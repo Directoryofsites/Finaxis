@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Libro Mayor y Balances</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 1.5cm;
+            @bottom-center {
+                content: "Página " counter(page) " de " counter(pages);
+                font-size: 10px;
+            }
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 9px;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+        .header h1, .header h2, .header p {
+            margin: 0;
+            padding: 2px 0;
+        }
+        .account-block {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+        .account-header {
+            background-color: #e0e0e0;
+            padding: 5px;
+            font-weight: bold;
+            font-size: 11px;
+            border: 1px solid #ccc;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 5px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .summary-row td {
+            font-weight: bold;
+            background-color: #f2f2f2;
+            border-top: 2px solid #333;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>{{ empresa_nombre }}</h1>
+        <h2>NIT: {{ empresa_nit }}</h2>
+        <p><strong>Libro Mayor y Balances</strong></p>
+        <p>Desde el {{ fecha_inicio }} hasta el {{ fecha_fin }}</p>
+    </div>
+
+    {% for cuenta in reporte.cuentas %}
+    <div class="account-block">
+        <div class="account-header">
+            CUENTA: {{ cuenta.cuenta_codigo }} - {{ cuenta.cuenta_nombre }}
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Documento</th>
+                    <th>Beneficiario</th>
+                    <th>Concepto</th>
+                    <th class="text-right">Débito</th>
+                    <th class="text-right">Crédito</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="4"><strong>Saldo Inicial</strong></td>
+                    <td colspan="2" class="text-right"><strong>{{ "${:,.2f}".format(cuenta.saldo_inicial) }}</strong></td>
+                </tr>
+                {% for mov in cuenta.movimientos %}
+                <tr>
+                    <td>{{ mov.fecha.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ mov.documento }}</td>
+                    <td>{{ mov.beneficiario or '' }}</td>
+                    <td>{{ mov.concepto }}</td>
+                    <td class="text-right">{{ "${:,.2f}".format(mov.debito) }}</td>
+                    <td class="text-right">{{ "${:,.2f}".format(mov.credito) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="summary-row">
+                    <td colspan="4" class="text-right"><strong>Totales del Período</strong></td>
+                    <td class="text-right"><strong>{{ "${:,.2f}".format(cuenta.total_debito) }}</strong></td>
+                    <td class="text-right"><strong>{{ "${:,.2f}".format(cuenta.total_credito) }}</strong></td>
+                </tr>
+                <tr class="summary-row">
+                    <td colspan="4" class="text-right"><strong>Nuevo Saldo</strong></td>
+                    <td colspan="2" class="text-right"><strong>{{ "${:,.2f}".format(cuenta.nuevo_saldo) }}</strong></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    {% else %}
+        <p style="text-align:center;">No se encontraron cuentas con movimiento para el período seleccionado.</p>
+    {% endfor %}
+
+</body>
+</html>

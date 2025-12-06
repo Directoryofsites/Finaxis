@@ -1,0 +1,3056 @@
+
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Manual de Usuario - ContaPY</title>
+        
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        :root {
+            --primary: #2563eb;
+            --secondary: #1e40af;
+            --bg: #f1f5f9;
+            --text: #334155;
+            --sidebar-width: 320px;
+            --sidebar-bg: #1e293b;
+            --sidebar-text: #e2e8f0;
+        }
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            overflow-y: auto;
+            padding: 2rem 1.5rem;
+            flex-shrink: 0;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+        }
+        .sidebar h1 {
+            font-size: 1.8rem;
+            color: white;
+            margin-bottom: 2.5rem;
+            padding-left: 0.5rem;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 1rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        .nav-group {
+            margin-bottom: 2rem;
+        }
+        .nav-group-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #94a3b8;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            padding-left: 0.75rem;
+        }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.6rem 0.75rem;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+            font-weight: 400;
+            margin-bottom: 0.25rem;
+        }
+        .nav-link::before {
+            content: "•";
+            margin-right: 0.75rem;
+            color: #64748b;
+            font-size: 1.2rem;
+            line-height: 0;
+        }
+        .nav-link:hover {
+            background-color: #334155;
+            color: white;
+            transform: translateX(4px);
+        }
+        .nav-link:hover::before {
+            color: var(--primary);
+        }
+        .nav-link.active {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
+        .nav-link.active::before {
+            color: white;
+        }
+        
+        /* Main Content */
+        .main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 4rem 6rem;
+            scroll-behavior: smooth;
+        }
+        .content-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Typography */
+        h1.chapter-title {
+            font-size: 2.8rem;
+            color: #0f172a;
+            margin-top: 5rem;
+            margin-bottom: 2rem;
+            border-bottom: 3px solid #e2e8f0;
+            padding-bottom: 1rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+        }
+        h2 {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-top: 3rem;
+            margin-bottom: 1.25rem;
+            font-weight: 700;
+        }
+        h3 {
+            font-size: 1.5rem;
+            color: #334155;
+            margin-top: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+        h4 {
+            font-size: 1.2rem;
+            color: #475569;
+            margin-top: 2rem;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+        p, li {
+            line-height: 1.8;
+            font-size: 1.05rem;
+            color: #475569;
+            margin-bottom: 1.25rem;
+        }
+        ul {
+            padding-left: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        li {
+            margin-bottom: 0.5rem;
+        }
+        strong {
+            color: #0f172a;
+            font-weight: 700;
+        }
+        hr {
+            border: 0;
+            height: 1px;
+            background: #e2e8f0;
+            margin: 4rem 0;
+        }
+        
+        /* Images */
+        .img-container {
+            margin: 3rem 0;
+            text-align: center;
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 1rem;
+        }
+        .manual-img {
+            max-width: 100%;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+        .img-caption {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-top: 1rem;
+            font-style: italic;
+            font-weight: 500;
+        }
+        
+        /* Note Badge */
+        .system-note {
+            display: inline-block;
+            background: #eff6ff;
+            color: var(--primary);
+            padding: 0.35rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid #bfdbfe;
+        }
+        
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            margin: 2.5rem 0;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            font-size: 0.95rem;
+        }
+        th {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            font-weight: 700;
+            text-align: left;
+            padding: 1rem 1.25rem;
+            border-bottom: 2px solid #e2e8f0;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
+        }
+        td {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid #e2e8f0;
+            color: #334155;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        tr:hover td {
+            background-color: #f8fafc;
+        }
+        
+        /* Alerts */
+        .alert {
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            border-radius: 0.75rem;
+            border-left: 5px solid;
+            font-size: 1rem;
+            display: flex;
+            align-items: start;
+        }
+        .alert-info {
+            background-color: #eff6ff;
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
+        .alert-success {
+            background-color: #f0fdf4;
+            border-color: #22c55e;
+            color: #15803d;
+        }
+        .alert-warning {
+            background-color: #fefce8;
+            border-color: #eab308;
+            color: #854d0e;
+        }
+        .alert-danger {
+            background-color: #fef2f2;
+            border-color: #ef4444;
+            color: #991b1b;
+        }
+    </style>
+    
+    </head>
+    <body>
+        <nav class="sidebar">
+            <h1>ContaPY Manual</h1>
+    <div class="nav-group"><div class="nav-group-title">Configuración y Maestros</div><a href="#capitulo_5_empresas" class="nav-link">Empresas</a><a href="#capitulo_1_puc" class="nav-link">Puc</a><a href="#capitulo_2_tipos_documento" class="nav-link">Tipos Documento</a><a href="#capitulo_3_plantillas" class="nav-link">Plantillas</a><a href="#capitulo_4_conceptos" class="nav-link">Conceptos</a><a href="#capitulo_34_gestion_terceros" class="nav-link">Gestion Terceros</a><a href="#capitulo_50_centros_de_costo" class="nav-link">Centros De Costo</a></div><div class="nav-group"><div class="nav-group-title">Operación Diaria</div><a href="#capitulo_24_nuevo_documento" class="nav-link">Nuevo Documento</a><a href="#capitulo_25_captura_rapida" class="nav-link">Captura Rapida</a><a href="#capitulo_26_explorador" class="nav-link">Explorador</a><a href="#capitulo_40_compras" class="nav-link">Compras</a><a href="#capitulo_41_facturacion" class="nav-link">Facturacion</a></div><div class="nav-group"><div class="nav-group-title">Reportes Contables</div><a href="#capitulo_27_libro_diario" class="nav-link">Libro Diario</a><a href="#capitulo_28_balance_general" class="nav-link">Balance General</a><a href="#capitulo_29_estado_resultados" class="nav-link">Estado Resultados</a><a href="#capitulo_30_balance_prueba" class="nav-link">Balance Prueba</a><a href="#capitulo_31_auxiliar_cuenta" class="nav-link">Auxiliar Cuenta</a><a href="#capitulo_32_libros_oficiales" class="nav-link">Libros Oficiales</a><a href="#capitulo_33_super_informe" class="nav-link">Super Informe</a><a href="#capitulo_51_auxiliar_cc_cuenta" class="nav-link">Auxiliar Cc Cuenta</a><a href="#capitulo_52_balance_general_cc" class="nav-link">Balance General Cc</a><a href="#capitulo_53_estado_resultados_cc_detallado" class="nav-link">Estado Resultados Cc Detallado</a><a href="#capitulo_54_balance_prueba_cc" class="nav-link">Balance Prueba Cc</a><a href="#capitulo_55_analisis_financiero" class="nav-link">Analisis Financiero</a></div><div class="nav-group"><div class="nav-group-title">Terceros y Cartera</div><a href="#capitulo_35_tercero_cuenta" class="nav-link">Tercero Cuenta</a><a href="#capitulo_36_estado_cuenta_cliente" class="nav-link">Estado Cuenta Cliente</a><a href="#capitulo_37_auxiliar_cartera" class="nav-link">Auxiliar Cartera</a><a href="#virtual_estado_cuenta_proveedor" class="nav-link">Estado Cuenta Proveedor</a><a href="#virtual_auxiliar_proveedor" class="nav-link">Auxiliar Proveedores</a></div><div class="nav-group"><div class="nav-group-title">Inventario y Logística</div><a href="#capitulo_38_gestion_inventario" class="nav-link">Gestion Inventario</a><a href="#capitulo_39_parametros_inventario" class="nav-link">Parametros Inventario</a><a href="#capitulo_42_traslados" class="nav-link">Traslados</a><a href="#capitulo_43_ajuste_inventario" class="nav-link">Ajuste Inventario</a><a href="#capitulo_44_rentabilidad_producto" class="nav-link">Rentabilidad Producto</a><a href="#capitulo_45_movimiento_analitico" class="nav-link">Movimiento Analitico</a><a href="#capitulo_46_kardex_detallado" class="nav-link">Kardex Detallado</a><a href="#capitulo_47_super_informe_inventarios" class="nav-link">Super Informe Inventarios</a><a href="#capitulo_48_gestion_topes" class="nav-link">Gestion Topes</a><a href="#capitulo_49_gestion_ventas" class="nav-link">Gestion Ventas</a></div><div class="nav-group"><div class="nav-group-title">Utilidades</div><a href="#capitulo_60_edicion_documentos" class="nav-link">Edicion Documentos</a><a href="#capitulo_61_recodificacion_masiva" class="nav-link">Recodificacion Masiva</a><a href="#capitulo_62_papelera_reciclaje" class="nav-link">Papelera Reciclaje</a><a href="#capitulo_63_control_cierre" class="nav-link">Control Cierre</a></div>
+        </nav>
+        <main class="main">
+            <div class="content-container">
+                <div style="text-align: center; margin-bottom: 8rem;">
+                    <h1 style="font-size: 5rem; color: var(--primary); margin-bottom: 1.5rem; letter-spacing: -0.05em;">Manual de Usuario</h1>
+                    <p style="font-size: 1.8rem; color: #64748b; font-weight: 300;">Sistema Contable ContaPY v1.0</p>
+                    <div style="margin-top: 4rem; display: inline-block; padding: 1rem 2rem; background: #f1f5f9; border-radius: 2rem; color: #475569; font-weight: 600;">
+                        Documentación Oficial Unificada
+                    </div>
+                </div>
+    <div class="group-section"><h1 style="font-size: 3.5rem; color: #0f172a; margin: 8rem 0 4rem 0; border-bottom: 5px solid var(--primary); display: inline-block; letter-spacing: -0.03em;">Configuración y Maestros</h1></div><div id="capitulo_5_empresas" class="chapter-container"><div class="system-note">Módulo: Configuración y Maestros</div><h1 class="chapter-title">Gestión de Empresas</h1>
+
+<h2>1. Introducción</h2>
+El módulo de <strong>Gestión de Empresas</strong> es su panel de control corporativo.
+
+Aquí no se gestiona la contabilidad del día a día, sino la <strong>Identidad</strong> de su organización ante el mundo. Los datos que configure aquí (Dirección, Teléfono, Logo) son los que aparecerán en el encabezado de todas sus Facturas, Egresos y Certificados.
+
+<hr>
+
+<h2>2. ¿Cómo acceder al módulo?</h2>
+Siga esta ruta en el menú principal:
+
+1.  Ubique la sección <strong>Administración y Configuración</strong>.
+2.  Busque el grupo <strong>Administración del Sistema</strong>.
+3.  Haga clic en la opción <strong>Gestión de Empresas</strong>.
+
+&gt; <strong>Ruta Rápida:</strong> `Administración &gt; Empresas`
+
+<hr>
+
+<h2>3. Lógica de Negocio (Identidad Corporativa)</h2>
+
+<h3>3.1. El "Membrete" Automático</h3>
+El sistema toma los datos de esta pantalla para generar dinámicamente los PDFs.
+<ul>
+<li>  <strong>Razón Social y NIT:</strong> Son legales y obligatorios.</li>
+<li>  <strong>Dirección y Teléfono:</strong> Aparecen en el pie de página o encabezado de las facturas.</li>
+<li>  <strong>Logo URL:</strong> Si usted pega aquí el enlace de su logo, el sistema lo estampará en la esquina superior izquierda de todos sus documentos.</li>
+</ul>
+
+<h3>3.2. Seguridad de Usuarios (Modo Lectura)</h3>
+En la parte inferior verá la lista de <strong>Usuarios Asociados</strong>.
+<ul>
+<li>  <strong>¿Por qué no puedo editar usuarios aquí?</strong></li>
+</ul>
+    Por seguridad, la gestión de usuarios (crear, borrar, cambiar claves) se hace en un módulo separado. Aquí solo tiene una vista de "Auditoría" para saber quién tiene acceso a esta empresa.
+
+<hr>
+
+<h2>4. Guía Paso a Paso</h2>
+
+<h3>4.1. Actualizar Datos de Contacto</h3>
+1.  En la lista de empresas, haga clic en el botón <strong>Gestionar</strong> de la empresa deseada.
+2.  Modifique los campos necesarios (Dirección, Email, Teléfono).
+3.  Haga clic en <strong>Guardar Datos</strong>.
+    <em>   </em>Efecto Inmediato:* La próxima factura que imprima ya saldrá con la nueva dirección.
+
+<h3>4.2. Configurar el Logo</h3>
+Para que su logo aparezca en los documentos:
+1.  Suba su logo a internet (puede ser en su sitio web o un servicio de imágenes).
+2.  Copie la dirección de la imagen (debe terminar en `.png` o `.jpg`).
+3.  Péguela en el campo <strong>URL del Logo</strong>.
+4.  Guarde los cambios.
+
+<h3>4.3. Conexión con el Diseñador de Documentos</h3>
+El campo <strong>Logo URL</strong> no actúa solo. Trabaja en conjunto con el <strong>Diseñador de Formatos</strong> (ubicado en <em>Tipos de Documento &gt; Diseñar</em>).
+
+<ul>
+<li>  <strong>La Variable Mágica:</strong> El sistema inyecta automáticamente la variable `{{empresa.logo_url}}` en sus plantillas HTML.</li>
+<li>  <strong>Funcionamiento:</strong></li>
+</ul>
+    1.  Usted pega el enlace aquí (ej: `https://miweb.com/logos/empresa1.png`).
+    2.  Al generar una factura, el sistema busca esta variable.
+    3.  Si existe, reemplaza el espacio del logo con su imagen específica.
+    
+&gt; <strong>Tip para Multi-Empresa:</strong> Si gestiona cientos de empresas, le recomendamos crear una carpeta pública en su servidor (ej: `/logos/`) y nombrar los archivos con el NIT (ej: `800123456.png`). Así podrá construir las URLs de forma lógica y rápida.
+
+<hr>
+
+<h2>5. Preguntas Frecuentes (FAQ)</h2>
+
+<ul>
+<li>  <strong>P: ¿Dónde está el botón de "Crear Empresa"?</strong></li>
+<li>  <strong>R:</strong> La creación de empresas es una función delicada que conlleva la creación automática de bases de datos y usuarios administradores. Por seguridad, esta opción suele estar reservada para el "Super Administrador" o el equipo de Soporte Técnico.</li>
+</ul>
+
+<ul>
+<li>  <strong>P: ¿Cómo elimino una empresa?</strong></li>
+<li>  <strong>R:</strong> <strong>¡Cuidado!</strong> Eliminar una empresa es una "Opción Nuclear". Borraría no solo el nombre, sino todos los terceros, cuentas, facturas y movimientos históricos. Por eso, no encontrará un botón de eliminar aquí. Si necesita dar de baja una empresa, contacte a Soporte para un borrado seguro.</li>
+</ul>
+
+<ul>
+<li>  <strong>P: Me sale un aviso de "No tienes permisos para ver usuarios".</strong></li>
+<li>  <strong>R:</strong> Esto es normal si usted es un usuario operativo (ej. Auxiliar Contable). Solo los usuarios con rol de "Administrador" o "Gerente" pueden ver la lista de accesos.</li>
+</ul>
+</div><hr><div id="capitulo_1_puc" class="chapter-container"><div class="system-note">Módulo: Configuración y Maestros</div><h1 class="chapter-title">📘 El Plan de Cuentas (PUC)</h1>
+
+<h2>1. Introducción</h2>
+El <strong>Plan de Cuentas (PUC)</strong> es la columna vertebral de su sistema contable. Es el listado organizado de todas las cuentas necesarias para registrar los hechos económicos de la empresa (activos, pasivos, patrimonio, ingresos, gastos y costos).
+
+En <strong>PYsis</strong>, el Plan de Cuentas es:
+<ul>
+<li>  🏗️ <strong>Jerárquico:</strong> Las cuentas se organizan en niveles (Clase, Grupo, Cuenta, Subcuenta, Auxiliar).</li>
+<li>  🧩 <strong>Flexible:</strong> Puede crear tantos niveles y auxiliares como su empresa requiera.</li>
+<li>  🧠 <strong>Inteligente:</strong> El sistema valida automáticamente la estructura y calcula los niveles.</li>
+</ul>
+
+<hr>
+
+<h2>2. ¿Cómo acceder al módulo?</h2>
+
+Para gestionar el Plan de Cuentas, siga esta ruta en el menú principal:
+
+1.  Ubique la sección <strong>⚙️ Administración y Configuración</strong>.
+2.  Busque el grupo <strong>Parametrización Maestra</strong>.
+3.  Haga clic en la opción <strong>📖 Gestionar PUC</strong>.
+
+&gt; <strong>Ruta:</strong> `Administración &gt; Parametrización Maestra &gt; Gestionar PUC`
+
+<hr>
+
+<h2>3. Conceptos Fundamentales</h2>
+
+Antes de crear cuentas, es vital entender dos conceptos clave que el sistema le pedirá:
+
+<h3>A. Cuenta de Movimiento vs. Cuenta de Grupo</h3>
+<div class="table-container"><table>
+<thead><tr>
+<th>Tipo de Cuenta</th>
+<th>Descripción</th>
+<th>Ejemplo</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>📂 Cuenta de Grupo (Padre)</strong></td>
+<td>Son cuentas que agrupan a otras. <strong>NO</strong> se pueden usar para hacer asientos contables. Su función es organizar y sumarizar.</td>
+<td>`1105 - CAJA`</td>
+</tr>
+<tr>
+<td><strong>📝 Cuenta de Movimiento (Auxiliar)</strong></td>
+<td>Son las cuentas de último nivel donde <strong>SÍ</strong> se registran los valores.</td>
+<td>`110505 - CAJA GENERAL`</td>
+</tr>
+</tbody></table></div>
+
+&gt; <em>Nota:</em> En el sistema, esto se define con la casilla <strong>"Permite Movimiento"</strong>.
+
+<h3>B. Jerarquía y Código</h3>
+El código define la jerarquía. Usted no necesita decirle al sistema el nivel, él lo calcula por la longitud del código y quién es su padre.
+
+<ul>
+<li>  <strong>Clase:</strong> 1 dígito (Ej: `1`)</li>
+<li>  <strong>Grupo:</strong> 2 dígitos (Ej: `11`)</li>
+<li>  <strong>Cuenta:</strong> 4 dígitos (Ej: `1105`)</li>
+<li>  <strong>Subcuenta:</strong> 6 dígitos (Ej: `110505`)</li>
+<li>  <strong>Auxiliar:</strong> 8 o más dígitos.</li>
+</ul>
+
+<hr>
+
+<h2>4. Guía Paso a Paso</h2>
+
+<h3>4.1. Crear una Nueva Cuenta</h3>
+
+1.  En la pantalla del PUC, haga clic en el botón <strong>"➕ Cuenta Raíz"</strong> o en el botón <strong>"Sub"</strong> de una cuenta existente.
+2.  Complete el formulario con los siguientes datos:
+<ul>
+<li>  <strong>Código:</strong> Escriba el código numérico único (Ej: `11050501`).</li>
+<li>  <strong>Nombre:</strong> El nombre descriptivo de la cuenta (Ej: `Caja Menor Oficina Principal`).</li>
+<li>  <strong>Cuenta Padre:</strong> Seleccione la cuenta superior a la que pertenece.</li>
+<li>  <strong>Permite Movimiento:</strong></li>
+<li>  ✅ Marque esta casilla <strong>SÍ</strong> si es una cuenta auxiliar donde registrará dinero.</li>
+<li>  ⬜ Déjela desmarcada <strong>NO</strong> si es una cuenta título o de agrupación.</li>
+</ul>
+3.  Haga clic en <strong>Guardar</strong>.
+
+<h3>4.2. Editar una Cuenta Existente</h3>
+
+1.  Busque la cuenta en el listado o use la barra de búsqueda por código o nombre.
+2.  Haga clic en el icono de <strong>✏️ Lápiz (Editar)</strong> al lado de la cuenta.
+3.  Modifique el nombre u otras propiedades.
+    <em>   ⚠️ </em>Advertencia:* Cambiar el código o el padre de una cuenta que ya tiene movimientos puede afectar sus reportes. Hágalo con precaución.
+4.  Haga clic en <strong>Actualizar</strong>.
+
+<h3>4.3. Eliminar una Cuenta</h3>
+
+1.  Ubique la cuenta que desea borrar.
+2.  Haga clic en el icono de <strong>🗑️ Basura (Eliminar)</strong>.
+3.  Confirme la acción.
+
+&gt; <strong>⛔ Restricciones de Seguridad:</strong> El sistema <strong>NO</strong> le permitirá borrar una cuenta si:
+&gt; *   Tiene cuentas hijas (primero debe borrar las hijas).
+&gt; *   Ya tiene movimientos contables registrados (para garantizar la integridad de la contabilidad).
+
+<hr>
+
+<h2>5. Herramientas Avanzadas</h2>
+
+<h3>🛡️ Depuración Jerárquica (Protección al Eliminar)</h3>
+La herramienta de <strong>Depuración</strong> es un <strong>asistente automático</strong> que se activa cuando usted intenta <strong>Eliminar</strong> una cuenta con hijos.
+
+<strong>¿Cómo funciona?</strong>
+1.  Cuando usted hace clic en el icono de <strong>🗑️ Eliminar</strong> de una cuenta padre.
+2.  El sistema ejecuta automáticamente un <strong>Análisis de Depuración</strong>.
+3.  Se abrirá una ventana emergente mostrándole:
+<ul>
+<li>  Si la cuenta tiene subcuentas (hijos) que también se eliminarán.</li>
+<li>  Si existen conflictos que impiden la eliminación.</li>
+</ul>
+4.  Usted podrá revisar esta información y confirmar la eliminación en cascada si está seguro.
+
+&gt; <strong>Nota:</strong> Esta es una medida de seguridad para evitar que queden "ramas sueltas" en su árbol contable.
+</div><hr><div id="capitulo_2_tipos_documento" class="chapter-container"><div class="system-note">Módulo: Configuración y Maestros</div><h1 class="chapter-title">Tipos de Documento</h1>
+
+<h2>1. Introducción</h2>
+El módulo de <strong>Tipos de Documento</strong> es el "cerebro" que define cómo se comporta cada transacción en ContaPY. Aquí no solo se crean los nombres de sus comprobantes (Facturas, Recibos, Egresos), sino que se <strong>programa la lógica</strong> que el sistema ejecutará automáticamente.
+
+Una configuración correcta garantiza que:
+<ul>
+<li>  <strong>Auditoría:</strong> La numeración sea consecutiva y sin huecos.</li>
+<li>  <strong>Automatización:</strong> El sistema mueva inventarios y genere asientos contables por usted.</li>
+<li>  <strong>Integración:</strong> Los documentos alimenten correctamente los módulos de Cartera (CxC) y Proveedores (CxP).</li>
+</ul>
+
+<hr>
+
+<h2>2. ¿Cómo acceder al módulo?</h2>
+Siga esta ruta en el menú principal:
+
+1.  Ubique la sección <strong>Administración y Configuración</strong>.
+2.  Busque el grupo <strong>Parametrización Maestra</strong>.
+3.  Haga clic en la opción <strong>Tipos de Documento</strong>.
+
+&gt; <strong>Ruta Rápida:</strong> `Administración &gt; Parametrización Maestra &gt; Tipos de Documento`
+
+<hr>
+
+<h2>3. Conceptos Fundamentales</h2>
+
+<h3>3.1. Modos de Numeración</h3>
+El sistema ofrece dos formas de controlar los consecutivos de sus documentos:
+
+<ul>
+<li>  <strong>Automática (Recomendado):</strong> El sistema asigna el siguiente número disponible (1, 2, 3...) sin intervención humana. Es ideal para documentos internos como Facturas de Venta, Recibos de Caja o Notas Contables.</li>
+<li>  <strong>Manual:</strong> El usuario debe digitar el número al momento de crear el documento. Esto es obligatorio para documentos externos donde no controlamos el consecutivo, como las <strong>Facturas de Compra</strong> (usamos el número que nos da el proveedor).</li>
+</ul>
+
+<h3>3.2. Lógica de Negocio (El "Cerebro" del Sistema)</h3>
+Aquí es donde usted define qué "superpoderes" tendrá el documento.
+
+<h4>A. El Interruptor de Inventario (`Afecta Inventario`)</h4>
+Esta casilla transforma el documento en una <strong>Orden de Almacén</strong>.
+<ul>
+<li>  <strong>Activado:</strong> El sistema OBLIGARÁ a seleccionar una Bodega y descontará (ventas) o sumará (compras) unidades del Kardex físico.</li>
+<li>  <strong>Desactivado:</strong> El documento será puramente financiero (ej. una Nota Contable por ajuste de precio) y no tocará sus existencias.</li>
+</ul>
+
+<h4>B. La "Doble Llave" de Cartera y Proveedores</h4>
+Para que un documento active los módulos especializados de cobro o pago, se requiere una <strong>Sinergia</strong> entre dos campos. Si falta uno, el módulo no funcionará.
+
+<div class="table-container"><table>
+<thead><tr>
+<th>Módulo</th>
+<th>Llave 1: Función Especial</th>
+<th>Llave 2: Cuenta Configurada</th>
+<th>Efecto</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>Ventas (CxC)</strong></td>
+<td>`VENTAS`</td>
+<td>`Cuenta Débito CxC` (Ej. 1305)</td>
+<td>Crea una deuda nueva al cliente.</td>
+</tr>
+<tr>
+<td><strong>Recaudos (CxC)</strong></td>
+<td>`RECIBO_CAJA`</td>
+<td>`Cuenta Crédito CxC` (Ej. 1305)</td>
+<td>Permite cruzar/abonar a facturas pendientes.</td>
+</tr>
+<tr>
+<td><strong>Compras (CxP)</strong></td>
+<td>`COMPRAS`</td>
+<td>`Cuenta Crédito CxP` (Ej. 2205)</td>
+<td>Crea una deuda nueva con el proveedor.</td>
+</tr>
+<tr>
+<td><strong>Pagos (CxP)</strong></td>
+<td>`PAGO_PROVEEDOR`</td>
+<td>`Cuenta Débito CxP` (Ej. 2205)</td>
+<td>Permite cruzar/abonar a facturas de compra.</td>
+</tr>
+</tbody></table></div>
+
+&gt; <strong>Ejemplo Crítico:</strong> Si crea un "Recibo de Caja" pero olvida asignarle la cuenta 1305 en la configuración, el sistema <strong>NO</strong> le mostrará la opción de "Abonar a Facturas" cuando lo esté usando.
+
+<hr>
+
+<h2>4. Diccionario de Campos (Referencia Detallada)</h2>
+
+Al crear o editar un tipo de documento, encontrará los siguientes campos:
+
+<div class="table-container"><table>
+<thead><tr>
+<th>Campo</th>
+<th>Descripción</th>
+<th>Recomendación</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>Código</strong></td>
+<td>Identificador corto de hasta 5 letras.</td>
+<td>Use siglas lógicas: `FV` (Factura Venta), `RC` (Recibo Caja), `CE` (Comprobante Egreso).</td>
+</tr>
+<tr>
+<td><strong>Nombre</strong></td>
+<td>Nombre completo del documento.</td>
+<td>Sea descriptivo: "Factura de Venta Electrónica".</td>
+</tr>
+<tr>
+<td><strong>Numeración Manual</strong></td>
+<td>Casilla de verificación.</td>
+<td>Marcar SOLO para documentos de proveedores.</td>
+</tr>
+<tr>
+<td><strong>Consecutivo Actual</strong></td>
+<td>El último número usado.</td>
+<td>Si inicia en 0, el primer documento será el 1.</td>
+</tr>
+<tr>
+<td><strong>Función Especial</strong></td>
+<td>Comportamiento pre-programado.</td>
+<td>`VENTAS` para facturar, `COMPRAS` para gastos, `NINGUNA` para notas internas.</td>
+</tr>
+<tr>
+<td><strong>Afecta Inventario</strong></td>
+<td>Si mueve Kardex.</td>
+<td>Marcar para Facturas y Remisiones. Desmarcar para Servicios.</td>
+</tr>
+<tr>
+<td><strong>Cuenta Caja/Banco</strong></td>
+<td>Cuenta por defecto para dinero.</td>
+<td>Use la `1105` (Caja General) o `1110` (Bancos).</td>
+</tr>
+<tr>
+<td><strong>Cuenta Débito CxC</strong></td>
+<td>Cuenta de Cartera (Deuda Cliente).</td>
+<td>Use la `1305` (Clientes Nacionales).</td>
+</tr>
+<tr>
+<td><strong>Cuenta Crédito CxP</strong></td>
+<td>Cuenta de Proveedores (Deuda Nuestra).</td>
+<td>Use la `2205` (Proveedores Nacionales).</td>
+</tr>
+</tbody></table></div>
+
+<hr>
+
+<h2>5. Guía de Configuración Paso a Paso</h2>
+
+<h3>5.1. Crear un Nuevo Tipo (Caso Práctico: Factura de Venta)</h3>
+1.  Haga clic en el botón <strong>Crear Nuevo Tipo</strong> (color índigo) en la parte superior derecha.
+2.  <strong>Datos Básicos:</strong>
+<ul>
+<li>  <strong>Código:</strong> `FV01`.</li>
+<li>  <strong>Nombre:</strong> `Factura de Venta Principal`.</li>
+<li>  <strong>Numeración:</strong> Automática.</li>
+<li>  <strong>Consecutivo:</strong> 0 (para iniciar en 1).</li>
+</ul>
+3.  <strong>Lógica de Negocio (¡Crucial!):</strong>
+<ul>
+<li>  Marque <strong>Afecta Inventario</strong> (Si vende productos físicos).</li>
+<li>  Seleccione Función Especial: <strong>VENTAS</strong>.</li>
+</ul>
+4.  <strong>Cuentas Contables (El enrutamiento):</strong>
+    <em>   <strong>Cuenta Caja:</strong> Seleccione su cuenta de Caja General (1105). </em>Esto habilita ventas de contado.*
+    <em>   <strong>Cuenta Débito CxC:</strong> Seleccione Clientes Nacionales (1305). </em>Esto habilita ventas a crédito y el módulo de cartera.*
+5.  Haga clic en <strong>Guardar</strong>.
+
+<h3>5.2. Diseñar Formato de Impresión</h3>
+ContaPY permite personalizar cómo se ve el PDF de cada documento.
+1.  En la tabla principal, ubique la columna <strong>Diseño</strong>.
+2.  Haga clic en el botón <strong>Diseñar</strong> (icono de regla y lápiz).
+3.  Se abrirá el editor visual donde podrá ajustar márgenes, logos y tamaños de letra.
+
+<h3>5.3. Editar o Eliminar</h3>
+<ul>
+<li>  <strong>Editar:</strong> Use el botón con el icono de lápiz para modificar nombres o cuentas asociadas.</li>
+<li>  <strong>Eliminar:</strong> Use el botón de papelera.</li>
+</ul>
+    &gt; <strong>Nota de Seguridad:</strong> El sistema NO permitirá eliminar un tipo de documento si ya existen movimientos contables creados con él. Esto es un candado de seguridad para proteger la integridad histórica de su contabilidad.
+
+<hr>
+
+<h2>6. Preguntas Frecuentes y Solución de Problemas</h2>
+
+<ul>
+<li>  <strong>P: Hice un Recibo de Caja pero no me deja cruzarlo con la Factura.</strong></li>
+<li>  <strong>R:</strong> Verifique la configuración del Tipo de Documento "Recibo de Caja". Asegúrese de que tenga asignada la <strong>MISMA</strong> cuenta de Cartera (ej. 1305) que usó en la Factura de Venta. Sin esa coincidencia, el sistema no puede vincularlos.</li>
+</ul>
+
+<ul>
+<li>  <strong>P: ¿Puedo cambiar la numeración de Automática a Manual después de crear documentos?</strong></li>
+<li>  <strong>R:</strong> Técnicamente sí, pero <strong>NO se recomienda</strong>. Podría generar huecos o duplicados en sus consecutivos, lo cual es grave ante una auditoría fiscal.</li>
+</ul>
+
+<ul>
+<li>  <strong>P: ¿Por qué el sistema me pide una Bodega obligatoriamente?</strong></li>
+<li>  <strong>R:</strong> Porque activó la casilla "Afecta Inventario" en el tipo de documento. Si está haciendo una factura de solo servicios, debería usar un tipo de documento diferente que tenga esa casilla desactivada.</li>
+</ul>
+</div><hr><div id="capitulo_3_plantillas" class="chapter-container"><div class="system-note">Módulo: Configuración y Maestros</div><h1 class="chapter-title">Gestión de Plantillas Contables</h1>
+
+<h2>1. Introducción</h2>
+<strong>¡Atención!</strong> No confunda este módulo con el diseño de facturas PDF.
+El módulo de <strong>Plantillas Contables</strong> es una herramienta de <strong>Velocidad de Digitación</strong>.
+
+Su función es guardar "esqueletos" de asientos contables repetitivos (como la Nómina Mensual, el Arriendo o la Depreciación) para que usted no tenga que digitar cuenta por cuenta cada vez.
+
+<hr>
+
+<h2>2. ¿Cómo acceder al módulo?</h2>
+Siga esta ruta en el menú principal:
+
+1.  Ubique la sección <strong>Administración y Configuración</strong>.
+2.  Busque el grupo <strong>Parametrización Maestra</strong>.
+3.  Haga clic en la opción <strong>Administración de Plantillas</strong>.
+
+&gt; <strong>Ruta Rápida:</strong> `Administración &gt; Plantillas`
+
+<hr>
+
+<h2>3. Lógica de Negocio (Reglas de Oro)</h2>
+
+<h3>3.1. La Regla del Equilibrio (Balance)</h3>
+El sistema <strong>BLOQUEARÁ</strong> el botón de guardar si la plantilla no está cuadrada.
+<ul>
+<li>  <strong>Suma de Débitos = Suma de Créditos.</strong></li>
+<li>  Si hay una diferencia de un solo centavo, el sistema asume que la plantilla es contablemente inválida y no permitirá crearla.</li>
+</ul>
+
+<h3>3.2. Datos "Sugeridos" vs. Fijos</h3>
+Al crear una plantilla, verá campos como "Beneficiario Sugerido" o "Centro de Costo Sugerido".
+<ul>
+<li>  <strong>¿Qué significa "Sugerido"?</strong> Que al usar la plantilla, el sistema llenará esos campos automáticamente, <strong>PERO</strong> usted podrá cambiarlos si lo desea.</li>
+</ul>
+<em>   </em>Ejemplo:* Puede crear una plantilla de "Pago de Arriendo" con la Inmobiliaria X como beneficiario sugerido. Si un mes cambia de inmobiliaria, podrá editarlo en el documento final sin dañar la plantilla original.
+
+<hr>
+
+<h2>4. Guía Paso a Paso</h2>
+
+<h3>4.1. Crear una Nueva Plantilla (Ej. Causación de Arriendo)</h3>
+1.  Haga clic en el botón azul <strong>Crear Nueva Plantilla</strong>.
+2.  <strong>Datos Generales:</strong>
+<ul>
+<li>  <strong>Nombre:</strong> `Causación Arriendo Oficina`.</li>
+<li>  <strong>Tipo Documento Sugerido:</strong> Seleccione `Nota de Contabilidad` o `Comprobante de Egreso`.</li>
+<li>  <strong>Beneficiario:</strong> Seleccione a su arrendador (opcional).</li>
+</ul>
+3.  <strong>Movimientos (La "Receta" Contable):</strong>
+<ul>
+<li>  <strong>Fila 1:</strong> Cuenta `5120 (Arrendamientos)` | Débito: `1.000.000` | Crédito: `0`.</li>
+<li>  <strong>Fila 2:</strong> Cuenta `2408 (IVA Descontable)` | Débito: `190.000` | Crédito: `0`.</li>
+<li>  <strong>Fila 3:</strong> Cuenta `2365 (Retención)` | Débito: `0` | Crédito: `35.000`.</li>
+<li>  <strong>Fila 4:</strong> Cuenta `2335 (CxP Arrendamientos)` | Débito: `0` | Crédito: `1.155.000`.</li>
+</ul>
+4.  <strong>Verificación:</strong> Mire el total en la parte inferior. Si dice <strong>BALANCEADO</strong> en verde, el botón de guardar se activará.
+5.  Haga clic en <strong>Guardar Plantilla</strong>.
+
+<h3>4.2. Editar una Plantilla</h3>
+1.  En la lista principal, haga clic en <strong>Editar</strong> (texto azul).
+2.  Puede agregar nuevas cuentas o cambiar los valores base.
+    &gt; <strong>Tip:</strong> Use valores base (ej. 1.000) o déjelos en cero si los montos cambian cada mes. Lo importante es la estructura de cuentas.
+
+<hr>
+
+<h2>5. Preguntas Frecuentes (FAQ)</h2>
+
+<ul>
+<li>  <strong>P: ¿Por qué el botón "Guardar" está gris y no funciona?</strong></li>
+<li>  <strong>R:</strong> Mire el pie de página de la tabla. Seguramente dice <strong>DESBALANCEADO</strong> en rojo. Revise sus sumas; el Débito debe ser exactamente igual al Crédito.</li>
+</ul>
+
+<ul>
+<li>  <strong>P: ¿Puedo usar una plantilla pero cambiarle el valor a una sola cuenta?</strong></li>
+<li>  <strong>R:</strong> ¡Sí! La plantilla solo "pre-llena" el documento. Una vez cargada, usted tiene libertad total para editar montos, borrar filas o cambiar terceros antes de guardar el documento final.</li>
+</ul>
+
+<ul>
+<li>  <strong>P: ¿Para qué sirve el "Concepto" en cada fila?</strong></li>
+</ul>
+    <em>   <strong>R:</strong> Ese texto aparecerá automáticamente en el movimiento contable. Sea genérico, por ejemplo: </em>"Canon de arrendamiento mes actual"*.
+
+<hr>
+
+<h2>6. ¿Cómo usar las plantillas? (Conexión con Contabilidad)</h2>
+
+Todo lo que usted cree en este módulo quedará disponible inmediatamente en el módulo de <strong>Captura Rápida</strong>.
+
+1.  Vaya a <strong>Contabilidad &gt; Captura Rápida</strong>.
+2.  En el campo <strong>"⚡ Plantilla (Requerido)"</strong>, despliegue la lista.
+3.  Seleccione la plantilla que acaba de crear (ej. `Causación Arriendo Oficina`).
+4.  <strong>¡Magia!</strong> El sistema cargará automáticamente:
+<ul>
+<li>  El Tipo de Documento.</li>
+<li>  El Beneficiario.</li>
+<li>  Todas las cuentas contables con sus débitos y créditos.</li>
+</ul>
+
+Solo tendrá que ajustar la fecha y hacer clic en <strong>Guardar Documento</strong>. Así es como las plantillas le ahorran horas de trabajo manual.
+</div><hr><div id="capitulo_4_conceptos" class="chapter-container"><div class="system-note">Módulo: Configuración y Maestros</div><h1 class="chapter-title">Gestión de Conceptos (Librería de Textos)</h1>
+
+<h2>1. Introducción</h2>
+El módulo de <strong>Conceptos Favoritos</strong> funciona como una "Memoria" o "Portapapeles Inteligente" para su empresa.
+
+Su objetivo es <strong>Estandarizar</strong> y <strong>Acelerar</strong>. En lugar de que cada auxiliar contable escriba "Pago arriendo", "Cancelación canon arrendamiento" o "Arriendo mes", usted define un único texto estándar.
+
+<hr>
+
+<h2>2. ¿Cómo acceder al módulo?</h2>
+Siga esta ruta en el menú principal:
+
+1.  Ubique la sección <strong>Administración y Configuración</strong>.
+2.  Busque el grupo <strong>Utilidades</strong>.
+3.  Haga clic en la opción <strong>Gestionar Conceptos</strong>.
+
+&gt; <strong>Ruta Rápida:</strong> `Administración &gt; Utilidades &gt; Gestionar Conceptos`
+
+<hr>
+
+<h2>3. Lógica de Negocio</h2>
+
+<h3>3.1. Estandarización de la Información</h3>
+Al usar conceptos predefinidos, sus reportes contables (como el Libro Mayor o los Auxiliares) se verán ordenados y profesionales. Evita errores de ortografía y descripciones ambiguas.
+
+<h3>3.2. Velocidad de Digitación</h3>
+El sistema autocompleta el texto. Si usted tiene guardado el concepto "Compra de Papelería y Útiles de Aseo", con solo escribir "Papel" el sistema le sugerirá la frase completa.
+
+<hr>
+
+<h2>4. Guía Paso a Paso</h2>
+
+<h3>4.1. Crear un Nuevo Concepto</h3>
+1.  Haga clic en el botón azul <strong>+ Nuevo Concepto</strong>.
+2.  Escriba la descripción detallada.
+    <em>   </em>Ejemplo:* "Servicios Públicos - Energía Eléctrica y Acueducto".
+3.  Haga clic en <strong>Crear</strong>.
+
+<h3>4.2. Editar o Eliminar</h3>
+<em>   <strong>Editar:</strong> Si detecta un error ortográfico, pulse <strong>Editar</strong>, corrija el texto y guarde. El cambio se aplicará para los </em>nuevos* documentos (los antiguos conservan el texto original).
+<ul>
+<li>  <strong>Eliminar:</strong> Seleccione las casillas de los conceptos obsoletos y pulse el botón rojo <strong>Eliminar Seleccionados</strong>.</li>
+</ul>
+
+<hr>
+
+<h2>5. Conexión con la Operación (Captura de Movimientos)</h2>
+
+<strong>¿Dónde aparecen estos textos?</strong>
+
+Esta es la parte más importante. Todo lo que usted guarde en esta librería aparecerá automáticamente en el módulo de <strong>Captura Rápida</strong> y en la <strong>Creación de Documentos</strong>.
+
+1.  Cuando esté haciendo un asiento contable.
+2.  En la columna "Concepto / Detalle".
+3.  Al empezar a escribir, el sistema desplegará su lista de <strong>Conceptos Favoritos</strong>.
+
+&gt; <strong>Tip de Pro:</strong> Usted también puede guardar conceptos <em>desde</em> la pantalla de captura. Si escribe un texto nuevo y le gusta, verá un pequeño icono de "Libro" al lado. Al pulsarlo, ese texto se guardará en esta librería maestra para usarlo en el futuro.
+</div><hr><div id="capitulo_34_gestion_terceros" class="chapter-container"><div class="system-note">Módulo: Configuración y Maestros</div><h1 class="chapter-title">Gestión de Terceros: El Corazón de su Base de Datos</h1>
+
+El módulo de <strong>Gestión de Terceros</strong> es el directorio maestro de su aplicación. Aquí se centraliza la información de todas las personas naturales o jurídicas con las que su empresa tiene relación: Clientes, Proveedores, Empleados y otros.
+
+<h2>1. Creación y Edición de Terceros</h2>
+
+Al crear o editar un tercero, encontrará un formulario detallado dividido en tres secciones críticas. La precisión aquí es vital para la facturación electrónica y los reportes contables.
+
+<h3>Sección 1: Identificación</h3>
+<ul>
+<li>  <strong>NIT / Cédula</strong>: El identificador único. No se puede modificar una vez creado.</li>
+<li>  <strong>DV (Dígito de Verificación)</strong>: Calculado automáticamente o ingresado manualmente según el documento.</li>
+<li>  <strong>Razón Social</strong>: Nombre legal de la empresa o nombre completo de la persona.</li>
+<li>  <strong>Nombre Comercial</strong>: (Opcional) Como es conocido el negocio en el mercado (ej. "Panadería La 22" vs "Juan Pérez S.A.S.").</li>
+</ul>
+
+<h3>Sección 2: Ubicación y Contacto</h3>
+Datos esenciales para la facturación y notificaciones. Asegúrese de que el <strong>Correo Electrónico</strong> sea el destinado para la recepción de facturas electrónicas.
+
+<h3>Sección 3: Detalles Fiscales y Comerciales (¡MUY IMPORTANTE!)</h3>
+Esta sección define cómo el sistema interactúa con este tercero.
+
+<ul>
+<li>  <strong>Responsabilidad Fiscal</strong>: Código de responsabilidad (ej. R-99-PN). Consulte el RUT del tercero.</li>
+<li>  <strong>Actividad Económica (CIIU)</strong>: Código de la actividad principal.</li>
+<li>  <strong>Régimen Simple</strong>: Marque esta casilla si el tercero pertenece al Régimen Simple de Tributación.</li>
+<li>  <strong>Lista de Precios</strong>: Si maneja múltiples tarifas (ej. Mayorista, Detal), asigne la lista correspondiente aquí. El sistema cargará automáticamente estos precios al facturarle.</li>
+</ul>
+
+<h4>La Casilla "Cliente" y el Módulo de Cartera</h4>
+&gt; [!IMPORTANT]
+&gt; <strong>¿Por qué es vital marcar la casilla "Cliente"?</strong>
+&gt; Al marcar esta casilla, el sistema habilita inmediatamente el <strong>Módulo de Cartera</strong> para este tercero. Esto le permitirá:
+&gt; 1.  Generarle Facturas de Venta.
+&gt; 2.  Asignarle cupos de crédito.
+&gt; 3.  Hacer seguimiento a sus cuentas por cobrar.
+&gt; 4.  Ver su historial de pagos y morosidad.
+&gt;
+&gt; Si no marca esta casilla, el tercero existirá en la base de datos pero no aparecerá en los selectores de venta.
+
+<h4>Proveedores y Empleados</h4>
+<ul>
+<li>  <strong>Proveedor</strong>: Habilita el módulo de Cuentas por Pagar y Compras.</li>
+<li>  <strong>Empleado</strong>: Permite asignarlo a nómina y gastos de personal.</li>
+</ul>
+<em>Nota: Un mismo tercero puede ser Cliente, Proveedor y Empleado simultáneamente.</em>
+
+<h2>2. Herramienta de Fusión (Fusionar Terceros)</h2>
+
+¿Creó por error a "Juan Perez" y "Juan A. Perez" como dos registros diferentes? La herramienta <strong>Fusionar</strong> es la solución.
+
+1.  Haga clic en el botón <strong>"Fusionar"</strong> en la pantalla principal.
+2.  Seleccione el <strong>Tercero Principal</strong> (el que quedará).
+3.  Seleccione el <strong>Tercero Duplicado</strong> (el que desaparecerá).
+4.  El sistema moverá <strong>todos</strong> los movimientos (facturas, recibos, asientos) del duplicado al principal y luego eliminará el duplicado.
+
+&gt; [!WARNING]
+&gt; <strong>Acción Irreversible</strong>: Una vez fusionados, no se pueden separar. Verifique bien los NITs antes de confirmar.
+
+<h2>Preguntas Frecuentes (FAQ)</h2>
+
+<strong>P: ¿Puedo cambiar el NIT de un tercero?</strong>
+R: No directamente. El NIT es la llave maestra. Si se equivocó, debe crear uno nuevo y, si ya tiene movimientos, usar la herramienta "Fusionar" para mover todo al nuevo NIT correcto.
+
+<strong>P: ¿Por qué no me aparece un tercero al intentar hacer una factura?</strong>
+R: Seguramente no tiene marcada la casilla <strong>"Cliente"</strong> en su ficha. Edítelo y márquela.
+
+<strong>P: ¿Qué pasa si elimino un tercero?</strong>
+R: El sistema solo le permitirá eliminar terceros que <strong>NO tengan movimientos contables</strong>. Si ya tiene facturas o asientos, debe inactivarlo o fusionarlo, pero no podrá borrarlo para preservar la integridad contable.
+</div><hr><div id="capitulo_50_centros_de_costo" class="chapter-container"><div class="system-note">Módulo: Configuración y Maestros</div><h1 class="chapter-title">Gestión de Centros de Costo</h1>
+
+<h2>1. Introducción</h2>
+El módulo de <strong>Centros de Costo</strong> permite definir la estructura organizativa de la empresa para la imputación detallada de gastos e ingresos.
+
+A diferencia del Plan Único de Cuentas (PUC) que es obligatorio y legal, los Centros de Costo son una herramienta de <strong>Contabilidad Administrativa</strong> que le permite saber <em>en qué</em> o <em>quién</em> se gasta el dinero (ej: "Departamento de Ventas", "Proyecto Edificio Norte", "Sucursal Centro").
+
+<hr>
+
+<h2>2. ¿Cómo acceder al módulo?</h2>
+Siga esta ruta en el menú principal:
+
+1.  Ubique la sección <strong>Administración y Configuración</strong>.
+2.  Busque el grupo <strong>Administración del Sistema</strong>.
+3.  Haga clic en la opción <strong>Centros de Costo</strong>.
+
+&gt; <strong>Ruta Rápida:</strong> `Administración &gt; Centros de Costo`
+
+<hr>
+
+<h2>3. Lógica de Negocio (Estructura Jerárquica)</h2>
+
+El sistema maneja una estructura de árbol (padres e hijos) para organizar sus centros de costo.
+
+<h3>3.1. Tipos de Centro de Costo</h3>
+Existen dos tipos fundamentales que debe conocer:
+
+<ul>
+<li>  <strong>📂 Título (Carpeta):</strong></li>
+<li>  Sirve solo para agrupar otros centros de costo.</li>
+<li>  <strong>NO</strong> recibe movimientos contables.</li>
+<li>  Ejemplo: "10 - DEPARTAMENTO ADMINISTRATIVO".</li>
+<li>  Se identifica con un icono de carpeta amarilla.</li>
+</ul>
+
+<ul>
+<li>  <strong>📄 Auxiliar (Movimiento):</strong></li>
+<li>  Es el nivel último donde se registran los gastos.</li>
+<li>  <strong>SÍ</strong> recibe movimientos contables.</li>
+<li>  Ejemplo: "10.01 - Gerencia General".</li>
+<li>  Se identifica con un icono de documento azul y la etiqueta "Auxiliar".</li>
+</ul>
+
+<hr>
+
+<h2>4. Guía Paso a Paso</h2>
+
+<h3>4.1. Crear un Nivel Principal (Raíz)</h3>
+Si está empezando desde cero, lo primero es crear las grandes divisiones de su empresa.
+
+1.  Haga clic en el botón <strong>+ Crear Nivel Principal</strong> ubicado en la parte superior derecha.
+2.  <strong>Código:</strong> Ingrese un código numérico (ej: `10`, `20`, `30`).
+3.  <strong>Nombre:</strong> Escriba el nombre del área (ej: `ADMINISTRACIÓN`).
+4.  <strong>¿Es Auxiliar?:</strong>
+<ul>
+<li>  Marque la casilla si este centro recibirá gastos directamente.</li>
+<li>  <strong>Desmarque</strong> la casilla si planea crear sub-divisiones dentro de él (recomendado para niveles principales).</li>
+</ul>
+5.  Haga clic en <strong>Guardar</strong>.
+
+<h3>4.2. Crear un Sub-nivel (Hijo)</h3>
+Para crear una subdivisión dentro de una carpeta existente:
+
+1.  Ubique el centro de costo "Padre" en la lista.
+2.  Haga clic en el botón verde con el signo más <strong>(+)</strong> en la columna de acciones.
+    <em>   </em>Nota: Este botón solo aparece en los centros tipo "Título".*
+3.  El sistema abrirá el formulario y pre-seleccionará automáticamente la ubicación correcta.
+4.  Complete el código (ej: si el padre es `10`, el hijo podría ser `10.01`).
+5.  Defina el nombre y si es auxiliar o título.
+6.  Guarde los cambios.
+
+<h3>4.3. Editar un Centro de Costo</h3>
+1.  Haga clic en el botón azul con el lápiz <strong>(Editar)</strong>.
+2.  Modifique el nombre o corrija el código si es necesario.
+3.  Guarde los cambios.
+
+<h3>4.4. Eliminar un Centro de Costo</h3>
+1.  Haga clic en el botón rojo con la papelera <strong>(Eliminar)</strong>.
+2.  Confirme la acción en la ventana emergente.
+
+&gt; <strong>Restricción de Seguridad:</strong> No podrá eliminar un centro de costo si este ya tiene movimientos contables asociados o si tiene hijos (sub-niveles) dentro de él. Primero debe reasignar los movimientos o eliminar los hijos.
+
+<hr>
+
+<h2>5. Preguntas Frecuentes (FAQ)</h2>
+
+<ul>
+<li>  <strong>P: ¿Puedo cambiar un centro de "Título" a "Auxiliar" después de crearlo?</strong></li>
+<li>  <strong>R:</strong> Sí, puede editarlo y cambiar la casilla "Es Auxiliar". Sin embargo, tenga cuidado: si lo convierte en "Auxiliar", ya no podrá crearle hijos. Y si lo convierte en "Título", asegúrese de que no tenga movimientos contables directos, pues quedarían "huérfanos" de nivel.</li>
+</ul>
+
+<ul>
+<li>  <strong>P: ¿Qué código debo usar?</strong></li>
+<li>  <strong>R:</strong> El sistema es flexible, pero recomendamos usar una estructura escalonada con puntos para mayor orden visual:</li>
+<li>  Nivel 1: `10`, `20`, `30`</li>
+<li>  Nivel 2: `10.01`, `10.02`</li>
+<li>  Nivel 3: `10.01.001`</li>
+</ul>
+
+<ul>
+<li>  <strong>P: ¿Cuántos niveles de profundidad puedo tener?</strong></li>
+<li>  <strong>R:</strong> No hay un límite técnico estricto, pero por usabilidad recomendamos no exceder 4 o 5 niveles de profundidad.</li>
+</ul>
+</div><hr><div class="group-section"><h1 style="font-size: 3.5rem; color: #0f172a; margin: 8rem 0 4rem 0; border-bottom: 5px solid var(--primary); display: inline-block; letter-spacing: -0.03em;">Operación Diaria</h1></div><div id="capitulo_24_nuevo_documento" class="chapter-container"><div class="system-note">Módulo: Operación Diaria</div><h1 class="chapter-title">Nuevo Documento Contable</h1>
+
+<h2>1. Introducción</h2>
+Este es el módulo central del sistema. Aquí se registran todos los hechos económicos (Asientos, Facturas, Recibos, Notas) de forma manual.
+
+<strong>Ubicación:</strong> `Contabilidad &gt; Documentos &gt; Nuevo`
+
+<hr>
+
+<h2>2. Cabecera del Documento</h2>
+Antes de ingresar los movimientos, debe definir los datos generales:
+
+1.  <strong>Fecha Contable:</strong> Por defecto es hoy. Afecta el periodo contable.
+2.  <strong>Tipo de Documento:</strong> Clasifica la operación (ej: `CC - Comprobante de Contabilidad`).
+    <em>   </em>Nota:* Al seleccionar el tipo, el sistema cargará automáticamente el <strong>siguiente número consecutivo</strong> disponible.
+3.  <strong>Beneficiario (Tercero):</strong> Quién está involucrado en la transacción.
+4.  <strong>Centro de Costo:</strong> (Opcional) Para imputación de costos.
+
+<h3>2.1. Funciones Especiales (Cartera y Proveedores)</h3>
+Si selecciona un tipo de documento configurado para <strong>Recaudo (RC)</strong> o <strong>Pago (CE/EG)</strong>:
+<ul>
+<li>  Aparecerá el campo <strong>Valor Total a Abonar</strong>.</li>
+<li>  Se desplegará la tabla de <strong>Facturas Pendientes</strong> de ese tercero.</li>
+<li>  Podrá distribuir el pago entre las facturas pendientes. El sistema generará los asientos de cruce automáticamente.</li>
+</ul>
+
+<hr>
+
+<h2>3. Detalle Contable (La Grilla)</h2>
+Aquí se ingresan las cuentas.
+<ul>
+<li>  <strong>Cuenta Contable:</strong> Puede buscar por código (ej: `1105`) o nombre (ej: `Caja`).</li>
+<li>  <strong>Concepto:</strong> Descripción del movimiento.</li>
+</ul>
+    <em>   </em>Tip:* Puede guardar conceptos frecuentes usando el botón `+`.
+<ul>
+<li>  <strong>Débito / Crédito:</strong> Ingrese los valores.</li>
+</ul>
+    <em>   </em>Atajo:* Use las teclas `+` (miles) y `-` (centenas) para agregar ceros rápidamente.
+    <em>   </em>Balance:* El sistema no dejará guardar si la diferencia no es cero.
+
+<hr>
+
+<h2>4. Plantillas</h2>
+Para ahorrar tiempo en asientos repetitivos (ej: Nómina, Arriendos):
+<ul>
+<li>  <strong>Cargar:</strong> Seleccione una plantilla del menú desplegable "Cargar Plantilla".</li>
+<li>  <strong>Guardar:</strong> Si acaba de hacer un asiento que usará después, haga clic en "Guardar Plantilla".</li>
+</ul>
+
+<h2>5. Finalización</h2>
+<ul>
+<li>  <strong>Guardar Documento:</strong> Registra la operación y genera el asiento.</li>
+<li>  <strong>Imprimir:</strong> Genera un PDF oficial del documento.</li>
+</ul>
+</div><hr><div id="capitulo_25_captura_rapida" class="chapter-container"><div class="system-note">Módulo: Operación Diaria</div><h1 class="chapter-title">Captura Rápida</h1>
+
+La herramienta de <strong>Captura Rápida</strong> está diseñada para acelerar drásticamente el proceso de digitación contable mediante el uso de <strong>Plantillas Predefinidas</strong>. A diferencia del formulario estándar de "Nuevo Documento", esta interfaz asume que la estructura del asiento (cuentas y naturaleza) ya está definida, permitiendo al usuario enfocarse únicamente en los valores y terceros.
+
+<h2>1. Concepto General</h2>
+
+El flujo de trabajo se basa en <strong>Plantillas</strong>. Una plantilla define qué cuentas se van a mover y en qué naturaleza (Débito/Crédito). Al usar esta herramienta, el sistema:
+1.  Carga las cuentas automáticamente.
+2.  Solicita un <strong>Valor Único Total</strong>.
+3.  Distribuye ese valor automáticamente en las columnas correspondientes (partida doble automática).
+
+<h2>2. Configuración Inicial</h2>
+
+Al ingresar, encontrará el panel de configuración del asiento:
+
+<ul>
+<li>  <strong>Fecha:</strong> Fecha contable del registro.</li>
+<li>  <strong>⚡ Plantilla (Requerido):</strong> Seleccione el tipo de operación (ej. "Gasto de Cafetería", "Pago de Servicio Público"). <strong>Es el campo más importante</strong>, ya que define toda la estructura del asiento.</li>
+<li>  <strong>Beneficiario:</strong> Tercero asociado al movimiento.</li>
+<li>  <strong>Botón (+):</strong> Permite crear un nuevo tercero rápidamente (NIT y Nombre) sin salir de la pantalla.</li>
+<li>  <strong>Centro de Costo:</strong> Opcional. Asigna un centro de costo a todas las líneas del asiento.</li>
+</ul>
+
+<h2>3. Valores y Conceptos</h2>
+
+Una vez seleccionada una plantilla, se despliega la sección de detalles:
+
+<h3>Valor Total del Asiento</h3>
+Un campo grande y destacado donde debe ingresar el valor total de la operación.
+<ul>
+<li>  <strong>Automatización:</strong> Al escribir el valor, el sistema lo asigna automáticamente al Débito de una cuenta y al Crédito de la otra, garantizando que el asiento siempre esté cuadrado (sumas iguales).</li>
+</ul>
+
+<h3>Detalle de Movimientos</h3>
+Muestra las cuentas contables cargadas por la plantilla.
+<ul>
+<li>  <strong>Concepto / Detalle:</strong> Campo de texto libre para describir la operación.</li>
+<li>  <strong>Botón (Libro):</strong> Si escribe una descripción que usará frecuentemente, haga clic en el icono de libro para guardarla en su librería de conceptos favoritos.</li>
+<li>  <strong>Débito / Crédito:</strong> Calculados automáticamente basados en el "Valor Total".</li>
+</ul>
+
+<h2>4. Validaciones y Guardado</h2>
+
+<ul>
+<li>  <strong>Balanceo:</strong> El sistema verifica en tiempo real que Débitos = Créditos. Si hay diferencias, verá una alerta parpadeante.</li>
+<li>  <strong>Guardar Documento:</strong> Solo se habilita si el asiento está cuadrado y la información completa. Al guardar, se genera el consecutivo y se limpia el formulario para el siguiente registro inmediato.</li>
+</ul>
+
+<hr>
+<strong>Tip de Eficiencia:</strong> Use la tecla `TAB` para navegar rápidamente entre campos. Esta pantalla está optimizada para digitación veloz sin necesidad de usar el mouse constantemente.
+</div><hr><div id="capitulo_26_explorador" class="chapter-container"><div class="system-note">Módulo: Operación Diaria</div><h1 class="chapter-title">Explorador de Movimientos</h1>
+
+El <strong>Explorador de Movimientos</strong> es la herramienta central para la consulta histórica, auditoría y reimpresión de documentos contables. Permite buscar comprobantes específicos utilizando múltiples criterios de filtrado.
+
+<h2>1. Panel de Filtros</h2>
+
+Antes de visualizar información, debe utilizar los filtros superiores para delimitar su búsqueda. El sistema no carga datos automáticamente para optimizar el rendimiento.
+
+<div class="table-container"><table>
+<thead><tr>
+<th>Campo</th>
+<th>Descripción</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>Desde / Hasta</strong></td>
+<td>Rango de fechas para la búsqueda.</td>
+</tr>
+<tr>
+<td><strong>Tipo Documento</strong></td>
+<td>Filtra por una fuente específica (ej. Factura de Venta, Egreso).</td>
+</tr>
+<tr>
+<td><strong>Tercero</strong></td>
+<td>Muestra documentos asociados a un beneficiario específico (NIT/Nombre).</td>
+</tr>
+<tr>
+<td><strong>Número</strong></td>
+<td>Busca un consecutivo exacto (ej. `1025`).</td>
+</tr>
+</tbody></table></div>
+
+<h3>Botones de Acción</h3>
+<ul>
+<li><strong>&lt;span style="color:blue"&gt;🔍 Buscar&lt;/span&gt;</strong>: Ejecuta la consulta con los filtros aplicados.</li>
+<li><strong>&lt;span style="color:gray"&gt;🧹 Limpiar&lt;/span&gt;</strong>: Restablece todos los filtros y limpia la tabla de resultados.</li>
+</ul>
+
+<h2>2. Resultados y Acciones</h2>
+
+La tabla de resultados muestra los documentos ordenados cronológicamente (más recientes primero).
+
+<h3>Columnas</h3>
+<ul>
+<li><strong>Fecha</strong>: Fecha contable del documento.</li>
+<li><strong>Tipo</strong>: Código y nombre del documento (ej. `FV - Factura de Venta`).</li>
+<li><strong>Número</strong>: Consecutivo único.</li>
+<li><strong>Beneficiario</strong>: Tercero asociado a la transacción.</li>
+<li><strong>Valor Total</strong>: Suma de débitos/créditos del asiento.</li>
+<li><strong>Estado</strong>:</li>
+<li>&lt;span style="color:green; border:1px solid green; padding:2px; border-radius:4px;"&gt;ACTIVO&lt;/span&gt;: Documento válido y contabilizado.</li>
+<li>&lt;span style="color:red; border:1px solid red; padding:2px; border-radius:4px;"&gt;ANULADO&lt;/span&gt;: Documento revertido (sin efecto contable).</li>
+</ul>
+
+<h3>Reimpresión de Comprobantes</h3>
+Para obtener una copia física o digital de un documento:
+1. Localice el documento en la tabla.
+2. Haga clic en el botón <strong>🖨️ Imprimir</strong> en la columna de acciones.
+3. El sistema generará un PDF oficial en una nueva pestaña, listo para descargar o imprimir.
+
+&gt; [!NOTE]
+&gt; <strong>Paginación</strong>: Si la búsqueda arroja muchos resultados, utilice los botones <strong>« Anterior</strong> y <strong>Siguiente »</strong> al final de la tabla para navegar entre páginas.
+</div><hr><div id="capitulo_40_compras" class="chapter-container"><div class="system-note">Módulo: Operación Diaria</div><h1 class="chapter-title">Gestión de Compras y Gastos</h1>
+
+El módulo de <strong>Nueva Compra</strong> es la herramienta central para registrar todas las adquisiciones de la empresa, ya sean inventarios (mercancía para la venta) o gastos generales. Este proceso afecta simultáneamente:
+1.  <strong>Cuentas por Pagar</strong>: Genera la deuda con el proveedor.
+2.  <strong>Inventario</strong>: Aumenta las existencias en la bodega seleccionada (si se compran bienes).
+3.  <strong>Contabilidad</strong>: Genera el asiento contable automático según la configuración del tipo de documento.
+
+<h2>1. Requisitos Previos</h2>
+
+Antes de registrar una compra, asegúrese de tener configurados:
+<ul>
+<li>  <strong>Proveedores</strong>: El tercero debe existir y estar marcado como "Proveedor".</li>
+<li>  <strong>Bodegas</strong>: Debe existir al menos una bodega para recibir la mercancía.</li>
+<li>  <strong>Tipos de Documento</strong>: Debe existir un tipo de documento con función "CXP Proveedor" (ej: Factura de Compra).</li>
+<li>  <strong>Productos/Servicios</strong>: Los ítems a comprar deben estar creados en el sistema.</li>
+</ul>
+
+<h2>2. Paso a Paso: Registrar una Compra</h2>
+
+La pantalla se divide en dos secciones principales: <strong>Información del Proveedor</strong> y <strong>Productos a Comprar</strong>.
+
+<h3>Paso 1: Datos Generales (Encabezado)</h3>
+
+Complete los campos obligatorios marcados con asterisco (&lt;span style="color:red"&gt;*&lt;/span&gt;):
+
+1.  <strong>Fecha Emisión</strong>: Fecha real de la factura del proveedor.
+2.  <strong>Tipo Documento</strong>: Seleccione el comprobante a generar (ej: "Factura de Compra").
+    <em>   </em>Nota*: Si el tipo de documento tiene <strong>Numeración Manual</strong>, aparecerá un campo adicional para digitar el número de la factura física del proveedor.
+3.  <strong>Bodega Destino</strong>: Seleccione dónde ingresará la mercancía. Esto es vital para el control de inventario.
+4.  <strong>Proveedor</strong>: Busque y seleccione la empresa o persona a quien se le compra.
+5.  <strong># Factura Proveedor</strong>: (Solo si aplica) Digite el número exacto de la factura recibida (ej: `FE-1099`) para evitar duplicados y facilitar auditorías.
+6.  <strong>Fecha Vencimiento</strong>: (Opcional) Fecha límite de pago. Útil para reportes de proveedores y flujo de caja.
+7.  <strong>Centro de Costo</strong>: (Opcional) Asigne la compra a un centro de costos específico si su empresa maneja contabilidad por centros.
+
+<h3>Paso 2: Agregar Productos o Servicios</h3>
+
+1.  Haga clic en el botón verde <strong>&lt;i class="fa fa-plus"&gt;&lt;/i&gt; Añadir Items</strong>.
+2.  Se abrirá una ventana modal con el catálogo de productos.
+3.  <strong>Buscar</strong>: Use el buscador para encontrar ítems por nombre o código.
+4.  <strong>Seleccionar</strong>: Marque la casilla de verificación a la izquierda de los productos que desea incluir.
+5.  <strong>Cantidad y Costo</strong>: Puede pre-ingresar la cantidad y el costo unitario directamente en el modal, o hacerlo después en la tabla principal.
+6.  Haga clic en <strong>Agregar Seleccionados</strong> para llevarlos a la pantalla de compra.
+
+<h3>Paso 3: Verificar y Ajustar Detalle</h3>
+
+En la tabla de "Productos a Comprar":
+<ul>
+<li>  <strong>Cantidad</strong>: Verifique que la cantidad coincida con la factura física.</li>
+<li>  <strong>Costo Unit.</strong>: Ingrese el costo unitario <strong>antes de impuestos</strong> (base). El sistema calculará el subtotal automáticamente.</li>
+<li>  <strong>Eliminar</strong>: Si se equivocó de ítem, use el botón rojo de "Papelera" para quitarlo de la lista.</li>
+</ul>
+
+&gt; <strong>Importante</strong>: El sistema valida que las cantidades sean mayores a 0 y los costos no sean negativos.
+
+<h3>Paso 4: Guardar la Compra</h3>
+
+1.  Verifique el <strong>Total Compra</strong> en la parte inferior de la tabla.
+2.  Haga clic en el botón <strong>&lt;i class="fa fa-save"&gt;&lt;/i&gt; Guardar Compra</strong>.
+3.  Si todo es correcto, verá un mensaje de éxito indicando el número de consecutivo interno generado (ej: "Compra #105 creada correctamente").
+
+<h2>3. Preguntas Frecuentes (FAQ)</h2>
+
+<strong>¿Por qué no me aparece ninguna bodega?</strong>
+Debe crear al menos una bodega en <em>Administración &gt; Inventario &gt; Parámetros &gt; Bodegas</em>. Sin bodega, no se puede ingresar inventario.
+
+<strong>¿Cómo registro un servicio (ej: Arriendo)?</strong>
+El proceso es idéntico. Asegúrese de que el ítem "Arriendo" esté creado en el inventario y marcado como "Es Servicio" (no maneja stock físico, pero sí afecta el gasto).
+
+<strong>¿Puedo registrar una compra a crédito?</strong>
+Sí. La forma de pago (crédito/contado) depende de cómo gestione la tesorería posteriormente. Al guardar la compra, se crea una cuenta por pagar (CXP). Luego, debe registrar el "Egreso" o "Pago" para saldar esa deuda.
+
+<strong>¿Qué hago si el proveedor no aparece?</strong>
+Debe ir a <em>Administración &gt; Terceros</em> y crearlo, asegurándose de marcar la casilla "Es Proveedor".
+
+<strong>¿El sistema calcula IVA y Retención?</strong>
+Los impuestos se calculan automáticamente según la configuración del <strong>Producto</strong> (impuesto asociado) y del <strong>Tercero</strong> (si es Gran Contribuyente, Responsable de IVA, etc.), basándose en la parametrización contable interna.
+</div><hr><div id="capitulo_41_facturacion" class="chapter-container"><div class="system-note">Módulo: Operación Diaria</div><h1 class="chapter-title">Facturación de Venta</h1>
+
+El módulo de <strong>Facturación</strong> permite registrar las ventas de productos y servicios a clientes, generando el documento legal correspondiente y, si aplica, realizando la salida automática del inventario.
+
+<h2>1. Conceptos Clave</h2>
+
+Antes de facturar, asegúrese de tener configurados los siguientes maestros:
+<ul>
+<li>  <strong>Clientes (Terceros):</strong> Deben estar creados y marcados como clientes. Si maneja listas de precios, asegúrese de asignarle una al cliente.</li>
+<li>  <strong>Productos/Servicios:</strong> Deben existir en el sistema.</li>
+<li>  <strong>Bodegas:</strong> Necesarias si va a facturar productos tangibles que mueven inventario.</li>
+<li>  <strong>Tipos de Documento:</strong> Debe existir un tipo de documento configurado para "Cartera Cliente" (ej. Factura de Venta).</li>
+</ul>
+
+<h2>2. Pasos para Crear una Factura</h2>
+
+Para acceder, vaya al menú <strong>Contabilidad &gt; Facturación</strong>.
+
+<h3>Paso 1: Información de la Venta (Encabezado)</h3>
+
+En la primera sección, complete los datos generales:
+
+1.  <strong>Fecha Emisión:</strong> Fecha contable de la factura. Por defecto es hoy.
+2.  <strong>Tipo Documento:</strong> Seleccione el tipo de comprobante (ej. Factura de Venta).
+    <em>   </em>Nota:* Si el tipo de documento afecta inventario, el campo "Bodega" se habilitará obligatoriamente.
+3.  <strong>Bodega:</strong> Seleccione la bodega de donde saldrá la mercancía.
+<ul>
+<li>  Si el servicio no mueve inventario, este campo puede aparecer deshabilitado o como "(No aplica)".</li>
+</ul>
+4.  <strong>Cliente:</strong> Busque y seleccione el cliente.
+<ul>
+<li>  <strong>Listas de Precio:</strong> Si el cliente tiene asignada una lista de precios, aparecerá una etiqueta verde indicando el ID de la lista. El sistema usará estos precios automáticamente al agregar productos.</li>
+</ul>
+5.  <strong>Condición Pago:</strong>
+<ul>
+<li>  <strong>Contado:</strong> La factura se asume pagada de inmediato (o pendiente de cobro inmediato).</li>
+<li>  <strong>Crédito:</strong> Habilita el campo "Fecha Vencimiento".</li>
+</ul>
+6.  <strong>Fecha Vencimiento:</strong> Obligatoria si la condición es Crédito. Indica el plazo máximo para el pago.
+7.  <strong>Centro de Costo:</strong> Opcional. Útil para segmentar los ingresos por áreas o proyectos.
+
+<h3>Paso 2: Detalle de Productos</h3>
+
+1.  Haga clic en el botón <strong>"Añadir Items"</strong>.
+2.  Se abrirá una ventana modal para buscar productos.
+<ul>
+<li>  Puede buscar por nombre o código.</li>
+<li>  Seleccione los productos deseados y haga clic en "Agregar".</li>
+</ul>
+3.  <strong>Precios Automáticos:</strong>
+<ul>
+<li>  Si el cliente tiene lista de precios, el sistema buscará el precio específico.</li>
+<li>  Si no tiene lista o el producto no está en ella, traerá el precio base del producto.</li>
+</ul>
+4.  <strong>Edición en Tabla:</strong>
+<ul>
+<li>  Una vez agregados, puede modificar la <strong>Cantidad</strong> y el <strong>Precio Unitario</strong> directamente en la tabla.</li>
+<li>  El subtotal y el total de la factura se recalcularán automáticamente.</li>
+</ul>
+5.  <strong>Eliminar:</strong> Use el icono de basura (rojo) para quitar una línea si se equivocó.
+
+<h3>Paso 3: Guardar</h3>
+
+1.  Verifique que el <strong>Total Factura</strong> sea correcto.
+2.  Haga clic en el botón <strong>"Crear Factura"</strong>.
+3.  El sistema validará:
+<ul>
+<li>  Que haya stock suficiente (si la bodega controla stock y la configuración lo exige).</li>
+<li>  Que las cantidades sean positivas.</li>
+<li>  Que los campos obligatorios estén llenos.</li>
+</ul>
+4.  Si todo es correcto, verá un mensaje de éxito con el número de factura generado (consecutivo automático).
+
+<h2>3. Preguntas Frecuentes (FAQ)</h2>
+
+<strong>¿Por qué no me deja seleccionar una Bodega?</strong>
+El campo Bodega solo se activa si el "Tipo de Documento" seleccionado está configurado para afectar inventario. Si está facturando solo servicios, es normal que esté deshabilitado.
+
+<strong>¿Cómo funcionan las Listas de Precios?</strong>
+Las listas de precios se asignan en la ficha del Cliente (Tercero). Al seleccionar el cliente en la factura, el sistema detecta su lista. Cuando agrega un producto, busca si ese producto tiene un precio especial en esa lista. Si lo encuentra, lo usa; si no, usa el precio estándar.
+
+<strong>¿Puedo cambiar el precio manualmente?</strong>
+Sí. Aunque el sistema sugiera un precio (base o de lista), usted puede editar la casilla "Precio Unit." en la tabla antes de guardar.
+
+<strong>¿Qué pasa si vendo a Crédito?</strong>
+El sistema generará una cuenta por cobrar (Cartera) al cliente. Podrá consultar esta deuda en los reportes de "Estado de Cuenta Cliente" o "Auxiliar de Cartera".
+</div><hr><div class="group-section"><h1 style="font-size: 3.5rem; color: #0f172a; margin: 8rem 0 4rem 0; border-bottom: 5px solid var(--primary); display: inline-block; letter-spacing: -0.03em;">Reportes Contables</h1></div><div id="capitulo_27_libro_diario" class="chapter-container"><div class="system-note">Módulo: Reportes Contables</div><h1 class="chapter-title">Libro Diario</h1>
+
+El <strong>Libro Diario</strong> es un reporte contable fundamental que presenta, en orden cronológico, todas las operaciones (asientos) registradas en el sistema durante un periodo determinado. Es esencial para el análisis detallado de la contabilidad y la auditoría de transacciones.
+
+<h2>1. Generación del Reporte</h2>
+
+Para visualizar la información, debe definir los criterios de búsqueda en el panel superior:
+
+<div class="table-container"><table>
+<thead><tr>
+<th>Campo</th>
+<th>Descripción</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>Tipo de Documento</strong></td>
+<td>Permite filtrar por una fuente específica (ej. solo Facturas de Venta). Si se deja en "Todos", muestra la contabilidad completa.</td>
+</tr>
+<tr>
+<td><strong>Fecha Inicio / Fin</strong></td>
+<td>Define el rango temporal del reporte. Ambos campos son obligatorios.</td>
+</tr>
+</tbody></table></div>
+
+Una vez definidos los filtros, haga clic en el botón <strong>🔍 Generar Reporte</strong>.
+
+<h2>2. Interpretación de Resultados</h2>
+
+El sistema desplegará una tabla detallada con la siguiente información por cada movimiento:
+
+<ul>
+<li><strong>Fecha</strong>: Día en que se contabilizó la operación.</li>
+<li><strong>Documento</strong>: Código y consecutivo del comprobante (ej. `FV #1025`).</li>
+<li><strong>Beneficiario</strong>: Tercero involucrado en la transacción.</li>
+<li><strong>Cuenta</strong>: Código y nombre de la cuenta contable afectada.</li>
+<li><strong>Concepto</strong>: Descripción detallada del movimiento.</li>
+<li><strong>Débito / Crédito</strong>: Valores monetarios del asiento.</li>
+</ul>
+
+<h3>Totales de Control</h3>
+Al final de la tabla, encontrará una fila de <strong>Totales Generales</strong> que suma todas las columnas de Débito y Crédito. En una contabilidad sana, estos dos valores deben ser <strong>iguales</strong> (principio de partida doble).
+
+<h2>3. Exportación e Impresión</h2>
+
+En la esquina superior derecha de la tabla de resultados, encontrará opciones para extraer la información:
+
+<ul>
+<li><strong>&lt;span style="color:green"&gt;📄 Exportar CSV&lt;/span&gt;</strong>: Descarga un archivo compatible con Excel, ideal para análisis de datos, tablas dinámicas o auditorías externas.</li>
+<li><strong>&lt;span style="color:red"&gt;🖨️ Imprimir PDF&lt;/span&gt;</strong>: Genera un documento oficial en formato PDF, listo para archivar o presentar a la gerencia.</li>
+</ul>
+</div><hr><div id="capitulo_28_balance_general" class="chapter-container"><div class="system-note">Módulo: Reportes Contables</div><h1 class="chapter-title">Balance General</h1>
+
+El <strong>Balance General</strong> (o Estado de Situación Financiera) es el reporte principal que muestra la salud económica de la empresa en una fecha específica. Detalla los bienes que posee (Activos), las deudas que tiene (Pasivos) y el valor residual que pertenece a los dueños (Patrimonio).
+
+<h2>1. Generación del Reporte</h2>
+
+Este informe es una "fotografía" financiera a una fecha de corte.
+
+1.  <strong>Fecha de Corte</strong>: Seleccione el día hasta el cual desea calcular los saldos. El sistema incluirá todas las transacciones desde el inicio de operaciones hasta esa fecha.
+2.  Haga clic en <strong>🔍 Generar Reporte</strong>.
+
+<h2>2. Estructura del Informe</h2>
+
+El reporte se divide en tres grandes bloques, siguiendo la ecuación contable fundamental:
+
+<h3>🟢 Activos</h3>
+Representa todo lo que la empresa posee (dinero en bancos, inventarios, cuentas por cobrar, propiedades).
+<ul>
+<li>Se listan las cuentas de clase 1.</li>
+<li>El <strong>Total Activos</strong> indica el valor bruto de la compañía.</li>
+</ul>
+
+<h3>🔴 Pasivos</h3>
+Representa las obligaciones financieras con terceros (proveedores, bancos, impuestos).
+<ul>
+<li>Se listan las cuentas de clase 2.</li>
+<li>El <strong>Total Pasivos</strong> indica el nivel de endeudamiento externo.</li>
+</ul>
+
+<h3>🔵 Patrimonio</h3>
+Representa la inversión de los socios y las utilidades acumuladas.
+<ul>
+<li>Se listan las cuentas de clase 3.</li>
+<li><strong>Utilidad del Ejercicio</strong>: El sistema calcula automáticamente la ganancia o pérdida del periodo y la integra en esta sección para garantizar el cuadre contable.</li>
+</ul>
+
+<h2>3. Verificación de Cuadre (Ecuación Patrimonial)</h2>
+
+Al final del reporte, el sistema realiza una validación automática:
+
+&gt; <strong>Activo = Pasivo + Patrimonio</strong>
+
+<ul>
+<li>Si la ecuación se cumple, verá un mensaje en &lt;span style="color:green"&gt;verde&lt;/span&gt; indicando que el balance está cuadrado.</li>
+<li>Si existe una diferencia, aparecerá una alerta en &lt;span style="color:red"&gt;rojo&lt;/span&gt;. Esto indica errores contables graves que deben ser revisados antes de presentar impuestos.</li>
+</ul>
+
+<h2>4. Exportación</h2>
+
+Puede descargar una versión oficial del balance haciendo clic en el botón <strong>📄 Exportar PDF</strong>. Este documento incluye el encabezado de la empresa y la firma digital de generación, listo para ser firmado por el Contador y el Representante Legal.
+</div><hr><div id="capitulo_29_estado_resultados" class="chapter-container"><div class="system-note">Módulo: Reportes Contables</div><h1 class="chapter-title">Estado de Resultados</h1>
+
+El <strong>Estado de Resultados</strong> (o Estado de Pérdidas y Ganancias) es un reporte financiero que muestra detalladamente cómo se obtuvo la utilidad o pérdida del ejercicio durante un periodo determinado.
+
+<h2>1. Generación del Reporte</h2>
+
+A diferencia del Balance General, este reporte es dinámico y abarca un lapso de tiempo.
+
+1.  <strong>Fecha Inicio y Fin</strong>: Defina el rango de fechas que desea analizar (por ejemplo, del 1 de Enero al 31 de Diciembre).
+2.  Haga clic en <strong>🔍 Generar</strong>.
+
+<h2>2. Estructura del Informe</h2>
+
+El sistema organiza la información de manera escalonada para facilitar el análisis financiero:
+
+<h3>🟢 Ingresos Operacionales</h3>
+Son las entradas de dinero producto de la actividad principal de la empresa (Ventas, Servicios).
+<ul>
+<li>Se listan las cuentas de clase 4.</li>
+</ul>
+
+<h3>🔴 Costos de Venta</h3>
+Es el valor directo de adquirir o producir los bienes vendidos.
+<ul>
+<li>Se listan las cuentas de clase 6 y 7.</li>
+</ul>
+
+&gt; <strong>Utilidad Bruta</strong> = Ingresos - Costos
+
+<h3>🟠 Gastos Operacionales</h3>
+Son los gastos necesarios para el funcionamiento de la empresa (Nómina, Arriendos, Servicios Públicos).
+<ul>
+<li>Se listan las cuentas de clase 5.</li>
+</ul>
+
+<h3>🏁 Utilidad Neta del Ejercicio</h3>
+Es el resultado final de la operación.
+<ul>
+<li>Si el valor es positivo, la empresa generó ganancias.</li>
+<li>Si el valor es negativo (en rojo), la empresa tuvo pérdidas.</li>
+</ul>
+
+&gt; <strong>Utilidad Neta</strong> = Utilidad Bruta - Gastos
+
+<h2>3. Exportación</h2>
+
+El sistema ofrece dos formatos de descarga:
+
+<ul>
+<li><strong>📄 PDF</strong>: Versión oficial para imprimir y firmar.</li>
+<li><strong>📊 CSV</strong>: Archivo plano compatible con Excel para realizar análisis de datos adicionales o gráficos personalizados.</li>
+</ul>
+</div><hr><div id="capitulo_30_balance_prueba" class="chapter-container"><div class="system-note">Módulo: Reportes Contables</div><h1 class="chapter-title">Balance de Prueba</h1>
+
+El <strong>Balance de Prueba</strong> es una herramienta de auditoría fundamental que permite verificar la exactitud de los registros contables. Muestra el resumen de todas las cuentas (Activo, Pasivo, Patrimonio, Ingresos, Gastos y Costos) asegurando que la contabilidad cumple con el principio de partida doble.
+
+<h2>1. Configuración del Reporte</h2>
+
+Este reporte es altamente personalizable para facilitar el análisis a diferentes niveles.
+
+1.  <strong>Rango de Fechas</strong>: Defina el periodo a auditar (Desde - Hasta).
+2.  <strong>Nivel de Detalle</strong>:
+<ul>
+<li><strong>1 (Clase)</strong>: Resumen general (Activo, Pasivo, etc.).</li>
+<li><strong>2 (Grupo)</strong>: Disponible, Inversiones, Deudores.</li>
+<li><strong>3 (Cuenta)</strong>: Caja, Bancos, Clientes.</li>
+<li><strong>4 (Subcuenta/Auxiliar)</strong>: Detalle máximo cuenta por cuenta.</li>
+</ul>
+3.  <strong>Filtro de Cuentas</strong>:
+<ul>
+<li><strong>Con Saldo o Movimiento</strong>: Muestra cuentas activas en el periodo (Recomendado).</li>
+<li><strong>Solo con Movimiento</strong>: Oculta cuentas estáticas aunque tengan saldo.</li>
+<li><strong>Todas las Cuentas</strong>: Muestra todo el plan de cuentas (puede ser muy extenso).</li>
+</ul>
+
+<h2>2. Interpretación de Columnas</h2>
+
+El reporte presenta la evolución de cada cuenta en cuatro momentos:
+
+<ul>
+<li><strong>Saldo Inicial</strong>: Valor de la cuenta antes de iniciar el rango de fechas seleccionado.</li>
+<li><strong>Débitos</strong>: Suma de todos los movimientos débito del periodo.</li>
+<li><strong>Créditos</strong>: Suma de todos los movimientos crédito del periodo.</li>
+<li><strong>Nuevo Saldo</strong>: Valor final de la cuenta.</li>
+</ul>
+
+&gt; <strong>Nuevo Saldo</strong> = Saldo Inicial + Débitos - Créditos
+
+<h2>3. Verificación de "Sumas Iguales"</h2>
+
+Al final del reporte, el sistema totaliza las columnas de Débitos y Créditos.
+
+<ul>
+<li><strong>Cuadre Correcto</strong>: Si la suma de Débitos es idéntica a la suma de Créditos, aparecerá un mensaje en &lt;span style="color:green"&gt;verde&lt;/span&gt; confirmando que el balance está cuadrado.</li>
+<li><strong>Descuadre</strong>: Si hay diferencias, el sistema mostrará una alerta en &lt;span style="color:red"&gt;rojo&lt;/span&gt; indicando el monto del error. Esto requiere revisión inmediata de los comprobantes.</li>
+</ul>
+
+<h2>4. Exportación</h2>
+
+Puede generar un archivo PDF oficial haciendo clic en <strong>📄 Exportar PDF</strong>. Este documento es ideal para revisiones de revisoría fiscal o auditoría externa.
+</div><hr><div id="capitulo_31_auxiliar_cuenta" class="chapter-container"><div class="system-note">Módulo: Reportes Contables</div><h1 class="chapter-title">Auxiliar por Cuenta</h1>
+
+El reporte <strong>Auxiliar por Cuenta</strong> permite consultar el detalle cronológico de todos los movimientos que han afectado a una cuenta contable específica durante un periodo de tiempo. Es esencial para auditorías detalladas y conciliaciones bancarias.
+
+<h2>1. Generación del Reporte</h2>
+
+Para consultar los movimientos:
+
+1.  <strong>Cuenta Contable</strong>: Seleccione la cuenta que desea analizar del listado desplegable. Puede buscar por código o nombre.
+2.  <strong>Rango de Fechas</strong>: Defina la fecha inicial y final del periodo a consultar.
+3.  Haga clic en <strong>🔍 Consultar Movimientos</strong>.
+
+<h2>2. Estructura del Informe</h2>
+
+El reporte se presenta en formato de extracto, similar a un estado de cuenta bancario:
+
+<ul>
+<li><strong>Saldo Anterior</strong>: Muestra el saldo que traía la cuenta antes de la fecha de inicio seleccionada.</li>
+<li><strong>Detalle de Movimientos</strong>:</li>
+<li><strong>Fecha</strong>: Día de la transacción.</li>
+<li><strong>Documento</strong>: Tipo y número de comprobante (ej. Egreso #123).</li>
+<li><strong>Beneficiario</strong>: Tercero asociado al movimiento.</li>
+<li><strong>Concepto</strong>: Descripción breve de la operación.</li>
+<li><strong>Débito/Crédito</strong>: Valor del movimiento.</li>
+<li><strong>Saldo</strong>: Saldo acumulado después de cada transacción.</li>
+<li><strong>Saldo Final</strong>: Valor de la cuenta al cierre de la fecha final seleccionada.</li>
+</ul>
+
+<h2>3. Exportación</h2>
+
+El sistema permite descargar la información en dos formatos:
+
+<ul>
+<li><strong>📄 PDF</strong>: Formato oficial para impresión y archivo físico.</li>
+<li><strong>📊 CSV</strong>: Formato de hoja de cálculo, ideal para realizar cruces de información, filtros avanzados o conciliaciones masivas en Excel.</li>
+</ul>
+</div><hr><div id="capitulo_32_libros_oficiales" class="chapter-container"><div class="system-note">Módulo: Reportes Contables</div><h1 class="chapter-title">Libros Oficiales</h1>
+
+El módulo de <strong>Libros Oficiales</strong> permite la generación y cierre de los libros contables requeridos por la normativa legal. Esta herramienta facilita tanto la revisión previa como la emisión definitiva de los documentos.
+
+<h2>1. Tipos de Libros Disponibles</h2>
+
+El sistema permite generar los tres libros principales:
+
+1.  <strong>📘 Libro Diario</strong>: Registra cronológicamente todas las operaciones del periodo.
+2.  <strong>📗 Libro Mayor y Balances</strong>: Resume los movimientos por cuenta mayor, mostrando saldos iniciales, movimientos y saldos finales.
+3.  <strong>📙 Libro de Inventarios y Balances</strong>: Detalla los activos, pasivos y patrimonio al corte seleccionado.
+
+<h2>2. Modos de Operación</h2>
+
+Es crítico entender la diferencia entre los dos modos de generación:
+
+<h3>Modo Borrador (Recomendado para Revisión)</h3>
+<ul>
+<li><strong>Icono</strong>: &lt;span style="color:indigo"&gt;🖨️&lt;/span&gt;</li>
+<li><strong>Función</strong>: Genera un PDF con marca de agua "BORRADOR".</li>
+<li><strong>Efecto</strong>: <strong>NO cierra el periodo</strong>. Puede generar este reporte tantas veces como necesite para verificar que la información sea correcta antes del cierre definitivo.</li>
+</ul>
+
+<h3>Modo Oficial (Zona de Peligro)</h3>
+<ul>
+<li><strong>Icono</strong>: &lt;span style="color:red"&gt;🔒&lt;/span&gt;</li>
+<li><strong>Función</strong>: Genera el PDF oficial numerado y <strong>CIERRA EL PERIODO CONTABLE</strong>.</li>
+<li><strong>Efecto</strong>:</li>
+<li>Bloquea la creación, edición o anulación de documentos en el mes y año seleccionados.</li>
+<li>Esta acción es <strong>irreversible</strong> desde el panel de usuario.</li>
+<li>Se recomienda realizar una copia de seguridad antes de ejecutar esta acción.</li>
+</ul>
+
+<h2>3. Proceso de Generación</h2>
+
+1.  Seleccione el <strong>Tipo de Libro</strong>.
+2.  Indique el <strong>Año Gravable</strong> y el <strong>Mes de Cierre</strong>.
+3.  Elija el <strong>Modo de Operación</strong> (Borrador u Oficial).
+4.  Haga clic en el botón de generación.
+<ul>
+<li>Si eligió <strong>Modo Oficial</strong>, el sistema solicitará una confirmación adicional de seguridad.</li>
+</ul>
+
+<h2>4. Solución de Problemas</h2>
+
+<ul>
+<li><strong>Error al generar</strong>: Verifique que existan movimientos en el periodo seleccionado.</li>
+<li><strong>Periodo ya cerrado</strong>: Si intenta cerrar un periodo previamente cerrado, el sistema le notificará que la operación no es permitida.</li>
+</ul>
+</div><hr><div id="capitulo_33_super_informe" class="chapter-container"><div class="system-note">Módulo: Reportes Contables</div><h1 class="chapter-title">Super Informe: El Reporte Más Potente</h1>
+
+El <strong>Super Informe</strong> es la herramienta de inteligencia de negocios central de la aplicación. A diferencia de los reportes estáticos, este módulo le permite "conversar" con sus datos mediante combinaciones de filtros.
+
+<h2>1. Dimensiones de Búsqueda</h2>
+
+Lo primero es definir <strong>qué</strong> desea consultar.
+
+1.  <strong>Movimientos Contables</strong>: (Por defecto) Analiza cada transacción individual. Ideal para auditoría detallada.
+
+<h2>2. La Lógica de los Filtros (Cómo Combinarlos)</h2>
+
+El poder del Super Informe radica en la <strong>combinación</strong>. El sistema utiliza una lógica "Y" (AND), lo que significa que <strong>entre más filtros aplique, más específicos serán los resultados</strong>.
+
+<h3>Escenario A: Auditoría de un Tercero Específico</h3>
+<em>Objetivo: Ver qué le hemos pagado a "Papelería El Éxito" este mes.</em>
+1.  <strong>Fecha Desde/Hasta</strong>: Seleccione el mes actual.
+2.  <strong>Tercero</strong>: Busque "Papelería El Éxito".
+3.  <strong>Resultado</strong>: Solo verá los movimientos de ese tercero en ese rango de fechas.
+
+<h3>Escenario B: Rastreo de Gastos Altos</h3>
+<em>Objetivo: Encontrar todos los gastos de viaje superiores a $500,000.</em>
+1.  <strong>Cuenta Contable</strong>: Seleccione la cuenta de "Gastos de Viaje" (ej. 5155).
+2.  <strong>Filtros de Valor &gt; Condición</strong>: Seleccione "Mayor que".
+3.  <strong>Filtros de Valor &gt; Monto</strong>: Escriba "500000".
+4.  <strong>Resultado</strong>: El sistema filtrará miles de registros y le mostrará solo aquellos que cumplan ambas condiciones.
+
+<h3>Escenario C: Búsqueda Forense (Palabras Clave)</h3>
+<em>Objetivo: Encontrar una factura perdida de la que solo recuerda que era por "Mantenimiento".</em>
+1.  <strong>Filtros de Documento &gt; Concepto</strong>: Escriba "Mantenimiento".
+2.  <strong>Resultado</strong>: El sistema buscará esa palabra dentro de las descripciones de todos los asientos contables.
+
+<h2>3. Filtros Avanzados</h2>
+
+Haga clic en <strong>"Mostrar Filtros Avanzados"</strong> para desplegar opciones quirúrgicas:
+
+<ul>
+<li>  <strong>Por Documento</strong>: Filtre por tipo (ej. solo Egresos) o por un número específico (ej. Egreso #1540).</li>
+<li>  <strong>Por Centro de Costo</strong>: Aísle los movimientos de una sucursal o departamento específico.</li>
+<li>  <strong>Por Estado</strong>: Puede buscar incluso documentos <strong>Anulados</strong> o <strong>Eliminados</strong> para auditoría de seguridad.</li>
+</ul>
+
+<h2>4. Exportación Inteligente</h2>
+
+Una vez haya filtrado la información y tenga en pantalla exactamente lo que necesita:
+
+<ul>
+<li>  <strong>Exportar PDF</strong>: Genera un reporte impreso con los resultados actuales.</li>
+<li>  <strong>Opción "Traer TODO"</strong>: Por defecto, el PDF respeta la paginación. Si marca esta casilla, el sistema generará un PDF masivo con <strong>todos</strong> los registros que coincidan con su búsqueda (útil para reportes de miles de líneas).</li>
+</ul>
+
+&gt; <strong>Consejo de Experto</strong>: No tenga miedo de experimentar. Si no encuentra resultados, intente limpiar algunos filtros con el botón <strong>"Limpiar"</strong> y sea menos específico.
+</div><hr><div id="capitulo_51_auxiliar_cc_cuenta" class="chapter-container"><div class="system-note">Módulo: Reportes Contables</div><h1 class="chapter-title">Auxiliar por Centro de Costo</h1>
+
+<h2>1. Introducción</h2>
+El reporte <strong>Auxiliar por Centro de Costo y Cuenta</strong> es una herramienta de auditoría detallada que le permite analizar todos los movimientos contables imputados a un centro de costo específico.
+
+A diferencia de un Balance de Prueba que solo muestra saldos totales, este reporte desglosa <strong>cada transacción individual</strong> (facturas, egresos, notas), permitiéndole responder preguntas como: <em>"¿En qué se gastó exactamente el presupuesto del Departamento de Ventas este mes?"</em>.
+
+<hr>
+
+<h2>2. Criterios de Búsqueda (Filtros)</h2>
+
+Para generar el reporte, debe configurar los siguientes parámetros en la parte superior de la pantalla:
+
+<ul>
+<li>  <strong>Centro de Costo (Obligatorio):</strong> Seleccione el área o proyecto que desea auditar. Solo aparecerán los centros de costo auxiliares (los que reciben movimientos).</li>
+<li>  <strong>Cuenta (Opcional):</strong></li>
+<li>  Si lo deja en `-- TODAS --`, el sistema mostrará todos los movimientos de todas las cuentas afectadas en ese centro de costo.</li>
+<li>  Si selecciona una cuenta específica (ej: `510506 - Sueldos`), el reporte se filtrará para mostrar solo esa cuenta dentro del centro de costo seleccionado.</li>
+<li>  <strong>Rango de Fechas:</strong> Defina el periodo de análisis (Desde / Hasta).</li>
+</ul>
+
+Una vez configurados, haga clic en el botón <strong>Generar Reporte</strong>.
+
+<hr>
+
+<h2>3. Interpretación de Resultados</h2>
+
+El reporte presenta la información agrupada por <strong>Cuenta Contable</strong>. Esto significa que verá bloques separados para cada cuenta (ej: un bloque para "Arrendamientos", otro para "Servicios Públicos", etc.).
+
+<h3>3.1. Estructura de Saldos</h3>
+El reporte maneja tres niveles de saldos para facilitar la auditoría:
+
+1.  <strong>Saldo Inicial Centro de Costo:</strong> Es el valor neto acumulado de <em>todas</em> las cuentas de ese centro de costo antes de la fecha de inicio consultada.
+2.  <strong>Saldo Inicial por Cuenta:</strong> Al inicio de cada bloque de cuenta, verá con cuánto saldo venía esa cuenta específica antes del periodo.
+3.  <strong>Saldo Final:</strong> Al final del reporte, se muestra el saldo total acumulado del centro de costo a la fecha de corte.
+
+<h3>3.2. Columnas del Reporte</h3>
+<ul>
+<li>  <strong>Fecha:</strong> Fecha de contabilización del movimiento.</li>
+<li>  <strong>Documento:</strong> Tipo y número del comprobante (ej: `FV-1025`, `CE-501`).</li>
+<li>  <strong>Cuenta:</strong> Código y nombre de la cuenta contable afectada.</li>
+<li>  <strong>Beneficiario:</strong> Tercero asociado al movimiento (Proveedor, Empleado, Cliente).</li>
+<li>  <strong>Concepto:</strong> Descripción detallada de la transacción.</li>
+<li>  <strong>Débito / Crédito:</strong> Valor del movimiento.</li>
+<li>  <strong>Saldo:</strong> Saldo parcial acumulado línea por línea.</li>
+</ul>
+
+<hr>
+
+<h2>4. Exportación y Herramientas</h2>
+
+En la parte superior derecha de los resultados encontrará botones para descargar la información:
+
+<ul>
+<li>  <strong>CSV (Excel):</strong> Descarga un archivo plano separado por comas, ideal para abrir en Excel y realizar tablas dinámicas o análisis propios.</li>
+<li>  <strong>PDF:</strong> Genera un documento imprimible con formato oficial, útil para presentar informes a gerencia o anexar a carpetas físicas.</li>
+</ul>
+</div><hr><div id="capitulo_52_balance_general_cc" class="chapter-container"><div class="system-note">Módulo: Reportes Contables</div><h1 class="chapter-title">Balance General por Centro de Costo</h1>
+
+<h2>1. Introducción</h2>
+El <strong>Balance General por Centro de Costo</strong> es un estado financiero especializado que le permite visualizar la situación patrimonial (Activos, Pasivos y Patrimonio) de una unidad de negocio específica.
+
+Aunque contablemente el Balance General suele ser uno solo para toda la empresa, este reporte es vital para la <strong>Contabilidad Administrativa</strong>, ya que le permite tratar a cada sucursal, proyecto o departamento como si fuera una "mini-empresa" independiente, evaluando sus propios recursos y obligaciones.
+
+<hr>
+
+<h2>2. Criterios de Búsqueda (Filtros)</h2>
+
+Para generar el reporte, configure los siguientes campos:
+
+<ul>
+<li>  <strong>Centro de Costo:</strong></li>
+<li>  Seleccione un centro específico para ver solo las cifras de esa área.</li>
+<li>  Seleccione `-- Todos (Consolidado) --` para ver el Balance General total de la compañía.</li>
+<li>  <strong>Fecha de Corte:</strong> El balance es una "foto" en un momento del tiempo. Seleccione la fecha hasta la cual desea calcular los saldos acumulados (ej: 31 de Diciembre).</li>
+</ul>
+
+Haga clic en <strong>Generar</strong> para procesar la información.
+
+<hr>
+
+<h2>3. Interpretación de Resultados</h2>
+
+El reporte se divide en tres grandes secciones, siguiendo la ecuación contable fundamental:
+
+<h3>3.1. Activos (Lo que se tiene)</h3>
+Muestra los bienes y derechos asignados al centro de costo.
+<em>   </em>Ejemplo:* Muebles y enseres de la Sucursal Norte, Caja Menor del Proyecto X.
+
+<h3>3.2. Pasivos (Lo que se debe)</h3>
+Muestra las obligaciones financieras imputadas al centro de costo.
+<em>   </em>Ejemplo:* Cuentas por pagar a proveedores de materiales para la obra.
+
+<h3>3.3. Patrimonio (Lo que realmente pertenece)</h3>
+Muestra el capital y resultados.
+<ul>
+<li>  <strong>Utilidad del Ejercicio:</strong> El sistema calcula automáticamente la ganancia o pérdida neta del centro de costo a la fecha de corte y la incluye en esta sección para cuadrar el balance.</li>
+</ul>
+
+<h3>3.4. Verificación de Cuadre (Ecuación Patrimonial)</h3>
+Al final del reporte encontrará un panel de verificación:
+<ul>
+<li>  <strong>Activo = Pasivo + Patrimonio</strong></li>
+<li>  Si el balance está cuadrado, verá un mensaje en <strong>Verde</strong> con un check ✅.</li>
+<li>  Si existe algún descuadre, aparecerá una alerta en <strong>Rojo</strong> ⚠️. Esto puede ocurrir si se han realizado movimientos manuales que rompen la partida doble por centro de costo.</li>
+</ul>
+
+<hr>
+
+<h2>4. Exportación</h2>
+
+<ul>
+<li>  <strong>Botón PDF:</strong> Genera un archivo PDF oficial, listo para imprimir y firmar. Incluye el encabezado de la empresa, la fecha de corte y la firma del sistema.</li>
+</ul>
+</div><hr><div id="capitulo_53_estado_resultados_cc_detallado" class="chapter-container"><div class="system-note">Módulo: Reportes Contables</div><h1 class="chapter-title">Estado de Resultados Detallado (CC)</h1>
+
+<h2>1. Introducción</h2>
+El <strong>Estado de Resultados Detallado por Centro de Costo</strong> es un informe gerencial que permite medir la rentabilidad (Ganancias o Pérdidas) de una unidad de negocio específica.
+
+A diferencia del Balance General que es una "foto" estática, este reporte es una "película" que muestra qué pasó en un periodo de tiempo: cuánto vendió esa sucursal, cuánto costó producirlo y cuánto se gastó en administración, para llegar a la utilidad final.
+
+<hr>
+
+<h2>2. Criterios de Búsqueda (Filtros)</h2>
+
+Para generar el análisis, configure los siguientes parámetros:
+
+<ul>
+<li>  <strong>Centro de Costo:</strong></li>
+<li>  Seleccione un centro específico (ej: "Proyecto Edificio Norte") para ver solo su rentabilidad.</li>
+<li>  Seleccione `Todos (Consolidado)` para ver el Estado de Resultados global de la empresa.</li>
+<li>  <strong>Rango de Fechas:</strong> Defina el periodo a evaluar (ej: Del 1 de Enero al 31 de Enero).</li>
+</ul>
+
+Haga clic en <strong>Generar</strong> para visualizar los datos.
+
+<hr>
+
+<h2>3. Interpretación de Resultados</h2>
+
+El reporte estructura la información de forma escalonada para llegar a la Utilidad Neta:
+
+<h3>3.1. Ingresos Operacionales (+)</h3>
+Son las ventas o servicios facturados por ese centro de costo.
+<em>   </em>Detalle:* Se muestra cuenta por cuenta (ej: "4135 - Comercio al por mayor").
+
+<h3>3.2. Costos de Venta (-)</h3>
+Es lo que costó directamente producir el bien o servicio vendido.
+<em>   </em>Cálculo:* `Ingresos - Costos = Utilidad Bruta`.
+
+<h3>3.3. Gastos Operacionales (-)</h3>
+Son los gastos necesarios para que el centro de costo funcione (Arriendos, Nómina Administrativa, Servicios).
+<em>   </em>Detalle:* Se listan todas las cuentas de gasto (Clase 5) imputadas a este centro.
+
+<h3>3.4. Utilidad Neta del Ejercicio (=)</h3>
+Es el resultado final.
+<ul>
+<li>  Si el valor es positivo (Verde), el centro de costo generó ganancias.</li>
+<li>  Si el valor es negativo (Rojo), el centro de costo dio pérdidas en ese periodo.</li>
+</ul>
+
+<hr>
+
+<h2>4. Exportación</h2>
+
+En la parte superior derecha encontrará las opciones de descarga:
+
+<ul>
+<li>  <strong>CSV (Excel):</strong> Descarga la tabla completa en formato plano, ideal para copiar y pegar en hojas de cálculo para análisis financieros avanzados.</li>
+<li>  <strong>PDF:</strong> Genera el informe oficial con membrete y firma, listo para presentar en juntas directivas.</li>
+</ul>
+</div><hr><div id="capitulo_54_balance_prueba_cc" class="chapter-container"><div class="system-note">Módulo: Reportes Contables</div><h1 class="chapter-title">Balance de Prueba por Centro de Costo</h1>
+
+<h2>1. Introducción</h2>
+El <strong>Balance de Prueba por Centro de Costo</strong> es una herramienta de auditoría que le permite verificar los saldos de sus cuentas contables, pero desagregados por cada unidad de negocio.
+
+Es fundamental para detectar errores de imputación. Por ejemplo, si la cuenta de "Caja General" tiene saldo negativo en la "Sucursal Norte", este reporte se lo mostrará inmediatamente.
+
+<hr>
+
+<h2>2. Criterios de Búsqueda (Filtros)</h2>
+
+Para generar el reporte, configure los siguientes parámetros:
+
+<ul>
+<li>  <strong>Rango de Fechas:</strong> Periodo a evaluar (Desde / Hasta).</li>
+<li>  <strong>Cuenta Contable (Opcional):</strong></li>
+<li>  Puede filtrar una cuenta específica (ej: `1105 - Caja`) para ver su comportamiento en todos los centros de costo.</li>
+<li>  Si lo deja en `Todas las Cuentas`, el sistema traerá el plan de cuentas completo.</li>
+<li>  <strong>Nivel de Detalle:</strong></li>
+<li>  <strong>1:</strong> Solo Grupos (Activo, Pasivo, Patrimonio).</li>
+<li>  <strong>4:</strong> Máximo detalle (Auxiliares).</li>
+<li>  <strong>Filtro de Centros:</strong></li>
+<li>  <strong>Con Saldo o Movimiento:</strong> Muestra centros activos (Recomendado).</li>
+<li>  <strong>Solo con Movimiento:</strong> Oculta centros que tienen saldo pero no se movieron en este periodo.</li>
+<li>  <strong>Todos:</strong> Muestra incluso los centros que están en cero.</li>
+</ul>
+
+Haga clic en <strong>Generar Reporte</strong> para ver la tabla.
+
+<hr>
+
+<h2>3. Interpretación de Resultados</h2>
+
+La tabla muestra la siguiente información para cada combinación de Cuenta y Centro de Costo:
+
+<ul>
+<li>  <strong>Código y Centro de Costo:</strong> Identifica a quién pertenece el saldo.</li>
+<li>  <strong>Saldo Inicial:</strong> Con cuánto dinero empezó el periodo.</li>
+<li>  <strong>Débitos:</strong> Todo lo que entró (o gastos).</li>
+<li>  <strong>Créditos:</strong> Todo lo que salió (o ingresos).</li>
+<li>  <strong>Nuevo Saldo:</strong> El valor final al cierre del periodo.</li>
+</ul>
+
+<h3>Totales Generales</h3>
+Al final de la tabla (Footer), encontrará la sumatoria de todos los débitos y créditos.
+&gt; <strong>Nota de Auditoría:</strong> Si la contabilidad está correcta, la suma de Débitos debe ser igual a la suma de Créditos (Partida Doble).
+
+<hr>
+
+<h2>4. Exportación</h2>
+
+<ul>
+<li>  <strong>Exportar PDF:</strong> Genera un documento formal con los filtros aplicados, ideal para revisiones físicas o para enviar al contador.</li>
+</ul>
+</div><hr><div id="capitulo_55_analisis_financiero" class="chapter-container"><div class="system-note">Módulo: Reportes Contables</div><h1 class="chapter-title">Tablero de Análisis Financiero</h1>
+
+<h2>1. Introducción</h2>
+El <strong>Tablero de Análisis Financiero</strong> es una herramienta estratégica que interpreta automáticamente la salud de su empresa. A diferencia de los reportes contables tradicionales (que muestran solo números), este módulo <strong>diagnostica</strong> si la empresa está sana, en riesgo o en crisis.
+
+Utiliza inteligencia de negocios para calcular 9 indicadores clave y generar una narrativa explicativa.
+
+<hr>
+
+<h2>2. Configuración del Análisis</h2>
+
+Al ingresar al módulo, encontrará el panel de control en la parte superior:
+
+1.  <strong>Rango de Fechas:</strong> Seleccione el periodo que desea evaluar (ej: `01/01/2024` a `31/12/2024`).
+2.  <strong>Botón "Ejecutar Análisis":</strong> Haga clic para procesar la información contable en tiempo real.
+
+<hr>
+
+<h2>3. Indicadores Clave (KPIs)</h2>
+
+El sistema evalúa tres grandes dimensiones:
+
+<h3>3.1. Liquidez (Capacidad de Pago)</h3>
+<ul>
+<li>  <strong>Razón Corriente:</strong> ¿Cuántos pesos tengo por cada peso que debo? (Meta: &gt; 1.5x).</li>
+<li>  <strong>Prueba Ácida:</strong> ¿Puedo pagar mis deudas ya, sin vender inventario? (Meta: &gt; 1.0x).</li>
+<li>  <strong>Capital de Trabajo Neto:</strong> Dinero libre para operar después de pagar deudas inmediatas.</li>
+</ul>
+
+<h3>3.2. Solvencia (Endeudamiento)</h3>
+<ul>
+<li>  <strong>Nivel de Endeudamiento:</strong> ¿Qué porcentaje de la empresa pertenece a los acreedores? (Meta: &lt; 50%).</li>
+<li>  <strong>Apalancamiento:</strong> Relación entre deuda externa y patrimonio propio.</li>
+</ul>
+
+<h3>3.3. Rentabilidad (Ganancias)</h3>
+<ul>
+<li>  <strong>Margen Bruto:</strong> Ganancia directa tras descontar costos de producción/venta.</li>
+<li>  <strong>Margen Neto:</strong> Ganancia final real tras todos los gastos.</li>
+<li>  <strong>ROE (Rentabilidad del Patrimonio):</strong> Retorno sobre la inversión de los socios.</li>
+<li>  <strong>ROA (Rentabilidad del Activo):</strong> Eficiencia de los activos para generar utilidades.</li>
+</ul>
+
+<hr>
+
+<h2>4. Diagnóstico Inteligente</h2>
+
+Debajo de los indicadores, el sistema genera un <strong>Informe Textual Automático</strong>:
+
+<ul>
+<li>  <strong>Escenario General:</strong> Clasifica a la empresa en una escala de 1 a 5 (desde "Óptimo" hasta "Crítico").</li>
+</ul>
+<em>   <strong>Interpretación:</strong> Un párrafo redactado en lenguaje natural explicando </em>por qué* la empresa está en esa situación.
+<ul>
+<li>  <strong>Recomendaciones:</strong> Sugerencias prácticas (ej: "Renegociar deuda", "Optimizar inventarios") basadas en los hallazgos.</li>
+</ul>
+
+<hr>
+
+<h2>5. Interpretación de Colores (Semáforo)</h2>
+
+Para facilitar la lectura, todos los indicadores usan un código de colores:
+
+<ul>
+<li>  🟢 <strong>Verde (Óptimo):</strong> El indicador cumple con las metas financieras ideales.</li>
+<li>  🔵 <strong>Azul (Aceptable):</strong> El indicador es estable, pero podría mejorar.</li>
+<li>  🔴 <strong>Rojo (Riesgo):</strong> El indicador está fuera de los rangos saludables y requiere atención inmediata.</li>
+</ul>
+</div><hr><div class="group-section"><h1 style="font-size: 3.5rem; color: #0f172a; margin: 8rem 0 4rem 0; border-bottom: 5px solid var(--primary); display: inline-block; letter-spacing: -0.03em;">Terceros y Cartera</h1></div><div id="capitulo_35_tercero_cuenta" class="chapter-container"><div class="system-note">Módulo: Terceros y Cartera</div><h1 class="chapter-title">Reporte de Movimiento por Tercero y Cuenta</h1>
+
+El reporte de <strong>Movimiento por Tercero y Cuenta</strong> (también conocido como <em>Auxiliar por Tercero</em>) es una herramienta fundamental para la auditoría contable. Le permite visualizar detalladamente todas las transacciones asociadas a un tercero específico en un rango de fechas, desglosadas cuenta por cuenta.
+
+<h2>1. Generación del Reporte</h2>
+
+Para generar el reporte, debe configurar los siguientes parámetros obligatorios:
+
+1.  <strong>Tercero</strong>: Seleccione la persona natural o jurídica que desea auditar. Puede buscar por nombre o razón social en la lista desplegable.
+2.  <strong>Rango de Fechas</strong>: Defina las fechas "Desde" y "Hasta" para acotar la búsqueda.
+3.  <strong>Filtrar Cuentas (Opcional)</strong>:
+<ul>
+<li>  Por defecto, el sistema muestra <strong>"Todas las Cuentas"</strong> donde el tercero ha tenido movimiento.</li>
+</ul>
+    <em>   Si desea auditar solo una cuenta específica (ej. </em>130505 Clientes Nacionales*), selecciónela en la lista.
+    <em>   </em>Tip:* Puede seleccionar múltiples cuentas manteniendo presionada la tecla `Ctrl` (Windows) o `Cmd` (Mac).
+
+Haga clic en el botón <strong>"Consultar Movimientos"</strong> para cargar la información.
+
+<h2>2. Interpretación de Resultados</h2>
+
+El reporte se estructura de manera jerárquica para facilitar la lectura:
+
+<h3>Estructura del Informe</h3>
+<ul>
+<li>  <strong>Saldo Inicial Tercero</strong>: Es el saldo neto acumulado de ese tercero en <em>todas</em> las cuentas antes de la fecha de inicio seleccionada.</li>
+<li>  <strong>Agrupación por Cuenta</strong>: Los movimientos se agrupan por código contable.</li>
+<li>  Cada grupo inicia indicando el <strong>Saldo Inicial de la Cuenta</strong> específica.</li>
+<li>  Se listan los movimientos cronológicamente (Fecha, Documento, Concepto, Débito, Crédito).</li>
+<li>  La columna <strong>Saldo Parcial</strong> muestra el acumulado línea a línea.</li>
+</ul>
+
+<h3>Totales</h3>
+Al final del reporte encontrará una fila de totales con:
+<ul>
+<li>  Total Débitos del periodo.</li>
+<li>  Total Créditos del periodo.</li>
+<li>  <strong>Saldo Final</strong>: El estado de cuenta definitivo del tercero a la fecha de corte.</li>
+</ul>
+
+<h2>3. Herramientas Avanzadas</h2>
+
+<h3>Botón "Recalcular" (Reconstrucción de Saldos)</h3>
+&gt; [!WARNING]
+&gt; <strong>¿Cuándo usar este botón?</strong>
+&gt; Utilice esta opción <strong>SOLO</strong> si detecta inconsistencias en los saldos (ej. el saldo final no coincide con la suma de movimientos).
+&gt;
+&gt; Al hacer clic en "Recalcular", el sistema revisará <strong>todo el historial</strong> de movimientos del tercero desde el principio de los tiempos y reconstruirá los saldos acumulados. Esta operación puede tardar unos segundos.
+
+<h3>Exportación</h3>
+<ul>
+<li>  <strong>CSV</strong>: Descarga un archivo plano ideal para auditorías en Excel.</li>
+<li>  <strong>PDF</strong>: Genera un documento formal listo para imprimir o enviar al cliente/proveedor como estado de cuenta.</li>
+</ul>
+</div><hr><div id="capitulo_36_estado_cuenta_cliente" class="chapter-container"><div class="system-note">Módulo: Terceros y Cartera</div><h1 class="chapter-title">Estado de Cuenta (Clientes)</h1>
+
+El reporte de <strong>Estado de Cuenta</strong> es una herramienta vital para la gestión de cartera. Proporciona una visión clara de las deudas pendientes de un cliente a una fecha de corte específica, clasificándolas por su antigüedad y estado de vencimiento.
+
+<h2>1. Generación del Reporte</h2>
+
+Para consultar el estado de cuenta de un cliente:
+
+1.  <strong>Cliente</strong>: Seleccione el cliente de la lista desplegable. Solo aparecerán los terceros marcados como "Cliente" en la gestión de terceros.
+2.  <strong>Fecha de Corte</strong>: Seleccione la fecha hasta la cual desea calcular la deuda.
+    <em>   </em>Por defecto, el sistema selecciona la fecha de hoy.*
+<ul>
+<li>  Si selecciona una fecha pasada, el sistema calculará la deuda "retroactivamente" (ideal para cierres de mes).</li>
+</ul>
+
+Haga clic en <strong>"Generar Estado"</strong> para visualizar la información.
+
+<h2>2. Interpretación de Resultados</h2>
+
+<h3>Listado de Facturas</h3>
+El sistema muestra una tabla con todas las facturas que tienen saldo pendiente a la fecha de corte:
+<ul>
+<li>  <strong>Documento</strong>: Tipo y número de la factura.</li>
+<li>  <strong>Emisión</strong>: Fecha original de la factura.</li>
+<li>  <strong>Valor Original</strong>: Monto total inicial.</li>
+<li>  <strong>Abonos</strong>: Pagos recibidos hasta la fecha.</li>
+<li>  <strong>Saldo</strong>: Valor que el cliente aún debe.</li>
+<li>  <strong>Estado</strong>: Indicador visual de salud de la deuda:</li>
+<li>  &lt;span style="color:green"&gt;<strong>Vence en X días</strong>&lt;/span&gt;: La factura está vigente.</li>
+<li>  &lt;span style="color:red"&gt;<strong>X días mora</strong>&lt;/span&gt;: La factura ya venció y está en mora.</li>
+</ul>
+
+<h3>Análisis de Vencimientos (Aging)</h3>
+En la parte inferior, encontrará un panel de colores que clasifica la deuda total según su antigüedad:
+<ul>
+<li>  <strong>Por Vencer</strong>: Deuda sana, aún no exigible.</li>
+<li>  <strong>1-30 Días</strong>: Mora temprana.</li>
+<li>  <strong>31-60 Días</strong>: Mora media.</li>
+<li>  <strong>61-90 Días</strong>: Mora crítica.</li>
+<li>  <strong>+90 Días</strong>: Cartera de difícil cobro.</li>
+</ul>
+
+<h2>3. Exportación y Envío</h2>
+
+Este reporte está diseñado para ser enviado directamente a sus clientes como cobro persuasivo:
+
+<ul>
+<li>  <strong>PDF</strong>: Genera un documento formal con el logo de su empresa, listo para enviar por correo electrónico.</li>
+<li>  <strong>CSV</strong>: Descarga los datos en formato Excel para análisis interno.</li>
+</ul>
+</div><hr><div id="capitulo_37_auxiliar_cartera" class="chapter-container"><div class="system-note">Módulo: Terceros y Cartera</div><h1 class="chapter-title">Auxiliar de Cartera</h1>
+
+El reporte de <strong>Auxiliar de Cartera</strong> es la herramienta definitiva para auditar los cruces entre facturación y recaudo. A diferencia del "Estado de Cuenta" que muestra saldos pendientes, este reporte detalla la historia completa de pagos y cobros.
+
+<h2>Dos Perspectivas, Un Mismo Objetivo</h2>
+
+Este reporte ofrece dos formas de visualizar la información, dependiendo de su necesidad de auditoría:
+
+<h3>1. Perspectiva de Facturas (Cuentas de Cobro)</h3>
+<em>Ideal para responder: "¿Qué pagos se le han aplicado a la factura X?"</em>
+
+En este modo, el reporte lista todas las facturas emitidas al cliente en el rango de fechas seleccionado.
+<ul>
+<li>  <strong>Columnas Principales</strong>: Fecha, Documento, Valor Original, Total Abonos y Saldo Actual de la factura.</li>
+<li>  <strong>Detalle de Abonos</strong>: Al expandir cada factura, verá una lista detallada de todos los <strong>Recibos de Caja</strong> que han amortizado esa deuda específica, con sus fechas y montos.</li>
+</ul>
+
+<h3>2. Perspectiva de Recibos de Caja (Pagos)</h3>
+<em>Ideal para responder: "¿Qué facturas cubrió el cliente con el pago Y?"</em>
+
+En este modo, el reporte lista todos los pagos recibidos del cliente.
+<ul>
+<li>  <strong>Columnas Principales</strong>: Fecha, Número de Recibo y Valor Total del Recibo.</li>
+<li>  <strong>Cruces con Facturas</strong>: Al expandir cada recibo, verá el desglose de cómo se distribuyó ese dinero entre las diferentes facturas pendientes (imputación de pagos).</li>
+</ul>
+
+<h2>Generación del Reporte</h2>
+
+1.  <strong>Cliente</strong>: Seleccione el tercero a auditar.
+2.  <strong>Rango de Fechas</strong>: Defina el periodo de análisis.
+3.  <strong>Perspectiva</strong>: Elija entre "Facturas" o "Recibos de Caja" haciendo clic en los botones correspondientes.
+4.  Haga clic en <strong>"Generar Reporte"</strong>.
+
+<h2>Exportación</h2>
+
+Puede descargar la información en dos formatos:
+<ul>
+<li>  <strong>PDF</strong>: Genera un documento oficial con el detalle seleccionado.</li>
+<li>  <strong>CSV</strong>: Exporta la tabla plana para auditoría en Excel.</li>
+</ul>
+</div><hr><div id="virtual_estado_cuenta_proveedor" class="chapter-container"><div class="system-note">Módulo: Terceros y Cartera</div><h1 class="chapter-title">Estado de Cuenta (Proveedors)</h1>
+
+El reporte de <strong>Estado de Cuenta</strong> es una herramienta vital para la gestión de cuentas por pagar. Proporciona una visión clara de las deudas pendientes de un proveedor a una fecha de corte específica, clasificándolas por su antigüedad y estado de vencimiento.
+
+<h2>1. Generación del Reporte</h2>
+
+Para consultar el estado de cuenta de un proveedor:
+
+1.  <strong>Proveedor</strong>: Seleccione el proveedor de la lista desplegable. Solo aparecerán los terceros marcados como "Proveedor" en la gestión de terceros.
+2.  <strong>Fecha de Corte</strong>: Seleccione la fecha hasta la cual desea calcular la deuda.
+    <em>   </em>Por defecto, el sistema selecciona la fecha de hoy.*
+<ul>
+<li>  Si selecciona una fecha pasada, el sistema calculará la deuda "retroactivamente" (ideal para cierres de mes).</li>
+</ul>
+
+Haga clic en <strong>"Generar Estado"</strong> para visualizar la información.
+
+<h2>2. Interpretación de Resultados</h2>
+
+<h3>Listado de Facturas</h3>
+El sistema muestra una tabla con todas las facturas que tienen saldo pendiente a la fecha de corte:
+<ul>
+<li>  <strong>Documento</strong>: Tipo y número de la factura.</li>
+<li>  <strong>Emisión</strong>: Fecha original de la factura.</li>
+<li>  <strong>Valor Original</strong>: Monto total inicial.</li>
+<li>  <strong>Abonos</strong>: Pagos recibidos hasta la fecha.</li>
+<li>  <strong>Saldo</strong>: Valor que el proveedor aún debe.</li>
+<li>  <strong>Estado</strong>: Indicador visual de salud de la deuda:</li>
+<li>  &lt;span style="color:green"&gt;<strong>Vence en X días</strong>&lt;/span&gt;: La factura está vigente.</li>
+<li>  &lt;span style="color:red"&gt;<strong>X días mora</strong>&lt;/span&gt;: La factura ya venció y está en mora.</li>
+</ul>
+
+<h3>Análisis de Vencimientos (Aging)</h3>
+En la parte inferior, encontrará un panel de colores que clasifica la deuda total según su antigüedad:
+<ul>
+<li>  <strong>Por Vencer</strong>: Deuda sana, aún no exigible.</li>
+<li>  <strong>1-30 Días</strong>: Mora temprana.</li>
+<li>  <strong>31-60 Días</strong>: Mora media.</li>
+<li>  <strong>61-90 Días</strong>: Mora crítica.</li>
+<li>  <strong>+90 Días</strong>: Cuentas por Pagar de difícil cobro.</li>
+</ul>
+
+<h2>3. Exportación y Envío</h2>
+
+Este reporte está diseñado para ser enviado directamente a sus proveedors como cobro persuasivo:
+
+<ul>
+<li>  <strong>PDF</strong>: Genera un documento formal con el logo de su empresa, listo para enviar por correo electrónico.</li>
+<li>  <strong>CSV</strong>: Descarga los datos en formato Excel para análisis interno.</li>
+</ul>
+</div><hr><div id="virtual_auxiliar_proveedor" class="chapter-container"><div class="system-note">Módulo: Terceros y Cartera</div><h1 class="chapter-title">Auxiliar de Proveedores</h1>
+
+El reporte de <strong>Auxiliar de Proveedores</strong> es la herramienta definitiva para auditar los cruces entre facturación y recaudo. A diferencia del "Estado de Cuenta" que muestra saldos pendientes, este reporte detalla la historia completa de pagos y cobros.
+
+<h2>Dos Perspectivas, Un Mismo Objetivo</h2>
+
+Este reporte ofrece dos formas de visualizar la información, dependiendo de su necesidad de auditoría:
+
+<h3>1. Perspectiva de Facturas (Cuentas de Cobro)</h3>
+<em>Ideal para responder: "¿Qué pagos se le han aplicado a la factura X?"</em>
+
+En este modo, el reporte lista todas las facturas emitidas al proveedor en el rango de fechas seleccionado.
+<ul>
+<li>  <strong>Columnas Principales</strong>: Fecha, Documento, Valor Original, Total Abonos y Saldo Actual de la factura.</li>
+<li>  <strong>Detalle de Abonos</strong>: Al expandir cada factura, verá una lista detallada de todos los <strong>Recibos de Caja</strong> que han amortizado esa deuda específica, con sus fechas y montos.</li>
+</ul>
+
+<h3>2. Perspectiva de Recibos de Caja (Pagos)</h3>
+<em>Ideal para responder: "¿Qué facturas cubrió el proveedor con el pago Y?"</em>
+
+En este modo, el reporte lista todos los pagos recibidos del proveedor.
+<ul>
+<li>  <strong>Columnas Principales</strong>: Fecha, Número de Recibo y Valor Total del Recibo.</li>
+<li>  <strong>Cruces con Facturas</strong>: Al expandir cada recibo, verá el desglose de cómo se distribuyó ese dinero entre las diferentes facturas pendientes (imputación de pagos).</li>
+</ul>
+
+<h2>Generación del Reporte</h2>
+
+1.  <strong>Proveedor</strong>: Seleccione el tercero a auditar.
+2.  <strong>Rango de Fechas</strong>: Defina el periodo de análisis.
+3.  <strong>Perspectiva</strong>: Elija entre "Facturas" o "Recibos de Caja" haciendo clic en los botones correspondientes.
+4.  Haga clic en <strong>"Generar Reporte"</strong>.
+
+<h2>Exportación</h2>
+
+Puede descargar la información en dos formatos:
+<ul>
+<li>  <strong>PDF</strong>: Genera un documento oficial con el detalle seleccionado.</li>
+<li>  <strong>CSV</strong>: Exporta la tabla plana para auditoría en Excel.</li>
+</ul>
+</div><hr><div class="group-section"><h1 style="font-size: 3.5rem; color: #0f172a; margin: 8rem 0 4rem 0; border-bottom: 5px solid var(--primary); display: inline-block; letter-spacing: -0.03em;">Inventario y Logística</h1></div><div id="capitulo_38_gestion_inventario" class="chapter-container"><div class="system-note">Módulo: Inventario y Logística</div><h1 class="chapter-title">Gestión de Inventario (Catálogo de Productos)</h1>
+
+El módulo de <strong>Gestión de Inventario</strong> es el centro de administración para todos los bienes y servicios que su empresa comercializa. Desde aquí podrá crear, editar, eliminar y consultar el estado de su portafolio.
+
+<h2>Funcionalidades Principales</h2>
+
+<h3>1. Búsqueda y Filtrado</h3>
+Para facilitar la gestión de catálogos extensos, el sistema ofrece herramientas de búsqueda avanzada:
+<ul>
+<li>  <strong>Por Grupo</strong>: Puede filtrar la lista para ver solo los productos de una o varias categorías específicas (ej. "Bebidas", "Servicios", "Materia Prima").</li>
+<li>  <strong>Buscador Inteligente</strong>: Escriba el código, nombre o referencia del producto en la barra de búsqueda. El sistema filtrará los resultados en tiempo real.</li>
+</ul>
+
+<h3>2. Listado de Productos</h3>
+La tabla principal ofrece una vista rápida del estado de su inventario:
+<ul>
+<li>  <strong>Código</strong>: Identificador único del producto.</li>
+<li>  <strong>Nombre y Grupo</strong>: Descripción y clasificación.</li>
+<li>  <strong>Stock Total</strong>: Cantidad actual disponible (calculada automáticamente según movimientos). <em>Nota: Los servicios no manejan stock.</em></li>
+<li>  <strong>Costo Promedio</strong>: Valor de valoración del inventario.</li>
+<li>  <strong>Precio Base</strong>: Precio de venta sugerido antes de impuestos.</li>
+<li>  <strong>Tipo</strong>: Distintivo visual para diferenciar entre <strong>Bien</strong> (Producto físico) y <strong>Servicio</strong> (Intangible).</li>
+</ul>
+
+<h3>3. Creación y Edición de Productos</h3>
+Al hacer clic en <strong>"Nuevo Item"</strong> o en el botón de <strong>Editar (Lápiz)</strong>, se abrirá una ventana con tres pestañas principales. A continuación se detalla cada una:
+
+<h4>A. Pestaña: Datos Básicos</h4>
+Aquí se define la identidad del producto.
+<ul>
+<li>  <strong>Código</strong>: Identificador único (ej. `REF-001`). Campo obligatorio.</li>
+<li>  <strong>Nombre</strong>: Descripción comercial del producto. Campo obligatorio.</li>
+<li>  <strong>Grupo</strong>: Categoría a la que pertenece (ej. "Lácteos", "Servicios"). <em>Nota: Seleccionar un grupo es clave para habilitar las "Características" específicas.</em></li>
+<li>  <strong>Impuesto IVA</strong>: Tasa impositiva aplicable al vender este producto.</li>
+<li>  <strong>¿Es un Servicio?</strong>: Casilla de verificación crítica.</li>
+<li>  <strong>Marcado (Sí)</strong>: El sistema entiende que es un intangible (mano de obra, fletes). No gestionará stock físico ni costos de bodega.</li>
+<li>  <strong>Desmarcado (No)</strong>: El sistema lo trata como un bien físico con control de inventario.</li>
+</ul>
+
+<h4>B. Pestaña: Inventario & Costos</h4>
+Esta pestaña cambia su comportamiento dependiendo de si el item es un Bien o un Servicio.
+
+<strong>Para Servicios:</strong>
+<ul>
+<li>  Mostrará un mensaje indicando que no manejan inventario físico.</li>
+</ul>
+
+<strong>Para Bienes Físicos:</strong>
+<ul>
+<li>  <strong>Saldos Iniciales (Solo al crear):</strong></li>
+<li>  <em>Stock Inicial</em>: Cantidad con la que arranca el producto.</li>
+<li>  <em>Costo Unitario</em>: Valor de compra de ese stock inicial.</li>
+<li>  <em>Bodega</em>: Ubicación física donde se almacenará ese saldo inicial.</li>
+<li>  <strong>Límites de Stock:</strong></li>
+<li>  <em>Stock Mínimo</em>: Cantidad por debajo de la cual el sistema generará alertas de reabastecimiento.</li>
+<li>  <em>Stock Máximo</em>: Tope sugerido de inventario.</li>
+<li>  <strong>Precio de Referencia:</strong></li>
+<li>  <em>Precio Base Manual</em>: Precio de venta sugerido antes de impuestos. Si se deja vacío, el sistema podría sugerir el Costo Promedio como base (dependiendo de la configuración).</li>
+<li>  <em>Costo Promedio Actual (Solo lectura)</em>: Visible al editar, muestra el valor contable actual del item.</li>
+</ul>
+
+<h4>C. Pestaña: Características</h4>
+Este formulario es dinámico y depende del <strong>Grupo</strong> seleccionado en la primera pestaña.
+<ul>
+<li>  Si el grupo tiene atributos definidos (ej. "Talla", "Color", "Marca", "Voltaje"), aparecerán aquí los campos correspondientes para diligenciar.</li>
+<li>  Si el grupo no tiene características, verá un mensaje indicándolo.</li>
+</ul>
+
+<h3>4. Eliminación de Items</h3>
+En la columna de "Acciones" de cada fila encontrará el botón de <strong>Eliminar (Basura)</strong>.
+&gt; <strong>Importante</strong>: Por seguridad contable, el sistema <strong>SOLO</strong> permitirá eliminar productos que no tengan movimientos históricos (facturas, compras, ajustes). Si el producto ya ha sido usado, deberá inactivarlo en lugar de eliminarlo (funcionalidad futura).
+
+<h3>5. Exportación</h3>
+<ul>
+<li>  <strong>PDF</strong>: El botón rojo de "PDF" genera un reporte imprimible con la lista de productos filtrada en pantalla, ideal para tomas físicas de inventario o listas de precios.</li>
+</ul>
+</div><hr><div id="capitulo_39_parametros_inventario" class="chapter-container"><div class="system-note">Módulo: Inventario y Logística</div><h1 class="chapter-title">Configuración de Parámetros de Inventario</h1>
+
+Este módulo es el "cerebro" de su sistema de inventarios. Aquí se definen las reglas de juego: dónde se guarda la mercancía, cómo se agrupa, qué impuestos aplican y cómo se calculan los precios.
+
+&gt; <strong>Advertencia</strong>: Una mala parametrización aquí puede causar errores contables. Se recomienda que esta sección sea gestionada por el Contador o el Administrador del sistema.
+
+<h2>1. Gestión de Bodegas</h2>
+Las bodegas representan las ubicaciones físicas o lógicas donde se almacena el inventario.
+<ul>
+<li>  <strong>Crear Bodega</strong>: Simplemente ingrese el nombre (ej. "Bodega Principal", "Tienda Norte") y haga clic en <strong>Crear</strong>.</li>
+<li>  <strong>Uso</strong>: Al crear productos o realizar compras, el sistema le preguntará a qué bodega ingresa la mercancía.</li>
+</ul>
+
+<h2>2. Grupos de Inventario (Categorías)</h2>
+Esta es la sección más crítica. Los grupos no solo organizan sus productos, sino que definen su comportamiento contable y sus características.
+
+<h3>A. Creación de Grupos y Contabilidad</h3>
+Al crear un grupo (ej. "Electrodomésticos"), debe asociar las cuentas contables automáticas:
+<ul>
+<li>  <strong>Cta. Inventario (Activo)</strong>: Donde se registra el valor de la mercancía al comprar.</li>
+<li>  <strong>Cta. Ingresos (Ventas)</strong>: Donde se registra la venta.</li>
+<li>  <strong>Cta. Costo de Venta</strong>: Donde se registra el costo al vender.</li>
+<li>  <strong>Cta. Ajustes (Faltante/Sobrante)</strong>: Para cuadres de inventario físico.</li>
+</ul>
+
+<h3>B. Características (Atributos)</h3>
+Una vez creado el grupo, use el botón de <strong>Etiqueta (Tags)</strong> para definir qué datos se pedirán al crear productos de este grupo.
+<em>Ejemplo para el grupo "Ropa":</em>
+1.  Haga clic en el icono de etiqueta del grupo "Ropa".
+2.  Agregue la característica "Talla".
+3.  Agregue la característica "Color".
+4.  Agregue la característica "Material".
+<em>Resultado</em>: Cuando cree una camisa en el grupo "Ropa", el sistema le exigirá Talla, Color y Material.
+
+<h3>C. Reglas de Precio</h3>
+Use el botón de <strong>Porcentaje (%)</strong> para automatizar precios.
+<ul>
+<li>  Puede definir que para la "Lista Mayorista", los productos de este grupo tengan un incremento del 20% sobre el costo.</li>
+<li>  Esto permite que al cambiar el costo de un producto, sus precios de venta se actualicen automáticamente si así lo desea.</li>
+</ul>
+
+<h2>3. Tasas de Impuesto</h2>
+Defina los impuestos que aplican a sus productos (IVA, Impoconsumo, Exento).
+<ul>
+<li>  <strong>Tasa</strong>: Ingrese el valor en decimal (ej. `0.19` para el 19%).</li>
+<li>  <strong>Contabilidad</strong>: Asocie las cuentas de IVA Generado (Ventas) e IVA Descontable (Compras) para que el sistema cause los impuestos automáticamente.</li>
+</ul>
+
+<h2>4. Listas de Precios</h2>
+Cree tantas listas como necesite para segmentar a sus clientes (ej. "Público General", "Distribuidores", "Empleados").
+<ul>
+<li>  Estas listas se usan luego en el módulo de Clientes para asignar una tarifa por defecto a cada tercero.</li>
+</ul>
+
+<hr>
+
+<h2>Preguntas Frecuentes (FAQ)</h2>
+
+<strong>1. ¿Puedo borrar un grupo de inventario?</strong>
+Solo si no tiene productos asociados. Si ya creó productos bajo ese grupo, el sistema bloqueará la eliminación para proteger la integridad de los datos.
+
+<strong>2. ¿Qué pasa si me equivoco en una cuenta contable?</strong>
+Puede editar el grupo y corregir la cuenta. Los movimientos futuros usarán la nueva cuenta, pero los movimientos pasados <strong>NO</strong> se corregirán automáticamente (requerirá una nota contable manual).
+
+<strong>3. ¿Para qué sirve la casilla "U. Medida" en las características?</strong>
+Si marca una característica como "Unidad de Medida", el sistema la tratará de forma especial para reportes y conversiones futuras (ej. Litros, Kilos, Metros).
+
+<strong>4. ¿Puedo tener una bodega para mercancía averiada?</strong>
+Sí. Cree una bodega llamada "Averías" o "Cuarentena". Esto le permite separar el stock vendible del no vendible sin sacarlo de sus activos hasta que se decida su disposición final.
+
+<strong>5. ¿El sistema maneja impuestos compuestos?</strong>
+Actualmente se maneja un impuesto principal por producto. Para casos complejos, consulte con soporte técnico.
+</div><hr><div id="capitulo_42_traslados" class="chapter-container"><div class="system-note">Módulo: Inventario y Logística</div><h1 class="chapter-title">Traslado de Inventario</h1>
+
+El módulo de <strong>Traslados</strong> permite mover mercancía de una bodega a otra, manteniendo actualizado el inventario en ambas ubicaciones.
+
+<h2>1. Conceptos Clave</h2>
+
+<ul>
+<li>  <strong>Bodega Origen (Salida):</strong> Es la bodega de donde se descontarán los productos. Debe tener stock disponible.</li>
+<li>  <strong>Bodega Destino (Entrada):</strong> Es la bodega donde ingresarán los productos.</li>
+<li>  <strong>Documento TR:</strong> El sistema utiliza un tipo de documento interno (TR) para registrar estos movimientos.</li>
+</ul>
+
+<h2>2. Pasos para Realizar un Traslado</h2>
+
+Para acceder, vaya al menú <strong>Contabilidad &gt; Traslados</strong>.
+
+<h3>Paso 1: Logística (Encabezado)</h3>
+
+1.  <strong>Fecha Traslado:</strong> Fecha en la que se hace efectivo el movimiento.
+2.  <strong>Selección de Bodegas:</strong>
+<ul>
+<li>  <strong>Origen:</strong> Seleccione la bodega de donde sale la mercancía.</li>
+<li>  <strong>Destino:</strong> Seleccione la bodega a donde llega.</li>
+</ul>
+    <em>   </em>Nota:* No puede seleccionar la misma bodega en ambos campos.
+<ul>
+<li>  <strong>Botón de Intercambio:</strong> Use el botón con flechas (↔) entre los selectores para invertir rápidamente el origen y el destino.</li>
+</ul>
+3.  <strong>Observaciones:</strong> Campo opcional para anotar detalles como "Envío por camión placa XXX" o "Reabastecimiento mensual".
+
+<h3>Paso 2: Selección de Mercancía</h3>
+
+1.  Haga clic en <strong>"Añadir Productos"</strong>.
+2.  Se abrirá el buscador de productos.
+<ul>
+<li>  <strong>Importante:</strong> El sistema solo le permitirá seleccionar productos que tengan stock disponible en la <strong>Bodega de Origen</strong> seleccionada.</li>
+</ul>
+3.  Una vez agregados, ajuste la <strong>Cantidad</strong> a trasladar en la tabla.
+<ul>
+<li>  Si intenta trasladar más de lo que hay en el origen, el sistema podría bloquear la operación o dejar el saldo en negativo (dependiendo de la configuración global).</li>
+</ul>
+
+<h3>Paso 3: Confirmar</h3>
+
+1.  Verifique el <strong>Total Unidades</strong> en la parte inferior de la tabla.
+2.  Haga clic en <strong>"Confirmar Traslado"</strong>.
+3.  El sistema generará un comprobante de traslado y ajustará los saldos automáticamente:
+<ul>
+<li>  Resta la cantidad en la Bodega Origen.</li>
+<li>  Suma la cantidad en la Bodega Destino.</li>
+</ul>
+
+<h2>3. Preguntas Frecuentes (FAQ)</h2>
+
+<strong>¿Por qué no veo algunos productos en el buscador?</strong>
+El buscador filtra los productos según la <strong>Bodega de Origen</strong>. Si un producto no tiene existencias en esa bodega, no aparecerá para evitar errores de inventario negativo.
+
+<strong>¿Puedo anular un traslado?</strong>
+Los traslados confirmados afectan el kardex inmediatamente. Si cometió un error, lo más recomendable es realizar un nuevo traslado "inverso" (intercambiando origen y destino) por las mismas cantidades para revertir el efecto.
+
+<strong>¿Afecta la contabilidad?</strong>
+Depende de la configuración de las bodegas y los grupos de inventario. Generalmente, si ambas bodegas pertenecen a la misma empresa, es un movimiento interno que solo reclasifica el activo, pero no genera ingresos ni costos de venta.
+</div><hr><div id="capitulo_43_ajuste_inventario" class="chapter-container"><div class="system-note">Módulo: Inventario y Logística</div><h1 class="chapter-title">Toma Física y Ajuste de Inventario</h1>
+
+El módulo de <strong>Toma Física de Inventario</strong> permite conciliar las existencias registradas en el sistema con lo que realmente hay en la bodega.
+
+<h2>1. Pasos para Realizar un Ajuste</h2>
+
+Para acceder, vaya al menú <strong>Inventario &gt; Ajuste de Inventario</strong>.
+
+<h3>Paso 1: Cargar Inventario</h3>
+
+1.  <strong>Fecha del Ajuste:</strong> Seleccione la fecha en la que se aplicará el movimiento contable.
+2.  <strong>Bodega:</strong> Seleccione la bodega que va a auditar.
+3.  <strong>Filtros (Opcional):</strong> Use "Filtrar por Grupo o Nombre" si desea hacer un conteo parcial (por ejemplo, solo contar "Bebidas").
+4.  Haga clic en <strong>"Cargar Inventario"</strong>.
+<ul>
+<li>  El sistema mostrará una tabla con todos los productos de esa bodega y su <strong>Saldo Sistema</strong> actual.</li>
+</ul>
+
+<h3>Paso 2: Digitar Conteo Físico</h3>
+
+En la columna <strong>"Conteo Físico"</strong> (resaltada en amarillo), ingrese la cantidad real que contó en la bodega.
+<ul>
+<li>  El sistema calculará automáticamente la <strong>Diferencia</strong> (Físico - Sistema).</li>
+<li>  Si hay diferencia, se mostrará en rojo (faltante) o verde (sobrante).</li>
+</ul>
+
+<h3>Paso 3: Seleccionar Items a Ajustar</h3>
+
+Marque la casilla <strong>"Incluir"</strong> (columna derecha) para los productos que desea ajustar.
+<ul>
+<li>  <strong>Nota:</strong> Solo se procesarán los items seleccionados. Si deja un item sin marcar, el sistema ignorará su diferencia.</li>
+</ul>
+
+<h3>Paso 4: Procesar</h3>
+
+1.  Verifique el resumen en la parte inferior ("X items seleccionados para ajuste").
+2.  Haga clic en <strong>"Procesar Ajuste"</strong>.
+3.  El sistema generará automáticamente los movimientos de entrada o salida necesarios para igualar el stock del sistema al conteo físico.
+
+<h2>2. Indicadores (KPIs)</h2>
+
+En la parte superior verá tres tarjetas informativas:
+<ul>
+<li>  <strong>Valor en Sistema:</strong> Cuánto vale el inventario teórico actual.</li>
+<li>  <strong>Valor Físico:</strong> Cuánto vale el inventario según lo que usted ha digitado.</li>
+<li>  <strong>Diferencia Neta:</strong> La pérdida o ganancia total valorizada que resultará de este ajuste.</li>
+</ul>
+
+<h2>3. Preguntas Frecuentes</h2>
+
+<strong>¿Qué pasa si dejo el conteo vacío?</strong>
+El sistema asume que el conteo es igual al saldo del sistema (diferencia cero) a menos que usted escriba explícitamente un número.
+
+<strong>¿Puedo hacer ajustes parciales?</strong>
+Sí. Puede filtrar por un grupo específico y ajustar solo esos productos. Los demás productos de la bodega no se verán afectados.
+
+<strong>¿Cómo corrijo un error?</strong>
+Una vez procesado, el ajuste crea movimientos definitivos. Si se equivocó, deberá realizar un nuevo ajuste con los valores correctos.
+</div><hr><div id="capitulo_44_rentabilidad_producto" class="chapter-container"><div class="system-note">Módulo: Inventario y Logística</div><h1 class="chapter-title">Reporte de Rentabilidad por Producto</h1>
+
+El <strong>Reporte de Rentabilidad</strong> es una herramienta estratégica ("la joya de la corona") diseñada para analizar en profundidad el desempeño financiero de sus ventas. Permite identificar qué productos, clientes o documentos generan ganancias reales y cuáles podrían estar ocasionando pérdidas.
+
+<h2>1. Modos de Análisis</h2>
+
+El reporte ofrece dos enfoques principales, seleccionables en la parte superior:
+
+<h3>A. Por Producto (Visión General)</h3>
+Agrupa las ventas por referencia de producto. Ideal para responder preguntas como:
+<ul>
+<li>  ¿Cuál es mi producto estrella?</li>
+<li>  ¿Qué productos estoy vendiendo con margen negativo?</li>
+<li>  ¿Cuánto gané en total por la venta de "Camisas Talla L"?</li>
+</ul>
+
+<h3>B. Por Documento (Auditoría Puntual)</h3>
+Permite buscar una factura específica (por ejemplo, `FV-1050`) para analizar la rentabilidad exacta de esa transacción. Muestra el desglose línea por línea de esa factura.
+
+<hr>
+
+<h2>2. Filtros y Configuración</h2>
+
+El panel de filtros es robusto y flexible. Puede combinar múltiples criterios para refinar su búsqueda.
+
+<h3>Filtros Básicos</h3>
+<ul>
+<li>  <strong>Rango de Fechas:</strong> Defina el periodo a analizar (Desde / Hasta).</li>
+<li>  <strong>Grupos de Inventario:</strong> Seleccione uno o varios grupos (ej. "Bebidas", "Electrónica") o use la opción "Seleccionar Todo" para un reporte global.</li>
+</ul>
+
+<h3>Filtros Avanzados</h3>
+Haga clic en el botón <strong>"Más Filtros"</strong> para desplegar opciones adicionales:
+1.  <strong>Producto Específico:</strong> Busque y seleccione uno o más productos puntuales para un análisis quirúrgico.
+2.  <strong>Cliente:</strong> Filtre las ventas realizadas a un tercero específico. Útil para analizar la rentabilidad de un cliente clave.
+3.  <strong>Lista de Precios:</strong> Vea el desempeño de una lista de precios concreta (ej. "Mayorista" vs "Detal").
+4.  <strong>Margen Mínimo %:</strong> Ingrese un porcentaje (ej. `20`). El reporte filtrará y mostrará solo aquellos productos cuyo margen sea inferior a ese valor.
+5.  <strong>Solo Pérdidas:</strong> Una casilla de verificación crítica. Al activarla, el sistema mostrará <strong>exclusivamente</strong> los items donde el costo superó al precio de venta (utilidad negativa).
+
+<hr>
+
+<h2>3. Interpretación de Resultados</h2>
+
+Una vez generado el reporte, verá una tarjeta de <strong>Resultados del Análisis</strong>.
+
+<h3>Indicadores Clave (KPIs)</h3>
+En la esquina superior derecha, verá la <strong>Utilidad Total</strong> del periodo consultado.
+<ul>
+<li>  <strong>Verde:</strong> Ganancia neta positiva.</li>
+<li>  <strong>Rojo:</strong> Pérdida neta.</li>
+</ul>
+
+<h3>Tabla de Datos</h3>
+La tabla detalla la información financiera columna por columna:
+<ul>
+<li>  <strong>Venta Total:</strong> Ingresos brutos por ese producto (Cantidad x Precio Venta).</li>
+<li>  <strong>Costo Total:</strong> Costo de la mercancía vendida (Cantidad x Costo Promedio).</li>
+<li>  <strong>Utilidad:</strong> La ganancia neta en dinero (`Venta - Costo`).</li>
+<li>  <strong>Margen %:</strong> El porcentaje de rentabilidad sobre la venta.</li>
+<li>  &lt;span style="color:green; background-color:#dcfce7; padding:2px 5px; border-radius:4px; font-weight:bold;"&gt;Verde&lt;/span&gt;: Margen saludable (&gt; 15%).</li>
+<li>  &lt;span style="color:#854d0e; background-color:#fef9c3; padding:2px 5px; border-radius:4px; font-weight:bold;"&gt;Amarillo&lt;/span&gt;: Margen bajo (&lt; 15%).</li>
+<li>  &lt;span style="color:red; background-color:#fee2e2; padding:2px 5px; border-radius:4px; font-weight:bold;"&gt;Rojo&lt;/span&gt;: Pérdida (Margen negativo).</li>
+</ul>
+
+<h3>Trazabilidad (Drill-Down)</h3>
+En el modo "Por Producto", verá un icono de <strong>ojo</strong> (&lt;i class="fas fa-eye"&gt;&lt;/i&gt;) en la columna "Ver Detalle".
+<ul>
+<li>  Al hacer clic, se despliega una sub-tabla que muestra <strong>todas las facturas</strong> donde se vendió ese producto en el periodo seleccionado.</li>
+<li>  Esto le permite rastrear exactamente qué venta causó una baja rentabilidad (por ejemplo, un descuento excesivo autorizado en una factura específica).</li>
+</ul>
+
+<hr>
+
+<h2>4. Exportación e Impresión</h2>
+
+<ul>
+<li>  <strong>Exportar PDF Global:</strong> El botón rojo "Exportar PDF" en el encabezado de resultados genera un documento formal con todo el análisis en pantalla, ideal para presentar a gerencia.</li>
+<li>  <strong>Impresión Individual:</strong> Dentro del detalle de trazabilidad, cada factura tiene un icono de impresora (&lt;i class="fas fa-print"&gt;&lt;/i&gt;) que le permite abrir el PDF original de esa venta específica para su revisión.</li>
+</ul>
+</div><hr><div id="capitulo_45_movimiento_analitico" class="chapter-container"><div class="system-note">Módulo: Inventario y Logística</div><h1 class="chapter-title">Reporte de Movimiento Analítico (Kardex)</h1>
+
+El <strong>Reporte de Movimiento Analítico</strong>, también conocido como <strong>Kardex Analítico</strong>, es una herramienta fundamental para el control detallado del inventario. Permite visualizar el flujo completo de cada producto (saldo inicial, entradas, salidas y saldo final) durante un periodo específico, facilitando la auditoría de existencias y la detección de inconsistencias.
+
+<h2>1. Acceso al Módulo</h2>
+
+Para acceder a este reporte, diríjase al menú principal:
+<ul>
+<li>  <strong>Ruta:</strong> `Inventario y Logística` &gt; `Estado General y Movimientos`</li>
+<li>  <strong>Ruta Alternativa:</strong> `Contabilidad` &gt; `Reportes` &gt; `Movimiento Analítico`</li>
+</ul>
+
+<h2>2. Filtros y Configuración</h2>
+
+El módulo cuenta con un panel de filtros robusto que le permite refinar la búsqueda de información.
+
+<h3>2.1. Filtros Básicos</h3>
+<ul>
+<li>  <strong>Rango de Fechas (Desde - Hasta):</strong> Define el periodo a analizar. El sistema calcula el "Saldo Inicial" basándose en todos los movimientos anteriores a la fecha "Desde".</li>
+<li>  <strong>Bodega:</strong> Permite filtrar los movimientos de una bodega específica o ver el consolidado de todas las bodegas ("Todas las Bodegas").</li>
+</ul>
+
+<h3>2.2. Filtros Avanzados</h3>
+Al hacer clic en el botón <strong>"Más Filtros"</strong>, se despliegan opciones adicionales:
+<ul>
+<li>  <strong>Grupo de Inventario:</strong> Permite analizar solo los productos pertenecientes a una familia o categoría específica (ej. "Lácteos", "Electrónica").</li>
+<li>  <strong>Producto Específico:</strong> Permite buscar y seleccionar un único producto para ver su historial detallado.</li>
+<li>  <strong>Modo de Visualización:</strong></li>
+<li>  <strong>Cantidad:</strong> Muestra las cifras en unidades físicas.</li>
+<li>  <strong>Valor ($):</strong> Muestra las cifras en términos monetarios (costo).</li>
+</ul>
+
+<h2>3. Interpretación de Resultados</h2>
+
+Una vez generada la consulta, se presenta una tabla detallada con la siguiente estructura para cada producto:
+
+<div class="table-container"><table>
+<thead><tr>
+<th>Columna</th>
+<th>Descripción</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>Producto</strong></td>
+<td>Código y nombre del ítem.</td>
+</tr>
+<tr>
+<td><strong>Saldo Inicial</strong></td>
+<td>Cantidad y valor del producto al inicio del periodo seleccionado (antes de la fecha "Desde").</td>
+</tr>
+<tr>
+<td><strong>Entradas (+)</strong></td>
+<td>Suma de todas las compras, traslados de entrada, devoluciones en venta y ajustes positivos durante el periodo.</td>
+</tr>
+<tr>
+<td><strong>Salidas (-)</strong></td>
+<td>Suma de todas las ventas, traslados de salida, devoluciones en compra y ajustes negativos durante el periodo.</td>
+</tr>
+<tr>
+<td><strong>Saldo Final</strong></td>
+<td>El resultado aritmético: <em>Inicial + Entradas - Salidas</em>. Representa la existencia teórica al final del periodo (fecha "Hasta").</td>
+</tr>
+</tbody></table></div>
+
+<h3>3.1. Totales del Periodo</h3>
+Al final de la tabla, una fila de <strong>TOTALES</strong> resume las cantidades y valores globales de todos los productos listados, permitiendo una visión macro del movimiento de inventario.
+
+<h2>4. Trazabilidad (Drill-Down)</h2>
+
+El reporte es interactivo. Si un producto tiene movimientos en el periodo (Entradas o Salidas &gt; 0):
+<ul>
+<li>  Los valores de <strong>Cantidad de Entradas</strong> y <strong>Cantidad de Salidas</strong> aparecen como enlaces (color verde o rojo respectivamente).</li>
+<li>  Al hacer clic en estos números, se abrirá una nueva pestaña con el <strong>Kardex Detallado</strong> de ese producto específico, mostrando documento por documento (facturas, recibos, ajustes) qué originó ese movimiento.</li>
+</ul>
+
+<h2>5. Exportación</h2>
+
+<ul>
+<li>  <strong>Botón PDF:</strong> Genera un documento PDF formal con la información visible en pantalla, ideal para imprimir, archivar o presentar en auditorías.</li>
+<li>  <strong>Botón Limpiar:</strong> Reinicia todos los filtros a sus valores predeterminados.</li>
+</ul>
+
+<hr>
+&gt; <strong>Nota:</strong> Este reporte es esencial para el cierre de mes y la conciliación de inventarios físicos vs. sistema.
+</div><hr><div id="capitulo_46_kardex_detallado" class="chapter-container"><div class="system-note">Módulo: Inventario y Logística</div><h1 class="chapter-title">Kardex Detallado por Producto</h1>
+
+El <strong>Kardex Detallado</strong> es la vista de máxima granularidad para el análisis de inventario. A diferencia del reporte general, esta pantalla se enfoca en un único producto y muestra cronológicamente cada documento que afectó su saldo.
+
+&gt; <strong>Nota de Navegación:</strong> Esta pantalla generalmente se accede haciendo clic en las cifras de "Entradas" o "Salidas" desde el <strong>Reporte de Movimiento Analítico</strong> (), permitiendo una auditoría profunda del origen de los datos.
+
+<h2>1. Información del Encabezado</h2>
+
+En la parte superior encontrará:
+<ul>
+<li>  <strong>Identificación del Producto:</strong> Nombre completo y código del ítem analizado.</li>
+<li>  <strong>Periodo del Reporte:</strong> Las fechas "Desde" y "Hasta" que se están consultando (heredadas de la pantalla anterior).</li>
+<li>  <strong>Filtro de Bodega:</strong> Un menú desplegable que le permite alternar entre ver el movimiento consolidado de <strong>"Todas las Bodegas"</strong> o filtrar los movimientos de una bodega específica.</li>
+</ul>
+
+<h2>2. Estructura del Kardex</h2>
+
+La tabla principal presenta la historia del producto, movimiento a movimiento:
+
+<h3>2.1. Saldo Anterior</h3>
+La primera fila (resaltada en amarillo) muestra el <strong>Saldo Anterior</strong>. Esto representa la cantidad y el valor total que tenía el producto justo antes de la fecha de inicio del reporte. Es el punto de partida para los cálculos siguientes.
+
+<h3>2.2. Columnas de Movimiento</h3>
+Para cada transacción registrada en el periodo, se detallan:
+<ul>
+<li>  <strong>Fecha:</strong> Día en que se registró la operación.</li>
+<li>  <strong>Documento:</strong> Tipo y número del documento (ej. "Factura de Venta #123", "Compra #456", "Ajuste #789").</li>
+<li>  <strong>Movimiento:</strong> Descripción de la operación (ej. "Venta", "Compra", "Traslado Entrada").</li>
+<li>  <strong>Bodega:</strong> Nombre de la bodega donde ocurrió el movimiento.</li>
+</ul>
+
+<h3>2.3. Secciones de Cantidades y Costos</h3>
+La tabla se divide en tres grandes secciones para facilitar la lectura:
+<ul>
+<li>  <strong>Entradas (Verde):</strong> Muestra la cantidad que ingresó y su costo unitario de adquisición.</li>
+<li>  <strong>Salidas (Rojo):</strong> Muestra la cantidad que salió, su costo unitario y el costo total de la salida.</li>
+</ul>
+<em>   <strong>Saldo (Azul):</strong> Muestra el estado del inventario </em>después* de cada movimiento.
+<ul>
+<li>  <strong>Cant:</strong> Existencia física actual.</li>
+<li>  <strong>Costo Prom:</strong> Costo promedio ponderado actualizado.</li>
+</ul>
+    <em>   <strong>Valor Total:</strong> Valor total del inventario (Cant </em> Costo Prom).
+
+<h2>3. Exportación de Datos</h2>
+
+Para facilitar el análisis externo o el archivo físico, dispone de dos opciones:
+<ul>
+<li>  <strong>Botón CSV (Excel):</strong> Descarga un archivo plano compatible con Excel, ideal para realizar cálculos propios o tablas dinámicas.</li>
+<li>  <strong>Botón PDF:</strong> Genera un documento PDF con formato oficial, perfecto para imprimir o enviar por correo electrónico como soporte de auditoría.</li>
+</ul>
+
+<hr>
+<strong>Tip de Auditoría:</strong> Si detecta un saldo negativo o un costo promedio inusual, revise los movimientos cronológicos en esta pantalla para identificar el documento exacto que causó la distorsión (por ejemplo, una salida sin stock previo o una compra con costo cero).
+</div><hr><div id="capitulo_47_super_informe_inventarios" class="chapter-container"><div class="system-note">Módulo: Inventario y Logística</div><h1 class="chapter-title">Super Informe de Inventarios</h1>
+
+El <strong>Super Informe de Inventarios</strong> es la herramienta de inteligencia de negocios más potente del módulo de inventarios. Está diseñado para responder preguntas complejas sobre el movimiento de mercancía, cruzando múltiples variables como terceros, bodegas, grupos y fechas.
+
+A diferencia de los reportes estándar que muestran saldos estáticos, este informe permite "interrogar" a la base de datos para obtener respuestas específicas sobre la operación logística y comercial.
+
+<h2>1. Panel de Preguntas y Respuestas (Casos de Uso)</h2>
+
+A continuación, presentamos una guía práctica basada en preguntas frecuentes que este reporte puede resolver:
+
+<h3>P1: "¿Qué productos se movieron con un Tercero (Cliente/Proveedor) específico?"</h3>
+<strong>Situación:</strong> Necesita auditar todas las transacciones (compras o ventas) realizadas con el proveedor "Distribuidora X" o el cliente "Empresa Y" para verificar volúmenes o precios pactados.
+<strong>Configuración:</strong>
+1.  Despliegue los <strong>Filtros Avanzados</strong>.
+2.  En el campo <strong>"Tercero"</strong>, busque y seleccione el nombre o NIT de la empresa.
+3.  Defina el rango de fechas.
+4.  Presione <strong>"Generar Reporte"</strong>.
+<strong>Resultado:</strong> Obtendrá una lista cronológica de todos los ítems comprados o vendidos a ese tercero, con sus costos unitarios y cantidades exactas.
+
+<h3>P2: "¿Cómo ver el movimiento de una familia de productos en una bodega puntual?"</h3>
+<strong>Situación:</strong> El jefe de bodega de la "Sucursal Norte" quiere revisar solo el movimiento de "Lácteos" para controlar mermas.
+<strong>Configuración:</strong>
+1.  En <strong>"Bodegas"</strong>, seleccione "Sucursal Norte".
+2.  En <strong>"Grupos"</strong>, seleccione "Lácteos".
+3.  Presione <strong>"Generar Reporte"</strong>.
+<strong>Resultado:</strong> El sistema filtrará el ruido y mostrará exclusivamente los movimientos que cumplen ambas condiciones simultáneamente.
+
+<h3>P3: "¿A qué precio compramos el producto 'X' el mes pasado?"</h3>
+<strong>Situación:</strong> Compras necesita verificar la fluctuación de costos de un insumo clave.
+<strong>Configuración:</strong>
+1.  En <strong>"Búsqueda Producto"</strong>, escriba el nombre o código del insumo.
+2.  Ajuste las fechas al mes pasado.
+3.  Genere el reporte.
+<strong>Resultado:</strong> Verá todas las entradas de ese producto. La columna <strong>"COSTO UNIT"</strong> le revelará el precio exacto registrado en cada factura de compra.
+
+<h3>P4: "¿Qué pasó con la Factura #12345?"</h3>
+<strong>Situación:</strong> Contabilidad tiene una duda sobre una factura específica y quiere saber qué productos movió.
+<strong>Configuración:</strong>
+1.  En <strong>"Ref. Documento"</strong>, escriba "12345".
+2.  Presione <strong>"Generar Reporte"</strong>.
+<strong>Resultado:</strong> El informe aislará todas las líneas de detalle asociadas a ese número de documento, permitiéndole ver exactamente qué ítems y cantidades se afectaron.
+
+<h2>2. Herramientas de Análisis</h2>
+
+<h3>Filtros Multi-Selección</h3>
+Una característica única de este reporte es la capacidad de seleccionar <strong>múltiples opciones</strong> a la vez. Por ejemplo, puede analizar el movimiento conjunto de las Bodegas A y B, excluyendo la Bodega C.
+
+<h3>Exportación Masiva a PDF</h3>
+El sistema permite exportar grandes volúmenes de datos a PDF.
+<ul>
+<li>  <strong>Casilla "Todo para PDF":</strong> Si marca esta opción antes de exportar, el sistema ignorará la paginación de la pantalla y generará un documento completo con <strong>todos</strong> los registros encontrados (ideal para archivos físicos o auditorías fiscales).</li>
+</ul>
+
+<h2>3. Interpretación de Columnas Clave</h2>
+
+<ul>
+<li>  <strong>DOC / REF:</strong> Tipo y número del documento soporte.</li>
+<li>  <strong>MOV (Movimiento):</strong> Indica la naturaleza de la operación (Venta, Compra, Traslado, Ajuste).</li>
+<li>  <strong>COSTO UNIT:</strong> El valor unitario real de la transacción. En ventas es el costo de mercancía vendida (CMV), en compras es el costo de adquisición.</li>
+</ul>
+<em>   <strong>COSTO TOTAL:</strong> El impacto económico total de esa línea (Cantidad </em> Costo Unitario).
+
+<hr>
+&gt; <strong>Consejo de Experto:</strong> Utilice este reporte para detectar "fugas" de inventario cruzando filtros. Por ejemplo, filtre por un grupo de productos de alto valor y revise si existen "Salidas por Ajuste" (mermas) inusualmente altas en el periodo.
+</div><hr><div id="capitulo_48_gestion_topes" class="chapter-container"><div class="system-note">Módulo: Inventario y Logística</div><h1 class="chapter-title">Gestión de Topes (Mínimos y Máximos)</h1>
+
+El módulo de <strong>Gestión de Topes</strong> es su asistente inteligente para la reposición de inventario. Su función principal es analizar el saldo actual de cada producto frente a los límites (topes) establecidos en su ficha maestra, generando alertas automáticas de compra o sobre-stock.
+
+<h2>1. Modos de Análisis</h2>
+
+El sistema ofrece dos estrategias de análisis que puede alternar con los botones grandes en la parte superior:
+
+<h3>1.1. 🚨 Mínimo: HACER PEDIDO</h3>
+Este modo identifica los productos cuyo saldo actual está <strong>por debajo</strong> del stock mínimo permitido.
+<ul>
+<li>  <strong>Objetivo:</strong> Evitar roturas de stock (quedarse sin mercancía).</li>
+<li>  <strong>Decisión Sugerida:</strong> "PEDIR". Indica que es urgente realizar una orden de compra al proveedor.</li>
+</ul>
+<em>   <strong>Cálculo:</strong> </em>Diferencia = Stock Mínimo - Saldo Actual*. Esta es la cantidad sugerida a pedir para volver a la zona segura.
+
+<h3>1.2. ⚠️ Máximo: NO COMPRAR</h3>
+Este modo identifica los productos cuyo saldo actual está <strong>por encima</strong> del stock máximo deseado.
+<ul>
+<li>  <strong>Objetivo:</strong> Evitar sobre-costos de almacenamiento y capital inmovilizado.</li>
+<li>  <strong>Decisión Sugerida:</strong> "NO COMPRAR". Advierte que no se debe adquirir más mercancía e incluso sugiere realizar promociones para evacuar el exceso.</li>
+</ul>
+<em>   <strong>Cálculo:</strong> </em>Diferencia = Saldo Actual - Stock Máximo*. Esta es la cantidad de exceso que tiene en bodega.
+
+<h2>2. Indicadores Clave (KPIs)</h2>
+
+En la parte superior verá tres tarjetas con cifras en tiempo real:
+<ul>
+<li>  <strong>Alertas Mínimas:</strong> Número de productos críticos que necesitan reposición inmediata.</li>
+<li>  <strong>Alertas Máximas:</strong> Número de productos con exceso de inventario.</li>
+<li>  <strong>Total en Lista:</strong> Cantidad total de ítems que requieren su atención según el filtro seleccionado.</li>
+</ul>
+
+<h2>3. Tabla de Resultados</h2>
+
+La tabla detalla la situación de cada producto en alerta:
+<ul>
+<li>  <strong>Saldo Actual:</strong> Existencia física a la fecha de corte.</li>
+<li>  <strong>Mínimo / Máximo:</strong> Los límites configurados en el sistema para ese producto.</li>
+<li>  <strong>Diferencia:</strong> La cantidad exacta que le falta (en alertas de mínimo) o le sobra (en alertas de máximo).</li>
+<li>  <strong>Decisión:</strong> Una etiqueta visual clara ("PEDIR" o "NO COMPRAR") para facilitar la toma de decisiones rápida.</li>
+</ul>
+
+<h2>4. Exportación</h2>
+
+<ul>
+<li>  <strong>Botón PDF:</strong> Genera un reporte formal con la lista de productos en alerta. Este documento es ideal para entregárselo directamente al departamento de compras como una "Sugerencia de Pedido".</li>
+</ul>
+
+<hr>
+&gt; <strong>Nota Importante:</strong> Para que este reporte funcione correctamente, asegúrese de haber configurado los campos "Stock Mínimo" y "Stock Máximo" en la ficha de creación de cada producto (Ver Capítulo: Catálogo de Productos).
+</div><hr><div id="capitulo_49_gestion_ventas" class="chapter-container"><div class="system-note">Módulo: Inventario y Logística</div><h1 class="chapter-title">Control de Rentabilidad (Gestión de Ventas)</h1>
+
+El módulo de <strong>Control de Rentabilidad</strong> permite auditar el margen de ganancia real de cada factura emitida. Es una herramienta diseñada para gerentes y auditores que necesitan verificar la rentabilidad operación por operación, asegurando que ninguna venta se realice a pérdida o con márgenes inferiores a los esperados.
+
+<h2>1. Búsqueda de Documentos</h2>
+
+El panel de control permite filtrar las facturas por:
+<ul>
+<li>  <strong>Rango de Fechas:</strong> Seleccione el periodo de emisión de las facturas a auditar.</li>
+<li>  <strong>Cliente:</strong> Puede ver todas las ventas o filtrar por un cliente específico para analizar su rentabilidad histórica.</li>
+</ul>
+
+Al presionar <strong>"Buscar"</strong>, el sistema listará todos los documentos que coincidan con los criterios.
+
+<h2>2. Tabla de Resultados</h2>
+
+La tabla muestra un resumen ejecutivo de los documentos encontrados:
+<ul>
+<li>  <strong>Fecha Emisión:</strong> Cuándo se realizó la venta.</li>
+<li>  <strong>Documento:</strong> El código interno de la factura (ej. FAC-1020).</li>
+<li>  <strong>Cliente:</strong> Nombre del comprador.</li>
+<li>  <strong>Acción:</strong> Un botón rojo de PDF para generar el análisis detallado.</li>
+</ul>
+
+<h2>3. Análisis de Rentabilidad (PDF)</h2>
+
+Al hacer clic en el botón <strong>PDF</strong> de una factura específica, se generará un reporte detallado que desglosa la rentabilidad de <strong>esa única operación</strong>.
+
+<h3>Contenido del Reporte PDF:</h3>
+Este documento "Informe de Rentabilidad por Factura" incluye:
+1.  <strong>Datos Generales:</strong> Cliente, vendedor, fecha y bodega.
+2.  <strong>Detalle Ítem por Ítem:</strong>
+    <em>   </em>Precio de Venta:* A cuánto se facturó el producto.
+    <em>   </em>Costo:* Cuánto le costó a la empresa ese producto (Costo Promedio al momento de la venta).
+    <em>   </em>Utilidad Bruta:<em> La ganancia neta en dinero (</em>Precio - Costo*).
+    <em>   </em>Margen %:* El porcentaje de rentabilidad real.
+3.  <strong>Totales:</strong> La utilidad consolidada de toda la factura.
+
+<hr>
+&gt; <strong>Uso Estratégico:</strong> Utilice este reporte para evaluar el desempeño de sus vendedores. Si detecta facturas con márgenes muy bajos, puede investigar si se otorgaron descuentos excesivos o si el costo del producto ha subido sin ajustar el precio de venta.
+</div><hr><div class="group-section"><h1 style="font-size: 3.5rem; color: #0f172a; margin: 8rem 0 4rem 0; border-bottom: 5px solid var(--primary); display: inline-block; letter-spacing: -0.03em;">Utilidades</h1></div><div id="capitulo_60_edicion_documentos" class="chapter-container"><div class="system-note">Módulo: Utilidades</div><h1 class="chapter-title">Edición de Documentos</h1>
+
+El módulo de <strong>Edición de Documentos</strong> es una herramienta controlada que permite realizar correcciones a transacciones ya guardadas en el sistema. A diferencia de otros sistemas contables rígidos, ContaPY permite la flexibilidad de corregir errores humanos sin necesidad de anular y volver a hacer todo el trabajo, siempre y cuando se cumplan ciertas reglas de seguridad y auditoría.
+
+<h2>Reglas de Seguridad</h2>
+
+Para garantizar la integridad de la información financiera, el sistema impone las siguientes restricciones estrictas para la edición:
+
+1.  <strong>Estado del Documento:</strong> Solo se pueden editar documentos en estado <strong>ACTIVO</strong>. Los documentos anulados no son modificables.
+2.  <strong>Periodo Contable:</strong> El sistema valida la fecha del documento. Si el mes correspondiente ya ha sido <strong>CERRADO</strong> (ver capítulo de Control y Cierre), la edición será bloqueada inmediatamente para proteger los estados financieros ya reportados.
+3.  <strong>Integridad de Claves:</strong> No es posible modificar el <strong>Tipo de Documento</strong> ni el <strong>Número Consecutivo</strong> una vez creado el registro. Estos campos son la llave única de la transacción. Si cometió un error aquí, la única vía es la anulación.
+
+<h2>Campos Editables</h2>
+
+Al ingresar al modo de edición, usted podrá modificar:
+
+<ul>
+<li>  <strong>Encabezado:</strong></li>
+<li>  <strong>Tercero (Beneficiario):</strong> Puede reasignar la factura a otro cliente o proveedor.</li>
+<li>  <strong>Centro de Costo:</strong> Puede corregir la imputación a la unidad de negocio.</li>
+<li>  <strong>Fechas:</strong> Fecha de documento y vencimiento (respetando el periodo contable).</li>
+<li>  <strong>Detalles:</strong> Vendedor, notas, observaciones.</li>
+</ul>
+
+<ul>
+<li>  <strong>Cuerpo (Movimientos):</strong></li>
+<li>  <strong>Agregar Ítems:</strong> Puede insertar nuevas líneas de productos o cuentas contables.</li>
+<li>  <strong>Eliminar Ítems:</strong> Puede borrar líneas incorrectas.</li>
+<li>  <strong>Modificar Valores:</strong> Cantidades, precios unitarios, descuentos e impuestos.</li>
+<li>  <strong>Cuentas Contables:</strong> Puede cambiar la cuenta contable de una línea específica (ej: cambiar de un Gasto de Viaje a un Gasto de Representación).</li>
+</ul>
+
+<h2>Impacto Contable</h2>
+
+Cualquier cambio realizado en este módulo tiene un efecto <strong>inmediato y en tiempo real</strong> sobre la contabilidad.
+<ul>
+<li>  Si cambia un valor, el Balance de Prueba se actualizará al instante.</li>
+<li>  Si cambia un tercero, el Estado de Cuenta de ambos (el anterior y el nuevo) reflejará el cambio inmediatamente.</li>
+<li>  Si agrega productos, el Kardex de inventario se recalculará.</li>
+</ul>
+
+<h2>Auditoría de Cambios</h2>
+
+Por seguridad, el sistema guarda un rastro silencioso de todas las ediciones. En el <strong>Log de Operaciones</strong> (visible para auditores), quedará registrado:
+<ul>
+<li>  Quién realizó la modificación.</li>
+<li>  La fecha y hora exacta.</li>
+<li>  El documento afectado.</li>
+</ul>
+
+&gt; <strong>Recomendación:</strong> Utilice la edición para correcciones menores (fechas, valores, conceptos). Para errores estructurales graves, es preferible anular y crear un nuevo documento para mantener una traza más clara.
+</div><hr><div id="capitulo_61_recodificacion_masiva" class="chapter-container"><div class="system-note">Módulo: Utilidades</div><h1 class="chapter-title">Recodificación Masiva</h1>
+
+La <strong>Recodificación Masiva</strong> es una de las herramientas más potentes de ContaPY, diseñada para corregir errores de asignación a gran escala sin tener que editar documento por documento.
+
+<h2>¿Qué es la Recodificación?</h2>
+
+Imagine que creó por error dos terceros para la misma persona: "Juan Perez" y "Juan A. Perez". Tiene 50 facturas con el primero y 30 con el segundo.
+En lugar de entrar a 80 facturas para cambiar el tercero manualmente, la Recodificación le permite decir: <em>"Mueva TODOS los movimientos de Juan Perez a Juan A. Perez"</em>.
+
+Esta herramienta funciona para:
+1.  <strong>Terceros:</strong> Unificar clientes o proveedores duplicados.
+2.  <strong>Productos:</strong> Corregir referencias creadas doblemente o migrar historia de un producto antiguo a uno nuevo.
+3.  <strong>Cuentas Contables:</strong> Mover movimientos de una cuenta auxiliar a otra (ej: reclasificación de gastos).
+
+<h2>Proceso de Ejecución</h2>
+
+1.  <strong>Seleccione la Tabla:</strong> Elija si va a recodificar Terceros, Productos o Cuentas.
+2.  <strong>Origen (Lo Incorrecto):</strong> Busque el registro que tiene los movimientos que desea mover.
+3.  <strong>Destino (Lo Correcto):</strong> Busque el registro que recibirá toda la historia.
+    <em>   </em>Nota:* El destino debe existir previamente. Si no existe, créelo en el maestro correspondiente.
+4.  <strong>Filtros (Opcional):</strong>
+<ul>
+<li>  <strong>Rango de Fechas:</strong> Puede limitar el cambio a un periodo específico (ej: "Solo corregir lo de Enero").</li>
+<li>  <strong>Tipo de Documento:</strong> Puede aplicar el cambio solo a Facturas de Venta, ignorando Recibos, por ejemplo.</li>
+<li>  <strong>Números Específicos:</strong> Puede ingresar una lista de números de documento (separados por coma) para una corrección quirúrgica.</li>
+</ul>
+
+<h2>Advertencias Críticas</h2>
+
+&gt; [!WARNING]
+&gt; <strong>Operación Irreversible</strong>
+&gt; La recodificación modifica directamente las referencias en la base de datos. No existe un botón de "Deshacer". Si se equivoca (ej: mueve todo al tercero incorrecto), la única forma de arreglarlo es realizar una nueva recodificación inversa, lo cual puede ser complejo si mezcló datos de dos terceros reales.
+&gt;
+&gt; <strong>Se recomienda hacer una Copia de Seguridad antes de realizar recodificaciones masivas.</strong>
+
+<h2>Efectos en el Sistema</h2>
+
+<ul>
+<li>  <strong>Saldos:</strong> El saldo del tercero/cuenta Origen quedará en cero (o disminuirá). El saldo del Destino aumentará.</li>
+<li>  <strong>Reportes:</strong> Todos los reportes históricos (incluso de años anteriores si no filtra por fecha) reflejarán el cambio como si siempre hubiera sido así.</li>
+<li>  <strong>Integridad:</strong> El sistema valida que no se rompa la integridad referencial. Por ejemplo, no le permitirá recodificar una cuenta de detalle a una cuenta mayor.</li>
+</ul>
+</div><hr><div id="capitulo_62_papelera_reciclaje" class="chapter-container"><div class="system-note">Módulo: Utilidades</div><h1 class="chapter-title">Papelera de Reciclaje</h1>
+
+ContaPY implementa un sistema de <strong>Eliminación Lógica (Soft Delete)</strong>. Esto significa que cuando usted "elimina" un documento en cualquier módulo, este no desaparece físicamente de la base de datos, sino que es enviado a una <strong>Papelera de Reciclaje</strong> segura.
+
+<h2>Objetivos de la Papelera</h2>
+
+1.  <strong>Seguridad:</strong> Evitar la pérdida accidental de información.
+2.  <strong>Auditoría:</strong> Mantener un rastro de quién eliminó qué y cuándo.
+3.  <strong>Recuperación:</strong> Permitir restaurar el trabajo realizado sin tener que digitar todo nuevamente.
+
+<h2>Acceso y Permisos</h2>
+
+El módulo de Papelera de Reciclaje es una zona restringida. Generalmente, solo los usuarios con rol de <strong>Administrador</strong> o <strong>Auditor</strong> tienen acceso a ella. Un usuario operativo estándar puede eliminar documentos (si tiene permiso), pero no puede ver ni restaurar desde la papelera.
+
+<h2>Restauración de Documentos</h2>
+
+Para recuperar un documento:
+1.  Ingrese al módulo de Papelera.
+2.  Use los filtros para buscar por Tipo, Número, Fecha de Eliminación o Usuario que eliminó.
+3.  Seleccione el documento y haga clic en <strong>Restaurar</strong>.
+
+<h3>Validaciones de Restauración</h3>
+
+El sistema aplicará dos validaciones críticas antes de permitir la restauración:
+
+1.  <strong>Periodo Contable:</strong> Verifica la fecha original del documento. Si pertenece a un mes que ya fue <strong>CERRADO</strong>, el sistema bloqueará la restauración. Deberá reabrir el periodo primero.
+2.  <strong>Conflicto de Numeración:</strong> Verifica si el número del documento ya fue reutilizado.
+    <em>   </em>Ejemplo:* Eliminó la Factura #50. Luego creó una nueva Factura #50.
+<ul>
+<li>  Si intenta restaurar la #50 original, el sistema lo impedirá porque no pueden existir dos facturas activas con el mismo número. Deberá anular o cambiar la #50 nueva antes de restaurar la vieja.</li>
+</ul>
+
+<h2>Auditoría de Eliminación</h2>
+
+En la vista de la papelera, usted encontrará columnas clave para la auditoría forense:
+<ul>
+<li>  <strong>Usuario Eliminación:</strong> El correo del usuario que ejecutó la acción.</li>
+<li>  <strong>Fecha Eliminación:</strong> La marca de tiempo exacta.</li>
+<li>  <strong>Valor Original:</strong> El valor total del documento al momento de ser borrado.</li>
+</ul>
+
+&gt; <strong>Nota Técnica:</strong> Los documentos en la papelera <strong>NO</strong> suman en los reportes contables ni afectan el inventario. Están en un estado de "limbo" hasta que sean restaurados o purgados definitivamente (función de purga solo por base de datos).
+</div><hr><div id="capitulo_63_control_cierre" class="chapter-container"><div class="system-note">Módulo: Utilidades</div><h1 class="chapter-title">Control y Cierre</h1>
+
+El módulo de <strong>Control y Cierre</strong> es el panel de mando para el Contador y el Auditor. Aquí se gestionan los procesos que garantizan la inmutabilidad de la información financiera y la calidad de los datos.
+
+<h2>1. Cierre de Periodos</h2>
+
+El cierre contable es el mecanismo para "congelar" la información. Una vez se han presentado impuestos o informes a gerencia, es vital asegurar que nadie modifique las cifras.
+
+<h3>Proceso de Cierre</h3>
+<ul>
+<li>  El cierre es <strong>Mensual</strong>.</li>
+<li>  Debe realizarse de forma <strong>Secuencial</strong>: No puede cerrar Marzo si no ha cerrado Febrero.</li>
+<li>  El sistema valida la <strong>Fecha de Inicio de Operaciones</strong>: No puede cerrar periodos anteriores al nacimiento de la empresa.</li>
+</ul>
+
+<h3>Efectos del Cierre</h3>
+Cuando un mes está cerrado (ej: Enero 2024):
+<ul>
+<li>  Nadie puede <strong>Crear</strong> documentos con fecha de Enero.</li>
+<li>  Nadie puede <strong>Editar</strong> documentos de Enero.</li>
+<li>  Nadie puede <strong>Anular</strong> ni <strong>Eliminar</strong> documentos de Enero.</li>
+<li>  Nadie puede <strong>Restaurar</strong> documentos de Enero desde la papelera.</li>
+</ul>
+
+<h3>Reapertura</h3>
+Si es estrictamente necesario hacer una corrección, un Administrador puede <strong>Reabrir</strong> el periodo.
+<ul>
+<li>  La reapertura también es secuencial inversa (del último hacia atrás).</li>
+<li>  Al reabrir, el periodo queda expuesto nuevamente a modificaciones. Se recomienda cerrar inmediatamente después de realizar el ajuste.</li>
+</ul>
+
+<h2>2. Auditoría de Consecutivos</h2>
+
+Este reporte es una herramienta de control fiscal indispensable. Su función es escanear la numeración de todos los documentos y detectar <strong>saltos o huecos</strong>.
+
+<ul>
+<li>  <strong>¿Por qué es importante?</strong> La DIAN y normas de control interno exigen que la facturación sea consecutiva. Un salto (ej: Factura 1, 2, 4... falta la 3) es una alerta grave de posible evasión o pérdida de información.</li>
+</ul>
+
+<h3>Análisis del Reporte</h3>
+El sistema le mostrará:
+<ul>
+<li>  <strong>Total Documentos Encontrados.</strong></li>
+<li>  <strong>Último Consecutivo Registrado.</strong></li>
+<li>  <strong>Huecos Detectados:</strong> Una lista detallada de los números faltantes (ej: "Faltan del 105 al 109").</li>
+</ul>
+
+<h2>3. Log de Operaciones</h2>
+
+Es la "caja negra" del sistema. Registra eventos transversales de seguridad.
+
+<ul>
+<li>  <strong>Filtros:</strong> Puede buscar por rango de fechas, usuario o tipo de evento.</li>
+<li>  <strong>Eventos Registrados:</strong></li>
+<li>  Inicios de Sesión (Login).</li>
+<li>  Creación de Terceros/Usuarios.</li>
+<li>  Anulación de Documentos (incluyendo la razón obligatoria digitada).</li>
+<li>  Eliminación de registros.</li>
+<li>  Cambios de configuración sensible.</li>
+</ul>
+
+Use este módulo periódicamente para monitorear la actividad inusual o verificar el cumplimiento de los procedimientos internos por parte de los usuarios.
+</div><hr>
+            </div>
+        </main>
+    </body>
+    </html>
+    

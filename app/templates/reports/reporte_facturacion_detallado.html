@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Explorador de Transacciones</title>
+    <style>
+        body { font-family: 'Helvetica', sans-serif; font-size: 9px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { margin: 0; }
+        .header h3 { margin: 5px 0; color: #555; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 5px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .text-right { text-align: right; }
+        .kpi-table { width: 50%; margin-bottom: 20px; }
+        .kpi-table td { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <h3>NIT: {{ empresa.nit }}</h3>
+        <h2>Explorador de Transacciones de {{ filtros.tipo_reporte.capitalize() }}</h2>
+        <p>Período del {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
+    </div>
+
+    <h4>Resumen del Período</h4>
+    <table class="kpi-table">
+        <tr>
+            <td>{{ 'Total Facturado' if filtros.tipo_reporte == 'ventas' else 'Total Comprado' }}</td>
+            <td class="text-right">$ {{ "{:,.0f}".format(data.kpis.total_valor) }}</td>
+        </tr>
+        {% if filtros.tipo_reporte == 'ventas' %}
+        <tr>
+            <td>Costo Total</td>
+            <td class="text-right">$ {{ "{:,.0f}".format(data.kpis.total_costo) }}</td>
+        </tr>
+        <tr>
+            <td>Utilidad Bruta</td>
+            <td class="text-right">$ {{ "{:,.0f}".format(data.kpis.utilidad_bruta_valor_total) }}</td>
+        </tr>
+        <tr>
+            <td>Margen Promedio</td>
+            <td class="text-right">{{ "%.2f"|format(data.kpis.utilidad_bruta_porcentaje_promedio) }}%</td>
+        </tr>
+        {% endif %}
+    </table>
+
+    <h4>Detalle de Transacciones</h4>
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Documento</th>
+                <th>Tercero</th>
+                <th>Producto</th>
+                <th class="text-right">Cantidad</th>
+                <th class="text-right">Vr. Unitario</th>
+                <th class="text-right">Vr. Total</th>
+                {% if filtros.tipo_reporte == 'ventas' %}
+                    <th class="text-right">Costo Total</th>
+                    <th class="text-right">Utilidad</th>
+                    <th class="text-right">% Margen</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data.items %}
+            <tr>
+                <td>{{ item.fecha }}</td>
+                <td>{{ item.documento_ref }}</td>
+                <td>{{ item.tercero_nombre }}</td>
+                <td>{{ item.producto_nombre }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.cantidad) }}</td>
+                <td class="text-right">$ {{ "{:,.0f}".format(item.valor_unitario) }}</td>
+                <td class="text-right">$ {{ "{:,.0f}".format(item.valor_total_linea) }}</td>
+                {% if filtros.tipo_reporte == 'ventas' %}
+                    <td class="text-right">$ {{ "{:,.0f}".format(item.costo_total_linea) }}</td>
+                    <td class="text-right">$ {{ "{:,.0f}".format(item.utilidad_bruta_valor) }}</td>
+                    <td class="text-right">{{ "%.2f"|format(item.utilidad_bruta_porcentaje) }}%</td>
+                {% endif %}
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="{{ 10 if filtros.tipo_reporte == 'ventas' else 7 }}">No se encontraron transacciones para los filtros seleccionados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

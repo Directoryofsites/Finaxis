@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ titulo_reporte }}</title>
+    <style>
+        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10px; color: #333; }
+        /* FORZAR ORIENTACIÓN HORIZONTAL PARA MOVIMIENTOS DETALLADOS */
+        @page { size: Letter landscape; margin: 1cm; } 
+        h1 { font-size: 16px; text-align: center; margin-bottom: 5px; }
+        h2 { font-size: 14px; text-align: center; margin-bottom: 15px; }
+        .header-info { text-align: center; font-size: 11px; margin-bottom: 20px; }
+        .header-info p { margin: 2px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
+        th { background-color: #f0f0f0; font-size: 10px; text-align: center; }
+        .text-right { text-align: right; }
+        .font-mono { font-family: 'Courier New', Courier, monospace; }
+        .total-row { background-color: #f0f0f0; font-weight: bold; }
+        .total-row td { padding-top: 6px; padding-bottom: 6px; }
+        .no-data { text-align: center; font-style: italic; padding: 20px; }
+
+        /* --- Estilos Específicos para cada Vista --- */
+
+        /* Vista Movimientos */
+        .vista-movimientos th { font-size: 9px; }
+        .vista-movimientos td { font-size: 9px; }
+
+        /* Vista Estado General */
+        .vista-estado th { font-size: 10px; }
+        .vista-estado .header-group { text-align: center; border-bottom: 1px solid #ccc; }
+        .vista-estado .subheader { text-align: right; }
+
+        /* Vista Rentabilidad */
+        .vista-rentabilidad th { font-size: 10px; }
+        .vista-rentabilidad .header-group { text-align: center; }
+
+    </style>
+</head>
+<body>
+    <div class="header-info">
+        <p style="font-size: 14px; font-weight: bold;">{{ empresa_nombre }}</p>
+        <p>NIT: (pendiente)</p>
+        <p>Teléfono: (pendiente)</p>
+    </div>
+
+    <h1>{{ titulo_reporte }}</h1>
+   
+    <h2>
+        {% if filtros.fecha_inicio and filtros.fecha_fin %}
+            Del {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}
+        {% elif filtros.fecha_fin %}
+            Hasta el {{ filtros.fecha_fin }}
+        {% else %}
+            A la fecha actual
+        {% endif %}
+    </h2>
+
+    
+    <hr style="border: 0; border-top: 1px solid #999;">
+
+    {% if not data.items %}
+        <p class="no-data">No se encontraron resultados para los filtros seleccionados.</p>
+    {% else %}
+        
+        {% if data.vista_reporte == 'MOVIMIENTOS' %}
+        <table class="vista-movimientos">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Documento</th>
+                    <th>Tercero</th>
+                    <th>Bodega</th>
+                    <th>Código</th>
+                    <th>Producto</th>
+                    <th>Tipo Mov.</th>
+                    <th class="text-right">Cantidad</th>
+                    <th class="text-right">Costo Unit.</th>
+                    <th class="text-right">Costo Total</th>
+                </tr>
+            </thead>
+            <tbody>
+
+                {% for item in data['items'] %}
+                <tr>
+
+                    <td>{{ item.fecha | string }}</td> 
+                    <td>{{ item.documento_ref or 'N/A' }}</td>
+                    <td>{{ item.tercero_nombre or 'N/A' }}</td>
+                    <td>{{ item.bodega_nombre }}</td>
+                    <td class="font-mono">{{ item.producto_codigo }}</td>
+                    <td>{{ item.producto_nombre }}</td>
+                    <td>{{ item.tipo_movimiento }}</td>
+                    <td class="text-right font-mono">{{ "%.2f"|format(item.cantidad) }}</td>
+                    {# --- CAMBIO: Costo unitario sin filtro de miles --- #}
+                    <td class="text-right font-mono">{{ "%.2f"|format(item.costo_unitario) }}</td>
+                    {# --- CAMBIO: Costo total con filtro de miles --- #}
+                    <td class="text-right font-mono">{{ item.costo_total | format_miles }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {# --- INICIO CAMBIO: Totales para MOVIMIENTOS con filtro de miles --- #}
+            {% if data.totales and data.totales.total_cantidad %}
+            <tfoot class="total-row">
+                <tr>
+                    <td colspan="7" class="text-right"><strong>TOTALES GENERALES</strong></td> 
+                    <td class="text-right font-mono">{{ "%.2f"|format(data.totales.total_cantidad) }}</td>
+                    <td class="text-right"></td> 
+                    {# --- CAMBIO: Aplicando format_miles al total de costo --- #}
+                    <td class="text-right font-mono">{{ data.totales.total_costo | format_miles }}</td>
+                </tr>
+            </tfoot>
+            {% endif %}
+            {# --- FIN CAMBIO --- #}
+            </table>
+        {% endif %}
+
+
+        {% if data.vista_reporte == 'ESTADO_GENERAL' %}
+        <table class="vista-estado">
+            <thead>
+                <tr>
+                    <th rowspan="2" style="vertical-align: bottom;">Producto</th>
+                    <th colspan="2" class="header-group">Saldo Inicial</th>
+                    <th colspan="2" class="header-group">Entradas</th>
+                    <th colspan="2" class="header-group">Salidas</th>
+                    <th colspan="2" class="header-group">Saldo Final</th>
+                </tr>
+                <tr>
+                    <th class="subheader">Cant.</th>
+                    <th class="subheader">Valor</th>
+                    <th class="subheader">Cant.</th>
+                    <th class="subheader">Valor</th>
+                    <th class="subheader">Cant.</th>
+                    <th class="subheader">Valor</th>
+                    <th class="subheader">Cant.</th>
+                    <th class="subheader">Valor</th>
+                </tr>
+            </thead>
+            <tbody>
+
+                {% for item in data['items'] %}
+                <tr>
+                    <td>({{ item.producto_codigo }}) {{ item.producto_nombre }}</td>
+                    <td class="text-right font-mono">{{ "%.2f"|format(item.saldo_inicial_cantidad) }}</td>
+                    {# --- CAMBIO: Valor con filtro de miles --- #}
+                    <td class="text-right font-mono">{{ item.saldo_inicial_valor | format_miles }}</td>
+                    <td class="text-right font-mono">{{ "%.2f"|format(item.total_entradas_cantidad) }}</td>
+                    {# --- CAMBIO: Valor con filtro de miles --- #}
+                    <td class="text-right font-mono">{{ item.total_entradas_valor | format_miles }}</td>
+                    <td class="text-right font-mono">{{ "%.2f"|format(item.total_salidas_cantidad) }}</td>
+                    {# --- CAMBIO: Valor con filtro de miles --- #}
+                    <td class="text-right font-mono">{{ item.total_salidas_valor | format_miles }}</td>
+                    <td class="text-right font-mono">{{ "%.2f"|format(item.saldo_final_cantidad) }}</td>
+                    {# --- CAMBIO: Valor con filtro de miles --- #}
+                    <td class="text-right font-mono">{{ item.saldo_final_valor | format_miles }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if data.totales %}
+            <tfoot class="total-row">
+                <tr>
+                    <td>TOTALES GENERALES</td>
+                    <td class="text-right font-mono">{{ "%.2f"|format(data.totales.saldo_inicial_cantidad) }}</td>
+                    {# --- CAMBIO: Aplicando format_miles al total de saldo inicial valor --- #}
+                    <td class="text-right font-mono">{{ data.totales.saldo_inicial_valor | format_miles }}</td>
+                    <td class="text-right font-mono">{{ "%.2f"|format(data.totales.total_entradas_cantidad) }}</td>
+                    {# --- CAMBIO: Aplicando format_miles al total de entradas valor --- #}
+                    <td class="text-right font-mono">{{ data.totales.total_entradas_valor | format_miles }}</td>
+                    <td class="text-right font-mono">{{ "%.2f"|format(data.totales.total_salidas_cantidad) }}</td>
+                    {# --- CAMBIO: Aplicando format_miles al total de salidas valor --- #}
+                    <td class="text-right font-mono">{{ data.totales.total_salidas_valor | format_miles }}</td>
+                    <td class="text-right font-mono">{{ "%.2f"|format(data.totales.saldo_final_cantidad) }}</td>
+                    {# --- CAMBIO: Aplicando format_miles al total de saldo final valor --- #}
+                    <td class="text-right font-mono">{{ data.totales.saldo_final_valor | format_miles }}</td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+        {% endif %}
+
+
+        {% if data.vista_reporte == 'RENTABILIDAD' %}
+        <table class="vista-rentabilidad">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th class="header-group text-right">Venta Total</th>
+                    <th class="header-group text-right">Costo Total</th>
+                    <th class="header-group text-right">Utilidad Bruta</th>
+                    <th class="header-group text-right">Margen %</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data['items'] %}
+                <tr>
+                    <td>({{ item.producto_codigo }}) {{ item.producto_nombre }}</td>
+                    {# --- CAMBIO: Valores de Venta, Costo, Utilidad con filtro de miles --- #}
+                    <td class="text-right font-mono">{{ item.total_venta | format_miles }}</td>
+                    <td class="text-right font-mono">{{ item.total_costo | format_miles }}</td>
+                    <td class="text-right font-mono">{{ item.total_utilidad | format_miles }}</td>
+                    <td class="text-right font-mono">{{ "%.2f"|format(item.margen_rentabilidad_porcentaje) }} %</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if data.totales %}
+            <tfoot class="total-row">
+                <tr>
+                    <td>TOTALES GENERALES</td>
+                    {# --- CAMBIO: Totales de Rentabilidad con filtro de miles --- #}
+                    <td class="text-right font-mono">{{ data.totales.total_venta_general | format_miles }}</td>
+                    <td class="text-right font-mono">{{ data.totales.total_costo_general | format_miles }}</td>
+                    <td class="text-right font-mono">{{ data.totales.total_utilidad_general | format_miles }}</td>
+                    <td class="text-right font-mono">{{ "%.2f"|format(data.totales.margen_general_porcentaje) }} %</td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+        {% endif %}
+    {% endif %}
+</body>
+</html>

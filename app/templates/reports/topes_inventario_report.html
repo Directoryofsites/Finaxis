@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ titulo_reporte }}</title>
+    <style>
+        /* Estilos esenciales para WeasyPrint (Generador de PDF) */
+        body { font-family: 'Arial', sans-serif; font-size: 10pt; margin: 0.75in; }
+        h1 { font-size: 16pt; color: #007bff; border-bottom: 2px solid #ddd; padding-bottom: 5px; margin-bottom: 15px; text-align: center; }
+        h2 { font-size: 12pt; margin-top: 15px; color: #333; }
+        .header-info { font-size: 9pt; margin-bottom: 20px; background-color: #f9f9f9; padding: 10px; border-radius: 5px; }
+        .header-info span { font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #e0e0e0; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; font-weight: bold; text-transform: uppercase; font-size: 9pt; }
+        td { font-size: 9pt; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        /* Clases para colores de alerta */
+        .minimo-alerta { color: #FFA500; font-weight: bold; } /* Naranja/Advertencia */
+        .maximo-alerta { color: #DC3545; font-weight: bold; } /* Rojo/Error */
+    </style>
+</head>
+<body>
+    <h1>{{ empresa_nombre }}</h1>
+    <h2>{{ titulo_reporte }}</h2>
+    
+    <div class="header-info">
+        <span>Fecha de Corte:</span> {{ filtros.fecha_corte }} <br>
+        <span>Alerta Activa:</span> {{ filtros.tipo_alerta }} <br>
+        <span>Bodegas Consolidadas:</span> {{ bodegas_seleccionadas }} <br>
+        <span>Grupos Consolidados:</span> {{ grupos_seleccionados }} <br>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 10%;">Cód.</th>
+                <th style="width: 30%;">Producto</th>
+                <th style="width: 15%;" class="text-right">Saldo Actual</th>
+                <th style="width: 10%;" class="text-right">Stock Mín.</th>
+                <th style="width: 10%;" class="text-right">Stock Máx.</th>
+                <th style="width: 15%;" class="text-right">Diferencia</th>
+                <th style="width: 10%;" class="text-center">Decisión</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data %}
+            {% set estado_class = '' %}
+            {% if item.estado_tope == 'MINIMO' %}
+                {% set estado_class = 'minimo-alerta' %}
+            {% elif item.estado_tope == 'MAXIMO' %}
+                {% set estado_class = 'maximo-alerta' %}
+            {% endif %}
+            
+            <tr>
+                <td>{{ item.producto_codigo }}</td>
+                <td>{{ item.producto_nombre }} ({{ item.bodega_nombre }})</td>
+                <td class="text-right">{{ "%.2f"|format(item.saldo_actual) }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.stock_minimo) }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.stock_maximo) }}</td>
+                
+                <td class="text-right {{ estado_class }}">{{ "%.2f"|format(item.diferencia) }}</td>
+                <td class="text-center {{ estado_class }}">
+                    {% if item.estado_tope == 'MINIMO' %}
+                        PEDIDO
+                    {% elif item.estado_tope == 'MAXIMO' %}
+                        SOBRE-STOCK
+                    {% else %}
+                        OK
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <h2>Total Artículos en Alerta: {{ data | length }}</h2>
+
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Libro de Inventarios y Balances</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 1.5cm;
+            @bottom-center {
+                content: "Página " counter(page) " de " counter(pages);
+                font-size: 10px;
+            }
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 10px;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+        .header h1, .header h2, .header p {
+            margin: 0;
+            padding: 2px 0;
+        }
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+        .report-table td {
+            padding: 5px;
+        }
+        .account-name {
+            padding-left: 15px;
+        }
+        .group-header {
+            font-weight: bold;
+            font-size: 12px;
+            background-color: #e0e0e0;
+            border-bottom: 2px solid #333;
+            border-top: 2px solid #333;
+        }
+        .total-row {
+            font-weight: bold;
+            border-top: 1px solid #333;
+        }
+        .grand-total {
+            font-size: 11px;
+            background-color: #f2f2f2;
+            border-top: 2px double #000;
+        }
+        .text-right {
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <h2>NIT: {{ empresa.nit }}</h2>
+        <p><strong>Libro de Inventarios y Balances (Estado de Situación Financiera)</strong></p>
+        <p>Con corte al {{ fecha_corte.strftime('%d de %B de %Y') }}</p>
+    </div>
+
+    <table class="report-table">
+        <tr>
+            <td colspan="2" class="group-header">ACTIVOS</td>
+        </tr>
+        {% for activo in reporte.activos %}
+        <tr>
+            <td>{{ activo.codigo }} - {{ activo.nombre }}</td>
+            <td class="text-right">{{ "${:,.2f}".format(activo.saldo) }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="total-row grand-total">
+            <td><strong>TOTAL ACTIVOS</strong></td>
+            <td class="text-right"><strong>{{ "${:,.2f}".format(reporte.total_activos) }}</strong></td>
+        </tr>
+
+        <tr>
+            <td colspan="2" class="group-header" style="padding-top: 20px;">PASIVOS</td>
+        </tr>
+        {% for pasivo in reporte.pasivos %}
+        <tr>
+            <td>{{ pasivo.codigo }} - {{ pasivo.nombre }}</td>
+            <td class="text-right">{{ "${:,.2f}".format(pasivo.saldo) }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="total-row">
+            <td><strong>Total Pasivos</strong></td>
+            <td class="text-right"><strong>{{ "${:,.2f}".format(reporte.total_pasivos) }}</strong></td>
+        </tr>
+
+        <tr>
+            <td colspan="2" class="group-header" style="padding-top: 20px;">PATRIMONIO</td>
+        </tr>
+        {% for item in reporte.patrimonio %}
+        <tr>
+            <td>{{ item.codigo }} - {{ item.nombre }}</td>
+            <td class="text-right">{{ "${:,.2f}".format(item.saldo) }}</td>
+        </tr>
+        {% endfor %}
+        <tr>
+            <td>Utilidad (o Pérdida) del Ejercicio</td>
+            <td class="text-right">{{ "${:,.2f}".format(reporte.utilidad_ejercicio) }}</td>
+        </tr>
+        <tr class="total-row">
+            <td><strong>Total Patrimonio</strong></td>
+            <td class="text-right"><strong>{{ "${:,.2f}".format(reporte.total_patrimonio) }}</strong></td>
+        </tr>
+        
+        <tr class="total-row grand-total">
+            <td><strong>TOTAL PASIVO Y PATRIMONIO</strong></td>
+            <td class="text-right"><strong>{{ "${:,.2f}".format(reporte.total_pasivo_patrimonio) }}</strong></td>
+        </tr>
+    </table>
+
+</body>
+</html>

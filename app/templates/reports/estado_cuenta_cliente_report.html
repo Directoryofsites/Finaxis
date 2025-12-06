@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Estado de Cuenta</title>
+    <style>
+        @page { size: letter portrait; margin: 1.5cm; }
+        body { font-family: Arial, sans-serif; font-size: 10px; }
+        h1, h2 { text-align: center; color: #333; margin: 0; }
+        .company-info { text-align: center; margin-bottom: 20px; }
+        .report-info { margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 5px; text-align: left; }
+        th { background-color: #f2f2f2; text-align: center; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        tfoot td { font-weight: bold; background-color: #e0e0e0; }
+        .aging-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 20px; }
+        .aging-box { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        .aging-box h4 { margin: 0 0 5px 0; font-size: 0.9em; }
+        .aging-box p { margin: 0; font-size: 1.2em; font-weight: bold; }
+        .vencida { color: #d9534f; }
+        .por-vencer { color: #5cb85c; }
+    </style>
+</head>
+<body>
+    <div class="company-info">
+        <h1>{{ empresa.razon_social }}</h1>
+        <h2>NIT: {{ empresa.nit }}</h2>
+    </div>
+    <div class="report-info">
+        <h2>Estado de Cuenta de Cliente</h2>
+        <p><strong>Cliente:</strong> {{ reporte.clienteInfo.razon_social }} (NIT: {{ reporte.clienteInfo.nit }})</p>
+        <p><strong>Fecha de Corte:</strong> {{ reporte.fechaCorte }}</p>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Documento</th>
+                <th>Fecha Doc.</th>
+                <th class="text-right">Valor Original</th>
+                <th class="text-right">Abonos</th>
+                <th class="text-right">Saldo</th>
+                <th class="text-center">Mora / Vencimiento</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for factura in reporte.facturas %}
+            <tr>
+                <td>{{ factura.tipo_documento }}-{{ factura.numero }}</td>
+                <td>{{ factura.fecha }}</td>
+                <td class="text-right">{{ '{:,.2f}'.format(factura.valor_original) }}</td>
+                <td class="text-right">({{ '{:,.2f}'.format(factura.abonos) }})</td>
+                <td class="text-right">{{ '{:,.2f}'.format(factura.saldo_pendiente) }}</td>
+                <td class="text-center">
+                    {% if factura.estado == 'VENCIDA' %}
+                        <span class="vencida">{{ factura.dias_mora }} días de mora</span>
+                    {% else %}
+                        <span class="por-vencer">Vence en {{ factura.dias_para_vencer }} días</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center">Este cliente no tiene facturas con saldo pendiente.</td></tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="4" class="text-right"><strong>SALDO TOTAL CLIENTE:</strong></td>
+                <td colspan="2" class="text-right"><strong>{{ '{:,.2f}'.format(reporte.saldoTotal) }}</strong></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="aging-grid">
+        <div class="aging-box"><h4 class="por-vencer">Por Vencer</h4><p>{{ '{:,.2f}'.format(reporte.edades.por_vencer) }}</p></div>
+        <div class="aging-box"><h4 class="vencida">1-30 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_1_30) }}</p></div>
+        <div class="aging-box"><h4 class="vencida">31-60 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_31_60) }}</p></div>
+        <div class="aging-box"><h4 class="vencida">61-90 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_61_90) }}</p></div>
+        <div class="aging-box"><h4 class="vencida">+90 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_mas_90) }}</p></div>
+    </div>
+</body>
+</html>

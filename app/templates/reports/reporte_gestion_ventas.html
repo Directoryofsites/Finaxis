@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Gestión de Ventas</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #333; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { margin: 0; font-size: 18px; }
+        .header h2 { margin: 5px 0; font-size: 14px; color: #555; }
+        .header p { margin: 5px 0; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+        th { background-color: #f2f2f2; font-weight: bold; }
+        .text-right { text-align: right; }
+        .total-row { font-weight: bold; background-color: #f9f9f9; }
+        .badge { display: inline-block; padding: 3px 7px; font-size: 9px; font-weight: bold; line-height: 1; color: #fff; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: 10px; }
+        .badge-success { background-color: #28a745; }
+        .badge-warning { background-color: #ffc107; color: #212529; }
+        .badge-danger { background-color: #dc3545; }
+        .badge-secondary { background-color: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ data.empresa_nombre }}</h1>
+        <h2>Reporte de Gestión de Ventas</h2>
+        <p>Período del {{ data.filtros.fecha_inicio }} al {{ data.filtros.fecha_fin }}</p>
+    </div>
+
+    <h3>Resumen General</h3>
+    <table>
+        <tr>
+            <th>Total Facturado</th>
+            <td class="text-right">{{ "${:,.2f}".format(data.kpis.total_facturado) }}</td>
+        </tr>
+        <tr>
+            <th>Total Cobrado</th>
+            <td class="text-right">{{ "${:,.2f}".format(data.kpis.total_cobrado) }}</td>
+        </tr>
+        <tr>
+            <th>Saldo Pendiente</th>
+            <td class="text-right">{{ "${:,.2f}".format(data.kpis.saldo_pendiente) }}</td>
+        </tr>
+         <tr>
+            <th>Cartera Vencida</th>
+            <td class="text-right">{{ "${:,.2f}".format(data.kpis.cartera_vencida) }}</td>
+        </tr>
+    </table>
+
+    <h3>Detalle de Facturas</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Documento</th>
+                <th>Cliente</th>
+                <th>Vencimiento</th>
+                <th class="text-right">Total Factura</th>
+                <th class="text-right">Saldo</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            {% for doc in data['items'] %}
+            <tr>
+                <td>{{ doc.fecha }}</td>
+                <td>{{ doc.tipo_documento }}-{{ doc.numero }}</td>
+                <td>{{ doc.beneficiario_nombre }}</td>
+                <td>{{ doc.fecha_vencimiento }}</td>
+                <td class="text-right">{{ "${:,.2f}".format(doc.total) }}</td>
+                <td class="text-right">{{ "${:,.2f}".format(doc.saldo_pendiente) }}</td>
+                <td>
+                    {% if doc.estado == 'Pagada' %}
+                        <span class="badge badge-success">Pagada</span>
+                    {% elif doc.estado == 'Pendiente' %}
+                        <span class="badge badge-warning">Pendiente</span>
+                    {% elif doc.estado == 'Vencida' %}
+                        <span class="badge badge-danger">Vencida</span>
+                    {% else %}
+                        <span class="badge badge-secondary">{{ doc.estado }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

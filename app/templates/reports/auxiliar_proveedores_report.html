@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auxiliar de Proveedores Detallado</title>
+    <style>
+        @page { size: letter portrait; margin: 1.5cm; }
+        body { font-family: Arial, sans-serif; font-size: 10px; }
+        h1, h2 { text-align: center; color: #333; margin: 0; }
+        .company-info { text-align: center; margin-bottom: 20px; }
+        .report-info { margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 5px; text-align: left; }
+        th { background-color: #f2f2f2; text-align: center; }
+        .text-right { text-align: right; }
+        .saldo-row td { font-weight: bold; background-color: #f0f0f0; }
+        .detalle-app { padding-left: 20px !important; font-size: 0.9em; color: #555; border-top: none !important; }
+    </style>
+</head>
+<body>
+    <div class="company-info">
+        <h1>{{ empresa.razon_social }}</h1>
+        <h2>NIT: {{ empresa.nit }}</h2>
+    </div>
+    <div class="report-info">
+        <h2>Auxiliar de Proveedores Detallado</h2>
+        <p><strong>Proveedor:</strong> {{ tercero.razon_social }} (NIT: {{ tercero.nit }})</p>
+        <p><strong>Periodo:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 12%;">Fecha</th>
+                <th style="width: 25%;">Documento</th>
+                <th style="width: 21%;">Débito (Pagos)</th>
+                <th style="width: 21%;">Crédito (Deudas)</th>
+                <th style="width: 21%;">Saldo</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="saldo-row">
+                <td colspan="4" class="text-right">SALDO ANTERIOR</td>
+                <td class="text-right">{{ '{:,.2f}'.format(reporte.saldoAnterior) }}</td>
+            </tr>
+            {% for mov in reporte.movimientos %}
+                <tr>
+                    <td>{{ mov.fecha.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ mov.tipo_documento }}-{{ mov.numero }}</td>
+                    <td class="text-right">{{ '{:,.2f}'.format(mov.debito) }}</td>
+                    <td class="text-right">{{ '{:,.2f}'.format(mov.credito) }}</td>
+                    <td class="text-right">{{ '{:,.2f}'.format(mov.saldo_parcial) }}</td>
+                </tr>
+                {% if mov.detalle_aplicaciones %}
+                    <tr>
+                        <td></td>
+                        <td colspan="4" class="detalle-app">
+                        {% for app in mov.detalle_aplicaciones %}
+                            {% if app.afectado_por %}
+                                <span>↳ Pagado por {{ app.afectado_por }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
+                            {% elif app.afecta_a %}
+                                <span>↳ Paga a {{ app.afecta_a }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
+                            {% endif %}
+                        {% endfor %}
+                        </td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

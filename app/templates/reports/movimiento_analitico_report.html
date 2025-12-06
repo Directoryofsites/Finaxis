@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte Analítico de Movimientos</title>
+    <style>
+        body { font-family: sans-serif; font-size: 10px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { margin: 0; font-size: 16px; }
+        .header h2 { margin: 0; font-size: 12px; font-weight: normal; }
+        .filters { margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+        .filters p { margin: 2px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 4px; text-align: left; }
+        th { background-color: #f2f2f2; font-weight: bold; }
+        .text-right { text-align: right; }
+        .number { font-family: monospace; } /* Para alinear números */
+        .total-row { font-weight: bold; background-color: #e8e8e8; }
+        .positive { color: green; }
+        .negative { color: red; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa_nombre }}</h1>
+        <h2>Reporte Analítico de Movimiento y Saldos</h2>
+        <p>Periodo: {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
+    </div>
+
+    <div class="filters">
+        <p><strong>Filtros Aplicados:</strong></p>
+        <p>Bodega: {{ bodega_nombre | default('Todas', true) }}</p>
+        <p>Grupo: {{ grupo_nombre | default('Todos', true) }}</p>
+        <p>Artículo: {{ producto_nombre | default('Todos', true) }}</p>
+        <p>Vista por: {{ 'Valor' if filtros.vista_por_valor else 'Cantidad' }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th class="text-right">Saldo Inicial {{ '(Valor)' if filtros.vista_por_valor else '(Cant)' }}</th>
+                <th class="text-right">Entradas {{ '(Valor)' if filtros.vista_por_valor else '(Cant)' }}</th>
+                <th class="text-right">Salidas {{ '(Valor)' if filtros.vista_por_valor else '(Cant)' }}</th>
+                <th class="text-right">Saldo Final {{ '(Valor)' if filtros.vista_por_valor else '(Cant)' }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if data.items %}
+                {% for item in data.items %}
+                <tr>
+                    <td>({{ item.producto_codigo }}) {{ item.producto_nombre }}</td>
+                    <td class="text-right number">{{ item.saldo_inicial | format_value(filtros.vista_por_valor) }}</td>
+                    <td class="text-right number positive">{{ item.total_entradas | format_value(filtros.vista_por_valor) }}</td>
+                    <td class="text-right number negative">{{ item.total_salidas | format_value(filtros.vista_por_valor) }}</td>
+                    <td class="text-right number">{{ item.saldo_final | format_value(filtros.vista_por_valor) }}</td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; font-style: italic;">No se encontraron resultados para los filtros seleccionados.</td>
+                </tr>
+            {% endif %}
+        </tbody>
+        {% if data.items %}
+        <tfoot class="total-row">
+            <tr>
+                <td>TOTALES GENERALES ({{ 'Valor' if filtros.vista_por_valor else 'Cantidad' }})</td>
+                <td class="text-right number">{{ data.totales.saldo_inicial | format_value(filtros.vista_por_valor) }}</td>
+                <td class="text-right number positive">{{ data.totales.total_entradas | format_value(filtros.vista_por_valor) }}</td>
+                <td class="text-right number negative">{{ data.totales.total_salidas | format_value(filtros.vista_por_valor) }}</td>
+                <td class="text-right number">{{ data.totales.saldo_final | format_value(filtros.vista_por_valor) }}</td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+
+    {# Filtro personalizado de Jinja2 para formatear números/moneda #}
+    {% macro format_value(num, is_currency) %}
+        {% if is_currency %}
+            {{ "$ {:,.0f}".format(num | float) }}
+        {% else %}
+            {{ "{:,.2f}".format(num | float) }}
+        {% endif %}
+    {% endmacro %}
+</body>
+</html>

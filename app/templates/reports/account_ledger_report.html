@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-g">
+    <title>Auxiliar por Cuenta</title>
+    <style>
+        body { font-family: sans-serif; font-size: 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ccc; padding: 4px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { margin: 0; }
+        .header h2 { margin: 0; font-weight: normal; }
+        .report-info { margin-bottom: 15px; }
+        .text-right { text-align: right; }
+        .total-row td { font-weight: bold; background-color: #f8f8f8; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa_nombre }}</h1>
+        <h2>NIT: {{ empresa_nit }}</h2>
+        <h2>Auxiliar por Cuenta</h2>
+    </div>
+
+    <div class="report-info">
+        <strong>Cuenta:</strong> {{ cuenta_codigo }} - {{ cuenta_nombre }}<br>
+        <strong>Periodo:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Documento</th>
+                <th>Beneficiario</th>
+                <th>Concepto</th>
+                {% if has_cost_centers %}
+                <th>C. Costo</th>
+                {% endif %}
+                <th class="text-right">Débito</th>
+                <th class="text-right">Crédito</th>
+                <th class="text-right">Saldo Parcial</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="total-row">
+                <td colspan="{{ 5 if has_cost_centers else 4 }}"><strong>SALDO ANTERIOR</strong></td>
+                <td colspan="3" class="text-right"><strong>{{ "{:,.2f}".format(saldo_anterior) }}</strong></td>
+            </tr>
+            {% for mov in movimientos %}
+            <tr>
+
+                <td>{{ mov.fecha.strftime('%Y-%m-%d') }}</td>
+                <td>{{ mov.tipo_documento }}-{{ mov.numero_documento }}</td>
+                <td>{{ mov.beneficiario or '' }}</td>
+                <td>{{ mov.concepto }}</td>
+                {% if has_cost_centers %}
+                <td>{{ mov.centro_costo_codigo or '' }}</td>
+                {% endif %}
+                <td class="text-right">{{ "{:,.2f}".format(mov.debito) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(mov.credito) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(mov.saldo_parcial) }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="{{ 5 if has_cost_centers else 4 }}"><strong>SALDO FINAL</strong></td>
+                {% set saldo_final = movimientos[-1].saldo_parcial if movimientos else saldo_anterior %}
+                <td colspan="3" class="text-right"><strong>{{ "{:,.2f}".format(saldo_final) }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Análisis de Rentabilidad de Factura</title>
+    <style>
+        body { font-family: sans-serif; font-size: 10px; }
+        .container { width: 100%; margin: 0 auto; }
+        .header, .footer { text-align: center; }
+        .header h1 { margin: 0; font-size: 16px; }
+        .header p { margin: 2px 0; }
+        .info-table { width: 100%; margin-top: 15px; margin-bottom: 15px; border-collapse: collapse; }
+        .info-table td { padding: 3px; }
+        .main-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .main-table th, .main-table td { border: 1px solid #ddd; padding: 4px; text-align: left; }
+        .main-table th { background-color: #f2f2f2; font-size: 9px; }
+        .main-table td { font-size: 9px; }
+        .text-right { text-align: right; }
+        .totals-section { width: 40%; margin-left: 60%; margin-top: 15px; }
+        .totals-table { width: 100%; border-collapse: collapse; }
+        .totals-table td { padding: 4px; }
+        .label { font-weight: bold; }
+        .currency::before { content: "$ "; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ empresa.nombre }}</h1>
+            <p>NIT: {{ empresa.nit }}</p>
+            <h2>Análisis de Rentabilidad de Factura</h2>
+        </div>
+
+        <table class="info-table">
+            <tr>
+                <td width="15%"><strong class="label">Documento:</strong></td>
+                <td width="35%">{{ doc.tipo_documento.nombre }} N° {{ doc.numero }}</td>
+                <td width="15%"><strong class="label">Cliente:</strong></td>
+                <td width="35%">{{ doc.beneficiario.razon_social }}</td>
+            </tr>
+            <tr>
+                <td><strong class="label">Fecha Emisión:</strong></td>
+                <td>{{ doc.fecha.strftime('%Y-%m-%d') }}</td>
+                <td><strong class="label">NIT Cliente:</strong></td>
+                <td>{{ doc.beneficiario.nit }}</td>
+            </tr>
+        </table>
+
+        <table class="main-table">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th class="text-right">Cant.</th>
+                    <th class="text-right">V/r Unitario</th>
+                    <th class="text-right">Total Venta</th>
+                    <th class="text-right">Costo Unit.</th>
+                    <th class="text-right">Costo Total</th>
+                    <th class="text-right">Util. Bruta</th>
+                    <th class="text-right">% Margen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in detalle_productos %}
+                <tr>
+                    <td>{{ item.nombre_producto }}</td>
+                    <td class="text-right">{{ "%.2f"|format(item.cantidad) }}</td>
+                    <td class="text-right currency">{{ "{:,.0f}".format(item.precio_unitario) }}</td>
+                    <td class="text-right currency">{{ "{:,.0f}".format(item.total_linea) }}</td>
+                    <td class="text-right currency">{{ "{:,.0f}".format(item.costo_unitario) }}</td>
+                    <td class="text-right currency">{{ "{:,.0f}".format(item.costo_total) }}</td>
+                    <td class="text-right currency">{{ "{:,.0f}".format(item.utilidad_bruta) }}</td>
+                    <td class="text-right">{{ "%.2f"|format(item.margen_rentabilidad * 100) }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="totals-section">
+            <table class="totals-table">
+                <tr>
+                    <td class="label">Total Venta:</td>
+                    <td class="text-right currency">{{ "{:,.0f}".format(totales.venta) }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Total Costo:</td>
+                    <td class="text-right currency">{{ "{:,.0f}".format(totales.costo) }}</td>
+                </tr>
+                <tr>
+                    <td class="label" style="border-top: 1px solid black; padding-top: 5px;">Utilidad Bruta:</td>
+                    <td class="text-right currency" style="border-top: 1px solid black; padding-top: 5px;">{{ "{:,.0f}".format(totales.utilidad) }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Margen de la Factura:</td>
+                    <td class="text-right">{{ "%.2f"|format(totales.margen * 100) }}%</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
