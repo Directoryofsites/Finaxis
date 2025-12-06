@@ -302,4 +302,4 @@ def get_detalles_reporte(db: Session, empresa_id: int, filtro_estado: str = None
 
 
 
->>>>>>> origin/pc2-cambios-pendientes
+

@@ -493,7 +493,11 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
         config_src = backup_data.get("configuracion", {})
         _upsert_manual_seguro(db, ConceptoFavorito, 'conceptos_favoritos', 'descripcion', config_src, target_empresa_id, user_id, id_maps={"centro_costo_id": map_ccs})
 
-        id_maps_tipos = {"cuenta_caja_id": map_cuentas, "cuenta_debito_cxc_id": map_cuentas, "cuenta_credito_cxc_id": map_cuentas}
+        id_maps_tipos = {
+            "cuenta_caja_id": map_cuentas, 
+            "cuenta_debito_cxc_id": map_cuentas, "cuenta_credito_cxc_id": map_cuentas,
+            "cuenta_debito_cxp_id": map_cuentas, "cuenta_credito_cxp_id": map_cuentas
+        }
         _upsert_manual_seguro(db, TipoDocumento, 'tipos_documento', 'codigo', maestros_src, target_empresa_id, user_id, id_maps=id_maps_tipos)
         
         # --- RESTAURACIÓN DE GRUPOS ---

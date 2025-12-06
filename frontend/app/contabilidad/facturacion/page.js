@@ -218,7 +218,7 @@ export default function NuevaFacturaPage() {
             const res = await apiService.get('/remisiones/');
             // Filtramos solo las que se pueden facturar
             const disponibles = res.data.remisiones.filter(r =>
-                r.estado === 'APROBADA' || r.estado === 'FACTURADA_PARCIAL'
+                r.estado === 'APROBADA' || r.estado === 'FACTURADA_PARCIAL' || r.estado === 'BORRADOR'
             );
             setRemisionesDisponibles(disponibles);
         } catch (error) {

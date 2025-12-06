@@ -33,7 +33,7 @@ router = APIRouter()
 def create_bodega_route(bodega: schemas.BodegaCreate, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return service_inventario.create_bodega(db=db, bodega=bodega, empresa_id=current_user.empresa_id)
 
-@router.get("/bodegas", response_model=List[schemas.Bodega], dependencies=[Depends(has_permission("inventario:gestionar_parametros"))])
+@router.get("/bodegas", response_model=List[schemas.Bodega], dependencies=[Depends(get_current_user)])
 def get_bodegas_route(db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return service_inventario.get_bodegas_by_empresa(db=db, empresa_id=current_user.empresa_id)
 
@@ -56,7 +56,7 @@ def delete_bodega_route(bodega_id: int, db: Session = Depends(get_db), current_u
 def create_grupo_inventario_route(grupo: schemas.GrupoInventarioCreate, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return service_inventario.create_grupo_inventario(db=db, grupo=grupo, empresa_id=current_user.empresa_id)
 
-@router.get("/grupos", response_model=List[schemas.GrupoInventario], dependencies=[Depends(has_permission("inventario:gestionar_parametros"))])
+@router.get("/grupos", response_model=List[schemas.GrupoInventario], dependencies=[Depends(get_current_user)])
 def get_grupos_route(db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return service_inventario.get_grupos_by_empresa(db=db, empresa_id=current_user.empresa_id)
 
@@ -95,7 +95,7 @@ def delete_grupo_inventario_route(grupo_id: int, db: Session = Depends(get_db), 
 def create_tasa_impuesto_route(tasa: schemas.TasaImpuestoCreate, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return service_inventario.create_tasa_impuesto(db=db, tasa=tasa, empresa_id=current_user.empresa_id)
 
-@router.get("/tasas-impuesto", response_model=List[schemas.TasaImpuesto], dependencies=[Depends(has_permission("inventario:gestionar_parametros"))])
+@router.get("/tasas-impuesto", response_model=List[schemas.TasaImpuesto], dependencies=[Depends(get_current_user)])
 def get_tasas_impuesto_route(db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return service_inventario.get_tasas_by_empresa(db=db, empresa_id=current_user.empresa_id)
 
@@ -118,7 +118,7 @@ def delete_tasa_impuesto_route(tasa_id: int, db: Session = Depends(get_db), curr
 def create_lista_precio_route(lista_precio: schemas.ListaPrecioCreate, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return service_inventario.create_lista_precio(db=db, lista_precio=lista_precio, empresa_id=current_user.empresa_id)
 
-@router.get("/listas-precio", response_model=List[schemas.ListaPrecio], dependencies=[Depends(has_permission("inventario:gestionar_parametros"))])
+@router.get("/listas-precio", response_model=List[schemas.ListaPrecio], dependencies=[Depends(get_current_user)])
 def get_listas_precio_route(db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return service_inventario.get_listas_precio_by_empresa(db=db, empresa_id=current_user.empresa_id)
 
@@ -141,7 +141,7 @@ def delete_lista_precio_route(lista_id: int, db: Session = Depends(get_db), curr
 def create_caracteristica_definicion_route(grupo_id: int, definicion_data: schemas.CaracteristicaDefinicionCreate, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return service_inventario.create_caracteristica_definicion(db=db, definicion_data=definicion_data, grupo_id=grupo_id, empresa_id=current_user.empresa_id)
 
-@router.get("/grupos/{grupo_id}/caracteristicas", response_model=List[schemas.CaracteristicaDefinicion], dependencies=[Depends(has_permission("inventario:gestionar_parametros"))])
+@router.get("/grupos/{grupo_id}/caracteristicas", response_model=List[schemas.CaracteristicaDefinicion], dependencies=[Depends(get_current_user)])
 def get_caracteristicas_definicion_route(grupo_id: int, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return service_inventario.get_caracteristicas_definicion_by_grupo(db=db, grupo_id=grupo_id, empresa_id=current_user.empresa_id)
 
@@ -162,7 +162,7 @@ def delete_caracteristica_definicion_route(definicion_id: int, db: Session = Dep
 def create_or_update_regla_precio_grupo_route(grupo_id: int, regla_data: schemas.ReglaPrecioGrupoCreate, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return service_inventario.create_or_update_regla_precio_grupo(db=db, regla_data=regla_data, grupo_id=grupo_id, empresa_id=current_user.empresa_id)
 
-@router.get("/grupos/{grupo_id}/reglas-precio", response_model=List[schemas.ReglaPrecioGrupo], dependencies=[Depends(has_permission("inventario:gestionar_parametros"))])
+@router.get("/grupos/{grupo_id}/reglas-precio", response_model=List[schemas.ReglaPrecioGrupo], dependencies=[Depends(get_current_user)])
 def get_reglas_precio_by_grupo_route(grupo_id: int, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return service_inventario.get_reglas_precio_by_grupo(db=db, grupo_id=grupo_id, empresa_id=current_user.empresa_id)
 
@@ -175,7 +175,7 @@ def delete_regla_precio_grupo_route(regla_id: int, db: Session = Depends(get_db)
 # === ENDPOINTS CRUD PARA PRODUCTOS ===
 # ==============================================================================
 
-@router.post("/productos", response_model=schemas.Producto, status_code=status.HTTP_201_CREATED, dependencies=[Depends(has_permission("inventario:crear_producto"))])
+@router.post("/productos", response_model=schemas.Producto, status_code=status.HTTP_201_CREATED, dependencies=[Depends(get_current_user)])
 def create_producto_route_restored(producto: schemas.ProductoCreate, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     """
     Ruta de creación principal. Se restaura a /productos para que el botón del FE funcione.
@@ -183,7 +183,7 @@ def create_producto_route_restored(producto: schemas.ProductoCreate, db: Session
     return service_inventario.create_producto(db=db, producto=producto, empresa_id=current_user.empresa_id)
 
 
-@router.post("/productos/filtrar", response_model=List[schemas.Producto], dependencies=[Depends(has_permission("inventario:ver_productos"))])
+@router.post("/productos/filtrar", response_model=List[schemas.Producto], dependencies=[Depends(get_current_user)])
 def get_productos_filtrados_route_correct_filter(filtros: schemas.ProductoFiltros, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     """
     Ruta correcta para la LISTA/FILTRADO. Debe ser llamada por el frontend en lugar de POST /productos.
@@ -191,7 +191,7 @@ def get_productos_filtrados_route_correct_filter(filtros: schemas.ProductoFiltro
     return service_inventario.get_productos_filtrados(db=db, empresa_id=current_user.empresa_id, filtros=filtros)
 
 
-@router.get("/productos/list-flat", response_model=List[schemas.ProductoSimple], dependencies=[Depends(has_permission("inventario:ver_productos"))])
+@router.get("/productos/list-flat", response_model=List[schemas.ProductoSimple], dependencies=[Depends(get_current_user)])
 def get_productos_flat_route(db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     """
     Retorna una lista ligera de todos los productos (ID, Código, Nombre) para usar en selectores.
@@ -207,13 +207,13 @@ def get_productos_flat_route(db: Session = Depends(get_db), current_user: models
     ]
 
 
-@router.get("/productos/{producto_id}", response_model=schemas.Producto, dependencies=[Depends(has_permission("inventario:ver_productos"))])
+@router.get("/productos/{producto_id}", response_model=schemas.Producto, dependencies=[Depends(get_current_user)])
 def get_producto_by_id_route(producto_id: int, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     db_producto = service_inventario.get_producto_by_id(db=db, producto_id=producto_id, empresa_id=current_user.empresa_id)
     if db_producto is None: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado.")
     return db_producto
 
-@router.put("/productos/{producto_id}", response_model=schemas.Producto, dependencies=[Depends(has_permission("inventario:editar_producto"))])
+@router.put("/productos/{producto_id}", response_model=schemas.Producto, dependencies=[Depends(get_current_user)])
 def update_producto_route(producto_id: int, producto: schemas.ProductoUpdate, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     db_producto = service_inventario.update_producto(db=db, producto_id=producto_id, producto_update=producto, empresa_id=current_user.empresa_id)
     if db_producto is None: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado.")
@@ -242,7 +242,7 @@ def search_productos_route(
         grupo_ids=grupo_ids
     )
 
-@router.post("/productos/buscar", response_model=List[schemas.ProductoAutocompleteItem], dependencies=[Depends(has_permission("inventario:ver_productos"))])
+@router.post("/productos/buscar", response_model=List[schemas.ProductoAutocompleteItem], dependencies=[Depends(get_current_user)])
 def buscar_productos_modal_route(
     filtros: schemas.ProductoFiltros,
     db: Session = Depends(get_db), 
@@ -256,7 +256,7 @@ def buscar_productos_modal_route(
         bodega_id=filtros.bodega_ids[0] if filtros.bodega_ids and filtros.bodega_ids[0] else None, 
     )
 
-@router.post("/productos/search-by-body", response_model=List[schemas.ProductoAutocompleteItem], dependencies=[Depends(has_permission("inventario:ver_productos"))])
+@router.post("/productos/search-by-body", response_model=List[schemas.ProductoAutocompleteItem], dependencies=[Depends(get_current_user)])
 def search_productos_by_body_route(
     filtros: schemas.ProductoFiltros,
     db: Session = Depends(get_db), 
