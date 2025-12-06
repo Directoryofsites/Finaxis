@@ -114,9 +114,23 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
                         models_producto.StockBodega.bodega_id == factura.bodega_id
                     ).with_for_update().first()
 
-                    stock_disponible = stock_bodega_actual.stock_actual if stock_bodega_actual else 0.0
+                    stock_fisico = stock_bodega_actual.stock_actual if stock_bodega_actual else 0.0
+                    stock_comprometido = stock_bodega_actual.stock_comprometido if stock_bodega_actual else 0.0
+                    
+                    # LOGICA DE DISPONIBILIDAD (FIX REMISIONES)
+                    # Si NO es una facturación de remisión, debemos respetar el stock comprometido.
+                    # Si ES una facturación de remisión, asumimos que estamos consumiendo nuestra propia reserva (validamos contra físico).
+                    stock_disponible = stock_fisico
+                    if not factura.remision_id:
+                        stock_disponible = stock_fisico - stock_comprometido
+
                     if stock_disponible < item.cantidad:
-                        raise HTTPException(status_code=409, detail=f"Stock insuficiente para '{producto_db.nombre}'. Disp: {stock_disponible:.2f}, Req: {item.cantidad:.2f}")
+                        msg_stock = f"Stock insuficiente para '{producto_db.nombre}'."
+                        if not factura.remision_id:
+                            msg_stock += f" Físico: {stock_fisico:.2f}, Comprometido: {stock_comprometido:.2f}, Disp: {stock_disponible:.2f}"
+                        else:
+                            msg_stock += f" Físico: {stock_fisico:.2f}"
+                        raise HTTPException(status_code=409, detail=f"{msg_stock}, Req: {item.cantidad:.2f}")
 
                 # Cálculos
                 subtotal_item = item.cantidad * item.precio_unitario
@@ -205,6 +219,12 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
                             documento_id=nuevo_documento.id,
                             fecha=fecha_factura_dt
                         )
+
+            # --- INTEGRACIÓN REMISIONES ---
+            if factura.remision_id:
+                from . import remision as service_remision
+                service_remision.procesar_facturacion_remision(db, factura.remision_id, factura.items)
+            # ------------------------------
 
         db.commit()
         db.refresh(nuevo_documento)

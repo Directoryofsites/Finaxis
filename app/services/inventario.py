@@ -207,9 +207,13 @@ def crear_traslado_entre_bodegas(db: Session, traslado: schemas_traslado.Traslad
                 # A. VALIDACIÓN DE STOCK (Origen)
                 stock_origen = db.query(models_producto.StockBodega).filter_by(producto_id=producto_id, bodega_id=traslado.bodega_origen_id).with_for_update().first()
                 stock_actual_origen = stock_origen.stock_actual if stock_origen else 0.0
+                stock_comprometido = stock_origen.stock_comprometido if stock_origen else 0.0
+                
+                # En traslados SIEMPRE respetamos el comprometido
+                stock_disponible_traslado = stock_actual_origen - stock_comprometido
 
-                if stock_actual_origen < cantidad:
-                    raise HTTPException(status_code=409, detail=f"Stock insuficiente en Bodega Origen ({db_origen.nombre}) para producto {db_producto.codigo}.")
+                if stock_disponible_traslado < cantidad:
+                    raise HTTPException(status_code=409, detail=f"Stock insuficiente en Bodega Origen ({db_origen.nombre}) para producto {db_producto.codigo}. Disp: {stock_disponible_traslado}, Req: {cantidad}")
                 
                 # app/services/inventario.py (Dentro de crear_traslado_entre_bodegas)
 

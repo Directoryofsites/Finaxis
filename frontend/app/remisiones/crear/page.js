@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { FaSave, FaPlus, FaTrash, FaCalendarAlt, FaUserTag, FaBoxOpen, FaWarehouse } from 'react-icons/fa';
@@ -15,6 +15,9 @@ const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-s
 
 export default function CreateRemisionPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const curRemisionId = searchParams.get('remision_id');
+
     const { user } = useAuth();
 
     // Estados Header
@@ -26,7 +29,7 @@ export default function CreateRemisionPage() {
 
     // Estados Detalle
     const [detalles, setDetalles] = useState([
-        { rowId: Date.now(), productoId: '', cantidad: 1, precio: 0, productoInput: '' }
+        { rowId: Date.now(), productoId: '', cantidad: 1, precio: 0, productoInput: '', stockDisponible: null, stockTexto: '' }
     ]);
 
     // Maestros
@@ -45,7 +48,74 @@ export default function CreateRemisionPage() {
         fetchMaestros();
     }, [user]);
 
+    // Load Remission Data if Editing
+    useEffect(() => {
+        if (curRemisionId && maestros.productos.length > 0) {
+            fetchRemisionData(curRemisionId);
+        }
+    }, [curRemisionId, maestros]); // Depend on maestros to correctly map products
+
+    const fetchRemisionData = async (id) => {
+        try {
+            setLoading(true);
+            const res = await apiService.get(`/remisiones/${id}`);
+            const data = res.data;
+            console.log("Remision Data Fetched:", data);
+
+            // Populate Fields
+            setFecha(new Date(data.fecha + 'T00:00:00'));
+            setFechaVencimiento(data.fecha_vencimiento ? new Date(data.fecha_vencimiento + 'T00:00:00') : null);
+            setTerceroId(data.tercero_id);
+            setBodegaId(data.bodega_id);
+            setObservaciones(data.observaciones || '');
+
+            // Populate Detalles & Fetch Stocks Parallelly
+            const mappedDetalles = await Promise.all(data.detalles.map(async (d) => {
+                const prod = maestros.productos.find(p => p.id == d.producto_id);
+
+                let stockInfo = { stockDisponible: null, stockTexto: '' };
+
+                try {
+                    // Fetch Stock inline
+                    const stockRes = await apiService.get(`/inventario/productos/${d.producto_id}`);
+                    const productoFull = stockRes.data;
+                    const stockEntry = productoFull.stocks_bodega.find(sb => sb.bodega_id === Number(data.bodega_id));
+                    const stockFisico = stockEntry ? stockEntry.stock_actual : 0;
+                    const stockComprometido = stockEntry ? stockEntry.stock_comprometido || 0 : 0;
+                    const stockDisponible = stockFisico - stockComprometido;
+
+                    stockInfo = {
+                        stockDisponible: stockDisponible,
+                        stockTexto: `Disp: ${stockDisponible} (Fís: ${stockFisico} - Res: ${stockComprometido})`
+                    };
+                } catch (err) {
+                    console.warn("Could not fetch stock for edit load", d.producto_id);
+                }
+
+                return {
+                    rowId: Date.now() + Math.random(),
+                    productoId: d.producto_id,
+                    cantidad: d.cantidad_solicitada,
+                    precio: d.precio_unitario,
+                    productoInput: prod ? `${prod.codigo} - ${prod.nombre}` : `Producto ID ${d.producto_id}`,
+                    ...stockInfo
+                };
+            }));
+
+            // ONE State Update
+            setDetalles(mappedDetalles);
+
+        } catch (err) {
+            console.error("Error loading remission", err);
+            setError("No se pudo cargar la remisión para editar.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const fetchMaestros = async () => {
+        // ... existing fetchMaestros logic
+
         try {
             const [tercerosRes, bodegasRes, productosRes] = await Promise.all([
                 apiService.get('/terceros/'),
@@ -73,6 +143,37 @@ export default function CreateRemisionPage() {
         setDetalles(newDetalles);
     };
 
+    const checkStock = async (index, productoId, currentBodegaId) => {
+        if (!productoId || !currentBodegaId) return;
+        try {
+            // Fetch remote stock
+            // We use the detail endpoint which returns stocks_bodega list
+            const res = await apiService.get(`/inventario/productos/${productoId}`);
+            const productoFull = res.data;
+
+            const stockEntry = productoFull.stocks_bodega.find(sb => sb.bodega_id === Number(currentBodegaId));
+            const stockFisico = stockEntry ? stockEntry.stock_actual : 0;
+            const stockComprometido = stockEntry ? stockEntry.stock_comprometido || 0 : 0; // Assuming backend returns this now
+            const stockDisponible = stockFisico - stockComprometido;
+
+            setDetalles(prev => {
+                const newDetalles = [...prev];
+                // Safety: check if index exists (user might have deleted row while fetching)
+                if (newDetalles[index]) {
+                    newDetalles[index] = {
+                        ...newDetalles[index],
+                        stockDisponible: stockDisponible,
+                        stockTexto: `Disp: ${stockDisponible} (Fís: ${stockFisico} - Res: ${stockComprometido})`
+                    };
+                }
+                return newDetalles;
+            });
+
+        } catch (err) {
+            console.error("Error fetching stock", err);
+        }
+    };
+
     const handleProductoBlur = (index, value) => {
         if (!value) return;
         const productoFound = maestros.productos.find(p =>
@@ -83,21 +184,37 @@ export default function CreateRemisionPage() {
         if (productoFound) {
             handleDetalleChange(index, 'productoId', productoFound.id);
             handleDetalleChange(index, 'productoInput', `${productoFound.codigo} - ${productoFound.nombre}`);
-            // Auto-fill price if available (Standard Cost or Price List logic would go here)
-            handleDetalleChange(index, 'precio', productoFound.costo_promedio || 0); // Using cost as placeholder base
+            handleDetalleChange(index, 'precio', productoFound.costo_promedio || 0);
+
+            // Check Stock
+            checkStock(index, productoFound.id, bodegaId);
+
         } else {
             handleDetalleChange(index, 'productoId', '');
-            // Keep input text but invalidate ID
         }
     };
 
+    // Refresh stocks if Bodega changes
+    useEffect(() => {
+        if (!bodegaId) return;
+        detalles.forEach((d, index) => {
+            if (d.productoId) {
+                checkStock(index, d.productoId, bodegaId);
+            }
+        });
+    }, [bodegaId]);
+
+
     const agregarFila = () => {
-        setDetalles([...detalles, { rowId: Date.now(), productoId: '', cantidad: 1, precio: 0, productoInput: '' }]);
+        setDetalles([...detalles, { rowId: Date.now(), productoId: '', cantidad: 1, precio: 0, productoInput: '', stockDisponible: null, stockTexto: '' }]);
     };
 
     const eliminarFila = (index) => {
         if (detalles.length > 1) {
             setDetalles(detalles.filter((_, i) => i !== index));
+        } else {
+            // Reset last row instead of empty
+            setDetalles([{ rowId: Date.now(), productoId: '', cantidad: 1, precio: 0, productoInput: '', stockDisponible: null, stockTexto: '' }]);
         }
     };
 
@@ -128,8 +245,13 @@ export default function CreateRemisionPage() {
         };
 
         try {
-            await apiService.post('/remisiones/', payload);
-            setMensaje("Remisión creada exitosamente.");
+            if (curRemisionId) {
+                await apiService.put(`/remisiones/${curRemisionId}`, payload);
+                setMensaje("Remisión actualizada exitosamente.");
+            } else {
+                await apiService.post('/remisiones/', payload);
+                setMensaje("Remisión creada exitosamente.");
+            }
             setTimeout(() => router.push('/remisiones'), 1500);
         } catch (err) {
             setError(err.response?.data?.detail || "Error al guardar la remisión.");
@@ -144,7 +266,7 @@ export default function CreateRemisionPage() {
             <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-4">
                     <BotonRegresar href="/remisiones" />
-                    <h1 className="text-2xl font-bold text-gray-800">Nueva Remisión</h1>
+                    <h1 className="text-2xl font-bold text-gray-800">{curRemisionId ? `Editar Remisión #${curRemisionId}` : 'Nueva Remisión'}</h1>
                 </div>
                 <button
                     onClick={handleSubmit}
@@ -264,6 +386,11 @@ export default function CreateRemisionPage() {
                                         onBlur={(e) => handleProductoBlur(index, e.target.value)}
                                         placeholder="Buscar código o nombre..."
                                     />
+                                    {det.stockTexto && (
+                                        <div className={`text-xs mt-1 ${det.stockDisponible < det.cantidad ? 'text-red-500 font-bold' : 'text-green-600'}`}>
+                                            {det.stockTexto}
+                                        </div>
+                                    )}
                                 </td>
                                 <td className="px-4 py-2">
                                     <input

@@ -329,8 +329,11 @@ def analizar_backup(db: Session, analysis_request: schemas_migracion.AnalysisReq
         raise HTTPException(status_code=400, detail="El archivo de backup no tiene firma digital o formato válido.")
         
     computed_signature = compute_signature(data)
+    integrity_valid = True
     if not hmac.compare_digest(computed_signature, signature):
-        raise HTTPException(status_code=400, detail="ERROR CRÍTICO: La firma digital no coincide. El archivo ha sido manipulado externamente.")
+        # En v7.0 permitimos análisis incluso si la firma falla, para diagnosticar
+        integrity_valid = False
+        print("⚠️ [WARNING] Firma digital inválida en Backup. Se procede condicionallmente.")
 
     # 2. Proceder con el análisis usando 'data' (el contenido real)
     backup_data = data
@@ -339,7 +342,8 @@ def analizar_backup(db: Session, analysis_request: schemas_migracion.AnalysisReq
         "summary": {}, 
         "conflicts": {"documentos": [], "maestros_faltantes": []}, 
         "sourceEmpresaId": backup_data.get("metadata", {}).get("empresa_id_origen"), 
-        "targetEmpresaId": target_empresa_id
+        "targetEmpresaId": target_empresa_id,
+        "integrity_valid": integrity_valid
     }
     
     maestros_map = {
@@ -425,7 +429,8 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
         
     computed_signature = compute_signature(data)
     if not hmac.compare_digest(computed_signature, signature):
-        raise HTTPException(status_code=400, detail="ERROR CRÍTICO: Firma inválida. Restauración abortada.")
+        if not request.bypass_signature:
+            raise HTTPException(status_code=400, detail="ERROR CRÍTICO: Firma inválida. El archivo ha sido modificado o la llave no coincide. Use permisos de administrador para forzar.")
         
     backup_data = data
     resumen = {

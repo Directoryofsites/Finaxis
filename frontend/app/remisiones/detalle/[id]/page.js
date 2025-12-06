@@ -1,11 +1,12 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiService } from '../../../../lib/apiService';
+import { FaEdit } from 'react-icons/fa';
 import BotonRegresar from '@/app/components/BotonRegresar';
 
 export default function DetalleRemisionPage({ params }) {
-    const { id } = params;
+    const { id } = use(params);
     const router = useRouter();
     const [remision, setRemision] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -65,6 +66,21 @@ export default function DetalleRemisionPage({ params }) {
         }
     };
 
+    const handleDownloadPDF = async () => {
+        try {
+            const response = await apiService.get(`/remisiones/${id}/pdf`, { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Remision_${remision.numero}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+        } catch (error) {
+            console.error("Error downloading PDF", error);
+        }
+    };
+
     if (loading) return <div className="p-8">Cargando...</div>;
     if (!remision) return <div className="p-8 text-red-500">{error || "No encontrada"}</div>;
 
@@ -84,6 +100,17 @@ export default function DetalleRemisionPage({ params }) {
                 </div>
 
                 <div className="flex gap-2">
+                    <button onClick={handleDownloadPDF} className="bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700 flex items-center gap-2">
+                        <FaEdit /> Descargar PDF
+                    </button>
+                    {remision.estado === 'BORRADOR' && (
+                        <button
+                            onClick={() => router.push(`/remisiones/crear?remision_id=${remision.id}`)}
+                            className="bg-indigo-600 text-white px-4 py-2 rounded shadow hover:bg-indigo-700 flex items-center gap-2"
+                        >
+                            <FaEdit /> Editar
+                        </button>
+                    )}
                     {remision.estado === 'BORRADOR' && (
                         <button onClick={handleAprobar} className="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700">
                             Aprobar y Reservar
@@ -128,7 +155,7 @@ export default function DetalleRemisionPage({ params }) {
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto ID</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Solicitado</th>
                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Pendiente</th>
                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Facturado</th>
@@ -138,7 +165,9 @@ export default function DetalleRemisionPage({ params }) {
                     <tbody className="divide-y divide-gray-200">
                         {remision.detalles.map((det, i) => (
                             <tr key={i}>
-                                <td className="px-6 py-4 text-sm text-gray-900">{det.producto_id}</td>
+                                <td className="px-6 py-4 text-sm text-gray-900">
+                                    <span className="font-bold">{det.producto_codigo}</span> - {det.producto_nombre}
+                                </td>
                                 <td className="px-6 py-4 text-sm text-right font-medium">{det.cantidad_solicitada}</td>
                                 <td className="px-6 py-4 text-sm text-right text-orange-600 font-bold">{det.cantidad_pendiente}</td>
                                 <td className="px-6 py-4 text-sm text-right text-green-600">{det.cantidad_facturada}</td>

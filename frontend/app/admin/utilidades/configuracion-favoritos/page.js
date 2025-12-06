@@ -11,8 +11,7 @@ import { toast, ToastContainer } from 'react-toastify';
 
 // --- Servicios ---
 import { getFavoritos, createFavorito, deleteFavorito } from '@/lib/favoritosService';
-// Importamos la estructura del menú desde el Dashboard para sugerir rutas
-// Importamos la estructura del menú desde el archivo de datos centralizado
+// Importamos la estructura del menú desde la librería centralizada
 import { menuStructure } from '@/lib/menuData';
 import BotonRegresar from '@/app/components/BotonRegresar'; // Asumiendo esta ruta
 

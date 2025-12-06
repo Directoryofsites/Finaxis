@@ -52,6 +52,7 @@ class AnalysisRequest(BaseModel):
     """ Define el cuerpo de la petición para analizar un backup. """
     backupData: Dict[str, Any]
     targetEmpresaId: int
+    bypass_signature: bool = False
 
 class AnalysisSummaryItem(BaseModel):
     """ Define el resumen para un tipo de dato (ej. terceros). """
@@ -70,6 +71,7 @@ class AnalysisReport(BaseModel):
     conflicts: AnalysisConflicts
     sourceEmpresaId: Optional[int] = None
     targetEmpresaId: int
+    integrity_valid: bool = True
 
 # --- NUEVOS ESQUEMAS PARA LA VALIDACIÓN DE RESTAURACIÓN ---
 

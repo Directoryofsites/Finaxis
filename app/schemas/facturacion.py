@@ -27,3 +27,4 @@ class FacturaCreate(BaseModel):
     # Campos opcionales
     centro_costo_id: Optional[int] = None
     fecha_vencimiento: Optional[date] = None
+    remision_id: Optional[int] = None

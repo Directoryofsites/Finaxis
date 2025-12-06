@@ -4,21 +4,21 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { 
-  FaFileInvoiceDollar, 
-  FaSave, 
-  FaPlus, 
-  FaCalendarAlt, 
-  FaUserTag, 
-  FaBuilding, 
-  FaWarehouse, 
-  FaMoneyBillWave, 
-  FaTrash, 
-  FaTag, 
-  FaListOl,
-  FaBook,
-  FaCheckCircle,
-  FaExclamationTriangle
+import {
+    FaFileInvoiceDollar,
+    FaSave,
+    FaPlus,
+    FaCalendarAlt,
+    FaUserTag,
+    FaBuilding,
+    FaWarehouse,
+    FaMoneyBillWave,
+    FaTrash,
+    FaTag,
+    FaListOl,
+    FaBook,
+    FaCheckCircle,
+    FaExclamationTriangle
 } from 'react-icons/fa';
 
 
@@ -30,6 +30,7 @@ import { getTerceros, getTerceroById } from '../../../lib/terceroService';
 import { getTiposDocumento } from '../../../lib/tiposDocumentoService';
 import { getCentrosCosto } from '../../../lib/centrosCostoService';
 import facturacionService from '../../../lib/facturacionService';
+import { apiService } from '../../../lib/apiService';
 // --- Componentes ---
 import BotonRegresar from '../../components/BotonRegresar';
 import ProductSelectionModal from '../../components/Facturacion/ProductSelectionModal';
@@ -48,7 +49,7 @@ export default function NuevaFacturaPage() {
     // Estados del Formulario
     const [fecha, setFecha] = useState(new Date());
     const [fechaVencimiento, setFechaVencimiento] = useState(new Date());
-    
+
     const [tipoDocumentoId, setTipoDocumentoId] = useState('');
     const [beneficiarioId, setBeneficiarioId] = useState('');
     const [centroCostoId, setCentroCostoId] = useState('');
@@ -56,7 +57,13 @@ export default function NuevaFacturaPage() {
     const [condicionPago, setCondicionPago] = useState('Crédito');
     const [bodegas, setBodegas] = useState([]);
     const [selectedBodegaId, setSelectedBodegaId] = useState('');
-    
+
+    // --- NUEVO: ESTADOS PARA REMISIÓN ---
+    const [remisionId, setRemisionId] = useState(null);
+    const [isRemisionModalOpen, setIsRemisionModalOpen] = useState(false);
+    const [remisionesDisponibles, setRemisionesDisponibles] = useState([]);
+    // ------------------------------------
+
     const [clienteListaPrecioId, setClienteListaPrecioId] = useState(null);
 
     const [pageIsLoading, setPageIsLoading] = useState(true);
@@ -75,11 +82,11 @@ export default function NuevaFacturaPage() {
 
     const tipoDocSeleccionado = useMemo(() =>
         maestros.tiposDocumento.find(td => td.id === parseInt(tipoDocumentoId))
-    , [maestros.tiposDocumento, tipoDocumentoId]);
+        , [maestros.tiposDocumento, tipoDocumentoId]);
 
     const bodegaRequerida = useMemo(() =>
         tipoDocSeleccionado?.afecta_inventario ?? false
-    , [tipoDocSeleccionado]);
+        , [tipoDocSeleccionado]);
 
     useEffect(() => {
         if (authLoading) return;
@@ -92,7 +99,7 @@ export default function NuevaFacturaPage() {
             try {
                 setPageIsLoading(true);
                 const [tercerosRes, tiposDocRes, centrosCostoRes, bodegasRes] = await Promise.all([
-                    getTerceros(), 
+                    getTerceros(),
                     getTiposDocumento(),
                     getCentrosCosto(),
                     getBodegas()
@@ -100,7 +107,7 @@ export default function NuevaFacturaPage() {
 
                 // --- FILTRO ESTRUCTURAL: SOLO HIJOS ---
                 const centrosCostoFiltrados = centrosCostoRes.filter(c => c.permite_movimiento);
-                
+
                 setMaestros({
                     terceros: tercerosRes,
                     tiposDocumento: tiposDocRes.filter(td => td.afecta_inventario && td.funcion_especial === 'cartera_cliente'),
@@ -122,7 +129,7 @@ export default function NuevaFacturaPage() {
             }
         };
         fetchMaestros();
-    }, [user, authLoading, router]); 
+    }, [user, authLoading, router]);
 
     // Efecto para manejar la selección automática de bodega
     useEffect(() => {
@@ -138,7 +145,7 @@ export default function NuevaFacturaPage() {
 
     useEffect(() => {
         if (fecha > fechaVencimiento) {
-             setFechaVencimiento(fecha);
+            setFechaVencimiento(fecha);
         }
     }, [fecha]);
 
@@ -180,7 +187,7 @@ export default function NuevaFacturaPage() {
                 }
                 itemsWithCalculatedPrice.push({ ...item, precio_unitario: precioUnitarioCalculado });
             }));
-            
+
             setItems(prevItems => {
                 const updatedItems = [...prevItems];
                 itemsWithCalculatedPrice.forEach(newItem => {
@@ -203,6 +210,67 @@ export default function NuevaFacturaPage() {
             setIsSubmitting(false);
         }
     }, [beneficiarioId, clienteListaPrecioId]);
+
+
+    // --- LÓGICA DE REMISIONES ---
+    const fetchRemisiones = async () => {
+        try {
+            const res = await apiService.get('/remisiones/');
+            // Filtramos solo las que se pueden facturar
+            const disponibles = res.data.remisiones.filter(r =>
+                r.estado === 'APROBADA' || r.estado === 'FACTURADA_PARCIAL'
+            );
+            setRemisionesDisponibles(disponibles);
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al cargar remisiones.");
+        }
+    };
+
+    const handleOpenRemisionModal = () => {
+        fetchRemisiones();
+        setIsRemisionModalOpen(true);
+    };
+
+    const cargarRemision = (rem) => {
+        // 1. Validar Bodega
+        const bodegaExiste = bodegas.some(b => b.id === rem.bodega_id);
+        if (!bodegaExiste && bodegas.length > 0) {
+            toast.warning(`La bodega de la remisión (${rem.bodega_nombre}) no está disponible para su usuario.`);
+            // Aún así permitimos cargar, o bloqueamos? Mejor permitimos y que el backend o selector validen.
+        }
+
+        // 2. Cargar Datos Cabecera
+        setBeneficiarioId(rem.tercero_id);
+        setSelectedBodegaId(String(rem.bodega_id));
+        setRemisionId(rem.id);
+
+        // 3. Cargar Detalles
+        // Necesitamos mapear los detalles de la remisión a items de factura
+        // IMPORTANTE: Solo cargamos lo PENDIENTE
+        const nuevosItems = rem.detalles
+            .filter(d => d.cantidad_pendiente > 0)
+            .map(d => ({
+                producto_id: d.producto_id,
+                codigo: d.producto_id, // Idealmente deberíamos tener el código real, pero el ID sirve de referencia si el backend lo acepta o si buscamos
+                // FIX: El detalle de remisión no trae 'nombre' ni 'codigo' del producto en el JSON simple. 
+                // Necesitamos 'enriquecer' esto o confiar en que el usuario revise.
+                // Como MEJOR OPCION: Vamos a pedir al backend que el endpoint /remisiones/ traiga nombres de productos o 
+                // hacemos un fetch rápido de productos.
+                // POR AHORA: Usamos placeholders, el usuario verá IDs. (Mejora: traer nombres)
+                nombre: `Producto ID ${d.producto_id} (Desde Remisión)`,
+                cantidad: d.cantidad_pendiente,
+                precio_unitario: d.precio_unitario
+            }));
+
+        setItems(nuevosItems);
+        setIsRemisionModalOpen(false);
+        toast.success(`Remisión #${rem.numero} cargada.`);
+    };
+    // ------------------------------------
+
+
+
 
 
     const handleItemChange = (productId, field, value) => {
@@ -248,6 +316,7 @@ export default function NuevaFacturaPage() {
             fecha_vencimiento: condicionPago === 'Crédito' ? fechaVencimiento.toISOString().split('T')[0] : null,
             condicion_pago: condicionPago,
             bodega_id: bodegaRequerida ? parseInt(selectedBodegaId) : null,
+            remision_id: remisionId ? parseInt(remisionId) : null,
             items: itemsValidados
         };
 
@@ -261,7 +330,7 @@ export default function NuevaFacturaPage() {
             setFecha(new Date());
             setFechaVencimiento(new Date());
 
-        } catch(err) {
+        } catch (err) {
             console.error("Error al guardar factura:", err);
             const errorMsg = err.response?.data?.detail || "Error inesperado al guardar.";
             toast.error(`Error: ${errorMsg}`);
@@ -283,43 +352,53 @@ export default function NuevaFacturaPage() {
         <div className="min-h-screen bg-gray-50 p-6 font-sans pb-20">
             <div className="max-w-7xl mx-auto">
                 <ToastContainer position="top-right" autoClose={5000} />
-                
-                                    {/* ENCABEZADO */}
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                        <div>
-                            {/* 1. BLOQUE DE BOTONES DE NAVEGACIÓN (En Fila) */}
-                            <div className="flex items-center gap-3 mb-2">
-                                <BotonRegresar />
-                                
-                                <button
-                                    onClick={() => window.open('/manual?file=capitulo_41_facturacion.md', '_blank')}
-                                    className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors font-bold text-sm"
-                                    type="button"
-                                >
-                                    <FaBook className="text-lg" /> Manual
-                                </button>
-                            </div>
 
-                            {/* 2. TÍTULO E ICONO */}
-                            <div className="flex items-center gap-3 mt-3">
-                                <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
-                                    <FaFileInvoiceDollar className="text-2xl" />
-                                </div>
-                                <div>
-                                    <h1 className="text-3xl font-bold text-gray-800">Nueva Factura</h1>
-                                    <p className="text-gray-500 text-sm">Gestión de ventas y salida de inventario.</p>
-                                </div>
+                {/* ENCABEZADO */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                    <div>
+                        {/* 1. BLOQUE DE BOTONES DE NAVEGACIÓN (En Fila) */}
+                        <div className="flex items-center gap-3 mb-2">
+                            <BotonRegresar />
+
+                            <button
+                                onClick={() => window.open('/manual?file=capitulo_41_facturacion.md', '_blank')}
+                                className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors font-bold text-sm"
+                                type="button"
+                            >
+                                <FaBook className="text-lg" /> Manual
+                            </button>
+                        </div>
+
+                        {/* 2. TÍTULO E ICONO */}
+                        <div className="flex items-center gap-3 mt-3">
+                            <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                                <FaFileInvoiceDollar className="text-2xl" />
+                            </div>
+                            <div>
+                                <h1 className="text-3xl font-bold text-gray-800">Nueva Factura</h1>
+                                <p className="text-gray-500 text-sm">Gestión de ventas y salida de inventario.</p>
                             </div>
                         </div>
                     </div>
+                </div>
+
+                {/* BOTÓN CARGAR REMISIÓN */}
+                <div className="flex justify-end mb-4">
+                    <button
+                        onClick={handleOpenRemisionModal}
+                        className="bg-orange-600 text-white px-4 py-2 rounded-lg shadow hover:bg-orange-700 flex items-center gap-2 font-bold transition-colors"
+                    >
+                        <FaListOl /> Cargar Remisión
+                    </button>
+                </div>
 
                 {/* CARD 1: DATOS GENERALES */}
                 <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 animate-fadeIn mb-6">
                     <h3 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2 border-b border-gray-100 pb-2">
-                        <span className="bg-blue-100 text-blue-600 w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span> 
+                        <span className="bg-blue-100 text-blue-600 w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span>
                         Información de la Venta
                     </h3>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {/* Fecha */}
                         <div>
@@ -354,11 +433,11 @@ export default function NuevaFacturaPage() {
                                 <select
                                     id="bodega" value={selectedBodegaId} onChange={e => setSelectedBodegaId(e.target.value)}
                                     className={`${selectClass} ${bodegaRequerida ? 'bg-yellow-50 border-yellow-300' : 'bg-gray-100'}`}
-                                    disabled={!bodegaRequerida || bodegas.length === 0} required={bodegaRequerida} 
+                                    disabled={!bodegaRequerida || bodegas.length === 0} required={bodegaRequerida}
                                 >
                                     {!bodegaRequerida ? <option value="">(No aplica)</option> :
-                                    bodegas.length === 0 ? <option value="">No hay bodegas</option> :
-                                    <> <option value="">Seleccione...</option> {bodegas.map(b => <option key={b.id} value={String(b.id)}>{b.nombre}</option>)} </>}
+                                        bodegas.length === 0 ? <option value="">No hay bodegas</option> :
+                                            <> <option value="">Seleccione...</option> {bodegas.map(b => <option key={b.id} value={String(b.id)}>{b.nombre}</option>)} </>}
                                 </select>
                                 <FaWarehouse className="absolute right-8 top-3 text-gray-400 pointer-events-none" />
                             </div>
@@ -374,7 +453,7 @@ export default function NuevaFacturaPage() {
                                 </select>
                                 <FaUserTag className="absolute right-8 top-3 text-gray-400 pointer-events-none" />
                             </div>
-                            {clienteListaPrecioId && <p className="mt-1 text-xs text-green-600 font-bold flex items-center"><FaTag className="mr-1"/> Lista Precios ID: {clienteListaPrecioId}</p>}
+                            {clienteListaPrecioId && <p className="mt-1 text-xs text-green-600 font-bold flex items-center"><FaTag className="mr-1" /> Lista Precios ID: {clienteListaPrecioId}</p>}
                         </div>
 
                         {/* Condición Pago */}
@@ -424,7 +503,7 @@ export default function NuevaFacturaPage() {
                 <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 animate-slideDown">
                     <div className="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
                         <h3 className="text-lg font-bold text-gray-700 flex items-center gap-2">
-                            <span className="bg-blue-100 text-blue-600 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span> 
+                            <span className="bg-blue-100 text-blue-600 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span>
                             Detalle de Productos
                         </h3>
                         <button
@@ -493,8 +572,8 @@ export default function NuevaFacturaPage() {
                         disabled={isSubmitting || items.length === 0 || !beneficiarioId || !tipoDocumentoId || (bodegaRequerida && !selectedBodegaId)}
                         className={`
                             px-10 py-4 rounded-xl shadow-lg font-bold text-white text-lg transition-all transform hover:-translate-y-1 flex items-center gap-3
-                            ${isSubmitting || items.length === 0 
-                                ? 'bg-gray-400 cursor-not-allowed' 
+                            ${isSubmitting || items.length === 0
+                                ? 'bg-gray-400 cursor-not-allowed'
                                 : 'bg-green-600 hover:bg-green-700 hover:shadow-green-200'}
                         `}
                     >
@@ -513,6 +592,55 @@ export default function NuevaFacturaPage() {
                     mode="venta"
                     bodegaIdSeleccionada={bodegaRequerida ? (selectedBodegaId ? parseInt(selectedBodegaId) : null) : null}
                 />
+
+                {/* MODAL SELECCION REMISION */}
+                {isRemisionModalOpen && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                            <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+                                <h3 className="text-xl font-bold text-gray-800">Seleccionar Remisión</h3>
+                                <button onClick={() => setIsRemisionModalOpen(false)} className="text-gray-500 hover:text-red-500">
+                                    <FaTrash className="transform rotate-45" /> Cerrar
+                                </button>
+                            </div>
+                            <div className="p-4">
+                                {remisionesDisponibles.length === 0 ? (
+                                    <p className="text-center text-gray-500 py-8">No hay remisiones pendientes de facturar.</p>
+                                ) : (
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-100">
+                                            <tr>
+                                                <th className="px-4 py-2 text-left">Número</th>
+                                                <th className="px-4 py-2 text-left">Fecha</th>
+                                                <th className="px-4 py-2 text-left">Cliente</th>
+                                                <th className="px-4 py-2 text-left">Bodega</th>
+                                                <th className="px-4 py-2 text-center">Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {remisionesDisponibles.map(r => (
+                                                <tr key={r.id} className="hover:bg-blue-50">
+                                                    <td className="px-4 py-2 font-bold">#{r.numero}</td>
+                                                    <td className="px-4 py-2">{r.fecha}</td>
+                                                    <td className="px-4 py-2">{r.tercero_nombre}</td>
+                                                    <td className="px-4 py-2">{r.bodega_nombre}</td>
+                                                    <td className="px-4 py-2 text-center">
+                                                        <button
+                                                            onClick={() => cargarRemision(r)}
+                                                            className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-800 text-sm"
+                                                        >
+                                                            Cargar
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
