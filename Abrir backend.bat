@@ -13,7 +13,7 @@ echo Iniciando servidor a través del lanzador personalizado...
 :: --- INICIO DE LA MODIFICACIÓN FINAL ---
 :: En lugar de llamar a 'uvicorn' directamente, se ejecuta el script 'run.py'.
 :: Esto asegura que nuestra configuración de entorno se aplique primero.
-python run.py
+.\.venv\Scripts\python.exe run.py
 :: --- FIN DE LA MODIFICACIÓN FINAL ---
 
 :: Pausa al final para ver la salida si el servidor se detiene.

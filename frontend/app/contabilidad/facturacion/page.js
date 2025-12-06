@@ -74,6 +74,7 @@ export default function NuevaFacturaPage() {
         terceros: [],
         tiposDocumento: [],
         centrosCosto: [],
+        productos: [],
     });
 
     const totalFactura = useMemo(() => {
@@ -98,11 +99,12 @@ export default function NuevaFacturaPage() {
         const fetchMaestros = async () => {
             try {
                 setPageIsLoading(true);
-                const [tercerosRes, tiposDocRes, centrosCostoRes, bodegasRes] = await Promise.all([
+                const [tercerosRes, tiposDocRes, centrosCostoRes, bodegasRes, productosRes] = await Promise.all([
                     getTerceros(),
                     getTiposDocumento(),
                     getCentrosCosto(),
-                    getBodegas()
+                    getBodegas(),
+                    apiService.get('/inventario/productos/list-flat')
                 ]);
 
                 // --- FILTRO ESTRUCTURAL: SOLO HIJOS ---
@@ -112,6 +114,7 @@ export default function NuevaFacturaPage() {
                     terceros: tercerosRes,
                     tiposDocumento: tiposDocRes.filter(td => td.afecta_inventario && td.funcion_especial === 'cartera_cliente'),
                     centrosCosto: centrosCostoFiltrados,
+                    productos: productosRes.data
                 });
 
                 setBodegas(bodegasRes);
@@ -250,18 +253,17 @@ export default function NuevaFacturaPage() {
         // IMPORTANTE: Solo cargamos lo PENDIENTE
         const nuevosItems = rem.detalles
             .filter(d => d.cantidad_pendiente > 0)
-            .map(d => ({
-                producto_id: d.producto_id,
-                codigo: d.producto_id, // Idealmente deberíamos tener el código real, pero el ID sirve de referencia si el backend lo acepta o si buscamos
-                // FIX: El detalle de remisión no trae 'nombre' ni 'codigo' del producto en el JSON simple. 
-                // Necesitamos 'enriquecer' esto o confiar en que el usuario revise.
-                // Como MEJOR OPCION: Vamos a pedir al backend que el endpoint /remisiones/ traiga nombres de productos o 
-                // hacemos un fetch rápido de productos.
-                // POR AHORA: Usamos placeholders, el usuario verá IDs. (Mejora: traer nombres)
-                nombre: `Producto ID ${d.producto_id} (Desde Remisión)`,
-                cantidad: d.cantidad_pendiente,
-                precio_unitario: d.precio_unitario
-            }));
+            .filter(d => d.cantidad_pendiente > 0)
+            .map(d => {
+                const producto = maestros.productos.find(p => p.id === d.producto_id);
+                return {
+                    producto_id: d.producto_id,
+                    codigo: producto ? producto.codigo : d.producto_id,
+                    nombre: producto ? producto.nombre : `Producto ID ${d.producto_id} (Desde Remisión)`,
+                    cantidad: d.cantidad_pendiente,
+                    precio_unitario: d.precio_unitario
+                };
+            });
 
         setItems(nuevosItems);
         setIsRemisionModalOpen(false);
