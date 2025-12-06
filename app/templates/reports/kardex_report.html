@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Kardex de Producto</title>
+    <style>
+        @page {
+            size: letter landscape;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 8pt;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header h1 { margin: 0; font-size: 16pt; }
+        .header h2 { margin: 0; font-size: 12pt; font-weight: normal; }
+        .info {
+            margin-bottom: 20px;
+            text-align: left;
+            font-size: 10pt;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .info p { margin: 2px 0; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 4px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            text-align: center;
+            /* Ajuste de tamaño de fuente para cabecera */
+            font-size: 7.5pt; 
+        }
+        .text-right { text-align: right; font-family: 'Courier New', monospace; }
+        .saldo-anterior {
+            font-weight: bold;
+            background-color: #e8e8e8;
+        }
+        .entrada { background-color: #e8f5e9; }
+        .salida { background-color: #ffebee; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>{{ empresa_nombre }}</h1>
+        <h2>Kardex de Producto</h2>
+    </div>
+
+    <div class="info">
+        <p><strong>Producto:</strong> {{ data.producto_codigo }} - {{ data.producto_nombre }}</p>
+        <p><strong>Período Analizado:</strong> {{ filtros.fecha_inicio | truncate(10, True, '') }} al {{ filtros.fecha_fin | truncate(10, True, '') }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                {# Ajuste de anchos para liberar espacio en el centro #}
+                <th style="width:7%">Fecha</th> 
+                <th style="width:10%">Documento</th>
+                <th style="width:10%">Tipo Mov.</th>
+                <th class="text-right" style="width:8%">Ent. Cant.</th>
+                <th class="text-right" style="width:10%">Ent. C. Unit.</th>
+                <th class="text-right" style="width:10%">Ent. C. Total</th>
+                <th class="text-right" style="width:8%">Sal. Cant.</th>
+                <th class="text-right" style="width:10%">Sal. C. Unit.</th>
+                <th class="text-right" style="width:10%">Sal. C. Total</th>
+                <th class="text-right" style="width:9%">Saldo Cant.</th>
+                <th class="text-right" style="width:9%">Costo Promedio</th>
+                <th class="text-right" style="width:10%">Saldo Valorizado</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            {# FIX CRÍTICO DE ALINEACIÓN: Fila de Saldo Anterior #}
+            {% set saldo_inicial_cant = data.totales.saldo_inicial_cantidad | default(0) | float %}
+            {% set saldo_inicial_valor = data.totales.saldo_inicial_valor | default(0) | float %}
+            
+            {# FIX CRÍTICO: Evitar División por Cero en Costo Promedio Inicial #}
+            {% set costo_prom_inicial = saldo_inicial_valor / saldo_inicial_cant if saldo_inicial_cant else 0.00 %}
+            
+            <tr class="saldo-anterior">
+                <td>{{ filtros.fecha_inicio | truncate(10, True, '') }}</td>
+                <td colspan="8">SALDO ANTERIOR</td> {# ¡FIX DE ALINEACIÓN CRÍTICO! Fusiona 8 celdas (Col 2 a Col 9) #}
+
+                {# Las últimas 3 columnas (Saldo, Costo Prom, Saldo Val) se mantienen alineadas #}
+                <td class="text-right"><strong>{{ "%.2f"|format(saldo_inicial_cant) }}</strong></td>
+                <td class="text-right"><strong>{{ costo_prom_inicial | float | format_miles }}</strong></td>
+                <td class="text-right"><strong>{{ saldo_inicial_valor | float | format_miles }}</strong></td>
+            </tr>
+
+            {# Bucle de Movimientos: FIX CRÍTICO: Se usa 'data.movimientos' #}
+            {% for item in data.movimientos | default([]) %}
+                
+                <tr class="{{ 'entrada' if item.entrada_cantidad else 'salida' }}">
+                    {# Columna 1-3: Fecha, Documento, Tipo Movimiento #}
+                    <td>{{ item.fecha | truncate(10, True, '') }}</td>
+                    <td>{{ item.documento_ref }}</td>
+                    <td>{{ item.tipo_movimiento }}</td>
+
+                    {# Columna 4-6: Entradas (Cantidad, Costo Unitario, Costo Total) #}
+                    <td class="text-right">{{ "%.2f"|format(item.entrada_cantidad) if item.entrada_cantidad else '' }}</td>
+                    <td class="text-right">{{ item.entrada_costo_unit | float | format_miles if item.entrada_costo_unit else '' }}</td>
+                    <td class="text-right">{{ item.entrada_costo_total | float | format_miles if item.entrada_costo_total else '' }}</td>
+                    
+                    {# Columna 7-9: Salidas (Cantidad, Costo Unitario, Costo Total) #}
+                    <td class="text-right">{{ "%.2f"|format(item.salida_cantidad) if item.salida_cantidad else '' }}</td>
+                    <td class="text-right">{{ item.salida_costo_unit | float | format_miles if item.salida_costo_unit else '' }}</td>
+                    <td class="text-right">{{ item.salida_costo_total | float | format_miles if item.salida_costo_total else '' }}</td>
+
+                    {# Columna 10-12: Saldos #}
+                    <td class="text-right"><strong>{{ "%.2f"|format(item.saldo_cantidad) }}</strong></td>
+                    <td class="text-right"><strong>{{ item.saldo_costo_promedio | float | format_miles }}</strong></td>
+                    <td class="text-right"><strong>{{ item.saldo_valor_total | float | format_miles }}</strong></td>
+                </tr>
+                
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {# Totales Finales #}
+    <div class="info">
+        <p><strong>Balance del Período:</strong></p>
+        <p>Entradas (Cant.): {{ "%.2f"|format(data.totales.total_entradas_cantidad) }} | Salidas (Cant.): {{ "%.2f"|format(data.totales.total_salidas_cantidad) }}</p>
+        <p><strong>Saldo Final:</strong> {{ "%.2f"|format(data.totales.saldo_final_cantidad) }} unidades con un valor total de <strong>${{ data.totales.saldo_final_valor | float | format_miles }}</strong></p>
+    </div>
+
+</body>
+</html>

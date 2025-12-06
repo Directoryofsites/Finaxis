@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Balance de Prueba por Centro de Costo</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        h1 { text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 10px; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .text-right { text-align: right; }
+        .nivel-1 { font-weight: bold; background-color: #e0e0e0; }
+        .nivel-2 { font-weight: bold; background-color: #f0f0f0; padding-left: 20px; }
+        .nivel-3 { padding-left: 40px; }
+        .nivel-4 { padding-left: 60px; }
+        .nivel-5 { padding-left: 80px; }
+        tfoot { font-weight: bold; background-color: #e0e0e0; }
+
+        .report-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .company-info h1 {
+        margin: 0;
+        font-size: 18px;
+    }
+    .company-info p {
+        margin: 0;
+        font-size: 14px;
+        color: #555;
+    }
+    .report-info {
+        margin-top: 15px;
+    }
+    .report-info h2 {
+        margin: 0;
+        font-size: 16px;
+    }
+    .report-info p {
+        margin: 0;
+        font-size: 12px;
+        color: #777;
+    }
+    </style>
+</head>
+<body>
+
+    <header class="report-header">
+    <div class="company-info">
+        <h1>{{ empresa.razon_social if empresa else 'Nombre de Empresa no disponible' }}</h1>
+        <p>NIT: {{ empresa.nit if empresa else 'N/A' }}</p>
+    </div>
+    <div class="report-info">
+        <h2>{{ titulo_reporte }}</h2>
+        <p>{{ periodo }}</p>
+        
+        {# --- INICIO: NUEVO BLOQUE CONDICIONAL PARA MOSTRAR LA CUENTA --- #}
+        {% if cuenta_info %}
+        <p><b>Cuenta:</b> {{ cuenta_info.codigo }} - {{ cuenta_info.nombre }}</p>
+        {% endif %}
+        {# --- FIN: NUEVO BLOQUE CONDICIONAL --- #}
+    </div>
+</header>
+    <table>
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Nombre del Centro de Costo</th>
+                <th class="text-right">Saldo Inicial</th>
+                <th class="text-right">Débitos</th>
+                <th class="text-right">Créditos</th>
+                <th class="text-right">Nuevo Saldo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for fila in filas %}
+            <tr class="nivel-{{ fila.nivel }}">
+                <td>{{ fila.codigo }}</td>
+                <td>{{ fila.nombre }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(fila.saldo_inicial) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(fila.debito) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(fila.credito) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(fila.nuevo_saldo) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="2">TOTALES</td>
+                <td class="text-right">{{ "{:,.2f}".format(totales.saldo_inicial) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(totales.debito) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(totales.credito) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(totales.nuevo_saldo) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Estado General de Inventarios</title>
+    <style>
+        @page {
+            size: letter landscape;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 8pt;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header h1 { margin: 0; font-size: 16pt; }
+        .header h2 { margin: 0; font-size: 12pt; font-weight: normal; }
+        .info {
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 10pt;
+        }
+        .info p { margin: 2px 0; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 5px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            text-align: center;
+        }
+        .text-right { text-align: right; }
+        tfoot td {
+            font-weight: bold;
+            background-color: #e8e8e8;
+            border-top: 2px solid #333;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>{{ empresa_nombre }}</h1>
+        <h2>Estado General de Inventarios</h2>
+    </div>
+
+    <div class="info">
+        <p><strong>Período Analizado:</strong> {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Producto</th>
+                <th class="text-right">Cant. Inicial</th>
+                <th class="text-right">Valor Inicial</th>
+                <th class="text-right">Cant. Entradas</th>
+                <th class="text-right">Valor Entradas</th>
+                <th class="text-right">Cant. Salidas</th>
+                <th class="text-right">Valor Salidas</th>
+                <th class="text-right">Cant. Final</th>
+                <th class="text-right">Valor Final</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            {% for item in data['items'] %}
+            <tr>
+                <td>{{ item.producto_codigo }}</td>
+                <td>{{ item.producto_nombre }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.saldo_inicial_cantidad) }}</td>
+                <td class="text-right">{{ "${:,.0f}".format(item.saldo_inicial_valor|float) }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.entradas_cantidad) }}</td>
+                <td class="text-right">{{ "${:,.0f}".format(item.entradas_valor|float) }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.salidas_cantidad) }}</td>
+                <td class="text-right">{{ "${:,.0f}".format(item.salidas_valor|float) }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.saldo_final_cantidad) }}</td>
+                <td class="text-right">{{ "${:,.0f}".format(item.saldo_final_valor|float) }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="10" style="text-align:center;">No se encontraron productos con movimiento en el período seleccionado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3" class="text-right"><strong>TOTALES</strong></td>
+                <td class="text-right"><strong>{{ "${:,.0f}".format(data.totales.saldo_inicial_valor|float) }}</strong></td>
+                <td colspan="1"></td>
+                <td class="text-right"><strong>{{ "${:,.0f}".format(data.totales.entradas_valor|float) }}</strong></td>
+                <td colspan="1"></td>
+                <td class="text-right"><strong>{{ "${:,.0f}".format(data.totales.salidas_valor|float) }}</strong></td>
+                <td colspan="1"></td>
+                <td class="text-right"><strong>{{ "${:,.0f}".format(data.totales.saldo_final_valor|float) }}</strong></td>
+            </tr>
+        </tfoot>
+    </table>
+
+</body>
+</html>

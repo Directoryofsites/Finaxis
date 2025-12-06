@@ -1,0 +1,72 @@
+{
+  "data": {
+    "inventario": {
+      "impuestos": [
+        {
+          "nombre": "IVA 19%",
+          "tasa": 0.19,
+          "descripcion": "Impuesto al valor agregado tarifa general",
+          "cuenta_codigo": "240805",
+          "cuenta_iva_descontable_codigo": "13551701"
+        },
+        {
+          "nombre": "IVA 5%",
+          "tasa": 0.05,
+          "descripcion": "Impuesto al valor agregado tarifa reducida",
+          "cuenta_codigo": "240810",
+          "cuenta_iva_descontable_codigo": "13551702"
+        },
+        {
+          "nombre": "IVA Exento (0%)",
+          "tasa": 0,
+          "descripcion": "Bienes exentos de IVA con derecho a devolucion",
+          "cuenta_codigo": "240815",
+          "cuenta_iva_descontable_codigo": "13551703"
+        },
+        {
+          "nombre": "No Gravado (Excluido)",
+          "tasa": 0,
+          "descripcion": "Bienes o servicios que no causan IVA",
+          "cuenta_codigo": "240820",
+          "cuenta_iva_descontable_codigo": "13551704"
+        },
+        {
+          "nombre": "ReteFuente Compras 2.5%",
+          "tasa": 0.025,
+          "descripcion": "Retencion en la fuente por compras generales (Declarantes)",
+          "cuenta_codigo": null,
+          "cuenta_iva_descontable_codigo": "236540"
+        },
+        {
+          "nombre": "ReteFuente Servicios 4%",
+          "tasa": 0.04,
+          "descripcion": "Retencion en la fuente por servicios generales",
+          "cuenta_codigo": null,
+          "cuenta_iva_descontable_codigo": "236525"
+        },
+        {
+          "nombre": "ReteFuente Honorarios 10%",
+          "tasa": 0.1,
+          "descripcion": "Retencion en la fuente por honorarios (Personas juridicas)",
+          "cuenta_codigo": null,
+          "cuenta_iva_descontable_codigo": "236515"
+        },
+        {
+          "nombre": "ReteIVA 15%",
+          "tasa": 0.15,
+          "descripcion": "Retencion de IVA del 15% sobre el valor del impuesto",
+          "cuenta_codigo": null,
+          "cuenta_iva_descontable_codigo": "236705"
+        },
+        {
+          "nombre": "ReteICA (Generico)",
+          "tasa": 0,
+          "descripcion": "Retencion de Industria y Comercio (Tasa variable)",
+          "cuenta_codigo": null,
+          "cuenta_iva_descontable_codigo": "236805"
+        }
+      ]
+    }
+  },
+  "signature": "65f4b8644f6393e846b1a799ffa516a552155a88024acbf13c2b430e8884f0b8"
+}

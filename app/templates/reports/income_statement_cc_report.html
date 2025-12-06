@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Estado de Resultados por Centro de Costo</title>
+    <style>
+        body { font-family: sans-serif; font-size: 10px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1, .header h2, .header h3 { margin: 0; }
+        .header h3 { font-weight: normal; font-style: italic; }
+        .report-info { margin-bottom: 20px; text-align: center; }
+        .content-table { width: 100%; border-collapse: collapse; }
+        .content-table td { padding: 4px; }
+        .account-row td:first-child { padding-left: 20px; }
+        .total-section-row td { font-weight: bold; border-top: 1px solid #000; border-bottom: 1px solid #000; }
+        .final-total-row td { font-weight: bold; border-top: 2px solid #000; border-bottom: 3px double #000; background-color: #f2f2f2; }
+        .text-right { text-align: right; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa_nombre }}</h1>
+        <h2>NIT: {{ empresa_nit }}</h2>
+        <h2>Estado de Resultados por Centro de Costo</h2>
+        <h3>{{ centro_costo_nombre_display }}</h3>
+    </div>
+
+    <div class="report-info">
+        <strong>Periodo:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}
+    </div>
+
+    <table class="content-table">
+        <tbody>
+            <tr>
+                <td colspan="2"><strong>INGRESOS OPERACIONALES</strong></td>
+            </tr>
+            {% for ingreso in ingresos %}
+            <tr class="account-row">
+                <td>{{ ingreso.codigo }} - {{ ingreso.nombre }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(ingreso.saldo) }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-section-row">
+                <td><strong>TOTAL INGRESOS OPERACIONALES</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.total_ingresos) }}</strong></td>
+            </tr>
+
+            <tr><td colspan="2">&nbsp;</td></tr>
+
+            <tr>
+                <td colspan="2"><strong>COSTOS DE VENTA</strong></td>
+            </tr>
+            {% for costo in costos %}
+            <tr class="account-row">
+                <td>{{ costo.codigo }} - {{ costo.nombre }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(costo.saldo) }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-section-row">
+                <td><strong>TOTAL COSTOS DE VENTA</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.total_costos) }}</strong></td>
+            </tr>
+
+            <tr class="final-total-row">
+                <td><strong>UTILIDAD BRUTA</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.utilidad_bruta) }}</strong></td>
+            </tr>
+
+            <tr><td colspan="2">&nbsp;</td></tr>
+
+            <tr>
+                <td colspan="2"><strong>GASTOS OPERACIONALES</strong></td>
+            </tr>
+            {% for gasto in gastos %}
+            <tr class="account-row">
+                <td>{{ gasto.codigo }} - {{ gasto.nombre }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(gasto.saldo) }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-section-row">
+                <td><strong>TOTAL GASTOS OPERACIONALES</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.total_gastos) }}</strong></td>
+            </tr>
+
+            <tr class="final-total-row">
+                <td><strong>UTILIDAD (O PÉRDIDA) DEL EJERCICIO</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.utilidad_neta) }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

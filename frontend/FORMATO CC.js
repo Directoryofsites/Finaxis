@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: 'Helvetica', sans-serif; font-size: 11px; color: #333; margin: 0; padding: 20px; }
+        
+        /* Cabecera */
+        .header-table { width: 100%; border-bottom: 2px solid #444; padding-bottom: 10px; margin-bottom: 20px; }
+        .company-name { font-size: 16px; font-weight: bold; text-transform: uppercase; }
+        
+        /* Título */
+        .doc-type-box { 
+            background: #eee; 
+            padding: 8px; 
+            border: 1px solid #ccc; 
+            text-align: right;
+            font-weight: bold; 
+            font-size: 14px; 
+            text-transform: uppercase; 
+            width: 100%; 
+            box-sizing: border-box; 
+        }
+        .doc-number { 
+            color: #d32f2f; 
+            font-size: 16px; 
+            font-weight: bold; 
+            text-align: right;
+            margin-top: 5px; 
+        }
+
+        .info-box { background: #f9f9f9; padding: 10px; border: 1px solid #ddd; margin-bottom: 20px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th { background: #333; color: white; padding: 5px; text-align: left; font-size: 10px; }
+        td { padding: 5px; border-bottom: 1px solid #eee; }
+        .text-right { text-align: right; }
+        .font-mono { font-family: 'Courier New', monospace; }
+        
+        .footer-totals { background: #f0f0f0; font-weight: bold; }
+        .footer-totals td { border-top: 2px solid #333; }
+        
+        /* ESTILO PARA EL VALOR EN LETRAS */
+        .letras-row td { 
+            background: #fff; 
+            padding-top: 10px; 
+            font-style: italic; 
+            border: none; /* Sin borde abajo */
+        }
+
+        .signatures { margin-top: 50px; width: 100%; display: table; }
+        .sig-col { display: table-cell; width: 25%; text-align: center; vertical-align: bottom; height: 40px; }
+        .sig-line { border-top: 1px solid #333; margin: 0 10px; padding-top: 5px; font-size: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <table class="header-table">
+        <tr>
+            <td width="60%" valign="top">
+                {% if empresa.logo_url %}
+                    <img src="{{empresa.logo_url}}" style="max-height: 60px; margin-bottom: 5px;"><br>
+                {% endif %}
+                <div class="company-name">{{empresa.razon_social}}</div>
+                <div>NIT: {{empresa.nit}}</div>
+                <div>{{empresa.direccion}}</div>
+                <div>{{empresa.telefono}}</div>
+            </td>
+            <td width="40%" valign="top" align="right"> 
+                <div class="doc-type-box">{{documento.tipo_nombre}}</div>
+                <div class="doc-number">N° {{documento.consecutivo}}</div>
+                <div style="text-align: right; margin-top: 5px;">Fecha: <strong>{{documento.fecha_emision}}</strong></div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="info-box">
+        <table style="width: 100%; margin: 0;">
+            <tr>
+                <td width="15%"><strong>Tercero:</strong></td>
+                <td width="45%">{{tercero.razon_social}}</td>
+                <td width="15%"><strong>NIT/CC:</strong></td>
+                <td width="25%">{{tercero.nit}}</td>
+            </tr>
+            {% if documento.observaciones %}
+            <tr>
+                <td colspan="4" style="border-top: 1px dashed #ccc; padding-top: 5px;">
+                    <strong>Notas:</strong> {{documento.observaciones}}
+                </td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th width="15%">Cuenta</th>
+                <th width="45%">Descripción</th>
+                <th width="20%" class="text-right">Débito</th>
+                <th width="20%" class="text-right">Crédito</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="font-mono">{{item.producto_codigo}}</td>
+                <td>{{item.producto_nombre}}</td>
+                <td class="text-right font-mono">{{item.debito_fmt}}</td>
+                <td class="text-right font-mono">{{item.credito_fmt}}</td>
+            </tr>
+            {% endfor %}
+            
+            <tr class="footer-totals">
+                <td colspan="2" class="text-right">SUMAS IGUALES:</td>
+                <td class="text-right font-mono">{{totales.total_debito}}</td>
+                <td class="text-right font-mono">{{totales.total_credito}}</td>
+            </tr>
+
+            <tr class="letras-row">
+                <td colspan="4">
+                    <strong>SON:</strong> {{totales.valor_letras}}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="signatures">
+        <div class="sig-col"><div class="sig-line">Elaboró</div></div>
+        <div class="sig-col"><div class="sig-line">Revisó</div></div>
+        <div class="sig-col"><div class="sig-line">Aprobó</div></div>
+        <div class="sig-col"><div class="sig-line">Contabilizó</div></div>
+    </div>
+
+    <div style="text-align: center; font-size: 9px; color: #aaa; margin-top: 20px;">
+        Impreso por Sistema ContaPY
+    </div>
+
+</body>
+</html>

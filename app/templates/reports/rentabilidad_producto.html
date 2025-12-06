@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Rentabilidad por Producto</title>
+    <style>
+        @page {
+            size: letter portrait;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 9pt;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 16pt;
+        }
+        .header h2 {
+            margin: 0;
+            font-size: 12pt;
+            font-weight: normal;
+        }
+        .info {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .info p {
+            margin: 2px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 5px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            font-size: 8pt;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .summary-table {
+            width: 50%;
+            margin-left: 50%;
+            border-top: 2px solid #333;
+        }
+        .summary-table td {
+            border: none;
+            padding: 4px;
+        }
+        .summary-table .label {
+            font-weight: bold;
+        }
+        .footer {
+            position: fixed;
+            bottom: -1cm;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 8pt;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Reporte de Rentabilidad por Producto</h1>
+        <h2>{{ empresa_nombre }}</h2>
+    </div>
+
+    <div class="info">
+        <p><strong>Producto:</strong> {{ producto_info.codigo }} - {{ producto_info.nombre }}</p>
+        <p><strong>Período Analizado:</strong> {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
+        <p><strong>Fecha de Generación:</strong> {{ fecha_generacion }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Documento</th>
+                <th class="text-right">Cant.</th>
+                <th class="text-right">Venta Unit.</th>
+                <th class="text-right">Venta Total</th>
+                <th class="text-right">Costo Unit.</th>
+                <th class="text-right">Costo Total</th>
+                <th class="text-right">Utilidad Bruta</th>
+                <th class="text-right">% Margen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data.items %}
+            <tr>
+                <td>{{ item.fecha }}</td>
+                <td>{{ item.documento_ref }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.cantidad) }}</td>
+                <td class="text-right">{{ "${:,.0f}".format(item.venta_unitaria|float) }}</td>
+                <td class="text-right">{{ "${:,.0f}".format(item.venta_total|float) }}</td>
+                <td class="text-right">{{ "${:,.0f}".format(item.costo_unitario_promedio|float) }}</td>
+                <td class="text-right">{{ "${:,.0f}".format(item.costo_total|float) }}</td>
+                <td class="text-right">{{ "${:,.0f}".format(item.utilidad_bruta|float) }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.margen_rentabilidad * 100) }}%</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="9" style="text-align:center;">No se encontraron ventas para este producto en el período seleccionado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <table class="summary-table">
+        <tr>
+            <td class="label">Venta Total:</td>
+            <td class="text-right">{{ "${:,.0f}".format(data.total_venta|float) }}</td>
+        </tr>
+        <tr>
+            <td class="label">Costo Total:</td>
+            <td class="text-right">{{ "${:,.0f}".format(data.total_costo|float) }}</td>
+        </tr>
+        <tr>
+            <td class="label">Utilidad Bruta Total:</td>
+            <td class="text-right">{{ "${:,.0f}".format(data.total_utilidad|float) }}</td>
+        </tr>
+        <tr>
+            <td class="label">Margen de Rentabilidad:</td>
+            <td class="text-right"><strong>{{ "%.2f"|format(data.margen_total_porcentaje) }}%</strong></td>
+        </tr>
+    </table>
+
+</body>
+</html>

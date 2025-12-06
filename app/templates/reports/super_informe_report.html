@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Super Informe</title>
+    <meta charset="UTF-8">
+    <style>
+        @page { 
+            size: letter landscape; 
+            margin: 1.5cm; 
+        }
+        body { 
+            font-family: Arial, sans-serif; 
+            font-size: 8px;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        h1, h2 { 
+            margin: 0;
+        }
+        h1 { font-size: 14px; }
+        h2 { font-size: 12px; font-weight: normal; }
+        .report-info {
+            margin-bottom: 15px;
+            font-size: 9px;
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 4px; 
+            text-align: left; 
+            word-wrap: break-word;
+        }
+        th { 
+            background-color: #f2f2f2; 
+            text-align: center;
+            font-weight: bold;
+        }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+
+        /* Estilos para filas basados en el estado pre-procesado */
+        .ANULADO { background-color: #fffbe6; }
+        .ELIMINADO { background-color: #ffebee; } /* Se eliminó el tachado */
+
+        tfoot td {
+            font-weight: bold;
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social or 'Nombre de Empresa no Disponible' }}</h1>
+        <h2>NIT: {{ empresa.nit or 'N/A' }}</h2>
+    </div>
+
+    <div class="report-info">
+
+        <h2>{{ report_title }}</h2>
+        <p>Generado el: {{ fecha_generacion }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                {% for header in headers %}
+                    <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row_data in processed_rows %}
+                <tr class="{{ row_data.estado }}">
+
+                    {% for cell in row_data.cells %}
+                    
+                        <td>{{ cell|default('', true) }}</td>
+                    {% endfor %}
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="{{ headers|length }}">No se encontraron resultados que coincidan con los criterios de búsqueda.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+
+       {% if show_totals %}
+<tfoot>
+    <tr>
+        <td colspan="{{ headers|length - 2 }}" class="text-right"><strong>TOTALES:</strong></td>
+        <td class="text-right"><strong>{{ totales.debito }}</strong></td>
+        <td class="text-right"><strong>{{ totales.credito }}</strong></td>
+    </tr>
+    <tr>
+        <td colspan="{{ headers|length - 2 }}" class="text-right"><strong>DIFERENCIA:</strong></td>
+        <td colspan="2" class="text-center"><strong>{{ totales.diferencia }}</strong></td>
+    </tr>
+</tfoot>
+{% endif %}
+
+    </table>
+</body>
+</html>

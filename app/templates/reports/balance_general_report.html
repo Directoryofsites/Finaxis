@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Balance General</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 1rem;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 16pt;
+        }
+        .header p {
+            margin: 2px 0;
+            font-size: 10pt;
+        }
+        .report-title {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .report-title h2 {
+            margin: 0;
+            font-size: 14pt;
+        }
+        .section {
+            margin-bottom: 1.5rem;
+        }
+        .section-title {
+            font-weight: bold;
+            font-size: 12pt;
+            border-bottom: 2px solid #333;
+            padding-bottom: 4px;
+            margin-bottom: 8px;
+        }
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+        }
+        .item-row span:last-child {
+            font-family: monospace;
+            text-align: right;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            border-top: 1px solid #666;
+            margin-top: 8px;
+            padding-top: 4px;
+            font-size: 11pt;
+        }
+        .grand-total-row {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 12pt;
+            background-color: #f0f0f0;
+            padding: 8px;
+            margin-top: 1rem;
+            border-top: 2px solid #333;
+            border-bottom: 2px solid #333;
+        }
+        .utilidad-row {
+            color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>{{ empresa.razon_social or 'Nombre de Empresa no Disponible' }}</h1>
+        <p>NIT: {{ empresa.nit or 'NIT no disponible' }}</p>
+    </div>
+
+    <div class="report-title">
+        <h2>Balance General</h2>
+        <p>Al {{ fecha_corte.strftime('%d de %B de %Y') }}</p>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Activos</div>
+        {% for item in reporte.activos %}
+            <div class="item-row">
+                <span>{{ item.codigo }} - {{ item.nombre }}</span>
+                <span>{{ "{:,.2f}".format(item.saldo) }}</span>
+            </div>
+        {% endfor %}
+        <div class="total-row">
+            <span>TOTAL ACTIVOS</span>
+            <span>{{ "{:,.2f}".format(reporte.total_activos) }}</span>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Pasivos</div>
+        {% for item in reporte.pasivos %}
+            <div class="item-row">
+                <span>{{ item.codigo }} - {{ item.nombre }}</span>
+                <span>{{ "{:,.2f}".format(item.saldo) }}</span>
+            </div>
+        {% endfor %}
+        <div class="total-row">
+            <span>TOTAL PASIVOS</span>
+            <span>{{ "{:,.2f}".format(reporte.total_pasivos) }}</span>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Patrimonio</div>
+        {% for item in reporte.patrimonio %}
+            <div class="item-row">
+                <span>{{ item.codigo }} - {{ item.nombre }}</span>
+                <span>{{ "{:,.2f}".format(item.saldo) }}</span>
+            </div>
+        {% endfor %}
+        <div class="item-row utilidad-row">
+            <span>3605 - Utilidad (Pérdida) del Ejercicio</span>
+            <span>{{ "{:,.2f}".format(reporte.utilidad_ejercicio) }}</span>
+        </div>
+        <div class="total-row">
+            <span>TOTAL PATRIMONIO</span>
+            <span>{{ "{:,.2f}".format(reporte.total_patrimonio) }}</span>
+        </div>
+    </div>
+
+    <div class="grand-total-row">
+        <span>TOTAL PASIVO + PATRIMONIO</span>
+        <span>{{ "{:,.2f}".format(reporte.total_pasivo_patrimonio) }}</span>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auxiliar por Comprobantes de Egreso</title>
+    <style>
+        @page { size: letter portrait; margin: 1.5cm; }
+        body { font-family: Arial, sans-serif; font-size: 10px; }
+        h1, h2 { text-align: center; color: #333; margin: 0; }
+        .company-info { text-align: center; margin-bottom: 20px; }
+        .report-info { margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 5px; text-align: left; }
+        th { background-color: #f2f2f2; text-align: center; }
+        .text-right { text-align: right; }
+        tfoot td { font-weight: bold; background-color: #f0f0f0; }
+        .detalle-app { padding-left: 20px !important; font-size: 0.9em; color: #555; border-top: none !important; }
+    </style>
+</head>
+<body>
+    <div class="company-info"><h1>{{ empresa.razon_social }}</h1><h2>NIT: {{ empresa.nit }}</h2></div>
+    <div class="report-info">
+        <h2>Auxiliar de Proveedores por Comprobantes de Egreso</h2>
+        <p><strong>Proveedor:</strong> {{ tercero.razon_social }} (NIT: {{ tercero.nit }})</p>
+        <p><strong>Periodo:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}</p>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">Fecha</th>
+                <th style="width: 35%;">Documento (Pago)</th>
+                <th style="width: 35%;">Valor Pago</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in reporte.recibos %}
+            <tr>
+                <td>{{ r.fecha.strftime('%Y-%m-%d') }}</td>
+                <td>{{ r.documento }}</td>
+                <td class="text-right">{{ '{:,.2f}'.format(r.valor_total) }}</td>
+            </tr>
+            {% if r.facturas_afectadas %}
+            <tr>
+                <td></td><td colspan="2" class="detalle-app">
+                {% for f in r.facturas_afectadas %}
+                    <span>↳ Paga a {{ f.documento }} por valor de {{ '{:,.2f}'.format(f.valor) }}</span><br>
+                {% endfor %}
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="2" class="text-right">TOTAL COMPROBANTES DE EGRESO</td>
+                <td class="text-right">{{ '{:,.2f}'.format(reporte.totales.total_recibos) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Rentabilidad por Documento</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 10pt; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { font-size: 16pt; margin-bottom: 5px; }
+        .header p { font-size: 10pt; margin: 0; }
+        .info-box { border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 5px; background-color: #f9f9f9; }
+        .info-box p { margin: 3px 0; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #eee; font-weight: bold; }
+        .right { text-align: right; }
+        .mono { font-family: 'Courier New', monospace; }
+        .footer { margin-top: 30px; border-top: 1px solid #ccc; padding-top: 10px; font-size: 9pt; }
+        .totals-row td { font-weight: bold; background-color: #e0e0e0; }
+        .negative { color: red; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <p>NIT: {{ empresa.nit }}</p>
+        <p>Reporte Generado: {{ now()|date("d/m/Y H:i") }}</p>
+    </div>
+
+    <div class="header-section">
+        <h1>Análisis de Rentabilidad por Documento</h1>
+    </div>
+
+    <div class="info-box">
+        <p><strong>Documento Auditado:</strong> {{ data.documento_ref }}</p>
+        <p><strong>Tercero:</strong> {{ data.tercero_nombre }}</p>
+        <p><strong>Fecha de Documento:</strong> {{ data.fecha|date("d/m/Y") }}</p>
+        <p><strong>Filtro Usado:</strong> Código {{ filtros.tipo_documento_codigo|default('N/A') }} y Número {{ filtros.numero_documento|default('N/A') }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">CÓDIGO</th>
+                <th style="width: 25%;">ARTÍCULO</th>
+                <th class="right" style="width: 8%;">CANT.</th>
+                <th class="right" style="width: 10%;">VTA. UNIT.</th>
+                <th class="right" style="width: 10%;">COSTO UNIT.</th>
+                <th class="right" style="width: 10%;">VTA. TOTAL</th>
+                <th class="right" style="width: 10%;">COSTO TOTAL</th>
+                <th class="right" style="width: 10%;">UTILIDAD BRUTA</th>
+                <th class="right" style="width: 7%;">MARGEN %</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data.detalle %}
+            <tr class="{% if item.utilidad_bruta_valor|default(0) < 0 %}negative{% endif %}">
+                <td class="mono">{{ item.producto_codigo }}</td>
+                <td>{{ item.producto_nombre }}</td>
+                <td class="right mono">{{ item.cantidad|format_decimal(2) }}</td>
+                <td class="right mono">{{ item.valor_venta_unitario|format_currency }}</td>
+                <td class="right mono">{{ item.costo_unitario|format_currency }}</td>
+                <td class="right mono">{{ item.valor_venta_total|format_currency }}</td>
+                <td class="right mono">{{ item.costo_total|format_currency }}</td>
+                <td class="right mono">{{ item.utilidad_bruta_valor|format_currency }}</td>
+                <td class="right mono">{{ item.utilidad_bruta_porcentaje|format_decimal(2) }}%</td>
+            </tr>
+            {% endfor %}
+            {% if not data.detalle %}
+            <tr>
+                <td colspan="9" style="text-align: center;">No se encontraron movimientos de inventario de venta para este documento.</td>
+            </tr>
+            {% endif %}
+        </tbody>
+        <tfoot>
+            <tr class="totals-row">
+                <td colspan="5" class="right">TOTALES ACUMULADOS:</td>
+                <td class="right mono">{{ data.totales.total_venta|default(0)|format_currency }}</td>
+                <td class="right mono">{{ data.totales.total_costo|default(0)|format_currency }}</td>
+                <td class="right mono">{{ data.totales.total_utilidad_bruta_valor|default(0)|format_currency }}</td>
+                <td class="right mono">{{ data.totales.total_utilidad_bruta_porcentaje|default(0)|format_decimal(2) }}%</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="footer">
+        <p>Fin del reporte de Rentabilidad por Documento.</p>
+        <p>Sistema Contable Finaxis.</p>
+    </div>
+</body>
+</html>

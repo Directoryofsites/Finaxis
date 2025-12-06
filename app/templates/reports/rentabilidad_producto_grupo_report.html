@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Análisis de Rentabilidad por Producto/Grupo</title>
+    <style>
+        @page {
+            size: letter landscape; /* Paisaje para más columnas */
+            margin: 1.5cm;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 8pt; /* Tamaño reducido para caber más info */
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 15px; /* Reducido margen */
+        }
+        .header h1 { margin: 0; font-size: 14pt; } /* Reducido tamaño */
+        .header h2 { margin: 0; font-size: 11pt; font-weight: normal; } /* Reducido tamaño */
+        .info {
+            margin-bottom: 15px; /* Reducido margen */
+            text-align: center;
+            font-size: 9pt; /* Reducido tamaño */
+        }
+        .info p { margin: 1px 0; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 4px; /* Reducido padding */
+            text-align: left;
+            word-wrap: break-word; /* Para nombres largos */
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            text-align: center;
+        }
+        .text-right { text-align: right; }
+        .nowrap { white-space: nowrap; } /* Para columnas de ID/Código */
+        tfoot td {
+            font-weight: bold;
+            background-color: #e8e8e8;
+            border-top: 2px solid #333;
+        }
+        /* Clases para formato numérico */
+        .currency { text-align: right; }
+        .percentage { text-align: right; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>{{ empresa.razon_social if empresa else 'Empresa Desconocida' }}</h1>
+        <h2>{{ titulo_reporte | default('Análisis de Rentabilidad') }}</h2>
+    </div>
+
+    <div class="info">
+        <p><strong>Período Analizado:</strong> {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
+        {% if filtros.grupos_nombres %}
+        <p><strong>Grupos:</strong> {{ filtros.grupos_nombres | join(', ') }}</p>
+        {% elif filtros.producto_nombre %}
+        <p><strong>Producto:</strong> {{ filtros.producto_nombre }}</p>
+        {% else %}
+        <p><strong>Filtro:</strong> Todos los productos/grupos</p>
+        {% endif %}
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="nowrap">Código</th>
+                <th>Producto</th>
+                <th class="currency">Venta Total</th>
+                <th class="currency">Costo Total</th>
+                <th class="currency">Utilidad Bruta</th>
+                <th class="percentage">Margen %</th>
+            </tr>
+        </thead>
+        <tbody>
+            {# Iteramos sobre data.items que viene del RentabilidadProductoResponse #}
+            {% for item in data.items %}
+            <tr>
+                <td class="nowrap">{{ item.producto_codigo }}</td>
+                <td>{{ item.producto_nombre }}</td>
+                <td class="currency">{{ "${:,.0f}".format(item.total_venta|float) }}</td>
+                <td class="currency">{{ "${:,.0f}".format(item.total_costo|float) }}</td>
+                <td class="currency">{{ "${:,.0f}".format(item.total_utilidad|float) }}</td>
+                <td class="percentage">{{ "%.2f%%"|format(item.margen_rentabilidad_porcentaje|float) }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align:center;">No se encontraron productos con rentabilidad para los filtros seleccionados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {# Mostramos los totales generales que vienen en data.totales #}
+        {% if data.items and data.totales %}
+        <tfoot>
+            <tr>
+                <td colspan="2" class="text-right"><strong>TOTALES GENERALES</strong></td>
+                <td class="currency"><strong>{{ "${:,.0f}".format(data.totales.total_venta_general|float) }}</strong></td>
+                <td class="currency"><strong>{{ "${:,.0f}".format(data.totales.total_costo_general|float) }}</strong></td>
+                <td class="currency"><strong>{{ "${:,.0f}".format(data.totales.total_utilidad_general|float) }}</strong></td>
+                <td class="percentage"><strong>{{ "%.2f%%"|format(data.totales.margen_general_porcentaje|float) }}</strong></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+
+</body>
+</html>

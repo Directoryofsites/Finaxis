@@ -1,0 +1,100 @@
+{
+    "uvt_2025": 49799,
+    "impuesto_renta": {
+        "pj_general": 35,
+        "pj_financiero": 40,
+        "pj_zona_franca": 20
+    },
+    "iva": {
+        "general": 19,
+        "especial": 5
+    },
+    "retefuente": {
+        "items": [
+            {
+                "concepto": "Compras Generales (Declarantes)",
+                "base_uvt": 27,
+                "tarifa": 2.5,
+                "renglon_formulario_350": 40
+            },
+            {
+                "concepto": "Compras Generales (No Declarantes)",
+                "base_uvt": 27,
+                "tarifa": 3.5,
+                "renglon_formulario_350": 40
+            },
+            {
+                "concepto": "Servicios Generales (Declarantes)",
+                "base_uvt": 4,
+                "tarifa": 4.0,
+                "renglon_formulario_350": 41
+            },
+            {
+                "concepto": "Servicios Generales (No Declarantes)",
+                "base_uvt": 4,
+                "tarifa": 6.0,
+                "renglon_formulario_350": 41
+            },
+            {
+                "concepto": "Honorarios y Comisiones (PJ)",
+                "base_uvt": 0,
+                "tarifa": 11.0,
+                "renglon_formulario_350": 42
+            },
+            {
+                "concepto": "Arrendamientos (Bienes Muebles)",
+                "base_uvt": 0,
+                "tarifa": 4.0,
+                "renglon_formulario_350": 43
+            },
+            {
+                "concepto": "Arrendamientos (Bienes Inmuebles)",
+                "base_uvt": 27,
+                "tarifa": 3.5,
+                "renglon_formulario_350": 43
+            }
+        ]
+    },
+    "calendario": {
+        "iva_bimestral": [
+            {
+                "periodo": "Ene-Feb",
+                "digitos": {
+                    "1": "2025-03-07",
+                    "2": "2025-03-08",
+                    "3": "2025-03-09",
+                    "4": "2025-03-10",
+                    "5": "2025-03-11",
+                    "6": "2025-03-14",
+                    "7": "2025-03-15",
+                    "8": "2025-03-16",
+                    "9": "2025-03-17",
+                    "0": "2025-03-18"
+                }
+            },
+            {
+                "periodo": "Mar-Abr",
+                "digitos": {
+                    "1": "2025-05-09",
+                    "0": "2025-05-23"
+                }
+            }
+        ],
+        "retefuente_mensual": {
+            "base_dates": [
+                "2025-02-07",
+                "2025-03-07",
+                "2025-04-09",
+                "2025-05-09",
+                "2025-06-10",
+                "2025-07-08",
+                "2025-08-11",
+                "2025-09-09",
+                "2025-10-07",
+                "2025-11-07",
+                "2025-12-10",
+                "2026-01-13"
+            ]
+        }
+    }
+}

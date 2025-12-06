@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Auxiliar por Tercero y Cuenta</title>
+    <style>
+        @page { 
+            size: letter landscape; 
+            margin: 1.5cm; 
+        }
+        body { 
+            font-family: Arial, sans-serif; 
+            font-size: 8px;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        h1, h2 { 
+            margin: 0;
+        }
+        h1 { font-size: 14px; }
+        h2 { font-size: 12px; font-weight: normal; }
+        .report-info {
+            margin-bottom: 15px;
+            font-size: 9px;
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 4px; 
+            text-align: left; 
+            word-wrap: break-word;
+        }
+        th { 
+            background-color: #f2f2f2; 
+            text-align: center;
+            font-weight: bold;
+        }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .total-global-row td {
+            font-weight: bold;
+            background-color: #e0e0e0;
+            border-top: 2px solid #333;
+        }
+        .cuenta-header-row td {
+            font-weight: bold;
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa_nombre }}</h1>
+        <h2>NIT: {{ empresa_nit }}</h2>
+    </div>
+
+    <div class="report-info">
+        <h2>Auxiliar por Tercero y Cuenta</h2>
+        <p>
+            <strong>Tercero:</strong> {{ tercero_info.nit }} - {{ tercero_info.razon_social }}<br>
+            <strong>Periodo:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}
+        </p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Documento</th>
+                <th>Concepto</th>
+                {% if has_cost_centers %}
+                <th>C. Costo</th>
+                {% endif %}
+                <th class="text-right">Débito</th>
+                <th class="text-right">Crédito</th>
+                <th class="text-right">Saldo Parcial</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="total-global-row">
+                <td colspan="{{ 6 if has_cost_centers else 5 }}"><strong>SALDO ANTERIOR GLOBAL</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(saldo_anterior_global) }}</strong></td>
+            </tr>
+
+            {% for cuenta_id, grupo_movimientos in movimientos | groupby('cuenta_id') %}
+                {% set movimientos_lista = list(grupo_movimientos) %}
+                {% set primer_mov = movimientos_lista[0] %}
+                <tr class="cuenta-header-row">
+                    <td colspan="{{ 7 if has_cost_centers else 6 }}">
+                        <strong>Cuenta: {{ primer_mov.cuenta_codigo }} - {{ primer_mov.cuenta_nombre }}</strong>
+                    </td>
+                </tr>
+                <tr style="background-color: #fafafa;">
+                    <td colspan="{{ 6 if has_cost_centers else 5 }}"><i>Saldo Anterior de la Cuenta</i></td>
+                    <td class="text-right">
+                        <i>{{ "{:,.2f}".format(saldos_iniciales_por_cuenta.get(cuenta_id | string, 0)) }}</i>
+                    </td>
+                </tr>
+
+                {% for mov in movimientos_lista %}
+                <tr>
+                    <td>{{ mov.fecha.strftime('%Y-%m-%d') if mov.fecha else '' }}</td>
+                    <td>{{ mov.tipo_documento }}-{{ mov.numero_documento }}</td>
+                    <td>{{ mov.concepto }}</td>
+                    {% if has_cost_centers %}
+                    <td>{{ mov.centro_costo_codigo or '' }}</td>
+                    {% endif %}
+                    <td class="text-right">{{ "{:,.2f}".format(mov.debito) }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(mov.credito) }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(mov.saldo_parcial) }}</td>
+                </tr>
+                {% endfor %}
+            {% endfor %}
+
+            <tr class="total-global-row">
+                <td colspan="{{ 6 if has_cost_centers else 5 }}"><strong>SALDO FINAL GLOBAL</strong></td>
+                {% set saldo_final_global = (movimientos[-1].saldo_parcial if movimientos else saldo_anterior_global) %}
+                <td class="text-right"><strong>{{ "{:,.2f}".format(saldo_final_global) }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>
