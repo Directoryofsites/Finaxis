@@ -52,7 +52,7 @@ def delete_bodega_route(bodega_id: int, db: Session = Depends(get_db), current_u
 # === ENDPOINTS CRUD PARA GRUPOS DE INVENTARIO ===
 # ==============================================================================
 
-@router.post("/grupos", response_model=schemas.GrupoInventario, status_code=status.HTTP_201_CREATED, dependencies=[Depends(has_permission("inventario:gestionar_parametros"))])
+@router.post("/grupos", response_model=schemas.GrupoInventario, status_code=status.HTTP_201_CREATED, dependencies=[Depends(get_current_user)])
 def create_grupo_inventario_route(grupo: schemas.GrupoInventarioCreate, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return service_inventario.create_grupo_inventario(db=db, grupo=grupo, empresa_id=current_user.empresa_id)
 
@@ -76,13 +76,13 @@ def get_grupo_by_id_route(grupo_id: int, db: Session = Depends(get_db), current_
     if db_grupo is None: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Grupo no encontrado.")
     return db_grupo
 
-@router.put("/grupos/{grupo_id}", response_model=schemas.GrupoInventario, dependencies=[Depends(has_permission("inventario:gestionar_parametros"))])
+@router.put("/grupos/{grupo_id}", response_model=schemas.GrupoInventario, dependencies=[Depends(get_current_user)])
 def update_grupo_inventario_route(grupo_id: int, grupo: schemas.GrupoInventarioUpdate, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     db_grupo = service_inventario.update_grupo_inventario(db=db, grupo_id=grupo_id, grupo=grupo, empresa_id=current_user.empresa_id)
     if db_grupo is None: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Grupo no encontrado.")
     return db_grupo
 
-@router.delete("/grupos/{grupo_id}", dependencies=[Depends(has_permission("inventario:gestionar_parametros"))])
+@router.delete("/grupos/{grupo_id}", dependencies=[Depends(get_current_user)])
 def delete_grupo_inventario_route(grupo_id: int, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return service_inventario.delete_grupo_inventario(db=db, grupo_id=grupo_id, empresa_id=current_user.empresa_id)
 
@@ -91,7 +91,7 @@ def delete_grupo_inventario_route(grupo_id: int, db: Session = Depends(get_db), 
 # === ENDPOINTS CRUD PARA TASAS DE IMPUESTO ===
 # ==============================================================================
 
-@router.post("/tasas-impuesto", response_model=schemas.TasaImpuesto, status_code=status.HTTP_201_CREATED, dependencies=[Depends(has_permission("inventario:gestionar_parametros"))])
+@router.post("/tasas-impuesto", response_model=schemas.TasaImpuesto, status_code=status.HTTP_201_CREATED, dependencies=[Depends(get_current_user)])
 def create_tasa_impuesto_route(tasa: schemas.TasaImpuestoCreate, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return service_inventario.create_tasa_impuesto(db=db, tasa=tasa, empresa_id=current_user.empresa_id)
 
@@ -99,13 +99,13 @@ def create_tasa_impuesto_route(tasa: schemas.TasaImpuestoCreate, db: Session = D
 def get_tasas_impuesto_route(db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return service_inventario.get_tasas_by_empresa(db=db, empresa_id=current_user.empresa_id)
 
-@router.put("/tasas-impuesto/{tasa_id}", response_model=schemas.TasaImpuesto, dependencies=[Depends(has_permission("inventario:gestionar_parametros"))])
+@router.put("/tasas-impuesto/{tasa_id}", response_model=schemas.TasaImpuesto, dependencies=[Depends(get_current_user)])
 def update_tasa_impuesto_route(tasa_id: int, tasa: schemas.TasaImpuestoUpdate, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     db_tasa = service_inventario.update_tasa_impuesto(db=db, tasa_id=tasa_id, tasa=tasa, empresa_id=current_user.empresa_id)
     if db_tasa is None: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tasa no encontrada.")
     return db_tasa
 
-@router.delete("/tasas-impuesto/{tasa_id}", dependencies=[Depends(has_permission("inventario:gestionar_parametros"))])
+@router.delete("/tasas-impuesto/{tasa_id}", dependencies=[Depends(get_current_user)])
 def delete_tasa_impuesto_route(tasa_id: int, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return service_inventario.delete_tasa_impuesto(db=db, tasa_id=tasa_id, empresa_id=current_user.empresa_id)
 
@@ -114,7 +114,7 @@ def delete_tasa_impuesto_route(tasa_id: int, db: Session = Depends(get_db), curr
 # === ENDPOINTS CRUD PARA LISTAS DE PRECIO ===
 # ==============================================================================
 
-@router.post("/listas-precio", response_model=schemas.ListaPrecio, status_code=status.HTTP_201_CREATED, dependencies=[Depends(has_permission("inventario:gestionar_parametros"))])
+@router.post("/listas-precio", response_model=schemas.ListaPrecio, status_code=status.HTTP_201_CREATED, dependencies=[Depends(get_current_user)])
 def create_lista_precio_route(lista_precio: schemas.ListaPrecioCreate, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return service_inventario.create_lista_precio(db=db, lista_precio=lista_precio, empresa_id=current_user.empresa_id)
 
@@ -122,13 +122,13 @@ def create_lista_precio_route(lista_precio: schemas.ListaPrecioCreate, db: Sessi
 def get_listas_precio_route(db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return service_inventario.get_listas_precio_by_empresa(db=db, empresa_id=current_user.empresa_id)
 
-@router.put("/listas-precio/{lista_id}", response_model=schemas.ListaPrecio, dependencies=[Depends(has_permission("inventario:gestionar_parametros"))])
+@router.put("/listas-precio/{lista_id}", response_model=schemas.ListaPrecio, dependencies=[Depends(get_current_user)])
 def update_lista_precio_route(lista_id: int, lista_update: schemas.ListaPrecioUpdate, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     db_lista = service_inventario.update_lista_precio(db=db, lista_id=lista_id, lista_update=lista_update, empresa_id=current_user.empresa_id)
     if db_lista is None: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lista de precio no encontrada.")
     return db_lista
 
-@router.delete("/listas-precio/{lista_id}", dependencies=[Depends(has_permission("inventario:gestionar_parametros"))])
+@router.delete("/listas-precio/{lista_id}", dependencies=[Depends(get_current_user)])
 def delete_lista_precio_route(lista_id: int, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return service_inventario.delete_lista_precio(db=db, lista_id=lista_id, empresa_id=current_user.empresa_id)
 
