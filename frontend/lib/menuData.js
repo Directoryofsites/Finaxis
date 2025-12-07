@@ -1,4 +1,4 @@
-import {
+﻿import {
     FaCalculator, FaChartBar, FaUsers, FaFileInvoiceDollar, FaBoxes, FaCog,
     FaFileAlt, FaPlus, FaBook, FaBalanceScale, FaCheckCircle, FaUniversity,
     FaClipboardList, FaWrench, FaHandshake, FaTruckMoving, FaReceipt, FaLock,
@@ -81,6 +81,7 @@ export const baseMenuStructure = [
             { name: 'Facturación', href: '/contabilidad/facturacion', icon: FaDollarSign },
             { name: 'Gestión de Remisiones', href: '/remisiones', icon: FaClipboardList },
             { name: 'Reportes Remisiones', href: '/remisiones/reportes', icon: FaChartPie },
+            { name: 'Gestión Cotizaciones', href: '/cotizaciones', icon: FaFileInvoiceDollar },
             { name: 'Gestión Compras', href: '/contabilidad/compras', icon: FaReceipt },
             { name: 'Rentabilidad Producto', href: '/contabilidad/reportes/rentabilidad-producto', icon: FaChartLine },
             { name: 'Rentabilidad por Documentos', href: '/contabilidad/reportes/gestion-ventas', icon: FaChartLine },
@@ -150,3 +151,4 @@ export const menuStructure = [
     ...modulesWithAnalisis,
     FAVORITOS_MODULE,
 ];
+

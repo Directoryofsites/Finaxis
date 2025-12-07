@@ -28,3 +28,4 @@ class FacturaCreate(BaseModel):
     centro_costo_id: Optional[int] = None
     fecha_vencimiento: Optional[date] = None
     remision_id: Optional[int] = None
+    cotizacion_id: Optional[int] = None

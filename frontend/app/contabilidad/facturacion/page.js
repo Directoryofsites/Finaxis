@@ -64,6 +64,12 @@ export default function NuevaFacturaPage() {
     const [remisionesDisponibles, setRemisionesDisponibles] = useState([]);
     // ------------------------------------
 
+    // --- NUEVO: ESTADOS PARA COTIZACIÓN ---
+    const [cotizacionId, setCotizacionId] = useState(null);
+    const [isCotizacionModalOpen, setIsCotizacionModalOpen] = useState(false);
+    const [cotizacionesDisponibles, setCotizacionesDisponibles] = useState([]);
+    // -------------------------------------
+
     const [clienteListaPrecioId, setClienteListaPrecioId] = useState(null);
 
     const [pageIsLoading, setPageIsLoading] = useState(true);
@@ -247,6 +253,7 @@ export default function NuevaFacturaPage() {
         setBeneficiarioId(rem.tercero_id);
         setSelectedBodegaId(String(rem.bodega_id));
         setRemisionId(rem.id);
+        setCotizacionId(null); // Limpiar cotización si se carga remisión
 
         // 3. Cargar Detalles
         // Necesitamos mapear los detalles de la remisión a items de factura
@@ -269,6 +276,53 @@ export default function NuevaFacturaPage() {
         setIsRemisionModalOpen(false);
         toast.success(`Remisión #${rem.numero} cargada.`);
     };
+
+    // --- LÓGICA DE COTIZACIONES ---
+    const handleOpenCotizacionModal = useCallback(async () => {
+        try {
+            setCotizacionesDisponibles([]);
+            const res = await apiService.get('/cotizaciones/', {
+                params: { estado: 'APROBADA' }
+            });
+            setCotizacionesDisponibles(res.data.cotizaciones);
+            setIsCotizacionModalOpen(true);
+        } catch (error) {
+            console.error("Error fetching cotizaciones:", error);
+            toast.error("No se pudieron cargar las cotizaciones disponibles.");
+        }
+    }, []);
+
+    const cargarCotizacion = (cot) => {
+        // 1. Validar Bodega (si aplica)
+        if (cot.bodega_id) {
+            const bodegaExiste = bodegas.some(b => b.id === cot.bodega_id);
+            if (bodegaExiste) setSelectedBodegaId(String(cot.bodega_id));
+        }
+
+        // 2. Cargar Datos
+        setBeneficiarioId(cot.tercero_id);
+        setCotizacionId(cot.id);
+        setRemisionId(null); // Limpiar remisión
+        setCondicionPago('Crédito') // Default, user can change
+        // Fechas - Opcional: setFechaVencimiento(new Date(cot.fecha_vencimiento)) if desired
+
+        // 3. Items
+        const nuevosItems = cot.detalles.map(d => {
+            const producto = maestros.productos.find(p => p.id === d.producto_id);
+            return {
+                producto_id: d.producto_id,
+                codigo: producto ? producto.codigo : d.producto_id,
+                nombre: producto ? producto.nombre : `Producto ID ${d.producto_id}`,
+                cantidad: d.cantidad,
+                precio_unitario: d.precio_unitario
+            };
+        });
+
+        setItems(nuevosItems);
+        setIsCotizacionModalOpen(false);
+        toast.success(`Cotización #${cot.numero} cargada.`);
+    };
+    // ------------------------------------
     // ------------------------------------
 
 
@@ -319,6 +373,7 @@ export default function NuevaFacturaPage() {
             condicion_pago: condicionPago,
             bodega_id: bodegaRequerida ? parseInt(selectedBodegaId) : null,
             remision_id: remisionId ? parseInt(remisionId) : null,
+            cotizacion_id: cotizacionId ? parseInt(cotizacionId) : null,
             items: itemsValidados
         };
 
@@ -384,11 +439,17 @@ export default function NuevaFacturaPage() {
                     </div>
                 </div>
 
-                {/* BOTÓN CARGAR REMISIÓN */}
-                <div className="flex justify-end mb-4">
+                {/* BOTÓN CARGAR REMISIÓN Y COTIZACIÓN */}
+                <div className="flex justify-end mb-4 gap-2">
+                    <button
+                        onClick={handleOpenCotizacionModal}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 flex items-center gap-2 font-bold transition-colors"
+                    >
+                        <FaListOl /> Cargar Cotización
+                    </button>
                     <button
                         onClick={handleOpenRemisionModal}
-                        className="bg-orange-600 text-white px-4 py-2 rounded-lg shadow hover:bg-orange-700 flex items-center gap-2 font-bold transition-colors"
+                        className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-300 flex items-center gap-2 font-bold transition-colors"
                     >
                         <FaListOl /> Cargar Remisión
                     </button>
@@ -598,47 +659,88 @@ export default function NuevaFacturaPage() {
                 {/* MODAL SELECCION REMISION */}
                 {isRemisionModalOpen && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-                            <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+                        <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
+                            <div className="flex justify-between items-center mb-6 border-b pb-2">
                                 <h3 className="text-xl font-bold text-gray-800">Seleccionar Remisión</h3>
-                                <button onClick={() => setIsRemisionModalOpen(false)} className="text-gray-500 hover:text-red-500">
-                                    <FaTrash className="transform rotate-45" /> Cerrar
-                                </button>
+                                <button onClick={() => setIsRemisionModalOpen(false)} className="text-gray-500 hover:text-gray-700"><FaTrash className="transform rotate-45" /></button>
                             </div>
-                            <div className="p-4">
-                                {remisionesDisponibles.length === 0 ? (
-                                    <p className="text-center text-gray-500 py-8">No hay remisiones pendientes de facturar.</p>
-                                ) : (
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-100">
-                                            <tr>
-                                                <th className="px-4 py-2 text-left">Número</th>
-                                                <th className="px-4 py-2 text-left">Fecha</th>
-                                                <th className="px-4 py-2 text-left">Cliente</th>
-                                                <th className="px-4 py-2 text-left">Bodega</th>
-                                                <th className="px-4 py-2 text-center">Acción</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {remisionesDisponibles.map(r => (
-                                                <tr key={r.id} className="hover:bg-blue-50">
-                                                    <td className="px-4 py-2 font-bold">#{r.numero}</td>
-                                                    <td className="px-4 py-2">{r.fecha}</td>
-                                                    <td className="px-4 py-2">{r.tercero_nombre}</td>
-                                                    <td className="px-4 py-2">{r.bodega_nombre}</td>
+
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Número</th>
+                                            <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Fecha</th>
+                                            <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Cliente</th>
+                                            <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Bodega</th>
+                                            <th className="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {remisionesDisponibles.length === 0 ? (
+                                            <tr><td colSpan="5" className="text-center py-4">No hay remisiones disponibles.</td></tr>
+                                        ) : (
+                                            remisionesDisponibles.map(rem => (
+                                                <tr key={rem.id} className="hover:bg-gray-50">
+                                                    <td className="px-4 py-2 font-bold">#{rem.numero}</td>
+                                                    <td className="px-4 py-2">{rem.fecha}</td>
+                                                    <td className="px-4 py-2">{rem.tercero_nombre}</td>
+                                                    <td className="px-4 py-2">{rem.bodega_nombre}</td>
                                                     <td className="px-4 py-2 text-center">
-                                                        <button
-                                                            onClick={() => cargarRemision(r)}
-                                                            className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-800 text-sm"
-                                                        >
+                                                        <button onClick={() => cargarRemision(rem)} className="bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200 text-sm font-bold">
                                                             Cargar
                                                         </button>
                                                     </td>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                )}
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* MODAL SELECCION COTIZACION */}
+                {isCotizacionModalOpen && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
+                            <div className="flex justify-between items-center mb-6 border-b pb-2">
+                                <h3 className="text-xl font-bold text-gray-800">Seleccionar Cotización</h3>
+                                <button onClick={() => setIsCotizacionModalOpen(false)} className="text-gray-500 hover:text-gray-700"><FaTrash className="transform rotate-45" /></button>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Número</th>
+                                            <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Fecha</th>
+                                            <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Cliente</th>
+                                            <th className="px-4 py-2 text-right text-xs font-bold text-gray-500 uppercase">Total</th>
+                                            <th className="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {cotizacionesDisponibles.length === 0 ? (
+                                            <tr><td colSpan="5" className="text-center py-4">No hay cotizaciones aprobadas disponibles.</td></tr>
+                                        ) : (
+                                            cotizacionesDisponibles.map(cot => (
+                                                <tr key={cot.id} className="hover:bg-gray-50">
+                                                    <td className="px-4 py-2 font-bold">#{cot.numero}</td>
+                                                    <td className="px-4 py-2">{cot.fecha}</td>
+                                                    <td className="px-4 py-2">{cot.tercero_nombre}</td>
+                                                    <td className="px-4 py-2 text-right">{(cot.total_estimado || 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP' })}</td>
+                                                    <td className="px-4 py-2 text-center">
+                                                        <button onClick={() => cargarCotizacion(cot)} className="bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200 text-sm font-bold">
+                                                            Cargar
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>

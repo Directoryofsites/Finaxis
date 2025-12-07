@@ -40,7 +40,7 @@ export default function CotizacionesListPage() {
         try {
             const params = {};
             if (filtros.numero) params.numero = filtros.numero;
-            if (filtros.tercero) params.tercero = filtros.tercero;
+            if (filtros.tercero) params.tercero_id = filtros.tercero;
             if (filtros.estado) params.estado = filtros.estado;
             if (filtros.fechaInicio) params.fecha_inicio = filtros.fechaInicio.toISOString().split('T')[0];
             if (filtros.fechaFin) params.fecha_fin = filtros.fechaFin.toISOString().split('T')[0];

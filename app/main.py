@@ -296,7 +296,9 @@ app.include_router(manual_router.router, prefix="/api/manual", tags=["Manual de 
 from app.api.remisiones import routes as remisiones_router
 app.include_router(remisiones_router.router, prefix="/api/remisiones", tags=["Remisiones"])
 
-
+# --- MODULO COTIZACIONES ---
+from app.api.cotizaciones import routes as cotizaciones_router
+app.include_router(cotizaciones_router.router, prefix="/api/cotizaciones", tags=["Cotizaciones"])
 
 if __name__ == "__main__":
     import uvicorn

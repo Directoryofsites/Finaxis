@@ -226,7 +226,7 @@ export default function CreateCotizacionPage() {
     if (loading) return <div className="p-8">Cargando...</div>;
 
     const totalEstimado = detalles.reduce((acc, d) => acc + ((parseFloat(d.cantidad) || 0) * (parseFloat(d.precio) || 0)), 0);
-    const readOnly = estado !== 'BORRADOR';
+    const readOnly = estado === 'FACTURADA' || estado === 'ANULADA';
 
     return (
         <div className="p-6 max-w-7xl mx-auto">

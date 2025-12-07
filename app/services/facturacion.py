@@ -224,7 +224,12 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
             if factura.remision_id:
                 from . import remision as service_remision
                 service_remision.procesar_facturacion_remision(db, factura.remision_id, factura.items)
-            # ------------------------------
+            
+            # --- INTEGRACIÓN COTIZACIONES ---
+            if factura.cotizacion_id:
+                from . import cotizacion as service_cotizacion
+                service_cotizacion.procesar_facturacion_cotizacion(db, factura.cotizacion_id, factura.items)
+            # --------------------------------
 
         db.commit()
         db.refresh(nuevo_documento)
