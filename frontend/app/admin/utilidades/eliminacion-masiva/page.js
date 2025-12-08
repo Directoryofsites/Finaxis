@@ -108,8 +108,17 @@ export default function EliminacionMasivaPage() {
         if (filtrosParaApi[key]) {
           const numValue = parseFloat(filtrosParaApi[key]);
           if (!isNaN(numValue)) {
-            filtrosParaApi[key] = numValue;
-          } else {
+            // Mapeo especial para coincidir con DocumentoGestionFiltros del backend (Listas)
+            if (key === 'tipoDocId') filtrosParaApi.tipoDocIds = [numValue];
+            else if (key === 'terceroId') filtrosParaApi.terceroIds = [numValue];
+            else if (key === 'cuentaId') filtrosParaApi.cuentaIds = [numValue];
+            else if (key === 'centroCostoId') filtrosParaApi.centroCostoIds = [numValue];
+            else filtrosParaApi[key] = numValue; // valorMonto se queda igual
+          }
+          // Limpiamos la clave singular original para no ensuciar
+          if (['tipoDocId', 'terceroId', 'cuentaId', 'centroCostoId'].includes(key)) {
+            delete filtrosParaApi[key];
+          } else if (isNaN(numValue)) {
             delete filtrosParaApi[key];
           }
         } else {

@@ -38,6 +38,13 @@ from .caracteristica_valor_producto import CaracteristicaValorProducto # Valor d
 # --- CAMBIO: Eliminada importación ---
 # from .precio_producto import PrecioProducto
 
-# En app/models/__init__.py agrega:
 from .cupo_adicional import CupoAdicional
 from .remision import Remision, RemisionDetalle
+
+# --- COTIZACIONES (Nuevo Modulo) ---
+from .cotizacion import Cotizacion, CotizacionDetalle
+
+# --- ACTIVOS FIJOS (Nuevo Modulo) ---
+from .activo_categoria import ActivoCategoria
+from .activo_fijo import ActivoFijo
+from .activo_novedad import ActivoNovedad

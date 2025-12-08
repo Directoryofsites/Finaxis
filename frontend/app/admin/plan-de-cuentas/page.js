@@ -15,6 +15,7 @@ import {
 import * as planCuentasService from '@/lib/planCuentasService';
 import CuentaFormModal from '@/app/components/PlanCuentas/CuentaFormModal';
 import ConfirmacionDepuracionModal from '@/app/components/PlanCuentas/ConfirmacionDepuracionModal';
+import ImportarPucModal from '@/app/components/PlanCuentas/ImportarPucModal';
 
 // =============================================================================
 // 🎨 COMPONENTE DE FILA RECURSIVA (Estilizado v2.0)
@@ -154,7 +155,9 @@ export default function PlanDeCuentasPage() {
   const [cuentaActual, setCuentaActual] = useState(null);
   const [depuracionData, setDepuracionData] = useState(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
+
   const [modalTitle, setModalTitle] = useState('');
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // --- Carga Inicial ---
   const fetchCuentas = useCallback(async () => {
@@ -327,6 +330,13 @@ export default function PlanDeCuentasPage() {
             >
               <FaBook className="text-lg" /> <span className="hidden md:inline">Manual</span>
             </button>
+            <button
+              onClick={() => setIsImportModalOpen(true)}
+              className="btn btn-ghost text-green-700 bg-green-50 hover:bg-green-100 gap-2 font-bold"
+              title="Importar PUC desde JSON"
+            >
+              <FaPlus className="text-lg" /> Importar
+            </button>
             <BotonRegresar />
           </div>
         </div>
@@ -424,7 +434,6 @@ export default function PlanDeCuentasPage() {
         </div>
       </div>
 
-      {/* Modales (Sin cambios funcionales, solo estilo heredado) */}
       <CuentaFormModal
         isOpen={isFormModalOpen}
         onClose={() => setIsFormModalOpen(false)}
@@ -440,6 +449,15 @@ export default function PlanDeCuentasPage() {
         onConfirm={handleConfirmDepuracion}
         analysisData={depuracionData}
         isLoading={isActionLoading}
+      />
+
+      {/* --- NUEVO IMPORTADOR INTELIGENTE (SOLICITUD ACTIVOS FIJOS/PUC) --- */}
+      <ImportarPucModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportComplete={() => {
+          fetchCuentas(); // Recargar tras importar
+        }}
       />
     </div>
   );

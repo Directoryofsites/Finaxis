@@ -76,6 +76,26 @@ def delete_cuenta(
     
     return
 
+    return
+
+# --- IMPORTACION AVANZADA ---
+
+@router.post("/analizar-importacion", response_model=schemas_plan.AnalisisImportacionResponse)
+def analizar_importacion(
+    cuentas: List[schemas_plan.ImportarCuentaInput],
+    db: Session = Depends(get_db),
+    current_user: models_usuario = Depends(get_current_user)
+):
+    return services_plan.analizar_importacion_puc(db, cuentas, current_user.empresa_id)
+
+@router.post("/importar-lote", status_code=status.HTTP_201_CREATED)
+def importar_lote(
+    request: schemas_plan.ImportarLoteRequest,
+    db: Session = Depends(get_db),
+    current_user: models_usuario = Depends(get_current_user)
+):
+    return services_plan.importar_cuentas_lote(db, request.cuentas, current_user.empresa_id, current_user.id)
+
 # --- RUTAS DE CONSULTA Y HERRAMIENTAS (SIMPLIFICADAS PERO SIN CAMBIOS DE LÓGICA) ---
 
 @router.get("/analizar-depuracion/{cuenta_id}", response_model=schemas_plan.AnalisisDepuracionResponse)

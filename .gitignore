@@ -119,3 +119,4 @@ Thumbs.db
 backend_logs.txt
 *.log
 debug_*.py
+!frontend/lib/

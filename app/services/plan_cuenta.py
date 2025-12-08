@@ -400,3 +400,88 @@ def reparar_jerarquia_puc(db: Session, empresa_id: int):
     else:
         print("--- La jerarquía ya era correcta. No se realizaron cambios. ---")
         return {"message": "La jerarquía ya era correcta. No se realizaron cambios."}
+
+# --- IMPORTACIÓN INTELIGENTE ---
+
+def analizar_importacion_puc(db: Session, cuentas_input: List[schemas.ImportarCuentaInput], empresa_id: int):
+    # 1. Obtener todas las cuentas existentes de la empresa
+    existentes = db.query(models.PlanCuenta.codigo).filter(models.PlanCuenta.empresa_id == empresa_id).all()
+    codigos_existentes = {c.codigo for c in existentes}
+    
+    resultados = []
+    nuevas_count = 0
+    existentes_count = 0
+    
+    for c in cuentas_input:
+        codigo_limpio = str(c.codigo).strip()
+        es_nueva = codigo_limpio not in codigos_existentes
+        
+        item = schemas.AnalisisImportacionItem(
+            codigo=codigo_limpio,
+            nombre=c.nombre,
+            nivel_calculado=0, # Se recalcula al insertar
+            es_nueva=es_nueva,
+            permite_movimiento=c.permite_movimiento if c.permite_movimiento is not None else (len(codigo_limpio) > 4),
+            razon_rechazo="Código duplicado" if not es_nueva else None
+        )
+        
+        resultados.append(item)
+        if es_nueva: nuevas_count += 1
+        else: existentes_count += 1
+        
+    return schemas.AnalisisImportacionResponse(
+        cuentas_analizadas=resultados,
+        total_nuevas=nuevas_count,
+        total_existentes=existentes_count
+    )
+
+def importar_cuentas_lote(db: Session, cuentas: List[schemas.ImportarCuentaInput], empresa_id: int, user_id: int):
+    # 1. Ordenar por longitud de código para asegurar que se creen primero los padres
+    cuentas_ordenadas = sorted(cuentas, key=lambda x: len(str(x.codigo)))
+    
+    creadas = 0
+    
+    # Cache local para evitar queries repetidos de padres
+    cuentas_db = db.query(models.PlanCuenta).filter(models.PlanCuenta.empresa_id == empresa_id).all()
+    mapa_codigo_id = {c.codigo: c.id for c in cuentas_db}
+    
+    for c in cuentas_ordenadas:
+        codigo = str(c.codigo).strip()
+        
+        if codigo in mapa_codigo_id:
+            continue
+            
+        # Buscar padre en el mapa
+        padre_id = None
+        prefijo = codigo[:-1]
+        while len(prefijo) > 0:
+            if prefijo in mapa_codigo_id:
+                padre_id = mapa_codigo_id[prefijo]
+                break
+            prefijo = prefijo[:-1]
+            
+        # Crear Objeto
+        nueva_cuenta = models.PlanCuenta(
+            empresa_id=empresa_id,
+            codigo=codigo,
+            nombre=c.nombre,
+            permite_movimiento=c.permite_movimiento if c.permite_movimiento is not None else False,
+            cuenta_padre_id=padre_id,
+            nivel=0, 
+            created_by=user_id,
+            updated_by=user_id,
+            clase=int(codigo[0]) if codigo and codigo[0].isdigit() else 0
+        )
+        
+        db.add(nueva_cuenta)
+        db.flush()
+        
+        mapa_codigo_id[codigo] = nueva_cuenta.id
+        creadas += 1
+        
+    db.commit()
+    
+    # Paso final: Reparar jerarquía completa para ajustar niveles
+    reparar_jerarquia_puc(db, empresa_id)
+    
+    return {"message": f"Proceso finalizado. Se crearon {creadas} cuentas nuevas."}

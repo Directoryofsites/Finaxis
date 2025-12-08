@@ -47,7 +47,14 @@ from app.models import (
     TasaImpuesto,
     Producto,
     StockBodega,
-    MovimientoInventario
+    MovimientoInventario,
+    # Cotizaciones
+    Cotizacion,
+    CotizacionDetalle,
+    # Activos Fijos
+    ActivoCategoria,
+    ActivoFijo,
+    ActivoNovedad
 )
 # --- FIN DE LA CIRUGÍA ARQUITECTÓNICA ---
 

@@ -300,6 +300,10 @@ app.include_router(remisiones_router.router, prefix="/api/remisiones", tags=["Re
 from app.api.cotizaciones import routes as cotizaciones_router
 app.include_router(cotizaciones_router.router, prefix="/api/cotizaciones", tags=["Cotizaciones"])
 
+# --- MODULO ACTIVOS FIJOS ---
+from app.api.activos_fijos import routes as activos_fijos_router
+app.include_router(activos_fijos_router.router, prefix="/api/activos", tags=["Activos Fijos"])
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)

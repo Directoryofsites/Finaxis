@@ -55,3 +55,21 @@ export const ejecutarDepuracion = (ids) => {
   const payload = { ids_a_eliminar: ids };
   return apiService.post('/plan-cuentas/ejecutar-depuracion', payload);
 };
+
+/**
+ * Analiza un array de cuentas (desde JSON/CSV) contra la DB.
+ * @param {Array} cuentas - Array de objetos {codigo, nombre, ...}
+ * @returns {Promise} { cuentas_analizadas, total_nuevas, ... }
+ */
+export const analizarImportacion = (cuentas) => {
+  return apiService.post('/plan-cuentas/analizar-importacion', cuentas);
+};
+
+/**
+ * Importa el lote de cuentas definitivas.
+ * @param {Array} cuentas - Array de cuentas seleccionadas para crear.
+ * @returns {Promise}
+ */
+export const importarLote = (cuentas) => {
+  return apiService.post('/plan-cuentas/importar-lote', { cuentas });
+};

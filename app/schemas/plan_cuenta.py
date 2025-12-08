@@ -11,6 +11,32 @@ class PlanCuentaInput(BaseModel):
     funcion_especial: Optional[Annotated[str, Field(max_length=50)]] = None
     cuenta_padre_id: Optional[int] = None
 
+# --- SCHEMAS PARA IMPORTACIÓN INTELIGENTE ---
+class ImportarCuentaInput(BaseModel):
+    codigo: str
+    nombre: str
+    # Opcionales para el input crudo
+    nivel: Optional[int] = None
+    permite_movimiento: Optional[bool] = None
+    funcion_especial: Optional[str] = None
+
+class AnalisisImportacionItem(BaseModel):
+    codigo: str
+    nombre: str
+    nivel_calculado: int
+    es_nueva: bool
+    razon_rechazo: Optional[str] = None # Si es duplicada o inválida
+    permite_movimiento: bool
+    padre_codigo_sugerido: Optional[str] = None
+
+class AnalisisImportacionResponse(BaseModel):
+    cuentas_analizadas: List[AnalisisImportacionItem]
+    total_nuevas: int
+    total_existentes: int
+
+class ImportarLoteRequest(BaseModel):
+    cuentas: List[ImportarCuentaInput]
+
 # --- SCHEMAS EXISTENTES ---
 class PlanCuentaBase(BaseModel):
     codigo: Annotated[str, Field(max_length=20)]

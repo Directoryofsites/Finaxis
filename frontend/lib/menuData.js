@@ -4,7 +4,7 @@
     FaClipboardList, FaWrench, FaHandshake, FaTruckMoving, FaReceipt, FaLock,
     FaListUl, FaDollarSign, FaChartLine, FaChartPie, FaPercentage, FaFileContract,
     FaRedoAlt, FaCalendarAlt, FaTools, FaTimes, FaChartArea, FaStar, FaBuilding,
-    FaStamp, FaShoppingCart, FaMoneyBillWave
+    FaStamp, FaShoppingCart, FaMoneyBillWave, FaTractor, FaCogs
 } from 'react-icons/fa';
 
 export const baseMenuStructure = [
@@ -47,7 +47,7 @@ export const baseMenuStructure = [
         links: [
             { name: 'Gestionar Terceros', href: '/admin/terceros', icon: FaHandshake },
             { name: 'Auxiliar por Tercero', href: '/contabilidad/reportes/tercero-cuenta', icon: FaFileAlt },
-            { name: 'Cartera', href: '/contabilidad/reportes/estado-cuenta-cliente', icon: FaLock }, 
+            { name: 'Cartera', href: '/contabilidad/reportes/estado-cuenta-cliente', icon: FaLock },
             { name: 'Auxiliar de Cartera', href: '/contabilidad/reportes/auxiliar-cartera', icon: FaClipboardList },
             { name: 'Proveedores', href: '/contabilidad/reportes/estado-cuenta-proveedor', icon: FaTruckMoving },
             { name: 'Auxiliar Proveedores', href: '/contabilidad/reportes/auxiliar-proveedores', icon: FaReceipt },
@@ -74,6 +74,16 @@ export const baseMenuStructure = [
         ]
     },
     {
+        id: 'activos',
+        name: "Activos Fijos (NIIF)",
+        icon: FaTractor,
+        links: [
+            { name: "Listado de Activos", href: "/activos", icon: FaListUl },
+            { name: "Registrar Nuevo Activo", href: "/activos/crear", icon: FaPlus },
+            { name: "Categorías y Vidas Útiles", href: "/activos/categorias", icon: FaCogs },
+        ]
+    },
+    {
         id: 'facturacion',
         name: 'Facturación',
         icon: FaDollarSign,
@@ -91,7 +101,7 @@ export const baseMenuStructure = [
         id: 'administracion',
         name: 'Administración y Configuración',
         icon: FaCog,
-        subgroups: [ 
+        subgroups: [
             {
                 title: 'Parametrización Maestra',
                 icon: FaFileContract,
