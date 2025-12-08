@@ -19,7 +19,7 @@ from app.models import (
     PlantillaMaestra, PlantillaDetalle, ConceptoFavorito, Documento, 
     DocumentoEliminado, MovimientoContable, MovimientoEliminado,
     LogOperacion, PeriodoContableCerrado, FormatoImpresion, AplicacionPago,
-    Remision, RemisionDetalle
+    Remision, RemisionDetalle, ConfiguracionReporte
 )
 Base.metadata.create_all(bind=engine)
 # --- FIN: LÓGICA DE AUTO-CREACIÓN ---
@@ -48,6 +48,12 @@ from app.api.plan_cuentas.routes import router as plan_cuentas_router
 from app.api.plantillas import routes as plantillas_router
 from app.api.terceros import routes as terceros_router
 from app.api.tipos_documento import routes as tipos_documento_router
+
+# --- MODULO IMPUESTOS ---
+from app.api.impuestos import routes as impuestos_router
+# app.include_router se mueve abajo
+
+
 from app.api.utilidades import routes as utilidades_router
 from app.api.reports import routes as reports_router
 from app.api.cartera import routes as cartera_router
@@ -291,6 +297,10 @@ app.include_router(favoritos_router.router, prefix="/api", tags=["Favoritos"])
 # app/main.py (Sección de include_router)
 app.include_router(dashboard_router.router, prefix="/api", tags=["Dashboard"])
 app.include_router(manual_router.router, prefix="/api/manual", tags=["Manual de Usuario"])
+
+# --- MODULO IMPUESTOS (Movido al final para evitar errores de orden) ---
+app.include_router(impuestos_router.router, prefix="/api/impuestos", tags=["Impuestos"])
+
 
 # --- MODULO REMISIONES ---
 from app.api.remisiones import routes as remisiones_router

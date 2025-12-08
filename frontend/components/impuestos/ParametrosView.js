@@ -1,10 +1,12 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { FaSave, FaPlus, FaTrash, FaBook, FaTimes, FaListOl } from 'react-icons/fa';
+import { FaSave, FaPlus, FaTrash, FaBook, FaTimes, FaListOl, FaHistory } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
+import { apiService } from '../../lib/apiService'; // Ensure this path is correct
+
 export default function ParametrosView({ impuesto }) {
-    // State for tariffs
+    // State for tariffs (Keep localStorage for tariffs for now as backend model only handles Report Config)
     const [tarifas, setTarifas] = useState([
         { id: 1, concepto: 'General', valor: 19, unidad: '%' },
         { id: 2, concepto: 'Especial', valor: 5, unidad: '%' },
@@ -12,35 +14,130 @@ export default function ParametrosView({ impuesto }) {
     const [periodicidad, setPeriodicidad] = useState('Bimestral');
 
     // State for PUC Mapping
-    // We initialize with the standard rows for the form
-    const defaultMapping = [
-        { r: 27, c: 'Ingresos Brutos', cuentas: '' },
-        { r: 28, c: 'Devoluciones en ventas', cuentas: '' },
-        { r: 40, c: 'Compras de bienes gravados', cuentas: '' },
-        { r: 57, c: 'Impuesto Generado', cuentas: '' },
-        { r: 65, c: 'Impuesto Descontable', cuentas: '' },
+    // State for PUC Mapping
+    const defaultIVA = [
+        // INGRESOS
+        { isHeader: true, c: 'Ingresos' },
+        { r: '27', c: 'Ingresos Operaciones 5%', cuentas: '' },
+        { r: '28', c: 'Ingresos Operaciones General (19%)', cuentas: '' },
+        { r: '35', c: 'Ingresos Exentos', cuentas: '' },
+        { r: '39', c: 'Operaciones excluidas', cuentas: '' },
+        { r: '40', c: 'Ingresos No Gravados', cuentas: '' },
+        { r: '41', c: 'Total Ingresos Brutos', cuentas: '[27]+[28]+[35]+[39]+[40]' }, // Example Formula
+        { r: '42', c: 'Devoluciones en ventas anuladas, rescindidas o resueltas', cuentas: '' },
+        { r: '43', c: 'Total Ingresos Netos', cuentas: '[41]-[42]' },
+
+        // COMPRAS
+        { isHeader: true, c: 'Compras' },
+        { r: '50', c: 'Bienes gravados a la tarifa del 5%', cuentas: '' },
+        { r: '51', c: 'Bienes gravados a la tarifa general', cuentas: '' },
+        { r: '52', c: 'Servicios gravados a la tarifa del 5%', cuentas: '' },
+        { r: '53', c: 'Servicios gravados a la tarifa general', cuentas: '' },
+        { r: '54', c: 'Bienes y servicios excluidos, exentos y no gravados', cuentas: '' },
+        { r: '55', c: 'Total compras e importaciones brutas', cuentas: '[50]+[51]+[52]+[53]+[54]' },
+        { r: '56', c: 'Devoluciones en compras anuladas, rescindidas o resueltas', cuentas: '' },
+        { r: '57', c: 'Total compras netas', cuentas: '[55]-[56]' },
+
+        // IMPUESTO GENERADO
+        { isHeader: true, c: 'Impuesto Generado' },
+        { r: '58', c: 'IVA Generado 5%', cuentas: '' },
+        { r: '59', c: 'IVA Generado 19%', cuentas: '' },
+        { r: '66', c: 'IVA recuperado en devoluciones en compras', cuentas: '' },
+        { r: '67', c: 'Total impuesto generado', cuentas: '[58]+[59]+[66]' },
+
+        // IMPUESTO DESCONTABLE
+        { isHeader: true, c: 'Impuesto Descontable' },
+        { r: '71', c: 'IVA Descontable Compras 5%', cuentas: '' },
+        { r: '72', c: 'IVA Descontable Compras 19%', cuentas: '' },
+        { r: '74', c: 'Servicios gravados a la tarifa del 5%', cuentas: '' },
+        { r: '75', c: 'Servicios gravados a la tarifa general', cuentas: '' },
+        { r: '77', c: 'Total impuesto pagado o facturado', cuentas: '[71]+[72]+[74]+[75]' },
+        { r: '78', c: 'IVA Retenido por servicios no domiciliados', cuentas: '' },
+        { r: '79', c: 'IVA por devoluciones en ventas', cuentas: '' },
+        { r: '80', c: 'Ajuste impuestos descontables (Pérdidas/Hurto)', cuentas: '' },
+        { r: '81', c: 'Total impuestos descontables', cuentas: '[77]+[78]+[79]-[80]' },
+
+        // CONTROL DE SALDOS
+        { isHeader: true, c: 'Control de Saldos' },
+        { r: '82', c: 'Saldo a pagar', cuentas: 'max(0, [67]-[81])' }, // Python syntax for backend eval
+        { r: '83', c: 'Saldo a favor', cuentas: 'max(0, [81]-[67])' },
+        { r: '85', c: 'Retenciones por IVA practicadas', cuentas: '' },
+        { r: '86', c: 'Saldo a pagar final', cuentas: '[82]-[85]' },
     ];
-    const [mapping, setMapping] = useState(defaultMapping);
+
+    const defaultRete = [
+        { r: '27', c: 'Rentas de trabajo (Salarios)', cuentas: '' },
+        { r: '29', c: 'Compras', cuentas: '' },
+        { r: '30', c: 'Honorarios', cuentas: '' },
+        { r: '31', c: 'Servicios', cuentas: '' },
+        { r: '32', c: 'Arrendamientos', cuentas: '' },
+        { r: '40', c: 'Total Retenciones', cuentas: '' },
+    ];
+
+    const defaultRenta = [
+        { r: '36', c: 'Efectivo y equivalentes', cuentas: '11' },
+        { r: '37', c: 'Inversiones', cuentas: '12' },
+        { r: '38', c: 'Cuentas por cobrar', cuentas: '13' },
+        { r: '39', c: 'Inventarios', cuentas: '14' },
+        { r: '40', c: 'Activos Intangibles', cuentas: '16' },
+        { r: '42', c: 'Propiedades, planta y equipo', cuentas: '15' },
+        { r: '43', c: 'Otros activos', cuentas: '17, 18, 19' },
+        { r: '45', c: 'Pasivos', cuentas: '2' },
+        { r: '47', c: 'Ingresos Brutos Act. Ordinarias', cuentas: '41' },
+        { r: '48', c: 'Ingresos Financieros', cuentas: '4210' },
+        { r: '51', c: 'Otros Ingresos', cuentas: '42' },
+        { r: '62', c: 'Costo de Ventas', cuentas: '61, 71' },
+        { r: '63', c: 'Gastos de Administración', cuentas: '51' },
+        { r: '64', c: 'Gastos de Distribución y Ventas', cuentas: '52' },
+        { r: '65', c: 'Gastos Financieros', cuentas: '53' },
+    ];
+
+    const [mapping, setMapping] = useState([]);
 
     // Modal state
     const [showModal, setShowModal] = useState(false);
     const [newTarifa, setNewTarifa] = useState({ concepto: '', valor: '', unidad: '%' });
 
-    // LOAD from localStorage
+    // LOAD from Backend
     useEffect(() => {
         if (impuesto) {
-            try {
-                const savedTarifas = localStorage.getItem(`impuestos_tarifas_${impuesto}`);
-                const savedPeriod = localStorage.getItem(`impuestos_periodicidad_${impuesto}`);
-                const savedMapping = localStorage.getItem(`impuestos_mapping_${impuesto}`);
-
-                if (savedTarifas) setTarifas(JSON.parse(savedTarifas));
-                if (savedPeriod) setPeriodicidad(savedPeriod);
-                if (savedMapping) setMapping(JSON.parse(savedMapping));
-
-            } catch (error) {
-                console.error("Error loading from localStorage:", error);
+            // Set initial defaults based on type to avoid flashing wrong rows
+            // If backend has data, it will overwrite this.
+            if (impuesto.toLowerCase() === 'iva') {
+                setMapping(defaultIVA);
+            } else if (impuesto.toLowerCase() === 'retefuente') {
+                setMapping(defaultRete);
+            } else if (impuesto.toLowerCase() === 'renta') {
+                setMapping(defaultRenta);
+            } else {
+                setMapping([]);
             }
+
+            // Load LocalStorage for Tarifas/Period
+            const savedTarifas = localStorage.getItem(`impuestos_tarifas_${impuesto}`);
+            const savedPeriod = localStorage.getItem(`impuestos_periodicidad_${impuesto}`);
+            if (savedTarifas) setTarifas(JSON.parse(savedTarifas));
+            if (savedPeriod) setPeriodicidad(savedPeriod);
+
+            // Load Configuration from Backend
+            apiService.get(`/impuestos/configuracion/${impuesto.toUpperCase()}`)
+                .then(res => {
+                    if (res.data && res.data.length > 0) {
+                        // Backend is authority. Use its data.
+                        const backendRows = res.data.map(b => ({
+                            r: b.renglon,
+                            c: b.concepto,
+                            cuentas: b.cuentas_ids ? b.cuentas_ids.join(', ') : '',
+                            isHeader: b.is_header || false
+                        }));
+
+                        // Optional: Sort by Renglon number if needed
+                        backendRows.sort((a, b) => parseInt(a.r) - parseInt(b.r));
+
+                        setMapping(backendRows);
+                    }
+                })
+                .catch(err => console.error("Error loading config", err));
         }
     }, [impuesto]);
 
@@ -48,7 +145,7 @@ export default function ParametrosView({ impuesto }) {
     const handleDelete = (id) => {
         if (window.confirm('¿Está seguro de eliminar esta tarifa?')) {
             setTarifas(prev => prev.filter(t => t.id !== id));
-            toast.success('Tarifa eliminada correctamente');
+            toast.success('Tarifa eliminada localmente');
         }
     };
 
@@ -66,7 +163,7 @@ export default function ParametrosView({ impuesto }) {
         setTarifas(prev => [...prev, nueva]);
         setShowModal(false);
         setNewTarifa({ concepto: '', valor: '', unidad: '%' });
-        toast.success('Tarifa agregada correctamente');
+        toast.success('Tarifa agregada localmente');
     };
 
     const handleMappingChange = (index, value) => {
@@ -75,11 +172,35 @@ export default function ParametrosView({ impuesto }) {
         ));
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         try {
+            // Save Local (Tarifas/Period)
             localStorage.setItem(`impuestos_tarifas_${impuesto}`, JSON.stringify(tarifas));
             localStorage.setItem(`impuestos_periodicidad_${impuesto}`, periodicidad);
-            localStorage.setItem(`impuestos_mapping_${impuesto}`, JSON.stringify(mapping));
+
+            // Save Backend (Mapping)
+            const payload = {
+                configs: mapping.map(m => {
+                    const cuentasStr = m.cuentas ? m.cuentas.trim() : '';
+                    let ids = [];
+                    // Detect Formula: Contains brackets [] or parenthesis ()
+                    // If it's a formula, do NOT split by comma (because max(0, ...) uses comma)
+                    if (cuentasStr && (cuentasStr.includes('[') || cuentasStr.includes('('))) {
+                        ids = [cuentasStr];
+                    } else {
+                        ids = cuentasStr ? cuentasStr.split(',').map(s => s.trim()).filter(s => s !== '') : [];
+                    }
+
+                    return {
+                        renglon: m.r || '',
+                        concepto: m.c,
+                        cuentas_ids: ids,
+                        is_header: m.isHeader || false
+                    };
+                })
+            };
+
+            await apiService.post(`/impuestos/configuracion/${impuesto.toUpperCase()}`, payload);
 
             toast.success(`Configuración de ${impuesto} guardada exitosamente.`);
         } catch (error) {
@@ -90,6 +211,21 @@ export default function ParametrosView({ impuesto }) {
 
     const openManual = () => {
         window.open('/manual?file=capitulo_impuestos_parametros.md', '_blank');
+    };
+
+    const handleRestoreDefaults = () => {
+        if (window.confirm("¿Está seguro? Esto sobrescribirá la configuración actual con la sugerida por el sistema.")) {
+            if (impuesto.toLowerCase() === 'iva') {
+                setMapping(defaultIVA);
+            } else if (impuesto.toLowerCase() === 'retefuente') {
+                setMapping(defaultRete);
+            } else if (impuesto.toLowerCase() === 'renta') {
+                setMapping(defaultRenta);
+            } else {
+                setMapping([]);
+            }
+            toast.info("Configuración restaurada. Recuerde Guardar.");
+        }
     };
 
     return (
@@ -112,6 +248,13 @@ export default function ParametrosView({ impuesto }) {
                             className="text-blue-600 hover:text-blue-800 flex items-center text-sm font-medium"
                         >
                             <FaBook className="mr-2" /> Manual
+                        </button>
+                        <button
+                            onClick={handleRestoreDefaults}
+                            className="text-gray-600 hover:text-gray-800 flex items-center text-sm font-medium bg-gray-100 px-3 py-2 rounded-md ml-2"
+                            title="Cargar configuración sugerida"
+                        >
+                            <FaHistory className="mr-2" /> Restaurar
                         </button>
                     </div>
                 </div>
@@ -183,21 +326,32 @@ export default function ParametrosView({ impuesto }) {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {mapping.map((row, idx) => (
-                                <tr key={idx}>
-                                    <td className="px-4 py-2 text-sm font-bold text-gray-600 text-center">{row.r}</td>
-                                    <td className="px-4 py-2 text-sm text-gray-900">{row.c}</td>
-                                    <td className="px-4 py-2">
-                                        <input
-                                            type="text"
-                                            value={row.cuentas}
-                                            onChange={(e) => handleMappingChange(idx, e.target.value)}
-                                            placeholder="Ej: 413505, 413510"
-                                            className="w-full border rounded px-2 py-1 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono"
-                                        />
-                                    </td>
-                                </tr>
-                            ))}
+                            {mapping.map((row, idx) => {
+                                if (row.isHeader) {
+                                    return (
+                                        <tr key={idx} className="bg-gray-100">
+                                            <td colSpan="3" className="px-4 py-2 font-bold text-gray-800 uppercase text-xs tracking-wider">
+                                                {row.c}
+                                            </td>
+                                        </tr>
+                                    );
+                                }
+                                return (
+                                    <tr key={idx}>
+                                        <td className="px-4 py-2 text-sm font-bold text-gray-600 text-center">{row.r}</td>
+                                        <td className="px-4 py-2 text-sm text-gray-900">{row.c}</td>
+                                        <td className="px-4 py-2">
+                                            <input
+                                                type="text"
+                                                value={row.cuentas}
+                                                onChange={(e) => handleMappingChange(idx, e.target.value)}
+                                                placeholder="Ej: 4135 o Fórmula: [27]+[28]"
+                                                className="w-full border rounded px-2 py-1 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono"
+                                            />
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>

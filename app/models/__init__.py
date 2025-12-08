@@ -40,7 +40,6 @@ from .caracteristica_valor_producto import CaracteristicaValorProducto # Valor d
 
 from .cupo_adicional import CupoAdicional
 from .remision import Remision, RemisionDetalle
-
 # --- COTIZACIONES (Nuevo Modulo) ---
 from .cotizacion import Cotizacion, CotizacionDetalle
 
@@ -48,3 +47,5 @@ from .cotizacion import Cotizacion, CotizacionDetalle
 from .activo_categoria import ActivoCategoria
 from .activo_fijo import ActivoFijo
 from .activo_novedad import ActivoNovedad
+
+from .configuracion_reporte import ConfiguracionReporte
