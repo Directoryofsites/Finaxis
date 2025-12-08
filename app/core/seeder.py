@@ -8,6 +8,7 @@ from ..models.usuario import Usuario
 from ..models import permiso as models_permiso
 from ..schemas import usuario as usuario_schema
 from ..services import usuario as usuario_service
+from ..services.seeder_puc import seed_puc_simplificado # Importar seeder PUC
 
 def seed_database():
     """
@@ -16,11 +17,13 @@ def seed_database():
     """
     db = SessionLocal()
     try:
-        if db.query(models_permiso.Rol).first():
-            print("Base de datos ya parece estar sembrada. Proceso omitido.")
-            return
+        # Nota: Eliminamos el check de 'Rol' al inicio para permitir que updates progresivos (como nuevos permisos o PUC) corran.
+        # En su lugar, cada bloque debe ser idempotente (verificar si existe antes de crear).
+        
+        print("Iniciando proceso de sembrado/actualización...")
 
-        print("Base de datos vacía detectada. Iniciando proceso de sembrado atómico...")
+        # ... (Mantener lógica de permisos y roles igual) ...
+
         
         # --- FASE 1: DEFINIR Y CREAR TODOS LOS DATOS INICIALES ---
         print("--> Definiendo roles y su mapa de permisos inicial...")
@@ -81,6 +84,10 @@ def seed_database():
         empresa_demo = Empresa(razon_social="Empresa de Demostración", nit="800000001-1", fecha_inicio_operaciones=datetime.fromisoformat("2025-01-01").date(), limite_registros=1500)
         db.add(empresa_demo)
         db.flush() # Asegurar que empresa_demo tenga su ID
+        
+        # --- NUEVO: SEMBRAR PUC SIMPLIFICADO ---
+        seed_puc_simplificado(db, empresa_demo.id)
+        # ---------------------------------------
 
         usuarios_data = [
             {"email": "soporte@soporte.com", "nombre_completo": "Usuario de Soporte Global", "password": "Jh811880", "rol_nombre": "soporte", "empresa_id": None},

@@ -1,212 +1,161 @@
-"use client";
 import React, { useState, useEffect } from 'react';
 import { FaSave, FaSync, FaCalculator } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import { getBalanceDePrueba } from '../../lib/reportesService';
+import { apiService } from '../../lib/apiService';
 
 export default function BorradorView({ impuesto }) {
-    // Initial mock data structure
-    const initialRows = [
-        { r: 27, c: 'Ingresos Brutos', v: 0 },
-        { r: 28, c: 'Devoluciones en ventas', v: 0 },
-        { r: 29, c: 'Ingresos Netos', v: 0 }, // Calculated
-        { r: 40, c: 'Compras de bienes gravados', v: 0 },
-        { r: 57, c: 'Impuesto Generado', v: 0 },
-        { r: 65, c: 'Impuesto Descontable', v: 0 },
-        { r: 82, c: 'Saldo a Pagar', v: 0 }, // Calculated
-    ];
-
-    const [rows, setRows] = useState(initialRows);
+    const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [periodo, setPeriodo] = useState('01'); // Default Period
+    const [anio, setAnio] = useState(new Date().getFullYear());
 
-    // Load from localStorage on mount
-    useEffect(() => {
-        if (typeof window !== 'undefined' && impuesto) {
-            const saved = localStorage.getItem(`impuestos_borrador_${impuesto}`);
-            if (saved) {
-                setRows(JSON.parse(saved));
-            }
-        }
-    }, [impuesto]);
-
-    // Handle input changes
-    const handleChange = (index, value) => {
-        setRows(prev => prev.map((row, i) =>
-            i === index ? { ...row, v: parseFloat(value) || 0 } : row
-        ));
-    };
-
-    // Helper: Round to nearest 1000 (DIAN Rule)
-    const roundToDian = (value) => {
-        return Math.round(value / 1000) * 1000;
-    };
-
-    // Real data fetching from Accounting module
+    // Load structure from Backend Config on "Update"
     const handleUpdate = async () => {
         setLoading(true);
-        toast.info("Consultando contabilidad en tiempo real...");
+        toast.info(`Calculando borrador de ${impuesto}...`);
 
         try {
-            // 1. Read Mapping Rules
-            const savedMapping = localStorage.getItem(`impuestos_mapping_${impuesto}`);
-            let mapping = [];
-            if (savedMapping) {
-                mapping = JSON.parse(savedMapping);
+            // Call the calculation endpoint directly
+            const response = await apiService.get(`/impuestos/declaracion/${impuesto.toUpperCase()}`, {
+                params: {
+                    anio: anio,
+                    periodo: periodo
+                }
+            });
+
+            // Backend returns { renglones: [ {r, c, v, is_header}, ... ] }
+            if (response.data && response.data.renglones) {
+                setRows(response.data.renglones);
+                toast.success("Borrador calculado exitosamente.");
+            } else {
+                toast.warning("No se recibieron datos del servidor.");
             }
 
-            // 2. Define Period (Default to current year for now, or read from Parametros)
-            const currentYear = new Date().getFullYear();
-            const fechaInicio = `${currentYear}-01-01`;
-            const fechaFin = `${currentYear}-12-31`;
-
-            // 3. Fetch Balance de Prueba
-            const response = await getBalanceDePrueba({
-                fecha_inicio: fechaInicio,
-                fecha_fin: fechaFin,
-                nivel_maximo: 6,
-                filtro_cuentas: 'CON_SALDO_O_MOVIMIENTO'
-            });
-
-            const balanceData = response.data.filas || [];
-
-            // 4. Process Data based on Mapping
-            const newRows = rows.map(row => {
-                const rule = mapping.find(m => m.r === row.r);
-
-                if (rule && rule.cuentas && rule.cuentas.trim() !== '') {
-                    const cuentasToSum = rule.cuentas.split(',').map(c => c.trim());
-                    let totalValue = 0;
-
-                    balanceData.forEach(account => {
-                        const accountCode = account.codigo.trim();
-                        const isRelevant = cuentasToSum.some(mappedCode => accountCode.startsWith(mappedCode));
-
-                        if (isRelevant) {
-                            if (cuentasToSum.includes(accountCode)) {
-                                totalValue += parseFloat(account.nuevo_saldo) || 0;
-                            }
-                        }
-                    });
-
-                    if (totalValue === 0) {
-                        balanceData.forEach(account => {
-                            const accountCode = account.codigo.trim();
-                            const isChild = cuentasToSum.some(mappedCode => accountCode.startsWith(mappedCode) && accountCode !== mappedCode);
-
-                            if (isChild && account.nivel >= 4) {
-                                if (account.nivel === 6) {
-                                    totalValue += parseFloat(account.nuevo_saldo) || 0;
-                                }
-                            }
-                        });
-                    }
-
-                    // Apply DIAN Rounding
-                    return { ...row, v: roundToDian(Math.abs(totalValue)) };
-                }
-                return row;
-            });
-
-            setRows(newRows);
-            toast.success("Datos actualizados y aproximados (DIAN).");
-
         } catch (error) {
-            console.error("Error fetching balance:", error);
-            toast.error("Error al consultar contabilidad.");
+            console.error("Error calculating draft:", error);
+            toast.error(error.response?.data?.detail || "Error al calcular el borrador.");
         } finally {
             setLoading(false);
         }
     };
 
-    // Save to localStorage
+    // Save locally (Optional, maybe sends to backend later?)
     const handleSave = () => {
-        try {
-            localStorage.setItem(`impuestos_borrador_${impuesto}`, JSON.stringify(rows));
-            toast.success(`Borrador de ${impuesto} guardado exitosamente.`);
-        } catch (error) {
-            console.error(error);
-            toast.error("Error al guardar el borrador.");
-        }
+        if (rows.length === 0) return;
+        localStorage.setItem(`impuestos_borrador_${impuesto}`, JSON.stringify(rows));
+        toast.success("Borrador guardado localmente.");
     };
 
-    // Simple calculation logic
-    const calculateTotals = () => {
-        const newRows = [...rows];
-        // Ingresos Netos = Brutos - Devoluciones
-        newRows[2].v = roundToDian(newRows[0].v - newRows[1].v);
-
-        // Saldo a Pagar = Generado - Descontable
-        const generado = newRows[4].v;
-        const descontable = newRows[5].v;
-        const saldo = generado - descontable;
-
-        // Note: The saldo itself is difference of rounded numbers, so it should be rounded, 
-        // but good practice to ensure it.
-        const saldoRounded = roundToDian(saldo);
-
-        if (saldoRounded < 0) {
-            newRows[6].c = 'Saldo a Favor';
-            newRows[6].v = Math.abs(saldoRounded);
-        } else {
-            newRows[6].c = 'Saldo a Pagar';
-            newRows[6].v = saldoRounded;
+    // Load locally saved draft on mount
+    useEffect(() => {
+        const saved = localStorage.getItem(`impuestos_borrador_${impuesto}`);
+        if (saved) {
+            try {
+                setRows(JSON.parse(saved));
+            } catch (e) { console.error("Error loading saved draft", e); }
         }
-
-        setRows(newRows);
-        toast.info("Cálculos actualizados (Cifras DIAN).");
-    };
+    }, [impuesto]);
 
     return (
         <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-800">Borrador del Formulario - {impuesto}</h2>
-                <div className="space-x-2">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div>
+                    <h2 className="text-xl font-semibold text-gray-800">Borrador - {impuesto}</h2>
+                    <p className="text-gray-500 text-sm">Simulación basada en la configuración actual.</p>
+                </div>
+
+                <div className="flex flex-wrap gap-2 items-center">
+                    {/* Period Selector Simplificado */}
+                    <select
+                        value={periodo}
+                        onChange={(e) => setPeriodo(e.target.value)}
+                        className="border rounded-md px-3 py-2 text-sm bg-gray-50"
+                    >
+                        {impuesto === 'renta' ? (
+                            <option value="00">Anual</option>
+                        ) : (
+                            <>
+                                <option value="01">Enero / Bim 1</option>
+                                <option value="02">Febrero / Bim 2</option>
+                                <option value="03">Marzo / Bim 3</option>
+                                <option value="04">Abril / Bim 4</option>
+                                <option value="05">Mayo / Bim 5</option>
+                                <option value="06">Junio / Bim 6</option>
+                                {/* Add more if needed */}
+                            </>
+                        )}
+                    </select>
+
+                    <input
+                        type="number"
+                        value={anio}
+                        onChange={(e) => setAnio(e.target.value)}
+                        className="border rounded-md px-3 py-2 text-sm w-20 bg-gray-50"
+                    />
+
                     <button
                         onClick={handleUpdate}
                         disabled={loading}
-                        className={`bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 flex items-center inline-flex ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center shadow-sm ${loading ? 'opacity-50' : ''}`}
                     >
                         <FaSync className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
-                        {loading ? 'Actualizando...' : 'Actualizar desde Contabilidad'}
+                        {loading ? 'Calculando...' : 'Calcular'}
                     </button>
-                    <button
-                        onClick={calculateTotals}
-                        className="bg-yellow-500 text-white px-4 py-2 rounded-md hover:bg-yellow-600 flex items-center inline-flex"
-                    >
-                        <FaCalculator className="mr-2" /> Recalcular
-                    </button>
+
                     <button
                         onClick={handleSave}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center inline-flex"
+                        className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center shadow-sm"
                     >
-                        <FaSave className="mr-2" /> Guardar Borrador
+                        <FaSave className="mr-2" /> Guardar
                     </button>
                 </div>
             </div>
 
-            {/* Form Grid */}
-            <div className="border border-gray-300 rounded-md p-4 bg-gray-50">
-                <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-700 border-b pb-2 mb-2">
-                    <div className="col-span-1">Renglón</div>
-                    <div className="col-span-8">Concepto</div>
-                    <div className="col-span-3 text-right">Valor</div>
-                </div>
-
-                {/* Rows */}
-                {rows.map((row, idx) => (
-                    <div key={idx} className="grid grid-cols-12 gap-4 items-center mb-2">
-                        <div className="col-span-1 bg-white border rounded px-2 py-1 text-center font-bold text-gray-600">{row.r}</div>
-                        <div className="col-span-8">{row.c}</div>
-                        <div className="col-span-3">
-                            <input
-                                type="number"
-                                value={row.v}
-                                onChange={(e) => handleChange(idx, e.target.value)}
-                                className="w-full border rounded px-2 py-1 text-right focus:ring-blue-500 focus:border-blue-500 font-mono"
-                            />
-                        </div>
-                    </div>
-                ))}
+            {/* Table */}
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Renglón</th>
+                            <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Concepto</th>
+                            <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                        {rows.length === 0 ? (
+                            <tr>
+                                <td colSpan="3" className="px-6 py-8 text-center text-gray-500">
+                                    No hay datos calculados. Presione "Calcular" para generar el borrador.
+                                </td>
+                            </tr>
+                        ) : (
+                            rows.map((row, idx) => {
+                                if (row.is_header) {
+                                    return (
+                                        <tr key={idx} className="bg-gray-100">
+                                            <td colSpan="3" className="px-4 py-2 font-bold text-gray-800 uppercase text-xs tracking-wider">
+                                                {row.c}
+                                            </td>
+                                        </tr>
+                                    );
+                                }
+                                return (
+                                    <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-4 py-2 text-center font-mono text-sm font-bold text-gray-600 w-16">
+                                            {row.r}
+                                        </td>
+                                        <td className="px-4 py-2 text-sm text-gray-800">
+                                            {row.c}
+                                        </td>
+                                        <td className="px-4 py-2 text-right font-mono text-sm font-medium text-gray-900">
+                                            {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(row.v)}
+                                        </td>
+                                    </tr>
+                                );
+                            })
+                        )}
+                    </tbody>
+                </table>
             </div>
         </div>
     );

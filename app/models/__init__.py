@@ -41,3 +41,4 @@ from .caracteristica_valor_producto import CaracteristicaValorProducto # Valor d
 # En app/models/__init__.py agrega:
 from .cupo_adicional import CupoAdicional
 from .remision import Remision, RemisionDetalle
+from .configuracion_reporte import ConfiguracionReporte

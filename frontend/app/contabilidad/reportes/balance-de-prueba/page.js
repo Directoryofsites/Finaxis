@@ -216,7 +216,10 @@ export default function BalancePruebaPage() {
                   <option value="1">1 (Clase)</option>
                   <option value="2">2 (Grupo)</option>
                   <option value="3">3 (Cuenta)</option>
-                  <option value="4">4 (Subcuenta/Auxiliar)</option>
+                  <option value="4">4 (Subcuenta)</option>
+                  <option value="5">5 (Auxiliar)</option>
+                  <option value="6">6 (Detalle 1)</option>
+                  <option value="7">7 (Detalle 2)</option>
                 </select>
                 <FaLayerGroup className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
               </div>
