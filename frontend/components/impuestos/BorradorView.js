@@ -8,6 +8,17 @@ export default function BorradorView({ impuesto }) {
     const [loading, setLoading] = useState(false);
     const [periodo, setPeriodo] = useState('01'); // Default Period
     const [anio, setAnio] = useState(new Date().getFullYear());
+    const [periodoConfig, setPeriodoConfig] = useState('Bimestral');
+
+    // Load Period Config
+    useEffect(() => {
+        if (impuesto) {
+            const savedPeriod = localStorage.getItem(`impuestos_periodicidad_${impuesto}`);
+            if (savedPeriod) {
+                setPeriodoConfig(savedPeriod);
+            }
+        }
+    }, [impuesto]);
 
     // Load structure from Backend Config on "Update"
     const handleUpdate = async () => {
@@ -73,6 +84,21 @@ export default function BorradorView({ impuesto }) {
                     >
                         {impuesto === 'renta' ? (
                             <option value="00">Anual</option>
+                        ) : periodoConfig === 'Mensual' ? (
+                            <>
+                                <option value="01">01. Enero</option>
+                                <option value="02">02. Febrero</option>
+                                <option value="03">03. Marzo</option>
+                                <option value="04">04. Abril</option>
+                                <option value="05">05. Mayo</option>
+                                <option value="06">06. Junio</option>
+                                <option value="07">07. Julio</option>
+                                <option value="08">08. Agosto</option>
+                                <option value="09">09. Septiembre</option>
+                                <option value="10">10. Octubre</option>
+                                <option value="11">11. Noviembre</option>
+                                <option value="12">12. Diciembre</option>
+                            </>
                         ) : (
                             <>
                                 <option value="01">Enero / Bim 1</option>
@@ -81,7 +107,6 @@ export default function BorradorView({ impuesto }) {
                                 <option value="04">Abril / Bim 4</option>
                                 <option value="05">Mayo / Bim 5</option>
                                 <option value="06">Junio / Bim 6</option>
-                                {/* Add more if needed */}
                             </>
                         )}
                     </select>
@@ -133,7 +158,7 @@ export default function BorradorView({ impuesto }) {
                                 if (row.is_header) {
                                     return (
                                         <tr key={idx} className="bg-gray-100">
-                                            <td colSpan="3" className="px-4 py-2 font-bold text-gray-800 uppercase text-xs tracking-wider">
+                                            <td colSpan="3" className="px-4 py-3 font-bold text-gray-800 uppercase text-xs tracking-wider border-t border-b border-gray-200">
                                                 {row.c}
                                             </td>
                                         </tr>

@@ -13,6 +13,17 @@ export default function DeclaracionView({ impuesto }) {
     // Selectors State
     const [anio, setAnio] = useState(new Date().getFullYear());
     const [periodo, setPeriodo] = useState('01');
+    const [periodoConfig, setPeriodoConfig] = useState('Bimestral');
+
+    // Load Period Config
+    useEffect(() => {
+        if (impuesto) {
+            const savedPeriod = localStorage.getItem(`impuestos_periodicidad_${impuesto}`);
+            if (savedPeriod) {
+                setPeriodoConfig(savedPeriod);
+            }
+        }
+    }, [impuesto]);
 
     // Load history from localStorage
     useEffect(() => {
@@ -80,7 +91,12 @@ export default function DeclaracionView({ impuesto }) {
                 doc.text(`Periodo: ${periodoTexto}`, 14, 35);
                 doc.text(`Desde: ${datosCalculados.fecha_inicio} Hasta: ${datosCalculados.fecha_fin}`, 14, 40);
 
-                const tableBody = rows.map(r => [r.r, r.c, `$ ${r.v.toLocaleString('es-CO')}`]);
+                const tableBody = rows.map(r => {
+                    if (r.is_header) {
+                        return [{ content: r.c, colSpan: 3, styles: { fontStyle: 'bold', fillColor: [240, 240, 240], halign: 'left' } }];
+                    }
+                    return [r.r, r.c, `$ ${r.v.toLocaleString('es-CO')}`];
+                });
 
                 autoTable(doc, {
                     startY: 45,
@@ -90,12 +106,15 @@ export default function DeclaracionView({ impuesto }) {
                     headStyles: { fillColor: [22, 163, 74] },
                 });
 
-                // Footer lines...
+                // Footer lines - Ajustadas firmas (Línea más arriba)
                 const finalY = doc.lastAutoTable.finalY + 10;
-                doc.text("Firma del Declarante:", 14, finalY + 20);
-                doc.line(14, finalY + 19, 80, finalY + 19);
-                doc.text("Firma del Contador/Revisor Fiscal:", 110, finalY + 20);
-                doc.line(110, finalY + 19, 180, finalY + 19);
+
+                // Líneas de firma (Subidas 2 filas visuales, aprox 15-20 pts)
+                doc.line(14, finalY + 15, 80, finalY + 15); // Antes +19
+                doc.text("Firma del Declarante", 14, finalY + 22); // Antes +20 (Texto un poco más abajo de la línea)
+
+                doc.line(110, finalY + 15, 180, finalY + 15);
+                doc.text("Firma del Contador/Revisor Fiscal", 110, finalY + 22);
 
                 doc.save(`Declaracion_${impuesto}_${anio}_${periodo}.pdf`);
 
@@ -105,7 +124,9 @@ export default function DeclaracionView({ impuesto }) {
                 // ... Add header ...
                 xmlContent += `  <Detalle>\n`;
                 rows.forEach(r => {
-                    xmlContent += `    <Renglon id="${r.r}"><Concepto>${r.c}</Concepto><Valor>${r.v}</Valor></Renglon>\n`;
+                    if (!r.is_header) { // Skip headers in XML usually? Or keep them? Keeping simple for now, maybe skip headers to avoid validation errors if strictly numeric.
+                        xmlContent += `    <Renglon id="${r.r}"><Concepto>${r.c}</Concepto><Valor>${r.v}</Valor></Renglon>\n`;
+                    }
                 });
                 xmlContent += `  </Detalle>\n</Declaracion>`;
 
@@ -155,21 +176,13 @@ export default function DeclaracionView({ impuesto }) {
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700">
-                            {impuesto === 'iva' ? 'Periodo (Bimestre)' : impuesto === 'renta' ? 'Periodo (Anual)' : 'Periodo (Mes)'}
+                            {impuesto === 'renta' ? 'Periodo (Anual)' :
+                                periodoConfig === 'Mensual' ? 'Periodo (Mes)' : 'Periodo (Bimestre)'}
                         </label>
                         <select value={periodo} onChange={(e) => setPeriodo(e.target.value)} className="mt-1 block w-48 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
-                            {impuesto === 'iva' ? (
-                                <>
-                                    <option value="01">01. Ene - Feb</option>
-                                    <option value="02">02. Mar - Abr</option>
-                                    <option value="03">03. May - Jun</option>
-                                    <option value="04">04. Jul - Ago</option>
-                                    <option value="05">05. Sep - Oct</option>
-                                    <option value="06">06. Nov - Dic</option>
-                                </>
-                            ) : impuesto === 'renta' ? (
+                            {impuesto === 'renta' ? (
                                 <option value="00">Anual (Ene - Dic)</option>
-                            ) : (
+                            ) : periodoConfig === 'Mensual' ? (
                                 <>
                                     <option value="01">01. Enero</option>
                                     <option value="02">02. Febrero</option>
@@ -183,6 +196,15 @@ export default function DeclaracionView({ impuesto }) {
                                     <option value="10">10. Octubre</option>
                                     <option value="11">11. Noviembre</option>
                                     <option value="12">12. Diciembre</option>
+                                </>
+                            ) : (
+                                <>
+                                    <option value="01">01. Ene - Feb</option>
+                                    <option value="02">02. Mar - Abr</option>
+                                    <option value="03">03. May - Jun</option>
+                                    <option value="04">04. Jul - Ago</option>
+                                    <option value="05">05. Sep - Oct</option>
+                                    <option value="06">06. Nov - Dic</option>
                                 </>
                             )}
                         </select>
@@ -207,15 +229,26 @@ export default function DeclaracionView({ impuesto }) {
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                                {datosCalculados.renglones.map((r, i) => (
-                                    <tr key={i} className="hover:bg-gray-50">
-                                        <td className="px-4 py-2 font-mono text-sm font-bold text-green-700 text-center">{r.r}</td>
-                                        <td className="px-4 py-2 text-sm text-gray-700">{r.c}</td>
-                                        <td className="px-4 py-2 text-right font-mono text-sm font-bold text-gray-900">
-                                            $ {r.v.toLocaleString('es-CO')}
-                                        </td>
-                                    </tr>
-                                ))}
+                                {datosCalculados.renglones.map((r, i) => {
+                                    if (r.is_header) {
+                                        return (
+                                            <tr key={i} className="bg-gray-100">
+                                                <td colSpan="3" className="px-4 py-3 font-bold text-gray-800 uppercase text-xs tracking-wider border-t border-b border-gray-200">
+                                                    {r.c}
+                                                </td>
+                                            </tr>
+                                        )
+                                    }
+                                    return (
+                                        <tr key={i} className="hover:bg-gray-50">
+                                            <td className="px-4 py-2 font-mono text-sm font-bold text-green-700 text-center">{r.r}</td>
+                                            <td className="px-4 py-2 text-sm text-gray-700">{r.c}</td>
+                                            <td className="px-4 py-2 text-right font-mono text-sm font-bold text-gray-900">
+                                                $ {r.v.toLocaleString('es-CO')}
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
                             </tbody>
                         </table>
                     </div>

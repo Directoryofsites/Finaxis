@@ -173,7 +173,7 @@ def calcular_declaracion_iva(db: Session, empresa_id: int, anio: int, periodo: s
             "c": conf.concepto,
             "v": 0.0, # Placeholder
             "cuentas": codigos_cuentas,
-            "is_header": (conf.renglon == "HEADER")
+            "is_header": (str(conf.renglon).strip().upper() == "HEADER")
         })
 
     # --- FASE 2: CÁLCULO DE VALORES ---
@@ -287,14 +287,57 @@ def calcular_declaracion_retefuente(db: Session, empresa_id: int, anio: int, per
     configs = get_configuracion(db, empresa_id, 'RETEFUENTE')
     
     # --- AUTO-SEEDING CONFIG SI NO EXISTE (MVP Helper) ---
-    if not configs:
+    # --- AUTO-SEEDING CONFIG SI NO EXISTE (o es version vieja) ---
+    if not configs or len(configs) < 10:
         default_rete = [
+            # SECCIÓN: RENTAS DE TRABAJO Y PENSIONES
+            {"is_header": True, "concepto": "Rentas de Trabajo y Pensiones"},
             {"renglon": "27", "concepto": "Rentas de trabajo (Salarios)", "cuentas_ids": ["236505"]},
-            {"renglon": "29", "concepto": "Compras", "cuentas_ids": ["236540"]},
-            {"renglon": "30", "concepto": "Honorarios", "cuentas_ids": ["236515"]},
-            {"renglon": "31", "concepto": "Servicios", "cuentas_ids": ["236525"]},
-            {"renglon": "32", "concepto": "Arrendamientos", "cuentas_ids": ["236530"]},
-            {"renglon": "40", "concepto": "Total Retenciones", "cuentas_ids": []} # Calculado o sumado? Mejor sumar todo
+            {"renglon": "28", "concepto": "Contribuciones a E.P.S.", "cuentas_ids": []}, 
+            {"renglon": "29", "concepto": "Rentas de pensiones", "cuentas_ids": []},
+
+            # SECCIÓN: RETENCIONES A TÍTULO DE RENTA (PERSONAS JURÍDICAS)
+            {"is_header": True, "concepto": "Retenciones Renta (Personas Jurídicas)"},
+            {"renglon": "30", "concepto": "Honorarios (Personas Jurídicas)", "cuentas_ids": ["236515"]},
+            {"renglon": "31", "concepto": "Comisiones (Personas Jurídicas)", "cuentas_ids": []},
+            {"renglon": "32", "concepto": "Servicios (Personas Jurídicas)", "cuentas_ids": ["236525"]},
+            {"renglon": "33", "concepto": "Arrendamientos (Personas Jurídicas)", "cuentas_ids": ["236530"]},
+            {"renglon": "34", "concepto": "Rendimientos Financieros (PJ)", "cuentas_ids": []},
+            {"renglon": "35", "concepto": "Regalías y Propiedad Intelectual (PJ)", "cuentas_ids": []},
+            {"renglon": "36", "concepto": "Dividendos y Participaciones (PJ)", "cuentas_ids": []},
+
+            # SECCIÓN: RETENCIONES A TÍTULO DE RENTA (PERSONAS NATURALES)
+            {"is_header": True, "concepto": "Retenciones Renta (Personas Naturales)"},
+            {"renglon": "40", "concepto": "Honorarios (Personas Naturales)", "cuentas_ids": []},
+            {"renglon": "41", "concepto": "Comisiones (Personas Naturales)", "cuentas_ids": []},
+            {"renglon": "42", "concepto": "Servicios (Personas Naturales)", "cuentas_ids": []},
+            {"renglon": "43", "concepto": "Arrendamientos (Personas Naturales)", "cuentas_ids": []},
+            {"renglon": "44", "concepto": "Rendimientos Financieros (PN)", "cuentas_ids": []},
+            {"renglon": "45", "concepto": "Enajenación Activos Fijos (PN)", "cuentas_ids": []},
+            {"renglon": "46", "concepto": "Loterías, rifas y apuestas", "cuentas_ids": []},
+
+            # SECCIÓN: COMPRAS Y OTROS
+            {"is_header": True, "concepto": "Compras y Otros"},
+            {"renglon": "50", "concepto": "Compras General", "cuentas_ids": ["236540"]},
+            {"renglon": "51", "concepto": "Compras Hidrocarburos/Carbón (NUEVO)", "cuentas_ids": []},
+            {"renglon": "52", "concepto": "Pagos al Exterior (General)", "cuentas_ids": []},
+            {"renglon": "53", "concepto": "Pagos al Exterior (Con PES)", "cuentas_ids": []},
+            {"renglon": "54", "concepto": "Otros pagos sujetos a retención", "cuentas_ids": []},
+
+            # SECCIÓN: RETENCIONES IVA Y TIMBRE
+            {"is_header": True, "concepto": "IVA y Timbre Nacional"},
+            {"renglon": "60", "concepto": "Retenciones a título de IVA", "cuentas_ids": ["2367"]},
+            {"renglon": "61", "concepto": "Retenciones Impuesto de Timbre", "cuentas_ids": []},
+
+            # SECCIÓN: AUTORRETENCIONES
+            {"is_header": True, "concepto": "Autorretenciones"},
+            {"renglon": "70", "concepto": "Autorretención Ventas (General)", "cuentas_ids": []},
+            {"renglon": "71", "concepto": "Autorretención Hidrocarburos/Minería", "cuentas_ids": []},
+            {"renglon": "72", "concepto": "Otras Autorretenciones", "cuentas_ids": []},
+
+            # TOTAL
+            {"is_header": True, "concepto": "Total"},
+            {"renglon": "99", "concepto": "Total Retenciones", "cuentas_ids": ["[27]+[28]+[29]+[30]+[31]+[32]+[33]+[34]+[35]+[36]+[40]+[41]+[42]+[43]+[44]+[45]+[46]+[50]+[51]+[52]+[53]+[54]+[60]+[61]+[70]+[71]+[72]"]} 
         ]
         # Guardamos y recargamos
         configs = save_configuracion(db, empresa_id, 'RETEFUENTE', default_rete)
@@ -311,7 +354,7 @@ def calcular_declaracion_retefuente(db: Session, empresa_id: int, anio: int, per
                 func.sum(MovimientoContable.debito).label("total_debito"),
                 func.sum(MovimientoContable.credito).label("total_credito")
             ).join(MovimientoContable.cuenta).join(MovimientoContable.documento).filter(
-                MovimientoContable.empresa_id == empresa_id,
+                Documento.empresa_id == empresa_id,
                 Documento.fecha >= f_inicio,
                 Documento.fecha <= f_fin,
                 Documento.estado == 'ACTIVO',
@@ -323,16 +366,43 @@ def calcular_declaracion_retefuente(db: Session, empresa_id: int, anio: int, per
             credito = saldo.total_credito or 0
             
             # Retefuente es Pasivo (2365) => Naturaleza Crédito
-            # Saldo = Crédito - Débito (Lo que retuve menos lo que ajusté/pagué si aplica, 
-            # aunque declaración suele ser lo causado en el periodo, es decir Créditos netos).
+            # Saldo = Crédito - Débito
             renglon_val = credito - debito
         
         resultados.append({
             "r": conf.renglon,
             "c": conf.concepto,
-            "v": float(renglon_val) if renglon_val > 0 else 0.0, # Retefuente no suele ser negativa
-            "cuentas": codigos_cuentas
+            "v": float(renglon_val) if renglon_val > 0 else 0.0,
+            "cuentas": codigos_cuentas,
+            "is_header": conf.renglon == "HEADER"
         })
+
+    # --- FASE 2: CÁLCULO DE VALORES (FORMULAS) ---
+    valores_renglon = {res["r"]: res["v"] for res in resultados if not res.get("is_header")}
+    
+    import re
+    def evaluar_formula(formula, valores):
+        pattern = re.compile(r'\[(\w+)\]')
+        def replacement(match):
+            key = match.group(1)
+            return str(valores.get(key, 0.0))
+        expr = pattern.sub(replacement, formula)
+        try:
+            safe_env = {"max": max, "min": min, "__builtins__": None}
+            return float(eval(expr, safe_env))
+        except:
+            return 0.0
+
+    for _ in range(2): # 2 pasadas para resolver dependencias simples
+        for res in resultados:
+            if res.get("is_header"): continue
+            codigos = res["cuentas"]
+            # Chequear si es formula (lista con un elemento que tiene brackets)
+            if codigos and len(codigos) == 1 and ('[' in codigos[0] or '+' in codigos[0]):
+                formula_str = codigos[0]
+                val_calc = evaluar_formula(formula_str, valores_renglon)
+                res["v"] = val_calc
+                valores_renglon[res["r"]] = val_calc
 
     return {
         "periodo": f"{anio}-{periodo}",
@@ -353,31 +423,60 @@ def calcular_declaracion_renta(db: Session, empresa_id: int, anio: int) -> Dict[
     configs = get_configuracion(db, empresa_id, 'RENTA')
     
     # --- AUTO-SEEDING CONFIG SI NO EXISTE ---
-    if not configs:
-        default_renta = [
-            # Patrimonio (Saldos a 31 de Dic) - En teoria DEBERIAN ser fiscales, no contables.
-            {"renglon": "36", "concepto": "Efectivo y equivalentes", "cuentas_ids": ["11"]},
-            {"renglon": "37", "concepto": "Inversiones", "cuentas_ids": ["12"]},
-            {"renglon": "38", "concepto": "Cuentas por cobrar", "cuentas_ids": ["13"]},
-            {"renglon": "39", "concepto": "Inventarios", "cuentas_ids": ["14"]},
-            {"renglon": "40", "concepto": "Activos Intangibles", "cuentas_ids": ["16"]},
-            {"renglon": "42", "concepto": "Propiedades, planta y equipo", "cuentas_ids": ["15"]},
-            {"renglon": "43", "concepto": "Otros activos", "cuentas_ids": ["17", "18", "19"]},
-            {"renglon": "45", "concepto": "Pasivos", "cuentas_ids": ["2"]},
-            
-            # Ingresos (Movimiento del año)
-            {"renglon": "47", "concepto": "Ingresos Brutos Act. Ordinarias", "cuentas_ids": ["41"]},
-            {"renglon": "48", "concepto": "Ingresos Financieros", "cuentas_ids": ["4210"]},
-            {"renglon": "51", "concepto": "Otros Ingresos", "cuentas_ids": ["42"]},
+    # --- AUTO-SEEDING CONFIG SI NO EXISTE (o es version vieja/corporativa) ---
+    if not configs or len(configs) < 10:
+        # Default por defecto: FORMULARIO 210 (PERSONAS NATURALES)
+        # NOTA: El frontend permite cambiar a Formulario 110 (Jurídicas).
+        default_renta_210 = [
+            # PATRIMONIO
+            {"is_header": True, "concepto": "Patrimonio"},
+            {"renglon": "28", "concepto": "Total Patrimonio Bruto", "cuentas_ids": ["1"]},
+            {"renglon": "29", "concepto": "Deudas", "cuentas_ids": ["2"]},
+            {"renglon": "30", "concepto": "Total Patrimonio Líquido", "cuentas_ids": ["[28]-[29]"]},
 
-            # Costos y Gastos (Movimiento del año)
-            {"renglon": "62", "concepto": "Costo de Ventas", "cuentas_ids": ["61", "71"]},
-            {"renglon": "63", "concepto": "Gastos de Administración", "cuentas_ids": ["51"]},
-            {"renglon": "64", "concepto": "Gastos de Distribución y Ventas", "cuentas_ids": ["52"]},
-            {"renglon": "65", "concepto": "Gastos Financieros", "cuentas_ids": ["53"]},
+            # CÉDULA GENERAL - RENTAS DE TRABAJO
+            {"is_header": True, "concepto": "Rentas de Trabajo"},
+            {"renglon": "32", "concepto": "Ingresos brutos rentas de trabajo", "cuentas_ids": ["42"]}, 
+            {"renglon": "33", "concepto": "Ingresos no constitutivos de renta", "cuentas_ids": []},
+            {"renglon": "34", "concepto": "Costos y deducciones procedentes", "cuentas_ids": ["51"]}, # Solo si aplica
+            {"renglon": "35", "concepto": "Renta líquida ordinaria trabajo", "cuentas_ids": ["[32]-[33]-[34]"]},
+
+            # CÉDULA GENERAL - RENTAS DE CAPITAL
+            {"is_header": True, "concepto": "Rentas de Capital"},
+            {"renglon": "50", "concepto": "Ingresos brutos por intereses y rendimientos fin.", "cuentas_ids": ["4210"]},
+            {"renglon": "51", "concepto": "Otros ingresos rentas de capital", "cuentas_ids": []},
+            {"renglon": "52", "concepto": "Ingresos no constitutivos de renta (Capital)", "cuentas_ids": []},
+            {"renglon": "53", "concepto": "Costos y gastos procedentes (Capital)", "cuentas_ids": ["53"]},
+            {"renglon": "54", "concepto": "Renta líquida ordinaria capital", "cuentas_ids": ["[50]+[51]-[52]-[53]"]},
+
+            # CÉDULA GENERAL - RENTAS NO LABORALES
+            {"is_header": True, "concepto": "Rentas No Laborales"},
+            {"renglon": "70", "concepto": "Ingresos brutos rentas no laborales", "cuentas_ids": []},
+            {"renglon": "71", "concepto": "Costos y gastos procedentes (No Laborales)", "cuentas_ids": []},
+
+            # CÉDULA DE PENSIONES
+            {"is_header": True, "concepto": "Cédula de Pensiones"},
+            {"renglon": "90", "concepto": "Ingresos brutos por pensiones", "cuentas_ids": []},
+            {"renglon": "91", "concepto": "Ingresos no constitutivos de renta (Pensiones)", "cuentas_ids": []},
+
+            # CÉDULA DIVIDENDOS
+            {"is_header": True, "concepto": "Dividendos y Participaciones"},
+            {"renglon": "100", "concepto": "Dividendos y participaciones 2017 y siguientes", "cuentas_ids": ["4215"]},
+
+            # GANANCIAS OCASIONALES
+            {"is_header": True, "concepto": "Ganancias Ocasionales"},
+            {"renglon": "110", "concepto": "Ingresos por ganancias ocasionales", "cuentas_ids": ["4240"]},
+            {"renglon": "111", "concepto": "Costos por ganancias ocasionales", "cuentas_ids": []},
+            
+            # LIQUIDACIÓN PRIVADA
+            {"is_header": True, "concepto": "Liquidación Privada"},
+            {"renglon": "120", "concepto": "Impuesto sobre la renta líquida", "cuentas_ids": []},
+            {"renglon": "130", "concepto": "Total Saldo a Pagar", "cuentas_ids": []},
+            {"renglon": "131", "concepto": "Total Saldo a Favor", "cuentas_ids": []},
         ]
-        # Guardamos y recargamos
-        configs = save_configuracion(db, empresa_id, 'RENTA', default_renta)
+        
+        # Guardamos y recargamos (Default: 210)
+        configs = save_configuracion(db, empresa_id, 'RENTA', default_renta_210)
     # -----------------------------------------------------
 
     resultados = []
