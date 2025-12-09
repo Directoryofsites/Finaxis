@@ -210,6 +210,30 @@ export default function ConfiguracionPHPage() {
                                     <textarea name="mensaje_factura" value={config.mensaje_factura || ''} onChange={handleConfigChange} className={inputClass} rows="3"></textarea>
                                 </div>
 
+                                <div className="pt-4 border-t border-dashed">
+                                    <p className="text-xs text-gray-400 mb-2 font-semibold">CONFIGURACIÓN CONTABLE</p>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className={labelClass}>Doc. Facturación (Cuentas de Cobro)</label>
+                                            <select name="tipo_documento_factura_id" value={config.tipo_documento_factura_id || ''} onChange={handleConfigChange} className={inputClass}>
+                                                <option value="">-- Seleccionar --</option>
+                                                {tiposDoc.filter(t => t.funcion_especial !== 'PAGO_PROVEEDOR').map(t => (
+                                                    <option key={t.id} value={t.id}>{t.codigo} - {t.nombre}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className={labelClass}>Doc. Recaudo (Recibos de Caja)</label>
+                                            <select name="tipo_documento_recibo_id" value={config.tipo_documento_recibo_id || ''} onChange={handleConfigChange} className={inputClass}>
+                                                <option value="">-- Seleccionar --</option>
+                                                {tiposDoc.filter(t => t.funcion_especial !== 'FACTURA_VENTA').map(t => (
+                                                    <option key={t.id} value={t.id}>{t.codigo} - {t.nombre}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
 
                                 <button type="submit" disabled={saving} className="w-full flex justify-center items-center gap-2 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm font-medium mt-4">
                                     <FaSave /> {saving ? 'Guardando...' : 'Guardar Parámetros'}
