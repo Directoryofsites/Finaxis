@@ -1,0 +1,70 @@
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Numeric, Float, Text
+from sqlalchemy.orm import relationship
+from app.core.database import Base
+
+class PHConfiguracion(Base):
+    __tablename__ = "ph_configuracion"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=False)
+    
+    # Intereses
+    interes_mora_mensual = Column(Float, default=1.5) # Porcentaje mensual
+    
+    # Fechas Clave (Días del mes)
+    dia_corte = Column(Integer, default=1) # Día que se genera la factura
+    dia_limite_pago = Column(Integer, default=10) # Hasta cuándo se paga sin mora
+    
+    # Pronto Pago
+    dia_limite_pronto_pago = Column(Integer, default=5)
+    descuento_pronto_pago = Column(Float, default=0.0) # Porcentaje descuento
+    
+    # Mensajes
+    mensaje_factura = Column(Text, nullable=True) # "Recuerde pagar antes del..."
+    
+    # Integración Contable
+    # Integración Contable
+    tipo_documento_factura_id = Column(Integer, ForeignKey("tipos_documento.id"), nullable=True)
+    tipo_documento_recibo_id = Column(Integer, ForeignKey("tipos_documento.id"), nullable=True)
+    
+    # Cuentas Contables Centralizadas (Overrides)
+    cuenta_cartera_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Para CXC (13, 14, 16...)
+    cuenta_caja_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Para Caja/Bancos (11...)
+
+    empresa = relationship("Empresa")
+    tipo_documento_factura = relationship("app.models.tipo_documento.TipoDocumento", foreign_keys=[tipo_documento_factura_id])
+    tipo_documento_recibo = relationship("app.models.tipo_documento.TipoDocumento", foreign_keys=[tipo_documento_recibo_id])
+    cuenta_cartera = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_cartera_id])
+    cuenta_caja = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_caja_id])
+
+class PHConcepto(Base):
+    __tablename__ = "ph_conceptos"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=False)
+    
+    nombre = Column(String(100), nullable=False) # Ej: "Cuota de Administración"
+    codigo_contable = Column(String(20), nullable=True) # Para integración contable
+    
+    # Tipo de Cálculo
+    # FIJO: Valor monetario directo (ej: $50.000 parqueadero)
+    # COEFICIENTE: Se calcula como (PresupuestoTotal * CoeficienteUnidad)
+    tipo_calculo = Column(String(20), default="COEFICIENTE") 
+    
+    valor_defecto = Column(Numeric(12, 2), default=0) # Si es FIJO
+    
+    # Configuración Específica de Facturación
+    cuenta_cartera_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Sobrescribe la global
+    tipo_documento_id = Column(Integer, ForeignKey("tipos_documento.id"), nullable=True) # Sobrescribe la global
+
+    # Configuración Específica de Recaudo (Abonos)
+    tipo_documento_recibo_id = Column(Integer, ForeignKey("tipos_documento.id"), nullable=True) # Nuevo
+    cuenta_caja_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Nuevo
+
+    activo = Column(Boolean, default=True)
+    
+    empresa = relationship("Empresa")
+    cuenta_cartera = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_cartera_id])
+    tipo_documento = relationship("app.models.tipo_documento.TipoDocumento", foreign_keys=[tipo_documento_id])
+    cuenta_caja = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_caja_id])
+    tipo_documento_recibo = relationship("app.models.tipo_documento.TipoDocumento", foreign_keys=[tipo_documento_recibo_id])

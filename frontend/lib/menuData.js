@@ -138,6 +138,18 @@ export const baseMenuStructure = [
 
 // FIX CRÍTICO: Reordenamiento de Favoritos y Análisis Financiero
 const ANALISIS_FINANCIERO_MODULE = { id: 'analisis_financiero', name: 'Análisis Financiero', icon: FaChartArea };
+const PH_MODULE = {
+    id: 'propiedad_horizontal',
+    name: 'Propiedad Horizontal',
+    icon: FaBuilding,
+    links: [
+        { name: 'Gestión Unidades', href: '/ph/unidades', icon: FaListUl },
+        { name: 'Facturación', href: '/ph/facturacion', icon: FaFileInvoiceDollar },
+        { name: 'Recaudos y Pagos', href: '/ph/pagos', icon: FaMoneyBillWave },
+        { name: 'Estado de Cuenta', href: '/ph/reportes/estado-cuenta', icon: FaFileAlt },
+        { name: 'Configuración', href: '/ph/configuracion', icon: FaCogs },
+    ]
+};
 const FAVORITOS_MODULE = { id: 'favoritos', name: 'Favoritos', icon: FaStar };
 
 // Función para insertar 'Análisis Financiero' después de 'Contabilidad'
@@ -159,6 +171,6 @@ const modulesWithAnalisis = insertModuleAfterContabilidad(baseMenuStructure, ANA
 // 2. Definimos la estructura final con Favoritos al final
 export const menuStructure = [
     ...modulesWithAnalisis,
+    PH_MODULE,
     FAVORITOS_MODULE,
 ];
-

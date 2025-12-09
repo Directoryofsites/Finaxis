@@ -17,6 +17,10 @@ class Empresa(Base):
     telefono = Column(String, nullable=True)
     email = Column(String, nullable=True)
     logo_url = Column(String, nullable=True)
+    
+    # Configuración Contable
+    prefijo_cxc = Column(String(10), nullable=False, default='13')
+    prefijo_cxp = Column(String(10), nullable=False, default='2')
     # ----------------------------
 
     periodos_cerrados = relationship("PeriodoContableCerrado", back_populates="empresa")

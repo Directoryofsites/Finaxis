@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Date, DateTime, TIMESTAMP, text
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Date, DateTime, TIMESTAMP, text, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from ..core.database import Base
@@ -26,6 +26,7 @@ class Documento(Base):
     centro_costo_id = Column(Integer, ForeignKey("centros_costo.id"))
     anulado = Column(Boolean, nullable=False, default=False)
     estado = Column(String, default='ACTIVO', nullable=False)
+    observaciones = Column(Text, nullable=True)
     usuario_creador_id = Column(Integer, ForeignKey("usuarios.id"))
 
     # --- CORRECCIÓN: Se elimina el server_default PostgreSQL-específico ---

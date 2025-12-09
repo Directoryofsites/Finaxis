@@ -314,6 +314,10 @@ app.include_router(cotizaciones_router.router, prefix="/api/cotizaciones", tags=
 from app.api.activos_fijos import routes as activos_fijos_router
 app.include_router(activos_fijos_router.router, prefix="/api/activos", tags=["Activos Fijos"])
 
+# --- MODULO PROPIEDAD HORIZONTAL ---
+from app.api.propiedad_horizontal import routes as ph_routes
+app.include_router(ph_routes.router, prefix="/api/ph", tags=["Propiedad Horizontal"])
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
