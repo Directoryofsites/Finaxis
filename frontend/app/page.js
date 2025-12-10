@@ -25,7 +25,7 @@ import Sidebar from '../components/Sidebar'; // Usamos el nuevo componente Sideb
 import { menuStructure } from '../lib/menuData'; // Usamos la data centralizada
 
 // --- Servicios Frontend ---
-import { getFinancialRatios } from '../lib/dashboardService';
+import { getFinancialRatios, getHorizontalAnalysis, getVerticalAnalysis } from '../lib/dashboardService';
 import { getFavoritos } from '../lib/favoritosService';
 
 // =============================================================
@@ -525,125 +525,286 @@ const RatiosDisplay = ({ kpisData }) => {
 
 
 /**
- * Componente que encapsula la lógica de carga y visualización del Tablero de Análisis Financiero.
+ * Vista para Análisis Horizontal (Comparativo).
  */
-const FinancialAnalysisModule = ({ user }) => {
-    // --- ESTADOS CRÍTICOS (FECHAS Y DATOS) ---
-    const today = new Date();
-    const firstDayOfYear = new Date(today.getFullYear(), 0, 1);
+const HorizontalAnalysisView = ({ user }) => {
+    // Estado fechas
+    const [p1Start, setP1Start] = useState('');
+    const [p1End, setP1End] = useState('');
+    const [p2Start, setP2Start] = useState('');
+    const [p2End, setP2End] = useState('');
 
-    const [fechaInicio, setFechaInicio] = useState(firstDayOfYear.toISOString().split('T')[0]);
-    const [fechaFin, setFechaFin] = useState(today.toISOString().split('T')[0]);
-    const [kpisData, setKpisData] = useState(null);
+    const [data, setData] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    const fetchData = useCallback(async (start, end) => {
+    // Valores por defecto: P1 = Año anterior, P2 = Año actual
+    useEffect(() => {
+        const today = new Date();
+        const year = today.getFullYear();
+        setP2Start(`${year}-01-01`);
+        setP2End(today.toISOString().split('T')[0]);
+        setP1Start(`${year - 1}-01-01`);
+        setP1End(`${year - 1}-12-31`);
+    }, []);
+
+    const handleExecute = async (e) => {
+        e.preventDefault();
         setLoading(true);
         try {
-            let ratiosRes = null;
-            if (start && end) {
-                ratiosRes = await getFinancialRatios(start, end);
-            }
-            setKpisData(ratiosRes);
+            const res = await getHorizontalAnalysis(p1Start, p1End, p2Start, p2End);
+            setData(res);
+            toast.success("Análisis Horizontal generado.");
         } catch (err) {
-            console.error("Error al cargar datos del dashboard:", err);
-            const errorMsg = err.response?.data?.detail || err.message || "Verifique la conexión con el backend.";
-            toast.error(`Fallo al cargar datos: ${errorMsg}`);
-            setKpisData(null);
+            toast.error("Error al generar análisis horizontal.");
         } finally {
             setLoading(false);
         }
-    }, []);
-
-    const handleExecuteRatios = (e) => {
-        e.preventDefault();
-        if (!fechaInicio || !fechaFin) {
-            toast.warning("Por favor, seleccione un rango de fechas válido.");
-            return;
-        }
-        if (new Date(fechaInicio) > new Date(fechaFin)) {
-            toast.error("La fecha de inicio no puede ser posterior a la fecha final.");
-            return;
-        }
-        fetchData(fechaInicio, fechaFin);
     };
 
-    // --- CARGA INICIAL: Inicia la carga de ratios automáticamente al entrar al módulo ---
-    useEffect(() => {
-        fetchData(fechaInicio, fechaFin);
-    }, [fetchData, fechaInicio, fechaFin]);
-
+    const formatMoney = (val) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
+    const formatPct = (val) => val.toFixed(2) + '%';
 
     return (
-        <div className="p-6 w-full">
-
-            {/* --- HEADER DE CONTROL COMPACTO Y MODERNO (REPLICADO) --- */}
-            <header className="bg-white p-4 shadow-md mb-6 rounded-lg border-l-4 border-blue-500">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-
-                    <h1 className="text-xl font-light text-gray-700 mb-3 md:mb-0 flex-shrink-0">
-                        Configuración de Análisis Financiero
-                    </h1>
-
-                    <form onSubmit={handleExecuteRatios} className="flex flex-col sm:flex-row items-stretch space-y-2 sm:space-y-0 sm:space-x-3 w-full md:w-auto">
-
-                        <div className="flex items-center space-x-2">
-                            <label htmlFor="fechaInicio" className="text-sm font-medium text-gray-500 hidden sm:block">Desde:</label>
-                            <input
-                                type="date"
-                                id="fechaInicio"
-                                value={fechaInicio}
-                                onChange={(e) => setFechaInicio(e.target.value)}
-                                className="rounded-md border-gray-300 shadow-sm p-1.5 border focus:border-blue-500 text-sm w-full sm:w-36"
-                                required
-                            />
-                        </div>
-
-                        <div className="flex items-center space-x-2">
-                            <label htmlFor="fechaFin" className="text-sm font-medium text-gray-500 hidden sm:block">Hasta:</label>
-                            <input
-                                type="date"
-                                id="fechaFin"
-                                value={fechaFin}
-                                onChange={(e) => setFechaFin(e.target.value)}
-                                className="rounded-md border-gray-300 shadow-sm p-1.5 border focus:border-blue-500 text-sm w-full sm:w-36"
-                                required
-                            />
-                        </div>
-
-
-                        <button
-                            type="submit"
-                            className="px-4 py-1.5 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-150 flex items-center justify-center disabled:bg-gray-400 text-sm"
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <span className="loading loading-spinner w-4 h-4 mr-2"></span>
-                            ) : (
-                                <FaPlayCircle className="mr-2" />
-                            )}
-                            {loading ? 'Cargando' : 'Ejecutar Análisis'}
-                        </button>
-
-
-                        <button
-                            onClick={() => window.open('/manual?file=capitulo_55_analisis_financiero.md', '_blank')}
-                            className="px-4 py-1.5 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg shadow-sm hover:bg-gray-50 transition duration-150 flex items-center justify-center text-sm"
-                            type="button"
-                        >
-                            <FaBook className="mr-2" /> Manual
-                        </button>
-
-
-                    </form>
+        <div>
+            <form onSubmit={handleExecute} className="mb-6 bg-white p-4 rounded shadow flex flex-wrap gap-4 items-end border-l-4 border-green-500">
+                <div>
+                    <span className="block text-xs font-bold text-gray-500 mb-1">Periodo 1 (Base/Anterior)</span>
+                    <div className="flex gap-2">
+                        <input type="date" value={p1Start} onChange={e => setP1Start(e.target.value)} className="border rounded p-1 text-sm" required />
+                        <input type="date" value={p1End} onChange={e => setP1End(e.target.value)} className="border rounded p-1 text-sm" required />
+                    </div>
                 </div>
-            </header>
+                <div>
+                    <span className="block text-xs font-bold text-gray-500 mb-1">Periodo 2 (Actual/Comparar)</span>
+                    <div className="flex gap-2">
+                        <input type="date" value={p2Start} onChange={e => setP2Start(e.target.value)} className="border rounded p-1 text-sm" required />
+                        <input type="date" value={p2End} onChange={e => setP2End(e.target.value)} className="border rounded p-1 text-sm" required />
+                    </div>
+                </div>
+                <button type="submit" disabled={loading} className="bg-green-600 text-white px-4 py-1.5 rounded hover:bg-green-700 text-sm font-semibold h-9">
+                    {loading ? 'Analizando...' : 'Comparar Periodos'}
+                </button>
+            </form>
 
-            {/* Carga de Ratios */}
-            <RatiosDisplay kpisData={kpisData} />
+            {data && (
+                <div className="overflow-x-auto bg-white shadow rounded">
+                    <table className="w-full text-sm">
+                        <thead className="bg-gray-100 text-gray-700">
+                            <tr>
+                                <th className="p-2 text-left">Cuenta</th>
+                                <th className="p-2 text-right">{data.periodo_1_texto}</th>
+                                <th className="p-2 text-right">{data.periodo_2_texto}</th>
+                                <th className="p-2 text-right">Var. Absoluta</th>
+                                <th className="p-2 text-right">Var. Relativa (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {data.items.map((row) => (
+                                <tr key={row.codigo_cuenta} className={`border-b hover:bg-gray-50 ${row.es_titulo ? 'font-bold bg-gray-50' : ''}`}>
+                                    <td className="p-2">
+                                        <span style={{ paddingLeft: `${(row.nivel - 1) * 10}px` }}>
+                                            {row.codigo_cuenta} - {row.nombre_cuenta}
+                                        </span>
+                                    </td>
+                                    <td className="p-2 text-right">{formatMoney(row.saldo_periodo_1)}</td>
+                                    <td className="p-2 text-right">{formatMoney(row.saldo_periodo_2)}</td>
+                                    <td className={`p-2 text-right ${row.variacion_absoluta < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                        {formatMoney(row.variacion_absoluta)}
+                                    </td>
+                                    <td className={`p-2 text-right ${row.variacion_relativa < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                        {formatPct(row.variacion_relativa)}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 };
+
+/**
+ * Vista para Análisis Vertical (Estructural).
+ */
+const VerticalAnalysisView = ({ user }) => {
+    const [start, setStart] = useState('');
+    const [end, setEnd] = useState('');
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const today = new Date();
+        setStart(`${today.getFullYear()}-01-01`);
+        setEnd(today.toISOString().split('T')[0]);
+    }, []);
+
+    const handleExecute = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const res = await getVerticalAnalysis(start, end);
+            setData(res);
+            toast.success("Análisis Vertical generado.");
+        } catch (err) {
+            toast.error("Error al generar análisis vertical.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const formatMoney = (val) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
+
+    return (
+        <div>
+            <form onSubmit={handleExecute} className="mb-6 bg-white p-4 rounded shadow flex items-end gap-4 border-l-4 border-purple-500">
+                <div>
+                    <span className="block text-xs font-bold text-gray-500 mb-1">Periodo de Análisis</span>
+                    <div className="flex gap-2">
+                        <input type="date" value={start} onChange={e => setStart(e.target.value)} className="border rounded p-1 text-sm" required />
+                        <input type="date" value={end} onChange={e => setEnd(e.target.value)} className="border rounded p-1 text-sm" required />
+                    </div>
+                </div>
+                <button type="submit" disabled={loading} className="bg-purple-600 text-white px-4 py-1.5 rounded hover:bg-purple-700 text-sm font-semibold h-9">
+                    {loading ? 'Calculando...' : 'Ver Estructura (%)'}
+                </button>
+            </form>
+
+            {data && (
+                <div className="overflow-x-auto bg-white shadow rounded">
+                    <table className="w-full text-sm">
+                        <thead className="bg-gray-100 text-gray-700">
+                            <tr>
+                                <th className="p-2 text-left">Cuenta</th>
+                                <th className="p-2 text-right">Saldo</th>
+                                <th className="p-2 text-right">% Participación</th>
+                                <th className="p-2 text-left w-1/3">Visualización</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {data.items.map((row) => (
+                                <tr key={row.codigo_cuenta} className={`border-b hover:bg-gray-50 ${row.es_titulo ? 'font-bold bg-gray-50' : ''}`}>
+                                    <td className="p-2">
+                                        <span style={{ paddingLeft: `${(row.nivel - 1) * 10}px` }}>
+                                            {row.codigo_cuenta} - {row.nombre_cuenta}
+                                        </span>
+                                    </td>
+                                    <td className="p-2 text-right">{formatMoney(row.saldo_periodo_1)}</td>
+                                    <td className="p-2 text-right font-mono">{row.porcentaje_participacion.toFixed(2)}%</td>
+                                    <td className="p-2 align-middle">
+                                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                            <div className="bg-purple-600 h-2.5 rounded-full" style={{ width: `${Math.min(Math.abs(row.porcentaje_participacion), 100)}%` }}></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+        </div>
+    );
+};
+
+
+/**
+ * Componente Principal del Módulo de Análisis Financiero.
+ * Gestiona Pestañas y Vistas.
+ */
+const FinancialAnalysisModule = ({ user }) => {
+    // --- LÓGICA DE PESTAÑAS ---
+    const [activeTab, setActiveTab] = useState('ratios');
+
+    // --- LÓGICA DE RATIOS (Original) ---
+    const today = new Date();
+    const firstDayOfYear = new Date(today.getFullYear(), 0, 1);
+    const [fechaInicio, setFechaInicio] = useState(firstDayOfYear.toISOString().split('T')[0]);
+    const [fechaFin, setFechaFin] = useState(today.toISOString().split('T')[0]);
+    const [kpisData, setKpisData] = useState(null);
+    const [loadingRatios, setLoadingRatios] = useState(false);
+
+    const fetchRatios = useCallback(async (start, end) => {
+        setLoadingRatios(true);
+        try {
+            if (start && end) {
+                const res = await getFinancialRatios(start, end);
+                setKpisData(res);
+            }
+        } catch (err) {
+            toast.error("Error al cargar indicadores.");
+        } finally {
+            setLoadingRatios(false);
+        }
+    }, []);
+
+    // Carga inicial de Ratios
+    useEffect(() => {
+        if (activeTab === 'ratios' && !kpisData) {
+            fetchRatios(fechaInicio, fechaFin);
+        }
+    }, [activeTab, fetchRatios, fechaInicio, fechaFin, kpisData]);
+
+    const handleExecuteRatios = (e) => {
+        e.preventDefault();
+        fetchRatios(fechaInicio, fechaFin);
+    };
+
+    return (
+        <div className="p-6 w-full fade-in">
+            <h1 className="text-2xl font-light text-slate-800 mb-6 flex items-center">
+                <FaChartArea className="mr-3 text-blue-600" /> Análisis Financiero Integral
+            </h1>
+
+            {/* --- NAVEGACIÓN DE PESTAÑAS --- */}
+            <div className="flex border-b border-gray-200 mb-6">
+                <button
+                    className={`px-6 py-3 font-medium text-sm focus:outline-none ${activeTab === 'ratios' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                    onClick={() => setActiveTab('ratios')}
+                >
+                    Indicadores (Ratios)
+                </button>
+                <button
+                    className={`px-6 py-3 font-medium text-sm focus:outline-none ${activeTab === 'horizontal' ? 'border-b-2 border-green-500 text-green-600' : 'text-gray-500 hover:text-gray-700'}`}
+                    onClick={() => setActiveTab('horizontal')}
+                >
+                    Análisis Horizontal
+                </button>
+                <button
+                    className={`px-6 py-3 font-medium text-sm focus:outline-none ${activeTab === 'vertical' ? 'border-b-2 border-purple-500 text-purple-600' : 'text-gray-500 hover:text-gray-700'}`}
+                    onClick={() => setActiveTab('vertical')}
+                >
+                    Análisis Vertical
+                </button>
+            </div>
+
+            {/* --- CONTENIDO DE PESTAÑAS --- */}
+
+            {/* TAB 1: RATIOS (Código Original Optimizado) */}
+            {activeTab === 'ratios' && (
+                <div>
+                    <form onSubmit={handleExecuteRatios} className="bg-white p-4 items-center rounded shadow-sm mb-6 flex gap-4 border-l-4 border-blue-500">
+                        <span className="font-semibold text-sm text-gray-600">Periodo:</span>
+                        <input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} className="border rounded p-1 text-sm" />
+                        <span className="text-gray-400">-</span>
+                        <input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} className="border rounded p-1 text-sm" />
+                        <button type="submit" disabled={loadingRatios} className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 text-sm">
+                            {loadingRatios ? '...' : 'Actualizar'}
+                        </button>
+                    </form>
+                    <RatiosDisplay kpisData={kpisData} />
+                </div>
+            )}
+
+            {/* TAB 2: HORIZONTAL */}
+            {activeTab === 'horizontal' && <HorizontalAnalysisView user={user} />}
+
+            {/* TAB 3: VERTICAL */}
+            {activeTab === 'vertical' && <VerticalAnalysisView user={user} />}
+
+        </div>
+    );
+};
+
 
 
 /**

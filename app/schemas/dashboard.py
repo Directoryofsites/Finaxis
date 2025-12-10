@@ -41,3 +41,44 @@ class FinancialRatiosResponse(BaseModel):
     recomendaciones_breves: List[str] = Field(..., description="Lista de recomendaciones automáticas cortas.")
     
     model_config = ConfigDict(from_attributes=True)
+
+
+# --- NUEVOS SCHEMAS PARA ANÁLISIS FINANCIERO (HORIZONTAL / VERTICAL) ---
+
+class AnalysisRow(BaseModel):
+    """Fila genérica para tablas de análisis."""
+    codigo_cuenta: str
+    nombre_cuenta: str
+    
+    # Valores
+    saldo_periodo_1: float = 0.0
+    saldo_periodo_2: Optional[float] = 0.0 # Para Horizontal o Comparativo
+    
+    # Cálculos Horizontal
+    variacion_absoluta: Optional[float] = 0.0 # P2 - P1
+    variacion_relativa: Optional[float] = 0.0 # (P2 - P1) / P1 * 100
+    
+    # Cálculos Vertical
+    porcentaje_participacion: Optional[float] = 0.0 # Saldo / Total Grupo * 100
+    
+    es_titulo: bool = False # Para indicar si es un encabezado de grupo (ej. ACTIVO)
+    nivel: int = 1 # Para indentación en frontend
+
+class HorizontalAnalysisRequest(BaseModel):
+    fecha_inicio_1: date
+    fecha_fin_1: date
+    fecha_inicio_2: date
+    fecha_fin_2: date
+
+class VerticalAnalysisRequest(BaseModel):
+    fecha_inicio: date
+    fecha_fin: date
+
+class HorizontalResponse(BaseModel):
+    items: List[AnalysisRow]
+    periodo_1_texto: str
+    periodo_2_texto: str
+
+class VerticalResponse(BaseModel):
+    items: List[AnalysisRow]
+    periodo_texto: str

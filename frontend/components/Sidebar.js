@@ -35,7 +35,11 @@ export default function Sidebar({
                 {menuStructure.map((module) => (
                     <button
                         key={module.id}
-                        onClick={() => onMenuClick(module.id)}
+                        type="button"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            onMenuClick(module.id);
+                        }}
                         className={`flex items-center p-3 transition duration-150 rounded-lg mx-2 text-sm font-semibold w-[90%]
                             ${activeModuleId === module.id ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}
                         title={module.name}

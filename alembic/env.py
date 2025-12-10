@@ -54,8 +54,11 @@ from app.models import (
     # Activos Fijos
     ActivoCategoria,
     ActivoFijo,
+    ActivoCategoria,
+    ActivoFijo,
     ActivoNovedad
 )
+from app.models.nomina import Empleado, Nomina, DetalleNomina, ConfiguracionNomina
 # --- FIN DE LA CIRUGÍA ARQUITECTÓNICA ---
 
 

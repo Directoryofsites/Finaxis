@@ -47,7 +47,6 @@ def get_cuentas_especiales_ids(db: Session, empresa_id: int, tipo: str) -> List[
     # SOLUCIÓN: Si es CXC, aceptamos cualquier ACTIVO (1%) excepto DISPONIBLE (11%).
     
     if tipo == 'cxc':
-        print(f"DEBUG: Checking CXC IDs: {cuentas_ids}")
         valid_ids = db.query(models_plan.id, models_plan.codigo).filter(
             models_plan.id.in_(list(cuentas_ids)),
             models_plan.codigo.like("1%"),
@@ -61,10 +60,8 @@ def get_cuentas_especiales_ids(db: Session, empresa_id: int, tipo: str) -> List[
         # O simplemente para dar prioridad total.
         if ph_cuenta_cartera_id and ph_cuenta_cartera_id in cuentas_ids:
             if ph_cuenta_cartera_id not in result_ids:
-                print(f"DEBUG: Adding PH Specific Account {ph_cuenta_cartera_id} to valid list.")
                 result_ids.append(ph_cuenta_cartera_id)
 
-        print(f"DEBUG: Valid CXC Codes found: {[r.codigo for r in valid_ids]}")
         return result_ids
     else:
         # Para CXP (Proveedores), mantenemos Pasivos (2%)

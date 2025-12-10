@@ -4,11 +4,41 @@
     FaClipboardList, FaWrench, FaHandshake, FaTruckMoving, FaReceipt, FaLock,
     FaListUl, FaDollarSign, FaChartLine, FaChartPie, FaPercentage, FaFileContract,
     FaRedoAlt, FaCalendarAlt, FaTools, FaTimes, FaChartArea, FaStar, FaBuilding,
-    FaStamp, FaShoppingCart, FaMoneyBillWave, FaTractor, FaCogs
+    FaStamp, FaShoppingCart, FaMoneyBillWave, FaTractor, FaCogs, FaHome
 } from 'react-icons/fa';
 
-export const baseMenuStructure = [
-    // Módulos originales del sistema
+// Módulos definidos externamente para claridad
+const ANALISIS_FINANCIERO_MODULE = { id: 'analisis_financiero', name: 'Análisis Financiero', icon: FaChartArea };
+const PH_MODULE = {
+    id: 'ph',
+    name: 'Propiedad Horizontal',
+    icon: FaBuilding,
+    links: [
+        { name: 'Unidades', href: '/ph/unidades', icon: FaHome },
+        { name: 'Propietarios', href: '/ph/propietarios', icon: FaUsers },
+        { name: 'Conceptos de Cobro', href: '/ph/conceptos', icon: FaListUl },
+        { name: 'Generar Cuentas Cobro', href: '/ph/facturacion', icon: FaFileInvoiceDollar },
+        { name: 'Recaudos (Pagos)', href: '/ph/pagos', icon: FaHandshake },
+        { name: 'Estado de Cuenta', href: '/ph/estado-cuenta', icon: FaFileContract }, // NUEVO
+        { name: 'Reportes PH', href: '/ph/reportes', icon: FaChartBar },
+        { name: 'Configuración PH', href: '/ph/configuracion', icon: FaCog }
+    ]
+};
+const NOMINA_MODULE = {
+    id: 'nomina',
+    name: 'Nómina',
+    icon: FaUsers,
+    links: [
+        { name: 'Empleados', href: '/nomina/empleados', icon: FaUsers },
+        { name: 'Liquidar Nómina', href: '/nomina/liquidar', icon: FaCalculator },
+        { name: 'Desprendibles', href: '/nomina/desprendibles', icon: FaFileAlt },
+        { name: 'Configuración (PUC)', href: '/nomina/configuracion', icon: FaCog },
+    ]
+};
+const FAVORITOS_MODULE = { id: 'favoritos', name: 'Favoritos', icon: FaStar };
+
+export const menuStructure = [
+    // 1. Contabilidad General
     {
         id: 'contabilidad',
         name: 'Contabilidad General',
@@ -16,9 +46,7 @@ export const baseMenuStructure = [
         links: [
             { name: 'Crear Documento', href: '/contabilidad/documentos', icon: FaFileAlt },
             { name: 'Captura Rápida', href: '/contabilidad/captura-rapida', icon: FaPlus },
-
             { name: 'Explorador Doc', href: '/contabilidad/explorador', icon: FaBook },
-
             { name: 'Libro Diario', href: '/contabilidad/reportes/libro-diario', icon: FaBook },
             { name: 'Balance General', href: '/contabilidad/reportes/balance-general', icon: FaBalanceScale },
             { name: 'Estado de Resultados', href: '/contabilidad/reportes/estado-resultados', icon: FaChartBar },
@@ -28,6 +56,9 @@ export const baseMenuStructure = [
             { name: 'Auditoría Avanzada (Super Informe)', href: '/contabilidad/reportes/super-informe', icon: FaClipboardList },
         ]
     },
+    // 2. Análisis Financiero
+    ANALISIS_FINANCIERO_MODULE,
+    // 3. Centros de Costo
     {
         id: 'centros_costo',
         name: 'Centros de Costo',
@@ -40,6 +71,7 @@ export const baseMenuStructure = [
             { name: 'Balance de Prueba por CC', href: '/contabilidad/reportes/balance-de-prueba-cc', icon: FaCheckCircle },
         ]
     },
+    // 4. Terceros
     {
         id: 'terceros',
         name: 'Terceros',
@@ -53,12 +85,14 @@ export const baseMenuStructure = [
             { name: 'Auxiliar Proveedores', href: '/contabilidad/reportes/auxiliar-proveedores', icon: FaReceipt },
         ]
     },
+    // 5. Impuestos
     {
         id: 'impuestos',
         name: 'Impuestos',
         icon: FaFileInvoiceDollar,
         route: '/impuestos'
     },
+    // 6. Inventarios
     {
         id: 'inventarios',
         name: 'Inventarios',
@@ -73,16 +107,7 @@ export const baseMenuStructure = [
             { name: '% Gestión de Topes', href: '/contabilidad/reportes/gestion-topes', icon: FaPercentage },
         ]
     },
-    {
-        id: 'activos',
-        name: "Activos Fijos (NIIF)",
-        icon: FaTractor,
-        links: [
-            { name: "Listado de Activos", href: "/activos", icon: FaListUl },
-            { name: "Registrar Nuevo Activo", href: "/activos/crear", icon: FaPlus },
-            { name: "Categorías y Vidas Útiles", href: "/activos/categorias", icon: FaCogs },
-        ]
-    },
+    // 7. Facturación (MOVIDO AQUI)
     {
         id: 'facturacion',
         name: 'Facturación',
@@ -97,6 +122,22 @@ export const baseMenuStructure = [
             { name: 'Rentabilidad por Documentos', href: '/contabilidad/reportes/gestion-ventas', icon: FaChartLine },
         ]
     },
+    // 8. Activos Fijos
+    {
+        id: 'activos',
+        name: "Activos Fijos (NIIF)",
+        icon: FaTractor,
+        links: [
+            { name: "Listado de Activos", href: "/activos", icon: FaListUl },
+            { name: "Registrar Nuevo Activo", href: "/activos/crear", icon: FaPlus },
+            { name: "Categorías y Vidas Útiles", href: "/activos/categorias", icon: FaCogs },
+        ]
+    },
+    // 9. Propiedad Horizontal (MOVIDO AQUI)
+    PH_MODULE,
+    // 10. Nómina
+    NOMINA_MODULE,
+    // 11. Administración y Configuración
     {
         id: 'administracion',
         name: 'Administración y Configuración',
@@ -133,44 +174,7 @@ export const baseMenuStructure = [
                 ]
             },
         ]
-    }
-];
-
-// FIX CRÍTICO: Reordenamiento de Favoritos y Análisis Financiero
-const ANALISIS_FINANCIERO_MODULE = { id: 'analisis_financiero', name: 'Análisis Financiero', icon: FaChartArea };
-const PH_MODULE = {
-    id: 'propiedad_horizontal',
-    name: 'Propiedad Horizontal',
-    icon: FaBuilding,
-    links: [
-        { name: 'Gestión Unidades', href: '/ph/unidades', icon: FaListUl },
-        { name: 'Facturación', href: '/ph/facturacion', icon: FaFileInvoiceDollar },
-        { name: 'Recaudos y Pagos', href: '/ph/pagos', icon: FaMoneyBillWave },
-        { name: 'Estado de Cuenta', href: '/ph/reportes/estado-cuenta', icon: FaFileAlt },
-        { name: 'Configuración', href: '/ph/configuracion', icon: FaCogs },
-    ]
-};
-const FAVORITOS_MODULE = { id: 'favoritos', name: 'Favoritos', icon: FaStar };
-
-// Función para insertar 'Análisis Financiero' después de 'Contabilidad'
-const insertModuleAfterContabilidad = (baseModules, newModule) => {
-    const contabilidadIndex = baseModules.findIndex(m => m.id === 'contabilidad');
-    if (contabilidadIndex !== -1) {
-        return [
-            ...baseModules.slice(0, contabilidadIndex + 1),
-            newModule,
-            ...baseModules.slice(contabilidadIndex + 1)
-        ];
-    }
-    return baseModules;
-};
-
-// 1. Insertamos Análisis Financiero en el lugar correcto dentro de baseMenuStructure
-const modulesWithAnalisis = insertModuleAfterContabilidad(baseMenuStructure, ANALISIS_FINANCIERO_MODULE);
-
-// 2. Definimos la estructura final con Favoritos al final
-export const menuStructure = [
-    ...modulesWithAnalisis,
-    PH_MODULE,
+    },
+    // 11. Favoritos
     FAVORITOS_MODULE,
 ];

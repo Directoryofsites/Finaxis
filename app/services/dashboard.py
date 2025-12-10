@@ -461,3 +461,183 @@ def get_limite_real_mes(db: Session, empresa_id: int, anio: int, mes: int) -> in
     # Si no hay adicional o es 0, retornamos la base
     return limite_base
 
+    return limite_base
+
+
+# ==========================================================
+# 6. ANÁLISIS HORIZONTAL Y VERTICAL (NUEVO)
+# ==========================================================
+
+def get_account_names_map(db: Session, empresa_id: int) -> Dict[str, str]:
+    """Retorna un mapa {codigo: nombre} de todas las cuentas de la empresa."""
+    cuentas = db.query(models_pc.PlanCuenta.codigo, models_pc.PlanCuenta.nombre)\
+        .filter(models_pc.PlanCuenta.empresa_id == empresa_id).all()
+    return {c.codigo: c.nombre for c in cuentas}
+
+def get_unified_saldos(db: Session, empresa_id: int, fecha_start: date, fecha_end: date) -> Dict[str, float]:
+    """
+    Retorna saldos 'netos' (según naturaleza) unificados de Balance y PyG.
+    """
+    raw_balance = get_saldos_balance_acumulado(db, empresa_id, fecha_end)
+    raw_pyg = get_saldos_pyg_periodo(db, empresa_id, fecha_start, fecha_end)
+    
+    saldos = {}
+    
+    # Helper para naturaleza
+    def get_val(row):
+        code = str(row.codigo)
+        if code.startswith(('1', '5', '6', '7', '8')):
+            return float(row.total_debito - row.total_credito)
+        else:
+            return float(row.total_credito - row.total_debito)
+
+    for row in raw_balance:
+        saldos[str(row.codigo)] = get_val(row)
+
+    for row in raw_pyg:
+        code = str(row.codigo)
+        val = get_val(row)
+        saldos[code] = saldos.get(code, 0.0) + val
+            
+    return saldos
+
+def build_hierarchical_data(saldos: Dict[str, float], names_map: Dict[str, str]) -> Dict[str, float]:
+    """
+    Genera saldos para los padres sumando los hijos.
+    Retorna un dict expandido {codigo: saldo} que incluye Clases, Grupos, Cuentas.
+    """
+    expanded_saldos = saldos.copy()
+    
+    # Identificar todos los códigos posibles padres
+    # Iteramos sobre las cuentas con saldo
+    keys = list(expanded_saldos.keys()) 
+    
+    for code in keys:
+        val = expanded_saldos[code]
+        # Propagar hacia arriba
+        # Ej: 110505 -> 1105 -> 11 -> 1
+        current = code
+        while len(current) > 1:
+            # Recortar (siguiente nivel padre estándar Colombia: 6->4->2->1)
+            if len(current) > 6: current = current[:6] # Subcuenta (o auxiliar largo)
+            elif len(current) > 4: current = current[:4] # Cuenta
+            elif len(current) > 2: current = current[:2] # Grupo
+            elif len(current) > 1: current = current[:1] # Clase
+            
+            # Si cortamos y es lo mismo (caso borde), break
+            if current == code: break ## Evitar loop si la logica de recorte falla
+            
+            # Acumular
+            expanded_saldos[current] = expanded_saldos.get(current, 0.0) + val
+            
+            # Preparar siguiente iteración padre
+            # Un paso a la vez hacia arriba? 
+            # El while con lógica de recorte asegura ir subiendo.
+            # Pero debemos tener cuidado de no sumar doble si la DB ya tenía saldos en niveles intermedios 
+            # (normalmente Contapy guarda movimientos solo en auxiliares, así que esto es seguro).
+            
+            # Ajuste de steps para loop:
+            if len(current) <= 1: break # Ya llegamos a la clase
+            
+            # Próximo recorte manual para el while
+            prev_len = len(current)
+            if prev_len > 6: current = current[:6]
+            elif prev_len > 4: current = current[:4]
+            elif prev_len > 2: current = current[:2]
+            else: current = current[:1]
+            
+            if len(current) == prev_len: break # Safety
+
+    return expanded_saldos
+
+def get_horizontal_analysis(db: Session, empresa_id: int, p1_start: date, p1_end: date, p2_start: date, p2_end: date):
+    # 1. Obtener saldos crudos
+    saldos_1 = get_unified_saldos(db, empresa_id, p1_start, p1_end)
+    saldos_2 = get_unified_saldos(db, empresa_id, p2_start, p2_end)
+    names_map = get_account_names_map(db, empresa_id)
+    
+    # 2. Expandir jerarquía
+    tree_1 = build_hierarchical_data(saldos_1, names_map)
+    tree_2 = build_hierarchical_data(saldos_2, names_map)
+    
+    # 3. Unir claves
+    all_codes = sorted(set(list(tree_1.keys()) + list(tree_2.keys())))
+    
+    items = []
+    for code in all_codes:
+        if code not in names_map and len(code) > 1: continue # Ignorar códigos 'huérfanos' si no existen en el plan de cuentas (opcional)
+        
+        nombre = names_map.get(code, f"Cuenta {code}")
+        v1 = tree_1.get(code, 0.0)
+        v2 = tree_2.get(code, 0.0)
+        
+        diff = v2 - v1
+        # Variación relativa: Si v1 es 0, es 100% (si v2 > 0) o 0% o undef.
+        # Manejo seguro:
+        if abs(v1) < 0.01:
+            rel = 100.0 if abs(v2) > 0.01 else 0.0
+        else:
+            rel = (diff / v1) * 100.0
+            
+        row = schemas_dashboard.AnalysisRow(
+            codigo_cuenta=code,
+            nombre_cuenta=nombre,
+            saldo_periodo_1=v1,
+            saldo_periodo_2=v2,
+            variacion_absoluta=diff,
+            variacion_relativa=rel,
+            es_titulo=(len(code) <= 4), # Clase, Grupo, Cuenta (4 digitos) como titulos resaltados
+            nivel=len(code)
+        )
+        items.append(row)
+        
+    return schemas_dashboard.HorizontalResponse(
+        items=items,
+        periodo_1_texto=f"{p1_start} a {p1_end}",
+        periodo_2_texto=f"{p2_start} a {p2_end}"
+    )
+
+def get_vertical_analysis(db: Session, empresa_id: int, start: date, end: date):
+    saldos = get_unified_saldos(db, empresa_id, start, end)
+    names_map = get_account_names_map(db, empresa_id)
+    tree = build_hierarchical_data(saldos, names_map)
+    
+    all_codes = sorted(tree.keys())
+    
+    # Bases para porcentajes
+    total_activo = tree.get('1', 0.0)
+    total_ingreso = tree.get('4', 0.0)
+    
+    items = []
+    for code in all_codes:
+        nombre = names_map.get(code, f"Cuenta {code}")
+        val = tree.get(code, 0.0)
+        
+        # Calcular %
+        pct = 0.0
+        base = 0.0
+        
+        # Clase 1, 2, 3 -> Base Activo
+        # Clase 4, 5, 6, 7 -> Base Ingreso
+        if code.startswith(('1', '2', '3')):
+            base = total_activo
+        elif code.startswith(('4', '5', '6', '7', '8')):
+            base = total_ingreso
+            
+        if abs(base) > 0.01:
+            pct = (val / base) * 100.0
+            
+        row = schemas_dashboard.AnalysisRow(
+            codigo_cuenta=code,
+            nombre_cuenta=nombre,
+            saldo_periodo_1=val,
+            porcentaje_participacion=pct,
+            es_titulo=(len(code) <= 4),
+            nivel=len(code)
+        )
+        items.append(row)
+
+    return schemas_dashboard.VerticalResponse(
+        items=items,
+        periodo_texto=f"{start} a {end}"
+    )

@@ -20,11 +20,24 @@ class ExportPaquetesConfiguraciones(BaseModel):
     plantillas_documentos: bool = False
     libreria_conceptos: bool = False
 
+class ExportPaquetesModulosEspecializados(BaseModel):
+    propiedad_horizontal: bool = False
+    activos_fijos: bool = False
+    favoritos: bool = False # Favoritos de usuario y menús
+
 class ExportPaquetes(BaseModel):
     """ Define qué paquetes de datos se incluirán en la exportación. """
     maestros: ExportPaquetesMaestros
+    modulos_especializados: ExportPaquetesModulosEspecializados = ExportPaquetesModulosEspecializados()
     transacciones: bool = False
     configuraciones: ExportPaquetesConfiguraciones
+
+# --- Esquema de Configuración de Copias Automáticas ---
+class AutoBackupConfig(BaseModel):
+    enabled: bool = False
+    hora_ejecucion: str = "03:00" # Formato HH:MM
+    ruta_local: str = "C:/Backups_Finaxis"
+    dias_retencion: int = 30 # Cuántos días guardar antes de borrar (opcional)
 
 # --- Schema de Exportación Corregido ---
 # Se elimina la anidación de 'filtros' y se añaden todos los campos del formulario.

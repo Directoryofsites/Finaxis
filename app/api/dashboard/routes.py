@@ -55,3 +55,43 @@ def get_consumo_usuario(
     Params: mes (1-12), anio (2025). Si se omiten, devuelve el mes actual.
     """
     return service_dashboard.get_consumo_actual(db, current_user.empresa_id, mes, anio)
+
+# --- NUEVOS ENDPOINTS: ANÁLISIS FINANCIERO AVANZADO ---
+
+@router.post(
+    "/analisis-horizontal",
+    response_model=schemas_dashboard.HorizontalResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Calcula el Análisis Horizontal (Variación) entre dos periodos."
+)
+def get_horizontal_analysis_route(
+    request: schemas_dashboard.HorizontalAnalysisRequest,
+    db: Session = Depends(get_db),
+    current_user: models_usuario.Usuario = Depends(get_current_user)
+):
+    return service_dashboard.get_horizontal_analysis(
+        db=db,
+        empresa_id=current_user.empresa_id,
+        p1_start=request.fecha_inicio_1,
+        p1_end=request.fecha_fin_1,
+        p2_start=request.fecha_inicio_2,
+        p2_end=request.fecha_fin_2
+    )
+
+@router.post(
+    "/analisis-vertical",
+    response_model=schemas_dashboard.VerticalResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Calcula el Análisis Vertical (% de Participación) para un periodo."
+)
+def get_vertical_analysis_route(
+    request: schemas_dashboard.VerticalAnalysisRequest,
+    db: Session = Depends(get_db),
+    current_user: models_usuario.Usuario = Depends(get_current_user)
+):
+    return service_dashboard.get_vertical_analysis(
+        db=db,
+        empresa_id=current_user.empresa_id,
+        start=request.fecha_inicio,
+        end=request.fecha_fin
+    )

@@ -178,6 +178,18 @@ def resetear_password(payload: usuario_schema.PasswordResetPayload, db: Session 
 def exportar_datos(export_request: migracion_schemas.ExportRequest, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(has_permission("utilidades:migracion"))): # <-- CAMBIO AQUÍ
     return migracion_service.exportar_datos(db=db, export_request=export_request, empresa_id=current_user.empresa_id)
 
+# --- RUTAS PARA COPIA AUTOMÁTICA ---
+from app.services import scheduler_backup
+
+@router.get("/backup-auto-config", response_model=migracion_schemas.AutoBackupConfig)
+def get_backup_config(current_user: models_usuario.Usuario = Depends(has_permission("utilidades:migracion"))):
+    return scheduler_backup.load_config()
+
+@router.post("/backup-auto-config")
+def update_backup_config(config: migracion_schemas.AutoBackupConfig, current_user: models_usuario.Usuario = Depends(has_permission("utilidades:migracion"))):
+    scheduler_backup.save_config(config.dict())
+    return {"msg": "Configuración de copia automática actualizada correctamente."}
+
 @router.post("/analizar-backup", response_model=migracion_schemas.AnalysisReport)
 def analizar_backup(analysis_request: migracion_schemas.AnalysisRequest, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(has_permission("utilidades:migracion"))): # <-- CAMBIO AQUÍ
     return migracion_service.analizar_backup(db=db, analysis_request=analysis_request)

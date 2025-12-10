@@ -19,7 +19,7 @@ from app.models import (
     PlantillaMaestra, PlantillaDetalle, ConceptoFavorito, Documento, 
     DocumentoEliminado, MovimientoContable, MovimientoEliminado,
     LogOperacion, PeriodoContableCerrado, FormatoImpresion, AplicacionPago,
-    Remision, RemisionDetalle, ConfiguracionReporte
+    Remision, RemisionDetalle, ConfiguracionReporte, nomina 
 )
 Base.metadata.create_all(bind=engine)
 # --- FIN: LÓGICA DE AUTO-CREACIÓN ---
@@ -100,6 +100,13 @@ app = FastAPI(
     description="Backend para la gestión contable, construido con FastAPI y Python.",
     version="1.0.0"
 )
+
+# --- INICIO: SCHEDULER DE COPIAS (AUTO-BACKUP) ---
+from app.services.scheduler_backup import start_scheduler
+@app.on_event("startup")
+def startup_event():
+    start_scheduler()
+# --- FIN: SCHEDULER ---
 
 origins = [
     "http://localhost:3000",
@@ -317,6 +324,10 @@ app.include_router(activos_fijos_router.router, prefix="/api/activos", tags=["Ac
 # --- MODULO PROPIEDAD HORIZONTAL ---
 from app.api.propiedad_horizontal import routes as ph_routes
 app.include_router(ph_routes.router, prefix="/api/ph", tags=["Propiedad Horizontal"])
+
+# --- MODULO NOMINA (BETA) ---
+from app.api.nomina import routes as router_nomina
+app.include_router(router_nomina.router, prefix="/api", tags=["Nómina"])
 
 if __name__ == "__main__":
     import uvicorn

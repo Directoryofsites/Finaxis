@@ -26,6 +26,12 @@ from ..models import (
 from ..schemas import migracion as schemas_migracion
 from ..services import cartera as services_cartera
 
+# --- NUEVOS MODELOS SOPORTADOS (v7.5) ---
+from ..models.propiedad_horizontal import PHConfiguracion, PHConcepto, PHTorre, PHUnidad, PHVehiculo, PHMascota
+from ..models.activo_fijo import ActivoFijo
+from ..models.activo_categoria import ActivoCategoria
+
+
 # =====================================================================================
 # 0. UTILIDAD DE SERIALIZACIÓN
 # =====================================================================================
@@ -81,6 +87,9 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
                     'tipos_documento': True, 'bodegas': True, 'grupos_inventario': True, 
                     'tasas_impuesto': True, 'productos': True
                 },
+                'modulos_especializados': {
+                    'propiedad_horizontal': True, 'activos_fijos': True, 'favoritos': True
+                },
                 'configuraciones': {
                     'plantillas_documentos': True, 'libreria_conceptos': True
                 },
@@ -91,16 +100,19 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
     # Extract flags for easier access
     paquetes = filtros.get('paquetes', {})
     maestros_flags = paquetes.get('maestros', {})
+    special_flags = paquetes.get('modulos_especializados', {}) # <--- NUEVO
     config_flags = paquetes.get('configuraciones', {})
     transacciones_flag = paquetes.get('transacciones', False)
 
     backup_data = {
         "metadata": {
             "fecha_generacion": datetime.utcnow().isoformat(),
-            "version_sistema": "7.0", 
+            "version_sistema": "7.5", 
             "empresa_id_origen": empresa_id
         },
-        "empresa": {}, "configuracion": {}, "maestros": {}, "inventario": {}, "transacciones": []
+        "empresa": {}, "configuracion": {}, "maestros": {}, "inventario": {}, 
+        "propiedad_horizontal": {}, "activos_fijos": {}, # <--- NUEVAS SECCIONES
+        "transacciones": []
     }
 
     # A. EMPRESA (Always export basic info for identification, but maybe minimal?)
@@ -236,13 +248,14 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
             })
 
     if maestros_flags.get('productos', False):
-        productos = db.query(Producto).filter(Producto.empresa_id == empresa_id).all()
         backup_data["inventario"]["productos"] = []
+        productos = db.query(Producto).filter(Producto.empresa_id == empresa_id).all()
         for p in productos:
             valores = []
             for v in p.valores_caracteristicas:
-                if v.definicion:
-                    valores.append({"caracteristica": v.definicion.nombre, "valor": v.valor})
+                definicion_nombre = v.definicion.nombre if v.definicion else None
+                if definicion_nombre:
+                     valores.append({"definicion": definicion_nombre, "valor": v.valor_texto if v.valor_texto is not None else v.valor_numerico})
 
             backup_data["inventario"]["productos"].append({
                 "codigo": p.codigo, "nombre": p.nombre,
@@ -251,6 +264,61 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
                 "impuesto_nombre": p.impuesto_iva.nombre if p.impuesto_iva else None,
                 "valores": valores
             })
+
+    # E. PROPIEDAD HORIZONTAL
+    if special_flags.get('propiedad_horizontal', False):
+        # 1. Configuración
+        ph_conf = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
+        if ph_conf:
+            backup_data["propiedad_horizontal"]["configuracion"] = serialize_model(ph_conf.__dict__)
+        
+        # 2. Conceptos
+        conceptos = db.query(PHConcepto).filter(PHConcepto.empresa_id == empresa_id).all()
+        backup_data["propiedad_horizontal"]["conceptos"] = [serialize_model(c.__dict__) for c in conceptos]
+        
+        # 3. Torres y Unidades
+        torres = db.query(PHTorre).filter(PHTorre.empresa_id == empresa_id).all()
+        backup_data["propiedad_horizontal"]["torres"] = []
+        for t in torres:
+            unidades = []
+            for u in t.unidades:
+                unidades.append({
+                    "codigo": u.codigo, "nombre": u.nombre, 
+                    "coeficiente": float(u.coeficiente or 0),
+                    "propietario_nit": u.propietario.nit if u.propietario else None,
+                    "arrendatario_nit": u.arrendatario.nit if u.arrendatario else None
+                })
+            backup_data["propiedad_horizontal"]["torres"].append({
+                "nombre": t.nombre,
+                "unidades": unidades
+            })
+            
+    # F. ACTIVOS FIJOS
+    if special_flags.get('activos_fijos', False):
+        cats = db.query(ActivoCategoria).filter(ActivoCategoria.empresa_id == empresa_id).all()
+        backup_data["activos_fijos"]["categorias"] = [{"nombre": c.nombre, "vida_util": c.vida_util_niif_meses, "metodo": c.metodo_depreciacion} for c in cats]
+        
+        activos = db.query(ActivoFijo).filter(ActivoFijo.empresa_id == empresa_id).all()
+        backup_data["activos_fijos"]["activos"] = []
+        for a in activos:
+            a_dict = serialize_model(a.__dict__)
+            a_dict["categoria_nombre"] = a.categoria.nombre if a.categoria else None
+            a_dict["responsable_nit"] = a.responsable.nit if a.responsable else None
+            a_dict["centro_costo_codigo"] = a.centro_costo.codigo if a.centro_costo else None
+            backup_data["activos_fijos"]["activos"].append(a_dict)
+    
+    # G. FAVORITOS
+    if special_flags.get('favoritos', False):
+         favs = db.query(UsuarioFavorito).join(Usuario).filter(Usuario.empresa_id == empresa_id).all()
+         # Nota: Los favoritos son por usuario, al restaurar intentaremos mapear por email si coinciden
+         backup_data["configuracion"]["user_favoritos"] = []
+         for f in favs:
+             backup_data["configuracion"]["user_favoritos"].append({
+                 "email_usuario": f.usuario.email,
+                 "ruta_enlace": f.ruta_enlace,
+                 "nombre_personalizado": f.nombre_personalizado,
+                 "orden": f.orden
+             })
 
     # F. TRANSACCIONES
     if transacciones_flag:
@@ -358,7 +426,9 @@ def analizar_backup(db: Session, analysis_request: schemas_migracion.AnalysisReq
         'productos': (Producto, 'codigo', 'codigo', 'inventario'),
         'formatos_impresion': (FormatoImpresion, 'nombre', 'nombre', 'configuracion'),
         'plantillas': (PlantillaMaestra, 'nombre_plantilla', 'nombre', 'configuracion'),
-        'conceptos_favoritos': (ConceptoFavorito, 'descripcion', 'descripcion', 'configuracion')
+        'conceptos_favoritos': (ConceptoFavorito, 'descripcion', 'descripcion', 'configuracion'),
+        'categorias_activos': (ActivoCategoria, 'nombre', 'nombre', 'activos_fijos'),
+        'activos_fijos': (ActivoFijo, 'codigo', 'codigo', 'activos_fijos')
     }
 
     for key_reporte, (model, db_key, json_key, section) in maestros_map.items():
@@ -372,7 +442,8 @@ def analizar_backup(db: Session, analysis_request: schemas_migracion.AnalysisReq
         target_rows = db.query(getattr(model, db_key)).filter(getattr(model, 'empresa_id', None) == target_empresa_id).all()
         target_keys = {str(getattr(row, db_key)).strip() for row in target_rows}
         
-        a_crear = sum(1 for item in source_items if str(item.get(json_key, '')).strip() not in target_keys)
+        # Robust check: Ensure item is a dict before accessing .get()
+        a_crear = sum(1 for item in source_items if isinstance(item, dict) and str(item.get(json_key, '')).strip() not in target_keys)
         coincidencias = len(source_items) - a_crear
         
         titulos = {
@@ -410,6 +481,28 @@ def analizar_backup(db: Session, analysis_request: schemas_migracion.AnalysisReq
         report["summary"]["Documentos y Movimientos"] = {
             "total": len(docs_source), "a_crear": a_importar_o_corregir, "coincidencias": 0
         }
+
+    # ANÁLISIS DE PROPIEDAD HORIZONTAL
+    ph_data = backup_data.get("propiedad_horizontal", {})
+    if ph_data:
+        # Conceptos
+        if "conceptos" in ph_data:
+            c_src = ph_data["conceptos"]
+            c_existing = {c.nombre for c in db.query(PHConcepto).filter(PHConcepto.empresa_id == target_empresa_id).all()}
+            a_crear = sum(1 for c in c_src if c["nombre"] not in c_existing)
+            report["summary"]["PH Conceptos"] = {"total": len(c_src), "a_crear": a_crear, "coincidencias": len(c_src) - a_crear}
+        
+        # Torres (y Unidades implícitas en total)
+        if "torres" in ph_data:
+            t_src = ph_data["torres"]
+            t_existing = {t.nombre for t in db.query(PHTorre).filter(PHTorre.empresa_id == target_empresa_id).all()}
+            a_crear = sum(1 for t in t_src if t["nombre"] not in t_existing)
+            report["summary"]["PH Torres"] = {"total": len(t_src), "a_crear": a_crear, "coincidencias": len(t_src) - a_crear}
+
+    # ANÁLISIS DE FAVORITOS USUARIO
+    fav_src = backup_data.get("configuracion", {}).get("user_favoritos", [])
+    if fav_src:
+        report["summary"]["Favoritos de Usuario"] = {"total": len(fav_src), "a_crear": len(fav_src), "coincidencias": 0}
 
     return report
 
@@ -577,6 +670,92 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
                     cc_id = map_ccs.get(d.get("centro_costo_codigo"))
                     if cuenta_id:
                         db.add(PlantillaDetalle(plantilla_maestra_id=maestra.id, cuenta_id=cuenta_id, centro_costo_id=cc_id, concepto=d["concepto"], debito=d["debito"], credito=d["credito"]))
+        db.flush()
+
+        # 6. MÓDULOS ESPECIALIZADOS
+        
+        # --- PROPIEDAD HORIZONTAL ---
+        ph_data = backup_data.get("propiedad_horizontal", {})
+        if ph_data:
+            # Config
+            if "configuracion" in ph_data:
+                conf_data = ph_data["configuracion"]
+                # Upsert PH Config
+                ph_conf = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == target_empresa_id).first()
+                if not ph_conf:
+                    ph_conf = PHConfiguracion(empresa_id=target_empresa_id)
+                    db.add(ph_conf)
+                # Actualizar campos simples
+                for k, v in conf_data.items():
+                    if hasattr(ph_conf, k) and k not in ['id', 'empresa_id']:
+                        setattr(ph_conf, k, v)
+            
+            # Conceptos
+            _upsert_manual_seguro(db, PHConcepto, 'conceptos', 'nombre', ph_data, target_empresa_id, user_id, 
+                                id_maps={"cuenta_cartera_id": map_cuentas, "cuenta_caja_id": map_cuentas, 
+                                        "tipo_documento_id": _get_id_translation_map(db, TipoDocumento, 'codigo', maestros_src, target_empresa_id)})
+            
+            # Torres y Unidades
+            if "torres" in ph_data:
+                for t_data in ph_data["torres"]:
+                    torre = db.query(PHTorre).filter(PHTorre.empresa_id == target_empresa_id, PHTorre.nombre == t_data["nombre"]).first()
+                    if not torre:
+                        torre = PHTorre(empresa_id=target_empresa_id, nombre=t_data["nombre"])
+                        db.add(torre)
+                        db.flush()
+                    
+                    for u_data in t_data["unidades"]:
+                        unidad = db.query(PHUnidad).filter(PHUnidad.empresa_id == target_empresa_id, PHUnidad.codigo == u_data["codigo"]).first()
+                        prop_id = map_terceros.get(u_data.get("propietario_nit"))
+                        arr_id = map_terceros.get(u_data.get("arrendatario_nit"))
+                        
+                        if not unidad:
+                             unidad = PHUnidad(empresa_id=target_empresa_id, torre_id=torre.id, codigo=u_data["codigo"], nombre=u_data["nombre"])
+                             db.add(unidad)
+                        
+                        unidad.coeficiente = u_data["coeficiente"]
+                        unidad.propietario_id = prop_id
+                        unidad.arrendatario_id = arr_id
+            
+        # --- ACTIVOS FIJOS ---
+        activos_data = backup_data.get("activos_fijos", {})
+        if activos_data:
+             _upsert_manual_seguro(db, ActivoCategoria, 'categorias', 'nombre', activos_data, target_empresa_id, user_id, 
+                                   id_maps={'cuenta_activo_id': map_cuentas, 'cuenta_depreciacion_id': map_cuentas, 'cuenta_gasto_id': map_cuentas})
+             db.flush()
+             map_cats = _get_id_translation_map(db, ActivoCategoria, 'nombre', activos_data, target_empresa_id)
+             
+             # --- AUTO-CREATE MISSING CATEGORIES (Prevent FK Error) ---
+             # If an asset refers to a category that wasn't in the categories list (or failed restore), we create it.
+             existing_cat_names = set(map_cats.keys())
+             cats_to_create = set()
+             for a in activos_data.get("activos", []):
+                 c_name = str(a.get("categoria_nombre", "")).strip()
+                 if c_name and c_name not in existing_cat_names:
+                     cats_to_create.add(c_name)
+             
+             if cats_to_create:
+                 print(f"⚠️ Auto-creating {len(cats_to_create)} missing categories for assets: {cats_to_create}")
+                 for c_name in cats_to_create:
+                     new_cat = ActivoCategoria(
+                         empresa_id=target_empresa_id, 
+                         nombre=c_name, 
+                         vida_util_niif_meses=60, # Default safe value
+                         metodo_depreciacion="LINEA_RECTA"
+                     )
+                     db.add(new_cat)
+                 db.flush()
+                 # Rebuild Map
+                 map_cats = _get_id_translation_map(db, ActivoCategoria, 'nombre', activos_data, target_empresa_id)
+                 # Add newly created ones manually to map if not found by source check (since source didn't have them)
+                 for c_name in cats_to_create:
+                        # Fetch ID
+                        mat_cat = db.query(ActivoCategoria).filter(ActivoCategoria.empresa_id == target_empresa_id, ActivoCategoria.nombre == c_name).first()
+                        if mat_cat: map_cats[c_name] = mat_cat.id
+
+             _upsert_manual_seguro(db, ActivoFijo, 'activos', 'codigo', activos_data, target_empresa_id, user_id,
+                                   id_maps={'categoria_id': map_cats, 'responsable_id': map_terceros, 'centro_costo_id': map_ccs})
+
         db.flush()
 
         # 7. TRANSACCIONES
@@ -838,19 +1017,31 @@ def _upsert_manual_seguro(db, model, json_key, natural_key, data_source, target_
         if id_maps:
             for field, mapping in id_maps.items():
                 old_val = clean_data.get(field)
-                if old_val is None:
+                mapped_id = None
+                
+                # 1. Try mapping the primary field (usually an ID)
+                if old_val is not None:
+                    mapped_id = mapping.get(str(old_val).strip())
+                
+                # 2. If valid mapping not found, try fallback fields (Code or Name)
+                if mapped_id is None:
                     code_field = field.replace('_id', '_codigo')
-                    old_val = r.get(code_field)
-                    if old_val is None:
-                        name_field = field.replace('_id', '_nombre')
-                        old_val = r.get(name_field)
+                    alt_val = r.get(code_field)
+                    if alt_val is not None:
+                        mapped_id = mapping.get(str(alt_val).strip())
+                
+                if mapped_id is None:
+                     name_field = field.replace('_id', '_nombre')
+                     alt_val = r.get(name_field)
+                     if alt_val is not None:
+                         mapped_id = mapping.get(str(alt_val).strip())
 
-                if old_val is not None and mapping:
-                    new_id = mapping.get(str(old_val))
-                    if new_id:
-                        clean_data[field] = new_id
-                    else:
-                        clean_data[field] = None
+                if mapped_id:
+                    clean_data[field] = mapped_id
+                else:
+                    # If strictly required foreign key and we failed to map, explicitly set None 
+                    # (This will cause IntegrityError, but better than silent wrong ID)
+                    clean_data[field] = None
 
         key_val = str(clean_data.get(natural_key)).strip()
         
