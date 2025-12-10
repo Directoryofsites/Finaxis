@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Instalación Local - Finaxis</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: #2980b9;
+            margin-top: 30px;
+            border-left: 5px solid #3498db;
+            padding-left: 10px;
+        }
+
+        h3 {
+            color: #16a085;
+            margin-top: 20px;
+        }
+
+        .step {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .step-number {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            width: 30px;
+            height: 30px;
+            text-align: center;
+            line-height: 30px;
+            border-radius: 50%;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid #ffeeba;
+            margin: 15px 0;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid #c3e6cb;
+            margin: 15px 0;
+        }
+
+        code {
+            background-color: #f1f1f1;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: 'Consolas', monospace;
+            color: #e74c3c;
+        }
+
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            font-size: 0.9em;
+            color: #777;
+        }
+
+        .btn-sim {
+            display: inline-block;
+            padding: 5px 10px;
+            background: #e0e0e0;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Manual de Instalación Local - Finaxis</h1>
+    <p>Este documento guía paso a paso el proceso de instalación del sistema <strong>Finaxis</strong> en un computador
+        local con sistema operativo Windows. El instalador ha sido diseñado para ser automático y "One-Click".</p>
+
+    <div class="warning">
+        <strong>⚠️ Importante antes de empezar:</strong>
+        <ul>
+            <li>El instalador verificará si PostgreSQL está instalado. <strong>Si su carpeta de instalación incluye el
+                    archivo instalador de Postgres</strong>, lo instalará automáticamente. Si no, deberá instalarlo
+                manualmente.</li>
+            <li>Se recomienda desactivar temporalmente el antivirus si este suele bloquear scripts desconocidos, aunque
+                el proceso es seguro.</li>
+            <li>Debe tener permisos de <strong>Administrador</strong> en el equipo.</li>
+        </ul>
+    </div>
+
+    <h2>📂 1. Preparación de Archivos</h2>
+    <div class="step">
+        <span class="step-number">1</span><strong>Ubicar el Instalador</strong>
+        <p>Asegúrese de tener la carpeta llamada <code>Installer_V1</code>. Esta carpeta contiene todo lo necesario
+            (Base de datos, Backend, Frontend y dependencias).</p>
+
+        <span class="step-number">2</span><strong>Copiar al Destino</strong>
+        <p>Copie la carpeta <code>Installer_V1</code> completa y péguela en una ubicación segura y con permisos de
+            escritura, por ejemplo:</p>
+        <ul>
+            <li>En el <strong>Escritorio</strong> (Recomendado para pruebas).</li>
+            <li>En la raíz del disco <code>C:\</code>.</li>
+            <li>En su carpeta de <code>Documentos</code>.</li>
+        </ul>
+        <p><em>Evite carpetas con rutas extremadamente largas o caracteres especiales raros.</em></p>
+    </div>
+
+    <h2>🚀 2. Ejecutar la Instalación</h2>
+    <div class="step">
+        <span class="step-number">3</span><strong>Iniciar el Instalador</strong>
+        <p>Abra la carpeta <code>Installer_V1</code>. Busque el archivo llamado:</p>
+        <h3>📄 <code>instalar.bat</code></h3>
+        <p>Haga <strong>clic derecho</strong> sobre él y seleccione <span class="btn-sim">Ejecutar como
+                administrador</span>.</p>
+
+        <div class="warning">
+            Si Windows muestra una pantalla azul diciendo "Windows protegió su PC", haga clic en <u>Más información</u>
+            y luego en el botón <strong>Ejecutar de todas formas</strong>.
+        </div>
+
+        <span class="step-number">4</span><strong>El Proceso Automático</strong>
+        <p>Se abrirá una ventana negra (terminal). <strong>NO LA CIERRE</strong>. El sistema realizará las siguientes
+            tareas automáticamente:</p>
+        <ol>
+            <li>Verificará si PostgreSQL ya está instalado.
+                <ul>
+                    <li>Si <strong>NO</strong> está instalado y el instalador lo incluye: Lo instalará silenciosamente.
+                    </li>
+                    <li>Si <strong>NO</strong> lo incluye: Le pedirá que lo instale manualmente.</li>
+                    <li>Si <strong>YA</strong> está instalado: Le avisará y usará la versión existente (se asume
+                        contraseña maestra <code>Admin123</code>).</li>
+                </ul>
+            </li>
+            <li>Creará la base de datos <code>contapy_db_v3</code>.</li>
+            <li>Cargará la estructura de tablas y los datos iniciales (semillas/seeds).</li>
+            <li>Configurará el entorno de Python y las dependencias del Backend.</li>
+            <li>Preparará el Frontend (Next.js).</li>
+        </ol>
+
+        <span class="step-number">5</span><strong>Finalización</strong>
+        <p>Cuando el proceso termine, verá un mensaje en letras verdes (o destacado) indicando que la instalación fue
+            exitosa. La ventana se cerrará o le pedirá presionar una tecla para continuar.</p>
+    </div>
+
+    <h2>✅ 3. Iniciar el Sistema</h2>
+    <div class="step">
+        <p>El instalador debe haber creado dos accesos directos (o scripts de inicio) dentro de la carpeta o en su
+            escritorio:</p>
+
+        <h3>Opción A: Iniciar Todo</h3>
+        <p>Busque y ejecute <code>Iniciar_Todo.bat</code> (o similar). Esto abrirá dos ventanas negras minimizadas:</p>
+        <ul>
+            <li>Una para el <strong>Backend</strong> (Servidor de datos).</li>
+            <li>Una para el <strong>Frontend</strong> (Interfaz visual).</li>
+        </ul>
+
+        <h3>Opción B: Iniciar Manualmente</h3>
+        <ol>
+            <li>Ejecute <code>Abrir Backend.bat</code> -> Espere a que diga <code>Application startup complete</code>.
+            </li>
+            <li>Ejecute <code>Abrir Frontend.bat</code> -> Espere a que diga <code>Ready</code> en el puerto 3000.</li>
+        </ol>
+    </div>
+
+    <h2>🌐 4. Acceder a la Aplicación</h2>
+    <div class="step">
+        <span class="step-number">6</span><strong>Abrir el Navegador</strong>
+        <p>Abra su navegador favorito (Chrome, Edge, Firefox) y escriba la siguiente dirección:</p>
+        <p style="font-size: 1.2em; text-align: center; background: #eee; padding: 10px; border-radius: 5px;">
+            <a href="http://localhost:3000" target="_blank">http://localhost:3000</a>
+        </p>
+
+        <span class="step-number">7</span><strong>Login Inicial</strong>
+        <p>Debería ver la pantalla de inicio de sesión de <strong>Finaxis</strong>.</p>
+        <p><strong>Credenciales por defecto (Super Admin):</strong></p>
+        <ul>
+            <li><strong>Email:</strong> <code>admin@empresa.com</code></li>
+            <li><strong>Contraseña:</strong> <code>admin123</code></li>
+        </ul>
+        <p><strong>Credenciales alternas (Soporte):</strong></p>
+        <ul>
+            <li><strong>Email:</strong> <code>soporte@soporte.com</code></li>
+            <li><strong>Contraseña:</strong> <code>Jh811880</code></li>
+        </ul>
+    </div>
+
+    <h2>❓ Solución de Problemas Comunes</h2>
+    <div class="step">
+        <h3>🔴 La base de datos falló al iniciar</h3>
+        <p><strong>Causa probable:</strong> El puerto 5432 ya estaba ocupado por otra instalación antigua de Postgres.
+        </p>
+        <p><strong>Solución:</strong> Desinstale versiones previas de PostgreSQL desde "Agregar o quitar programas" y
+            vuelva a ejecutar el instalador. O reinicie el PC para liberar puertos.</p>
+
+        <h3>🔴 No carga el Frontend (Pantalla blanco o error de conexión)</h3>
+        <p><strong>Causa probable:</strong> El Backend no se inició correctamente.</p>
+        <p><strong>Solución:</strong> Verifique la ventana negra del Backend. Si se cerró sola, hay un error. Ejecute
+            <code>Abrir Backend.bat</code> nuevamente y lea si muestra algún error en rojo.</p>
+
+        <h3>🔴 Error "Access Denied" o "Permiso denegado"</h3>
+        <p><strong>Solución:</strong> Recuerde siempre ejecutar los scripts con <strong>Clic Derecho -> Ejecutar como
+                administrador</strong>.</p>
+    </div>
+
+    <div class="footer">
+        <p>Generado por Asistente de Desarrollo - Finaxis &copy; 2025</p>
+    </div>
+
+</body>
+
+</html>

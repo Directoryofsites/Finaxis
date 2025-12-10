@@ -8,19 +8,19 @@ import { apiService } from './apiService';
  * Crucial para evitar errores 422 Unprocessable Entity en el backend.
  */
 const cleanFilters = (filters) => {
-    const cleaned = {};
-    for (const key in filters) {
-        const value = filters[key];
-        // Solo incluir valores que NO son null, undefined, ni una cadena vacía
-        if (value !== null && value !== undefined && value !== '') {
-            // Caso especial para arrays (como grupo_ids) que pueden ser vacíos
-            if (Array.isArray(value) && value.length === 0) {
-                continue; // Omitir arrays vacíos
-            }
-            cleaned[key] = value;
-        }
+  const cleaned = {};
+  for (const key in filters) {
+    const value = filters[key];
+    // Solo incluir valores que NO son null, undefined, ni una cadena vacía
+    if (value !== null && value !== undefined && value !== '') {
+      // Caso especial para arrays (como grupo_ids) que pueden ser vacíos
+      if (Array.isArray(value) && value.length === 0) {
+        continue; // Omitir arrays vacíos
+      }
+      cleaned[key] = value;
     }
-    return cleaned;
+  }
+  return cleaned;
 };
 // ------------------------------------------------------------
 
@@ -83,18 +83,18 @@ export const getProductos = async () => {
  * basado en una lista de precios específica.
  */
 export const calcularPrecioVenta = async (productoId, listaPrecioId) => {
-    if (!productoId || !listaPrecioId) {
-        console.error("calcularPrecioVenta requiere productoId y listaPrecioId");
-        throw new Error("Faltan parámetros para calcular el precio.");
-    }
-    try {
-        const url = `/inventario/productos/${productoId}/precio-venta?lista_precio=${listaPrecioId}`;
-        const response = await apiService.get(url);
-        return response.data.precio_calculado;
-    } catch (error) {
-        console.error(`Error al calcular precio para producto ${productoId} con lista ${listaPrecioId}:`, error.response?.data || error);
-        throw error;
-    }
+  if (!productoId || !listaPrecioId) {
+    console.error("calcularPrecioVenta requiere productoId y listaPrecioId");
+    throw new Error("Faltan parámetros para calcular el precio.");
+  }
+  try {
+    const url = `/inventario/productos/${productoId}/precio-venta?lista_precio=${listaPrecioId}`;
+    const response = await apiService.get(url);
+    return response.data.precio_calculado;
+  } catch (error) {
+    console.error(`Error al calcular precio para producto ${productoId} con lista ${listaPrecioId}:`, error.response?.data || error);
+    throw error;
+  }
 };
 
 /**
@@ -105,7 +105,7 @@ export const getProductosFiltrados = async (filtros = {}) => {
     const cleanedFilters = cleanFilters(filtros);
     console.log("Llamando a getProductosFiltrados (POST /productos/filtrar) con filtros saneados:", cleanedFilters);
     // >>> FIX CRÍTICO DE URL: Apuntamos a la ruta de filtrado correcta
-    const response = await apiService.post('/inventario/productos/filtrar', cleanedFilters); 
+    const response = await apiService.post('/inventario/productos/filtrar', cleanedFilters);
     // <<< FIN FIX CRÍTICO
     return response.data;
   } catch (error) {
@@ -141,9 +141,9 @@ export const searchProductosAutocomplete = async (filtros = {}) => {
     // --- FIX DEFINITIVO 422: MIGRACIÓN A POST ---
     const cleanedFilters = cleanFilters(filtros);
     console.log("Llamando a searchProductosAutocomplete (POST /productos/search-by-body) con filtros saneados:", cleanedFilters);
-    
+
     // El endpoint /search-by-body asume que recibimos los filtros en el BODY (POST)
-    const response = await apiService.post('/inventario/productos/search-by-body', cleanedFilters); 
+    const response = await apiService.post('/inventario/productos/search-by-body', cleanedFilters);
     // --- FIN FIX DEFINITIVO ---
     return response.data;
   } catch (error) {
@@ -186,58 +186,46 @@ export const deleteProducto = async (productoId) => {
 };
 
 export const generarPdfListaProductos = async (filtros) => {
-    try {
-        const cleanedFilters = cleanFilters(filtros);
-        
-        const response_token = await apiService.post(
-            '/inventario/productos/solicitar-pdf', 
-            cleanedFilters
-        );
-        
-        const token = response_token.data.token;
-        
-        const response = await apiService.get(
-            `/inventario/productos/imprimir/${token}`,
-            {
-                responseType: 'blob' 
-            }
-        );
+  try {
+    const cleanedFilters = cleanFilters(filtros);
 
-        const contentDisposition = response.headers['content-disposition'];
-        const filenameMatch = contentDisposition && contentDisposition.match(/filename\*?=['"]?(.*)['"]?/i);
-        
-        let filename = `Cartilla_Inventario_${new Date().toISOString().slice(0, 10)}.pdf`;
-        if (filenameMatch && filenameMatch[1]) {
-             filename = decodeURIComponent(filenameMatch[1].replace(/\"/g, ''));
-        }
+    const response_token = await apiService.post(
+      '/inventario/productos/solicitar-pdf',
+      cleanedFilters
+    );
 
-        const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', filename);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(url);
-        
-        return { success: true, message: `PDF generado y descargado como ${filename}` };
+    const token = response_token.data.token;
 
-    } catch (error) {
-        console.error('Error al generar PDF de la lista de productos:', error.response?.data || error.message);
-        throw error;
+    const response = await apiService.get(
+      `/inventario/productos/imprimir/${token}`,
+      {
+        responseType: 'blob'
+      }
+    );
+
+    const contentDisposition = response.headers['content-disposition'];
+    const filenameMatch = contentDisposition && contentDisposition.match(/filename\*?=['"]?(.*)['"]?/i);
+
+    let filename = `Cartilla_Inventario_${new Date().toISOString().slice(0, 10)}.pdf`;
+    if (filenameMatch && filenameMatch[1]) {
+      filename = decodeURIComponent(filenameMatch[1].replace(/\"/g, ''));
     }
+
+    const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+    return { success: true, message: `PDF generado y descargado como ${filename}` };
+
+  } catch (error) {
+    console.error('Error al generar PDF de la lista de productos:', error.response?.data || error.message);
+    throw error;
+  }
 };
 
-// frontend/lib/inventarioService.js (LISTA DE EXPORTACIÓN FINAL Y COMPLETA)
-
-export {
-    getBodegas,
-    getGruposInventario,
-    getImpuestos,
-    getProductos,
-    calcularPrecioVenta,
-    getProductosFiltrados, 
-    searchProductosAutocomplete, 
-    deleteProducto,
-    generarPdfListaProductos 
-};
+// End of file

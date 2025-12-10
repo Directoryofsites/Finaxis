@@ -1,0 +1,117 @@
+from typing import List, Optional
+from datetime import date, datetime
+from pydantic import BaseModel, Field
+from .inventario import ProductoResponse, Bodega as BodegaResponse # Importar esquemas
+
+# --- Recetas ---
+
+class RecetaDetalleBase(BaseModel):
+    insumo_id: int
+    cantidad: float
+
+class RecetaDetalleCreate(RecetaDetalleBase):
+    pass
+
+class RecetaDetalleResponse(RecetaDetalleBase):
+    id: int
+    insumo: Optional[ProductoResponse] = None
+
+    class Config:
+        orm_mode = True
+
+class RecetaBase(BaseModel):
+    producto_id: int
+    nombre: str
+    descripcion: Optional[str] = None
+    cantidad_base: float = 1.0
+    activa: bool = True
+
+class RecetaCreate(RecetaBase):
+    detalles: List[RecetaDetalleCreate]
+
+class RecetaUpdate(BaseModel):
+    nombre: Optional[str] = None
+    descripcion: Optional[str] = None
+    cantidad_base: Optional[float] = None
+    activa: Optional[bool] = None
+    detalles: Optional[List[RecetaDetalleCreate]] = None
+
+class RecetaResponse(RecetaBase):
+    id: int
+    empresa_id: int
+    fecha_creacion: datetime
+    detalles: List[RecetaDetalleResponse] = []
+    producto: Optional[ProductoResponse] = None # El producto que produce
+
+    class Config:
+        orm_mode = True
+
+# --- Ordenes de Producción ---
+
+class OrdenProduccionInsumoResponse(BaseModel):
+    id: int
+    insumo_id: int
+    bodega_origen_id: int
+    cantidad: float
+    costo_unitario_historico: float
+    costo_total: float
+    fecha_despacho: datetime
+    insumo: Optional[ProductoResponse] = None
+    bodega_origen: Optional[BodegaResponse] = None
+
+    class Config:
+        orm_mode = True
+
+class OrdenProduccionRecursoCreate(BaseModel):
+    descripcion: str
+    tipo: str # MOD o CIF
+    valor: float
+
+class OrdenProduccionRecursoResponse(OrdenProduccionRecursoCreate):
+    id: int
+    fecha_registro: datetime
+
+    class Config:
+        orm_mode = True
+
+class OrdenProduccionBase(BaseModel):
+    producto_id: int
+    bodega_destino_id: int
+    cantidad_planeada: float
+    receta_id: Optional[int] = None
+    fecha_inicio: Optional[date] = None
+    observaciones: Optional[str] = None
+
+class OrdenProduccionCreate(OrdenProduccionBase):
+    pass
+
+class OrdenProduccionUpdate(BaseModel):
+    cantidad_planeada: Optional[float] = None
+    bodega_destino_id: Optional[int] = None
+    fecha_fin: Optional[date] = None
+    estado: Optional[str] = None
+    observaciones: Optional[str] = None
+
+class OrdenProduccionResponse(OrdenProduccionBase):
+    id: int
+    empresa_id: int
+    numero_orden: str
+    estado: str
+    cantidad_real: Optional[float] = 0.0
+    fecha_fin: Optional[date] = None
+    fecha_creacion: datetime
+    
+    costo_total_mp: float
+    costo_total_mod: float
+    costo_total_cif: float
+    costo_unitario_final: float
+
+    producto: Optional[ProductoResponse] = None
+    bodega_destino: Optional[BodegaResponse] = None
+    receta: Optional[RecetaResponse] = None
+    
+    insumos: List[OrdenProduccionInsumoResponse] = []
+    recursos: List[OrdenProduccionRecursoResponse] = []
+
+    class Config:
+        orm_mode = True

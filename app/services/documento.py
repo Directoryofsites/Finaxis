@@ -21,10 +21,7 @@ from app.services import periodo as periodo_service
 
 import os
 
-# --- INICIO: NUEVAS IMPORTACIONES PARA REVERSIÓN DE INVENTARIO ---
-from app.services import inventario as service_inventario
-from ..models import producto as models_producto
-# --- FIN: NUEVAS IMPORTACIONES PARA REVERSIÓN DE INVENTARIO ---
+
 
 # --- INICIO: ARQUITECTURA DE PLANTILLAS REFACTORIZADA ---
 # 1. Importamos el nuevo diccionario con las plantillas pre-compiladas.

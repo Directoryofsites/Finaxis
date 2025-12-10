@@ -1,4 +1,4 @@
-# app/models/grupo_inventario.py (Versión con Características y Reglas de Precio)
+# app/models/grupo_inventario.py (Versión con Características, Reglas de Precio y Cuentas de Producción)
 
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
@@ -17,15 +17,21 @@ class GrupoInventario(Base):
     cuenta_ajuste_faltante_id = Column(Integer, ForeignKey('plan_cuentas.id'), nullable=True)
     cuenta_ajuste_sobrante_id = Column(Integer, ForeignKey('plan_cuentas.id'), nullable=True)
 
+    # --- PRODIUCCION: Cuenta clase 7 (71/72/73) ---
+    cuenta_costo_produccion_id = Column(Integer, ForeignKey('plan_cuentas.id'), nullable=True)
+    
     # --- CAMBIO: Se elimina impuesto_predeterminado_id ---
     # impuesto_predeterminado_id = Column(Integer, ForeignKey('tasas_impuesto.id'), nullable=True)
 
-    # Relaciones con PlanCuenta (sin cambios)
+    # Relaciones con PlanCuenta
     cuenta_inventario = relationship("PlanCuenta", foreign_keys=[cuenta_inventario_id])
     cuenta_ingreso = relationship("PlanCuenta", foreign_keys=[cuenta_ingreso_id])
     cuenta_costo_venta = relationship("PlanCuenta", foreign_keys=[cuenta_costo_venta_id])
     cuenta_ajuste_faltante = relationship("PlanCuenta", foreign_keys=[cuenta_ajuste_faltante_id])
     cuenta_ajuste_sobrante = relationship("PlanCuenta", foreign_keys=[cuenta_ajuste_sobrante_id])
+    
+    # Relación con cuenta de producción
+    cuenta_costo_produccion = relationship("PlanCuenta", foreign_keys=[cuenta_costo_produccion_id])
 
     # --- CAMBIO: Se elimina relación impuesto ---
     # impuesto_predeterminado = relationship("TasaImpuesto", foreign_keys=[impuesto_predeterminado_id])

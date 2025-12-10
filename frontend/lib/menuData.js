@@ -4,7 +4,7 @@
     FaClipboardList, FaWrench, FaHandshake, FaTruckMoving, FaReceipt, FaLock,
     FaListUl, FaDollarSign, FaChartLine, FaChartPie, FaPercentage, FaFileContract,
     FaRedoAlt, FaCalendarAlt, FaTools, FaTimes, FaChartArea, FaStar, FaBuilding,
-    FaStamp, FaShoppingCart, FaMoneyBillWave, FaTractor, FaCogs
+    FaStamp, FaShoppingCart, FaMoneyBillWave, FaTractor, FaCogs, FaIndustry
 } from 'react-icons/fa';
 
 export const baseMenuStructure = [
@@ -150,6 +150,18 @@ const PH_MODULE = {
         { name: 'Configuración', href: '/ph/configuracion', icon: FaCogs },
     ]
 };
+
+// --- MODULO PRODUCCION (NUEVO) ---
+const PRODUCCION_MODULE = {
+    id: 'produccion',
+    name: 'Producción',
+    icon: FaIndustry, // O FaChartLine si FaIndustry no existe en la versión de react-icons usada, pero FaIndustry es estándar.
+    links: [
+        { name: 'Gestión de Recetas', href: '/produccion/recetas', icon: FaListUl },
+        { name: 'Órdenes Producción', href: '/produccion/ordenes', icon: FaClipboardList },
+    ]
+};
+
 const FAVORITOS_MODULE = { id: 'favoritos', name: 'Favoritos', icon: FaStar };
 
 // Función para insertar 'Análisis Financiero' después de 'Contabilidad'
@@ -172,5 +184,6 @@ const modulesWithAnalisis = insertModuleAfterContabilidad(baseMenuStructure, ANA
 export const menuStructure = [
     ...modulesWithAnalisis,
     PH_MODULE,
+    PRODUCCION_MODULE, // <--- Insertado antes de Favoritos
     FAVORITOS_MODULE,
 ];

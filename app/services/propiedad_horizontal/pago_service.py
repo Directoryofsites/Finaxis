@@ -103,7 +103,14 @@ def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_
     if monto <= 0:
         raise HTTPException(status_code=400, detail="El monto debe ser mayor a 0.")
     
+    print(f"DEBUG: Buscando configuración PH para empresa_id={empresa_id}")
     config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
+    
+    if config:
+        print(f"DEBUG: Config encontrada. ID={config.id}, ReciboDocID={config.tipo_documento_recibo_id}")
+    else:
+        print("DEBUG: Configuración PH es None (No existe fila en la tabla para esta empresa).")
+
     if not config or not config.tipo_documento_recibo_id:
         raise HTTPException(status_code=400, detail="No se ha configurado el Tipo de Documento para Recibos de Caja en PH.")
 
@@ -122,16 +129,19 @@ def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_
     # PRIORIDAD: Usar Cuenta Caja de PH Config
     cuenta_caja_final = config.cuenta_caja_id
     
+    print(f"DEBUG: Resolviendo Caja. ConfigCajaID={cuenta_caja_final}")
+    print(f"DEBUG: TipoDoc({tipo_doc.id}) -> DebitoCXC={tipo_doc.cuenta_debito_cxc_id}, CajaID={getattr(tipo_doc, 'cuenta_caja_id', 'N/A')}")
+
     if not cuenta_caja_final:
-        # Fallback: Usar cuenta debito del tipo doc (si se usa para eso, aunque logicamente es variable)
-        # O mejor, requerir configuración centralizada para evitar ambigüedades.
-        # Por compatibilidad, intentamos la del tipo doc.
-        cuenta_caja_final = tipo_doc.cuenta_debito_cxc_id # A veces lo ponen aqui? No, seria debito_cxc. 
-        # En RC, Debito es Caja.
+        # Fallback 1: Usar cuenta debito CXC estandar
+        cuenta_caja_final = tipo_doc.cuenta_debito_cxc_id 
+        
+        # Fallback 2: Usar campo especial 'cuenta_caja_id'
         if not cuenta_caja_final:
-             # Si no hay config central ni en doc -> fallback a una caja por defecto (ej. 110505) si pudiéramos adivinarla, pero mejor error.
-             # Pero para ser amigables, si el usuario usó la cuenta DEBITO (Cartera) del tipo doc como Caja? (Error común).
-             pass
+             caja_id_custom = getattr(tipo_doc, 'cuenta_caja_id', None)
+             if caja_id_custom:
+                 cuenta_caja_final = caja_id_custom
+                 print(f"DEBUG: Asignada cuenta Caja desde campo custom: {caja_id_custom}")
     
     if not cuenta_caja_final:
          raise HTTPException(status_code=400, detail="No se encontró cuenta de Caja/Bancos. Configure 'Cuenta Caja' en Parámetros PH.")
@@ -139,6 +149,8 @@ def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_
     # B. Crédito a Cartera (Disminuye deuda)
     # PRIORIDAD: Usar Cuenta Cartera de PH Config
     cuenta_cartera_final = config.cuenta_cartera_id
+    
+    print(f"DEBUG: Resolviendo Cartera. ConfigCarteraID={cuenta_cartera_final}")
     
     if not cuenta_cartera_final:
         # Fallback Tipo Doc

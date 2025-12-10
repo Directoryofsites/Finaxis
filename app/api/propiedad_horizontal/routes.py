@@ -97,9 +97,9 @@ def update_configuracion(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
+    print(f"DEBUG: update_configuracion called by user {current_user.id}. Payload: {config.dict()}")
     return configuracion_service.update_configuracion(db, current_user.empresa_id, config)
 
-# --- CONCEPTOS ---
 @router.get("/conceptos", response_model=List[config_schemas.PHConceptoResponse])
 def get_conceptos(
     db: Session = Depends(get_db),

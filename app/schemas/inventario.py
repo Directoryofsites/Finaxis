@@ -1,4 +1,4 @@
-# app/schemas/inventario.py (VERSIÓN CORREGIDA: VISIBILIDAD CUENTAS IMPUESTOS + FIX GRUPO_IDS)
+# app/schemas/inventario.py (VERSIÓN CORREGIDA: VISIBILIDAD CUENTAS IMPUESTOS + FIX GRUPO_IDS + PROD COST)
 
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
@@ -28,6 +28,7 @@ class GrupoInventarioBase(BaseModel):
     cuenta_costo_venta_id: Optional[int] = None
     cuenta_ajuste_faltante_id: Optional[int] = None
     cuenta_ajuste_sobrante_id: Optional[int] = None
+    cuenta_costo_produccion_id: Optional[int] = None # Nuevo campo Clase 7
 
 class GrupoInventarioCreate(GrupoInventarioBase):
     pass
@@ -39,6 +40,7 @@ class GrupoInventarioUpdate(GrupoInventarioBase):
     cuenta_costo_venta_id: Optional[int] = None
     cuenta_ajuste_faltante_id: Optional[int] = None
     cuenta_ajuste_sobrante_id: Optional[int] = None
+    cuenta_costo_produccion_id: Optional[int] = None # Nuevo campo Clase 7
 
 class GrupoInventarioSimple(BaseModel):
     id: int
@@ -260,4 +262,6 @@ class AjusteInventarioCreate(BaseModel):
 class PrecioVentaCalculado(BaseModel):
     """Schema simple para devolver el precio de venta calculado."""
     precio_calculado: float
-# --- FIN NUEVO SCHEMA ---
+
+# Alias para compatibilidad
+ProductoResponse = Producto

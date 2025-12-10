@@ -318,6 +318,10 @@ app.include_router(activos_fijos_router.router, prefix="/api/activos", tags=["Ac
 from app.api.propiedad_horizontal import routes as ph_routes
 app.include_router(ph_routes.router, prefix="/api/ph", tags=["Propiedad Horizontal"])
 
+# --- MODULO PRODUCCION ---
+from app.api.endpoints import produccion as produccion_router
+app.include_router(produccion_router.router, prefix="/api/produccion", tags=["Producción"])
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)

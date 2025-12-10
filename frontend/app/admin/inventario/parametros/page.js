@@ -285,53 +285,65 @@ const EditModal = ({ item, onSave, onClose, titulo, cuentas }) => {
                     </div>
 
                     {titulo === 'Grupos de Inventario' && (
-                        <div className="grid grid-cols-1 gap-4">
-                            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                <p className="text-xs font-bold text-gray-500 uppercase mb-2">Cuentas Principales</p>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="text-xs text-gray-600">Inventario (Activo)</label>
-                                        <select name="cuenta_inventario_id" value={formData.cuenta_inventario_id || ''} onChange={handleChange} className="w-full mt-1 px-3 py-2 border border-gray-300 rounded text-sm bg-white">
-                                            <option value="">Seleccione...</option>
-                                            {cuentas?.map(c => <option key={c.id} value={c.id}>{c.codigo} - {c.nombre}</option>)}
-                                        </select>
+                        <>
+                            <div className="grid grid-cols-1 gap-4">
+                                <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                    <p className="text-xs font-bold text-gray-500 uppercase mb-2">Cuentas Principales</p>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="text-xs text-gray-600">Inventario (Activo)</label>
+                                            <select name="cuenta_inventario_id" value={formData.cuenta_inventario_id || ''} onChange={handleChange} className="w-full mt-1 px-3 py-2 border border-gray-300 rounded text-sm bg-white">
+                                                <option value="">Seleccione...</option>
+                                                {cuentas?.map(c => <option key={c.id} value={c.id}>{c.codigo} - {c.nombre}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-gray-600">Ingresos (Ventas)</label>
+                                            <select name="cuenta_ingreso_id" value={formData.cuenta_ingreso_id || ''} onChange={handleChange} className="w-full mt-1 px-3 py-2 border border-gray-300 rounded text-sm bg-white">
+                                                <option value="">Seleccione...</option>
+                                                {cuentas?.map(c => <option key={c.id} value={c.id}>{c.codigo} - {c.nombre}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-gray-600">Costo de Venta</label>
+                                            <select name="cuenta_costo_venta_id" value={formData.cuenta_costo_venta_id || ''} onChange={handleChange} className="w-full mt-1 px-3 py-2 border border-gray-300 rounded text-sm bg-white">
+                                                <option value="">Seleccione...</option>
+                                                {cuentas?.map(c => <option key={c.id} value={c.id}>{c.codigo} - {c.nombre}</option>)}
+                                            </select>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">Ingresos (Ventas)</label>
-                                        <select name="cuenta_ingreso_id" value={formData.cuenta_ingreso_id || ''} onChange={handleChange} className="w-full mt-1 px-3 py-2 border border-gray-300 rounded text-sm bg-white">
-                                            <option value="">Seleccione...</option>
-                                            {cuentas?.map(c => <option key={c.id} value={c.id}>{c.codigo} - {c.nombre}</option>)}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">Costo de Venta</label>
-                                        <select name="cuenta_costo_venta_id" value={formData.cuenta_costo_venta_id || ''} onChange={handleChange} className="w-full mt-1 px-3 py-2 border border-gray-300 rounded text-sm bg-white">
-                                            <option value="">Seleccione...</option>
-                                            {cuentas?.map(c => <option key={c.id} value={c.id}>{c.codigo} - {c.nombre}</option>)}
-                                        </select>
+                                </div>
+                                <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                    <p className="text-xs font-bold text-gray-500 uppercase mb-2">Ajustes de Inventario</p>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-xs text-gray-600">Faltante (Gasto)</label>
+                                            <select name="cuenta_ajuste_faltante_id" value={formData.cuenta_ajuste_faltante_id || ''} onChange={handleChange} className="w-full mt-1 px-3 py-2 border border-gray-300 rounded text-sm bg-white">
+                                                <option value="">Seleccione...</option>
+                                                {cuentas?.map(c => <option key={c.id} value={c.id}>{c.codigo} - {c.nombre}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-gray-600">Sobrante (Ingreso)</label>
+                                            <select name="cuenta_ajuste_sobrante_id" value={formData.cuenta_ajuste_sobrante_id || ''} onChange={handleChange} className="w-full mt-1 px-3 py-2 border border-gray-300 rounded text-sm bg-white">
+                                                <option value="">Seleccione...</option>
+                                                {cuentas?.map(c => <option key={c.id} value={c.id}>{c.codigo} - {c.nombre}</option>)}
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                <p className="text-xs font-bold text-gray-500 uppercase mb-2">Ajustes de Inventario</p>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="text-xs text-gray-600">Faltante (Gasto)</label>
-                                        <select name="cuenta_ajuste_faltante_id" value={formData.cuenta_ajuste_faltante_id || ''} onChange={handleChange} className="w-full mt-1 px-3 py-2 border border-gray-300 rounded text-sm bg-white">
-                                            <option value="">Seleccione...</option>
-                                            {cuentas?.map(c => <option key={c.id} value={c.id}>{c.codigo} - {c.nombre}</option>)}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-600">Sobrante (Ingreso)</label>
-                                        <select name="cuenta_ajuste_sobrante_id" value={formData.cuenta_ajuste_sobrante_id || ''} onChange={handleChange} className="w-full mt-1 px-3 py-2 border border-gray-300 rounded text-sm bg-white">
-                                            <option value="">Seleccione...</option>
-                                            {cuentas?.map(c => <option key={c.id} value={c.id}>{c.codigo} - {c.nombre}</option>)}
-                                        </select>
-                                    </div>
+                            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 mt-2">
+                                <p className="text-xs font-bold text-gray-500 uppercase mb-2">Producción</p>
+                                <div>
+                                    <label className="text-xs text-gray-600">Cta. Costo Producción (Clase 7)</label>
+                                    <select name="cuenta_costo_produccion_id" value={formData.cuenta_costo_produccion_id || ''} onChange={handleChange} className="w-full mt-1 px-3 py-2 border border-gray-300 rounded text-sm bg-white">
+                                        <option value="">Seleccione...</option>
+                                        {cuentas?.map(c => <option key={c.id} value={c.id}>{c.codigo} - {c.nombre}</option>)}
+                                    </select>
                                 </div>
                             </div>
-                        </div>
+                        </>
                     )}
 
                     {titulo === 'Tasas de Impuesto' && (
@@ -388,7 +400,7 @@ export default function ParametrosInventarioPage() {
 
     const [inputs, setInputs] = useState({
         bodegas: { nombre: '' },
-        grupos: { nombre: '', cuenta_inventario_id: '', cuenta_ingreso_id: '', cuenta_costo_venta_id: '', cuenta_ajuste_faltante_id: '', cuenta_ajuste_sobrante_id: '' },
+        grupos: { nombre: '', cuenta_inventario_id: '', cuenta_ingreso_id: '', cuenta_costo_venta_id: '', cuenta_ajuste_faltante_id: '', cuenta_ajuste_sobrante_id: '', cuenta_costo_produccion_id: '' },
         impuestos: { nombre: '', tasa: '', cuenta_id: '', cuenta_iva_descontable_id: '' },
         listasPrecio: { nombre: '' }
     });
@@ -444,7 +456,7 @@ export default function ParametrosInventarioPage() {
         let resetState = {};
 
         if (category === 'bodegas') { endpoint = '/bodegas/'; resetState = { nombre: '' }; }
-        else if (category === 'grupos') { endpoint = '/inventario/grupos/'; resetState = { nombre: '', cuenta_inventario_id: '', cuenta_ingreso_id: '', cuenta_costo_venta_id: '', cuenta_ajuste_faltante_id: '', cuenta_ajuste_sobrante_id: '' }; }
+        else if (category === 'grupos') { endpoint = '/inventario/grupos/'; resetState = { nombre: '', cuenta_inventario_id: '', cuenta_ingreso_id: '', cuenta_costo_venta_id: '', cuenta_ajuste_faltante_id: '', cuenta_ajuste_sobrante_id: '', cuenta_costo_produccion_id: '' }; }
         else if (category === 'impuestos') { endpoint = '/inventario/tasas-impuesto/'; resetState = { nombre: '', tasa: '', cuenta_id: '', cuenta_iva_descontable_id: '' }; }
         else if (category === 'listasPrecio') { endpoint = '/listas-precio/'; resetState = { nombre: '' }; }
 
@@ -626,7 +638,7 @@ export default function ParametrosInventarioPage() {
                 </div>
                 <div className="flex gap-2">
 
-                    
+
                     <button
                         onClick={() => window.open('/manual?file=capitulo_39_parametros_inventario.md', '_blank')}
                         className="btn btn-ghost btn-sm gap-2 text-indigo-600"
