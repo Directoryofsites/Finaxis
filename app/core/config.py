@@ -22,16 +22,18 @@ load_dotenv(dotenv_path=dotenv_path)
 
 
 class Settings(BaseSettings):
-    # Pydantic leerá automáticamente las variables que acabamos de cargar en el entorno.
-    DATABASE_URL: str
-    SECRET_KEY: str
-    ALGORITHM: str
-    ACCESS_TOKEN_EXPIRE_MINUTES: int
-    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int
+    # --- SEGURIDAD: CLAVE MAESTRA INCRUSTADA (FALLBACK DE PRODUCCIÓN) ---
+    # Si no existe archivo .env, se usará esta conexión por defecto.
+    DATABASE_URL: str = "postgresql://postgres:Jh_811880_:Panica_33195_/*@localhost:5432/contapy_db"
+    
+    SECRET_KEY: str = "secret_key_por_defecto_para_produccion_segura"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 30
     
     # --- AÑADIDO PARA LA IMPRESIÓN SEGURA ---
     # Se define la variable que la aplicación espera encontrar.
-    BASE_URL: str
+    BASE_URL: str = "http://localhost:3000"
 
 
 settings = Settings()

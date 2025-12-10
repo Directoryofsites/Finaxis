@@ -49,7 +49,6 @@ export default function PagosPHPage() {
             try {
                 const data = await phService.getEstadoCuenta(uid);
                 setEstadoCuenta(data);
-                // Pre-fill monto with total debt?
                 if (data.saldo_total > 0) {
                     setPagoForm(prev => ({ ...prev, monto: data.saldo_total }));
                 }

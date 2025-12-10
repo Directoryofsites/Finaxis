@@ -4,7 +4,7 @@
     FaClipboardList, FaWrench, FaHandshake, FaTruckMoving, FaReceipt, FaLock,
     FaListUl, FaDollarSign, FaChartLine, FaChartPie, FaPercentage, FaFileContract,
     FaRedoAlt, FaCalendarAlt, FaTools, FaTimes, FaChartArea, FaStar, FaBuilding,
-    FaStamp, FaShoppingCart, FaMoneyBillWave, FaTractor, FaCogs, FaHome
+    FaStamp, FaShoppingCart, FaMoneyBillWave, FaTractor, FaCogs, FaHome, FaIndustry
 } from 'react-icons/fa';
 
 // Módulos definidos externamente para claridad
@@ -19,7 +19,7 @@ const PH_MODULE = {
         { name: 'Conceptos de Cobro', href: '/ph/conceptos', icon: FaListUl },
         { name: 'Generar Cuentas Cobro', href: '/ph/facturacion', icon: FaFileInvoiceDollar },
         { name: 'Recaudos (Pagos)', href: '/ph/pagos', icon: FaHandshake },
-        { name: 'Estado de Cuenta', href: '/ph/estado-cuenta', icon: FaFileContract }, // NUEVO
+        { name: 'Estado de Cuenta', href: '/ph/estado-cuenta', icon: FaFileContract },
         { name: 'Reportes PH', href: '/ph/reportes', icon: FaChartBar },
         { name: 'Configuración PH', href: '/ph/configuracion', icon: FaCog }
     ]
@@ -35,6 +35,18 @@ const NOMINA_MODULE = {
         { name: 'Configuración (PUC)', href: '/nomina/configuracion', icon: FaCog },
     ]
 };
+
+// --- MODULO PRODUCCION (NUEVO) ---
+const PRODUCCION_MODULE = {
+    id: 'produccion',
+    name: 'Producción',
+    icon: FaIndustry,
+    links: [
+        { name: 'Gestión de Recetas', href: '/produccion/recetas', icon: FaListUl },
+        { name: 'Órdenes Producción', href: '/produccion/ordenes', icon: FaClipboardList },
+    ]
+};
+
 const FAVORITOS_MODULE = { id: 'favoritos', name: 'Favoritos', icon: FaStar };
 
 export const menuStructure = [
@@ -107,7 +119,7 @@ export const menuStructure = [
             { name: '% Gestión de Topes', href: '/contabilidad/reportes/gestion-topes', icon: FaPercentage },
         ]
     },
-    // 7. Facturación (MOVIDO AQUI)
+    // 7. Facturación
     {
         id: 'facturacion',
         name: 'Facturación',
@@ -133,11 +145,13 @@ export const menuStructure = [
             { name: "Categorías y Vidas Útiles", href: "/activos/categorias", icon: FaCogs },
         ]
     },
-    // 9. Propiedad Horizontal (MOVIDO AQUI)
+    // 9. Propiedad Horizontal
     PH_MODULE,
     // 10. Nómina
     NOMINA_MODULE,
-    // 11. Administración y Configuración
+    // 11. Producción
+    PRODUCCION_MODULE,
+    // 12. Administración y Configuración
     {
         id: 'administracion',
         name: 'Administración y Configuración',
@@ -175,6 +189,6 @@ export const menuStructure = [
             },
         ]
     },
-    // 11. Favoritos
+    // 13. Favoritos
     FAVORITOS_MODULE,
 ];

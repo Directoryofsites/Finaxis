@@ -52,3 +52,6 @@ from .configuracion_reporte import ConfiguracionReporte
 
 # --- PROPIEDAD HORIZONTAL (Nuevo Módulo) ---
 from .propiedad_horizontal import PHTorre, PHUnidad, PHVehiculo, PHMascota
+
+# --- PRODUCCION (Nuevo Módulo) ---
+from .produccion import Receta, RecetaDetalle, OrdenProduccion, OrdenProduccionInsumo, OrdenProduccionRecurso
