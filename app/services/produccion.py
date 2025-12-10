@@ -11,6 +11,7 @@ from ..models import bodega as models_bodega
 from ..models import tercero as models_tercero
 from ..schemas import produccion as schemas_prod
 from ..schemas import documento as schemas_doc
+from app.services.produccion_configuracion import get_configuracion # Importar config service
 
 from . import inventario as service_inventario
 from . import documento as service_documento
@@ -38,6 +39,17 @@ def create_receta(db: Session, receta: schemas_prod.RecetaCreate, empresa_id: in
         )
         db.add(db_detalle)
     
+    if receta.recursos:
+        for rec in receta.recursos:
+            db_recurso = models_prod.RecetaRecurso(
+                receta_id=db_receta.id,
+                descripcion=rec.descripcion,
+                tipo=rec.tipo,
+                costo_estimado=rec.costo_estimado,
+                cuenta_contable_id=rec.cuenta_contable_id
+            )
+            db.add(db_recurso)
+    
     db.commit()
     db.refresh(db_receta)
     return db_receta
@@ -48,8 +60,60 @@ def get_recetas(db: Session, empresa_id: int):
 def get_receta_by_id(db: Session, receta_id: int, empresa_id: int):
     return db.query(models_prod.Receta).options(
         selectinload(models_prod.Receta.detalles).selectinload(models_prod.RecetaDetalle.insumo),
+        selectinload(models_prod.Receta.recursos),
         selectinload(models_prod.Receta.producto)
     ).filter(models_prod.Receta.id == receta_id, models_prod.Receta.empresa_id == empresa_id).first()
+
+def update_receta(db: Session, receta_id: int, receta_update: schemas_prod.RecetaUpdate, empresa_id: int):
+    db_receta = get_receta_by_id(db, receta_id, empresa_id)
+    if not db_receta:
+        return None
+
+    # Actualizar campos básicos
+    if receta_update.nombre is not None:
+        db_receta.nombre = receta_update.nombre
+    if receta_update.descripcion is not None:
+        db_receta.descripcion = receta_update.descripcion
+    if receta_update.cantidad_base is not None:
+        db_receta.cantidad_base = receta_update.cantidad_base
+    if receta_update.activa is not None:
+        db_receta.activa = receta_update.activa
+
+    # Actualizar Detalles (Reemplazo completo si se envía la lista)
+    if receta_update.detalles is not None:
+        # Eliminar anteriores
+        for det in db_receta.detalles:
+            db.delete(det)
+        
+        # Crear nuevos
+        for det_in in receta_update.detalles:
+            new_det = models_prod.RecetaDetalle(
+                receta_id=db_receta.id,
+                insumo_id=det_in.insumo_id,
+                cantidad=det_in.cantidad
+            )
+            db.add(new_det)
+
+    # Actualizar Recursos (Reemplazo completo si se envía la lista)
+    if receta_update.recursos is not None:
+        # Eliminar anteriores
+        for rec in db_receta.recursos:
+            db.delete(rec)
+        
+        # Crear nuevos
+        for rec_in in receta_update.recursos:
+            new_rec = models_prod.RecetaRecurso(
+                receta_id=db_receta.id,
+                descripcion=rec_in.descripcion,
+                tipo=rec_in.tipo,
+                costo_estimado=rec_in.costo_estimado,
+                cuenta_contable_id=rec_in.cuenta_contable_id
+            )
+            db.add(new_rec)
+
+    db.commit()
+    db.refresh(db_receta)
+    return db_receta
 
 # --- ORDENES DE PRODUCCION ---
 
@@ -71,10 +135,37 @@ def create_orden(db: Session, orden: schemas_prod.OrdenProduccionCreate, empresa
         observaciones=orden.observaciones
     )
     db.add(db_orden)
-    db.commit()
-    db.refresh(db_orden)
-    return db_orden
+    db.flush() # Obtener ID
 
+    # Copiar Recursos de la Receta (Presupuestado)
+    if orden.receta_id:
+        receta = get_receta_by_id(db, orden.receta_id, empresa_id)
+        if receta and receta.recursos:
+            factor = orden.cantidad_planeada / (receta.cantidad_base or 1)
+            total_mod = 0.0
+            total_cif = 0.0
+
+            for rec in receta.recursos:
+                valor_calculado = rec.costo_estimado * factor
+                
+                new_op_rec = models_prod.OrdenProduccionRecurso(
+                    orden_id=db_orden.id,
+                    descripcion=rec.descripcion,
+                    tipo=rec.tipo,
+                    valor=valor_calculado
+                )
+                db.add(new_op_rec)
+
+                if rec.tipo == 'MANO_OBRA_DIRECTA':
+                    total_mod += valor_calculado
+                elif rec.tipo == 'COSTO_INDIRECTO_FABRICACION':
+                    total_cif += valor_calculado
+            
+            # Actualizar totales estimados en la Orden
+            db_orden.costo_total_mod = total_mod
+            db_orden.costo_total_cif = total_cif
+
+    db.commit()
     db.refresh(db_orden)
     return db_orden
 
@@ -313,3 +404,141 @@ def cerrar_orden(db: Session, orden_id: int, cantidad_real_obtenida: float, empr
     db.commit()
     db.refresh(orden)
     return orden
+
+# --- LIFECYCLE MANAGEMENT ---
+
+def anular_orden(db: Session, orden_id: int, motivo: str, empresa_id: int, user_id: int):
+    """
+    Anula una orden de producción.
+    - Si está EN_PROCESO: Reversa consumo de insumos (Entrada a Bodega).
+    - Si está CERRADA: Reversa consumo de insumos (Entrada) Y reversa producto terminado (Salida).
+    - Genera documento contable de anulación.
+    """
+    orden = get_orden_by_id(db, orden_id, empresa_id)
+    if not orden:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+    
+    if orden.estado == models_prod.EstadoOrdenProduccion.ANULADA:
+        raise HTTPException(status_code=400, detail="La orden ya está anulada")
+    
+    if orden.estado not in [models_prod.EstadoOrdenProduccion.EN_PROCESO, models_prod.EstadoOrdenProduccion.CERRADA]:
+        raise HTTPException(status_code=400, detail="Solo se pueden anular órdenes en proceso o cerradas. Para borradores, usa eliminar.")
+
+    # Obtener configuración para Tipo de Documento
+    config_prod = get_configuracion(db, empresa_id)
+    if not config_prod or not config_prod.tipo_documento_anulacion_id:
+        raise HTTPException(status_code=400, detail="No está configurado el Tipo de Documento para Anulaciones de Producción.")
+    
+    tipo_doc_id = config_prod.tipo_documento_anulacion_id
+    
+    # --- INICIO TRANSACCIÓN ---
+    movimientos_contables = []
+    
+    # 1. Reversar Insumos (ENTRADA a Bodega Origen)
+    for consumo in orden.insumos:
+        cantidad_devolver = consumo.cantidad
+        costo_unitario = consumo.costo_unitario_historico
+        costo_total = cantidad_devolver * costo_unitario
+        
+        insumo_obj = consumo.insumo
+        grupo = insumo_obj.grupo_inventario
+        
+        # Debito Inventario (Vuelve a entrar)
+        movimientos_contables.append(schemas_doc.MovimientoContableCreate(
+            cuenta_id=grupo.cuenta_inventario_id,
+            debito=costo_total,
+            credito=0,
+            concepto=f"Reversión Insumo OP-{orden.numero_orden}",
+            producto_id=insumo_obj.id
+        ))
+        # Credito Costo (Se anula el gasto)
+        movimientos_contables.append(schemas_doc.MovimientoContableCreate(
+            cuenta_id=grupo.cuenta_costo_id, 
+            debito=0,
+            credito=costo_total,
+            concepto=f"Reversión Costo OP-{orden.numero_orden}",
+            producto_id=insumo_obj.id
+        ))
+    
+    # 2. Si estaba CERRADA, reversar Producto Terminado (SALIDA de Bodega Destino)
+    if orden.estado == models_prod.EstadoOrdenProduccion.CERRADA:
+        cant_pt = orden.cantidad_real
+        costo_unitario_pt = orden.costo_unitario_final
+        total_pt = cant_pt * costo_unitario_pt
+        
+        pt_obj = orden.producto
+        grupo_pt = pt_obj.grupo_inventario
+        
+        # Credito Inventario (Sale)
+        movimientos_contables.append(schemas_doc.MovimientoContableCreate(
+            cuenta_id=grupo_pt.cuenta_inventario_id,
+            debito=0,
+            credito=total_pt,
+            concepto=f"Reversión PT OP-{orden.numero_orden}",
+            producto_id=pt_obj.id
+        ))
+        
+        # Debito Costo/Bridge (Se reversa el ingreso a inventario)
+        movimientos_contables.append(schemas_doc.MovimientoContableCreate(
+            cuenta_id=grupo_pt.cuenta_costo_produccion_id, 
+            debito=total_pt,
+            credito=0,
+            concepto=f"Reversión Cierre OP-{orden.numero_orden}",
+            producto_id=pt_obj.id
+        ))
+
+    # Crear Documento Contable
+    doc_anulacion = schemas_doc.DocumentoCreate(
+        empresa_id=empresa_id,
+        tipo_documento_id=tipo_doc_id,
+        fecha=date.today(),
+        concepto=f"ANULACIÓN OP-{orden.numero_orden}: {motivo}",
+        movimientos=movimientos_contables
+    )
+    
+    db_doc = service_documento.create_documento(db, doc_anulacion, user_id, commit=False)
+    
+    # 3. Aplicar Movimientos de Inventario (Kardex)
+    # 3.1 MP (Entradas)
+    for consumo in orden.insumos:
+        service_inventario.registrar_movimiento_inventario(
+            db, consumo.insumo_id, consumo.bodega_origen_id,
+            'ENTRADA_AJUSTE', consumo.cantidad, consumo.costo_unitario_historico, # Usando Ajuste como proxy de devolucion
+            datetime.now(), db_doc.id
+        )
+    
+    # 3.2 PT (Salida) - Solo si Cerrada
+    if orden.estado == models_prod.EstadoOrdenProduccion.CERRADA:
+         service_inventario.registrar_movimiento_inventario(
+            db, orden.producto_id, orden.bodega_destino_id,
+            'SALIDA_AJUSTE', orden.cantidad_real, orden.costo_unitario_final,
+            datetime.now(), db_doc.id
+        )
+
+    # 4. Actualizar estado de la orden
+    orden.estado = models_prod.EstadoOrdenProduccion.ANULADA
+    orden.motivo_anulacion = motivo
+    
+    db.commit()
+    return orden
+
+def archivar_orden(db: Session, orden_id: int, archivar: bool, empresa_id: int):
+    orden = get_orden_by_id(db, orden_id, empresa_id)
+    if not orden:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+    
+    orden.archivada = archivar
+    db.commit()
+    return orden
+
+def delete_orden(db: Session, orden_id: int, empresa_id: int):
+    orden = get_orden_by_id(db, orden_id, empresa_id)
+    if not orden:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+        
+    if orden.estado != models_prod.EstadoOrdenProduccion.PLANIFICADA:
+         raise HTTPException(status_code=400, detail="Solo se pueden eliminar órdenes en estado PLANIFICADA (Borrador). Si ya tiene movimientos, usa Anular.")
+    
+    db.delete(orden)
+    db.commit()
+    return True

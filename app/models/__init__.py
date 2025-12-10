@@ -55,3 +55,4 @@ from .propiedad_horizontal import PHTorre, PHUnidad, PHVehiculo, PHMascota
 
 # --- PRODUCCION (Nuevo Módulo) ---
 from .produccion import Receta, RecetaDetalle, OrdenProduccion, OrdenProduccionInsumo, OrdenProduccionRecurso
+from .configuracion_produccion import ConfiguracionProduccion

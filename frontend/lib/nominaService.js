@@ -18,6 +18,15 @@ export const createEmpleado = async (empleadoData) => {
     }
 };
 
+export const updateEmpleado = async (id, empleadoData) => {
+    try {
+        const response = await apiService.put(`/nomina/empleados/${id}`, empleadoData);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
 export const previewLiquidacion = async (empleadoId, diasTrabajados, horasExtras = 0, comisiones = 0) => {
     try {
         const payload = {
@@ -43,9 +52,9 @@ export const guardarLiquidacion = async (liquidacionData) => {
     }
 };
 
-export const getConfig = async () => {
+export const getConfig = async (params = {}) => {
     try {
-        const response = await apiService.get('/nomina/configuracion');
+        const response = await apiService.get('/nomina/configuracion', { params });
         return response.data;
     } catch (error) {
         throw error;
@@ -83,6 +92,44 @@ export const downloadDesprendible = async (id, filename) => {
         link.click();
         link.remove();
         return true;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// --- TIPOS DE NOMINA ---
+
+export const getTiposNomina = async () => {
+    try {
+        const response = await apiService.get('/nomina/tipos');
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const createTipoNomina = async (tipoData) => {
+    try {
+        const response = await apiService.post('/nomina/tipos', tipoData);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const updateTipoNomina = async (id, tipoData) => {
+    try {
+        const response = await apiService.put(`/nomina/tipos/${id}`, tipoData);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const deleteTipoNomina = async (id) => {
+    try {
+        const response = await apiService.delete(`/nomina/tipos/${id}`);
+        return response.data;
     } catch (error) {
         throw error;
     }

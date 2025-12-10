@@ -161,10 +161,22 @@ class LiquidadorNominaService:
         db.add(detalle)
         
         # 5. Contabilización Automática
-        # Buscar configuración
-        config = db.query(models_nomina.ConfiguracionNomina).filter(
+        # Buscar configuración: Prioridad Específica > Global
+        config_query = db.query(models_nomina.ConfiguracionNomina).filter(
             models_nomina.ConfiguracionNomina.empresa_id == empresa_id
-        ).first()
+        )
+        
+        config = None
+        # 1. Intentar buscar configuración específica del Tipo de Nomina
+        if empleado.tipo_nomina_id:
+             config = config_query.filter(models_nomina.ConfiguracionNomina.tipo_nomina_id == empleado.tipo_nomina_id).first()
+             
+        # 2. Si no existe (o empleado no tiene tipo), buscar global (tipo_nomina_id IS NULL)
+        if not config:
+            config = db.query(models_nomina.ConfiguracionNomina).filter(
+                models_nomina.ConfiguracionNomina.empresa_id == empresa_id,
+                models_nomina.ConfiguracionNomina.tipo_nomina_id == None
+            ).first()
 
         if config:
             from app.models import Documento, MovimientoContable, TipoDocumento

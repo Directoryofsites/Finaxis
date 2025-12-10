@@ -29,6 +29,15 @@ export const createReceta = async (recetaData) => {
     }
 };
 
+export const updateReceta = async (id, recetaData) => {
+    try {
+        const response = await api.put(`/produccion/recetas/${id}`, recetaData);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
 // --- ORDENES DE PRODUCCION ---
 
 export const getOrdenes = async () => {
@@ -78,6 +87,98 @@ export const cerrarOrden = async (ordenId, cantidadReal) => {
             params: { cantidad_real: cantidadReal }
         });
         return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// --- LIFECYCLE ---
+
+export const anularOrden = async (id, motivo) => {
+    try {
+        const response = await api.post(`/produccion/ordenes/${id}/anular`, { motivo });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const archivarOrden = async (id, archivada) => {
+    try {
+        const response = await api.post(`/produccion/ordenes/${id}/archivar`, { archivada });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const deleteOrden = async (id) => {
+    try {
+        const response = await api.delete(`/produccion/ordenes/${id}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const deleteReceta = async (id) => {
+    try {
+        const response = await api.delete(`/produccion/recetas/${id}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// --- CONFIGURACION ---
+
+export const getConfigProduccion = async () => {
+    try {
+        const response = await api.get('/produccion/configuracion');
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const saveConfigProduccion = async (config) => {
+    try {
+        const response = await api.post('/produccion/configuracion', config);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const downloadOrdenPDF = async (ordenId) => {
+    try {
+        const response = await api.get(`/produccion/ordenes/${ordenId}/pdf`, {
+            responseType: 'blob'
+        });
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `Orden_${ordenId}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const downloadRecetaPDF = async (recetaId) => {
+    try {
+        const response = await api.get(`/produccion/recetas/${recetaId}/pdf`, {
+            responseType: 'blob'
+        });
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `Receta_${recetaId}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
     } catch (error) {
         throw error;
     }

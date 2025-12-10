@@ -13,29 +13,72 @@ from app.models.usuario import Usuario
 
 router = APIRouter(prefix="/nomina", tags=["Nomina"])
 
-# --- SCHEMAS (Internal for now, later move to schemas/nomina.py) ---
+from app.schemas.nomina import (
+    TipoNominaCreate, TipoNominaUpdate, TipoNominaResponse,
+    EmpleadoCreate, EmpleadoResponse, LiquidarRequest, GuardarNominaRequest
+)
 
-class EmpleadoCreate(BaseModel):
-    nombres: str
-    apellidos: str
-    numero_documento: str
-    salario_base: float
-    fecha_ingreso: date
-    tiene_auxilio: bool = True
-    tercero_id: Optional[int] = None
+# --- ROUTES TIPOS NOMINA (NUEVO) ---
 
-class EmpleadoResponse(EmpleadoCreate):
-    id: int
-    class Config:
-        from_attributes = True
+@router.get("/tipos", response_model=List[TipoNominaResponse])
+def get_tipos_nomina(db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    return db.query(models.TipoNomina).filter(models.TipoNomina.empresa_id == current_user.empresa_id).all()
 
-class LiquidarRequest(BaseModel):
-    empleado_id: int
-    dias_trabajados: int = 30
-    horas_extras: float = 0
-    comisiones: float = 0
+@router.post("/tipos", response_model=TipoNominaResponse)
+def create_tipo_nomina(tipo: TipoNominaCreate, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    nuevo_tipo = models.TipoNomina(
+        empresa_id=current_user.empresa_id,
+        nombre=tipo.nombre,
+        descripcion=tipo.descripcion,
+        periodo_pago=tipo.periodo_pago
+    )
+    db.add(nuevo_tipo)
+    db.commit()
+    db.refresh(nuevo_tipo)
+    return nuevo_tipo
 
-# --- ROUTES ---
+@router.put("/tipos/{id}", response_model=TipoNominaResponse)
+def update_tipo_nomina(id: int, tipo: TipoNominaUpdate, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    db_tipo = db.query(models.TipoNomina).filter(
+        models.TipoNomina.id == id,
+        models.TipoNomina.empresa_id == current_user.empresa_id
+    ).first()
+    
+    if not db_tipo:
+        raise HTTPException(status_code=404, detail="Tipo de nómina no encontrado")
+        
+    if tipo.nombre is not None:
+        db_tipo.nombre = tipo.nombre
+    if tipo.descripcion is not None:
+        db_tipo.descripcion = tipo.descripcion
+    if tipo.periodo_pago is not None:
+        db_tipo.periodo_pago = tipo.periodo_pago
+        
+    db.commit()
+    db.refresh(db_tipo)
+    return db_tipo
+
+@router.delete("/tipos/{id}")
+def delete_tipo_nomina(id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    db_tipo = db.query(models.TipoNomina).filter(
+        models.TipoNomina.id == id,
+        models.TipoNomina.empresa_id == current_user.empresa_id
+    ).first()
+    
+    if not db_tipo:
+        raise HTTPException(status_code=404, detail="Tipo de nómina no encontrado")
+    
+    # Validar que no tenga empleados asociados
+    empleados_count = db.query(models.Empleado).filter(models.Empleado.tipo_nomina_id == id).count()
+    if empleados_count > 0:
+        raise HTTPException(status_code=400, detail="No se puede eliminar porque hay empleados asociados a este tipo.")
+        
+    db.delete(db_tipo)
+    db.commit()
+    return {"message": "Tipo de nómina eliminado correctamente"}
+
+
+# --- ROUTES EMPLEADOS ---
 
 @router.post("/empleados", response_model=EmpleadoResponse)
 def create_empleado(empleado: EmpleadoCreate, db: Session = Depends(get_db)):
@@ -76,7 +119,8 @@ def create_empleado(empleado: EmpleadoCreate, db: Session = Depends(get_db)):
         salario_base=empleado.salario_base,
         fecha_ingreso=empleado.fecha_ingreso,
         auxilio_transporte=empleado.tiene_auxilio,
-        tercero_id=tercero.id
+        tercero_id=tercero.id,
+        tipo_nomina_id=empleado.tipo_nomina_id
     )
     db.add(db_empleado)
     db.commit()
@@ -87,36 +131,61 @@ def create_empleado(empleado: EmpleadoCreate, db: Session = Depends(get_db)):
 def get_empleados(db: Session = Depends(get_db)):
     return db.query(models.Empleado).all()
 
+@router.put("/empleados/{id}", response_model=EmpleadoResponse)
+def update_empleado(id: int, empleado: EmpleadoCreate, db: Session = Depends(get_db)):
+    db_empleado = db.query(models.Empleado).filter(models.Empleado.id == id).first()
+    if not db_empleado:
+        raise HTTPException(status_code=404, detail="Empleado no encontrado")
+        
+    db_empleado.nombres = empleado.nombres
+    db_empleado.apellidos = empleado.apellidos
+    db_empleado.numero_documento = empleado.numero_documento
+    db_empleado.salario_base = empleado.salario_base
+    db_empleado.fecha_ingreso = empleado.fecha_ingreso
+    db_empleado.auxilio_transporte = empleado.tiene_auxilio
+    db_empleado.tipo_nomina_id = empleado.tipo_nomina_id
+    
+    db.commit()
+    db.refresh(db_empleado)
+    return db_empleado
+
 # --- CONFIGURACION PUC ---
 
-class ConfigNominaSchema(BaseModel):
-    tipo_documento_id: Optional[int] = None
-    cuenta_sueldo_id: Optional[int] = None
-    cuenta_auxilio_transporte_id: Optional[int] = None
-    cuenta_horas_extras_id: Optional[int] = None
-    cuenta_comisiones_id: Optional[int] = None
-    cuenta_salarios_por_pagar_id: Optional[int] = None
-    cuenta_aporte_salud_id: Optional[int] = None
-    cuenta_aporte_pension_id: Optional[int] = None
-    cuenta_fondo_solidaridad_id: Optional[int] = None
-    
-    class Config:
-        from_attributes = True
+from app.schemas.nomina import ConfigNominaSchema
 
 @router.get("/configuracion", response_model=ConfigNominaSchema)
-def get_configuracion(db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
-    config = db.query(models.ConfiguracionNomina).filter(models.ConfiguracionNomina.empresa_id == current_user.empresa_id).first()
+def get_configuracion(tipo_nomina_id: Optional[int] = None, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    query = db.query(models.ConfiguracionNomina).filter(models.ConfiguracionNomina.empresa_id == current_user.empresa_id)
+    
+    if tipo_nomina_id:
+        query = query.filter(models.ConfiguracionNomina.tipo_nomina_id == tipo_nomina_id)
+    else:
+        # Default global config (where tipo_nomina_id is None)
+        query = query.filter(models.ConfiguracionNomina.tipo_nomina_id == None)
+        
+    config = query.first()
+    
     if not config:
-        # Devolver vacÃo o defaults
-        return ConfigNominaSchema()
+        return ConfigNominaSchema(tipo_nomina_id=tipo_nomina_id)
     return config
 
 @router.post("/configuracion", response_model=ConfigNominaSchema)
 def save_configuracion(config: ConfigNominaSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
-    db_config = db.query(models.ConfiguracionNomina).filter(models.ConfiguracionNomina.empresa_id == current_user.empresa_id).first()
+    # Buscar config existente para ese tipo (o global si es None)
+    query = db.query(models.ConfiguracionNomina).filter(models.ConfiguracionNomina.empresa_id == current_user.empresa_id)
+    
+    if config.tipo_nomina_id:
+        query = query.filter(models.ConfiguracionNomina.tipo_nomina_id == config.tipo_nomina_id)
+    else:
+        query = query.filter(models.ConfiguracionNomina.tipo_nomina_id == None)
+        
+    db_config = query.first()
     
     if not db_config:
-        db_config = models.ConfiguracionNomina(empresa_id=current_user.empresa_id)
+        db_config = models.ConfiguracionNomina(
+            empresa_id=current_user.empresa_id,
+            tipo_nomina_id=config.tipo_nomina_id
+        )
         db.add(db_config)
     
     # Actualizar campos

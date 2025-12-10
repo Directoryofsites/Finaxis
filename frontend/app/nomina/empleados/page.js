@@ -1,21 +1,23 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { getEmpleados, createEmpleado } from '../../../lib/nominaService';
+import { getEmpleados, createEmpleado, updateEmpleado, getTiposNomina } from '../../../lib/nominaService';
 import { getTerceros } from '../../../lib/terceroService';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { FaUserPlus, FaSearch } from 'react-icons/fa';
+import { FaUserPlus, FaSearch, FaEdit, FaCheck, FaTimes } from 'react-icons/fa';
 
 export default function EmpleadosPage() {
     const [empleados, setEmpleados] = useState([]);
+    const [tiposNomina, setTiposNomina] = useState([]);
     const [loading, setLoading] = useState(false);
     const [showForm, setShowForm] = useState(false);
+    const [editingId, setEditingId] = useState(null);
 
     // Form State
     const [formData, setFormData] = useState({
         nombres: '', apellidos: '', numero_documento: '',
         salario_base: '', fecha_ingreso: '', tiene_auxilio: true,
-        tercero_id: null
+        tercero_id: null, tipo_nomina_id: ''
     });
 
     // Search State
@@ -26,10 +28,14 @@ export default function EmpleadosPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const data = await getEmpleados();
-            setEmpleados(data);
+            const [emps, tipos] = await Promise.all([
+                getEmpleados(),
+                getTiposNomina()
+            ]);
+            setEmpleados(emps);
+            setTiposNomina(tipos);
         } catch (error) {
-            toast.error("Error al cargar empleados");
+            toast.error("Error al cargar datos");
         } finally {
             setLoading(false);
         }
@@ -49,7 +55,6 @@ export default function EmpleadosPage() {
         setSearching(true);
         try {
             const results = await getTerceros({ filtro: term });
-            // Ajustar segun estructura de respuesta de getTerceros array vs { data: [] }
             setSearchResults(Array.isArray(results) ? results : results.data || []);
         } catch (error) {
             console.error("Error buscando terceros", error);
@@ -59,13 +64,9 @@ export default function EmpleadosPage() {
     };
 
     const selectTercero = (tercero) => {
-        // Separar nombres y apellidos si es posible, o poner todo en nombres
-        // Asumiendo tercero.nombre_razon_social tiene todo
         const rawName = tercero.nombre_razon_social || '';
-        const parts = rawName.split(' ').filter(Boolean); // Filter empty parts
-
-        let nombres = '';
-        let apellidos = '';
+        const parts = rawName.split(' ').filter(Boolean);
+        let nombres = '', apellidos = '';
 
         if (parts.length > 2) {
             apellidos = parts.slice(-2).join(' ');
@@ -75,14 +76,14 @@ export default function EmpleadosPage() {
             apellidos = parts[1];
         } else {
             nombres = rawName;
-            apellidos = '.'; // Apellido dummy si solo hay un nombre para cumplir requerimiento
+            apellidos = '.';
         }
 
         setFormData({
             ...formData,
             nombres: nombres || '',
-            apellidos: apellidos || '', // Default to empty string if undefined
-            numero_documento: tercero.nit || '', // Ensure valid string
+            apellidos: apellidos || '',
+            numero_documento: tercero.nit || '',
             tercero_id: tercero.id
         });
         setSearchTerm('');
@@ -92,14 +93,49 @@ export default function EmpleadosPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await createEmpleado(formData);
-            toast.success("Empleado creado exitosamente");
-            setShowForm(false);
-            setFormData({ nombres: '', apellidos: '', numero_documento: '', salario_base: '', fecha_ingreso: '', tiene_auxilio: true, tercero_id: null });
+            // Prepare payload
+            const payload = { ...formData };
+            if (payload.tipo_nomina_id === '') payload.tipo_nomina_id = null;
+            else payload.tipo_nomina_id = parseInt(payload.tipo_nomina_id);
+
+            if (editingId) {
+                await updateEmpleado(editingId, payload);
+                toast.success("Empleado actualizado");
+            } else {
+                await createEmpleado(payload);
+                toast.success("Empleado creado");
+            }
+
+            resetForm();
             fetchData();
         } catch (error) {
             toast.error("Error al guardar empleado");
         }
+    };
+
+    const startEdit = (emp) => {
+        setEditingId(emp.id);
+        setFormData({
+            nombres: emp.nombres,
+            apellidos: emp.apellidos,
+            numero_documento: emp.numero_documento,
+            salario_base: emp.salario_base,
+            fecha_ingreso: emp.fecha_ingreso,
+            tiene_auxilio: emp.auxilio_transporte,
+            tercero_id: emp.tercero_id,
+            tipo_nomina_id: emp.tipo_nomina_id || ''
+        });
+        setShowForm(true);
+    };
+
+    const resetForm = () => {
+        setShowForm(false);
+        setEditingId(null);
+        setFormData({
+            nombres: '', apellidos: '', numero_documento: '',
+            salario_base: '', fecha_ingreso: '', tiene_auxilio: true,
+            tercero_id: null, tipo_nomina_id: ''
+        });
     };
 
     return (
@@ -108,7 +144,7 @@ export default function EmpleadosPage() {
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-light text-gray-800">Gestión de Empleados</h1>
                 <button
-                    onClick={() => setShowForm(!showForm)}
+                    onClick={() => { resetForm(); setShowForm(true); }}
                     className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 flex items-center"
                 >
                     <FaUserPlus className="mr-2" /> Nuevo Empleado
@@ -116,38 +152,40 @@ export default function EmpleadosPage() {
             </div>
 
             {showForm && (
-                <div className="bg-white p-6 rounded shadow mb-6 border-l-4 border-blue-500 animate-fadeIn">
-                    <h3 className="font-bold mb-4 text-gray-700">Registrar Nuevo Colaborador</h3>
+                <div className="bg-white p-6 rounded shadow mb-6 border-l-4 border-blue-500 animate-fadeIn relative">
+                    <button onClick={resetForm} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><FaTimes /></button>
+                    <h3 className="font-bold mb-4 text-gray-700">{editingId ? 'Editar Empleado' : 'Registrar Nuevo Colaborador'}</h3>
 
-                    {/* Buscador de Terceros */}
-                    <div className="mb-6 relative">
-                        <label className="block text-xs text-gray-500 mb-1">Buscar Tercero Existente (Opcional)</label>
-                        <div className="flex">
-                            <input
-                                type="text"
-                                placeholder="Buscar por Nombre o NIT..."
-                                className="border p-2 rounded-l w-full focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                value={searchTerm}
-                                onChange={(e) => handleSearchTercero(e.target.value)}
-                            />
-                            <div className="bg-gray-100 p-2 rounded-r border border-l-0 text-gray-500">
-                                <FaSearch />
+                    {!editingId && (
+                        <div className="mb-6 relative">
+                            <label className="block text-xs text-gray-500 mb-1">Buscar Tercero Existente (Opcional)</label>
+                            <div className="flex">
+                                <input
+                                    type="text"
+                                    placeholder="Buscar por Nombre o NIT..."
+                                    className="border p-2 rounded-l w-full focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                    value={searchTerm}
+                                    onChange={(e) => handleSearchTercero(e.target.value)}
+                                />
+                                <div className="bg-gray-100 p-2 rounded-r border border-l-0 text-gray-500">
+                                    <FaSearch />
+                                </div>
                             </div>
+                            {searchResults.length > 0 && (
+                                <ul className="absolute z-10 w-full bg-white border rounded shadow-lg max-h-48 overflow-y-auto mt-1">
+                                    {searchResults.map(t => (
+                                        <li key={t.id}
+                                            onClick={() => selectTercero(t)}
+                                            className="p-2 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 text-sm"
+                                        >
+                                            <span className="font-bold">{t.nombre_razon_social}</span>
+                                            <span className="text-gray-500 ml-2">({t.nit})</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
-                        {searchResults.length > 0 && (
-                            <ul className="absolute z-10 w-full bg-white border rounded shadow-lg max-h-48 overflow-y-auto mt-1">
-                                {searchResults.map(t => (
-                                    <li key={t.id}
-                                        onClick={() => selectTercero(t)}
-                                        className="p-2 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 text-sm"
-                                    >
-                                        <span className="font-bold">{t.nombre_razon_social}</span>
-                                        <span className="text-gray-500 ml-2">({t.nit})</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
+                    )}
 
                     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input name="nombres" placeholder="Nombres" className="border p-2 rounded" required
@@ -165,14 +203,35 @@ export default function EmpleadosPage() {
                                 value={formData.fecha_ingreso} onChange={e => setFormData({ ...formData, fecha_ingreso: e.target.value })} />
                         </div>
 
-                        <div className="flex items-center">
+                        <div>
+                            <label className="block text-xs text-gray-500">Tipo de Nómina</label>
+                            <select
+                                className="border p-2 rounded w-full bg-white"
+                                value={formData.tipo_nomina_id}
+                                onChange={e => setFormData({ ...formData, tipo_nomina_id: e.target.value })}
+                            >
+                                <option value="">-- Sin Clasificar --</option>
+                                {tiposNomina.map(tipo => (
+                                    <option key={tipo.id} value={tipo.id}>{tipo.nombre} ({tipo.periodo_pago})</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="flex items-center md:col-span-2">
                             <input type="checkbox" id="aux" checked={formData.tiene_auxilio}
                                 onChange={e => setFormData({ ...formData, tiene_auxilio: e.target.checked })} className="mr-2 h-5 w-5" />
                             <label htmlFor="aux" className="text-gray-700">Aplica Auxilio de Transporte</label>
                         </div>
 
-                        <div className="md:col-span-2">
-                            <button type="submit" className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 w-full font-bold">Guardar Empleado</button>
+                        <div className="md:col-span-2 flex gap-3">
+                            <button type="submit" className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 w-full font-bold flex justify-center items-center">
+                                <FaCheck className="mr-2" /> {editingId ? 'Actualizar Empleado' : 'Guardar Empleado'}
+                            </button>
+                            {editingId && (
+                                <button type="button" onClick={resetForm} className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">
+                                    Cancelar
+                                </button>
+                            )}
                         </div>
                     </form>
                 </div>
@@ -184,9 +243,10 @@ export default function EmpleadosPage() {
                         <tr>
                             <th className="p-4">Documento</th>
                             <th className="p-4">Nombre Completo</th>
+                            <th className="p-4">Tipo Nómina</th>
                             <th className="p-4">Salario Base</th>
                             <th className="p-4">Fecha Ingreso</th>
-                            <th className="p-4">Estado</th>
+                            <th className="p-4 text-right">Acciones</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -194,16 +254,23 @@ export default function EmpleadosPage() {
                             <tr key={emp.id} className="hover:bg-gray-50">
                                 <td className="p-4 font-mono text-sm">{emp.numero_documento}</td>
                                 <td className="p-4 font-medium text-gray-800">{emp.nombres} {emp.apellidos}</td>
+                                <td className="p-4 text-sm text-gray-600">
+                                    {tiposNomina.find(t => t.id === emp.tipo_nomina_id)?.nombre || <span className="text-gray-400 italic">No Asignado</span>}
+                                </td>
                                 <td className="p-4 text-green-600 font-bold">
                                     {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(emp.salario_base)}
                                 </td>
                                 <td className="p-4 text-gray-500 text-sm">{emp.fecha_ingreso}</td>
-                                <td className="p-4"><span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Activo</span></td>
+                                <td className="p-4 text-right">
+                                    <button
+                                        onClick={() => startEdit(emp)}
+                                        className="text-blue-500 hover:text-blue-700 bg-blue-50 p-2 rounded transition"
+                                    >
+                                        <FaEdit />
+                                    </button>
+                                </td>
                             </tr>
                         ))}
-                        {empleados.length === 0 && !loading && (
-                            <tr><td colSpan="5" className="p-8 text-center text-gray-400">No hay empleados registrados.</td></tr>
-                        )}
                     </tbody>
                 </table>
             </div>

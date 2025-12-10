@@ -1,9 +1,9 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
-import { FaPlus, FaList, FaSave, FaSearch, FaTimes, FaFlask } from 'react-icons/fa';
+import { FaPlus, FaList, FaSave, FaSearch, FaTimes, FaFlask, FaEdit, FaTrash, FaMoneyBillWave, FaFilePdf } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
-import { getRecetas, createReceta } from '../../../lib/produccionService';
+import { getRecetas, createReceta, updateReceta, deleteReceta, downloadRecetaPDF } from '../../../lib/produccionService';
 import { getProductosByEmpresa as getProductos } from '../../../lib/productosService'; // Necesitamos buscar productos (MP y PT)
 
 export default function GestionRecetasPage() {
@@ -12,18 +12,32 @@ export default function GestionRecetasPage() {
     const [recetas, setRecetas] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    // Estado para Crear Receta
+    // Estado para Crear/Editar Receta
+    const [editMode, setEditMode] = useState(false);
+    const [editingId, setEditingId] = useState(null);
+
     const [productos, setProductos] = useState([]); // Catálogo global para selección
-    const [productoPT, setProductoPT] = useState(null); // Producto Terminado seleccionado
+    const [productoPT, setProductoPT] = useState(null); // Producto Terminado seleccionado (objeto completo)
 
     const [nombreReceta, setNombreReceta] = useState('');
+    const [descripcionReceta, setDescripcionReceta] = useState('');
     const [cantidadBase, setCantidadBase] = useState(1);
-    const [detalles, setDetalles] = useState([]); // Lista de ingredientes { insumo_id, cantidad, producto_nombre }
+
+    // Lista de ingredientes { insumo_id, cantidad, producto_nombre }
+    const [detalles, setDetalles] = useState([]);
+
+    // Lista de recursos { descripcion, tipo (MOD/CIF), costo_estimado }
+    const [recursos, setRecursos] = useState([]);
 
     // Estado auxiliar para agregar ingrediente
     const [selectedIngrediente, setSelectedIngrediente] = useState(null);
     const [cantidadIngrediente, setCantidadIngrediente] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Estado auxiliar para agregar recurso
+    const [newRecursoDesc, setNewRecursoDesc] = useState('');
+    const [newRecursoTipo, setNewRecursoTipo] = useState('MANO_OBRA_DIRECTA'); // MOD o CIF
+    const [newRecursoCosto, setNewRecursoCosto] = useState(0);
 
     useEffect(() => {
         loadRecetas();
@@ -52,6 +66,49 @@ export default function GestionRecetasPage() {
         } catch (error) {
             console.error("Error cargando productos", error);
         }
+    };
+
+    const resetForm = () => {
+        setEditMode(false);
+        setEditingId(null);
+        setNombreReceta('');
+        setDescripcionReceta('');
+        setCantidadBase(1);
+        setProductoPT(null);
+        setDetalles([]);
+        setRecursos([]);
+        setActiveTab('list');
+    };
+
+    const handleEdit = (receta) => {
+        setEditMode(true);
+        setEditingId(receta.id);
+
+        setNombreReceta(receta.nombre);
+        setDescripcionReceta(receta.descripcion || '');
+        setCantidadBase(receta.cantidad_base);
+
+        // Encontrar el producto PT en la lista cargada
+        const pt = productos.find(p => p.id === receta.producto_id);
+        setProductoPT(pt || { id: receta.producto_id, nombre: 'Producto Original (No encontrado en lista)' });
+
+        // Mapear detalles
+        const mappedDetalles = receta.detalles.map(d => ({
+            insumo_id: d.insumo_id,
+            cantidad: d.cantidad,
+            producto_nombre: d.insumo ? d.insumo.nombre : `Insumo #${d.insumo_id}`
+        }));
+        setDetalles(mappedDetalles);
+
+        // Mapear recursos (si existen en el objeto receta, verificar backend return)
+        const mappedRecursos = receta.recursos ? receta.recursos.map(r => ({
+            descripcion: r.descripcion,
+            tipo: r.tipo === 'MANO_OBRA_DIRECTA' ? 'MANO_OBRA_DIRECTA' : 'COSTO_INDIRECTO_FABRICACION', // Normalizar si viene diferente
+            costo_estimado: r.costo_estimado
+        })) : [];
+        setRecursos(mappedRecursos);
+
+        setActiveTab('create');
     };
 
     const handleAddIngrediente = () => {
@@ -87,6 +144,28 @@ export default function GestionRecetasPage() {
         setDetalles(detalles.filter(d => d.insumo_id !== id));
     };
 
+    const handleAddRecurso = () => {
+        if (!newRecursoDesc) return toast.warning("Ingrese una descripción para el recurso.");
+        if (newRecursoCosto <= 0) return toast.warning("El costo debe ser mayor a 0.");
+
+        setRecursos([
+            ...recursos,
+            {
+                descripcion: newRecursoDesc,
+                tipo: newRecursoTipo,
+                costo_estimado: parseFloat(newRecursoCosto)
+            }
+        ]);
+        setNewRecursoDesc('');
+        setNewRecursoCosto(0);
+    };
+
+    const handleRemoveRecurso = (index) => {
+        const newArr = [...recursos];
+        newArr.splice(index, 1);
+        setRecursos(newArr);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!productoPT) return toast.warning("Seleccione el Producto Terminado.");
@@ -98,85 +177,131 @@ export default function GestionRecetasPage() {
             const payload = {
                 producto_id: productoPT.id,
                 nombre: nombreReceta,
-                descripcion: `Receta para ${productoPT.nombre}`,
+                descripcion: descripcionReceta,
                 cantidad_base: parseFloat(cantidadBase),
-                activa: true,
                 detalles: detalles.map(d => ({
                     insumo_id: d.insumo_id,
                     cantidad: d.cantidad
+                })),
+                recursos: recursos.map(r => ({
+                    descripcion: r.descripcion,
+                    tipo: r.tipo,
+                    costo_estimado: r.costo_estimado
                 }))
             };
 
-            await createReceta(payload);
-            toast.success("Receta creada exitosamente.");
-            setActiveTab('list');
+            if (editMode) {
+                // UPDATE
+                await updateReceta(editingId, payload);
+                toast.success("Receta actualizada correctamente.");
+            } else {
+                // CREATE
+                await createReceta(payload);
+                toast.success("Receta creada correctamente.");
+            }
+
+            resetForm();
             loadRecetas();
-            // Reset form
-            setProductoPT(null);
-            setNombreReceta('');
-            setDetalles([]);
         } catch (error) {
-            console.error(error);
-            toast.error("Error al guardar receta.");
+            console.error("Error guardando receta", error);
+            toast.error("Error al guardar la receta.");
         } finally {
             setLoading(false);
         }
     };
 
-    // Filtrar productos para autocompletar
-    const productosFiltrados = productos.filter(p =>
+    const handleDelete = async (receta) => {
+        if (!window.confirm("¿Eliminar esta receta? Si tiene órdenes asociadas no se podrá eliminar.")) return;
+        try {
+            await deleteReceta(receta.id);
+            toast.success("Receta eliminada.");
+            loadRecetas();
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al eliminar receta.");
+        }
+    };
+
+    // Filtros de búsqueda (simple)
+    const filteredProductos = productos.filter(p =>
         p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.codigo.toLowerCase().includes(searchTerm.toLowerCase())
-    ).slice(0, 10); // Top 10
+    ).slice(0, 10); // Limitamos a 10 resultados para el dropdown
 
     return (
-        <div className="p-6 bg-slate-50 min-h-screen">
+        <div className="p-6 bg-gray-50 min-h-screen font-sans text-gray-800">
             <ToastContainer />
+            <div className="flex justify-between items-center mb-8">
+                <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
+                    <FaFlask className="text-blue-600" />
+                    Gestión de Recetas
+                </h1>
+                {activeTab === 'list' ? (
+                    <button
+                        onClick={() => { resetForm(); setActiveTab('create'); }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg shadow-md transition-all flex items-center gap-2"
+                    >
+                        <FaPlus /> Nueva Receta
+                    </button>
+                ) : (
+                    <button
+                        onClick={resetForm}
+                        className="bg-gray-500 hover:bg-gray-600 text-white px-5 py-2 rounded-lg shadow-md transition-all flex items-center gap-2"
+                    >
+                        <FaList /> Volver al Listado
+                    </button>
+                )}
+            </div>
 
-            <header className="mb-6 flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800 flex items-center">
-                        <FaFlask className="mr-3 text-blue-600" />
-                        Gestión de Recetas (Fórmulas)
-                    </h1>
-                    <p className="text-slate-500">Defina los materiales necesarios para producir sus productos.</p>
-                </div>
-                <button
-                    onClick={() => setActiveTab(activeTab === 'list' ? 'create' : 'list')}
-                    className={`px-4 py-2 rounded-lg font-semibold shadow-md transition ${activeTab === 'list' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                >
-                    {activeTab === 'list' ? <><FaPlus className="inline mr-2" /> Nueva Receta</> : <><FaList className="inline mr-2" /> Ver Lista</>}
-                </button>
-            </header>
-
-            {activeTab === 'list' && (
-                <div className="bg-white rounded-xl shadow p-6">
-                    <h2 className="text-lg font-bold mb-4">Recetas Registradas</h2>
-                    {loading ? <p>Cargando...</p> : (
+            {activeTab === 'list' ? (
+                // --- VISTA LISTADO ---
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    {loading ? (
+                        <p className="text-gray-500 text-center py-8">Cargando recetas...</p>
+                    ) : recetas.length === 0 ? (
+                        <div className="text-center py-10 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                            <p className="text-gray-500 mb-4">No hay recetas configuradas.</p>
+                            <button onClick={() => setActiveTab('create')} className="text-blue-600 hover:underline">Crear la primera receta</button>
+                        </div>
+                    ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="bg-slate-100 text-slate-600 uppercase text-sm">
-                                        <th className="p-3">ID</th>
-                                        <th className="p-3">Nombre Receta</th>
-                                        <th className="p-3">Producto Terminado</th>
-                                        <th className="p-3">Base</th>
-                                        <th className="p-3">Estado</th>
+                                    <tr className="border-b border-gray-200 text-gray-600 text-sm uppercas tracking-wider">
+                                        <th className="p-4 font-semibold">Producto Terminado</th>
+                                        <th className="p-4 font-semibold">Nombre Receta</th>
+                                        <th className="p-4 font-semibold text-center">Insumos</th>
+                                        <th className="p-4 font-semibold text-center">Estado</th>
+                                        <th className="p-4 font-semibold text-right">Acciones</th>
                                     </tr>
                                 </thead>
-                                <tbody className="text-sm">
-                                    {recetas.length === 0 ? (
-                                        <tr><td colSpan="5" className="p-4 text-center text-gray-500">No hay recetas registradas.</td></tr>
-                                    ) : recetas.map(r => (
-                                        <tr key={r.id} className="border-b hover:bg-slate-50">
-                                            <td className="p-3 font-mono">{r.id}</td>
-                                            <td className="p-3 font-semibold text-blue-600">{r.nombre}</td>
-                                            <td className="p-3">{r.producto ? r.producto.nombre : 'N/A'}</td>
-                                            <td className="p-3">{r.cantidad_base} UND</td>
-                                            <td className="p-3">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${r.activa ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                    {r.activa ? 'ACTIVA' : 'INACTIVA'}
+                                <tbody className="divide-y divide-gray-100">
+                                    {recetas.map(receta => (
+                                        <tr key={receta.id} className="hover:bg-blue-50 transition-colors">
+                                            <td className="p-4 text-gray-800 font-medium">
+                                                {receta.producto ? receta.producto.nombre : 'Producto Eliminado'}
+                                            </td>
+                                            <td className="p-4 text-gray-600">{receta.nombre}</td>
+                                            <td className="p-4 text-center">
+                                                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-bold">
+                                                    {receta.detalles ? receta.detalles.length : 0} ítems
                                                 </span>
+                                            </td>
+                                            <td className="p-4 text-center">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${receta.activa ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                                    {receta.activa ? 'Activa' : 'Inactiva'}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-right">
+                                                <button onClick={() => downloadRecetaPDF(receta.id)} className="text-gray-500 hover:text-gray-700 mx-2 transition-colors" title="Imprimir"><FaFilePdf size={18} /></button>
+                                                <button
+                                                    onClick={() => handleEdit(receta)}
+                                                    className="text-indigo-600 hover:text-indigo-800 mx-2 transition-colors"
+                                                    title="Editar"
+                                                >
+                                                    <FaEdit size={18} />
+                                                </button>
+                                                <button onClick={() => handleDelete(receta)} className="text-red-500 hover:text-red-700 transition-colors" title="Eliminar"><FaTrash size={18} /></button>
                                             </td>
                                         </tr>
                                     ))}
@@ -185,140 +310,185 @@ export default function GestionRecetasPage() {
                         </div>
                     )}
                 </div>
-            )}
+            ) : (
+                // --- VISTA CREACIÓN / EDICIÓN ---
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* COLUMNA IZQUIERDA: DATOS GENERALES */}
+                    <div className="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-100 p-6 h-fit sticky top-6">
+                        <h2 className="text-xl font-bold text-gray-800 mb-6 pb-2 border-b border-gray-100">
+                            {editMode ? 'Editar Receta' : 'Datos Generales'}
+                        </h2>
 
-            {activeTab === 'create' && (
-                <div className="bg-white rounded-xl shadow p-6 max-w-4xl mx-auto">
-                    <h2 className="text-xl font-bold mb-6 text-slate-700 border-b pb-2">Crear Nueva Fórmula Maestra</h2>
-
-                    <form onSubmit={handleSubmit}>
-                        {/* SECCIÓN 1: CABECERA */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 bg-slate-50 p-4 rounded-lg">
+                        <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre de la Receta</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Producto a Fabricar (PT)</label>
+                                {editMode ? (
+                                    <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 text-gray-700 font-medium">
+                                        {productoPT ? `${productoPT.nombre} (${productoPT.codigo})` : 'Cargando producto...'}
+                                    </div>
+                                ) : (
+                                    productos.length > 0 ? (
+                                        <select
+                                            className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                            value={productoPT ? productoPT.id : ''}
+                                            onChange={(e) => {
+                                                const p = productos.find(prod => prod.id === parseInt(e.target.value));
+                                                setProductoPT(p);
+                                            }}
+                                        >
+                                            <option value="">-- Seleccionar --</option>
+                                            {productos.filter(p => !p.es_servicio).map(p => ( // Mostrar todos, o filtrar por grupos PT si existiera flag
+                                                <option key={p.id} value={p.id}>{p.nombre} ({p.codigo})</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <p className="text-red-500 text-sm">No hay productos cargados.</p>
+                                    )
+                                )}
+                                {editMode && <p className="text-xs text-gray-500 mt-1">El producto no se puede cambiar en edición.</p>}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la Receta</label>
                                 <input
                                     type="text"
-                                    className="w-full border rounded p-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                                    placeholder="Ej: Camisa Slim Fit Talla M"
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                    placeholder="Ej: Versión Estándar 2024"
                                     value={nombreReceta}
                                     onChange={e => setNombreReceta(e.target.value)}
-                                    required
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Producto a Producir (PT)</label>
-                                <select
-                                    className="w-full border rounded p-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                                    onChange={e => {
-                                        const prod = productos.find(p => p.id === parseInt(e.target.value));
-                                        setProductoPT(prod);
-                                        if (prod && !nombreReceta) setNombreReceta(`Fórmula estándar para ${prod.nombre}`);
-                                    }}
-                                    value={productoPT ? productoPT.id : ''}
-                                >
-                                    <option value="">-- Seleccione Producto Terminado --</option>
-                                    {productos.filter(p => !p.es_servicio).map(p => (
-                                        <option key={p.id} value={p.id}>{p.codigo} - {p.nombre}</option>
-                                    ))}
-                                </select>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Descripción (Opcional)</label>
+                                <textarea
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                    rows="3"
+                                    value={descripcionReceta}
+                                    onChange={e => setDescripcionReceta(e.target.value)}
+                                ></textarea>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Cantidad Base (Rendimiento)</label>
-                                <input
-                                    type="number"
-                                    className="w-full border rounded p-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                                    min="0.01" step="0.01"
-                                    value={cantidadBase}
-                                    onChange={e => setCantidadBase(e.target.value)}
-                                />
-                                <span className="text-xs text-gray-500">Cantidad de PT que resulta de esta receta.</span>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad Base</label>
+                                    <input
+                                        type="number"
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                        min="1"
+                                        value={cantidadBase}
+                                        onChange={e => setCantidadBase(parseFloat(e.target.value))}
+                                    />
+                                    <span className="text-xs text-gray-500">Unidades que produce esta receta.</span>
+                                </div>
                             </div>
                         </div>
 
-                        {/* SECCIÓN 2: INGREDIENTES */}
-                        <div className="mb-6">
-                            <h3 className="font-bold text-gray-700 mb-2">Ingredientes / Materia Prima (MP)</h3>
+                        <div className="mt-8 pt-6 border-t border-gray-100">
+                            <button
+                                onClick={handleSubmit}
+                                disabled={loading}
+                                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all flex justify-center items-center gap-2"
+                            >
+                                {loading ? 'Guardando...' : (
+                                    <><FaSave /> {editMode ? 'Actualizar Receta' : 'Guardar Receta'}</>
+                                )}
+                            </button>
+                        </div>
+                    </div>
 
-                            <div className="flex gap-2 mb-4 items-end bg-blue-50 p-3 rounded-lg border border-blue-100">
-                                <div className="flex-1 relative">
-                                    <label className="block text-xs font-bold text-blue-700 mb-1">Buscar Insumo</label>
-                                    <div className="flex items-center bg-white border rounded">
-                                        <FaSearch className="ml-2 text-gray-400" />
+                    {/* COLUMNA DERECHA: INSUMOS Y RECURSOS */}
+                    <div className="lg:col-span-2 space-y-6">
+
+                        {/* SECCIÓN MATERIA PRIMA (INSUMOS) */}
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <FaFlask className="text-purple-600" /> Materia Prima e Insumos
+                            </h3>
+
+                            {/* Buscador y Agregador Small */}
+                            <div className="flex flex-wrap items-end gap-3 mb-6 bg-purple-50 p-4 rounded-xl border border-purple-100">
+                                <div className="flex-1 relative min-w-[200px]">
+                                    <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Buscar Insumo</label>
+                                    <div className="relative">
+                                        <FaSearch className="absolute left-3 top-3 text-gray-400" />
                                         <input
                                             type="text"
-                                            className="w-full p-2 outline-none"
-                                            placeholder="Escriba nombre o código..."
+                                            placeholder="Nombre o código..."
+                                            className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none"
                                             value={searchTerm}
-                                            onChange={e => {
+                                            onChange={(e) => {
                                                 setSearchTerm(e.target.value);
                                                 setSelectedIngrediente(null); // Reset al escribir
                                             }}
                                         />
                                     </div>
-                                    {/* Autocomplete Dropdown */}
+                                    {/* Dropdown de resultados */}
                                     {searchTerm && !selectedIngrediente && (
-                                        <div className="absolute z-10 bg-white border shadow-lg w-full mt-1 max-h-40 overflow-y-auto rounded-md">
-                                            {productosFiltrados.map(p => (
+                                        <div className="absolute z-10 w-full bg-white border border-gray-200 mt-1 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                                            {filteredProductos.length > 0 ? filteredProductos.map(p => (
                                                 <div
                                                     key={p.id}
-                                                    className="p-2 hover:bg-blue-50 cursor-pointer text-sm"
+                                                    className="px-4 py-2 hover:bg-purple-50 cursor-pointer text-sm border-b border-gray-50 last:border-0"
                                                     onClick={() => {
                                                         setSelectedIngrediente(p);
                                                         setSearchTerm(p.nombre);
                                                     }}
                                                 >
-                                                    <span className="font-bold text-gray-700">{p.codigo}</span> - {p.nombre}
+                                                    <span className="font-bold text-gray-700">{p.nombre}</span>
+                                                    <span className="text-gray-400 text-xs ml-2">({p.codigo})</span>
                                                 </div>
-                                            ))}
+                                            )) : (
+                                                <div className="px-4 py-2 text-gray-400 text-sm">No se encontraron productos.</div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
 
                                 <div className="w-32">
-                                    <label className="block text-xs font-bold text-blue-700 mb-1">Cantidad</label>
+                                    <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Cantidad</label>
                                     <input
                                         type="number"
-                                        className="w-full border rounded p-2 text-center"
-                                        min="0.0001" step="any"
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-center font-bold focus:ring-2 focus:ring-purple-500 outline-none"
                                         value={cantidadIngrediente}
                                         onChange={e => setCantidadIngrediente(e.target.value)}
                                     />
                                 </div>
 
                                 <button
-                                    type="button"
                                     onClick={handleAddIngrediente}
-                                    className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 shadow h-10 w-10 flex items-center justify-center"
+                                    className="bg-purple-600 hover:bg-purple-700 text-white p-2.5 rounded-lg shadow-md transition-colors"
                                     title="Agregar Insumo"
                                 >
                                     <FaPlus />
                                 </button>
                             </div>
 
-                            {/* Lista de Detalles Agregados */}
-                            <div className="border rounded-lg overflow-hidden">
+                            {/* Tabla de Insumos Agregados */}
+                            <div className="overflow-hidden rounded-lg border border-gray-200">
                                 <table className="w-full text-sm">
-                                    <thead className="bg-gray-100 text-gray-600 font-semibold">
+                                    <thead className="bg-gray-50 text-gray-600 font-semibold">
                                         <tr>
-                                            <th className="p-2 text-left">Insumo</th>
-                                            <th className="p-2 text-center">Cantidad Requerida</th>
-                                            <th className="p-2 text-center">Acción</th>
+                                            <td className="px-4 py-3">Insumo / Material</td>
+                                            <td className="px-4 py-3 text-center">Cant. Req.</td>
+                                            <td className="px-4 py-3 text-right"></td>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody className="divide-y divide-gray-100">
                                         {detalles.length === 0 ? (
-                                            <tr><td colSpan="3" className="p-4 text-center text-gray-400 bg-white">Sin ingredientes agregados.</td></tr>
-                                        ) : detalles.map((d, idx) => (
-                                            <tr key={idx} className="border-t">
-                                                <td className="p-2 font-medium">{d.producto_nombre}</td>
-                                                <td className="p-2 text-center">{d.cantidad}</td>
-                                                <td className="p-2 text-center">
+                                            <tr>
+                                                <td colSpan="3" className="px-4 py-6 text-center text-gray-400 italic">
+                                                    No se han agregado insumos.
+                                                </td>
+                                            </tr>
+                                        ) : detalles.map((det, idx) => (
+                                            <tr key={idx} className="hover:bg-gray-50">
+                                                <td className="px-4 py-3 font-medium text-gray-700">{det.producto_nombre}</td>
+                                                <td className="px-4 py-3 text-center bg-gray-50 font-mono text-gray-800">{det.cantidad}</td>
+                                                <td className="px-4 py-3 text-right">
                                                     <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveIngrediente(d.insumo_id)}
-                                                        className="text-red-500 hover:text-red-700 transition"
+                                                        onClick={() => handleRemoveIngrediente(det.insumo_id)}
+                                                        className="text-red-400 hover:text-red-600 p-1"
                                                     >
                                                         <FaTimes />
                                                     </button>
@@ -330,24 +500,101 @@ export default function GestionRecetasPage() {
                             </div>
                         </div>
 
-                        <div className="flex justify-end gap-4 mt-8">
-                            <button
-                                type="button"
-                                onClick={() => setActiveTab('list')}
-                                className="px-6 py-2 border rounded-lg hover:bg-gray-50 text-gray-700"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="px-6 py-2 bg-green-600 text-white font-bold rounded-lg shadow hover:bg-green-700 flex items-center"
-                            >
-                                <FaSave className="mr-2" />
-                                {loading ? 'Guardando...' : 'Guardar Receta'}
-                            </button>
+                        {/* SECCIÓN RECURSOS (MOD / CIF) */}
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <FaMoneyBillWave className="text-orange-600" /> Mano de Obra y Costos Indirectos
+                            </h3>
+
+                            {/* Agregador de Recursos */}
+                            <div className="flex flex-wrap items-end gap-3 mb-6 bg-orange-50 p-4 rounded-xl border border-orange-100">
+                                <div className="flex-1 min-w-[200px]">
+                                    <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Descripción del Recurso</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Ej: Mano de Obra Operario, Energía, Agua..."
+                                        className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 outline-none"
+                                        value={newRecursoDesc}
+                                        onChange={(e) => setNewRecursoDesc(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="w-48">
+                                    <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Tipo de Costo</label>
+                                    <select
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-orange-500 outline-none"
+                                        value={newRecursoTipo}
+                                        onChange={(e) => setNewRecursoTipo(e.target.value)}
+                                    >
+                                        <option value="MANO_OBRA_DIRECTA">Mano de Obra (MOD)</option>
+                                        <option value="COSTO_INDIRECTO_FABRICACION">Costo Indirecto (CIF)</option>
+                                    </select>
+                                </div>
+
+                                <div className="w-32">
+                                    <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Costo Est. ($)</label>
+                                    <input
+                                        type="number"
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-center font-bold focus:ring-2 focus:ring-orange-500 outline-none"
+                                        value={newRecursoCosto}
+                                        onChange={e => setNewRecursoCosto(e.target.value)}
+                                    />
+                                </div>
+
+                                <button
+                                    onClick={handleAddRecurso}
+                                    className="bg-orange-600 hover:bg-orange-700 text-white p-2.5 rounded-lg shadow-md transition-colors"
+                                    title="Agregar Recurso"
+                                >
+                                    <FaPlus />
+                                </button>
+                            </div>
+
+                            {/* Tabla de Recursos Agregados */}
+                            <div className="overflow-hidden rounded-lg border border-gray-200">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-gray-50 text-gray-600 font-semibold">
+                                        <tr>
+                                            <td className="px-4 py-3">Concepto</td>
+                                            <td className="px-4 py-3 text-center">Tipo</td>
+                                            <td className="px-4 py-3 text-right">Costo Estimado</td>
+                                            <td className="px-4 py-3 text-right"></td>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {recursos.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="4" className="px-4 py-6 text-center text-gray-400 italic">
+                                                    No se han agregado recursos adicionales.
+                                                </td>
+                                            </tr>
+                                        ) : recursos.map((rec, idx) => (
+                                            <tr key={idx} className="hover:bg-gray-50">
+                                                <td className="px-4 py-3 font-medium text-gray-700">{rec.descripcion}</td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <span className={`text-xs px-2 py-1 rounded font-bold ${rec.tipo === 'MANO_OBRA_DIRECTA' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                        {rec.tipo === 'MANO_OBRA_DIRECTA' ? 'MOD' : 'CIF'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-right font-mono text-gray-800">
+                                                    ${rec.costo_estimado.toLocaleString()}
+                                                </td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <button
+                                                        onClick={() => handleRemoveRecurso(idx)}
+                                                        className="text-red-400 hover:text-red-600 p-1"
+                                                    >
+                                                        <FaTimes />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </form>
+
+                    </div>
                 </div>
             )}
         </div>

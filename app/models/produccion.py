@@ -9,6 +9,7 @@ class EstadoOrdenProduccion(str, enum.Enum):
     EN_PROCESO = "EN_PROCESO"
     CERRADA = "CERRADA"
     CANCELADA = "CANCELADA"
+    ANULADA = "ANULADA"
 
 class TipoRecurso(str, enum.Enum):
     MOD = "MANO_OBRA_DIRECTA"
@@ -30,7 +31,24 @@ class Receta(Base):
     # Relaciones
     producto = relationship("Producto", backref="recetas") # backref para acceder desde Producto
     detalles = relationship("RecetaDetalle", back_populates="receta", cascade="all, delete-orphan")
+    recursos = relationship("RecetaRecurso", back_populates="receta", cascade="all, delete-orphan")
     ordenes = relationship("OrdenProduccion", back_populates="receta")
+
+class RecetaRecurso(Base):
+    __tablename__ = 'receta_recursos'
+
+    id = Column(Integer, primary_key=True, index=True)
+    receta_id = Column(Integer, ForeignKey('recetas.id'), nullable=False)
+    
+    descripcion = Column(String(255), nullable=False) # Ej: "Horas Hombre Estándar"
+    tipo = Column(String(50), nullable=False) # Enum: MOD o CIF
+    costo_estimado = Column(Float, nullable=False) # Valor monetario estándar
+    
+    # Opcional: Link a cuenta contable específica si difiere de la parametrización general
+    cuenta_contable_id = Column(Integer, ForeignKey('plan_cuentas.id'), nullable=True)
+
+    # Relaciones
+    receta = relationship("Receta", back_populates="recursos")
 
 class RecetaDetalle(Base):
     __tablename__ = 'receta_detalles'
@@ -70,6 +88,10 @@ class OrdenProduccion(Base):
     costo_unitario_final = Column(Float, default=0.0)
     
     observaciones = Column(String(1000), nullable=True)
+    
+    # Nuevos campos para Ciclo de Vida
+    archivada = Column(Boolean, default=False)
+    motivo_anulacion = Column(String(500), nullable=True)
     
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
 

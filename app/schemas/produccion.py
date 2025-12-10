@@ -19,6 +19,23 @@ class RecetaDetalleResponse(RecetaDetalleBase):
     class Config:
         orm_mode = True
 
+# --- Recursos de Receta (MOD/CIF) ---
+
+class RecetaRecursoBase(BaseModel):
+    descripcion: str
+    tipo: str # MOD o CIF
+    costo_estimado: float
+    cuenta_contable_id: Optional[int] = None
+
+class RecetaRecursoCreate(RecetaRecursoBase):
+    pass
+
+class RecetaRecursoResponse(RecetaRecursoBase):
+    id: int
+    
+    class Config:
+        orm_mode = True
+
 class RecetaBase(BaseModel):
     producto_id: int
     nombre: str
@@ -28,6 +45,7 @@ class RecetaBase(BaseModel):
 
 class RecetaCreate(RecetaBase):
     detalles: List[RecetaDetalleCreate]
+    recursos: Optional[List[RecetaRecursoCreate]] = []
 
 class RecetaUpdate(BaseModel):
     nombre: Optional[str] = None
@@ -35,12 +53,14 @@ class RecetaUpdate(BaseModel):
     cantidad_base: Optional[float] = None
     activa: Optional[bool] = None
     detalles: Optional[List[RecetaDetalleCreate]] = None
+    recursos: Optional[List[RecetaRecursoCreate]] = None
 
 class RecetaResponse(RecetaBase):
     id: int
     empresa_id: int
     fecha_creacion: datetime
     detalles: List[RecetaDetalleResponse] = []
+    recursos: List[RecetaRecursoResponse] = []
     producto: Optional[ProductoResponse] = None # El producto que produce
 
     class Config:
@@ -112,6 +132,22 @@ class OrdenProduccionResponse(OrdenProduccionBase):
     
     insumos: List[OrdenProduccionInsumoResponse] = []
     recursos: List[OrdenProduccionRecursoResponse] = []
+
+    class Config:
+        orm_mode = True
+
+# --- Configuracion (Lifecycle) ---
+
+class ConfigProduccionBase(BaseModel):
+    tipo_documento_orden_id: Optional[int] = None
+    tipo_documento_anulacion_id: Optional[int] = None
+
+class ConfigProduccionCreate(ConfigProduccionBase):
+    pass
+
+class ConfigProduccionResponse(ConfigProduccionBase):
+    id: int
+    empresa_id: int
 
     class Config:
         orm_mode = True

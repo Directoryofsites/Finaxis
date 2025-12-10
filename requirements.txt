@@ -50,3 +50,4 @@ uvicorn==0.35.0
 weasyprint==65.1
 webencodings==0.5.1
 zopfli==0.2.3.post1
+APScheduler==3.10.4

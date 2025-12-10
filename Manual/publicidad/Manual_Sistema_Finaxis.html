@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual del Sistema Finaxis - Solución Contable Integral</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 30px rgba(0,0,0,0.1);
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .logo {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 1rem;
+        }
+        
+        .version {
+            background: rgba(255,255,255,0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 0.9rem;
+        }
+        
+        .nav {
+            background: #34495e;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 2rem;
+            padding: 0 2rem;
+        }
+        
+        .nav a {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .nav a:hover {
+            background: #3498db;
+            transform: translateY(-2px);
+        }
+        
+        .content {
+            padding: 2rem;
+        }
+        
+        .section {
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .section h2 {
+            color: #2c3e50;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid #3498db;
+        }
+        
+        .section h3 {
+            color: #34495e;
+            font-size: 1.4rem;
+            margin: 1.5rem 0 1rem 0;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #3498db;
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .feature-card h4 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+        
+        .feature-card p {
+            color: #666;
+            font-size: 0.95rem;
+        }
+        
+        .benefits {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin: 2rem 0;
+        }
+        
+        .benefits h3 {
+            color: white;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+        
+        .benefit-item {
+            background: rgba(255,255,255,0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .benefit-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .tech-stack {
+            background: #2d3748;
+            color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin: 2rem 0;
+        }
+        
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .tech-item {
+            background: rgba(255,255,255,0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .cta {
+            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+            border-radius: 10px;
+            margin: 3rem 0;
+        }
+        
+        .cta h3 {
+            color: white;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .cta-button {
+            background: white;
+            color: #00b894;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 1rem;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+        
+        .warning {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+        
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+        
+        @media (max-width: 768px) {
+            .nav ul {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .content {
+                padding: 1rem;
+            }
+            
+            .section {
+                padding: 1rem;
+            }
+            
+            .logo {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1rem;">
+                    <svg width="500" height="120" viewBox="0 0 500 120" fill="none" xmlns="http://www.w3.org/2000/svg" style="height: 120px;">
+                        <!-- Logo Finaxis - Versión transparente basada en el original -->
+                        <g transform="translate(20, 20)">
+                            <!-- Triángulo principal turquesa -->
+                            <path d="M0 40 L25 15 L50 40 L25 65 Z" fill="#1CBCCF"/>
+                            <!-- Triángulo dorado superpuesto -->
+                            <path d="M25 25 L50 15 L65 40 L50 55 L40 40 Z" fill="#D4AF37"/>
+                            <!-- Elemento de conexión -->
+                            <path d="M25 40 L40 40" stroke="#0F4C75" stroke-width="3"/>
+                            <!-- Detalles geométricos -->
+                            <circle cx="25" cy="40" r="2" fill="white"/>
+                            <circle cx="40" cy="40" r="2" fill="white"/>
+                        </g>
+                        <!-- Texto FINAXIS -->
+                        <text x="120" y="55" font-family="Arial, sans-serif" font-size="42" font-weight="900" fill="#0F4C75" letter-spacing="2px">FINAXIS</text>
+                        <!-- Subtítulo -->
+                        <text x="120" y="75" font-family="Arial, sans-serif" font-size="16" fill="#7F8C8D" font-weight="400">Finanzas, Administración y Sistema Integrado</text>
+                    </svg>
+                </div>
+                <div class="subtitle">Finanzas, Administración y Sistema Integrado</div>
+                <div class="version">Versión 1.0 - Solución Completa</div>
+            </div>
+        </header>
+
+        <nav class="nav">
+            <ul>
+                <li><a href="#overview">Descripción</a></li>
+                <li><a href="#modules">Módulos</a></li>
+                <li><a href="#features">Características</a></li>
+                <li><a href="#pricing">Precios</a></li>
+                <li><a href="#benefits">Beneficios</a></li>
+                <li><a href="#technology">Tecnología</a></li>
+                <li><a href="#implementation">Implementación</a></li>
+            </ul>
+        </nav>
+
+        <main class="content">
+            <section id="overview" class="section">
+                <h2>🎯 ¿Qué es Finaxis?</h2>
+                <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">
+                    <strong>Finaxis</strong> es un sistema contable integral desarrollado específicamente para empresas que buscan 
+                    automatizar y optimizar todos sus procesos financieros, contables e inventarios en una sola plataforma.
+                </p>
+                
+                <div class="highlight">
+                    <strong>🚀 Solución Todo-en-Uno:</strong> Desde la gestión de inventarios hasta reportes financieros avanzados, 
+                    Finaxis centraliza todas las operaciones de su empresa en un sistema moderno, seguro y fácil de usar.
+                </div>
+
+                <h3>🎯 ¿Para quién está diseñado?</h3>
+                <ul style="margin-left: 2rem; margin-top: 1rem;">
+                    <li><strong>Pequeñas y medianas empresas</strong> que necesitan un control contable profesional</li>
+                    <li><strong>Empresas comerciales</strong> con manejo de inventarios y facturación</li>
+                    <li><strong>Empresas de servicios</strong> que requieren control de cartera y facturación</li>
+                    <li><strong>Empresas manufactureras</strong> con procesos de producción</li>
+                    <li><strong>Conjuntos residenciales</strong> (Propiedad Horizontal)</li>
+                    <li><strong>Empresas con nómina</strong> que necesitan automatización de pagos</li>
+                </ul>
+            </section>
+
+            <section id="modules" class="section">
+                <h2>📋 Módulos del Sistema</h2>
+                <p>Finaxis está compuesto por módulos especializados que cubren todas las áreas de su negocio:</p>
+
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>📊 Contabilidad General</h4>
+                        <p>Plan de cuentas personalizable, movimientos contables, libros oficiales, balance de prueba, estado de resultados y reportes financieros completos.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4>📦 Gestión de Inventarios</h4>
+                        <p>Control total de productos, bodegas múltiples, movimientos de inventario, ajustes, traslados y reportes de valorización.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4>🧾 Facturación Electrónica</h4>
+                        <p>Emisión de facturas, cotizaciones, remisiones, notas crédito/débito con cálculo automático de impuestos y formatos personalizables.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4>🏪 Gestión de Compras</h4>
+                        <p>Registro de compras, control de proveedores, cuentas por pagar, aplicación de pagos y reportes de compras.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4>💰 Cartera y Cobranzas</h4>
+                        <p>Control de cuentas por cobrar, seguimiento de pagos, aplicación de abonos, reportes de cartera y gestión de vencimientos.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4>👥 Gestión de Terceros</h4>
+                        <p>Base de datos completa de clientes, proveedores y empleados con información fiscal y comercial actualizada.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4>🏭 Producción</h4>
+                        <p>Órdenes de producción, recetas, control de materias primas, costos de producción y seguimiento de procesos manufactureros.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4>💼 Nómina</h4>
+                        <p>Cálculo automático de nómina, liquidaciones, prestaciones sociales, reportes laborales e integración contable.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4>🏢 Propiedad Horizontal</h4>
+                        <p>Módulo especializado para administración de conjuntos residenciales, cuotas de administración y gastos comunes.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4>🏗️ Activos Fijos</h4>
+                        <p>Control de activos fijos, depreciaciones automáticas, novedades y reportes de activos para declaraciones fiscales.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4>📈 Reportes y Analytics</h4>
+                        <p>Dashboard ejecutivo, reportes financieros, análisis de rentabilidad, indicadores de gestión y reportes personalizables.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4>🔐 Seguridad y Auditoría</h4>
+                        <p>Control de usuarios, roles y permisos, auditoría de operaciones, respaldos automáticos y trazabilidad completa.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="pricing" class="section">
+                <h2>💎 Modelo de Adquisición Revolucionario</h2>
+                
+                <div class="highlight">
+                    <strong>🎯 Pague Solo por lo que Usa:</strong> Finaxis utiliza un innovador sistema de pago por consumo. 
+                    No pague licencias costosas, solo pague por los asientos contables que realmente utilice.
+                </div>
+
+                <h3>🚀 Sistema Prepago por Paquetes</h3>
+                <p>Seleccione el paquete que mejor se adapte al movimiento contable de su empresa:</p>
+
+                <div class="feature-grid">
+                    <div class="feature-card" style="border-left-color: #27ae60;">
+                        <h4>📦 Paquete BÁSICO</h4>
+                        <p><strong>500 Asientos Contables/Mes</strong><br>
+                        • Ideal para empresas pequeñas<br>
+                        • Acceso a todos los módulos<br>
+                        • Sin restricciones de funcionalidades<br>
+                        • Soporte técnico incluido<br>
+                        • Capacitación incluida<br>
+                        <strong>Precio: Desde $150.000/mes</strong></p>
+                    </div>
+
+                    <div class="feature-card" style="border-left-color: #3498db;">
+                        <h4>📦 Paquete PROFESIONAL</h4>
+                        <p><strong>2.000 Asientos Contables/Mes</strong><br>
+                        • Para empresas en crecimiento<br>
+                        • Acceso a todos los módulos<br>
+                        • Sin restricciones de funcionalidades<br>
+                        • Soporte técnico incluido<br>
+                        • Capacitación incluida<br>
+                        <strong>Precio: Desde $350.000/mes</strong></p>
+                    </div>
+
+                    <div class="feature-card" style="border-left-color: #e74c3c;">
+                        <h4>📦 Paquete EMPRESARIAL</h4>
+                        <p><strong>5.000+ Asientos Contables/Mes</strong><br>
+                        • Para empresas grandes<br>
+                        • Acceso a todos los módulos<br>
+                        • Sin restricciones de funcionalidades<br>
+                        • Soporte técnico incluido<br>
+                        • Capacitación incluida<br>
+                        <strong>Precio: Desde $650.000/mes</strong></p>
+                    </div>
+                </div>
+
+                <div class="warning">
+                    <strong>📋 Importante sobre los Paquetes:</strong><br>
+                    • <strong>Todos los paquetes incluyen acceso completo a todos los módulos</strong><br>
+                    • No hay restricciones de funcionalidades entre paquetes<br>
+                    • Los asientos no utilizados en el mes se pierden (no se acumulan)<br>
+                    • Cada mes inicia con la cantidad completa de asientos del paquete<br>
+                    • Si necesita asientos adicionales en un mes, puede adquirir paquetes extra
+                </div>
+
+                <div class="success">
+                    <strong>🎁 VERSIÓN DEMO GRATUITA:</strong> Reciba una versión completa con 100 asientos contables 
+                    mensuales para probar todas las funcionalidades sin compromiso durante 3 meses.
+                </div>
+
+                <h3>💰 Ventajas del Sistema por Consumo</h3>
+                <div class="benefits">
+                    <div class="benefits-grid">
+                        <div class="benefit-item">
+                            <div class="benefit-icon">💸</div>
+                            <h4>Sin Costos Ocultos</h4>
+                            <p>No pague por soporte, actualizaciones o capacitaciones adicionales</p>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">📈</div>
+                            <h4>Escalable</h4>
+                            <p>Cambie de paquete según crezca su empresa</p>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">🔄</div>
+                            <h4>Actualizaciones Incluidas</h4>
+                            <p>Siempre tendrá la última versión sin costo adicional</p>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">🎓</div>
+                            <h4>Capacitación Gratuita</h4>
+                            <p>Entrenamiento completo incluido en todos los paquetes</p>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">🛡️</div>
+                            <h4>Soporte Incluido</h4>
+                            <p>Asistencia técnica sin costo adicional</p>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">⏰</div>
+                            <h4>Sin Permanencia</h4>
+                            <p>Cancele cuando quiera, sin penalizaciones</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="warning">
+                    <strong>💡 ¿Cómo funciona el conteo de asientos?</strong><br>
+                    <strong>1 Asiento = 1 Registro Contable Individual</strong><br>
+                    • Consignación básica (Bancos vs Caja) = 2 registros = 2 asientos<br>
+                    • Factura con IVA (Ingreso + IVA vs Caja) = 3 registros = 3 asientos<br>
+                    • Compra con retención = múltiples registros = múltiples asientos<br>
+                    • <strong>Consultas y reportes = ¡ILIMITADOS!</strong><br>
+                    • <strong>Usuarios simultáneos = ¡ILIMITADOS!</strong>
+                </div>
+
+                <h3>🆚 Comparación con Sistemas Tradicionales</h3>
+                <div style="overflow-x: auto; margin: 2rem 0;">
+                    <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <thead style="background: #34495e; color: white;">
+                            <tr>
+                                <th style="padding: 1rem; text-align: left;">Concepto</th>
+                                <th style="padding: 1rem; text-align: center;">Sistemas Tradicionales</th>
+                                <th style="padding: 1rem; text-align: center;">Finaxis</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #eee;">
+                                <td style="padding: 1rem; font-weight: bold;">Costo Inicial</td>
+                                <td style="padding: 1rem; text-align: center; color: #e74c3c;">$5.000.000 - $15.000.000</td>
+                                <td style="padding: 1rem; text-align: center; color: #27ae60;"><strong>$0 (Demo Gratuita)</strong></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #eee; background: #f8f9fa;">
+                                <td style="padding: 1rem; font-weight: bold;">Actualizaciones</td>
+                                <td style="padding: 1rem; text-align: center; color: #e74c3c;">$500.000 - $2.000.000/año</td>
+                                <td style="padding: 1rem; text-align: center; color: #27ae60;"><strong>Incluidas</strong></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #eee;">
+                                <td style="padding: 1rem; font-weight: bold;">Soporte Técnico</td>
+                                <td style="padding: 1rem; text-align: center; color: #e74c3c;">$200.000 - $500.000/mes</td>
+                                <td style="padding: 1rem; text-align: center; color: #27ae60;"><strong>Incluido</strong></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #eee; background: #f8f9fa;">
+                                <td style="padding: 1rem; font-weight: bold;">Capacitación</td>
+                                <td style="padding: 1rem; text-align: center; color: #e74c3c;">$300.000 - $800.000</td>
+                                <td style="padding: 1rem; text-align: center; color: #27ae60;"><strong>Incluida</strong></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 1rem; font-weight: bold;">Costo Mensual Empresa Pequeña</td>
+                                <td style="padding: 1rem; text-align: center; color: #e74c3c;">$800.000 - $1.500.000</td>
+                                <td style="padding: 1rem; text-align: center; color: #27ae60;"><strong>$150.000 - $350.000</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="benefits" class="section">
+                <div class="benefits">
+                    <h3>🎯 Beneficios para su Negocio</h3>
+                    <div class="benefits-grid">
+                        <div class="benefit-item">
+                            <div class="benefit-icon">⚡</div>
+                            <h4>Automatización Total</h4>
+                            <p>Elimine tareas manuales y reduzca errores humanos</p>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">💰</div>
+                            <h4>Reducción de Costos</h4>
+                            <p>Ahorre hasta 70% vs sistemas tradicionales</p>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">📊</div>
+                            <h4>Información en Tiempo Real</h4>
+                            <p>Tome decisiones basadas en datos actualizados</p>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">🔒</div>
+                            <h4>Seguridad Garantizada</h4>
+                            <p>Protección de datos y respaldos automáticos</p>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">📱</div>
+                            <h4>Acceso Remoto</h4>
+                            <p>Trabaje desde cualquier lugar con internet</p>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">⚖️</div>
+                            <h4>Cumplimiento Legal</h4>
+                            <p>Reportes fiscales y contables según normativa</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="features" class="section">
+                <h2>🌟 Características Destacadas</h2>
+
+                <div class="highlight">
+                    <strong>🌐 Plataforma Multi-Empresa y Multi-Usuario:</strong> Una sola instalación puede manejar múltiples empresas 
+                    con usuarios independientes y permisos específicos. Ideal para contadores públicos, grupos empresariales o franquicias.
+                </div>
+
+                <h3>🖥️ Modalidades de Funcionamiento</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>🌐 Versión Web (Recomendada)</h4>
+                        <p>• Acceso desde cualquier navegador<br>
+                        • Trabajo remoto y colaborativo<br>
+                        • Actualizaciones automáticas<br>
+                        • Respaldos en la nube<br>
+                        • Acceso desde móviles y tablets</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>💻 Versión Local</h4>
+                        <p>• Instalación en servidor propio<br>
+                        • Control total de datos<br>
+                        • Funciona sin internet<br>
+                        • Red local de alta velocidad<br>
+                        • Máxima seguridad interna</p>
+                    </div>
+                </div>
+
+                <h3>💼 Para el Área Contable</h3>
+                <ul style="margin-left: 2rem;">
+                    <li><strong>Plan de Cuentas Personalizable:</strong> Adapte la estructura contable a su empresa</li>
+                    <li><strong>Causación Automática:</strong> Los documentos generan automáticamente los asientos contables</li>
+                    <li><strong>Libros Oficiales:</strong> Libro Diario, Mayor, Balance de Prueba automáticos</li>
+                    <li><strong>Cierre de Períodos:</strong> Cierre contable con validaciones y controles</li>
+                    <li><strong>Reportes Financieros:</strong> Estado de Resultados, Balance General, Flujo de Caja</li>
+                    <li><strong>Centros de Costo:</strong> Análisis de rentabilidad por departamento o proyecto</li>
+                    <li><strong>Plantillas Contables:</strong> Automatice asientos repetitivos</li>
+                    <li><strong>Auditoría Completa:</strong> Trazabilidad de todos los cambios y operaciones</li>
+                </ul>
+
+                <h3>📦 Para el Área de Inventarios</h3>
+                <ul style="margin-left: 2rem;">
+                    <li><strong>Múltiples Bodegas:</strong> Controle inventarios en diferentes ubicaciones</li>
+                    <li><strong>Valorización por Métodos:</strong> FIFO, Promedio Ponderado, Último Costo</li>
+                    <li><strong>Control de Stock:</strong> Alertas de stock mínimo y máximo</li>
+                    <li><strong>Trazabilidad:</strong> Seguimiento completo de movimientos de productos</li>
+                    <li><strong>Listas de Precios:</strong> Múltiples listas con reglas automáticas</li>
+                    <li><strong>Ajustes de Inventario:</strong> Correcciones con justificación y auditoría</li>
+                    <li><strong>Traslados entre Bodegas:</strong> Control de movimientos internos</li>
+                    <li><strong>Características de Productos:</strong> Atributos personalizables por grupo</li>
+                    <li><strong>Reportes de Valorización:</strong> Análisis de costos y rentabilidad</li>
+                </ul>
+
+                <h3>🧾 Para el Área Comercial</h3>
+                <ul style="margin-left: 2rem;">
+                    <li><strong>Facturación Rápida:</strong> Interface intuitiva para facturación ágil</li>
+                    <li><strong>Cálculo Automático de Impuestos:</strong> IVA, ICA, Retenciones automáticas</li>
+                    <li><strong>Formatos Personalizables:</strong> Diseñe sus propios formatos de impresión</li>
+                    <li><strong>Gestión de Cartera:</strong> Control automático de vencimientos y cobranzas</li>
+                    <li><strong>Reportes de Ventas:</strong> Análisis de rentabilidad por producto, cliente, vendedor</li>
+                    <li><strong>Cotizaciones:</strong> Genere cotizaciones que se convierten en facturas</li>
+                    <li><strong>Remisiones:</strong> Control de entregas y despachos</li>
+                    <li><strong>Gestión de Terceros:</strong> Base de datos completa de clientes y proveedores</li>
+                </ul>
+
+                <h3>🏭 Para el Área de Producción</h3>
+                <ul style="margin-left: 2rem;">
+                    <li><strong>Órdenes de Producción:</strong> Planificación y seguimiento de procesos</li>
+                    <li><strong>Recetas de Producción:</strong> Fórmulas con materias primas y recursos</li>
+                    <li><strong>Control de Costos:</strong> MOD, CIF y materiales por producto</li>
+                    <li><strong>Configuración Flexible:</strong> Adapte a su proceso productivo</li>
+                </ul>
+
+                <h3>💰 Para el Área Financiera</h3>
+                <ul style="margin-left: 2rem;">
+                    <li><strong>Cuentas por Cobrar:</strong> Seguimiento automático de cartera</li>
+                    <li><strong>Cuentas por Pagar:</strong> Control de obligaciones con proveedores</li>
+                    <li><strong>Aplicación de Pagos:</strong> Cruce automático de documentos</li>
+                    <li><strong>Flujo de Caja:</strong> Proyecciones y análisis financiero</li>
+                </ul>
+
+                <h3>👥 Para Recursos Humanos</h3>
+                <ul style="margin-left: 2rem;">
+                    <li><strong>Nómina Automatizada:</strong> Cálculo de salarios, prestaciones y deducciones</li>
+                    <li><strong>Tipos de Contrato:</strong> Indefinido, fijo, obra, prestación de servicios</li>
+                    <li><strong>Liquidaciones:</strong> Cálculo automático de cesantías y vacaciones</li>
+                    <li><strong>Reportes Laborales:</strong> Certificados, paz y salvos, reportes oficiales</li>
+                </ul>
+
+                <h3>🏢 Para Propiedad Horizontal</h3>
+                <ul style="margin-left: 2rem;">
+                    <li><strong>Cuotas de Administración:</strong> Facturación automática por apartamento</li>
+                    <li><strong>Gastos Comunes:</strong> Control por torre, bloque o zona</li>
+                    <li><strong>Reportes para Asambleas:</strong> Estados financieros especializados</li>
+                    <li><strong>Control de Proveedores:</strong> Gestión de servicios y mantenimiento</li>
+                </ul>
+
+                <h3>🏗️ Para Activos Fijos</h3>
+                <ul style="margin-left: 2rem;">
+                    <li><strong>Registro de Activos:</strong> Control detallado de bienes de la empresa</li>
+                    <li><strong>Depreciación Automática:</strong> Cálculo según métodos fiscales</li>
+                    <li><strong>Novedades:</strong> Compras, ventas, bajas, traslados</li>
+                    <li><strong>Reportes Fiscales:</strong> Información para declaraciones tributarias</li>
+                </ul>
+
+                <div class="success">
+                    <strong>✅ Integración Total:</strong> Todos los módulos están completamente integrados. 
+                    Una factura actualiza automáticamente inventarios, contabilidad y cartera.
+                </div>
+            </section>
+
+            <section id="technology" class="section">
+                <h2>🔧 Tecnología de Vanguardia</h2>
+                
+                <div class="tech-stack">
+                    <h3 style="color: white; text-align: center; margin-bottom: 1rem;">Stack Tecnológico</h3>
+                    <div class="tech-grid">
+                        <div class="tech-item">
+                            <h4>Backend</h4>
+                            <p>Python + FastAPI<br>Alta performance y escalabilidad</p>
+                        </div>
+                        <div class="tech-item">
+                            <h4>Frontend</h4>
+                            <p>React + Next.js<br>Interface moderna y responsiva</p>
+                        </div>
+                        <div class="tech-item">
+                            <h4>Base de Datos</h4>
+                            <p>PostgreSQL<br>Robusta y confiable</p>
+                        </div>
+                        <div class="tech-item">
+                            <h4>Seguridad</h4>
+                            <p>JWT + Encriptación<br>Máxima protección de datos</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>🚀 Ventajas Técnicas</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>⚡ Alto Rendimiento</h4>
+                        <p>Arquitectura optimizada para manejar grandes volúmenes de transacciones sin pérdida de velocidad.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📱 Multiplataforma</h4>
+                        <p>Funciona en Windows, Mac, Linux y dispositivos móviles desde cualquier navegador web.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🔄 Respaldos Automáticos</h4>
+                        <p>Sistema de respaldos programados que garantiza la seguridad de su información.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🔧 Personalizable</h4>
+                        <p>Adapte campos, reportes y procesos según las necesidades específicas de su empresa.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>🏢 Plataforma Multi-Empresa: Ideal para Contadores y Grupos Empresariales</h2>
+                
+                <div class="highlight">
+                    <strong>🎯 Una Sola Instalación, Múltiples Empresas:</strong> Finaxis permite manejar varias empresas 
+                    desde una sola plataforma, ideal para contadores públicos, grupos empresariales o franquicias.
+                </div>
+
+                <h3>👥 Gestión Multi-Usuario Avanzada</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>🔐 Control de Acceso Granular</h4>
+                        <p>• Usuarios por empresa específica<br>
+                        • Roles y permisos personalizables<br>
+                        • Acceso a módulos específicos<br>
+                        • Auditoría de accesos y operaciones</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🏢 Separación Total de Datos</h4>
+                        <p>• Cada empresa mantiene sus datos independientes<br>
+                        • No hay cruce de información entre empresas<br>
+                        • Respaldos individuales por empresa<br>
+                        • Configuraciones independientes</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📊 Reportes Consolidados</h4>
+                        <p>• Reportes individuales por empresa<br>
+                        • Consolidación de múltiples empresas<br>
+                        • Dashboard ejecutivo multi-empresa<br>
+                        • Análisis comparativo entre empresas</p>
+                    </div>
+                </div>
+
+                <h3>💼 Casos de Uso Multi-Empresa</h3>
+                <ul style="margin-left: 2rem;">
+                    <li><strong>Contadores Públicos:</strong> Maneje la contabilidad de todos sus clientes desde una sola plataforma</li>
+                    <li><strong>Grupos Empresariales:</strong> Controle múltiples empresas del grupo con reportes consolidados</li>
+                    <li><strong>Franquicias:</strong> Cada franquicia mantiene su contabilidad independiente con reportes centralizados</li>
+                    <li><strong>Empresas con Sucursales:</strong> Cada sucursal como empresa independiente con consolidación</li>
+                </ul>
+
+                <div class="success">
+                    <strong>💰 Ventaja Económica:</strong> En lugar de comprar múltiples licencias, pague solo por el 
+                    consumo total de asientos contables de todas las empresas. ¡Ahorro garantizado!
+                </div>
+            </section>
+
+            <section id="implementation" class="section">
+                <h2>🚀 Proceso de Implementación</h2>
+
+                <div class="highlight">
+                    <strong>⏱️ Implementación Rápida:</strong> Su sistema estará funcionando en menos de una semana 
+                    con migración completa de datos y capacitación incluida.
+                </div>
+
+                <h3>📋 Fases de Implementación</h3>
+                
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>1️⃣ Análisis y Configuración</h4>
+                        <p>• Análisis de procesos actuales<br>
+                        • Configuración del plan de cuentas<br>
+                        • Parametrización de la empresa<br>
+                        • Configuración de usuarios y permisos</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h4>2️⃣ Migración de Datos</h4>
+                        <p>• Importación de terceros (clientes/proveedores)<br>
+                        • Migración de productos e inventarios<br>
+                        • Saldos iniciales contables<br>
+                        • Cartera y cuentas por pagar</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h4>3️⃣ Capacitación</h4>
+                        <p>• Capacitación al equipo contable<br>
+                        • Entrenamiento en facturación<br>
+                        • Manejo de inventarios<br>
+                        • Generación de reportes</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h4>4️⃣ Puesta en Marcha</h4>
+                        <p>• Pruebas de funcionamiento<br>
+                        • Validación de procesos<br>
+                        • Acompañamiento inicial<br>
+                        • Soporte técnico continuo</p>
+                    </div>
+                </div>
+
+                <h3>🎓 Capacitación Incluida</h3>
+                <ul style="margin-left: 2rem;">
+                    <li><strong>Manual de Usuario Completo:</strong> Documentación detallada de todos los procesos</li>
+                    <li><strong>Videos Tutoriales:</strong> Biblioteca de videos explicativos paso a paso</li>
+                    <li><strong>Capacitación Presencial/Virtual:</strong> Sesiones de entrenamiento personalizadas</li>
+                    <li><strong>Soporte Técnico:</strong> Línea directa de soporte durante y después de la implementación</li>
+                </ul>
+
+                <div class="warning">
+                    <strong>⚠️ Importante:</strong> Durante la implementación, su sistema actual seguirá funcionando 
+                    normalmente. La migración se realiza sin interrumpir sus operaciones diarias.
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>💡 Casos de Uso Reales</h2>
+
+                <h3>🏪 Empresa Comercial</h3>
+                <p><strong>Problema:</strong> Una distribuidora manejaba inventarios en Excel y facturación manual, perdiendo control de costos y rentabilidad.</p>
+                <p><strong>Solución con Finaxis:</strong></p>
+                <ul style="margin-left: 2rem;">
+                    <li>Control automático de inventarios en 5 bodegas</li>
+                    <li>Facturación electrónica con cálculo automático de márgenes</li>
+                    <li>Reportes de rentabilidad por producto y cliente</li>
+                    <li>Control de cartera con alertas de vencimiento</li>
+                </ul>
+                <div class="success">
+                    <strong>Resultado:</strong> Reducción del 40% en tiempo de facturación y aumento del 25% en rentabilidad 
+                    por mejor control de costos.
+                </div>
+
+                <h3>🏭 Empresa Manufacturera</h3>
+                <p><strong>Problema:</strong> Una fábrica no tenía control preciso de costos de producción ni trazabilidad de materias primas.</p>
+                <p><strong>Solución con Finaxis:</strong></p>
+                <ul style="margin-left: 2rem;">
+                    <li>Módulo de producción con recetas y órdenes de trabajo</li>
+                    <li>Control de costos por producto terminado</li>
+                    <li>Trazabilidad completa de materias primas</li>
+                    <li>Integración automática con contabilidad</li>
+                </ul>
+                <div class="success">
+                    <strong>Resultado:</strong> Control preciso de costos de producción y reducción del 30% en desperdicios 
+                    por mejor planificación.
+                </div>
+
+                <h3>🏢 Conjunto Residencial</h3>
+                <p><strong>Problema:</strong> Administración manual de cuotas, gastos comunes y proveedores generaba errores y reclamos.</p>
+                <p><strong>Solución con Finaxis:</strong></p>
+                <ul style="margin-left: 2rem;">
+                    <li>Módulo especializado de Propiedad Horizontal</li>
+                    <li>Facturación automática de cuotas de administración</li>
+                    <li>Control de gastos comunes por torre/bloque</li>
+                    <li>Reportes financieros para asambleas</li>
+                </ul>
+                <div class="success">
+                    <strong>Resultado:</strong> Transparencia total en el manejo de recursos y reducción del 90% en reclamos 
+                    por errores administrativos.
+                </div>
+            </section>
+
+            <div class="cta">
+                <h3>🚀 ¿Listo para Transformar su Empresa?</h3>
+                <p style="font-size: 1.2rem; margin-bottom: 1rem;">
+                    Finaxis es más que un software contable, es la herramienta que llevará su empresa al siguiente nivel. 
+                    Con tecnología de vanguardia, soporte especializado y una implementación sin complicaciones.
+                </p>
+                <p style="font-size: 1rem; opacity: 0.9; margin-bottom: 1.5rem;">
+                    ✅ Versión demo disponible<br>
+                    ✅ Sin permanencia mínima<br>
+                    ✅ Capacitación incluida<br>
+                    ✅ Soporte técnico incluido<br>
+                    ✅ Todas las funcionalidades disponibles
+                </p>
+                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <a href="#" class="cta-button">📞 Solicitar Información</a>
+                    <a href="#" class="cta-button" style="background: transparent; border: 2px solid white; color: white;">🎯 Ver Demostración</a>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 Sistema Finaxis - Solución Contable Integral</p>
+            <p>Desarrollado con tecnología de vanguardia para empresas que buscan crecer</p>
+        </footer>
+    </div>
+
+    <script>
+        // Smooth scrolling para los enlaces de navegación
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Efecto de aparición al hacer scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Aplicar el efecto a las secciones
+        document.querySelectorAll('.section, .feature-card').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(el);
+        });
+
+        // Mostrar la primera sección inmediatamente
+        const firstSection = document.querySelector('.section');
+        if (firstSection) {
+            firstSection.style.opacity = '1';
+            firstSection.style.transform = 'translateY(0)';
+        }
+    </script>
+</body>
+</html>

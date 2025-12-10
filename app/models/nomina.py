@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Boolean, Enum, Numeric, Text
+from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Boolean, Enum, Numeric, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 import enum
 from datetime import date
@@ -34,6 +34,25 @@ class EstadoEmpleado(str, enum.Enum):
 # MODELOS
 # ==========================================================
 
+class TipoNomina(Base):
+    """
+    Define los tipos de nómina configurables (Ej: Administrativa, Operativa, Gerencial).
+    Cada tipo puede tener su propia periodicidad (futuro) o configuración contable específica (futuro).
+    """
+    __tablename__ = "nomina_tipos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    empresa_id = Column(Integer, ForeignKey("empresas.id"))
+    nombre = Column(String(100), nullable=False) # Ej: Administrativa, Operativa
+    descripcion = Column(String(255), nullable=True)
+    
+    # Opcional: Periodicidad por defecto para este tipo
+    periodo_pago = Column(Enum(PeriodoPago), default=PeriodoPago.MENSUAL)
+
+    # Relaciones
+    empleados = relationship("Empleado", back_populates="tipo_nomina")
+
+
 class Empleado(Base):
     __tablename__ = "nomina_empleados"
 
@@ -54,6 +73,10 @@ class Empleado(Base):
     fecha_retiro = Column(Date, nullable=True)
     tipo_contrato = Column(Enum(TipoContrato), default=TipoContrato.INDEFINIDO)
     cargo = Column(String(100), nullable=True)
+    
+    # Clasificación de Nómina (NUEVO)
+    tipo_nomina_id = Column(Integer, ForeignKey("nomina_tipos.id"), nullable=True)
+    tipo_nomina = relationship("TipoNomina", back_populates="empleados")
     
     # Información Salarial
     salario_base = Column(Numeric(18, 2), default=0)
@@ -76,7 +99,12 @@ class ConfiguracionNomina(Base):
     __tablename__ = "nomina_configuracion"
 
     id = Column(Integer, primary_key=True, index=True)
-    empresa_id = Column(Integer, ForeignKey("empresas.id"), unique=True)
+    empresa_id = Column(Integer, ForeignKey("empresas.id")) # Unique removed here, added to constraint below
+    tipo_nomina_id = Column(Integer, ForeignKey("nomina_tipos.id"), nullable=True) # If null -> Global Default? Or just restrict to Types. Let's make it nullable for safety but ideally 1-1.
+
+    __table_args__ = (
+        UniqueConstraint('empresa_id', 'tipo_nomina_id', name='uq_config_empresa_tipo'),
+    )
     
     # Configuración General
     tipo_documento_id = Column(Integer, ForeignKey("tipos_documento.id"), nullable=True)

@@ -37,6 +37,17 @@ def get_receta(
     if not receta:
         raise HTTPException(status_code=404, detail="Receta no encontrada")
     return receta
+@router.put("/recetas/{receta_id}", response_model=schemas_prod.RecetaResponse)
+def update_receta(
+    receta_id: int,
+    receta: schemas_prod.RecetaUpdate,
+    db: Session = Depends(database.get_db),
+    current_user: Usuario = Depends(security.get_current_user)
+):
+    updated = service_prod.update_receta(db, receta_id, receta, current_user.empresa_id)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Receta no encontrada")
+    return updated
 
 # --- ORDENES DE PRODUCCION ---
 
@@ -46,8 +57,6 @@ def create_orden(
     db: Session = Depends(database.get_db),
     current_user: Usuario = Depends(security.get_current_user)
 ):
-    return service_prod.create_orden(db, orden, current_user.empresa_id, current_user.id)
-
     return service_prod.create_orden(db, orden, current_user.empresa_id, current_user.id)
 
 @router.get("/ordenes", response_model=List[schemas_prod.OrdenProduccionResponse])
@@ -107,3 +116,111 @@ def cerrar_orden(
     Calcula costos finales, ingresa producto terminado a bodega y genera contabilidad.
     """
     return service_prod.cerrar_orden(db, orden_id, cantidad_real, current_user.empresa_id, current_user.id)
+
+# --- LIFECYCLE (ANULAR / ARCHIVAR / ELIMINAR) ---
+
+@router.post("/ordenes/{orden_id}/anular", response_model=schemas_prod.OrdenProduccionResponse)
+def anular_orden(
+    orden_id: int,
+    motivo: str = Body(..., embed=True),
+    db: Session = Depends(database.get_db),
+    current_user: Usuario = Depends(security.get_current_user)
+):
+    return service_prod.anular_orden(db, orden_id, motivo, current_user.empresa_id, current_user.id)
+
+@router.post("/ordenes/{orden_id}/archivar", response_model=schemas_prod.OrdenProduccionResponse)
+def archivar_orden(
+    orden_id: int,
+    archivada: bool = Body(..., embed=True),
+    db: Session = Depends(database.get_db),
+    current_user: Usuario = Depends(security.get_current_user)
+):
+    return service_prod.archivar_orden(db, orden_id, archivada, current_user.empresa_id)
+
+@router.delete("/ordenes/{orden_id}")
+def delete_orden(
+    orden_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: Usuario = Depends(security.get_current_user)
+):
+    return service_prod.delete_orden(db, orden_id, current_user.empresa_id)
+
+@router.delete("/recetas/{receta_id}")
+def delete_receta(
+    receta_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: Usuario = Depends(security.get_current_user)
+):
+    # TODO: Validar que no tenga órdenes asociadas?
+    # Por ahora borrado directo (SQLAlchemy cascade handled in relationship?)
+    # En Receta no pusimos cascade en Orden -> Receta (es OneToMany Receta->Orden)
+    # Si hay órdenes, fallará FK. Capturar error?
+    try:
+        updated = service_prod.update_receta(db, receta_id, schemas_prod.RecetaUpdate(activa=False), current_user.empresa_id) # Soft delete better? Or Hard?
+        # User asked for Delete. Let's try Delete if no orders.
+        # But for now, let's implement logic in service if needed.
+        # Check service_prod.delete_receta? Not implemented yet.
+        # For now, return status 501 or implement quick delete in service.
+        pass
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="No se puede eliminar la receta (posiblemente en uso).")
+    
+    # Let's implement delete_receta in service too or use direct db delete here for MVP
+    receta = service_prod.get_receta_by_id(db, receta_id, current_user.empresa_id)
+    if not receta: raise HTTPException(404)
+    db.delete(receta)
+    try:
+        db.commit()
+    except:
+        db.rollback()
+        raise HTTPException(400, detail="No se puede eliminar. Puede tener órdenes asociadas.")
+    return {"message": "Receta eliminada"}
+
+from fastapi import Response
+from app.services import pdf_produccion
+
+# --- CONFIGURACION ---
+from app.services import produccion_configuracion as service_config
+
+@router.get("/configuracion", response_model=Optional[schemas_prod.ConfigProduccionResponse])
+def get_config(
+    db: Session = Depends(database.get_db),
+    current_user: Usuario = Depends(security.get_current_user)
+):
+    return service_config.get_configuracion(db, current_user.empresa_id)
+
+@router.post("/configuracion", response_model=schemas_prod.ConfigProduccionResponse)
+def save_config(
+    config: schemas_prod.ConfigProduccionCreate,
+    db: Session = Depends(database.get_db),
+    current_user: Usuario = Depends(security.get_current_user)
+):
+    return service_config.save_configuracion(db, config, current_user.empresa_id)
+
+# --- PDF REPORTS ---
+
+@router.get("/ordenes/{orden_id}/pdf")
+def get_pdf_orden(
+    orden_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: Usuario = Depends(security.get_current_user)
+):
+    orden = service_prod.get_orden_by_id(db, orden_id, current_user.empresa_id)
+    if not orden: raise HTTPException(404, detail="Orden no encontrada")
+    
+    # Pass empresa object directly from current_user relationship (lazy loaded)
+    pdf_content = pdf_produccion.generar_pdf_orden_produccion(orden, current_user.empresa)
+    return Response(content=pdf_content, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename=Orden_{orden.numero_orden}.pdf"})
+
+@router.get("/recetas/{receta_id}/pdf")
+def get_pdf_receta(
+    receta_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: Usuario = Depends(security.get_current_user)
+):
+    receta = service_prod.get_receta_by_id(db, receta_id, current_user.empresa_id)
+    if not receta: raise HTTPException(404, detail="Receta no encontrada")
+    
+    pdf_content = pdf_produccion.generar_pdf_receta(receta, current_user.empresa)
+    return Response(content=pdf_content, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename=Receta_{receta.nombre}.pdf"})
+
