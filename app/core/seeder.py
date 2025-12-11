@@ -81,9 +81,22 @@ def seed_database():
 
         # --- FASE 3: CREAR EMPRESAS Y USUARIOS INICIALES ---
         print("--> Creando empresa y usuarios de demostración...")
-        empresa_demo = Empresa(razon_social="Empresa de Demostración", nit="800000001-1", fecha_inicio_operaciones=datetime.fromisoformat("2025-01-01").date(), limite_registros=1500)
-        db.add(empresa_demo)
-        db.flush() # Asegurar que empresa_demo tenga su ID
+        
+        # Check if exists (Idempotency Fix)
+        empresa_demo = db.query(Empresa).filter(Empresa.nit == "800000001-1").first()
+        
+        if not empresa_demo:
+            empresa_demo = Empresa(
+                razon_social="Empresa de Demostración", 
+                nit="800000001-1", 
+                fecha_inicio_operaciones=datetime.fromisoformat("2025-01-01").date(), 
+                limite_registros=1500
+            )
+            db.add(empresa_demo)
+            db.flush() # Asegurar que empresa_demo tenga su ID
+            print(f"--> Empresa Demo Creada (ID: {empresa_demo.id})")
+        else:
+            print(f"--> Empresa Demo ya existe (ID: {empresa_demo.id}). Saltando creación.")
         
         # --- NUEVO: SEMBRAR PUC SIMPLIFICADO ---
         seed_puc_simplificado(db, empresa_demo.id)
