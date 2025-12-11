@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auxiliar de Cartera</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Auxiliar de Cartera</h1>
+<p>El reporte de <strong>Auxiliar de Cartera</strong> es la herramienta definitiva para auditar los cruces entre facturación y recaudo. A diferencia del "Estado de Cuenta" que muestra saldos pendientes, este reporte detalla la historia completa de pagos y cobros.</p>
+<h2>Dos Perspectivas, Un Mismo Objetivo</h2>
+<p>Este reporte ofrece dos formas de visualizar la información, dependiendo de su necesidad de auditoría:</p>
+<h3>1. Perspectiva de Facturas (Cuentas de Cobro)</h3>
+<p><em>Ideal para responder: "¿Qué pagos se le han aplicado a la factura X?"</em></p>
+<p>En este modo, el reporte lista todas las facturas emitidas al cliente en el rango de fechas seleccionado.
+-   <strong>Columnas Principales</strong>: Fecha, Documento, Valor Original, Total Abonos y Saldo Actual de la factura.
+-   <strong>Detalle de Abonos</strong>: Al expandir cada factura, verá una lista detallada de todos los <strong>Recibos de Caja</strong> que han amortizado esa deuda específica, con sus fechas y montos.</p>
+<h3>2. Perspectiva de Recibos de Caja (Pagos)</h3>
+<p><em>Ideal para responder: "¿Qué facturas cubrió el cliente con el pago Y?"</em></p>
+<p>En este modo, el reporte lista todos los pagos recibidos del cliente.
+-   <strong>Columnas Principales</strong>: Fecha, Número de Recibo y Valor Total del Recibo.
+-   <strong>Cruces con Facturas</strong>: Al expandir cada recibo, verá el desglose de cómo se distribuyó ese dinero entre las diferentes facturas pendientes (imputación de pagos).</p>
+<h2>Generación del Reporte</h2>
+<ol>
+<li><strong>Cliente</strong>: Seleccione el tercero a auditar.</li>
+<li><strong>Rango de Fechas</strong>: Defina el periodo de análisis.</li>
+<li><strong>Perspectiva</strong>: Elija entre "Facturas" o "Recibos de Caja" haciendo clic en los botones correspondientes.</li>
+<li>Haga clic en <strong>"Generar Reporte"</strong>.</li>
+</ol>
+<h2>Exportación</h2>
+<p>Puede descargar la información en dos formatos:
+-   <strong>PDF</strong>: Genera un documento oficial con el detalle seleccionado.
+-   <strong>CSV</strong>: Exporta la tabla plana para auditoría en Excel.</p>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

@@ -154,7 +154,7 @@ export default function Erradicador({ todasLasEmpresas }) {
       <div className="flex justify-between items-center mb-4 border-b pb-2">
         <h2 className="text-2xl font-bold text-gray-800">Inspector y Erradicador Universal</h2>
         <button
-          onClick={() => window.open('/manual?file=capitulo_23_erradicador.md', '_blank')}
+          onClick={() => window.open('/manual/capitulo_23_erradicador.html', '_blank')}
           className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors"
           title="Ver Manual de Usuario"
         >

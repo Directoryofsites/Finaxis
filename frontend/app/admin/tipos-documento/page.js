@@ -80,7 +80,7 @@ export default function TiposDocumentoPage() {
                     {/* Botones de Acción Superior */}
                     <div className="flex gap-2">
                         <button
-                            onClick={() => window.open('/manual?file=capitulo_2_tipos_documento.md', '_blank')}
+                            onClick={() => window.open('/manual/capitulo_2_tipos_documento.html', '_blank')}
                             className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2"
                             title="Ver Manual de Usuario"
                         >

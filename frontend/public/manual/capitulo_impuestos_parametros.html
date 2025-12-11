@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Técnico y de Usuario: Configuración Maestra de Parámetros Tributarios</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual Técnico y de Usuario: Configuración Maestra de Parámetros Tributarios</h1>
+<h2>1. Introducción y Alcance</h2>
+<p>Este documento detalla el funcionamiento, operación y lógica del módulo de <strong>Parámetros de Impuestos</strong> dentro del ecosistema ContaPY. Este módulo es el "cerebro" de la gestión tributaria, ya que define las reglas, tasas y periodicidades que el sistema utilizará automáticamente para calcular impuestos en facturas, compras y declaraciones.</p>
+<p><strong>Importancia Crítica:</strong> Una configuración errónea en este módulo resultará en cálculos incorrectos en toda la contabilidad. Se recomienda que esta sección sea administrada únicamente por el Contador General o el Director Financiero.</p>
+<hr />
+<h2>2. Interfaz de Usuario: Desglose Componente por Componente</h2>
+<p>La interfaz ha sido diseñada para ser intuitiva pero rigurosa. A continuación, se explica cada elemento visible en la pantalla:</p>
+<h3>A. Encabezado y Herramientas</h3>
+<ul>
+<li><strong>Título del Impuesto:</strong> Indica claramente qué impuesto se está configurando (ej. "Configuración de IVA").</li>
+<li><strong>Botón "Ver Manual de Configuración":</strong> Acceso directo a este documento. Úselo siempre que tenga dudas sobre un campo específico.</li>
+</ul>
+<h3>B. Panel de Tarifas (Tabla Principal)</h3>
+<p>Este es el corazón de la configuración. Aquí se listan todas las variantes de tarifas que su empresa maneja para el impuesto seleccionado.</p>
+<ul>
+<li><strong>Columna "Concepto":</strong> Nombre descriptivo de la tarifa. Ejemplos: "Tarifa General", "Bienes Exentos", "Servicios al 5%". Este nombre aparecerá en los selectores al momento de crear facturas.</li>
+<li><strong>Columna "Valor":</strong> El número base para el cálculo matemático.</li>
+<li><strong>Columna "Unidad":</strong> Define cómo se interpreta el valor:<ul>
+<li><strong>% (Porcentaje):</strong> El uso más común. El sistema multiplicará la base gravable por este porcentaje (ej. Base * 0.19).</li>
+<li><strong>UVT (Unidad de Valor Tributario):</strong> Usado para topes o sanciones. El sistema multiplicará este valor por la UVT vigente del año.</li>
+<li><strong>COP (Pesos):</strong> Valores fijos absolutos.</li>
+</ul>
+</li>
+<li><strong>Columna "Acciones":</strong> Contiene el botón de <strong>Papelera</strong> para eliminar tarifas obsoletas.</li>
+</ul>
+<h3>C. Panel de Periodicidad</h3>
+<p>Define el ciclo fiscal de la obligación.
+*   <strong>Bimestral:</strong> Ene-Feb, Mar-Abr, etc. (Común para Grandes Contribuyentes).
+*   <strong>Cuatrimestral:</strong> Ene-Abr, May-Ago, Sep-Dic.
+*   <strong>Anual:</strong> Ene-Dic (Común para Renta o Régimen Simple).</p>
+<h3>D. Botón "Guardar Cambios"</h3>
+<p>Ubicado en la parte inferior derecha. <strong>Es el botón más importante.</strong> Si usted agrega tarifas o cambia la periodicidad pero sale de la página sin presionar este botón, <strong>LOS CAMBIOS SE PERDERÁN</strong>. Al presionarlo, el sistema guarda la configuración en la memoria persistente del navegador (y posteriormente en la base de datos).</p>
+<hr />
+<h2>3. Procedimientos Paso a Paso</h2>
+<h3>3.1. Cómo Agregar una Nueva Tarifa</h3>
+<p>Siga estos pasos rigurosamente para crear una nueva regla de impuesto:</p>
+<ol>
+<li>Ubique el botón <strong>"Agregar"</strong> (azul claro con icono de cruz) en la esquina superior derecha de la tabla de tarifas.</li>
+<li>Se desplegará una ventana modal (Pop-up) llamada "Nueva Tarifa".</li>
+<li><strong>Campo Concepto:</strong> Escriba un nombre claro y único.<ul>
+<li><em>Correcto:</em> "IVA Servicios Hoteleros"</li>
+<li><em>Incorrecto:</em> "Tarifa 2" (No es descriptivo).</li>
+</ul>
+</li>
+<li><strong>Campo Valor:</strong> Ingrese solo el número. No use símbolos de porcentaje ni comas para miles. Use punto (.) para decimales si es necesario.<ul>
+<li><em>Ejemplo:</em> Para 19%, escriba <code>19</code>. Para 2.5%, escriba <code>2.5</code>.</li>
+</ul>
+</li>
+<li><strong>Campo Unidad:</strong> Seleccione <code>%</code> para la mayoría de impuestos. Seleccione <code>UVT</code> o <code>COP</code> solo si la normativa específica lo exige.</li>
+<li>Haga clic en el botón azul <strong>"Agregar"</strong> dentro de la ventana modal.</li>
+<li>Verifique que la nueva fila apareció inmediatamente en la tabla de fondo.</li>
+<li><strong>FINALIZAR:</strong> Haga clic en el botón verde <strong>"Guardar Cambios"</strong> en la pantalla principal.</li>
+</ol>
+<h3>3.2. Cómo Eliminar una Tarifa Obsoleta</h3>
+<p>Si una tarifa ya no está vigente (ej. una reforma tributaria eliminó el IVA del 5% para cierto sector):</p>
+<ol>
+<li>Identifique la fila exacta en la tabla.</li>
+<li>Haga clic en el icono rojo de <strong>Papelera</strong> (Basura).</li>
+<li>El sistema le pedirá confirmación: "¿Está seguro de eliminar esta tarifa?".</li>
+<li>Acepte la confirmación.</li>
+<li><strong>FINALIZAR:</strong> Haga clic en el botón verde <strong>"Guardar Cambios"</strong> para hacer permanente la eliminación.</li>
+</ol>
+<h3>3.3. Cómo Cambiar la Periodicidad</h3>
+<p>Si su empresa cambió de régimen (ej. pasó de responsable anual a bimestral por aumento de ingresos):</p>
+<ol>
+<li>Diríjase al panel inferior "Periodicidad".</li>
+<li>Haga clic sobre el círculo (radio button) de la nueva periodicidad deseada.</li>
+<li>Verifique que el punto azul se haya movido a la nueva opción.</li>
+<li><strong>FINALIZAR:</strong> Haga clic en el botón verde <strong>"Guardar Cambios"</strong>.<ul>
+<li><em>Nota:</em> Esto recalculará automáticamente las fechas de vencimiento en el módulo de Calendario.</li>
+</ul>
+</li>
+</ol>
+<hr />
+<h2>4. Solución de Problemas Frecuentes (Troubleshooting)</h2>
+<p><strong>P: Hice cambios, salí de la página y al volver no están.</strong>
+<strong>R:</strong> Usted olvidó presionar el botón verde "Guardar Cambios". El sistema no guarda automáticamente por seguridad, para evitar cambios accidentales en parámetros delicados. Debe repetir el proceso y guardar.</p>
+<p><strong>P: No puedo eliminar una tarifa.</strong>
+<strong>R:</strong> Verifique si la tarifa está siendo usada en documentos históricos. Por integridad de datos, el sistema podría bloquear la eliminación de tarifas que ya tienen movimientos contables asociados. En ese caso, se recomienda renombrarla a "OBSOLETA - [Nombre]" en lugar de borrarla.</p>
+<p><strong>P: El botón "Agregar" no hace nada.</strong>
+<strong>R:</strong> Asegúrese de haber llenado todos los campos en la ventana modal. Si el campo "Valor" está vacío o tiene letras, el sistema impedirá la creación para evitar errores matemáticos.</p>
+<p><strong>P: ¿Cómo configuro retenciones en la fuente con bases mínimas?</strong>
+<strong>R:</strong> Para Retención en la Fuente, el módulo habilita columnas adicionales para "Base Mínima en UVT" y "Base Mínima en Pesos". Asegúrese de estar en la pestaña de "Retención en la Fuente" para ver estas opciones específicas.</p>
+<hr />
+<h2>5. Glosario Técnico</h2>
+<ul>
+<li><strong>UVT:</strong> Unidad de Valor Tributario. Valor reajustado anualmente por la DIAN.</li>
+<li><strong>Base Gravable:</strong> Valor sobre el cual se aplica la tarifa.</li>
+<li><strong>Tarifa:</strong> Porcentaje o valor fijo definido por la ley.</li>
+<li><strong>Persistencia:</strong> Capacidad del sistema de recordar la información después de cerrar el navegador.</li>
+</ul>
+<hr />
+<p><em>Documento generado automáticamente por el Sistema de Asistencia ContaPY. Última actualización: Diciembre 2025.</em></p>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

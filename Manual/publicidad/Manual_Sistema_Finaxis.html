@@ -30,7 +30,7 @@
         .header {
             background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
             color: white;
-            padding: 2rem;
+            padding: 0.5rem 2rem;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -308,28 +308,20 @@
     <div class="container">
         <header class="header">
             <div class="header-content">
-                <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1rem;">
-                    <svg width="500" height="120" viewBox="0 0 500 120" fill="none" xmlns="http://www.w3.org/2000/svg" style="height: 120px;">
-                        <!-- Logo Finaxis - Versión transparente basada en el original -->
-                        <g transform="translate(20, 20)">
-                            <!-- Triángulo principal turquesa -->
-                            <path d="M0 40 L25 15 L50 40 L25 65 Z" fill="#1CBCCF"/>
-                            <!-- Triángulo dorado superpuesto -->
-                            <path d="M25 25 L50 15 L65 40 L50 55 L40 40 Z" fill="#D4AF37"/>
-                            <!-- Elemento de conexión -->
-                            <path d="M25 40 L40 40" stroke="#0F4C75" stroke-width="3"/>
-                            <!-- Detalles geométricos -->
-                            <circle cx="25" cy="40" r="2" fill="white"/>
-                            <circle cx="40" cy="40" r="2" fill="white"/>
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3rem;">
+                    <svg width="500" height="60" viewBox="0 0 500 60" fill="none" xmlns="http://www.w3.org/2000/svg" style="height: 60px;">
+                        <!-- Logo Finaxis centrado -->
+                        <g transform="translate(180, 15)">
+                            
+                            
+                            
                         </g>
-                        <!-- Texto FINAXIS -->
-                        <text x="120" y="55" font-family="Arial, sans-serif" font-size="42" font-weight="900" fill="#0F4C75" letter-spacing="2px">FINAXIS</text>
-                        <!-- Subtítulo -->
-                        <text x="120" y="75" font-family="Arial, sans-serif" font-size="16" fill="#7F8C8D" font-weight="400">Finanzas, Administración y Sistema Integrado</text>
+                        <!-- Texto FINAXIS centrado -->
+                        <text x="250" y="25" font-family="Arial, sans-serif" font-size="28" font-weight="900" fill="white" letter-spacing="2px" text-anchor="middle">FINAXIS</text>
                     </svg>
+                    <div class="subtitle" style="margin: 0; font-size: 1rem;">Finanzas, Administración y Sistema Integrado</div>
+                    <div class="version" style="font-size: 0.8rem; margin-top: 0.3rem;">Versión 1.0 - Solución Completa</div>
                 </div>
-                <div class="subtitle">Finanzas, Administración y Sistema Integrado</div>
-                <div class="version">Versión 1.0 - Solución Completa</div>
             </div>
         </header>
 
@@ -349,8 +341,8 @@
             <section id="overview" class="section">
                 <h2>🎯 ¿Qué es Finaxis?</h2>
                 <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">
-                    <strong>Finaxis</strong> es un sistema contable integral desarrollado específicamente para empresas que buscan 
-                    automatizar y optimizar todos sus procesos financieros, contables e inventarios en una sola plataforma.
+                    <strong>Finaxis</strong> es un sistema administrativo integral desarrollado específicamente para empresas que buscan 
+                    automatizar y optimizar todos sus procesos financieros en una sola plataforma.
                 </p>
                 
                 <div class="highlight">
@@ -542,42 +534,12 @@
                     • <strong>Usuarios simultáneos = ¡ILIMITADOS!</strong>
                 </div>
 
-                <h3>🆚 Comparación con Sistemas Tradicionales</h3>
-                <div style="overflow-x: auto; margin: 2rem 0;">
-                    <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                        <thead style="background: #34495e; color: white;">
-                            <tr>
-                                <th style="padding: 1rem; text-align: left;">Concepto</th>
-                                <th style="padding: 1rem; text-align: center;">Sistemas Tradicionales</th>
-                                <th style="padding: 1rem; text-align: center;">Finaxis</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr style="border-bottom: 1px solid #eee;">
-                                <td style="padding: 1rem; font-weight: bold;">Costo Inicial</td>
-                                <td style="padding: 1rem; text-align: center; color: #e74c3c;">$5.000.000 - $15.000.000</td>
-                                <td style="padding: 1rem; text-align: center; color: #27ae60;"><strong>$0 (Demo Gratuita)</strong></td>
-                            </tr>
-                            <tr style="border-bottom: 1px solid #eee; background: #f8f9fa;">
-                                <td style="padding: 1rem; font-weight: bold;">Actualizaciones</td>
-                                <td style="padding: 1rem; text-align: center; color: #e74c3c;">$500.000 - $2.000.000/año</td>
-                                <td style="padding: 1rem; text-align: center; color: #27ae60;"><strong>Incluidas</strong></td>
-                            </tr>
-                            <tr style="border-bottom: 1px solid #eee;">
-                                <td style="padding: 1rem; font-weight: bold;">Soporte Técnico</td>
-                                <td style="padding: 1rem; text-align: center; color: #e74c3c;">$200.000 - $500.000/mes</td>
-                                <td style="padding: 1rem; text-align: center; color: #27ae60;"><strong>Incluido</strong></td>
-                            </tr>
-                            <tr style="border-bottom: 1px solid #eee; background: #f8f9fa;">
-                                <td style="padding: 1rem; font-weight: bold;">Capacitación</td>
-                                <td style="padding: 1rem; text-align: center; color: #e74c3c;">$300.000 - $800.000</td>
-                                <td style="padding: 1rem; text-align: center; color: #27ae60;"><strong>Incluida</strong></td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 1rem; font-weight: bold;">Costo Mensual Empresa Pequeña</td>
-                                <td style="padding: 1rem; text-align: center; color: #e74c3c;">$800.000 - $1.500.000</td>
-                                <td style="padding: 1rem; text-align: center; color: #27ae60;"><strong>$150.000 - $350.000</strong></td>
-                            </tr>
+
+
+                
+            
+            
+            </tr>
                         </tbody>
                     </table>
                 </div>

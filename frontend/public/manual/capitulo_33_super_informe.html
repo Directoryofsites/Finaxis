@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Informe: El Reporte Más Potente</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Super Informe: El Reporte Más Potente</h1>
+<p>El <strong>Super Informe</strong> es la herramienta de inteligencia de negocios central de la aplicación. A diferencia de los reportes estáticos, este módulo le permite "conversar" con sus datos mediante combinaciones de filtros.</p>
+<h2>1. Dimensiones de Búsqueda</h2>
+<p>Lo primero es definir <strong>qué</strong> desea consultar.</p>
+<ol>
+<li><strong>Movimientos Contables</strong>: (Por defecto) Analiza cada transacción individual. Ideal para auditoría detallada.</li>
+</ol>
+<h2>2. La Lógica de los Filtros (Cómo Combinarlos)</h2>
+<p>El poder del Super Informe radica en la <strong>combinación</strong>. El sistema utiliza una lógica "Y" (AND), lo que significa que <strong>entre más filtros aplique, más específicos serán los resultados</strong>.</p>
+<h3>Escenario A: Auditoría de un Tercero Específico</h3>
+<p><em>Objetivo: Ver qué le hemos pagado a "Papelería El Éxito" este mes.</em>
+1.  <strong>Fecha Desde/Hasta</strong>: Seleccione el mes actual.
+2.  <strong>Tercero</strong>: Busque "Papelería El Éxito".
+3.  <strong>Resultado</strong>: Solo verá los movimientos de ese tercero en ese rango de fechas.</p>
+<h3>Escenario B: Rastreo de Gastos Altos</h3>
+<p><em>Objetivo: Encontrar todos los gastos de viaje superiores a $500,000.</em>
+1.  <strong>Cuenta Contable</strong>: Seleccione la cuenta de "Gastos de Viaje" (ej. 5155).
+2.  <strong>Filtros de Valor &gt; Condición</strong>: Seleccione "Mayor que".
+3.  <strong>Filtros de Valor &gt; Monto</strong>: Escriba "500000".
+4.  <strong>Resultado</strong>: El sistema filtrará miles de registros y le mostrará solo aquellos que cumplan ambas condiciones.</p>
+<h3>Escenario C: Búsqueda Forense (Palabras Clave)</h3>
+<p><em>Objetivo: Encontrar una factura perdida de la que solo recuerda que era por "Mantenimiento".</em>
+1.  <strong>Filtros de Documento &gt; Concepto</strong>: Escriba "Mantenimiento".
+2.  <strong>Resultado</strong>: El sistema buscará esa palabra dentro de las descripciones de todos los asientos contables.</p>
+<h2>3. Filtros Avanzados</h2>
+<p>Haga clic en <strong>"Mostrar Filtros Avanzados"</strong> para desplegar opciones quirúrgicas:</p>
+<ul>
+<li><strong>Por Documento</strong>: Filtre por tipo (ej. solo Egresos) o por un número específico (ej. Egreso #1540).</li>
+<li><strong>Por Centro de Costo</strong>: Aísle los movimientos de una sucursal o departamento específico.</li>
+<li><strong>Por Estado</strong>: Puede buscar incluso documentos <strong>Anulados</strong> o <strong>Eliminados</strong> para auditoría de seguridad.</li>
+</ul>
+<h2>4. Exportación Inteligente</h2>
+<p>Una vez haya filtrado la información y tenga en pantalla exactamente lo que necesita:</p>
+<ul>
+<li><strong>Exportar PDF</strong>: Genera un reporte impreso con los resultados actuales.</li>
+<li><strong>Opción "Traer TODO"</strong>: Por defecto, el PDF respeta la paginación. Si marca esta casilla, el sistema generará un PDF masivo con <strong>todos</strong> los registros que coincidan con su búsqueda (útil para reportes de miles de líneas).</li>
+</ul>
+<blockquote>
+<p><strong>Consejo de Experto</strong>: No tenga miedo de experimentar. Si no encuentra resultados, intente limpiar algunos filtros con el botón <strong>"Limpiar"</strong> y sea menos específico.</p>
+</blockquote>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

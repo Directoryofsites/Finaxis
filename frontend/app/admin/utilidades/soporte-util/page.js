@@ -256,7 +256,7 @@ function GestionEmpresasPanel({ empresas, onDataChange, onOpenModal }) {
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-800">Gestión de Empresas Registradas</h2>
                 <button
-                    onClick={() => window.open('/manual?file=capitulo_16_gestion_empresas.md', '_blank')}
+                    onClick={() => window.open('/manual/capitulo_16_gestion_empresas.html', '_blank')}
                     className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors"
                     title="Ver Manual de Usuario"
                 >
@@ -368,7 +368,7 @@ function GestionSoportePanel({ soporteUsers, onDataChange }) {
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold text-gray-800">Usuarios de Soporte Actuales</h2>
                     <button
-                        onClick={() => window.open('/manual?file=capitulo_14_soporte_gestion.md', '_blank')}
+                        onClick={() => window.open('/manual/capitulo_14_soporte_gestion.html', '_blank')}
                         className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors"
                         title="Ver Manual de Usuario"
                     >

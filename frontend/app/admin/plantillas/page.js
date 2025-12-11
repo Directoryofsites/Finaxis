@@ -62,7 +62,7 @@ export default function GestionPlantillasPage() {
         <h1 className="text-3xl font-bold text-gray-800">Administración de Plantillas de Documentos</h1>
         <div className="flex gap-2">
           <button
-            onClick={() => window.open('/manual?file=capitulo_3_plantillas.md', '_blank')}
+            onClick={() => window.open('/manual/capitulo_3_plantillas.html', '_blank')}
             className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2 flex items-center"
             title="Ver Manual de Usuario"
           >

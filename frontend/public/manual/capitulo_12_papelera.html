@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Capítulo 12: Papelera de Reciclaje</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual de Usuario - Capítulo 12: Papelera de Reciclaje</h1>
+<h2>1. Introducción</h2>
+<p>La <strong>Papelera de Reciclaje</strong> es la red de seguridad definitiva de ContaPY2. Su función es retener todos los documentos que han sido eliminados del sistema, permitiendo su recuperación en caso de error humano o auditoría.</p>
+<p><strong>Ubicación:</strong> <code>Administración &gt; Utilidades &gt; Papelera</code></p>
+<hr />
+<h2>2. Funcionamiento</h2>
+<p>Cuando usted utiliza la opción "Eliminar" en cualquier módulo (como la <em>Eliminación Masiva</em> del Capítulo 11), los datos <strong>NO</strong> se destruyen físicamente del disco duro. En su lugar:
+1.  El documento se marca como "Eliminado".
+2.  Desaparece de todos los informes contables, balances y estados financieros.
+3.  Se traslada a esta bandeja de custodia.
+4.  El sistema registra la "Huella de Auditoría": <strong>Quién</strong> lo eliminó y <strong>Cuándo</strong>.</p>
+<hr />
+<h2>3. Interfaz de la Papelera</h2>
+<p>La pantalla presenta una tabla detallada con los documentos en custodia:</p>
+<ul>
+<li><strong>ID Original:</strong> El código interno único del registro.</li>
+<li><strong>Tipo de Documento:</strong> (Ej: Factura, Recibo de Caja).</li>
+<li><strong>Valor:</strong> El monto total por el que se creó el documento.</li>
+<li><strong>Número:</strong> El consecutivo que tenía antes de ser borrado.</li>
+<li><strong>Fecha Original:</strong> La fecha contable del documento.</li>
+<li><strong>Datos de Eliminación:</strong> Muestra el usuario responsable y la fecha/hora exacta del borrado.</li>
+</ul>
+<hr />
+<h2>4. Restauración de Documentos</h2>
+<p>Si eliminó un registro por accidente, puede traerlo de vuelta a la vida ("Resucitarlo"):</p>
+<ol>
+<li>Localice el documento en la lista.</li>
+<li>Haga clic en el botón azul <strong>"Restaurar"</strong>.</li>
+<li>Confirme la acción en la ventana emergente.</li>
+</ol>
+<h3>4.1. ¿Qué sucede al restaurar?</h3>
+<ul>
+<li>El documento desaparece de la Papelera.</li>
+<li>Reaparece en el <em>Explorador de Documentos</em> y en los <em>Libros Contables</em>.</li>
+<li>Recupera su contabilidad original (Débitos y Créditos).</li>
+<li><strong>IMPORTANTE:</strong> Intenta recuperar su <strong>Número Consecutivo</strong> original.</li>
+</ul>
+<blockquote>
+<p>[!WARNING]
+<strong>Conflicto de Consecutivos:</strong>
+Si usted eliminó la <em>Factura #50</em> y, posteriormente, creó una <em>nueva</em> <em>Factura #50</em>, el sistema <strong>NO</strong> le permitirá restaurar la antigua, ya que no pueden existir dos documentos del mismo tipo con el mismo número.</p>
+<p><strong>Solución:</strong> Deberá cambiar el número de la factura nueva o eliminarla temporalmente para liberar el cupo de la #50 antigua.</p>
+</blockquote>
+<hr />
+<h2>5. Preguntas Frecuentes</h2>
+<ul>
+<li>
+<p><strong>P: ¿Cómo vaciar la papelera definitivamente?</strong></p>
+<ul>
+<li><strong>R:</strong> Por seguridad y cumplimiento de normas de auditoría (NIIF), la opción de "Vaciar Papelera" está restringida exclusivamente al Super-Administrador de la base de datos o personal de Soporte Técnico. Los usuarios funcionales no pueden destruir evidencia forense.</li>
+</ul>
+</li>
+<li>
+<p><strong>P: ¿Puedo ver el detalle (cuentas, terceros) de un documento en la papelera?</strong></p>
+<ul>
+<li><strong>R:</strong> No directamente. Debe restaurarlo primero para poder inspeccionar su contenido detallado. La papelera solo muestra los datos de encabezado.</li>
+</ul>
+</li>
+<li>
+<p><strong>P: ¿Cuánto tiempo se guardan los archivos?</strong></p>
+<ul>
+<li><strong>R:</strong> Indefinidamente. El sistema no borra automáticamente nada a menos que se ejecute una purga de base de datos manual.</li>
+</ul>
+</li>
+<li>
+<p><strong>P: ¿Quién puede entrar a la papelera?</strong></p>
+<ul>
+<li><strong>R:</strong> El acceso suele estar restringido a usuarios con perfil de Administrador o Auditor, ya que ver documentos eliminados puede revelar información sensible.</li>
+</ul>
+</li>
+</ul>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

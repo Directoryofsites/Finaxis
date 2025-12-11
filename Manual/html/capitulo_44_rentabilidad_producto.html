@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capítulo 44: Reporte de Rentabilidad por Producto</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Capítulo 44: Reporte de Rentabilidad por Producto</h1>
+<p>El <strong>Reporte de Rentabilidad</strong> es una herramienta estratégica ("la joya de la corona") diseñada para analizar en profundidad el desempeño financiero de sus ventas. Permite identificar qué productos, clientes o documentos generan ganancias reales y cuáles podrían estar ocasionando pérdidas.</p>
+<h2>1. Modos de Análisis</h2>
+<p>El reporte ofrece dos enfoques principales, seleccionables en la parte superior:</p>
+<h3>A. Por Producto (Visión General)</h3>
+<p>Agrupa las ventas por referencia de producto. Ideal para responder preguntas como:
+*   ¿Cuál es mi producto estrella?
+*   ¿Qué productos estoy vendiendo con margen negativo?
+*   ¿Cuánto gané en total por la venta de "Camisas Talla L"?</p>
+<h3>B. Por Documento (Auditoría Puntual)</h3>
+<p>Permite buscar una factura específica (por ejemplo, <code>FV-1050</code>) para analizar la rentabilidad exacta de esa transacción. Muestra el desglose línea por línea de esa factura.</p>
+<hr />
+<h2>2. Filtros y Configuración</h2>
+<p>El panel de filtros es robusto y flexible. Puede combinar múltiples criterios para refinar su búsqueda.</p>
+<h3>Filtros Básicos</h3>
+<ul>
+<li><strong>Rango de Fechas:</strong> Defina el periodo a analizar (Desde / Hasta).</li>
+<li><strong>Grupos de Inventario:</strong> Seleccione uno o varios grupos (ej. "Bebidas", "Electrónica") o use la opción "Seleccionar Todo" para un reporte global.</li>
+</ul>
+<h3>Filtros Avanzados</h3>
+<p>Haga clic en el botón <strong>"Más Filtros"</strong> para desplegar opciones adicionales:
+1.  <strong>Producto Específico:</strong> Busque y seleccione uno o más productos puntuales para un análisis quirúrgico.
+2.  <strong>Cliente:</strong> Filtre las ventas realizadas a un tercero específico. Útil para analizar la rentabilidad de un cliente clave.
+3.  <strong>Lista de Precios:</strong> Vea el desempeño de una lista de precios concreta (ej. "Mayorista" vs "Detal").
+4.  <strong>Margen Mínimo %:</strong> Ingrese un porcentaje (ej. <code>20</code>). El reporte filtrará y mostrará solo aquellos productos cuyo margen sea inferior a ese valor.
+5.  <strong>Solo Pérdidas:</strong> Una casilla de verificación crítica. Al activarla, el sistema mostrará <strong>exclusivamente</strong> los items donde el costo superó al precio de venta (utilidad negativa).</p>
+<hr />
+<h2>3. Interpretación de Resultados</h2>
+<p>Una vez generado el reporte, verá una tarjeta de <strong>Resultados del Análisis</strong>.</p>
+<h3>Indicadores Clave (KPIs)</h3>
+<p>En la esquina superior derecha, verá la <strong>Utilidad Total</strong> del periodo consultado.
+*   <strong>Verde:</strong> Ganancia neta positiva.
+*   <strong>Rojo:</strong> Pérdida neta.</p>
+<h3>Tabla de Datos</h3>
+<p>La tabla detalla la información financiera columna por columna:
+*   <strong>Venta Total:</strong> Ingresos brutos por ese producto (Cantidad x Precio Venta).
+*   <strong>Costo Total:</strong> Costo de la mercancía vendida (Cantidad x Costo Promedio).
+*   <strong>Utilidad:</strong> La ganancia neta en dinero (<code>Venta - Costo</code>).
+*   <strong>Margen %:</strong> El porcentaje de rentabilidad sobre la venta.
+    *   <span style="color:green; background-color:#dcfce7; padding:2px 5px; border-radius:4px; font-weight:bold;">Verde</span>: Margen saludable (&gt; 15%).
+    *   <span style="color:#854d0e; background-color:#fef9c3; padding:2px 5px; border-radius:4px; font-weight:bold;">Amarillo</span>: Margen bajo (&lt; 15%).
+    *   <span style="color:red; background-color:#fee2e2; padding:2px 5px; border-radius:4px; font-weight:bold;">Rojo</span>: Pérdida (Margen negativo).</p>
+<h3>Trazabilidad (Drill-Down)</h3>
+<p>En el modo "Por Producto", verá un icono de <strong>ojo</strong> (<i class="fas fa-eye"></i>) en la columna "Ver Detalle".
+*   Al hacer clic, se despliega una sub-tabla que muestra <strong>todas las facturas</strong> donde se vendió ese producto en el periodo seleccionado.
+*   Esto le permite rastrear exactamente qué venta causó una baja rentabilidad (por ejemplo, un descuento excesivo autorizado en una factura específica).</p>
+<hr />
+<h2>4. Exportación e Impresión</h2>
+<ul>
+<li><strong>Exportar PDF Global:</strong> El botón rojo "Exportar PDF" en el encabezado de resultados genera un documento formal con todo el análisis en pantalla, ideal para presentar a gerencia.</li>
+<li><strong>Impresión Individual:</strong> Dentro del detalle de trazabilidad, cada factura tiene un icono de impresora (<i class="fas fa-print"></i>) que le permite abrir el PDF original de esa venta específica para su revisión.</li>
+</ul>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

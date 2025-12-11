@@ -1,8 +1,8 @@
 import { apiService } from './apiService';
 
-export const getEmpleados = async () => {
+export const getEmpleados = async (params = {}) => {
     try {
-        const response = await apiService.get('/nomina/empleados');
+        const response = await apiService.get('/nomina/empleados', { params });
         return response.data;
     } catch (error) {
         throw error;

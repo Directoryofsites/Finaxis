@@ -88,7 +88,7 @@ export default function PapeleraPage() {
                 <h1 className="text-3xl font-bold text-gray-800">Papelera de Reciclaje</h1>
                 <div className="flex items-center gap-4">
                     <button
-                        onClick={() => window.open('/manual?file=capitulo_12_papelera.md', '_blank')}
+                        onClick={() => window.open('/manual/capitulo_12_papelera.html', '_blank')}
                         className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2 flex items-center"
                         title="Ver Manual de Usuario"
                     >

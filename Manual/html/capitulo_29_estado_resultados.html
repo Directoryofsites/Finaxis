@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estado de Resultados</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Estado de Resultados</h1>
+<p>El <strong>Estado de Resultados</strong> (o Estado de Pérdidas y Ganancias) es un reporte financiero que muestra detalladamente cómo se obtuvo la utilidad o pérdida del ejercicio durante un periodo determinado.</p>
+<h2>1. Generación del Reporte</h2>
+<p>A diferencia del Balance General, este reporte es dinámico y abarca un lapso de tiempo.</p>
+<ol>
+<li><strong>Fecha Inicio y Fin</strong>: Defina el rango de fechas que desea analizar (por ejemplo, del 1 de Enero al 31 de Diciembre).</li>
+<li>Haga clic en <strong>🔍 Generar</strong>.</li>
+</ol>
+<h2>2. Estructura del Informe</h2>
+<p>El sistema organiza la información de manera escalonada para facilitar el análisis financiero:</p>
+<h3>🟢 Ingresos Operacionales</h3>
+<p>Son las entradas de dinero producto de la actividad principal de la empresa (Ventas, Servicios).
+- Se listan las cuentas de clase 4.</p>
+<h3>🔴 Costos de Venta</h3>
+<p>Es el valor directo de adquirir o producir los bienes vendidos.
+- Se listan las cuentas de clase 6 y 7.</p>
+<blockquote>
+<p><strong>Utilidad Bruta</strong> = Ingresos - Costos</p>
+</blockquote>
+<h3>🟠 Gastos Operacionales</h3>
+<p>Son los gastos necesarios para el funcionamiento de la empresa (Nómina, Arriendos, Servicios Públicos).
+- Se listan las cuentas de clase 5.</p>
+<h3>🏁 Utilidad Neta del Ejercicio</h3>
+<p>Es el resultado final de la operación.
+- Si el valor es positivo, la empresa generó ganancias.
+- Si el valor es negativo (en rojo), la empresa tuvo pérdidas.</p>
+<blockquote>
+<p><strong>Utilidad Neta</strong> = Utilidad Bruta - Gastos</p>
+</blockquote>
+<h2>3. Exportación</h2>
+<p>El sistema ofrece dos formatos de descarga:</p>
+<ul>
+<li><strong>📄 PDF</strong>: Versión oficial para imprimir y firmar.</li>
+<li><strong>📊 CSV</strong>: Archivo plano compatible con Excel para realizar análisis de datos adicionales o gráficos personalizados.</li>
+</ul>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

@@ -418,7 +418,7 @@ export default function NuevaFacturaPage() {
                             <BotonRegresar />
 
                             <button
-                                onClick={() => window.open('/manual?file=capitulo_41_facturacion.md', '_blank')}
+                                onClick={() => window.open('/manual/capitulo_41_facturacion.html', '_blank')}
                                 className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors font-bold text-sm"
                                 type="button"
                             >

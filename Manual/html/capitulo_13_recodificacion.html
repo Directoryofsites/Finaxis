@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Capítulo 13: Recodificación Masiva</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual de Usuario - Capítulo 13: Recodificación Masiva</h1>
+<h2>1. Introducción</h2>
+<p>La <strong>Recodificación Masiva</strong> es una herramienta de "cirugía mayor" para su contabilidad. Permite mover saldos y movimientos de un código a otro en bloque, ahorrando horas de corrección manual.</p>
+<p><strong>Ubicación:</strong> <code>Administración &gt; Utilidades &gt; Recodificación Masiva</code></p>
+<blockquote>
+<p>[!CAUTION]
+<strong>Acción Irreversible:</strong> A diferencia de la anulación, esta acción reescribe la historia contable. Una vez ejecutada, no hay botón de "Deshacer" (Undo). Se recomienda hacer una Copia de Seguridad (ver <em>Capítulo 6</em>) antes de usarla.</p>
+</blockquote>
+<hr />
+<h2>2. ¿Qué puedo recodificar?</h2>
+<p>El sistema permite tres tipos de transformaciones, seleccionables mediante las pestañas superiores:</p>
+<ol>
+<li><strong>Cambiar Cuenta Contable:</strong><ul>
+<li><em>Caso de uso:</em> Registró todos los gastos de papelería en la cuenta <code>519530</code> pero el contador ordenó moverlos a la <code>519595</code>.</li>
+</ul>
+</li>
+<li><strong>Cambiar Tercero (Beneficiario):</strong><ul>
+<li><em>Caso de uso:</em> Se crearon dos códigos para el mismo proveedor (uno con NIT y otro con Cédula) y desea unificar todos los movimientos en el NIT correcto.</li>
+</ul>
+</li>
+<li><strong>Cambiar Centro de Costo:</strong><ul>
+<li><em>Caso de uso:</em> Un proyecto cambió de nombre o se fusionó con otro departamento.</li>
+</ul>
+</li>
+</ol>
+<hr />
+<h2>3. Pasos para la Recodificación</h2>
+<h3>Paso 1: Definir el Alcance (Filtros)</h3>
+<p>Antes de cambiar nada, debe decirle al sistema <strong>dónde</strong> buscar.
+*   <strong>Tipo de Documento (Obligatorio):</strong> Por seguridad, la recodificación se hace por tipo de documento. Debe seleccionar uno (ej: <em>Factura de Venta</em>).
+*   <strong>Rango de Fechas:</strong> Puede limitar el cambio a un mes o año específico.
+*   <strong>Número:</strong> Si solo desea corregir un documento específico, escriba su número aquí.</p>
+<h3>Paso 2: Definir la Transformación</h3>
+<p>Aquí se configura la regla de cambio: <strong>"Buscar X y reemplazarlo por Y"</strong>.
+*   <strong>Origen (Izquierda):</strong> El dato erróneo o antiguo que desea eliminar.
+*   <strong>Destino (Derecha):</strong> El dato correcto o nuevo donde quedarán los saldos.</p>
+<h3>Paso 3: Ejecución</h3>
+<p>Al presionar el botón rojo <strong>"Ejecutar Recodificación Masiva"</strong>, el sistema:
+1.  Buscará todos los renglones que coincidan con los filtros y el dato de Origen.
+2.  Cambiará el ID del Origen por el del Destino.
+3.  Recalculará saldos si es necesario.</p>
+<hr />
+<h2>4. Preguntas Frecuentes y Solución de Problemas</h2>
+<ul>
+<li>
+<p><strong>P: ¿Por qué me da error "El origen y destino no pueden ser el mismo"?</strong></p>
+<ul>
+<li><strong>R:</strong> Está intentando mover saldos de la Cuenta A a la Cuenta A. Debe seleccionar una cuenta diferente en el destino.</li>
+</ul>
+</li>
+<li>
+<p><strong>P: ¿Puedo recodificar documentos de años cerrados?</strong></p>
+<ul>
+<li><strong>R:</strong> Técnicamente sí, pero <strong>NO SE RECOMIENDA</strong>. Alterar años cerrados cambiará los saldos iniciales del año siguiente, descuadrando los libros oficiales ya presentados.</li>
+</ul>
+</li>
+<li>
+<p><strong>P: ¿Qué pasa con los documentos anulados?</strong></p>
+<ul>
+<li><strong>R:</strong> La recodificación también afecta a los documentos anulados para mantener la consistencia histórica.</li>
+</ul>
+</li>
+<li>
+<p><strong>P: ¿Puedo cambiar el Tercero de una Factura y un Recibo al mismo tiempo?</strong></p>
+<ul>
+<li><strong>R:</strong> No. Debe ejecutar el proceso dos veces: una seleccionando "Tipo: Factura" y otra seleccionando "Tipo: Recibo". Esto es una medida de seguridad para evitar cambios masivos accidentales en toda la base de datos.</li>
+</ul>
+</li>
+<li>
+<p><strong>P: ¿Cuánto tarda el proceso?</strong></p>
+<ul>
+<li><strong>R:</strong> Depende del volumen de datos. Para unos pocos cientos de registros es instantáneo. Para miles, puede tardar unos segundos. No cierre la ventana hasta ver el mensaje de "Operación Exitosa".</li>
+</ul>
+</li>
+</ul>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

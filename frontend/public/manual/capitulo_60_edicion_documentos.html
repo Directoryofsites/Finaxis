@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edición de Documentos</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Edición de Documentos</h1>
+<p>El módulo de <strong>Edición de Documentos</strong> es una herramienta controlada que permite realizar correcciones a transacciones ya guardadas en el sistema. A diferencia de otros sistemas contables rígidos, ContaPY permite la flexibilidad de corregir errores humanos sin necesidad de anular y volver a hacer todo el trabajo, siempre y cuando se cumplan ciertas reglas de seguridad y auditoría.</p>
+<h2>Reglas de Seguridad</h2>
+<p>Para garantizar la integridad de la información financiera, el sistema impone las siguientes restricciones estrictas para la edición:</p>
+<ol>
+<li><strong>Estado del Documento:</strong> Solo se pueden editar documentos en estado <strong>ACTIVO</strong>. Los documentos anulados no son modificables.</li>
+<li><strong>Periodo Contable:</strong> El sistema valida la fecha del documento. Si el mes correspondiente ya ha sido <strong>CERRADO</strong> (ver capítulo de Control y Cierre), la edición será bloqueada inmediatamente para proteger los estados financieros ya reportados.</li>
+<li><strong>Integridad de Claves:</strong> No es posible modificar el <strong>Tipo de Documento</strong> ni el <strong>Número Consecutivo</strong> una vez creado el registro. Estos campos son la llave única de la transacción. Si cometió un error aquí, la única vía es la anulación.</li>
+</ol>
+<h2>Campos Editables</h2>
+<p>Al ingresar al modo de edición, usted podrá modificar:</p>
+<ul>
+<li>
+<p><strong>Encabezado:</strong></p>
+<ul>
+<li><strong>Tercero (Beneficiario):</strong> Puede reasignar la factura a otro cliente o proveedor.</li>
+<li><strong>Centro de Costo:</strong> Puede corregir la imputación a la unidad de negocio.</li>
+<li><strong>Fechas:</strong> Fecha de documento y vencimiento (respetando el periodo contable).</li>
+<li><strong>Detalles:</strong> Vendedor, notas, observaciones.</li>
+</ul>
+</li>
+<li>
+<p><strong>Cuerpo (Movimientos):</strong></p>
+<ul>
+<li><strong>Agregar Ítems:</strong> Puede insertar nuevas líneas de productos o cuentas contables.</li>
+<li><strong>Eliminar Ítems:</strong> Puede borrar líneas incorrectas.</li>
+<li><strong>Modificar Valores:</strong> Cantidades, precios unitarios, descuentos e impuestos.</li>
+<li><strong>Cuentas Contables:</strong> Puede cambiar la cuenta contable de una línea específica (ej: cambiar de un Gasto de Viaje a un Gasto de Representación).</li>
+</ul>
+</li>
+</ul>
+<h2>Impacto Contable</h2>
+<p>Cualquier cambio realizado en este módulo tiene un efecto <strong>inmediato y en tiempo real</strong> sobre la contabilidad.
+*   Si cambia un valor, el Balance de Prueba se actualizará al instante.
+*   Si cambia un tercero, el Estado de Cuenta de ambos (el anterior y el nuevo) reflejará el cambio inmediatamente.
+*   Si agrega productos, el Kardex de inventario se recalculará.</p>
+<h2>Auditoría de Cambios</h2>
+<p>Por seguridad, el sistema guarda un rastro silencioso de todas las ediciones. En el <strong>Log de Operaciones</strong> (visible para auditores), quedará registrado:
+*   Quién realizó la modificación.
+*   La fecha y hora exacta.
+*   El documento afectado.</p>
+<blockquote>
+<p><strong>Recomendación:</strong> Utilice la edición para correcciones menores (fechas, valores, conceptos). Para errores estructurales graves, es preferible anular y crear un nuevo documento para mantener una traza más clara.</p>
+</blockquote>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

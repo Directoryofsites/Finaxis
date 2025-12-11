@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎨 Guía de Estilo Visual: Manual de Usuario ContaPY</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>🎨 Guía de Estilo Visual: Manual de Usuario ContaPY</h1>
+<p>Este documento define los estándares de diseño, tipografía y maquetación para el Manual de Usuario en Línea de ContaPY. El objetivo es mantener una consistencia visual impecable, profesional y altamente legible en todos los capítulos.</p>
+<hr />
+<h2>1. Filosofía de Diseño</h2>
+<ul>
+<li><strong>Legibilidad ante todo:</strong> El contenido debe ser fácil de escanear y leer.</li>
+<li><strong>Jerarquía Clara:</strong> Diferenciación obvia entre títulos, subtítulos y cuerpo.</li>
+<li><strong>Espaciado Generoso:</strong> El uso de espacio en blanco ("aire") es vital para evitar la fatiga visual.</li>
+<li><strong>Minimalismo Profesional:</strong> Evitar decoraciones innecesarias; cada elemento tiene un propósito.</li>
+</ul>
+<hr />
+<h2>2. Paleta de Colores</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Elemento</th>
+<th style="text-align: left;">Color Hex</th>
+<th style="text-align: left;">Tailwind Class</th>
+<th style="text-align: left;">Uso</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Fondo General</strong></td>
+<td style="text-align: left;"><code>#F9FAFB</code></td>
+<td style="text-align: left;"><code>bg-gray-50</code></td>
+<td style="text-align: left;">Fondo de la pantalla (fuera de la tarjeta).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Fondo Tarjeta</strong></td>
+<td style="text-align: left;"><code>#FFFFFF</code></td>
+<td style="text-align: left;"><code>bg-white</code></td>
+<td style="text-align: left;">Fondo del área de lectura.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Texto Principal</strong></td>
+<td style="text-align: left;"><code>#1E1E1E</code></td>
+<td style="text-align: left;"><code>text-[#1E1E1E]</code></td>
+<td style="text-align: left;">Títulos Principales (H1).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Texto Secundario</strong></td>
+<td style="text-align: left;"><code>#2B2B2B</code></td>
+<td style="text-align: left;"><code>text-[#2B2B2B]</code></td>
+<td style="text-align: left;">Subtítulos (H2, H3) y Párrafos.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Acento / Marca</strong></td>
+<td style="text-align: left;"><code>#4F46E5</code></td>
+<td style="text-align: left;"><code>text-indigo-600</code></td>
+<td style="text-align: left;">Enlaces, Iconos, Bordes de énfasis.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Bordes Suaves</strong></td>
+<td style="text-align: left;"><code>#E5E7EB</code></td>
+<td style="text-align: left;"><code>border-gray-200</code></td>
+<td style="text-align: left;">Líneas divisorias, bordes de tablas.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>3. Tipografía y Jerarquía</h2>
+<p>La fuente base es <strong>Sans-Serif</strong> (Inter, Roboto o System UI).</p>
+<h3>3.1. Título Principal (H1)</h3>
+<ul>
+<li><strong>Tamaño:</strong> 36px (<code>text-4xl</code>).</li>
+<li><strong>Peso:</strong> Extra Bold (<code>font-extrabold</code>).</li>
+<li><strong>Color:</strong> <code>#1E1E1E</code>.</li>
+<li><strong>Espaciado:</strong><ul>
+<li>Margen Superior: <code>3rem</code> (48px).</li>
+<li>Margen Inferior: <code>2rem</code> (32px).</li>
+</ul>
+</li>
+<li><strong>Estilo:</strong> Lleva una línea divisoria inferior suave (<code>border-b</code>).</li>
+</ul>
+<h3>3.2. Subtítulo de Sección (H2)</h3>
+<ul>
+<li><strong>Tamaño:</strong> 24px (<code>text-2xl</code>).</li>
+<li><strong>Peso:</strong> Bold (<code>font-bold</code>).</li>
+<li><strong>Color:</strong> <code>#2B2B2B</code>.</li>
+<li><strong>Espaciado:</strong><ul>
+<li>Margen Superior: <code>4rem</code> (64px) -&gt; <em>Clave para separar temas</em>.</li>
+<li>Margen Inferior: <code>1.5rem</code> (24px).</li>
+</ul>
+</li>
+</ul>
+<h3>3.3. Sub-sección (H3)</h3>
+<ul>
+<li><strong>Tamaño:</strong> 20px (<code>text-xl</code>).</li>
+<li><strong>Peso:</strong> SemiBold (<code>font-semibold</code>).</li>
+<li><strong>Color:</strong> <code>#2B2B2B</code>.</li>
+<li><strong>Espaciado:</strong><ul>
+<li>Margen Superior: <code>2.5rem</code> (40px).</li>
+<li>Margen Inferior: <code>1rem</code> (16px).</li>
+</ul>
+</li>
+</ul>
+<h3>3.4. Cuerpo de Texto (Párrafos)</h3>
+<ul>
+<li><strong>Tamaño:</strong> 18px (<code>text-lg</code>).</li>
+<li><strong>Color:</strong> <code>#2B2B2B</code>.</li>
+<li><strong>Interlineado:</strong> 1.625 (<code>leading-relaxed</code>) -&gt; <em>Muy importante para lectura cómoda</em>.</li>
+<li><strong>Margen Inferior:</strong> <code>1.5rem</code> (24px).</li>
+</ul>
+<hr />
+<h2>4. Componentes UI</h2>
+<h3>A. Listas (Bullets y Numeradas)</h3>
+<ul>
+<li><strong>Tamaño de texto:</strong> 18px (<code>text-lg</code>).</li>
+<li><strong>Ubicación:</strong> Margen izquierdo de 1.5rem (<code>ml-6</code>).</li>
+<li><strong>Espaciado entre ítems:</strong> <code>0.75rem</code> (12px) (<code>space-y-3</code>).</li>
+<li><strong>Margen Inferior:</strong> <code>2rem</code> (32px).</li>
+</ul>
+<h3>B. Citas y Notas (Blockquotes)</h3>
+<p>Se usan para resaltar información importante, advertencias o ejemplos.
+*   <strong>Estilo:</strong> Contenedor con fondo gris muy suave (<code>bg-gray-50</code>).
+*   <strong>Borde:</strong> Borde izquierdo grueso (4px) color Índigo (<code>border-indigo-400</code>).
+*   <strong>Relleno:</strong> Padding interno de <code>1.5rem</code> (24px).
+*   <strong>Texto:</strong> Itálica, color gris oscuro (<code>text-gray-700</code>).</p>
+<h3>C. Tablas</h3>
+<ul>
+<li><strong>Contenedor:</strong> Bordes redondeados y sombra suave.</li>
+<li><strong>Cabecera:</strong> Fondo gris claro (<code>bg-gray-50</code>), texto en mayúsculas, negrita y pequeño (<code>text-xs</code>).</li>
+<li><strong>Celdas:</strong> Padding generoso (<code>px-6 py-4</code>), bordes inferiores suaves.</li>
+</ul>
+<h3>D. Imágenes</h3>
+<ul>
+<li><strong>Estilo:</strong> Bordes redondeados (<code>rounded-xl</code>).</li>
+<li><strong>Efecto:</strong> Sombra media (<code>shadow-md</code>) y borde fino (<code>border-gray-100</code>).</li>
+<li><strong>Ubicación:</strong> Centradas, con margen vertical amplio (<code>my-8</code>).</li>
+</ul>
+<hr />
+<h2>5. Reglas de Implementación Técnica (React/Next.js)</h2>
+<p>Para replicar este diseño en código, <strong>NO</strong> use las clases por defecto de <code>prose</code>. Debe utilizar componentes personalizados en <code>ReactMarkdown</code> como se muestra a continuación:</p>
+<pre><code class="language-javascript">const MarkdownComponents = {
+    h1: ({node, ...props}) =&gt; &lt;h1 className=&quot;text-4xl font-extrabold text-[#1E1E1E] mt-12 mb-8 border-b border-gray-200 pb-4&quot; {...props} /&gt;,
+    h2: ({node, ...props}) =&gt; &lt;h2 className=&quot;text-2xl font-bold text-[#2B2B2B] mt-16 mb-6&quot; {...props} /&gt;,
+    p: ({node, ...props}) =&gt; &lt;p className=&quot;text-lg text-[#2B2B2B] leading-relaxed mb-6&quot; {...props} /&gt;,
+    // ... otros componentes definidos en frontend/app/manual/page.js
+};
+</code></pre>
+<hr />
+<p><strong>Fin de la Guía de Estilo</strong></p>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

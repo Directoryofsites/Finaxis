@@ -32,7 +32,7 @@ def create_favorito_route(
     current_user: models_usuario.Usuario = Depends(get_current_user)
 ):
     """
-    Crea un nuevo acceso rápido. Aplica validación de límite (máximo 6) y unicidad de orden en el servicio.
+    Crea un nuevo acceso rápido. Aplica validación de límite (máximo 24) y unicidad de orden en el servicio.
     """
     return service_favoritos.create_favorito(db, favorito_input, current_user.id)
 

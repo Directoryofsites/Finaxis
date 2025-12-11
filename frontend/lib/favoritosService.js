@@ -20,11 +20,22 @@ export const getFavoritos = async () => {
 
 /**
  * Crea un nuevo acceso rápido.
- * @param {object} data - { ruta_enlace, nombre_personalizado, orden }
+ * @param {object} data - { ruta_enlace, nombre_personalizado, orden (1-24) }
  */
 export const createFavorito = async (data) => {
     // Llama al endpoint POST /api/favoritos/
     const response = await apiService.post('/favoritos/', data);
+    return response.data;
+};
+
+/**
+ * Actualiza un acceso rápido existente.
+ * @param {number} id - ID del favorito a actualizar.
+ * @param {object} data - { ruta_enlace?, nombre_personalizado?, orden? }
+ */
+export const updateFavorito = async (id, data) => {
+    // Llama al endpoint PUT /api/favoritos/{id}
+    const response = await apiService.put(`/favoritos/${id}`, data);
     return response.data;
 };
 

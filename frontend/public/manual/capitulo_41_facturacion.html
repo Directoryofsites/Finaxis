@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capítulo 41: Facturación de Venta</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Capítulo 41: Facturación de Venta</h1>
+<p>El módulo de <strong>Facturación</strong> permite registrar las ventas de productos y servicios a clientes, generando el documento legal correspondiente y, si aplica, realizando la salida automática del inventario.</p>
+<h2>1. Conceptos Clave</h2>
+<p>Antes de facturar, asegúrese de tener configurados los siguientes maestros:
+*   <strong>Clientes (Terceros):</strong> Deben estar creados y marcados como clientes. Si maneja listas de precios, asegúrese de asignarle una al cliente.
+*   <strong>Productos/Servicios:</strong> Deben existir en el sistema.
+*   <strong>Bodegas:</strong> Necesarias si va a facturar productos tangibles que mueven inventario.
+*   <strong>Tipos de Documento:</strong> Debe existir un tipo de documento configurado para "Cartera Cliente" (ej. Factura de Venta).</p>
+<h2>2. Pasos para Crear una Factura</h2>
+<p>Para acceder, vaya al menú <strong>Contabilidad &gt; Facturación</strong>.</p>
+<h3>Paso 1: Información de la Venta (Encabezado)</h3>
+<p>En la primera sección, complete los datos generales:</p>
+<ol>
+<li><strong>Fecha Emisión:</strong> Fecha contable de la factura. Por defecto es hoy.</li>
+<li><strong>Tipo Documento:</strong> Seleccione el tipo de comprobante (ej. Factura de Venta).<ul>
+<li><em>Nota:</em> Si el tipo de documento afecta inventario, el campo "Bodega" se habilitará obligatoriamente.</li>
+</ul>
+</li>
+<li><strong>Bodega:</strong> Seleccione la bodega de donde saldrá la mercancía.<ul>
+<li>Si el servicio no mueve inventario, este campo puede aparecer deshabilitado o como "(No aplica)".</li>
+</ul>
+</li>
+<li><strong>Cliente:</strong> Busque y seleccione el cliente.<ul>
+<li><strong>Listas de Precio:</strong> Si el cliente tiene asignada una lista de precios, aparecerá una etiqueta verde indicando el ID de la lista. El sistema usará estos precios automáticamente al agregar productos.</li>
+</ul>
+</li>
+<li><strong>Condición Pago:</strong><ul>
+<li><strong>Contado:</strong> La factura se asume pagada de inmediato (o pendiente de cobro inmediato).</li>
+<li><strong>Crédito:</strong> Habilita el campo "Fecha Vencimiento".</li>
+</ul>
+</li>
+<li><strong>Fecha Vencimiento:</strong> Obligatoria si la condición es Crédito. Indica el plazo máximo para el pago.</li>
+<li><strong>Centro de Costo:</strong> Opcional. Útil para segmentar los ingresos por áreas o proyectos.</li>
+</ol>
+<h3>Paso 2: Detalle de Productos</h3>
+<ol>
+<li>Haga clic en el botón <strong>"Añadir Items"</strong>.</li>
+<li>Se abrirá una ventana modal para buscar productos.<ul>
+<li>Puede buscar por nombre o código.</li>
+<li>Seleccione los productos deseados y haga clic en "Agregar".</li>
+</ul>
+</li>
+<li><strong>Precios Automáticos:</strong><ul>
+<li>Si el cliente tiene lista de precios, el sistema buscará el precio específico.</li>
+<li>Si no tiene lista o el producto no está en ella, traerá el precio base del producto.</li>
+</ul>
+</li>
+<li><strong>Edición en Tabla:</strong><ul>
+<li>Una vez agregados, puede modificar la <strong>Cantidad</strong> y el <strong>Precio Unitario</strong> directamente en la tabla.</li>
+<li>El subtotal y el total de la factura se recalcularán automáticamente.</li>
+</ul>
+</li>
+<li><strong>Eliminar:</strong> Use el icono de basura (rojo) para quitar una línea si se equivocó.</li>
+</ol>
+<h3>Paso 3: Guardar</h3>
+<ol>
+<li>Verifique que el <strong>Total Factura</strong> sea correcto.</li>
+<li>Haga clic en el botón <strong>"Crear Factura"</strong>.</li>
+<li>El sistema validará:<ul>
+<li>Que haya stock suficiente (si la bodega controla stock y la configuración lo exige).</li>
+<li>Que las cantidades sean positivas.</li>
+<li>Que los campos obligatorios estén llenos.</li>
+</ul>
+</li>
+<li>Si todo es correcto, verá un mensaje de éxito con el número de factura generado (consecutivo automático).</li>
+</ol>
+<h2>3. Preguntas Frecuentes (FAQ)</h2>
+<p><strong>¿Por qué no me deja seleccionar una Bodega?</strong>
+El campo Bodega solo se activa si el "Tipo de Documento" seleccionado está configurado para afectar inventario. Si está facturando solo servicios, es normal que esté deshabilitado.</p>
+<p><strong>¿Cómo funcionan las Listas de Precios?</strong>
+Las listas de precios se asignan en la ficha del Cliente (Tercero). Al seleccionar el cliente en la factura, el sistema detecta su lista. Cuando agrega un producto, busca si ese producto tiene un precio especial en esa lista. Si lo encuentra, lo usa; si no, usa el precio estándar.</p>
+<p><strong>¿Puedo cambiar el precio manualmente?</strong>
+Sí. Aunque el sistema sugiera un precio (base o de lista), usted puede editar la casilla "Precio Unit." en la tabla antes de guardar.</p>
+<p><strong>¿Qué pasa si vendo a Crédito?</strong>
+El sistema generará una cuenta por cobrar (Cartera) al cliente. Podrá consultar esta deuda en los reportes de "Estado de Cuenta Cliente" o "Auxiliar de Cartera".</p>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

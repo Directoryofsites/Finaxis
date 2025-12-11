@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Papelera de Reciclaje</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Papelera de Reciclaje</h1>
+<p>ContaPY implementa un sistema de <strong>Eliminación Lógica (Soft Delete)</strong>. Esto significa que cuando usted "elimina" un documento en cualquier módulo, este no desaparece físicamente de la base de datos, sino que es enviado a una <strong>Papelera de Reciclaje</strong> segura.</p>
+<h2>Objetivos de la Papelera</h2>
+<ol>
+<li><strong>Seguridad:</strong> Evitar la pérdida accidental de información.</li>
+<li><strong>Auditoría:</strong> Mantener un rastro de quién eliminó qué y cuándo.</li>
+<li><strong>Recuperación:</strong> Permitir restaurar el trabajo realizado sin tener que digitar todo nuevamente.</li>
+</ol>
+<h2>Acceso y Permisos</h2>
+<p>El módulo de Papelera de Reciclaje es una zona restringida. Generalmente, solo los usuarios con rol de <strong>Administrador</strong> o <strong>Auditor</strong> tienen acceso a ella. Un usuario operativo estándar puede eliminar documentos (si tiene permiso), pero no puede ver ni restaurar desde la papelera.</p>
+<h2>Restauración de Documentos</h2>
+<p>Para recuperar un documento:
+1.  Ingrese al módulo de Papelera.
+2.  Use los filtros para buscar por Tipo, Número, Fecha de Eliminación o Usuario que eliminó.
+3.  Seleccione el documento y haga clic en <strong>Restaurar</strong>.</p>
+<h3>Validaciones de Restauración</h3>
+<p>El sistema aplicará dos validaciones críticas antes de permitir la restauración:</p>
+<ol>
+<li><strong>Periodo Contable:</strong> Verifica la fecha original del documento. Si pertenece a un mes que ya fue <strong>CERRADO</strong>, el sistema bloqueará la restauración. Deberá reabrir el periodo primero.</li>
+<li><strong>Conflicto de Numeración:</strong> Verifica si el número del documento ya fue reutilizado.<ul>
+<li><em>Ejemplo:</em> Eliminó la Factura #50. Luego creó una nueva Factura #50.</li>
+<li>Si intenta restaurar la #50 original, el sistema lo impedirá porque no pueden existir dos facturas activas con el mismo número. Deberá anular o cambiar la #50 nueva antes de restaurar la vieja.</li>
+</ul>
+</li>
+</ol>
+<h2>Auditoría de Eliminación</h2>
+<p>En la vista de la papelera, usted encontrará columnas clave para la auditoría forense:
+*   <strong>Usuario Eliminación:</strong> El correo del usuario que ejecutó la acción.
+*   <strong>Fecha Eliminación:</strong> La marca de tiempo exacta.
+*   <strong>Valor Original:</strong> El valor total del documento al momento de ser borrado.</p>
+<blockquote>
+<p><strong>Nota Técnica:</strong> Los documentos en la papelera <strong>NO</strong> suman en los reportes contables ni afectan el inventario. Están en un estado de "limbo" hasta que sean restaurados o purgados definitivamente (función de purga solo por base de datos).</p>
+</blockquote>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

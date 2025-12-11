@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Capítulo 21: Últimas Operaciones</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual de Usuario - Capítulo 21: Últimas Operaciones</h1>
+<h2>1. Introducción</h2>
+<p>Este módulo es el "ojo que todo lo ve" del sistema. Permite consultar una bitácora global de todas las operaciones críticas (Creación, Anulación, Eliminación) realizadas en <strong>cualquier empresa</strong>.</p>
+<p><strong>Ubicación:</strong> <code>Administración &gt; Utilidades &gt; Panel de Soporte &gt; Pestaña "Últimas Operaciones"</code></p>
+<hr />
+<h2>2. Filtros de Búsqueda</h2>
+<p>Para evitar sobrecargar el sistema, la consulta debe ser específica:</p>
+<h3>2.1. Límite y Orden</h3>
+<ul>
+<li><strong>Límite:</strong> Cantidad máxima de registros a traer (por defecto 50).</li>
+<li><strong>Ordenar Por:</strong><ul>
+<li><em>Fecha de Creación:</em> Cuándo se grabó el dato en el servidor (tiempo real).</li>
+<li><em>Fecha del Documento:</em> La fecha contable asignada al documento.</li>
+</ul>
+</li>
+</ul>
+<h3>2.2. Filtros de Tiempo</h3>
+<ul>
+<li><strong>Por Fecha de Creación:</strong> Útil para saber "¿Qué hicieron los usuarios hoy entre las 2 PM y las 4 PM?".</li>
+<li><strong>Por Fecha del Documento:</strong> Útil para auditar periodos contables (ej: "¿Qué documentos se crearon con fecha de Enero 2023?").</li>
+</ul>
+<h3>2.3. Filtro por Empresa</h3>
+<p>Puede seleccionar una o varias empresas manteniendo presionada la tecla <code>Ctrl</code> (o <code>Cmd</code> en Mac). Si no selecciona ninguna, buscará en <strong>todas</strong>.</p>
+<hr />
+<h2>3. Interpretación de la Tabla</h2>
+<ul>
+<li><strong>Empresa:</strong> El tenant donde ocurrió el evento.</li>
+<li><strong>Usuario:</strong> El correo electrónico de quien realizó la acción.</li>
+<li><strong>Operación:</strong><ul>
+<li><span style="color:green"><strong>CREACIÓN:</strong></span> Nuevo documento registrado.</li>
+<li><span style="color:orange"><strong>ANULACIÓN:</strong></span> Documento invalidado (reversión contable).</li>
+<li><span style="color:red"><strong>ELIMINACIÓN:</strong></span> Documento borrado físicamente (o enviado a papelera).</li>
+</ul>
+</li>
+</ul>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

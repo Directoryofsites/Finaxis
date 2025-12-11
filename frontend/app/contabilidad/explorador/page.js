@@ -164,7 +164,7 @@ export default function ExploradorDocumentosPage() {
                     <div className="flex gap-2">
                         <BotonRegresar />
                         <button
-                            onClick={() => window.open('/manual?file=capitulo_26_explorador.md', '_blank')}
+                            onClick={() => window.open('/manual/capitulo_26_explorador.html', '_blank')}
                             className="btn btn-sm btn-ghost text-indigo-600 gap-2"
                             title="Ver Manual"
                         >

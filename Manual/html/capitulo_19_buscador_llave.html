@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Capítulo 19: Buscador por Llave Natural</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual de Usuario - Capítulo 19: Buscador por Llave Natural</h1>
+<h2>1. Introducción</h2>
+<p>Esta herramienta técnica permite al equipo de soporte encontrar el <strong>ID Interno (Primary Key)</strong> de un registro en la base de datos utilizando su identificador público o "llave natural".</p>
+<p><strong>Ubicación:</strong> <code>Administración &gt; Utilidades &gt; Panel de Soporte &gt; Pestaña "Buscador"</code></p>
+<hr />
+<h2>2. ¿Para qué sirve?</h2>
+<p>En la base de datos, las relaciones se hacen por IDs numéricos (ej: <code>tercero_id = 452</code>), pero los usuarios conocen a los terceros por su NIT (ej: <code>900.123.456</code>). Esta herramienta traduce el lenguaje del usuario al lenguaje del sistema.</p>
+<p><strong>Casos de Uso:</strong>
+*   Necesita usar el "Inspector Universal" (Capítulo 20) y le pide un ID numérico, pero usted solo tiene el NIT del cliente.
+*   Necesita verificar en los logs del servidor qué pasó con la factura #500, pero los logs registran <code>documento_id</code>.</p>
+<hr />
+<h2>3. Tipos de Búsqueda</h2>
+<ol>
+<li><strong>Tercero por NIT:</strong> Ingrese el número de identificación (sin dígito de verificación si es posible, o completo).</li>
+<li><strong>Cuenta por Código:</strong> Ingrese el código contable (ej: <code>110505</code>).</li>
+<li><strong>Centro de Costo por Código:</strong> Ingrese el código corto del centro de costos.</li>
+<li><strong>Documento por Tipo y Número:</strong> Requiere dos datos:<ul>
+<li><strong>ID Tipo Doc:</strong> El ID numérico del tipo de documento (ej: 1 para Factura de Venta).</li>
+<li><strong>Número:</strong> El consecutivo del documento (ej: 1020).</li>
+</ul>
+</li>
+</ol>
+<h2>4. Resultados</h2>
+<p>El sistema devolverá un mensaje verde con el <strong>ID Encontrado</strong>. Copie este número para usarlo en otras herramientas de diagnóstico.</p>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

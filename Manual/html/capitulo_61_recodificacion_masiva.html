@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recodificación Masiva</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Recodificación Masiva</h1>
+<p>La <strong>Recodificación Masiva</strong> es una de las herramientas más potentes de ContaPY, diseñada para corregir errores de asignación a gran escala sin tener que editar documento por documento.</p>
+<h2>¿Qué es la Recodificación?</h2>
+<p>Imagine que creó por error dos terceros para la misma persona: "Juan Perez" y "Juan A. Perez". Tiene 50 facturas con el primero y 30 con el segundo.
+En lugar de entrar a 80 facturas para cambiar el tercero manualmente, la Recodificación le permite decir: <em>"Mueva TODOS los movimientos de Juan Perez a Juan A. Perez"</em>.</p>
+<p>Esta herramienta funciona para:
+1.  <strong>Terceros:</strong> Unificar clientes o proveedores duplicados.
+2.  <strong>Productos:</strong> Corregir referencias creadas doblemente o migrar historia de un producto antiguo a uno nuevo.
+3.  <strong>Cuentas Contables:</strong> Mover movimientos de una cuenta auxiliar a otra (ej: reclasificación de gastos).</p>
+<h2>Proceso de Ejecución</h2>
+<ol>
+<li><strong>Seleccione la Tabla:</strong> Elija si va a recodificar Terceros, Productos o Cuentas.</li>
+<li><strong>Origen (Lo Incorrecto):</strong> Busque el registro que tiene los movimientos que desea mover.</li>
+<li><strong>Destino (Lo Correcto):</strong> Busque el registro que recibirá toda la historia.<ul>
+<li><em>Nota:</em> El destino debe existir previamente. Si no existe, créelo en el maestro correspondiente.</li>
+</ul>
+</li>
+<li><strong>Filtros (Opcional):</strong><ul>
+<li><strong>Rango de Fechas:</strong> Puede limitar el cambio a un periodo específico (ej: "Solo corregir lo de Enero").</li>
+<li><strong>Tipo de Documento:</strong> Puede aplicar el cambio solo a Facturas de Venta, ignorando Recibos, por ejemplo.</li>
+<li><strong>Números Específicos:</strong> Puede ingresar una lista de números de documento (separados por coma) para una corrección quirúrgica.</li>
+</ul>
+</li>
+</ol>
+<h2>Advertencias Críticas</h2>
+<blockquote>
+<p>[!WARNING]
+<strong>Operación Irreversible</strong>
+La recodificación modifica directamente las referencias en la base de datos. No existe un botón de "Deshacer". Si se equivoca (ej: mueve todo al tercero incorrecto), la única forma de arreglarlo es realizar una nueva recodificación inversa, lo cual puede ser complejo si mezcló datos de dos terceros reales.</p>
+<p><strong>Se recomienda hacer una Copia de Seguridad antes de realizar recodificaciones masivas.</strong></p>
+</blockquote>
+<h2>Efectos en el Sistema</h2>
+<ul>
+<li><strong>Saldos:</strong> El saldo del tercero/cuenta Origen quedará en cero (o disminuirá). El saldo del Destino aumentará.</li>
+<li><strong>Reportes:</strong> Todos los reportes históricos (incluso de años anteriores si no filtra por fecha) reflejarán el cambio como si siempre hubiera sido así.</li>
+<li><strong>Integridad:</strong> El sistema valida que no se rompa la integridad referencial. Por ejemplo, no le permitirá recodificar una cuenta de detalle a una cuenta mayor.</li>
+</ul>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

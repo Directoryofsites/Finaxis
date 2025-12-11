@@ -272,7 +272,7 @@ export default function SuperInformePage() {
           </div>
         </div>
         <button
-          onClick={() => window.open('/manual?file=capitulo_33_super_informe.md', '_blank')}
+          onClick={() => window.open('/manual/capitulo_33_super_informe.html', '_blank')}
           className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors"
           title="Ver Manual de Usuario"
         >

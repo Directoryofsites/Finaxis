@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Capítulo 7: Cierre de Periodos Contables</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual de Usuario - Capítulo 7: Cierre de Periodos Contables</h1>
+<h2>1. Introducción</h2>
+<p>El módulo de <strong>Gestión de Periodos</strong> es el candado de seguridad de su contabilidad.</p>
+<p>Su función es simple pero crítica: <strong>Bloquear el tiempo</strong>.
+Una vez usted cierra un mes (ej: Enero), el sistema prohíbe terminantemente crear, editar o borrar cualquier documento con fecha de ese mes. Esto garantiza que sus estados financieros presentados a la DIAN o a la Gerencia no cambien "mágicamente" después de ser reportados.</p>
+<hr />
+<h2>2. ¿Cómo acceder al módulo?</h2>
+<p>Siga esta ruta en el menú principal:</p>
+<ol>
+<li>Ubique la sección <strong>Administración y Configuración</strong>.</li>
+<li>Busque el grupo <strong>Utilidades</strong>.</li>
+<li>Haga clic en la opción <strong>Periodos Contables</strong>.</li>
+</ol>
+<blockquote>
+<p><strong>Ruta Rápida:</strong> <code>Administración &gt; Utilidades &gt; Periodos</code></p>
+</blockquote>
+<hr />
+<h2>3. Lógica de Negocio (El Mecanismo de Cremallera)</h2>
+<p>El sistema utiliza una lógica secuencial estricta, similar a subir o bajar una cremallera:</p>
+<h3>3.1. Para Cerrar (Subir Cremallera)</h3>
+<ul>
+<li><strong>Orden Obligatorio:</strong> Usted no puede cerrar Marzo si Febrero sigue abierto. Debe ir en orden: Enero -&gt; Febrero -&gt; Marzo.</li>
+<li><strong>Validación de Inicio:</strong> No puede cerrar periodos anteriores a la fecha de fundación de su empresa.</li>
+</ul>
+<h3>3.2. Para Reabrir (Bajar Cremallera)</h3>
+<ul>
+<li><strong>Orden Inverso:</strong> Si necesita corregir algo en Enero pero ya cerró hasta Marzo, el sistema le exigirá reabrir en orden inverso: Primero reabre Marzo, luego Febrero, y finalmente Enero.</li>
+<li><strong>¿Por qué es tan estricto?</strong> Porque los saldos de Febrero dependen de Enero. Si usted cambia Enero, automáticamente invalida los saldos iniciales de Febrero y Marzo. Esta restricción protege la integridad matemática de su contabilidad.</li>
+</ul>
+<hr />
+<h2>4. Guía Paso a Paso</h2>
+<h3>4.1. Cerrar un Mes</h3>
+<ol>
+<li>Ingrese al módulo. Verá una tabla con los meses del año actual.</li>
+<li>Busque el primer mes con estado <strong>"Abierto"</strong> (Color Verde).</li>
+<li>Haga clic en el botón azul <strong>Cerrar Período</strong>.</li>
+<li>Confirme la acción.<ul>
+<li><em>Resultado:</em> El estado cambiará a <strong>"Cerrado"</strong> (Rojo) y nadie podrá alterar datos de ese mes.</li>
+</ul>
+</li>
+</ol>
+<h3>4.2. Reabrir un Mes (Correcciones)</h3>
+<ol>
+<li>Busque el último mes con estado <strong>"Cerrado"</strong>.</li>
+<li>Haga clic en el botón amarillo <strong>Reabrir Período</strong>.</li>
+<li>Confirme la advertencia de seguridad.<ul>
+<li><em>Resultado:</em> El mes volverá a estar disponible para edición.</li>
+</ul>
+</li>
+</ol>
+<hr />
+<h2>5. Preguntas Frecuentes (FAQ)</h2>
+<ul>
+<li>
+<p><strong>P: ¿El cierre genera el asiento de "Cierre de Año" (Cancelación de cuentas de resultado)?</strong></p>
+<ul>
+<li><strong>R:</strong> <strong>No.</strong> Este módulo es solo un bloqueo de seguridad (permisos). El asiento contable de cierre de año (Cuenta 59) es un proceso automático separado que se ejecuta en el módulo de "Comprobantes Automáticos".</li>
+</ul>
+</li>
+<li>
+<p><strong>P: Soy el Gerente, ¿puedo editar un mes cerrado sin reabrirlo?</strong></p>
+<ul>
+<li><strong>R:</strong> <strong>No.</strong> Ni siquiera el "Super Usuario" puede violar un periodo cerrado. La única forma es reabrirlo formalmente, hacer el cambio, y volver a cerrar. Esto deja una huella de auditoría clara.</li>
+</ul>
+</li>
+<li>
+<p><strong>P: ¿Puedo cerrar el año 2024 si no he terminado el 2023?</strong></p>
+<ul>
+<li><strong>R:</strong> No. El sistema exige continuidad cronológica absoluta. Debe cerrar Diciembre 2023 antes de poder cerrar Enero 2024.</li>
+</ul>
+</li>
+</ul>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

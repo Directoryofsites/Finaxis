@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Capítulo 16: Gestión de Empresas</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual de Usuario - Capítulo 16: Gestión de Empresas</h1>
+<h2>1. Introducción</h2>
+<p>Este módulo permite administrar el ciclo de vida de las empresas (tenants) registradas en el sistema. Desde aquí se pueden actualizar datos fiscales, gestionar usuarios específicos de cada empresa o dar de baja un servicio.</p>
+<p><strong>Ubicación:</strong> <code>Administración &gt; Utilidades &gt; Panel de Soporte &gt; Pestaña "Gestión Empresas"</code></p>
+<hr />
+<h2>2. Listado de Empresas</h2>
+<p>El panel presenta una tabla con todas las compañías activas, mostrando su <strong>NIT</strong> y <strong>Razón Social</strong>.</p>
+<h2>3. Acciones Disponibles</h2>
+<h3>3.1. Gestionar (Botón Azul)</h3>
+<p>Abre una ventana modal con dos pestañas internas:
+1.  <strong>Datos:</strong> Permite corregir el nombre, NIT o fecha de inicio de la empresa.
+2.  <strong>Usuarios:</strong> Permite ver, crear o eliminar usuarios <em>específicos</em> de esa empresa (sin afectar a otras).
+    *   <em>Útil para:</em> Restablecer la contraseña del contador de un cliente específico.</p>
+<h3>3.2. Eliminar (Botón Rojo)</h3>
+<p>Esta es la acción más destructiva del sistema.
+*   <strong>Consecuencias:</strong> Borra la empresa y <strong>TODA</strong> su información vinculada (documentos, terceros, cuentas, usuarios).
+*   <strong>Irreversible:</strong> No hay papelera de reciclaje para empresas eliminadas.</p>
+<blockquote>
+<p>[!CAUTION]
+<strong>Peligro de Pérdida de Datos:</strong>
+Asegúrese de tener una copia de seguridad completa antes de eliminar una empresa. Esta acción no se puede deshacer.</p>
+</blockquote>
+<hr />
+<h2>4. Preguntas Frecuentes</h2>
+<ul>
+<li><strong>P: ¿Puedo fusionar dos empresas?</strong><ul>
+<li><strong>R:</strong> No automáticamente. Debe exportar datos de una e importarlos en la otra manualmente.</li>
+</ul>
+</li>
+<li><strong>P: ¿Por qué no puedo eliminar una empresa?</strong><ul>
+<li><strong>R:</strong> Es posible que el sistema tenga bloqueos de seguridad si la empresa tiene transacciones activas recientes. Contacte al desarrollador si el problema persiste.</li>
+</ul>
+</li>
+</ul>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

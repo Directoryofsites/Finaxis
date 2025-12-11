@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Capítulo 11: Gestión Masiva de Documentos</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual de Usuario - Capítulo 11: Gestión Masiva de Documentos</h1>
+<h2>1. Introducción</h2>
+<p>El módulo de <strong>Gestión Masiva</strong> es el centro de control para la depuración y corrección de datos a gran escala. Permite localizar grupos específicos de documentos y aplicarles acciones administrativas (Anular, Eliminar, Modificar) de forma eficiente y segura.</p>
+<p><strong>Ubicación:</strong> <code>Administración &gt; Utilidades &gt; Eliminación Masiva</code></p>
+<hr />
+<h2>2. El Motor de Búsqueda Avanzada</h2>
+<p>Antes de actuar, es vital aislar los documentos correctos. El sistema ofrece una matriz de filtros que pueden combinarse entre sí:</p>
+<h3>2.1. Filtros de Identificación</h3>
+<ul>
+<li><strong>Tipo de Documento:</strong> Permite seleccionar una categoría específica (ej: solo "Facturas de Venta" o "Comprobantes de Egreso").</li>
+<li><strong>Tercero (Beneficiario):</strong> Aísla todas las transacciones vinculadas a un cliente, proveedor o empleado específico.</li>
+<li><strong>Número(s):</strong> Búsqueda exacta. Puede ingresar múltiples números separados por comas (ej: <code>105, 108, 200</code>) para trabajar sobre una lista predefinida.</li>
+</ul>
+<h3>2.2. Filtros de Clasificación Contable</h3>
+<ul>
+<li><strong>Cuenta Contable:</strong> "Rastreador de Imputaciones". Muestra todos los documentos que afectaron una cuenta específica (ej: buscar todo lo que movió la cuenta "Caja General").</li>
+<li><strong>Centro de Costo:</strong> Ideal para auditoría de presupuestos por departamento.</li>
+<li><strong>Palabra Clave en Concepto:</strong> Busca texto dentro de la descripción de los movimientos. Útil para encontrar rastros como "Ajuste", "Error", o nombres de proyectos específicos.</li>
+</ul>
+<h3>2.3. Filtros de Valor y Tiempo</h3>
+<ul>
+<li><strong>Rango de Fechas:</strong> Delimita la búsqueda a un periodo fiscal específico.</li>
+<li><strong>Filtro por Valor:</strong> Herramienta de auditoría para detectar anomalías.<ul>
+<li><em>Ejemplo:</em> "Buscar todos los gastos MENORES a $1,000" (posible basura).</li>
+<li><em>Ejemplo:</em> "Buscar todas las ventas MAYORES a $10,000,000" (transacciones significativas).</li>
+</ul>
+</li>
+</ul>
+<h3>2.4. Opción "Incluir Anulados"</h3>
+<p>Por defecto, el sistema oculta los documentos que ya están anulados. Marque esta casilla si necesita reactivarlos o auditarlos.</p>
+<hr />
+<h2>3. Acciones de Gestión</h2>
+<p>Una vez obtenidos los resultados, seleccione los documentos usando las casillas de verificación (o el selector "Todos" en el encabezado de la tabla).</p>
+<h3>3.1. Anulación Masiva (Botón Naranja)</h3>
+<ul>
+<li><strong>Función:</strong> Revierte los efectos contables de los documentos seleccionados sin borrarlos.</li>
+<li><strong>Estado Resultante:</strong> Los documentos pasan a estado <strong>ANULADO</strong>. Sus valores débito/crédito se vuelven cero internamente, pero el registro histórico permanece.</li>
+<li><strong>Caso de Uso:</strong> Errores contables donde se debe preservar la secuencia numérica (consecutivo) para cumplir con la legislación fiscal.</li>
+</ul>
+<h3>3.2. Eliminación Definitiva (Botón Rojo)</h3>
+<ul>
+<li><strong>Función:</strong> Retira los documentos de la contabilidad activa y libera sus números consecutivos.</li>
+<li><strong>Destino:</strong> Los documentos <strong>NO</strong> desaparecen inmediatamente; son enviados a la <strong>Papelera de Reciclaje</strong> del sistema, desde donde podrían ser recuperados en caso de emergencia.</li>
+<li><strong>Requisito de Seguridad:</strong> El sistema exigirá que escriba la palabra clave <code>"ELIMINAR"</code> para confirmar esta acción crítica.</li>
+<li><strong>Justificación:</strong> Es <strong>obligatorio</strong> escribir una razón en el campo de texto (ej: "Error de digitación duplicado"). Esta nota quedará adjunta al registro en la papelera.</li>
+</ul>
+<h3>3.3. Modificar (Botón Azul)</h3>
+<ul>
+<li><strong>Restricción:</strong> Solo funciona cuando se selecciona <strong>un único documento</strong>.</li>
+<li><strong>Función:</strong> Le redirige inmediatamente a la pantalla de Edición del documento seleccionado.</li>
+</ul>
+<h4>3.3.1. Guía de Edición de Documentos</h4>
+<p>La interfaz de <strong>Edición</strong> es un entorno controlado diseñado para modificar transacciones contables ya guardadas. A diferencia de la creación inicial, este módulo impone restricciones estrictas para garantizar la integridad de la base de datos histórica.</p>
+<h4>3.3.2. Estructura de la Pantalla</h4>
+<p>Al ingresar al modo de edición, la pantalla se divide en tres secciones críticas:</p>
+<p><strong>A. Encabezado de Identificación (Zona Bloqueada)</strong>
+En la parte superior derecha, verá campos con fondo grisáceo que <strong>NO</strong> son editables por seguridad:
+*   <strong>Tipo de Documento y Número:</strong> (Ej: <em>Comprobante #111</em>). Son inmutables para no romper la secuencia cronológica.</p>
+<p><strong>B. Datos de Encabezado (Zona Editable)</strong>
+A la izquierda y centro, encontrará los campos modificables:
+*   <strong>Fecha:</strong> Permite mover el documento en el tiempo (dentro de periodos abiertos).
+*   <strong>Beneficiario:</strong> Para reasignar la transacción a otro Tercero.
+*   <strong>Centro de Costo:</strong> Para reclasificar el gasto o ingreso.</p>
+<p><strong>C. Tabla de Movimientos Contables</strong>
+El núcleo de la edición. Aquí se visualiza el asiento contable completo.
+*   <strong>Modificar Valores:</strong> Haga clic en cualquier celda de Débito o Crédito para ajustar montos.
+*   <strong>Eliminar Filas (X Roja):</strong> Borra movimientos erróneos.
+*   <strong>Agregar Fila (Botón Blanco):</strong> Añade nuevas cuentas (ej: una retención olvidada).</p>
+<h4>3.3.3. Validaciones y Guardado</h4>
+<blockquote>
+<p>[!IMPORTANT]
+<strong>La Regla de Oro: "Sumas Iguales"</strong>
+El botón verde <strong>"Guardar Cambios"</strong> solo funcionará si la diferencia entre Débitos y Créditos es exactamente <strong>$0,00</strong>. Si los montos no coinciden, el sistema impedirá guardar para proteger la contabilidad.</p>
+</blockquote>
+<h3>3.4. Guardar como Plantilla (Botón Morado)</h3>
+<ul>
+<li><strong>Restricción:</strong> Solo funciona con un único documento seleccionado.</li>
+<li><strong>Función:</strong> Clona la estructura del documento (cuentas, terceros, conceptos) y la guarda como una nueva <strong>Plantilla</strong> (ver <em>Capítulo 3</em>).</li>
+<li><strong>Caso de Uso:</strong> Si descubre que una factura compleja se repite mes a mes, puede convertirla en plantilla desde aquí para automatizarla en el futuro.</li>
+</ul>
+<h3>3.5. Reactivar (Botón Individual)</h3>
+<ul>
+<li>Si busca documentos anulados, aparecerá un botón de "Reactivar" (flecha circular) en cada fila. Esto restaura los valores contables originales del documento.</li>
+</ul>
+<hr />
+<h2>4. Consejos de Seguridad</h2>
+<ol>
+<li><strong>Verifique el Contador:</strong> Antes de presionar cualquier botón masivo, mire el número en "Resultados Encontrados" para asegurarse de que coincide con lo que espera.</li>
+<li><strong>Auditoría de Valores:</strong> Use el filtro de "Valor Mayor Que" para revisar las transacciones más grandes del mes antes de cerrar el periodo.</li>
+<li><strong>Limpieza de Consecutivos:</strong> Si tiene saltos en la numeración (Huecos), use esta herramienta para encontrar los documentos "basura" que están ocupando números y elimínelos para liberar la secuencia.</li>
+</ol>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

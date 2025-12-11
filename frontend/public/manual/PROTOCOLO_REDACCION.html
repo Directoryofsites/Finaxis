@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROTOCOLO DE REDACCIÓN DE MANUALES (ContaPY)</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>PROTOCOLO DE REDACCIÓN DE MANUALES (ContaPY)</h1>
+<blockquote>
+<p><strong>OBJETIVO:</strong> Crear manuales que expliquen la <strong>Lógica de Negocio</strong> y el "Cerebro" del sistema, no solo la interfaz gráfica. El usuario debe entender qué está "programando" cuando llena un formulario.</p>
+</blockquote>
+<hr />
+<h2>FASE 1: INVESTIGACIÓN PROFUNDA (CÓDIGO ANTES QUE TEXTO)</h2>
+<p><strong>PROHIBIDO</strong> escribir una sola línea del manual sin antes haber ejecutado esta auditoría técnica:</p>
+<ol>
+<li>
+<p><strong>Rastreo del Modelo de Datos (<code>backend/app/models</code>):</strong></p>
+<ul>
+<li>Identificar columnas "Banderas" (Booleans, Enums). <em>Ej: <code>afecta_inventario</code>, <code>es_servicio</code>.</em></li>
+<li>Identificar Claves Foráneas críticas. <em>Ej: <code>cuenta_caja_id</code>.</em></li>
+</ul>
+</li>
+<li>
+<p><strong>Rastreo de la Lógica de Servicio (<code>backend/app/services</code>):</strong></p>
+<ul>
+<li>Buscar dónde se usan esas "Banderas". ¿Qué <code>if</code> activan?</li>
+<li><strong>Pregunta Clave:</strong> "¿Qué proceso se detiene o cambia si este campo está vacío o en falso?"</li>
+<li><em>Ejemplo descubierto:</em> <code>if funcion_especial == 'VENTAS' and cuenta_cxc_id: activar_cartera()</code>.</li>
+</ul>
+</li>
+<li>
+<p><strong>Rastreo del Frontend (<code>frontend/app</code>):</strong></p>
+<ul>
+<li>Buscar validaciones ocultas o campos que aparecen/desaparecen.</li>
+<li>Identificar qué datos son obligatorios por código aunque no parezcan obvios.</li>
+</ul>
+</li>
+</ol>
+<hr />
+<h2>FASE 2: ESTRATEGIA DE CONTENIDO (REVELAR LA CAJA NEGRA)</h2>
+<p>Al redactar, transformar los hallazgos técnicos en explicaciones funcionales:</p>
+<ul>
+<li><strong>No decir:</strong> "Marque la casilla X".</li>
+<li>
+<p><strong>Decir:</strong> "La casilla X actúa como un interruptor que obliga al sistema a..."</p>
+</li>
+<li>
+<p><strong>Concepto de "Sinergia":</strong>
+    Explicar explícitamente cuando dos campos deben trabajar juntos.</p>
+<ul>
+<li><em>Ej: "Para que funcione el Módulo Y, necesita configurar A + B."</em></li>
+</ul>
+</li>
+<li>
+<p><strong>Consecuencias del Error:</strong>
+    Advertir qué pasa si se configura mal.</p>
+<ul>
+<li><em>Ej: "Si olvida este campo, el sistema no le permitirá cruzar facturas más adelante."</em></li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2>FASE 3: ESTRUCTURA OBLIGATORIA</h2>
+<p>Usar siempre la <code>PLANTILLA_MAESTRA.md</code>, pero enriqueciendo las secciones:</p>
+<ol>
+<li><strong>Introducción:</strong> ¿Qué "poderes" otorga este módulo al usuario?</li>
+<li><strong>Lógica de Negocio (NUEVA SECCIÓN CRÍTICA):</strong><ul>
+<li>Tablas de "Causa y Efecto".</li>
+<li>Diagramas mentales de flujo (escritos).</li>
+<li>Explicación de automatizaciones invisibles.</li>
+</ul>
+</li>
+<li><strong>Diccionario de Campos:</strong> Tabla detallada de cada input.</li>
+<li><strong>FAQ / Troubleshooting:</strong> Basado en las restricciones de código encontradas en la Fase 1.</li>
+</ol>
+<hr />
+<h2>PROMPT GENÉRICO PARA LA IA (Copiar y Pegar)</h2>
+<p><em>"Vas a redactar el manual para el módulo [NOMBRE MÓDULO]. Antes de escribir, tu tarea obligatoria es leer los archivos <code>models/[archivo].py</code>, <code>services/[archivo].py</code> y <code>frontend/[archivo].js</code>. Debes encontrar la lógica oculta, los disparadores automáticos y las dependencias entre campos. No quiero una descripción de la pantalla; quiero que me expliques cómo piensa el software y cómo mis inputs afectan la contabilidad, el inventario y otros módulos. Usa el <code>PROTOCOLO_REDACCION.md</code> como ley suprema."</em></p>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

@@ -640,7 +640,7 @@ export default function ParametrosInventarioPage() {
 
 
                     <button
-                        onClick={() => window.open('/manual?file=capitulo_39_parametros_inventario.md', '_blank')}
+                        onClick={() => window.open('/manual/capitulo_39_parametros_inventario.html', '_blank')}
                         className="btn btn-ghost btn-sm gap-2 text-indigo-600"
                     >
                         <FaBook /> Manual

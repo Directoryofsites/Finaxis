@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capítulo 48: Gestión de Topes (Mínimos y Máximos)</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Capítulo 48: Gestión de Topes (Mínimos y Máximos)</h1>
+<p>El módulo de <strong>Gestión de Topes</strong> es su asistente inteligente para la reposición de inventario. Su función principal es analizar el saldo actual de cada producto frente a los límites (topes) establecidos en su ficha maestra, generando alertas automáticas de compra o sobre-stock.</p>
+<h2>1. Modos de Análisis</h2>
+<p>El sistema ofrece dos estrategias de análisis que puede alternar con los botones grandes en la parte superior:</p>
+<h3>1.1. 🚨 Mínimo: HACER PEDIDO</h3>
+<p>Este modo identifica los productos cuyo saldo actual está <strong>por debajo</strong> del stock mínimo permitido.
+*   <strong>Objetivo:</strong> Evitar roturas de stock (quedarse sin mercancía).
+*   <strong>Decisión Sugerida:</strong> "PEDIR". Indica que es urgente realizar una orden de compra al proveedor.
+*   <strong>Cálculo:</strong> <em>Diferencia = Stock Mínimo - Saldo Actual</em>. Esta es la cantidad sugerida a pedir para volver a la zona segura.</p>
+<h3>1.2. ⚠️ Máximo: NO COMPRAR</h3>
+<p>Este modo identifica los productos cuyo saldo actual está <strong>por encima</strong> del stock máximo deseado.
+*   <strong>Objetivo:</strong> Evitar sobre-costos de almacenamiento y capital inmovilizado.
+*   <strong>Decisión Sugerida:</strong> "NO COMPRAR". Advierte que no se debe adquirir más mercancía e incluso sugiere realizar promociones para evacuar el exceso.
+*   <strong>Cálculo:</strong> <em>Diferencia = Saldo Actual - Stock Máximo</em>. Esta es la cantidad de exceso que tiene en bodega.</p>
+<h2>2. Indicadores Clave (KPIs)</h2>
+<p>En la parte superior verá tres tarjetas con cifras en tiempo real:
+*   <strong>Alertas Mínimas:</strong> Número de productos críticos que necesitan reposición inmediata.
+*   <strong>Alertas Máximas:</strong> Número de productos con exceso de inventario.
+*   <strong>Total en Lista:</strong> Cantidad total de ítems que requieren su atención según el filtro seleccionado.</p>
+<h2>3. Tabla de Resultados</h2>
+<p>La tabla detalla la situación de cada producto en alerta:
+*   <strong>Saldo Actual:</strong> Existencia física a la fecha de corte.
+*   <strong>Mínimo / Máximo:</strong> Los límites configurados en el sistema para ese producto.
+*   <strong>Diferencia:</strong> La cantidad exacta que le falta (en alertas de mínimo) o le sobra (en alertas de máximo).
+*   <strong>Decisión:</strong> Una etiqueta visual clara ("PEDIR" o "NO COMPRAR") para facilitar la toma de decisiones rápida.</p>
+<h2>4. Exportación</h2>
+<ul>
+<li><strong>Botón PDF:</strong> Genera un reporte formal con la lista de productos en alerta. Este documento es ideal para entregárselo directamente al departamento de compras como una "Sugerencia de Pedido".</li>
+</ul>
+<hr />
+<blockquote>
+<p><strong>Nota Importante:</strong> Para que este reporte funcione correctamente, asegúrese de haber configurado los campos "Stock Mínimo" y "Stock Máximo" en la ficha de creación de cada producto (Ver Capítulo: Catálogo de Productos).</p>
+</blockquote>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

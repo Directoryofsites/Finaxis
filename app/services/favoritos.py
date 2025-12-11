@@ -10,9 +10,8 @@ from ..models import usuario_favorito as models_favorito
 from ..models import usuario as models_usuario
 from ..schemas import usuario_favorito as schemas_favorito
 
-# FIX 1: Límite de botones CENTRALIZADO: Aumentado de 12 a 16
-# (Se mantiene para la documentación, pero no se usa en la validación crítica)
-MAX_FAVORITOS = 16 
+# NUEVO LÍMITE: Expandido a 24 botones para mayor flexibilidad
+MAX_FAVORITOS = 24 
 
 def get_favoritos_by_user_id(db: Session, user_id: int) -> List[models_favorito.UsuarioFavorito]:
     """Obtiene todos los accesos rápidos definidos por un usuario ordenados por el campo 'orden'."""
@@ -23,8 +22,8 @@ def get_favoritos_by_user_id(db: Session, user_id: int) -> List[models_favorito.
 def create_favorito(db: Session, favorito: schemas_favorito.UsuarioFavoritoCreate, user_id: int) -> models_favorito.UsuarioFavorito:
     """Crea un nuevo acceso rápido para un usuario, aplicando validaciones."""
     
-    # FIX CRÍTICO: Forzamos el límite a 16 aquí para garantizar que el Backend lo vea.
-    LIMITE_DEFINITIVO = 16
+    # LÍMITE ACTUALIZADO: Expandido a 24 botones
+    LIMITE_DEFINITIVO = 24
     conteo_actual = db.query(func.count(models_favorito.UsuarioFavorito.id)).filter(
         models_favorito.UsuarioFavorito.usuario_id == user_id
     ).scalar()

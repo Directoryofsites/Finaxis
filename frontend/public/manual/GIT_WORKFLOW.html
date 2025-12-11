@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📘 Manual de Sincronización Git (Modo 2 PCs)</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>📘 Manual de Sincronización Git (Modo 2 PCs)</h1>
+<p>Este manual explica cómo trabajar en el proyecto <strong>Finaxis / ContaPY2</strong> utilizando dos o más computadores simultáneamente sin perder datos.</p>
+<h2>🌟 La Regla de Oro</h2>
+<blockquote>
+<p><strong>GitHub es la fuente de la verdad.</strong> 
+Tus PCs son solo estaciones de trabajo temporales. Nunca confíes en que lo que hay en tu PC es lo "último" hasta que no hayas sincronizado con GitHub.</p>
+</blockquote>
+<hr />
+<h2>🚀 1. Configuración Inicial (Solo la primera vez en un PC Nuevo)</h2>
+<p>Si te sientas en un computador donde <strong>NUNCA</strong> has trabajado en este proyecto:</p>
+<ol>
+<li>
+<p><strong>Instalar Prerrequisitos:</strong></p>
+<ul>
+<li><a href="https://git-scm.com/download/win">Instalar Git</a> (Siguiente a todo).</li>
+<li><a href="https://code.visualstudio.com/">Instalar VS Code</a>.</li>
+</ul>
+</li>
+<li>
+<p><strong>Clonar el Proyecto:</strong></p>
+<ul>
+<li>Crea una carpeta vacía (ej: <code>C:\ContaPY2</code>).</li>
+<li>Abre esa carpeta, clic derecho -&gt; "Git Bash Here" o abre la terminal.</li>
+<li>Ejecuta:
+    <code>bash
+    git clone https://github.com/Directoryofsites/Finaxis.git .</code>
+    <em>(⚠️ Ojo al punto al final. Significa "aquí mismo". Si no lo pones, creará una subcarpeta).</em></li>
+</ul>
+</li>
+<li>
+<p><strong>Configurar Entorno Virtual:</strong></p>
+<ul>
+<li>Ejecuta: <code>python -m venv .venv</code></li>
+<li>Ejecuta: <code>.venv\Scripts\pip install -r requirements.txt</code></li>
+</ul>
+</li>
+</ol>
+<hr />
+<h2>☀️ 2. Rutina Diaria (El Ritual Sagrado)</h2>
+<p>Para prevenir errores, repite esto como un mantra.</p>
+<h3>☕ Al Empezar el Día (Antes de escribir código)</h3>
+<p><strong>Objetivo:</strong> Traer al PC actual lo que trabajaste ayer en el otro PC.</p>
+<ol>
+<li>Abre la terminal en la carpeta del proyecto.</li>
+<li>Ejecuta:
+    <code>bash
+    git pull</code><ul>
+<li><em>Si dice "Already up to date":</em> Nadie hizo nada nuevo. Puedes empezar.</li>
+<li><em>Si descarga archivos:</em> ¡Bien! Ya tienes la última versión.</li>
+</ul>
+</li>
+</ol>
+<h3>🌙 Al Terminar el Día (Antes de apagar el PC)</h3>
+<p><strong>Objetivo:</strong> Guardar tu trabajo en la nube para que el otro PC lo reciba mañana.</p>
+<ol>
+<li>Abre la terminal.</li>
+<li>
+<p>Ejecuta estos 3 comandos en orden:
+    <code>bash
+    git add .</code>
+    <em>(Prepara TODOS los archivos modificados para ser guardados).</em></p>
+<p><code>bash
+git commit -m "Descripción breve de lo que hice hoy"</code>
+<em>(Sella los cambios en tu PC con un mensaje).</em></p>
+<p><code>bash
+git push</code>
+<em>(Envía el paquete a la nube/GitHub).</em></p>
+</li>
+</ol>
+<hr />
+<h2>🚑 3. Solución de Problemas Comunes</h2>
+<h3>🔴 Error: "Git Push Failed" / "Updates were rejected"</h3>
+<p><strong>Causa:</strong> Intentaste subir (<code>push</code>) cambios pero alguien (quizás tú mismo en el otro PC) subió cosas antes y no las descargaste. GitHub protege el proyecto rechazando tu subida.</p>
+<p><strong>Solución:</strong>
+1.  Descarga primero: <code>git pull</code>.
+2.  Es posible que Git mezcle todo automáticamente.
+3.  Si todo sale bien, intenta subir de nuevo: <code>git push</code>.</p>
+<h3>🟠 "Merge Conflict" (Conflicto de Fusión)</h3>
+<p><strong>Causa:</strong> Ambos PCs modificaron la <strong>mismo archivo</strong> en la <strong>misma línea</strong>. Git no sabe cuál versión elegir.</p>
+<p><strong>Solución:</strong>
+1.  Abre el archivo "rojo" (el que tiene conflicto).
+2.  Verás signos como <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</code> y <code>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code>.
+3.  Borra manualente el código que NO quieres y deja el código correcto.
+4.  Borra las marcas raras (<code>&lt;&lt;&lt;</code>, <code>===</code>, <code>&gt;&gt;&gt;</code>).
+5.  Guarda el archivo.
+6.  Ejecuta:
+    <code>bash
+    git add .
+    git commit -m "Arreglando conflicto"
+    git push</code></p>
+<hr />
+<h2>🧪 Comandos Útiles Extra</h2>
+<ul>
+<li><code>git status</code>: Te dice qué archivos has modificado pero no has guardado.</li>
+<li><code>git log</code>: Muestra el historial de quién hizo qué y cuándo.</li>
+</ul>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

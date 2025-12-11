@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Navegación: Nueva Estructura de Módulos (Inventarios y Facturación)</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual de Navegación: Nueva Estructura de Módulos (Inventarios y Facturación)</h1>
+<h2>1. Introducción</h2>
+<p>Para mejorar la eficiencia operativa y separar las labores administrativas de las comerciales, se ha reorganizado el menú principal del sistema. 
+El antiguo módulo gigante de "Inventarios" se ha dividido en dos secciones especializadas: <strong>Inventarios</strong> (Control Logístico) y <strong>Facturación</strong> (Gestión Comercial).</p>
+<hr />
+<h2>2. Nueva Estructura del Menú</h2>
+<h3>2.1. Módulo de Inventarios 📦</h3>
+<p><strong>Enfoque:</strong> Control físico, stock, costos y parametrización.
+Este módulo es exclusivo para el personal encargado del almacén, logística y control de costos.</p>
+<p><strong>Opciones Disponibles (en orden):</strong>
+1.  <strong>Parámetros Inventario:</strong> Configuración de reglas, bodegas y categorias.
+2.  <strong>Gestión de Inventarios:</strong> Catálogo maestro de productos y servicios.
+3.  <strong>Estado General y Movimientos:</strong> Kardex detallado y auditoría de movimientos.
+4.  <strong>Relación Documentos Inventarios:</strong> Informe de cruce de documentos.
+5.  <strong>Traslado Inventarios:</strong> Movimiento de mercancía entre bodegas internas.
+6.  <strong>Ajuste Inventarios:</strong> Corrección de stock físico vs. sistema.
+7.  <strong>% Gestión de Topes:</strong> Control de máximos y mínimos.</p>
+<h3>2.2. Módulo de Facturación 💰 (NUEVO)</h3>
+<p><strong>Enfoque:</strong> Ventas, compras y rentabilidad.
+Este módulo agrupa todas las operaciones transaccionales comerciales.</p>
+<p><strong>Opciones Disponibles (en orden):</strong>
+1.  <strong>Facturación:</strong> Emisión de facturas de venta.
+2.  <strong>Gestión de Remisiones:</strong> Creación y despacho de mercancía sin factura inmediata.
+3.  <strong>Reportes Remisiones:</strong> Control de entregas y pendientes por facturar.
+4.  <strong>Gestión Compras:</strong> Registro de facturas de proveedores y entradas de almacén.
+5.  <strong>Rentabilidad Producto:</strong> Análisis de margen de ganancia por ítem.
+6.  <strong>Rentabilidad por Documentos:</strong> Análisis de margen por venta/factura.</p>
+<hr />
+<h2>3. ¿Cómo acceder?</h2>
+<p>Ambos módulos se encuentran en el <strong>Menú Lateral Izquierdo</strong>.</p>
+<ul>
+<li>El icono de <strong>Inventarios</strong> sigue siendo la caja (📦).</li>
+<li>El icono de <strong>Facturación</strong> es el signo de peso/dólar (💲).</li>
+</ul>
+<blockquote>
+<p><strong>Ruta Rápida:</strong> Simplemente busque el nuevo bloque llamado "Facturación" justo debajo de Inventarios.</p>
+</blockquote>
+<hr />
+<h2>4. Preguntas Frecuentes (FAQ)</h2>
+<ul>
+<li>
+<p><strong>¿Se borró alguna información?</strong>
+    No. Absolutamente toda la información (facturas, productos, remisiones) sigue intacta. Solo se han movido los <em>accesos directos</em> para que sea más fácil encontrarlos.</p>
+</li>
+<li>
+<p><strong>¿Por qué no veo "Remisiones" en Inventario?</strong>
+    Ahora viven en el módulo de <strong>Facturación</strong>, ya que es un paso previo a la venta.</p>
+</li>
+<li>
+<p><strong>¿Dónde configuro las Bodegas?</strong>
+    Sigue estando en <strong>Inventarios &gt; Parámetros Inventario</strong>.</p>
+</li>
+</ul>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

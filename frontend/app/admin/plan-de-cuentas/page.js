@@ -324,7 +324,7 @@ export default function PlanDeCuentasPage() {
           {/* Botones de Acción Superior */}
           <div className="flex gap-2">
             <button
-              onClick={() => window.open('/manual?file=capitulo_1_puc.md', '_blank')}
+              onClick={() => window.open('/manual/capitulo_1_puc.html', '_blank')}
               className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2"
               title="Ver Manual de Capacitación"
             >

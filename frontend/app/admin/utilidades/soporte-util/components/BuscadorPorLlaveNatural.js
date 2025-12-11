@@ -108,7 +108,7 @@ export default function BuscadorPorLlaveNatural({ todasLasEmpresas }) {
           ℹ️ Buscador de ID por Llave Natural
         </h3>
         <button
-          onClick={() => window.open('/manual?file=capitulo_19_buscador_llave.md', '_blank')}
+          onClick={() => window.open('/manual/capitulo_19_buscador_llave.html', '_blank')}
           className="text-teal-600 hover:bg-teal-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors"
           title="Ver Manual de Usuario"
         >

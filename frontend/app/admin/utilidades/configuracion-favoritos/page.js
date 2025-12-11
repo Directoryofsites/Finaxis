@@ -1,4 +1,4 @@
-// frontend/app/admin/utilidades/configuracion-favoritos/page.js (REEMPLAZO COMPLETO - LÍMITE 16)
+// frontend/app/admin/utilidades/configuracion-favoritos/page.js (REEMPLAZO COMPLETO - LÍMITE 24)
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -17,9 +17,9 @@ import BotonRegresar from '@/app/components/BotonRegresar'; // Asumiendo esta ru
 
 // ====================================================================
 // CONSTANTE DE CAPACIDAD CENTRALIZADA (FIX CRÍTICO)
-// El límite anterior de 12 se amplía a 16.
+// El límite se amplía a 24 para mayor flexibilidad.
 // ====================================================================
-const MAX_FAVORITES_CAPACITY = 16;
+const MAX_FAVORITES_CAPACITY = 24;
 
 
 const mapMenuToOptions = (menu) => {

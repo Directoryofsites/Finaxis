@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario: Categorías de Activos Fijos (El Cerebro Contable)</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual de Usuario: Categorías de Activos Fijos (El Cerebro Contable)</h1>
+<h2>1. Introducción</h2>
+<p>Antes de registrar cualquier activo (una silla, un computador, un carro), el sistema necesita saber las "Reglas del Juego".
+El módulo de <strong>Categorías</strong> es donde usted define esas reglas. Aquí le dice al software:
+<em>"Todos los computadores se deprecian a 3 años, pero los edificios a 45 años".</em></p>
+<p><strong>¿Por qué es importante?</strong>
+Si configura bien esto una sola vez, el sistema hará toda la contabilidad automática por usted el resto del año.</p>
+<hr />
+<h2>2. ¿Cómo acceder?</h2>
+<p>Menú Principal &gt; <strong>Activos Fijos</strong> &gt; Botón <strong>Categorías y Vidas Útiles</strong>.</p>
+<hr />
+<h2>3. Guía Paso a Paso para Crear una Categoría</h2>
+<p>Haga clic en el botón azul <strong>[+ Nueva Categoría]</strong> y complete:</p>
+<h3>A. Nombre Descriptivo</h3>
+<p>Use nombres claros que agrupen bienes similares.
+*   <em>Ejemplo:</em> "Equipo de Computo y Comunicación"
+*   <em>Ejemplo:</em> "Flota y Equipo de Transporte"
+*   <em>Ejemplo:</em> "Muebles y Enseres de Oficina"</p>
+<h3>B. Vidas Útiles (El corazón de la NIIF)</h3>
+<p>Aquí definimos en <strong>cuántos meses</strong> se gastará el bien. El sistema permite manejar dos realidades paralelas:</p>
+<ol>
+<li>
+<p><strong>Vida Útil NIIF (Realidad Financiera):</strong></p>
+<ul>
+<li>Es el tiempo que usted <em>realmente</em> espera usar el activo.</li>
+<li><em>Ejemplo:</em> Un portátil nromalmente dura <strong>36 meses</strong> (3 años).</li>
+</ul>
+</li>
+<li>
+<p><strong>Vida Útil Fiscal (Regla DIAN):</strong></p>
+<ul>
+<li>Es el tiempo mínimo que exige la ley para descontar el gasto.</li>
+<li><em>Ejemplo:</em> La ley tributaria puede exigir deprecialo a <strong>60 meses</strong> (5 años).</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p><strong>El Sistema es Dual:</strong> Calculará ambos valores simultáneamente para que usted tenga el reporte de "Diferencia Fiscal" listo para su declaración de renta.</p>
+</blockquote>
+<h3>C. Método de Depreciación</h3>
+<p>Por ahora, el estándar mundial es <strong>Línea Recta</strong> (El activo pierde valor igual todos los meses). Déjelo seleccionado a menos que su contador indique lo contrario.</p>
+<hr />
+<h2>4. Cuestionario de Autoevaluación (FAQ)</h2>
+<p><strong>P1: ¿Qué pasa si me equivoco en la vida útil y ya registré activos?</strong>
+<strong>R:</strong> Los activos nuevos tomarán la corrección. Los antiguos mantendrán la regla con la que nacieron (histórico). Para corregir antiguos, debe hacer un "Avalúo" o re-estimación (Fase avanzada).</p>
+<p><strong>P2: ¿Puedo tener una categoría "No Depreciable"?</strong>
+<strong>R:</strong> ¡Sí! Use esto para <strong>Terrenos</strong>. Los terrenos no se gastan con el tiempo, al contrario, suelen subir de precio. Ponga 0 meses o método "No Depreciar".</p>
+<p><strong>P3: ¿Las cuentas contables se ponen aquí?</strong>
+<strong>R:</strong> Internamente sí. El sistema ya sabe que la cuenta de activos empieza por 15 y la de gasto por 51. En esta versión simplificada, el software asigna las cuentas estándar automáticamente.</p>
+<p><strong>P4: ¿Cuántas categorías debo crear?</strong>
+<strong>R:</strong> Las recomendadas son entre 5 y 10:
+1. Edificaciones
+2. Maquinaria y Equipo
+3. Equipo de Oficina
+4. Equipo de Cómputo
+5. Flota y Transporte
+6. Terrenos</p>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

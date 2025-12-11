@@ -281,7 +281,7 @@ export default function GestionCentrosCostoPage() {
 
                             {/* 2. Botón Manual (Derecha) */}
                             <button
-                                onClick={() => window.open('/manual?file=capitulo_50_centros_de_costo.md', '_blank')}
+                                onClick={() => window.open('/manual/capitulo_50_centros_de_costo.html', '_blank')}
                                 className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors font-bold text-sm"
                                 type="button"
                             >

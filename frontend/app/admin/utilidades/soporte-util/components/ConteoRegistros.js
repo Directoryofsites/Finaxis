@@ -90,7 +90,7 @@ export default function ConteoRegistros() {
                 </div>
                 <div className="flex gap-2">
                     <button
-                        onClick={() => window.open('/manual?file=capitulo_22_conteo_registros.md', '_blank')}
+                        onClick={() => window.open('/manual/capitulo_22_conteo_registros.html', '_blank')}
                         className="btn btn-sm btn-outline btn-info gap-2"
                         title="Ver Manual de Usuario"
                     >

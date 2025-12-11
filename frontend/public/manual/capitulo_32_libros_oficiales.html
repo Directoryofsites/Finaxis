@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Libros Oficiales</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Libros Oficiales</h1>
+<p>El módulo de <strong>Libros Oficiales</strong> permite la generación y cierre de los libros contables requeridos por la normativa legal. Esta herramienta facilita tanto la revisión previa como la emisión definitiva de los documentos.</p>
+<h2>1. Tipos de Libros Disponibles</h2>
+<p>El sistema permite generar los tres libros principales:</p>
+<ol>
+<li><strong>📘 Libro Diario</strong>: Registra cronológicamente todas las operaciones del periodo.</li>
+<li><strong>📗 Libro Mayor y Balances</strong>: Resume los movimientos por cuenta mayor, mostrando saldos iniciales, movimientos y saldos finales.</li>
+<li><strong>📙 Libro de Inventarios y Balances</strong>: Detalla los activos, pasivos y patrimonio al corte seleccionado.</li>
+</ol>
+<h2>2. Modos de Operación</h2>
+<p>Es crítico entender la diferencia entre los dos modos de generación:</p>
+<h3>Modo Borrador (Recomendado para Revisión)</h3>
+<ul>
+<li><strong>Icono</strong>: <span style="color:indigo">🖨️</span></li>
+<li><strong>Función</strong>: Genera un PDF con marca de agua "BORRADOR".</li>
+<li><strong>Efecto</strong>: <strong>NO cierra el periodo</strong>. Puede generar este reporte tantas veces como necesite para verificar que la información sea correcta antes del cierre definitivo.</li>
+</ul>
+<h3>Modo Oficial (Zona de Peligro)</h3>
+<ul>
+<li><strong>Icono</strong>: <span style="color:red">🔒</span></li>
+<li><strong>Función</strong>: Genera el PDF oficial numerado y <strong>CIERRA EL PERIODO CONTABLE</strong>.</li>
+<li><strong>Efecto</strong>:<ul>
+<li>Bloquea la creación, edición o anulación de documentos en el mes y año seleccionados.</li>
+<li>Esta acción es <strong>irreversible</strong> desde el panel de usuario.</li>
+<li>Se recomienda realizar una copia de seguridad antes de ejecutar esta acción.</li>
+</ul>
+</li>
+</ul>
+<h2>3. Proceso de Generación</h2>
+<ol>
+<li>Seleccione el <strong>Tipo de Libro</strong>.</li>
+<li>Indique el <strong>Año Gravable</strong> y el <strong>Mes de Cierre</strong>.</li>
+<li>Elija el <strong>Modo de Operación</strong> (Borrador u Oficial).</li>
+<li>Haga clic en el botón de generación.<ul>
+<li>Si eligió <strong>Modo Oficial</strong>, el sistema solicitará una confirmación adicional de seguridad.</li>
+</ul>
+</li>
+</ol>
+<h2>4. Solución de Problemas</h2>
+<ul>
+<li><strong>Error al generar</strong>: Verifique que existan movimientos en el periodo seleccionado.</li>
+<li><strong>Periodo ya cerrado</strong>: Si intenta cerrar un periodo previamente cerrado, el sistema le notificará que la operación no es permitida.</li>
+</ul>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

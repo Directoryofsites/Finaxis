@@ -143,7 +143,7 @@ export default function InspectorMaestros({ todasLasEmpresas }) {
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-bold text-red-800">Inspector y Erradicador de Datos Maestros</h3>
         <button
-          onClick={() => window.open('/manual?file=capitulo_18_inspector_maestros.md', '_blank')}
+          onClick={() => window.open('/manual/capitulo_18_inspector_maestros.html', '_blank')}
           className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors"
           title="Ver Manual de Usuario"
         >

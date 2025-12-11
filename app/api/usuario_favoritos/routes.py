@@ -23,7 +23,7 @@ router = APIRouter(
     "/", 
     response_model=List[schemas_favorito.UsuarioFavoritoResponse],
     status_code=status.HTTP_200_OK,
-    summary="Obtiene los 6 accesos rápidos del usuario autenticado."
+    summary="Obtiene los accesos rápidos del usuario autenticado (hasta 24)."
 )
 def read_favoritos(
     db: Session = Depends(get_db), 
@@ -42,7 +42,7 @@ def read_favoritos(
     "/", 
     response_model=schemas_favorito.UsuarioFavoritoResponse, 
     status_code=status.HTTP_201_CREATED,
-    summary="Crea un nuevo acceso rápido (máximo 6)."
+    summary="Crea un nuevo acceso rápido (máximo 24)."
 )
 def create_favorito_route(
     favorito: schemas_favorito.UsuarioFavoritoCreate,
@@ -50,7 +50,7 @@ def create_favorito_route(
     current_user: Usuario = Depends(get_current_user)
 ):
     """
-    Crea un nuevo acceso rápido. Valida el límite de 6 botones y la unicidad del orden.
+    Crea un nuevo acceso rápido. Valida el límite de 24 botones y la unicidad del orden.
     """
     return service_favoritos.create_favorito(db, favorito, current_user.id)
 

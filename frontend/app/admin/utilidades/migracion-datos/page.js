@@ -117,7 +117,7 @@ export default function MigracionDatosPage() {
             <div className="flex justify-between items-center w-full md:w-auto gap-4">
               <BotonRegresar />
               <button
-                onClick={() => window.open('/manual?file=capitulo_6_copias.md', '_blank')}
+                onClick={() => window.open('/manual/capitulo_6_copias.html', '_blank')}
                 className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2 flex items-center md:hidden"
                 title="Ver Manual de Usuario"
               >
@@ -135,7 +135,7 @@ export default function MigracionDatosPage() {
             </div>
           </div>
           <button
-            onClick={() => window.open('/manual?file=capitulo_6_copias.md', '_blank')}
+            onClick={() => window.open('/manual/capitulo_6_copias.html', '_blank')}
             className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2 hidden md:flex items-center"
             title="Ver Manual de Usuario"
           >

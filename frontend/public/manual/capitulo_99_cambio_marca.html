@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Técnico: Cambio de Nombre de Marca y Razón Social</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual Técnico: Cambio de Nombre de Marca y Razón Social</h1>
+<p>Este documento detalla los archivos exactos que deben modificarse para cambiar el nombre del programa (actualmente "Finaxis") o la Razón Social de la empresa en el sistema.</p>
+<h2>1. Cambio de Nombre del Programa (Rebranding)</h2>
+<p>Si desea cambiar el nombre del software (ej. de "Finaxis" a "OtroNombre"), debe editar los siguientes archivos:</p>
+<h3>Frontend (Interfaz de Usuario)</h3>
+<ol>
+<li>
+<p><strong>Barra Lateral (Menú Principal):</strong></p>
+<ul>
+<li><strong>Archivo:</strong> <code>c:\ContaPY2\frontend\components\Sidebar.js</code></li>
+<li><strong>Ubicación:</strong> Busca la etiqueta <code>&lt;h2&gt;</code> cerca de la línea 22.</li>
+<li><strong>Código a editar:</strong>
+    <code>javascript
+    &lt;h2 className="text-xl font-bold text-white"&gt;
+        Finaxis &lt;span className="text-sm font-light text-blue-400"&gt;v1.0&lt;/span&gt;
+    &lt;/h2&gt;</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Título de la Pestaña del Navegador:</strong></p>
+<ul>
+<li><strong>Archivo:</strong> <code>c:\ContaPY2\frontend\app\layout.js</code></li>
+<li><strong>Ubicación:</strong> Objeto <code>metadata</code> cerca de la línea 6.</li>
+<li><strong>Código a editar:</strong>
+    <code>javascript
+    export const metadata = {
+      title: "Sistema Finaxis", // &lt;--- Cambiar aquí
+      description: "Sistema contable integral para Colombia",
+    };</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Pantalla de Bienvenida (Login):</strong></p>
+<ul>
+<li><strong>Archivo:</strong> <code>c:\ContaPY2\frontend\app\page.js</code></li>
+<li><strong>Ubicación:</strong> Componente <code>HomePageContent</code> (al final del archivo), sección de no autenticado.</li>
+<li><strong>Código a editar:</strong>
+    <code>javascript
+    &lt;h1 className="text-4xl font-extrabold text-blue-600 mb-4"&gt;Finaxis&lt;/h1&gt;
+    &lt;p className="mt-4 text-lg text-gray-600"&gt;Tu Sistema Finaxis ERP...&lt;/p&gt;</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Logo de la Aplicación:</strong></p>
+<ul>
+<li><strong>Archivo:</strong> <code>c:\ContaPY2\frontend\public\logo.png</code></li>
+<li><strong>Acción:</strong> Reemplazar este archivo de imagen con el nuevo logo. Asegúrese de mantener el nombre <code>logo.png</code> o actualizar las referencias en el código.</li>
+</ul>
+</li>
+</ol>
+<h3>Backend (API y Reportes)</h3>
+<ol>
+<li>
+<p><strong>Título de la API (Documentación):</strong></p>
+<ul>
+<li><strong>Archivo:</strong> <code>c:\ContaPY2\app\main.py</code></li>
+<li><strong>Ubicación:</strong> Definición de <code>FastAPI</code> cerca de la línea 91.</li>
+<li><strong>Código a editar:</strong>
+    <code>python
+    app = FastAPI(
+        title="API del Sistema Finaxis", # &lt;--- Cambiar aquí
+        // ...
+    )</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Pie de Página en Reportes PDF:</strong></p>
+<ul>
+<li><strong>Ubicación:</strong> <code>c:\ContaPY2\app\templates\reports\</code></li>
+<li><strong>Archivos:</strong> Debe revisar los archivos <code>.html</code> en esta carpeta.</li>
+<li><strong>Ejemplo:</strong> <code>rentabilidad_documento_report.html</code> (Línea ~88).</li>
+<li><strong>Código a editar:</strong>
+    <code>html
+    &lt;div class="footer"&gt;
+        &lt;p&gt;Sistema Contable Finaxis.&lt;/p&gt; &lt;!-- Cambiar aquí --&gt;
+    &lt;/div&gt;</code></li>
+<li><em>Nota:</em> Puede usar un editor de código para buscar y reemplazar "Finaxis" en todos los archivos de esta carpeta.</li>
+</ul>
+</li>
+<li>
+<p><strong>Formatos de Impresión (Base de Datos):</strong></p>
+<ul>
+<li>Si al imprimir un documento (Factura, Comprobante, etc.) ve el texto "Impreso por Sistema ContaPY", esto <strong>NO está en el código</strong>, sino en la configuración de la plantilla en la Base de Datos.</li>
+<li><strong>Solución:</strong><ol>
+<li>Ingrese al sistema como Administrador.</li>
+<li>Vaya a <strong>Configuración</strong> -&gt; <strong>Formatos de Impresión</strong>.</li>
+<li>Seleccione el formato que está usando (ej. "Estándar").</li>
+<li>Edite el contenido HTML y busque el texto en el pie de página.</li>
+<li>Cámbielo por "Impreso por Sistema Finaxis" y guarde.</li>
+</ol>
+</li>
+</ul>
+</li>
+</ol>
+<hr />
+<h2>2. Cambio de Razón Social (Nombre de la Empresa)</h2>
+<p>El nombre de la empresa que aparece en los reportes y en la barra superior <strong>NO está escrito en el código</strong>, sino que se toma de la Base de Datos.</p>
+<h3>Cómo cambiarlo:</h3>
+<ol>
+<li>
+<p><strong>Desde la Aplicación:</strong></p>
+<ul>
+<li>Ingrese al módulo <strong>Administración</strong> -&gt; <strong>Gestión de Empresas</strong>.</li>
+<li>Seleccione su empresa y haga clic en <strong>Editar</strong>.</li>
+<li>Cambie el campo <strong>Razón Social</strong>.</li>
+<li>Guarde los cambios.</li>
+</ul>
+</li>
+<li>
+<p><strong>Efecto:</strong></p>
+<ul>
+<li>Este cambio se reflejará automáticamente en:<ul>
+<li>Encabezados de todos los reportes PDF.</li>
+<li>Barra superior del Dashboard.</li>
+<li>Certificados y documentos generados.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3>Excepción (Si se codificó manualmente en algún reporte específico):</h3>
+<p>Si por alguna razón ve un nombre de empresa fijo que no cambia al editar la base de datos, revise los archivos en <code>c:\ContaPY2\app\templates\reports\</code> y busque si el nombre fue escrito directamente en el HTML en lugar de usar la variable <code>{{ empresa.razon_social }}</code>.</p>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

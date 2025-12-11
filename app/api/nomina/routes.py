@@ -128,8 +128,11 @@ def create_empleado(empleado: EmpleadoCreate, db: Session = Depends(get_db)):
     return db_empleado
 
 @router.get("/empleados", response_model=List[EmpleadoResponse])
-def get_empleados(db: Session = Depends(get_db)):
-    return db.query(models.Empleado).all()
+def get_empleados(tipo_nomina_id: Optional[int] = None, db: Session = Depends(get_db)):
+    query = db.query(models.Empleado)
+    if tipo_nomina_id:
+        query = query.filter(models.Empleado.tipo_nomina_id == tipo_nomina_id)
+    return query.all()
 
 @router.put("/empleados/{id}", response_model=EmpleadoResponse)
 def update_empleado(id: int, empleado: EmpleadoCreate, db: Session = Depends(get_db)):

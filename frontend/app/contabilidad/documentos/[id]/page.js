@@ -170,7 +170,7 @@ export default function DocumentoDetallePage() {
           {!isEditing ? (
             <>
               <button
-                onClick={() => window.open('/manual?file=capitulo_10_edicion.md', '_blank')}
+                onClick={() => window.open('/manual/capitulo_10_edicion.html', '_blank')}
                 className="px-4 py-2 text-indigo-600 hover:bg-indigo-50 rounded-md font-bold flex items-center gap-2"
                 title="Ver Manual de Usuario"
               >

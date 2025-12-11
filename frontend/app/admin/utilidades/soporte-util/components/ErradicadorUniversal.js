@@ -123,7 +123,7 @@ export default function ErradicadorUniversal({ todasLasEmpresas }) {
       <div className="flex justify-between items-center mb-4 border-b pb-2">
         <h2 className="text-2xl font-bold text-red-700">Exterminador Universal de Datos</h2>
         <button
-          onClick={() => window.open('/manual?file=capitulo_23_erradicador.md', '_blank')}
+          onClick={() => window.open('/manual/capitulo_23_erradicador.html', '_blank')}
           className="text-red-600 hover:bg-red-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors"
           title="Ver Manual de Usuario"
         >

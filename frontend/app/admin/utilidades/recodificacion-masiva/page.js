@@ -317,7 +317,7 @@ export default function RecodificacionMasivaPage() {
             </div>
           </div>
           <button
-            onClick={() => window.open('/manual?file=capitulo_13_recodificacion.md', '_blank')}
+            onClick={() => window.open('/manual/capitulo_13_recodificacion.html', '_blank')}
             className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2 flex items-center"
             title="Ver Manual de Usuario"
           >

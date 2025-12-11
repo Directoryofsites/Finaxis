@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario: Listado de Activos (Torre de Control)</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual de Usuario: Listado de Activos (Torre de Control)</h1>
+<h2>1. Introducción</h2>
+<p>Esta es la pantalla principal. Aquí usted no "hace" cosas, sino que "controla" cosas. Es su vista panorámica de toda la propiedad de la empresa, desde la cafetera de la cocina hasta el camión de reparto.</p>
+<hr />
+<h2>2. ¿Cómo acceder?</h2>
+<p>Menú Principal &gt; <strong>Activos Fijos</strong> &gt; Botón <strong>Listado de Activos</strong>.</p>
+<hr />
+<h2>3. ¿Cómo leer el Tablero?</h2>
+<p>La tabla central le muestra 5 datos vitales:</p>
+<ol>
+<li><strong>Código (Azul):</strong> Es el enlace al expediente del activo.</li>
+<li><strong>Activo y Serial:</strong> Qué es.</li>
+<li><strong>Categoría:</strong> Si es Mueble, Computador, etc.</li>
+<li><strong>Costo Histórico:</strong> Cuánto pagamos por él (no cuánto vale hoy).</li>
+<li><strong>ESTADO (El Semáforo):</strong><ul>
+<li>🟢 <strong>ACTIVO:</strong> El bien está en uso y depreciándose normalmente. Todo OK.</li>
+<li>🟡 <strong>MANTENIMIENTO:</strong> El bien está en reparación. (Aún se deprecia, pero no está operativo).</li>
+<li>🔴 <strong>BAJA:</strong> El bien ya no existe para la empresa (se vendió, se botó o se robó). Ya no aparece en los balances financieros.</li>
+</ul>
+</li>
+</ol>
+<hr />
+<h2>4. Herramientas de Auditoría</h2>
+<h3>La Lupa (Buscador Inteligente) 🔍</h3>
+<p>Arriba hay una barra de búsqueda. No necesita decirle qué buscar, ella es lista.
+Puede escribir:
+*   Una placa: <code>AF-001</code>
+*   Una marca: <code>Samsung</code>
+*   Un responsable: <code>Juan Perez</code>
+El sistema filtrará la lista en tiempo real.</p>
+<h3>Exportación (Próximamente)</h3>
+<p>Desde aquí podrá descargar en Excel el "Libro Fiscal de Activos" que piden los auditores, con el cálculo exacto de cuánto se depreció cada tornillo este año.</p>
+<hr />
+<h2>5. Cuestionario de Autoevaluación (FAQ)</h2>
+<p><strong>P1: ¿Puedo ver los activos que ya di de baja?</strong>
+<strong>R:</strong> Por defecto el sistema muestra los VIVOS. En los filtros avanzados (próxima actualización) podrá ver el "Cementerio de Activos" (Histórico de bajas).</p>
+<p><strong>P2: ¿Cómo sé cuánto vale mi activo HOY (Valor en Libros)?</strong>
+<strong>R:</strong> El listado principal muestra el "Costo de Adquisición" (cuánto pagó). Para ver el valor actual (Costo - Depreciación), debe entrar al detalle del activo o sacar el reporte mensual financiero.</p>
+<p><strong>P3: ¿Si un activo se pierde, lo borro de la lista?</strong>
+<strong>R:</strong> <strong>¡JAMÁS!</strong> Contablemente nada se borra.
+*   <em>Correcto:</em> Debe entrar al activo y cambiar su estado a <strong>BAJA</strong>. Esto dejará el registro de que existió y qué pasó con él, justificando la pérdida ante la DIAN.</p>
+<hr />
+<p><strong>Recuerde:</strong> Un inventario de activos fijos actualizado es la diferencia entre una empresa ordenada y una donde "las cosas desaparecen". <strong>Haga inventario físico al menos una vez al año.</strong></p>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

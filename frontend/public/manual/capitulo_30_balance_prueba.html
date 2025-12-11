@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balance de Prueba</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Balance de Prueba</h1>
+<p>El <strong>Balance de Prueba</strong> es una herramienta de auditoría fundamental que permite verificar la exactitud de los registros contables. Muestra el resumen de todas las cuentas (Activo, Pasivo, Patrimonio, Ingresos, Gastos y Costos) asegurando que la contabilidad cumple con el principio de partida doble.</p>
+<h2>1. Configuración del Reporte</h2>
+<p>Este reporte es altamente personalizable para facilitar el análisis a diferentes niveles.</p>
+<ol>
+<li><strong>Rango de Fechas</strong>: Defina el periodo a auditar (Desde - Hasta).</li>
+<li><strong>Nivel de Detalle</strong>:<ul>
+<li><strong>1 (Clase)</strong>: Resumen general (Activo, Pasivo, etc.).</li>
+<li><strong>2 (Grupo)</strong>: Disponible, Inversiones, Deudores.</li>
+<li><strong>3 (Cuenta)</strong>: Caja, Bancos, Clientes.</li>
+<li><strong>4 (Subcuenta/Auxiliar)</strong>: Detalle máximo cuenta por cuenta.</li>
+</ul>
+</li>
+<li><strong>Filtro de Cuentas</strong>:<ul>
+<li><strong>Con Saldo o Movimiento</strong>: Muestra cuentas activas en el periodo (Recomendado).</li>
+<li><strong>Solo con Movimiento</strong>: Oculta cuentas estáticas aunque tengan saldo.</li>
+<li><strong>Todas las Cuentas</strong>: Muestra todo el plan de cuentas (puede ser muy extenso).</li>
+</ul>
+</li>
+</ol>
+<h2>2. Interpretación de Columnas</h2>
+<p>El reporte presenta la evolución de cada cuenta en cuatro momentos:</p>
+<ul>
+<li><strong>Saldo Inicial</strong>: Valor de la cuenta antes de iniciar el rango de fechas seleccionado.</li>
+<li><strong>Débitos</strong>: Suma de todos los movimientos débito del periodo.</li>
+<li><strong>Créditos</strong>: Suma de todos los movimientos crédito del periodo.</li>
+<li><strong>Nuevo Saldo</strong>: Valor final de la cuenta.</li>
+</ul>
+<blockquote>
+<p><strong>Nuevo Saldo</strong> = Saldo Inicial + Débitos - Créditos</p>
+</blockquote>
+<h2>3. Verificación de "Sumas Iguales"</h2>
+<p>Al final del reporte, el sistema totaliza las columnas de Débitos y Créditos.</p>
+<ul>
+<li><strong>Cuadre Correcto</strong>: Si la suma de Débitos es idéntica a la suma de Créditos, aparecerá un mensaje en <span style="color:green">verde</span> confirmando que el balance está cuadrado.</li>
+<li><strong>Descuadre</strong>: Si hay diferencias, el sistema mostrará una alerta en <span style="color:red">rojo</span> indicando el monto del error. Esto requiere revisión inmediata de los comprobantes.</li>
+</ul>
+<h2>4. Exportación</h2>
+<p>Puede generar un archivo PDF oficial haciendo clic en <strong>📄 Exportar PDF</strong>. Este documento es ideal para revisiones de revisoría fiscal o auditoría externa.</p>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

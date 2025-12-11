@@ -248,7 +248,7 @@ export default function NuevaCompraPage() {
                         </div>
                     </div>
                     <button
-                        onClick={() => window.open('/manual?file=capitulo_40_compras.md', '_blank')}
+                        onClick={() => window.open('/manual/capitulo_40_compras.html', '_blank')}
                         className="btn btn-ghost btn-sm gap-2 text-green-600"
                     >
                         <FaBook /> Manual

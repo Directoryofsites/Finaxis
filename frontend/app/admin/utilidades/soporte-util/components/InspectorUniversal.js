@@ -83,7 +83,7 @@ export default function InspectorUniversal() {
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-bold text-purple-800">Inspector Universal por ID</h3>
         <button
-          onClick={() => window.open('/manual?file=capitulo_20_inspector_id.md', '_blank')}
+          onClick={() => window.open('/manual/capitulo_20_inspector_id.html', '_blank')}
           className="text-purple-600 hover:bg-purple-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors"
           title="Ver Manual de Usuario"
         >

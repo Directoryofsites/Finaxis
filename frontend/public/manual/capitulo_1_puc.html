@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📘 Manual de Usuario - Capítulo 1: El Plan de Cuentas (PUC)</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>📘 Manual de Usuario - Capítulo 1: El Plan de Cuentas (PUC)</h1>
+<h2>1. Introducción</h2>
+<p>El <strong>Plan de Cuentas (PUC)</strong> es la columna vertebral de su sistema contable. Es el listado organizado de todas las cuentas necesarias para registrar los hechos económicos de la empresa (activos, pasivos, patrimonio, ingresos, gastos y costos).</p>
+<p>En <strong>PYsis</strong>, el Plan de Cuentas es:
+*   🏗️ <strong>Jerárquico:</strong> Las cuentas se organizan en niveles (Clase, Grupo, Cuenta, Subcuenta, Auxiliar).
+*   🧩 <strong>Flexible:</strong> Puede crear tantos niveles y auxiliares como su empresa requiera.
+*   🧠 <strong>Inteligente:</strong> El sistema valida automáticamente la estructura y calcula los niveles.</p>
+<hr />
+<h2>2. ¿Cómo acceder al módulo?</h2>
+<p>Para gestionar el Plan de Cuentas, siga esta ruta en el menú principal:</p>
+<ol>
+<li>Ubique la sección <strong>⚙️ Administración y Configuración</strong>.</li>
+<li>Busque el grupo <strong>Parametrización Maestra</strong>.</li>
+<li>Haga clic en la opción <strong>📖 Gestionar PUC</strong>.</li>
+</ol>
+<blockquote>
+<p><strong>Ruta:</strong> <code>Administración &gt; Parametrización Maestra &gt; Gestionar PUC</code></p>
+</blockquote>
+<hr />
+<h2>3. Conceptos Fundamentales</h2>
+<p>Antes de crear cuentas, es vital entender dos conceptos clave que el sistema le pedirá:</p>
+<h3>A. Cuenta de Movimiento vs. Cuenta de Grupo</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Tipo de Cuenta</th>
+<th style="text-align: left;">Descripción</th>
+<th style="text-align: left;">Ejemplo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>📂 Cuenta de Grupo (Padre)</strong></td>
+<td style="text-align: left;">Son cuentas que agrupan a otras. <strong>NO</strong> se pueden usar para hacer asientos contables. Su función es organizar y sumarizar.</td>
+<td style="text-align: left;"><code>1105 - CAJA</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>📝 Cuenta de Movimiento (Auxiliar)</strong></td>
+<td style="text-align: left;">Son las cuentas de último nivel donde <strong>SÍ</strong> se registran los valores.</td>
+<td style="text-align: left;"><code>110505 - CAJA GENERAL</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><em>Nota:</em> En el sistema, esto se define con la casilla <strong>"Permite Movimiento"</strong>.</p>
+</blockquote>
+<h3>B. Jerarquía y Código</h3>
+<p>El código define la jerarquía. Usted no necesita decirle al sistema el nivel, él lo calcula por la longitud del código y quién es su padre.</p>
+<ul>
+<li><strong>Clase:</strong> 1 dígito (Ej: <code>1</code>)</li>
+<li><strong>Grupo:</strong> 2 dígitos (Ej: <code>11</code>)</li>
+<li><strong>Cuenta:</strong> 4 dígitos (Ej: <code>1105</code>)</li>
+<li><strong>Subcuenta:</strong> 6 dígitos (Ej: <code>110505</code>)</li>
+<li><strong>Auxiliar:</strong> 8 o más dígitos.</li>
+</ul>
+<hr />
+<h2>4. Guía Paso a Paso</h2>
+<h3>4.1. Crear una Nueva Cuenta</h3>
+<ol>
+<li>En la pantalla del PUC, haga clic en el botón <strong>"➕ Cuenta Raíz"</strong> o en el botón <strong>"Sub"</strong> de una cuenta existente.</li>
+<li>Complete el formulario con los siguientes datos:<ul>
+<li><strong>Código:</strong> Escriba el código numérico único (Ej: <code>11050501</code>).</li>
+<li><strong>Nombre:</strong> El nombre descriptivo de la cuenta (Ej: <code>Caja Menor Oficina Principal</code>).</li>
+<li><strong>Cuenta Padre:</strong> Seleccione la cuenta superior a la que pertenece.</li>
+<li><strong>Permite Movimiento:</strong><ul>
+<li>✅ Marque esta casilla <strong>SÍ</strong> si es una cuenta auxiliar donde registrará dinero.</li>
+<li>⬜ Déjela desmarcada <strong>NO</strong> si es una cuenta título o de agrupación.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Haga clic en <strong>Guardar</strong>.</li>
+</ol>
+<h3>4.2. Editar una Cuenta Existente</h3>
+<ol>
+<li>Busque la cuenta en el listado o use la barra de búsqueda por código o nombre.</li>
+<li>Haga clic en el icono de <strong>✏️ Lápiz (Editar)</strong> al lado de la cuenta.</li>
+<li>Modifique el nombre u otras propiedades.<ul>
+<li>⚠️ <em>Advertencia:</em> Cambiar el código o el padre de una cuenta que ya tiene movimientos puede afectar sus reportes. Hágalo con precaución.</li>
+</ul>
+</li>
+<li>Haga clic en <strong>Actualizar</strong>.</li>
+</ol>
+<h3>4.3. Eliminar una Cuenta</h3>
+<ol>
+<li>Ubique la cuenta que desea borrar.</li>
+<li>Haga clic en el icono de <strong>🗑️ Basura (Eliminar)</strong>.</li>
+<li>Confirme la acción.</li>
+</ol>
+<blockquote>
+<p><strong>⛔ Restricciones de Seguridad:</strong> El sistema <strong>NO</strong> le permitirá borrar una cuenta si:
+*   Tiene cuentas hijas (primero debe borrar las hijas).
+*   Ya tiene movimientos contables registrados (para garantizar la integridad de la contabilidad).</p>
+</blockquote>
+<hr />
+<h2>5. Herramientas Avanzadas</h2>
+<h3>🛡️ Depuración Jerárquica (Protección al Eliminar)</h3>
+<p>La herramienta de <strong>Depuración</strong> es un <strong>asistente automático</strong> que se activa cuando usted intenta <strong>Eliminar</strong> una cuenta con hijos.</p>
+<p><strong>¿Cómo funciona?</strong>
+1.  Cuando usted hace clic en el icono de <strong>🗑️ Eliminar</strong> de una cuenta padre.
+2.  El sistema ejecuta automáticamente un <strong>Análisis de Depuración</strong>.
+3.  Se abrirá una ventana emergente mostrándole:
+    *   Si la cuenta tiene subcuentas (hijos) que también se eliminarán.
+    *   Si existen conflictos que impiden la eliminación.
+4.  Usted podrá revisar esta información y confirmar la eliminación en cascada si está seguro.</p>
+<blockquote>
+<p><strong>Nota:</strong> Esta es una medida de seguridad para evitar que queden "ramas sueltas" en su árbol contable.</p>
+</blockquote>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

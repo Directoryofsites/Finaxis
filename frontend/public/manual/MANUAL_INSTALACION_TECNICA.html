@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Técnico de Instalación y Despliegue - Finaxis</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual Técnico de Instalación y Despliegue - Finaxis</h1>
+<p>Este documento está dirigido al <strong>Distribuidor / Soporte Técnico</strong>. Explica cómo instalar el sistema, los requerimientos, y responde las dudas estratégicas sobre personalización y seguridad.</p>
+<hr />
+<h2>1. Requerimientos del Sistema (Cliente)</h2>
+<p>Para que Finaxis funcione correctamente en el PC del cliente, se debe cumplir con lo siguiente:</p>
+<h3>Hardware Mínimo</h3>
+<ul>
+<li><strong>Procesador:</strong> Intel Core i3 (8va Gen) o equivalente AMD. Reutilizable i5/i7 recomendado.</li>
+<li><strong>Memoria RAM:</strong> 8 GB (Mínimo absoluto). Recomendado 16 GB si va a tener el motor de base de datos local.</li>
+<li><strong>Disco Duro:</strong> SSD (Disco de Estado Sólido) es obligatorio para el rendimiento de la base de datos.</li>
+<li><strong>Espacio:</strong> 2 GB para el programa + Espacio para Base de Datos (crece con el tiempo).</li>
+</ul>
+<h3>Software / Sistema Operativo</h3>
+<ul>
+<li><strong>Sistema Operativo:</strong> Windows 10 (Build 19041 o superior) o Windows 11. <strong>SOLO 64 BITS</strong>.<ul>
+<li><em>Nota:</em> NO funciona en Windows 7 ni en versiones de 32 bits.</li>
+</ul>
+</li>
+<li><strong>Motor de Base de Datos:</strong> PostgreSQL 14, 15 o 16.<ul>
+<li>Debe estar instalado previamente en el equipo (o en un servidor de la red).</li>
+</ul>
+</li>
+<li><strong>Navegador:</strong> Google Chrome, Microsoft Edge o Firefox (Actualizados).</li>
+</ul>
+<hr />
+<h2>2. Proceso de Instalación</h2>
+<p>El instalador actual (<code>Installer_V1</code>) es de tipo <strong>PORTABLE</strong>. No "instala" cosas en el registro de Windows, lo cual es excelente para evitar conflictos.</p>
+<h3>Pasos:</h3>
+<ol>
+<li><strong>Instalar PostgreSQL:</strong> Si el cliente no tiene servidor, instale PostgreSQL en el PC principal.<ul>
+<li>Cree una base de datos vacía llamada <code>contapy_db</code>.</li>
+<li>Anote la contraseña del usuario <code>postgres</code>.</li>
+</ul>
+</li>
+<li><strong>Copiar la Carpeta:</strong> Lleve la carpeta <code>Installer_V1</code> (puede renombrarla a <code>Finaxis</code>) y péguela en el disco <code>C:\</code> o <code>D:\</code>. Recomendamos rutas cortas y sin espacios (ej: <code>C:\Finaxis</code>).</li>
+<li><strong>Configurar Conexión (.env):</strong><ul>
+<li>Entre a la carpeta <code>backend</code> y abra el archivo <code>.env</code>.</li>
+<li>Edite la línea <code>DATABASE_URL</code> con la clave real del PostgreSQL de ese cliente.</li>
+</ul>
+</li>
+<li><strong>Iniciar:</strong> Ejecute <code>INICIAR_SISTEMA.bat</code>.</li>
+</ol>
+<hr />
+<h2>3. Guía Estratégica para el Creador (Usted)</h2>
+<p>A continuación, respondemos sus dudas críticas sobre seguridad y modelo de negocio.</p>
+<h3>A. ¿El instalador es personalizable por cliente?</h3>
+<p><strong>Estrategia recomendada: Instalador Genérico + Respaldo Personalizado.</strong></p>
+<ul>
+<li><strong>No re-compile el instalador para cada cliente.</strong> Eso es ineficiente. Use el mismo ejecutable (<code>FinaxisServer.exe</code>) para todos.</li>
+<li><strong>¿Cómo personalizo la empresa?</strong><ol>
+<li>En su oficina (PC de desarrollo), cree la empresa del cliente, configure sus impuestos, logo y parámetros iniciales.</li>
+<li>Genere un <strong>BACKUP (Respaldo)</strong> de esa base de datos específica.</li>
+<li>En el PC del cliente, instale el programa "vacío" (Genérico).</li>
+<li><strong>Restaure el Backup</strong> de su oficina en el PC del cliente.</li>
+<li><em>Resultado:</em> El cliente abre el programa y ya ve SU empresa con todo configurado, sin que usted haya tenido que programar un instalador distinto.</li>
+</ol>
+</li>
+</ul>
+<h3>B. ¿Debo loguearme con mi clave de Soporte en el PC del cliente?</h3>
+<p><strong>RIESGO ALTO.</strong> Si usted digita su clave maestra (<code>Jh8...</code>) en un teclado desconocido, un <em>keylogger</em> podría robarla.</p>
+<p><strong>Solución:</strong>
+Use la estrategia del punto A (Respaldo Personalizado).
+1.  Usted hace todo el trabajo "sensible" (crear empresa, asignar cupos) en <strong>SU COMPUTADOR SEGURO</strong>.
+2.  Al cliente solo le lleva los <strong>DATOS YA LISTOS</strong> (el backup).
+3.  Así, nunca tiene que escribir la clave de Soporte Global en el PC del cliente. El cliente entra directo con su usuario <code>admin@cliente.com</code>.</p>
+<h3>C. Seguridad contra Hackers</h3>
+<p>El sistema tiene 3 capas de seguridad:</p>
+<ol>
+<li><strong>Código Compilado:</strong> El backend está en <code>.exe</code>. Es difícil (aunque no imposible) de leer para un humano. Protege su lógica de negocio.</li>
+<li><strong>Frontend Ofuscado:</strong> El código React está "minificado". Es ilegible.</li>
+<li><strong>PUNTO DÉBIL ACTUAL (El archivo .env):</strong><ul>
+<li>En la carpeta <code>backend</code> queda un archivo de texto <code>.env</code> con la clave de la base de datos.</li>
+<li><strong>Mitigación:</strong> Configurar el PostgreSQL del cliente para que solo acepte conexiones desde <code>localhost</code> (el mismo PC). Así, si roban la clave, no pueden conectarse desde internet.</li>
+</ul>
+</li>
+</ol>
+<h3>D. Cupos y Licencias (Modelo de Negocio)</h3>
+<p><strong>Sí, los cupos funcionan nativamente.</strong>
+El control de cupos (ej: 1500 registros/mes) está programado dentro del <code>FinaxisServer.exe</code>.
+*   Cuando usted crea la empresa (en su oficina), le asigna el cupo.
+*   Ese dato viaja en el Backup a la base de datos del cliente.
+*   El <code>.exe</code> lee ese dato y bloquea si se pasan.
+*   <strong>¿Pueden hackear el cupo?</strong> Solo si saben entrar a la base de datos PostgreSQL y modificar la tabla <code>empresas</code> manualmente. Para protegerse de esto, en el futuro implementaremos "Licencias Firmadas Digitalmente", pero por ahora, el modelo es funcional para distribución local.</p>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estado de Cuenta (Clientes)</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Estado de Cuenta (Clientes)</h1>
+<p>El reporte de <strong>Estado de Cuenta</strong> es una herramienta vital para la gestión de cartera. Proporciona una visión clara de las deudas pendientes de un cliente a una fecha de corte específica, clasificándolas por su antigüedad y estado de vencimiento.</p>
+<h2>1. Generación del Reporte</h2>
+<p>Para consultar el estado de cuenta de un cliente:</p>
+<ol>
+<li><strong>Cliente</strong>: Seleccione el cliente de la lista desplegable. Solo aparecerán los terceros marcados como "Cliente" en la gestión de terceros.</li>
+<li><strong>Fecha de Corte</strong>: Seleccione la fecha hasta la cual desea calcular la deuda.<ul>
+<li><em>Por defecto, el sistema selecciona la fecha de hoy.</em></li>
+<li>Si selecciona una fecha pasada, el sistema calculará la deuda "retroactivamente" (ideal para cierres de mes).</li>
+</ul>
+</li>
+</ol>
+<p>Haga clic en <strong>"Generar Estado"</strong> para visualizar la información.</p>
+<h2>2. Interpretación de Resultados</h2>
+<h3>Listado de Facturas</h3>
+<p>El sistema muestra una tabla con todas las facturas que tienen saldo pendiente a la fecha de corte:
+-   <strong>Documento</strong>: Tipo y número de la factura.
+-   <strong>Emisión</strong>: Fecha original de la factura.
+-   <strong>Valor Original</strong>: Monto total inicial.
+-   <strong>Abonos</strong>: Pagos recibidos hasta la fecha.
+-   <strong>Saldo</strong>: Valor que el cliente aún debe.
+-   <strong>Estado</strong>: Indicador visual de salud de la deuda:
+    -   <span style="color:green"><strong>Vence en X días</strong></span>: La factura está vigente.
+    -   <span style="color:red"><strong>X días mora</strong></span>: La factura ya venció y está en mora.</p>
+<h3>Análisis de Vencimientos (Aging)</h3>
+<p>En la parte inferior, encontrará un panel de colores que clasifica la deuda total según su antigüedad:
+-   <strong>Por Vencer</strong>: Deuda sana, aún no exigible.
+-   <strong>1-30 Días</strong>: Mora temprana.
+-   <strong>31-60 Días</strong>: Mora media.
+-   <strong>61-90 Días</strong>: Mora crítica.
+-   <strong>+90 Días</strong>: Cartera de difícil cobro.</p>
+<h2>3. Exportación y Envío</h2>
+<p>Este reporte está diseñado para ser enviado directamente a sus clientes como cobro persuasivo:</p>
+<ul>
+<li><strong>PDF</strong>: Genera un documento formal con el logo de su empresa, listo para enviar por correo electrónico.</li>
+<li><strong>CSV</strong>: Descarga los datos en formato Excel para análisis interno.</li>
+</ul>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

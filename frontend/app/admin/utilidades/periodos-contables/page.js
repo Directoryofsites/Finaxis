@@ -126,7 +126,7 @@ export default function GestionPeriodosPage() {
         <div className="flex gap-2">
           <BotonRegresar />
           <button
-            onClick={() => window.open('/manual?file=capitulo_7_cierre.md', '_blank')}
+            onClick={() => window.open('/manual/capitulo_7_cierre.html', '_blank')}
             className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2 flex items-center"
             title="Ver Manual de Usuario"
           >

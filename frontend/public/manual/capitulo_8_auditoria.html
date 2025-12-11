@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Capítulo 8: Auditoría de Consecutivos</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual de Usuario - Capítulo 8: Auditoría de Consecutivos</h1>
+<h2>1. Introducción</h2>
+<p>El módulo de <strong>Auditoría de Consecutivos</strong> es su herramienta de control fiscal y administrativo.</p>
+<p>Su objetivo es responder una sola pregunta: <strong>¿Falta algún documento?</strong>
+En contabilidad, la numeración consecutiva es sagrada. Si usted tiene la factura #100 y la #102, la DIAN (o su auditor) le preguntará: <em>"¿Dónde está la #101?"</em>. Este módulo escanea su base de datos en busca de esos "huecos" o saltos injustificados.</p>
+<hr />
+<h2>2. ¿Cómo acceder al módulo?</h2>
+<p>Siga esta ruta en el menú principal:</p>
+<ol>
+<li>Ubique la sección <strong>Administración y Configuración</strong>.</li>
+<li>Busque el grupo <strong>Utilidades</strong>.</li>
+<li>Haga clic en la opción <strong>Auditoría de Consecutivos</strong>.</li>
+</ol>
+<blockquote>
+<p><strong>Ruta Rápida:</strong> <code>Administración &gt; Utilidades &gt; Auditoría</code></p>
+</blockquote>
+<hr />
+<h2>3. Lógica de Negocio (Estados del Documento)</h2>
+<p>El sistema clasifica cada número en uno de estos estados:</p>
+<h3>3.1. ACTIVO (Normal)</h3>
+<p>El documento existe, tiene valores y es válido contablemente.</p>
+<h3>3.2. ANULADO (Legal)</h3>
+<p>El documento existe pero sus valores son CERO.
+*   <strong>Significado:</strong> Se cometió un error, se anuló formalmente, y queda la evidencia (el "papel tachado").
+*   <strong>Impacto:</strong> Correcto. No genera huecos fiscales.</p>
+<h3>3.3. ELIMINADO (Riesgo)</h3>
+<p>El documento existió alguna vez, pero fue borrado físicamente de la base de datos (probablemente por un administrador).
+*   <strong>Impacto:</strong> Deja una huella de auditoría ("Aquí hubo algo"), pero no se puede recuperar el contenido.</p>
+<h3>3.4. HUECO (Alerta Máxima)</h3>
+<p>El sistema detecta un salto numérico sin explicación.
+*   <em>Ejemplo:</em> Existe la factura #50 y la #52, pero la #51 nunca se creó ni se anuló. Simplemente no está.
+*   <strong>Causa Común:</strong> Errores de red durante el guardado o manipulación indebida de la base de datos.</p>
+<hr />
+<h2>4. Guía Paso a Paso</h2>
+<h3>4.1. Ejecutar una Auditoría</h3>
+<ol>
+<li>Seleccione el <strong>Tipo de Documento</strong> que desea revisar (ej: Factura de Venta).</li>
+<li>Haga clic en el botón azul <strong>Auditar</strong>.</li>
+<li>El sistema escaneará miles de registros en segundos.</li>
+</ol>
+<h3>4.2. Interpretar los Resultados</h3>
+<p>Verá una tabla con colores:
+*   <strong>Blanco:</strong> Documentos normales.
+*   <strong>Verde:</strong> Documentos anulados (Correcto).
+*   <strong>Rojo:</strong> Documentos eliminados (Atención).
+*   <strong>Amarillo (HUECO):</strong> Saltos numéricos. El sistema le dirá: <em>"¡Alerta! Faltan 3 consecutivos desde el #105 hasta el #107"</em>.</p>
+<hr />
+<h2>5. Preguntas Frecuentes (FAQ)</h2>
+<ul>
+<li>
+<p><strong>P: ¿El sistema puede "rellenar" los huecos automáticamente?</strong></p>
+<ul>
+<li><strong>R:</strong> <strong>No.</strong> Por seguridad, el sistema nunca crea documentos fantasma. Si tiene un hueco, debe justificarlo manualmente ante su auditor o crear un documento con ese número (si el sistema se lo permite y la fecha corresponde).</li>
+</ul>
+</li>
+<li>
+<p><strong>P: ¿Por qué tengo tantos "Huecos" en mis Cotizaciones?</strong></p>
+<ul>
+<li><strong>R:</strong> Es normal. Las cotizaciones a menudo se borran o no se formalizan. La auditoría estricta es vital para <strong>Facturas</strong> y <strong>Comprobantes de Egreso</strong>, pero menos crítica para documentos internos.</li>
+</ul>
+</li>
+</ul>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

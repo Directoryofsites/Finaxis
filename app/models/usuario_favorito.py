@@ -18,8 +18,7 @@ class UsuarioFavorito(Base):
     # Ruta de la aplicación (Ej: /contabilidad/facturacion)
     ruta_enlace = Column(String(255), nullable=False)
     
-    # Posición en el dashboard (1 a 6)
-    # Posición en el dashboard (1 a 12), reflejando la nueva regla de negocio.
+    # Posición en el dashboard (1 a 24) - Expandido para mayor flexibilidad
     orden = Column(Integer, nullable=False) 
 
     # Relaciones

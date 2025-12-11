@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Capítulo 51: Auxiliar por Centro de Costo</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual de Usuario - Capítulo 51: Auxiliar por Centro de Costo</h1>
+<h2>1. Introducción</h2>
+<p>El reporte <strong>Auxiliar por Centro de Costo y Cuenta</strong> es una herramienta de auditoría detallada que le permite analizar todos los movimientos contables imputados a un centro de costo específico.</p>
+<p>A diferencia de un Balance de Prueba que solo muestra saldos totales, este reporte desglosa <strong>cada transacción individual</strong> (facturas, egresos, notas), permitiéndole responder preguntas como: <em>"¿En qué se gastó exactamente el presupuesto del Departamento de Ventas este mes?"</em>.</p>
+<hr />
+<h2>2. Criterios de Búsqueda (Filtros)</h2>
+<p>Para generar el reporte, debe configurar los siguientes parámetros en la parte superior de la pantalla:</p>
+<ul>
+<li><strong>Centro de Costo (Obligatorio):</strong> Seleccione el área o proyecto que desea auditar. Solo aparecerán los centros de costo auxiliares (los que reciben movimientos).</li>
+<li><strong>Cuenta (Opcional):</strong><ul>
+<li>Si lo deja en <code>-- TODAS --</code>, el sistema mostrará todos los movimientos de todas las cuentas afectadas en ese centro de costo.</li>
+<li>Si selecciona una cuenta específica (ej: <code>510506 - Sueldos</code>), el reporte se filtrará para mostrar solo esa cuenta dentro del centro de costo seleccionado.</li>
+</ul>
+</li>
+<li><strong>Rango de Fechas:</strong> Defina el periodo de análisis (Desde / Hasta).</li>
+</ul>
+<p>Una vez configurados, haga clic en el botón <strong>Generar Reporte</strong>.</p>
+<hr />
+<h2>3. Interpretación de Resultados</h2>
+<p>El reporte presenta la información agrupada por <strong>Cuenta Contable</strong>. Esto significa que verá bloques separados para cada cuenta (ej: un bloque para "Arrendamientos", otro para "Servicios Públicos", etc.).</p>
+<h3>3.1. Estructura de Saldos</h3>
+<p>El reporte maneja tres niveles de saldos para facilitar la auditoría:</p>
+<ol>
+<li><strong>Saldo Inicial Centro de Costo:</strong> Es el valor neto acumulado de <em>todas</em> las cuentas de ese centro de costo antes de la fecha de inicio consultada.</li>
+<li><strong>Saldo Inicial por Cuenta:</strong> Al inicio de cada bloque de cuenta, verá con cuánto saldo venía esa cuenta específica antes del periodo.</li>
+<li><strong>Saldo Final:</strong> Al final del reporte, se muestra el saldo total acumulado del centro de costo a la fecha de corte.</li>
+</ol>
+<h3>3.2. Columnas del Reporte</h3>
+<ul>
+<li><strong>Fecha:</strong> Fecha de contabilización del movimiento.</li>
+<li><strong>Documento:</strong> Tipo y número del comprobante (ej: <code>FV-1025</code>, <code>CE-501</code>).</li>
+<li><strong>Cuenta:</strong> Código y nombre de la cuenta contable afectada.</li>
+<li><strong>Beneficiario:</strong> Tercero asociado al movimiento (Proveedor, Empleado, Cliente).</li>
+<li><strong>Concepto:</strong> Descripción detallada de la transacción.</li>
+<li><strong>Débito / Crédito:</strong> Valor del movimiento.</li>
+<li><strong>Saldo:</strong> Saldo parcial acumulado línea por línea.</li>
+</ul>
+<hr />
+<h2>4. Exportación y Herramientas</h2>
+<p>En la parte superior derecha de los resultados encontrará botones para descargar la información:</p>
+<ul>
+<li><strong>CSV (Excel):</strong> Descarga un archivo plano separado por comas, ideal para abrir en Excel y realizar tablas dinámicas o análisis propios.</li>
+<li><strong>PDF:</strong> Genera un documento imprimible con formato oficial, útil para presentar informes a gerencia o anexar a carpetas físicas.</li>
+</ul>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

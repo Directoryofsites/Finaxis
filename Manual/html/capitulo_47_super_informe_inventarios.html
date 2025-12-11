@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capítulo 47: Super Informe de Inventarios</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Capítulo 47: Super Informe de Inventarios</h1>
+<p>El <strong>Super Informe de Inventarios</strong> es la herramienta de inteligencia de negocios más potente del módulo de inventarios. Está diseñado para responder preguntas complejas sobre el movimiento de mercancía, cruzando múltiples variables como terceros, bodegas, grupos y fechas.</p>
+<p>A diferencia de los reportes estándar que muestran saldos estáticos, este informe permite "interrogar" a la base de datos para obtener respuestas específicas sobre la operación logística y comercial.</p>
+<h2>1. Panel de Preguntas y Respuestas (Casos de Uso)</h2>
+<p>A continuación, presentamos una guía práctica basada en preguntas frecuentes que este reporte puede resolver:</p>
+<h3>P1: "¿Qué productos se movieron con un Tercero (Cliente/Proveedor) específico?"</h3>
+<p><strong>Situación:</strong> Necesita auditar todas las transacciones (compras o ventas) realizadas con el proveedor "Distribuidora X" o el cliente "Empresa Y" para verificar volúmenes o precios pactados.
+<strong>Configuración:</strong>
+1.  Despliegue los <strong>Filtros Avanzados</strong>.
+2.  En el campo <strong>"Tercero"</strong>, busque y seleccione el nombre o NIT de la empresa.
+3.  Defina el rango de fechas.
+4.  Presione <strong>"Generar Reporte"</strong>.
+<strong>Resultado:</strong> Obtendrá una lista cronológica de todos los ítems comprados o vendidos a ese tercero, con sus costos unitarios y cantidades exactas.</p>
+<h3>P2: "¿Cómo ver el movimiento de una familia de productos en una bodega puntual?"</h3>
+<p><strong>Situación:</strong> El jefe de bodega de la "Sucursal Norte" quiere revisar solo el movimiento de "Lácteos" para controlar mermas.
+<strong>Configuración:</strong>
+1.  En <strong>"Bodegas"</strong>, seleccione "Sucursal Norte".
+2.  En <strong>"Grupos"</strong>, seleccione "Lácteos".
+3.  Presione <strong>"Generar Reporte"</strong>.
+<strong>Resultado:</strong> El sistema filtrará el ruido y mostrará exclusivamente los movimientos que cumplen ambas condiciones simultáneamente.</p>
+<h3>P3: "¿A qué precio compramos el producto 'X' el mes pasado?"</h3>
+<p><strong>Situación:</strong> Compras necesita verificar la fluctuación de costos de un insumo clave.
+<strong>Configuración:</strong>
+1.  En <strong>"Búsqueda Producto"</strong>, escriba el nombre o código del insumo.
+2.  Ajuste las fechas al mes pasado.
+3.  Genere el reporte.
+<strong>Resultado:</strong> Verá todas las entradas de ese producto. La columna <strong>"COSTO UNIT"</strong> le revelará el precio exacto registrado en cada factura de compra.</p>
+<h3>P4: "¿Qué pasó con la Factura #12345?"</h3>
+<p><strong>Situación:</strong> Contabilidad tiene una duda sobre una factura específica y quiere saber qué productos movió.
+<strong>Configuración:</strong>
+1.  En <strong>"Ref. Documento"</strong>, escriba "12345".
+2.  Presione <strong>"Generar Reporte"</strong>.
+<strong>Resultado:</strong> El informe aislará todas las líneas de detalle asociadas a ese número de documento, permitiéndole ver exactamente qué ítems y cantidades se afectaron.</p>
+<h2>2. Herramientas de Análisis</h2>
+<h3>Filtros Multi-Selección</h3>
+<p>Una característica única de este reporte es la capacidad de seleccionar <strong>múltiples opciones</strong> a la vez. Por ejemplo, puede analizar el movimiento conjunto de las Bodegas A y B, excluyendo la Bodega C.</p>
+<h3>Exportación Masiva a PDF</h3>
+<p>El sistema permite exportar grandes volúmenes de datos a PDF.
+*   <strong>Casilla "Todo para PDF":</strong> Si marca esta opción antes de exportar, el sistema ignorará la paginación de la pantalla y generará un documento completo con <strong>todos</strong> los registros encontrados (ideal para archivos físicos o auditorías fiscales).</p>
+<h2>3. Interpretación de Columnas Clave</h2>
+<ul>
+<li><strong>DOC / REF:</strong> Tipo y número del documento soporte.</li>
+<li><strong>MOV (Movimiento):</strong> Indica la naturaleza de la operación (Venta, Compra, Traslado, Ajuste).</li>
+<li><strong>COSTO UNIT:</strong> El valor unitario real de la transacción. En ventas es el costo de mercancía vendida (CMV), en compras es el costo de adquisición.</li>
+<li><strong>COSTO TOTAL:</strong> El impacto económico total de esa línea (Cantidad * Costo Unitario).</li>
+</ul>
+<hr />
+<blockquote>
+<p><strong>Consejo de Experto:</strong> Utilice este reporte para detectar "fugas" de inventario cruzando filtros. Por ejemplo, filtre por un grupo de productos de alto valor y revise si existen "Salidas por Ajuste" (mermas) inusualmente altas en el periodo.</p>
+</blockquote>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

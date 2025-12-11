@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capítulo 42: Traslado de Inventario</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Capítulo 42: Traslado de Inventario</h1>
+<p>El módulo de <strong>Traslados</strong> permite mover mercancía de una bodega a otra, manteniendo actualizado el inventario en ambas ubicaciones.</p>
+<h2>1. Conceptos Clave</h2>
+<ul>
+<li><strong>Bodega Origen (Salida):</strong> Es la bodega de donde se descontarán los productos. Debe tener stock disponible.</li>
+<li><strong>Bodega Destino (Entrada):</strong> Es la bodega donde ingresarán los productos.</li>
+<li><strong>Documento TR:</strong> El sistema utiliza un tipo de documento interno (TR) para registrar estos movimientos.</li>
+</ul>
+<h2>2. Pasos para Realizar un Traslado</h2>
+<p>Para acceder, vaya al menú <strong>Contabilidad &gt; Traslados</strong>.</p>
+<h3>Paso 1: Logística (Encabezado)</h3>
+<ol>
+<li><strong>Fecha Traslado:</strong> Fecha en la que se hace efectivo el movimiento.</li>
+<li><strong>Selección de Bodegas:</strong><ul>
+<li><strong>Origen:</strong> Seleccione la bodega de donde sale la mercancía.</li>
+<li><strong>Destino:</strong> Seleccione la bodega a donde llega.</li>
+<li><em>Nota:</em> No puede seleccionar la misma bodega en ambos campos.</li>
+<li><strong>Botón de Intercambio:</strong> Use el botón con flechas (↔) entre los selectores para invertir rápidamente el origen y el destino.</li>
+</ul>
+</li>
+<li><strong>Observaciones:</strong> Campo opcional para anotar detalles como "Envío por camión placa XXX" o "Reabastecimiento mensual".</li>
+</ol>
+<h3>Paso 2: Selección de Mercancía</h3>
+<ol>
+<li>Haga clic en <strong>"Añadir Productos"</strong>.</li>
+<li>Se abrirá el buscador de productos.<ul>
+<li><strong>Importante:</strong> El sistema solo le permitirá seleccionar productos que tengan stock disponible en la <strong>Bodega de Origen</strong> seleccionada.</li>
+</ul>
+</li>
+<li>Una vez agregados, ajuste la <strong>Cantidad</strong> a trasladar en la tabla.<ul>
+<li>Si intenta trasladar más de lo que hay en el origen, el sistema podría bloquear la operación o dejar el saldo en negativo (dependiendo de la configuración global).</li>
+</ul>
+</li>
+</ol>
+<h3>Paso 3: Confirmar</h3>
+<ol>
+<li>Verifique el <strong>Total Unidades</strong> en la parte inferior de la tabla.</li>
+<li>Haga clic en <strong>"Confirmar Traslado"</strong>.</li>
+<li>El sistema generará un comprobante de traslado y ajustará los saldos automáticamente:<ul>
+<li>Resta la cantidad en la Bodega Origen.</li>
+<li>Suma la cantidad en la Bodega Destino.</li>
+</ul>
+</li>
+</ol>
+<h2>3. Preguntas Frecuentes (FAQ)</h2>
+<p><strong>¿Por qué no veo algunos productos en el buscador?</strong>
+El buscador filtra los productos según la <strong>Bodega de Origen</strong>. Si un producto no tiene existencias en esa bodega, no aparecerá para evitar errores de inventario negativo.</p>
+<p><strong>¿Puedo anular un traslado?</strong>
+Los traslados confirmados afectan el kardex inmediatamente. Si cometió un error, lo más recomendable es realizar un nuevo traslado "inverso" (intercambiando origen y destino) por las mismas cantidades para revertir el efecto.</p>
+<p><strong>¿Afecta la contabilidad?</strong>
+Depende de la configuración de las bodegas y los grupos de inventario. Generalmente, si ambas bodegas pertenecen a la misma empresa, es un movimiento interno que solo reclasifica el activo, pero no genera ingresos ni costos de venta.</p>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

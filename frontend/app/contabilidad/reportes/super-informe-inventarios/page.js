@@ -308,7 +308,7 @@ export default function SuperInformeInventariosPage() {
 
                             {/* 2. Botón Manual (Derecha) */}
                             <button
-                                onClick={() => window.open('/manual?file=capitulo_47_super_informe_inventarios.md', '_blank')}
+                                onClick={() => window.open('/manual/capitulo_47_super_informe_inventarios.html', '_blank')}
                                 className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors font-bold text-sm"
                                 type="button"
                             >

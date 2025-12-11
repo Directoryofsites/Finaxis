@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Guía de Inicialización para PC 2 (Con Cambios Pendientes)</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>🚀 Guía de Inicialización para PC 2 (Con Cambios Pendientes)</h1>
+<p><strong>Objetivo:</strong> Conectar el PC 2 a GitHub y subir sus cambios actuales sin "chocar" con lo que ya subió el PC 1.</p>
+<p>Como el PC 2 ya tiene código trabajado pero no está conectado a Git, seguiremos este protocolo de seguridad ("Rama Paralela").</p>
+<h2>📋 Credenciales</h2>
+<ul>
+<li><strong>Repo URL:</strong> <code>https://github.com/Directoryofsites/Finaxis.git</code></li>
+<li><strong>Usuario:</strong> <code>Finaxis Dev</code></li>
+<li><strong>Email:</strong> <code>dev@finaxis.com</code></li>
+</ul>
+<hr />
+<h2>💻 Paso a Paso (Ejecutar en PC 2)</h2>
+<p>Abre la terminal en la carpeta del proyecto en PC 2 (<code>C:\ContaPY2</code>) y ejecuta uno a uno:</p>
+<h3>1. Inicialización</h3>
+<pre><code class="language-bash">git init
+git config user.name &quot;Finaxis Dev&quot;
+git config user.email &quot;dev@finaxis.com&quot;
+</code></pre>
+<h3>2. Conexión Remota</h3>
+<pre><code class="language-bash">git remote add origin https://github.com/Directoryofsites/Finaxis.git
+</code></pre>
+<h3>3. Seguridad (Crear Rama)</h3>
+<p>En lugar de subir directo a <code>main</code> (que ya existe y causaría error), creamos una rama temporal con tus cambios:</p>
+<pre><code class="language-bash">git checkout -b pc2-cambios-pendientes
+</code></pre>
+<h3>4. Guardar Cambios Locales</h3>
+<pre><code class="language-bash">git add .
+git commit -m &quot;Sincronizacion inicial desde PC 2&quot;
+</code></pre>
+<h3>5. Subir a la Nube</h3>
+<pre><code class="language-bash">git push -u origin pc2-cambios-pendientes
+</code></pre>
+<hr />
+<h2>🏁 ¿Y después?</h2>
+<p>Una vez aparezca el mensaje de éxito en la terminal:
+1.  Avísale al Antigravity del PC 1.
+2.  El PC 1 se encargará de fusionar (unir) tu rama <code>pc2-cambios-pendientes</code> con <code>main</code>.
+3.  Al día siguiente, en PC 2, solo tendrás que hacer <code>git pull origin main</code> para tener todo unificado.</p>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

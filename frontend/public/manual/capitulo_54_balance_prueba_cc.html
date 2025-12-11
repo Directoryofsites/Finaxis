@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Capítulo 54: Balance de Prueba por Centro de Costo</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual de Usuario - Capítulo 54: Balance de Prueba por Centro de Costo</h1>
+<h2>1. Introducción</h2>
+<p>El <strong>Balance de Prueba por Centro de Costo</strong> es una herramienta de auditoría que le permite verificar los saldos de sus cuentas contables, pero desagregados por cada unidad de negocio.</p>
+<p>Es fundamental para detectar errores de imputación. Por ejemplo, si la cuenta de "Caja General" tiene saldo negativo en la "Sucursal Norte", este reporte se lo mostrará inmediatamente.</p>
+<hr />
+<h2>2. Criterios de Búsqueda (Filtros)</h2>
+<p>Para generar el reporte, configure los siguientes parámetros:</p>
+<ul>
+<li><strong>Rango de Fechas:</strong> Periodo a evaluar (Desde / Hasta).</li>
+<li><strong>Cuenta Contable (Opcional):</strong><ul>
+<li>Puede filtrar una cuenta específica (ej: <code>1105 - Caja</code>) para ver su comportamiento en todos los centros de costo.</li>
+<li>Si lo deja en <code>Todas las Cuentas</code>, el sistema traerá el plan de cuentas completo.</li>
+</ul>
+</li>
+<li><strong>Nivel de Detalle:</strong><ul>
+<li><strong>1:</strong> Solo Grupos (Activo, Pasivo, Patrimonio).</li>
+<li><strong>4:</strong> Máximo detalle (Auxiliares).</li>
+</ul>
+</li>
+<li><strong>Filtro de Centros:</strong><ul>
+<li><strong>Con Saldo o Movimiento:</strong> Muestra centros activos (Recomendado).</li>
+<li><strong>Solo con Movimiento:</strong> Oculta centros que tienen saldo pero no se movieron en este periodo.</li>
+<li><strong>Todos:</strong> Muestra incluso los centros que están en cero.</li>
+</ul>
+</li>
+</ul>
+<p>Haga clic en <strong>Generar Reporte</strong> para ver la tabla.</p>
+<hr />
+<h2>3. Interpretación de Resultados</h2>
+<p>La tabla muestra la siguiente información para cada combinación de Cuenta y Centro de Costo:</p>
+<ul>
+<li><strong>Código y Centro de Costo:</strong> Identifica a quién pertenece el saldo.</li>
+<li><strong>Saldo Inicial:</strong> Con cuánto dinero empezó el periodo.</li>
+<li><strong>Débitos:</strong> Todo lo que entró (o gastos).</li>
+<li><strong>Créditos:</strong> Todo lo que salió (o ingresos).</li>
+<li><strong>Nuevo Saldo:</strong> El valor final al cierre del periodo.</li>
+</ul>
+<h3>Totales Generales</h3>
+<p>Al final de la tabla (Footer), encontrará la sumatoria de todos los débitos y créditos.</p>
+<blockquote>
+<p><strong>Nota de Auditoría:</strong> Si la contabilidad está correcta, la suma de Débitos debe ser igual a la suma de Créditos (Partida Doble).</p>
+</blockquote>
+<hr />
+<h2>4. Exportación</h2>
+<ul>
+<li><strong>Exportar PDF:</strong> Genera un documento formal con los filtros aplicados, ideal para revisiones físicas o para enviar al contador.</li>
+</ul>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Capítulo 2: Tipos de Documento</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual de Usuario - Capítulo 2: Tipos de Documento</h1>
+<h2>1. Introducción</h2>
+<p>El módulo de <strong>Tipos de Documento</strong> es el "cerebro" que define cómo se comporta cada transacción en ContaPY. Aquí no solo se crean los nombres de sus comprobantes (Facturas, Recibos, Egresos), sino que se <strong>programa la lógica</strong> que el sistema ejecutará automáticamente.</p>
+<p>Una configuración correcta garantiza que:
+*   <strong>Auditoría:</strong> La numeración sea consecutiva y sin huecos.
+*   <strong>Automatización:</strong> El sistema mueva inventarios y genere asientos contables por usted.
+*   <strong>Integración:</strong> Los documentos alimenten correctamente los módulos de Cartera (CxC) y Proveedores (CxP).</p>
+<hr />
+<h2>2. ¿Cómo acceder al módulo?</h2>
+<p>Siga esta ruta en el menú principal:</p>
+<ol>
+<li>Ubique la sección <strong>Administración y Configuración</strong>.</li>
+<li>Busque el grupo <strong>Parametrización Maestra</strong>.</li>
+<li>Haga clic en la opción <strong>Tipos de Documento</strong>.</li>
+</ol>
+<blockquote>
+<p><strong>Ruta Rápida:</strong> <code>Administración &gt; Parametrización Maestra &gt; Tipos de Documento</code></p>
+</blockquote>
+<hr />
+<h2>3. Conceptos Fundamentales</h2>
+<h3>3.1. Modos de Numeración</h3>
+<p>El sistema ofrece dos formas de controlar los consecutivos de sus documentos:</p>
+<ul>
+<li><strong>Automática (Recomendado):</strong> El sistema asigna el siguiente número disponible (1, 2, 3...) sin intervención humana. Es ideal para documentos internos como Facturas de Venta, Recibos de Caja o Notas Contables.</li>
+<li><strong>Manual:</strong> El usuario debe digitar el número al momento de crear el documento. Esto es obligatorio para documentos externos donde no controlamos el consecutivo, como las <strong>Facturas de Compra</strong> (usamos el número que nos da el proveedor).</li>
+</ul>
+<h3>3.2. Lógica de Negocio (El "Cerebro" del Sistema)</h3>
+<p>Aquí es donde usted define qué "superpoderes" tendrá el documento.</p>
+<h4>A. El Interruptor de Inventario (<code>Afecta Inventario</code>)</h4>
+<p>Esta casilla transforma el documento en una <strong>Orden de Almacén</strong>.
+*   <strong>Activado:</strong> El sistema OBLIGARÁ a seleccionar una Bodega y descontará (ventas) o sumará (compras) unidades del Kardex físico.
+*   <strong>Desactivado:</strong> El documento será puramente financiero (ej. una Nota Contable por ajuste de precio) y no tocará sus existencias.</p>
+<h4>B. La "Doble Llave" de Cartera y Proveedores</h4>
+<p>Para que un documento active los módulos especializados de cobro o pago, se requiere una <strong>Sinergia</strong> entre dos campos. Si falta uno, el módulo no funcionará.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Módulo</th>
+<th style="text-align: left;">Llave 1: Función Especial</th>
+<th style="text-align: left;">Llave 2: Cuenta Configurada</th>
+<th style="text-align: left;">Efecto</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Ventas (CxC)</strong></td>
+<td style="text-align: left;"><code>VENTAS</code></td>
+<td style="text-align: left;"><code>Cuenta Débito CxC</code> (Ej. 1305)</td>
+<td style="text-align: left;">Crea una deuda nueva al cliente.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Recaudos (CxC)</strong></td>
+<td style="text-align: left;"><code>RECIBO_CAJA</code></td>
+<td style="text-align: left;"><code>Cuenta Crédito CxC</code> (Ej. 1305)</td>
+<td style="text-align: left;">Permite cruzar/abonar a facturas pendientes.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Compras (CxP)</strong></td>
+<td style="text-align: left;"><code>COMPRAS</code></td>
+<td style="text-align: left;"><code>Cuenta Crédito CxP</code> (Ej. 2205)</td>
+<td style="text-align: left;">Crea una deuda nueva con el proveedor.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Pagos (CxP)</strong></td>
+<td style="text-align: left;"><code>PAGO_PROVEEDOR</code></td>
+<td style="text-align: left;"><code>Cuenta Débito CxP</code> (Ej. 2205)</td>
+<td style="text-align: left;">Permite cruzar/abonar a facturas de compra.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Ejemplo Crítico:</strong> Si crea un "Recibo de Caja" pero olvida asignarle la cuenta 1305 en la configuración, el sistema <strong>NO</strong> le mostrará la opción de "Abonar a Facturas" cuando lo esté usando.</p>
+</blockquote>
+<hr />
+<h2>4. Diccionario de Campos (Referencia Detallada)</h2>
+<p>Al crear o editar un tipo de documento, encontrará los siguientes campos:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Campo</th>
+<th style="text-align: left;">Descripción</th>
+<th style="text-align: left;">Recomendación</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Código</strong></td>
+<td style="text-align: left;">Identificador corto de hasta 5 letras.</td>
+<td style="text-align: left;">Use siglas lógicas: <code>FV</code> (Factura Venta), <code>RC</code> (Recibo Caja), <code>CE</code> (Comprobante Egreso).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Nombre</strong></td>
+<td style="text-align: left;">Nombre completo del documento.</td>
+<td style="text-align: left;">Sea descriptivo: "Factura de Venta Electrónica".</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Numeración Manual</strong></td>
+<td style="text-align: left;">Casilla de verificación.</td>
+<td style="text-align: left;">Marcar SOLO para documentos de proveedores.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Consecutivo Actual</strong></td>
+<td style="text-align: left;">El último número usado.</td>
+<td style="text-align: left;">Si inicia en 0, el primer documento será el 1.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Función Especial</strong></td>
+<td style="text-align: left;">Comportamiento pre-programado.</td>
+<td style="text-align: left;"><code>VENTAS</code> para facturar, <code>COMPRAS</code> para gastos, <code>NINGUNA</code> para notas internas.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Afecta Inventario</strong></td>
+<td style="text-align: left;">Si mueve Kardex.</td>
+<td style="text-align: left;">Marcar para Facturas y Remisiones. Desmarcar para Servicios.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Cuenta Caja/Banco</strong></td>
+<td style="text-align: left;">Cuenta por defecto para dinero.</td>
+<td style="text-align: left;">Use la <code>1105</code> (Caja General) o <code>1110</code> (Bancos).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Cuenta Débito CxC</strong></td>
+<td style="text-align: left;">Cuenta de Cartera (Deuda Cliente).</td>
+<td style="text-align: left;">Use la <code>1305</code> (Clientes Nacionales).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Cuenta Crédito CxP</strong></td>
+<td style="text-align: left;">Cuenta de Proveedores (Deuda Nuestra).</td>
+<td style="text-align: left;">Use la <code>2205</code> (Proveedores Nacionales).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>5. Guía de Configuración Paso a Paso</h2>
+<h3>5.1. Crear un Nuevo Tipo (Caso Práctico: Factura de Venta)</h3>
+<ol>
+<li>Haga clic en el botón <strong>Crear Nuevo Tipo</strong> (color índigo) en la parte superior derecha.</li>
+<li><strong>Datos Básicos:</strong><ul>
+<li><strong>Código:</strong> <code>FV01</code>.</li>
+<li><strong>Nombre:</strong> <code>Factura de Venta Principal</code>.</li>
+<li><strong>Numeración:</strong> Automática.</li>
+<li><strong>Consecutivo:</strong> 0 (para iniciar en 1).</li>
+</ul>
+</li>
+<li><strong>Lógica de Negocio (¡Crucial!):</strong><ul>
+<li>Marque <strong>Afecta Inventario</strong> (Si vende productos físicos).</li>
+<li>Seleccione Función Especial: <strong>VENTAS</strong>.</li>
+</ul>
+</li>
+<li><strong>Cuentas Contables (El enrutamiento):</strong><ul>
+<li><strong>Cuenta Caja:</strong> Seleccione su cuenta de Caja General (1105). <em>Esto habilita ventas de contado.</em></li>
+<li><strong>Cuenta Débito CxC:</strong> Seleccione Clientes Nacionales (1305). <em>Esto habilita ventas a crédito y el módulo de cartera.</em></li>
+</ul>
+</li>
+<li>Haga clic en <strong>Guardar</strong>.</li>
+</ol>
+<h3>5.2. Diseñar Formato de Impresión</h3>
+<p>ContaPY permite personalizar cómo se ve el PDF de cada documento.
+1.  En la tabla principal, ubique la columna <strong>Diseño</strong>.
+2.  Haga clic en el botón <strong>Diseñar</strong> (icono de regla y lápiz).
+3.  Se abrirá el editor visual donde podrá ajustar márgenes, logos y tamaños de letra.</p>
+<h3>5.3. Editar o Eliminar</h3>
+<ul>
+<li><strong>Editar:</strong> Use el botón con el icono de lápiz para modificar nombres o cuentas asociadas.</li>
+<li><strong>Eliminar:</strong> Use el botón de papelera.
+    &gt; <strong>Nota de Seguridad:</strong> El sistema NO permitirá eliminar un tipo de documento si ya existen movimientos contables creados con él. Esto es un candado de seguridad para proteger la integridad histórica de su contabilidad.</li>
+</ul>
+<hr />
+<h2>6. Preguntas Frecuentes y Solución de Problemas</h2>
+<ul>
+<li>
+<p><strong>P: Hice un Recibo de Caja pero no me deja cruzarlo con la Factura.</strong></p>
+<ul>
+<li><strong>R:</strong> Verifique la configuración del Tipo de Documento "Recibo de Caja". Asegúrese de que tenga asignada la <strong>MISMA</strong> cuenta de Cartera (ej. 1305) que usó en la Factura de Venta. Sin esa coincidencia, el sistema no puede vincularlos.</li>
+</ul>
+</li>
+<li>
+<p><strong>P: ¿Puedo cambiar la numeración de Automática a Manual después de crear documentos?</strong></p>
+<ul>
+<li><strong>R:</strong> Técnicamente sí, pero <strong>NO se recomienda</strong>. Podría generar huecos o duplicados en sus consecutivos, lo cual es grave ante una auditoría fiscal.</li>
+</ul>
+</li>
+<li>
+<p><strong>P: ¿Por qué el sistema me pide una Bodega obligatoriamente?</strong></p>
+<ul>
+<li><strong>R:</strong> Porque activó la casilla "Afecta Inventario" en el tipo de documento. Si está haciendo una factura de solo servicios, debería usar un tipo de documento diferente que tenga esa casilla desactivada.</li>
+</ul>
+</li>
+</ul>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

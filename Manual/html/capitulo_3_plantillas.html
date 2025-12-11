@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Capítulo 3: Gestión de Plantillas Contables</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual de Usuario - Capítulo 3: Gestión de Plantillas Contables</h1>
+<h2>1. Introducción</h2>
+<p><strong>¡Atención!</strong> No confunda este módulo con el diseño de facturas PDF.
+El módulo de <strong>Plantillas Contables</strong> es una herramienta de <strong>Velocidad de Digitación</strong>.</p>
+<p>Su función es guardar "esqueletos" de asientos contables repetitivos (como la Nómina Mensual, el Arriendo o la Depreciación) para que usted no tenga que digitar cuenta por cuenta cada vez.</p>
+<hr />
+<h2>2. ¿Cómo acceder al módulo?</h2>
+<p>Siga esta ruta en el menú principal:</p>
+<ol>
+<li>Ubique la sección <strong>Administración y Configuración</strong>.</li>
+<li>Busque el grupo <strong>Parametrización Maestra</strong>.</li>
+<li>Haga clic en la opción <strong>Administración de Plantillas</strong>.</li>
+</ol>
+<blockquote>
+<p><strong>Ruta Rápida:</strong> <code>Administración &gt; Plantillas</code></p>
+</blockquote>
+<hr />
+<h2>3. Lógica de Negocio (Reglas de Oro)</h2>
+<h3>3.1. La Regla del Equilibrio (Balance)</h3>
+<p>El sistema <strong>BLOQUEARÁ</strong> el botón de guardar si la plantilla no está cuadrada.
+*   <strong>Suma de Débitos = Suma de Créditos.</strong>
+*   Si hay una diferencia de un solo centavo, el sistema asume que la plantilla es contablemente inválida y no permitirá crearla.</p>
+<h3>3.2. Datos "Sugeridos" vs. Fijos</h3>
+<p>Al crear una plantilla, verá campos como "Beneficiario Sugerido" o "Centro de Costo Sugerido".
+*   <strong>¿Qué significa "Sugerido"?</strong> Que al usar la plantilla, el sistema llenará esos campos automáticamente, <strong>PERO</strong> usted podrá cambiarlos si lo desea.
+*   <em>Ejemplo:</em> Puede crear una plantilla de "Pago de Arriendo" con la Inmobiliaria X como beneficiario sugerido. Si un mes cambia de inmobiliaria, podrá editarlo en el documento final sin dañar la plantilla original.</p>
+<hr />
+<h2>4. Guía Paso a Paso</h2>
+<h3>4.1. Crear una Nueva Plantilla (Ej. Causación de Arriendo)</h3>
+<ol>
+<li>Haga clic en el botón azul <strong>Crear Nueva Plantilla</strong>.</li>
+<li><strong>Datos Generales:</strong><ul>
+<li><strong>Nombre:</strong> <code>Causación Arriendo Oficina</code>.</li>
+<li><strong>Tipo Documento Sugerido:</strong> Seleccione <code>Nota de Contabilidad</code> o <code>Comprobante de Egreso</code>.</li>
+<li><strong>Beneficiario:</strong> Seleccione a su arrendador (opcional).</li>
+</ul>
+</li>
+<li><strong>Movimientos (La "Receta" Contable):</strong><ul>
+<li><strong>Fila 1:</strong> Cuenta <code>5120 (Arrendamientos)</code> | Débito: <code>1.000.000</code> | Crédito: <code>0</code>.</li>
+<li><strong>Fila 2:</strong> Cuenta <code>2408 (IVA Descontable)</code> | Débito: <code>190.000</code> | Crédito: <code>0</code>.</li>
+<li><strong>Fila 3:</strong> Cuenta <code>2365 (Retención)</code> | Débito: <code>0</code> | Crédito: <code>35.000</code>.</li>
+<li><strong>Fila 4:</strong> Cuenta <code>2335 (CxP Arrendamientos)</code> | Débito: <code>0</code> | Crédito: <code>1.155.000</code>.</li>
+</ul>
+</li>
+<li><strong>Verificación:</strong> Mire el total en la parte inferior. Si dice <strong>BALANCEADO</strong> en verde, el botón de guardar se activará.</li>
+<li>Haga clic en <strong>Guardar Plantilla</strong>.</li>
+</ol>
+<h3>4.2. Editar una Plantilla</h3>
+<ol>
+<li>En la lista principal, haga clic en <strong>Editar</strong> (texto azul).</li>
+<li>Puede agregar nuevas cuentas o cambiar los valores base.
+    &gt; <strong>Tip:</strong> Use valores base (ej. 1.000) o déjelos en cero si los montos cambian cada mes. Lo importante es la estructura de cuentas.</li>
+</ol>
+<hr />
+<h2>5. Preguntas Frecuentes (FAQ)</h2>
+<ul>
+<li>
+<p><strong>P: ¿Por qué el botón "Guardar" está gris y no funciona?</strong></p>
+<ul>
+<li><strong>R:</strong> Mire el pie de página de la tabla. Seguramente dice <strong>DESBALANCEADO</strong> en rojo. Revise sus sumas; el Débito debe ser exactamente igual al Crédito.</li>
+</ul>
+</li>
+<li>
+<p><strong>P: ¿Puedo usar una plantilla pero cambiarle el valor a una sola cuenta?</strong></p>
+<ul>
+<li><strong>R:</strong> ¡Sí! La plantilla solo "pre-llena" el documento. Una vez cargada, usted tiene libertad total para editar montos, borrar filas o cambiar terceros antes de guardar el documento final.</li>
+</ul>
+</li>
+<li>
+<p><strong>P: ¿Para qué sirve el "Concepto" en cada fila?</strong></p>
+<ul>
+<li><strong>R:</strong> Ese texto aparecerá automáticamente en el movimiento contable. Sea genérico, por ejemplo: <em>"Canon de arrendamiento mes actual"</em>.</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2>6. ¿Cómo usar las plantillas? (Conexión con Contabilidad)</h2>
+<p>Todo lo que usted cree en este módulo quedará disponible inmediatamente en el módulo de <strong>Captura Rápida</strong>.</p>
+<ol>
+<li>Vaya a <strong>Contabilidad &gt; Captura Rápida</strong>.</li>
+<li>En el campo <strong>"⚡ Plantilla (Requerido)"</strong>, despliegue la lista.</li>
+<li>Seleccione la plantilla que acaba de crear (ej. <code>Causación Arriendo Oficina</code>).</li>
+<li><strong>¡Magia!</strong> El sistema cargará automáticamente:<ul>
+<li>El Tipo de Documento.</li>
+<li>El Beneficiario.</li>
+<li>Todas las cuentas contables con sus débitos y créditos.</li>
+</ul>
+</li>
+</ol>
+<p>Solo tendrá que ajustar la fecha y hacer clic en <strong>Guardar Documento</strong>. Así es como las plantillas le ahorran horas de trabajo manual.</p>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

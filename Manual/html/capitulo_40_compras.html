@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capítulo 40: Gestión de Compras y Gastos</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Capítulo 40: Gestión de Compras y Gastos</h1>
+<p>El módulo de <strong>Nueva Compra</strong> es la herramienta central para registrar todas las adquisiciones de la empresa, ya sean inventarios (mercancía para la venta) o gastos generales. Este proceso afecta simultáneamente:
+1.  <strong>Cuentas por Pagar</strong>: Genera la deuda con el proveedor.
+2.  <strong>Inventario</strong>: Aumenta las existencias en la bodega seleccionada (si se compran bienes).
+3.  <strong>Contabilidad</strong>: Genera el asiento contable automático según la configuración del tipo de documento.</p>
+<h2>1. Requisitos Previos</h2>
+<p>Antes de registrar una compra, asegúrese de tener configurados:
+*   <strong>Proveedores</strong>: El tercero debe existir y estar marcado como "Proveedor".
+*   <strong>Bodegas</strong>: Debe existir al menos una bodega para recibir la mercancía.
+*   <strong>Tipos de Documento</strong>: Debe existir un tipo de documento con función "CXP Proveedor" (ej: Factura de Compra).
+*   <strong>Productos/Servicios</strong>: Los ítems a comprar deben estar creados en el sistema.</p>
+<h2>2. Paso a Paso: Registrar una Compra</h2>
+<p>La pantalla se divide en dos secciones principales: <strong>Información del Proveedor</strong> y <strong>Productos a Comprar</strong>.</p>
+<h3>Paso 1: Datos Generales (Encabezado)</h3>
+<p>Complete los campos obligatorios marcados con asterisco (<span style="color:red">*</span>):</p>
+<ol>
+<li><strong>Fecha Emisión</strong>: Fecha real de la factura del proveedor.</li>
+<li><strong>Tipo Documento</strong>: Seleccione el comprobante a generar (ej: "Factura de Compra").<ul>
+<li><em>Nota</em>: Si el tipo de documento tiene <strong>Numeración Manual</strong>, aparecerá un campo adicional para digitar el número de la factura física del proveedor.</li>
+</ul>
+</li>
+<li><strong>Bodega Destino</strong>: Seleccione dónde ingresará la mercancía. Esto es vital para el control de inventario.</li>
+<li><strong>Proveedor</strong>: Busque y seleccione la empresa o persona a quien se le compra.</li>
+<li><strong># Factura Proveedor</strong>: (Solo si aplica) Digite el número exacto de la factura recibida (ej: <code>FE-1099</code>) para evitar duplicados y facilitar auditorías.</li>
+<li><strong>Fecha Vencimiento</strong>: (Opcional) Fecha límite de pago. Útil para reportes de proveedores y flujo de caja.</li>
+<li><strong>Centro de Costo</strong>: (Opcional) Asigne la compra a un centro de costos específico si su empresa maneja contabilidad por centros.</li>
+</ol>
+<h3>Paso 2: Agregar Productos o Servicios</h3>
+<ol>
+<li>Haga clic en el botón verde <strong><i class="fa fa-plus"></i> Añadir Items</strong>.</li>
+<li>Se abrirá una ventana modal con el catálogo de productos.</li>
+<li><strong>Buscar</strong>: Use el buscador para encontrar ítems por nombre o código.</li>
+<li><strong>Seleccionar</strong>: Marque la casilla de verificación a la izquierda de los productos que desea incluir.</li>
+<li><strong>Cantidad y Costo</strong>: Puede pre-ingresar la cantidad y el costo unitario directamente en el modal, o hacerlo después en la tabla principal.</li>
+<li>Haga clic en <strong>Agregar Seleccionados</strong> para llevarlos a la pantalla de compra.</li>
+</ol>
+<h3>Paso 3: Verificar y Ajustar Detalle</h3>
+<p>En la tabla de "Productos a Comprar":
+*   <strong>Cantidad</strong>: Verifique que la cantidad coincida con la factura física.
+*   <strong>Costo Unit.</strong>: Ingrese el costo unitario <strong>antes de impuestos</strong> (base). El sistema calculará el subtotal automáticamente.
+*   <strong>Eliminar</strong>: Si se equivocó de ítem, use el botón rojo de "Papelera" para quitarlo de la lista.</p>
+<blockquote>
+<p><strong>Importante</strong>: El sistema valida que las cantidades sean mayores a 0 y los costos no sean negativos.</p>
+</blockquote>
+<h3>Paso 4: Guardar la Compra</h3>
+<ol>
+<li>Verifique el <strong>Total Compra</strong> en la parte inferior de la tabla.</li>
+<li>Haga clic en el botón <strong><i class="fa fa-save"></i> Guardar Compra</strong>.</li>
+<li>Si todo es correcto, verá un mensaje de éxito indicando el número de consecutivo interno generado (ej: "Compra #105 creada correctamente").</li>
+</ol>
+<h2>3. Preguntas Frecuentes (FAQ)</h2>
+<p><strong>¿Por qué no me aparece ninguna bodega?</strong>
+Debe crear al menos una bodega en <em>Administración &gt; Inventario &gt; Parámetros &gt; Bodegas</em>. Sin bodega, no se puede ingresar inventario.</p>
+<p><strong>¿Cómo registro un servicio (ej: Arriendo)?</strong>
+El proceso es idéntico. Asegúrese de que el ítem "Arriendo" esté creado en el inventario y marcado como "Es Servicio" (no maneja stock físico, pero sí afecta el gasto).</p>
+<p><strong>¿Puedo registrar una compra a crédito?</strong>
+Sí. La forma de pago (crédito/contado) depende de cómo gestione la tesorería posteriormente. Al guardar la compra, se crea una cuenta por pagar (CXP). Luego, debe registrar el "Egreso" o "Pago" para saldar esa deuda.</p>
+<p><strong>¿Qué hago si el proveedor no aparece?</strong>
+Debe ir a <em>Administración &gt; Terceros</em> y crearlo, asegurándose de marcar la casilla "Es Proveedor".</p>
+<p><strong>¿El sistema calcula IVA y Retención?</strong>
+Los impuestos se calculan automáticamente según la configuración del <strong>Producto</strong> (impuesto asociado) y del <strong>Tercero</strong> (si es Gran Contribuyente, Responsable de IVA, etc.), basándose en la parametrización contable interna.</p>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

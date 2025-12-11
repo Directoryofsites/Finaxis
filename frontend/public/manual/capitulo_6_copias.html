@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Capítulo 6: Copias y Restauración (Migración)</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual de Usuario - Capítulo 6: Copias y Restauración (Migración)</h1>
+<h2>1. Introducción</h2>
+<p>El módulo de <strong>Migración de Datos</strong> es la herramienta más potente para la seguridad y portabilidad de su información.</p>
+<p>A diferencia de un simple "Guardar como...", este módulo permite:
+1.  <strong>Exportar (Backup):</strong> Generar un archivo <code>.json</code> completo con toda la estructura de su empresa (Terceros, Cuentas, Facturas, Inventario).
+2.  <strong>Restaurar (Fusión):</strong> Insertar datos de un archivo en una empresa existente sin borrar lo que ya tiene (Modo Fusión).
+3.  <strong>Transformar:</strong> Cambiar masivamente códigos de cuentas o terceros (Herramienta avanzada).</p>
+<hr />
+<h2>2. ¿Cómo acceder al módulo?</h2>
+<p>Siga esta ruta en el menú principal:</p>
+<ol>
+<li>Ubique la sección <strong>Administración y Configuración</strong>.</li>
+<li>Busque el grupo <strong>Utilidades</strong>.</li>
+<li>Haga clic en la opción <strong>Migración de Datos</strong>.</li>
+</ol>
+<blockquote>
+<p><strong>Ruta Rápida:</strong> <code>Administración &gt; Utilidades &gt; Migración</code></p>
+</blockquote>
+<hr />
+<h2>3. Lógica de Negocio (Seguridad Atómica)</h2>
+<h3>3.1. El Protocolo Espejo Atómico</h3>
+<p>Al restaurar una copia, el sistema no borra ciegamente. Utiliza un protocolo de seguridad llamado <strong>"Fusión Segura"</strong>:
+*   <strong>No Borrado Masivo:</strong> Si usted restaura una copia sobre una empresa que ya tiene datos, el sistema <strong>NO</strong> borrará sus facturas existentes. Solo agregará las nuevas o actualizará las que coincidan exactamente en número y tipo.
+*   <strong>Snapshot de Seguridad:</strong> Antes de cualquier restauración, el sistema crea automáticamente una copia de seguridad interna (Snapshot) de cómo estaba la empresa <em>antes</em> de tocar nada. Si algo falla, se puede revertir.</p>
+<h3>3.2. Diferencia entre Backup y Exportación</h3>
+<p>En ContaPY, ambos términos se usan para lo mismo: un archivo <code>.json</code> que contiene la "ADN" de su empresa. Este archivo es legible por humanos y por máquinas, lo que garantiza que sus datos son suyos y no están "secuestrados" en un formato extraño.</p>
+<hr />
+<h2>4. Guía Paso a Paso</h2>
+<h3>4.1. Exportar Datos (Crear Copia de Seguridad)</h3>
+<p>Esta herramienta le permite extraer información quirúrgica de su empresa. No es solo un "todo o nada"; usted puede decidir exactamente qué llevarse.</p>
+<h4>A. Selección de Paquetes (El "Qué")</h4>
+<p>En la columna izquierda encontrará tres grupos de datos. Lo que marque aquí será lo que el sistema escriba en el archivo <code>.json</code>.</p>
+<p><strong>1. Datos Maestros (La Estructura)</strong>
+Son los cimientos de su contabilidad.
+*   <strong>Plan de Cuentas:</strong> Exporta su árbol de cuentas (PUC) completo.
+    *   <em>¿Qué pasa si lo marco?</em> El sistema guarda códigos, nombres, niveles y configuraciones (si pide tercero, si es de impuestos, etc.).
+    *   <em>Uso común:</em> Ideal para replicar su estructura contable en una empresa nueva sin llevarse los saldos.
+*   <strong>Terceros:</strong> Exporta su directorio de clientes, proveedores y empleados.
+*   <strong>Centros de Costo:</strong> Exporta su estructura de departamentos o proyectos.
+*   <strong>Tipos de Documento:</strong> Exporta la configuración de sus comprobantes (Facturas, Egresos, etc.), incluyendo sus resoluciones de facturación y numeración actual.
+*   <strong>Inventario (Bodegas, Grupos, Productos):</strong> Exporta todo su catálogo de productos y precios, pero <strong>NO</strong> las cantidades (el stock se define por los movimientos, ver "Transacciones").</p>
+<p><strong>2. Configuraciones (La Personalización)</strong>
+*   <strong>Plantillas de Documentos:</strong> Exporta los diseños HTML de sus facturas. ¡Muy útil para no tener que volver a diseñar su factura en cada empresa!
+*   <strong>Librería de Conceptos:</strong> Exporta sus textos predefinidos.</p>
+<p><strong>3. Transacciones (El "Movimiento")</strong>
+Esta es la opción más potente.
+*   <strong>Incluir Movimientos Contables:</strong> Al activar este interruptor, usted le dice al sistema: <em>"No quiero solo la estructura, quiero la historia financiera"</em>.
+*   <em>Efecto:</em> Se habilitará el panel derecho de <strong>Filtros Avanzados</strong>.</p>
+<hr />
+<h4>B. Filtros de Transacciones (El "Cuánto")</h4>
+<p>Si activó la opción de "Transacciones", el panel derecho se iluminará. Aquí puede aplicar un bisturí a su información. <strong>Los filtros son acumulativos</strong> (funcionan con lógica "Y").
+*   <strong>Rango de Fechas:</strong>
+    *   <em>Ejemplo:</em> Del <code>01/01/2023</code> al <code>31/12/2023</code>.
+    *   <em>Resultado:</em> Solo se exportarán los comprobantes de ese año. El resto se ignora.</p>
+<ul>
+<li><strong>Por Tercero:</strong><ul>
+<li><em>Ejemplo:</em> Selecciona al cliente "Éxito S.A.".</li>
+<li><em>Resultado:</em> El sistema buscará <strong>todas</strong> las facturas, recibos o asientos donde este tercero sea el protagonista. Ideal para auditorías específicas o entregar información a un abogado.</li>
+</ul>
+</li>
+<li><strong>Por Cuenta Contable:</strong><ul>
+<li><em>Ejemplo:</em> Selecciona la cuenta <code>4135 (Comercio al por mayor)</code>.</li>
+<li><em>Resultado:</em> Exportará solo los movimientos que tocaron esa cuenta de ingresos.</li>
+</ul>
+</li>
+<li><strong>Por Centro de Costo:</strong><ul>
+<li><em>Ejemplo:</em> Proyecto "Edificio Norte".</li>
+<li><em>Resultado:</em> Obtendrá un archivo con la contabilidad exclusiva de ese proyecto.</li>
+</ul>
+</li>
+<li><strong>Palabra Clave:</strong><ul>
+<li><em>Ejemplo:</em> Escribe "Arriendo".</li>
+<li><em>Resultado:</em> El sistema buscará en las observaciones de todos los documentos y exportará aquellos que contengan esa palabra.</li>
+</ul>
+</li>
+</ul>
+<h4>C. El Resultado Final</h4>
+<p>Al hacer clic en <strong>Generar Backup JSON</strong>, obtendrá un archivo con un nombre como:
+<code>backup_contable_MiEmpresa_2025-10-27.json</code>
+Este archivo es inteligente:
+1.  <strong>Autocontenido:</strong> Si usted filtró las facturas de "Juan Pérez", el sistema automáticamente incluirá en el paquete al tercero "Juan Pérez" y las cuentas contables que usó en esas facturas, para que al restaurar no falte nada.
+2.  <strong>Legible:</strong> Aunque es técnico, puede abrirlo con un bloc de notas y leer su información.</p>
+<h3>4.2. Restaurar Copia de Seguridad (Importar Datos)</h3>
+<p>El proceso de restauración en ContaPY no es ciego. El sistema actúa como un "Aduanero": revisa cada dato antes de dejarlo entrar a su empresa.</p>
+<h4>A. El Proceso de Análisis (La "Aduana")</h4>
+<p>Antes de guardar un solo dato, el sistema lee su archivo <code>.json</code> y lo compara con lo que ya existe en la empresa destino.
+1.  <strong>Seleccione la Empresa Destino:</strong>
+    *   <em>Precaución:</em> Asegúrese de elegir la empresa correcta. Si elige una empresa vacía, se llenará con los datos. Si elige una empresa en marcha, el sistema intentará fusionar la información.
+2.  <strong>Cargue el Archivo:</strong>
+    *   Busque el archivo <code>.json</code> en su computador.
+3.  <strong>El Informe de Impacto (Vital):</strong>
+    *   Al cargar el archivo, <strong>NO</strong> se guardan los datos inmediatamente. Aparecerá un panel de "Análisis de Impacto".
+    *   <strong>Semáforo de Datos:</strong>
+        *   🟢 <strong>A Importar:</strong> Registros nuevos que no existen en la empresa destino. Estos entrarán sin problemas.
+        *   🔴 <strong>Conflictos (Omitidos):</strong> Registros que YA existen (ej: el Tercero con cédula 123 ya está creado). El sistema <strong>protege</strong> el dato existente y omite el del archivo para no sobrescribir información valiosa.</p>
+<blockquote>
+<p><strong>Ejemplo de Fusión:</strong> Si usted importa una copia donde "Juan Pérez" tiene el teléfono "555-5555", pero en su empresa actual "Juan Pérez" ya existe con el teléfono "999-9999", el sistema <strong>RESPETA</strong> el teléfono "999-9999" y no lo toca.</p>
+</blockquote>
+<h4>B. Ejecución (La Confirmación)</h4>
+<p>Solo si está de acuerdo con el informe de impacto (cuántos entran, cuántos rebotan), proceda.
+1.  <strong>Revisar Conflictos:</strong> Si ve números en rojo, puede desplegar la lista para ver exactamente qué registros se están omitiendo.
+2.  <strong>Confirmar:</strong> Haga clic en el botón <strong>Confirmar e Importar Datos</strong>.
+3.  <strong>Snapshot de Seguridad:</strong> En este milisegundo, el sistema hace una copia interna de emergencia por si algo sale mal durante la escritura.</p>
+<h4>C. Escenarios de Uso Comunes</h4>
+<ul>
+<li><strong>Clonación de Empresas:</strong> Exportar la "Empresa Modelo" (con PUC y Plantillas listas) y restaurarla en una "Empresa Nueva" vacía. Ahorra horas de configuración.</li>
+<li><strong>Fusión de Sucursales:</strong> Si tiene dos empresas separadas y quiere unificarlas, puede exportar la Sucursal B y restaurarla dentro de la Sucursal A.</li>
+<li><strong>Recuperación de Desastres:</strong> Si borró accidentalmente un bloque de facturas, puede restaurar una copia de ayer. El sistema omitirá lo que no borró (porque ya existe) y solo re-insertará lo que falta.</li>
+</ul>
+<h3>4.3. Transformación de Datos (ETL)</h3>
+<blockquote>
+<p><strong>¿Qué es ETL?</strong> Siglas de <em>Extract, Transform, Load</em>. Es una herramienta para "operar" sus datos fuera del sistema antes de ingresarlos.
+Esta pantalla no toca su base de datos actual. Funciona como un <strong>Laboratorio de Archivos</strong>: usted sube un archivo <code>.json</code>, le aplica reglas de cambio, y el sistema le devuelve un <strong>nuevo archivo <code>.json</code> transformado</strong> listo para restaurar.</p>
+</blockquote>
+<h4>A. ¿Para qué sirve esto? (Casos de Uso)</h4>
+<ol>
+<li><strong>Corregir Errores de Fecha:</strong> Imaginemos que digitó 1.000 facturas con fecha "2023" pero eran del "2024". En lugar de editarlas una por una, usa esta herramienta para cambiar el año masivamente.</li>
+<li><strong>Migrar de Software Viejo:</strong> Si viene de otro software y quiere importar sus datos, puede usar esta herramienta para asignarles los Tipos de Documento correctos de ContaPY.</li>
+<li><strong>Renumeración Masiva:</strong> Si su resolución de facturación cambió y necesita que sus facturas antiguas empiecen desde el número 5000 para no chocar con las nuevas.</li>
+</ol>
+<h4>B. Guía de Uso del Laboratorio</h4>
+<p><strong>Paso 1: Cargar la Fuente</strong>
+Suba el archivo <code>.json</code> que desea modificar. El sistema le dirá cuántos documentos encontró dentro.
+<strong>Paso 2: Definir las Reglas (El Bisturí)</strong>
+Puede aplicar una o varias reglas al mismo tiempo:
+*   <strong>Recodificación General (Renumerar):</strong>
+    *   <em>Campo:</em> <code>Nuevo N° Inicial Consecutivo</code>.
+    *   <em>Acción:</em> Si escribe <code>1001</code>, el sistema tomará el documento más antiguo y le pondrá el #1001, al siguiente el #1002, y así sucesivamente.
+    *   <em>Utilidad:</em> Ordenar cronológicamente facturas desordenadas.
+*   <strong>Cambio de Fechas (Viaje en el Tiempo):</strong>
+    *   Puede forzar un <strong>Día</strong>, <strong>Mes</strong> o <strong>Año</strong> específico.
+    *   <em>Ejemplo:</em> Si pone Año <code>2025</code>, todas las facturas del archivo pasarán a ser del 2025, manteniendo su día y mes original.
+*   <strong>Cambio de Tipo de Documento (Metamorfosis):</strong>
+    *   Esta es la función más potente. Permite convertir documentos de una clase a otra.
+    *   <em>Filtro de Fechas:</em> Primero, diga "Desde qué fecha" quiere aplicar el cambio (para no afectar años cerrados).
+    *   <em>Origen y Destino:</em> Seleccione "De Tipo: Cotización" -&gt; "A Tipo: Factura de Venta".
+    *   <em>Resultado:</em> El sistema buscará todas las cotizaciones en ese rango de fechas y les cambiará su código interno para que, al restaurarlas, el sistema las reconozca como Facturas reales.
+<strong>Paso 3: Aplicar y Descargar</strong>
+Haga clic en <strong>Aplicar y Generar JSON</strong>.
+*   El sistema procesará los datos en memoria (segundos).
+*   Se habilitará un panel negro (Terminal) mostrando el resultado.
+*   Haga clic en <strong>Descargar Archivo .JSON</strong>.</p>
+<blockquote>
+<p><strong>Nota Final:</strong> El archivo que descarga aquí es el que debe usar luego en la pestaña de <strong>Restauración</strong> (Sección 4.2).</p>
+</blockquote>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

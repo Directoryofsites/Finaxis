@@ -80,7 +80,7 @@ export default function CrearEmpresaPanel() {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-gray-800">Crear Nueva Empresa y Usuarios</h2>
         <button
-          onClick={() => window.open('/manual?file=capitulo_15_crear_empresa.md', '_blank')}
+          onClick={() => window.open('/manual/capitulo_15_crear_empresa.html', '_blank')}
           className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors"
           title="Ver Manual de Usuario"
         >

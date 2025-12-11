@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Capítulo 15: Crear Nueva Empresa</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual de Usuario - Capítulo 15: Crear Nueva Empresa</h1>
+<h2>1. Introducción</h2>
+<p>Esta herramienta permite al equipo de soporte desplegar un nuevo entorno ("Tenant") para un cliente. El proceso crea tanto la entidad legal (Empresa) como los usuarios administradores iniciales en un solo paso.</p>
+<p><strong>Ubicación:</strong> <code>Administración &gt; Utilidades &gt; Panel de Soporte &gt; Pestaña "Crear Empresa"</code></p>
+<hr />
+<h2>2. Formulario de Registro</h2>
+<h3>2.1. Datos de la Empresa</h3>
+<p>Estos son los datos fiscales obligatorios que definirán la identidad de la contabilidad:
+*   <strong>Razón Social:</strong> El nombre legal de la compañía (ej: <em>Ferretería El Tornillo S.A.S.</em>).
+*   <strong>NIT:</strong> El número de identificación tributaria sin dígito de verificación.
+*   <strong>Fecha Inicio de Operaciones:</strong> La fecha contable desde la cual el sistema permitirá registrar movimientos.</p>
+<h3>2.2. Usuarios Administradores</h3>
+<p>Por defecto, el sistema exige crear al menos un usuario para que el cliente pueda acceder.
+*   <strong>Email:</strong> Será el nombre de usuario para el inicio de sesión.
+*   <strong>Contraseña:</strong> Debe tener mínimo 6 caracteres.</p>
+<blockquote>
+<p>[!TIP]
+<strong>Múltiples Usuarios:</strong> Puede hacer clic en "+ Añadir otro usuario" si necesita entregar la empresa con varios accesos configurados (ej: Gerente y Contador).</p>
+</blockquote>
+<hr />
+<h2>3. Proceso de Creación</h2>
+<ol>
+<li>Diligencie todos los campos requeridos.</li>
+<li>Haga clic en el botón <strong>"Crear Empresa y Usuarios"</strong>.</li>
+<li>El sistema realizará las siguientes acciones automáticas:<ul>
+<li>Creará el registro de la empresa en la base de datos maestra.</li>
+<li>Creará los usuarios vinculados a esa empresa.</li>
+<li>Asignará automáticamente el rol de <strong>ADMINISTRADOR</strong> a estos usuarios.</li>
+<li>Inicializará el Plan de Cuentas base (si está configurado así en el backend).</li>
+</ul>
+</li>
+</ol>
+<h2>4. Solución de Problemas</h2>
+<ul>
+<li><strong>Error "El NIT ya existe":</strong> Verifique en la pestaña "Gestión Empresas" si ya hay un registro con ese documento.</li>
+<li><strong>Error "Email duplicado":</strong> El correo electrónico ya está siendo usado por otro usuario en el sistema (incluso en otra empresa). Los emails deben ser únicos globalmente.</li>
+</ul>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

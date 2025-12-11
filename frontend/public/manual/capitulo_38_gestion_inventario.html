@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Inventario (Catálogo de Productos)</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Gestión de Inventario (Catálogo de Productos)</h1>
+<p>El módulo de <strong>Gestión de Inventario</strong> es el centro de administración para todos los bienes y servicios que su empresa comercializa. Desde aquí podrá crear, editar, eliminar y consultar el estado de su portafolio.</p>
+<h2>Funcionalidades Principales</h2>
+<h3>1. Búsqueda y Filtrado</h3>
+<p>Para facilitar la gestión de catálogos extensos, el sistema ofrece herramientas de búsqueda avanzada:
+-   <strong>Por Grupo</strong>: Puede filtrar la lista para ver solo los productos de una o varias categorías específicas (ej. "Bebidas", "Servicios", "Materia Prima").
+-   <strong>Buscador Inteligente</strong>: Escriba el código, nombre o referencia del producto en la barra de búsqueda. El sistema filtrará los resultados en tiempo real.</p>
+<h3>2. Listado de Productos</h3>
+<p>La tabla principal ofrece una vista rápida del estado de su inventario:
+-   <strong>Código</strong>: Identificador único del producto.
+-   <strong>Nombre y Grupo</strong>: Descripción y clasificación.
+-   <strong>Stock Total</strong>: Cantidad actual disponible (calculada automáticamente según movimientos). <em>Nota: Los servicios no manejan stock.</em>
+-   <strong>Costo Promedio</strong>: Valor de valoración del inventario.
+-   <strong>Precio Base</strong>: Precio de venta sugerido antes de impuestos.
+-   <strong>Tipo</strong>: Distintivo visual para diferenciar entre <strong>Bien</strong> (Producto físico) y <strong>Servicio</strong> (Intangible).</p>
+<h3>3. Creación y Edición de Productos</h3>
+<p>Al hacer clic en <strong>"Nuevo Item"</strong> o en el botón de <strong>Editar (Lápiz)</strong>, se abrirá una ventana con tres pestañas principales. A continuación se detalla cada una:</p>
+<h4>A. Pestaña: Datos Básicos</h4>
+<p>Aquí se define la identidad del producto.
+-   <strong>Código</strong>: Identificador único (ej. <code>REF-001</code>). Campo obligatorio.
+-   <strong>Nombre</strong>: Descripción comercial del producto. Campo obligatorio.
+-   <strong>Grupo</strong>: Categoría a la que pertenece (ej. "Lácteos", "Servicios"). <em>Nota: Seleccionar un grupo es clave para habilitar las "Características" específicas.</em>
+-   <strong>Impuesto IVA</strong>: Tasa impositiva aplicable al vender este producto.
+-   <strong>¿Es un Servicio?</strong>: Casilla de verificación crítica.
+    -   <strong>Marcado (Sí)</strong>: El sistema entiende que es un intangible (mano de obra, fletes). No gestionará stock físico ni costos de bodega.
+    -   <strong>Desmarcado (No)</strong>: El sistema lo trata como un bien físico con control de inventario.</p>
+<h4>B. Pestaña: Inventario &amp; Costos</h4>
+<p>Esta pestaña cambia su comportamiento dependiendo de si el item es un Bien o un Servicio.</p>
+<p><strong>Para Servicios:</strong>
+-   Mostrará un mensaje indicando que no manejan inventario físico.</p>
+<p><strong>Para Bienes Físicos:</strong>
+-   <strong>Saldos Iniciales (Solo al crear):</strong>
+    -   <em>Stock Inicial</em>: Cantidad con la que arranca el producto.
+    -   <em>Costo Unitario</em>: Valor de compra de ese stock inicial.
+    -   <em>Bodega</em>: Ubicación física donde se almacenará ese saldo inicial.
+-   <strong>Límites de Stock:</strong>
+    -   <em>Stock Mínimo</em>: Cantidad por debajo de la cual el sistema generará alertas de reabastecimiento.
+    -   <em>Stock Máximo</em>: Tope sugerido de inventario.
+-   <strong>Precio de Referencia:</strong>
+    -   <em>Precio Base Manual</em>: Precio de venta sugerido antes de impuestos. Si se deja vacío, el sistema podría sugerir el Costo Promedio como base (dependiendo de la configuración).
+    -   <em>Costo Promedio Actual (Solo lectura)</em>: Visible al editar, muestra el valor contable actual del item.</p>
+<h4>C. Pestaña: Características</h4>
+<p>Este formulario es dinámico y depende del <strong>Grupo</strong> seleccionado en la primera pestaña.
+-   Si el grupo tiene atributos definidos (ej. "Talla", "Color", "Marca", "Voltaje"), aparecerán aquí los campos correspondientes para diligenciar.
+-   Si el grupo no tiene características, verá un mensaje indicándolo.</p>
+<h3>4. Eliminación de Items</h3>
+<p>En la columna de "Acciones" de cada fila encontrará el botón de <strong>Eliminar (Basura)</strong>.</p>
+<blockquote>
+<p><strong>Importante</strong>: Por seguridad contable, el sistema <strong>SOLO</strong> permitirá eliminar productos que no tengan movimientos históricos (facturas, compras, ajustes). Si el producto ya ha sido usado, deberá inactivarlo en lugar de eliminarlo (funcionalidad futura).</p>
+</blockquote>
+<h3>5. Exportación</h3>
+<ul>
+<li><strong>PDF</strong>: El botón rojo de "PDF" genera un reporte imprimible con la lista de productos filtrada en pantalla, ideal para tomas físicas de inventario o listas de precios.</li>
+</ul>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

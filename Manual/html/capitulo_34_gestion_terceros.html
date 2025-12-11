@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Terceros: El Corazón de su Base de Datos</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Gestión de Terceros: El Corazón de su Base de Datos</h1>
+<p>El módulo de <strong>Gestión de Terceros</strong> es el directorio maestro de su aplicación. Aquí se centraliza la información de todas las personas naturales o jurídicas con las que su empresa tiene relación: Clientes, Proveedores, Empleados y otros.</p>
+<h2>1. Creación y Edición de Terceros</h2>
+<p>Al crear o editar un tercero, encontrará un formulario detallado dividido en tres secciones críticas. La precisión aquí es vital para la facturación electrónica y los reportes contables.</p>
+<h3>Sección 1: Identificación</h3>
+<ul>
+<li><strong>NIT / Cédula</strong>: El identificador único. No se puede modificar una vez creado.</li>
+<li><strong>DV (Dígito de Verificación)</strong>: Calculado automáticamente o ingresado manualmente según el documento.</li>
+<li><strong>Razón Social</strong>: Nombre legal de la empresa o nombre completo de la persona.</li>
+<li><strong>Nombre Comercial</strong>: (Opcional) Como es conocido el negocio en el mercado (ej. "Panadería La 22" vs "Juan Pérez S.A.S.").</li>
+</ul>
+<h3>Sección 2: Ubicación y Contacto</h3>
+<p>Datos esenciales para la facturación y notificaciones. Asegúrese de que el <strong>Correo Electrónico</strong> sea el destinado para la recepción de facturas electrónicas.</p>
+<h3>Sección 3: Detalles Fiscales y Comerciales (¡MUY IMPORTANTE!)</h3>
+<p>Esta sección define cómo el sistema interactúa con este tercero.</p>
+<ul>
+<li><strong>Responsabilidad Fiscal</strong>: Código de responsabilidad (ej. R-99-PN). Consulte el RUT del tercero.</li>
+<li><strong>Actividad Económica (CIIU)</strong>: Código de la actividad principal.</li>
+<li><strong>Régimen Simple</strong>: Marque esta casilla si el tercero pertenece al Régimen Simple de Tributación.</li>
+<li><strong>Lista de Precios</strong>: Si maneja múltiples tarifas (ej. Mayorista, Detal), asigne la lista correspondiente aquí. El sistema cargará automáticamente estos precios al facturarle.</li>
+</ul>
+<h4>La Casilla "Cliente" y el Módulo de Cartera</h4>
+<blockquote>
+<p>[!IMPORTANT]
+<strong>¿Por qué es vital marcar la casilla "Cliente"?</strong>
+Al marcar esta casilla, el sistema habilita inmediatamente el <strong>Módulo de Cartera</strong> para este tercero. Esto le permitirá:
+1.  Generarle Facturas de Venta.
+2.  Asignarle cupos de crédito.
+3.  Hacer seguimiento a sus cuentas por cobrar.
+4.  Ver su historial de pagos y morosidad.</p>
+<p>Si no marca esta casilla, el tercero existirá en la base de datos pero no aparecerá en los selectores de venta.</p>
+</blockquote>
+<h4>Proveedores y Empleados</h4>
+<ul>
+<li><strong>Proveedor</strong>: Habilita el módulo de Cuentas por Pagar y Compras.</li>
+<li><strong>Empleado</strong>: Permite asignarlo a nómina y gastos de personal.
+<em>Nota: Un mismo tercero puede ser Cliente, Proveedor y Empleado simultáneamente.</em></li>
+</ul>
+<h2>2. Herramienta de Fusión (Fusionar Terceros)</h2>
+<p>¿Creó por error a "Juan Perez" y "Juan A. Perez" como dos registros diferentes? La herramienta <strong>Fusionar</strong> es la solución.</p>
+<ol>
+<li>Haga clic en el botón <strong>"Fusionar"</strong> en la pantalla principal.</li>
+<li>Seleccione el <strong>Tercero Principal</strong> (el que quedará).</li>
+<li>Seleccione el <strong>Tercero Duplicado</strong> (el que desaparecerá).</li>
+<li>El sistema moverá <strong>todos</strong> los movimientos (facturas, recibos, asientos) del duplicado al principal y luego eliminará el duplicado.</li>
+</ol>
+<blockquote>
+<p>[!WARNING]
+<strong>Acción Irreversible</strong>: Una vez fusionados, no se pueden separar. Verifique bien los NITs antes de confirmar.</p>
+</blockquote>
+<h2>Preguntas Frecuentes (FAQ)</h2>
+<p><strong>P: ¿Puedo cambiar el NIT de un tercero?</strong>
+R: No directamente. El NIT es la llave maestra. Si se equivocó, debe crear uno nuevo y, si ya tiene movimientos, usar la herramienta "Fusionar" para mover todo al nuevo NIT correcto.</p>
+<p><strong>P: ¿Por qué no me aparece un tercero al intentar hacer una factura?</strong>
+R: Seguramente no tiene marcada la casilla <strong>"Cliente"</strong> en su ficha. Edítelo y márquela.</p>
+<p><strong>P: ¿Qué pasa si elimino un tercero?</strong>
+R: El sistema solo le permitirá eliminar terceros que <strong>NO tengan movimientos contables</strong>. Si ya tiene facturas o asientos, debe inactivarlo o fusionarlo, pero no podrá borrarlo para preservar la integridad contable.</p>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

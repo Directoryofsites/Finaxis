@@ -231,7 +231,7 @@ const TomaInventarioFisicoPage = () => {
 
                             {/* 2. Botón Manual (Derecha) */}
                             <button
-                                onClick={() => window.open('/manual?file=capitulo_43_ajuste_inventario.md', '_blank')}
+                                onClick={() => window.open('/manual/capitulo_43_ajuste_inventario.html', '_blank')}
                                 className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors font-bold text-sm"
                                 type="button"
                             >

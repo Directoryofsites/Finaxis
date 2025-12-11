@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario: Registro de Nuevos Activos (Hoja de Vida)</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Manual de Usuario: Registro de Nuevos Activos (Hoja de Vida)</h1>
+<h2>1. Introducción</h2>
+<p>Este módulo es la "Partida de Nacimiento" del activo. Aquí le asignamos una identificación única (Placa) y definimos quién es el responsable de cuidarlo.</p>
+<hr />
+<h2>2. ¿Cómo acceder?</h2>
+<p>Menú Principal &gt; <strong>Activos Fijos</strong> &gt; Botón <strong>Registrar Nuevo Activo</strong>.</p>
+<hr />
+<h2>3. Explicación del Formulario</h2>
+<p>El formulario tiene 3 secciones críticas. Llénelelas con la factura de compra en mano.</p>
+<h3>Sección A: Identificación</h3>
+<ul>
+<li><strong>Placa / Código Interno:</strong> Es el "DNI" del activo. Una vez guardado, <strong>NO SE PUEDE CAMBIAR</strong>.<ul>
+<li><em>Tip:</em> Use etiquetas adhesivas plateadas en sus equipos y escriba ese número aquí (Ej: AF-2024-001).</li>
+</ul>
+</li>
+<li><strong>Nombre:</strong> Sea específico. No ponga "Computador". Ponga "Portátil Dell Latitude 7490 i7".</li>
+<li><strong>Serie / Serial:</strong> Vital para garantías y casos de robo. Es el número único de fábrica.</li>
+</ul>
+<h3>Sección B: Control de Custodia (¿Quién lo tiene?)</h3>
+<ul>
+<li><strong>Ubicación Física:</strong> ¿Dónde está hoy? (Ej: "Sala de Juntas Piso 2").</li>
+<li><strong>Responsable:</strong> Seleccione el empleado que firma el acta de recibido. Si ese empleado renuncia, usted vendrá acá a cambiar el responsable (Traslado).</li>
+</ul>
+<h3>Sección C: Valores y Adquisición (Dinero)</h3>
+<ul>
+<li><strong>Costo de Adquisición:</strong> Valor neto de la factura (antes de IVA, generalmente). Incluya costos de instalación, transporte y puesta en marcha (Norma NIIF).</li>
+<li><strong>Valor Residual (Salvamento):</strong><ul>
+<li><em>Concepto Avanzado:</em> Es lo que usted cree que valdrá ese activo cuando ya esté viejo y lo vaya a vender como chatarra o usado.</li>
+<li><em>Ejemplo:</em> Compra una moto en $10.000. Usted cree que en 5 años la podrá vender en $2.000.</li>
+<li>Costo ($10.000) - Residual ($2.000) = <strong>$8.000</strong>.</li>
+<li>El sistema solo depreciará esos $8.000. Si no está seguro, ponga 0.</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2>4. Cuestionario de Autoevaluación (FAQ)</h2>
+<p><strong>P1: Compré un activo hace 6 meses pero apenas voy a usar el software. ¿Qué fecha pongo?</strong>
+<strong>R:</strong> Ponga la <strong>Fecha de Compra Real</strong> (la de la factura antigua). El sistema calculará la depreciación acumulada desde esa fecha hasta hoy automáticamente.</p>
+<p><strong>P2: ¿Puedo registrar un "Combo" (Ej: Escritorio + Silla)?</strong>
+<strong>R:</strong> Se recomienda registrarlos <strong>por separado</strong>.
+*   <em>Razón:</em> Si mañana se rompe la silla y debe darla de baja, no querrá dar de baja también el escritorio en el sistema.</p>
+<p><strong>P3: ¿El software genera código de barras?</strong>
+<strong>R:</strong> Aún no imprime las etiquetas, pero el campo "Placa" es compatible con cualquier lector de códigos de barras USB estándar para búsquedas rápidas.</p>
+<p><strong>P4: Me equivoqué en el precio. ¿Puedo editarlo?</strong>
+<strong>R:</strong> <strong>NO.</strong> Por seguridad contable, los valores históricos son sagrados.
+*   <em>Solución:</em> Si el activo es nuevo (mismo día), bórrelo (si tiene permisos admin) y créelo de nuevo. Si ya pasó tiempo, deberá hacer un "Revalúo" o "Deterioro" mediante una nota contable.</p>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

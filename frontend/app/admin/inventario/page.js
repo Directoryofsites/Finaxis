@@ -247,7 +247,7 @@ export default function GestionInventarioPage() {
                 </div>
                 <div className="flex gap-3">
                     <button
-                        onClick={() => window.open('/manual?file=capitulo_38_gestion_inventario.md', '_blank')}
+                        onClick={() => window.open('/manual/capitulo_38_gestion_inventario.html', '_blank')}
                         className="btn btn-ghost btn-sm gap-2 text-indigo-600"
                         title="Ver Manual"
                     >

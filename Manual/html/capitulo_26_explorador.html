@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorador de Movimientos</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Explorador de Movimientos</h1>
+<p>El <strong>Explorador de Movimientos</strong> es la herramienta central para la consulta histórica, auditoría y reimpresión de documentos contables. Permite buscar comprobantes específicos utilizando múltiples criterios de filtrado.</p>
+<h2>1. Panel de Filtros</h2>
+<p>Antes de visualizar información, debe utilizar los filtros superiores para delimitar su búsqueda. El sistema no carga datos automáticamente para optimizar el rendimiento.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Campo</th>
+<th style="text-align: left;">Descripción</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Desde / Hasta</strong></td>
+<td style="text-align: left;">Rango de fechas para la búsqueda.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Tipo Documento</strong></td>
+<td style="text-align: left;">Filtra por una fuente específica (ej. Factura de Venta, Egreso).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Tercero</strong></td>
+<td style="text-align: left;">Muestra documentos asociados a un beneficiario específico (NIT/Nombre).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Número</strong></td>
+<td style="text-align: left;">Busca un consecutivo exacto (ej. <code>1025</code>).</td>
+</tr>
+</tbody>
+</table>
+<h3>Botones de Acción</h3>
+<ul>
+<li><strong><span style="color:blue">🔍 Buscar</span></strong>: Ejecuta la consulta con los filtros aplicados.</li>
+<li><strong><span style="color:gray">🧹 Limpiar</span></strong>: Restablece todos los filtros y limpia la tabla de resultados.</li>
+</ul>
+<h2>2. Resultados y Acciones</h2>
+<p>La tabla de resultados muestra los documentos ordenados cronológicamente (más recientes primero).</p>
+<h3>Columnas</h3>
+<ul>
+<li><strong>Fecha</strong>: Fecha contable del documento.</li>
+<li><strong>Tipo</strong>: Código y nombre del documento (ej. <code>FV - Factura de Venta</code>).</li>
+<li><strong>Número</strong>: Consecutivo único.</li>
+<li><strong>Beneficiario</strong>: Tercero asociado a la transacción.</li>
+<li><strong>Valor Total</strong>: Suma de débitos/créditos del asiento.</li>
+<li><strong>Estado</strong>:<ul>
+<li><span style="color:green; border:1px solid green; padding:2px; border-radius:4px;">ACTIVO</span>: Documento válido y contabilizado.</li>
+<li><span style="color:red; border:1px solid red; padding:2px; border-radius:4px;">ANULADO</span>: Documento revertido (sin efecto contable).</li>
+</ul>
+</li>
+</ul>
+<h3>Reimpresión de Comprobantes</h3>
+<p>Para obtener una copia física o digital de un documento:
+1. Localice el documento en la tabla.
+2. Haga clic en el botón <strong>🖨️ Imprimir</strong> en la columna de acciones.
+3. El sistema generará un PDF oficial en una nueva pestaña, listo para descargar o imprimir.</p>
+<blockquote>
+<p>[!NOTE]
+<strong>Paginación</strong>: Si la búsqueda arroja muchos resultados, utilice los botones <strong>« Anterior</strong> y <strong>Siguiente »</strong> al final de la tabla para navegar entre páginas.</p>
+</blockquote>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

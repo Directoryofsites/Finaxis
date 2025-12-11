@@ -298,7 +298,7 @@ export default function EliminacionMasivaPage() {
             </div>
           </div>
           <button
-            onClick={() => window.open('/manual?file=capitulo_11_eliminacion.md', '_blank')}
+            onClick={() => window.open('/manual/capitulo_11_eliminacion.html', '_blank')}
             className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2 flex items-center"
             title="Ver Manual de Usuario"
           >

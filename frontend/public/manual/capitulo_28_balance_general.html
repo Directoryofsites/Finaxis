@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balance General</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="javascript:history.back()" class="back-link">← Volver</a>
+    
+    <div class="content">
+        <h1>Balance General</h1>
+<p>El <strong>Balance General</strong> (o Estado de Situación Financiera) es el reporte principal que muestra la salud económica de la empresa en una fecha específica. Detalla los bienes que posee (Activos), las deudas que tiene (Pasivos) y el valor residual que pertenece a los dueños (Patrimonio).</p>
+<h2>1. Generación del Reporte</h2>
+<p>Este informe es una "fotografía" financiera a una fecha de corte.</p>
+<ol>
+<li><strong>Fecha de Corte</strong>: Seleccione el día hasta el cual desea calcular los saldos. El sistema incluirá todas las transacciones desde el inicio de operaciones hasta esa fecha.</li>
+<li>Haga clic en <strong>🔍 Generar Reporte</strong>.</li>
+</ol>
+<h2>2. Estructura del Informe</h2>
+<p>El reporte se divide en tres grandes bloques, siguiendo la ecuación contable fundamental:</p>
+<h3>🟢 Activos</h3>
+<p>Representa todo lo que la empresa posee (dinero en bancos, inventarios, cuentas por cobrar, propiedades).
+- Se listan las cuentas de clase 1.
+- El <strong>Total Activos</strong> indica el valor bruto de la compañía.</p>
+<h3>🔴 Pasivos</h3>
+<p>Representa las obligaciones financieras con terceros (proveedores, bancos, impuestos).
+- Se listan las cuentas de clase 2.
+- El <strong>Total Pasivos</strong> indica el nivel de endeudamiento externo.</p>
+<h3>🔵 Patrimonio</h3>
+<p>Representa la inversión de los socios y las utilidades acumuladas.
+- Se listan las cuentas de clase 3.
+- <strong>Utilidad del Ejercicio</strong>: El sistema calcula automáticamente la ganancia o pérdida del periodo y la integra en esta sección para garantizar el cuadre contable.</p>
+<h2>3. Verificación de Cuadre (Ecuación Patrimonial)</h2>
+<p>Al final del reporte, el sistema realiza una validación automática:</p>
+<blockquote>
+<p><strong>Activo = Pasivo + Patrimonio</strong></p>
+</blockquote>
+<ul>
+<li>Si la ecuación se cumple, verá un mensaje en <span style="color:green">verde</span> indicando que el balance está cuadrado.</li>
+<li>Si existe una diferencia, aparecerá una alerta en <span style="color:red">rojo</span>. Esto indica errores contables graves que deben ser revisados antes de presentar impuestos.</li>
+</ul>
+<h2>4. Exportación</h2>
+<p>Puede descargar una versión oficial del balance haciendo clic en el botón <strong>📄 Exportar PDF</strong>. Este documento incluye el encabezado de la empresa y la firma digital de generación, listo para ser firmado por el Contador y el Representante Legal.</p>
+    </div>
+
+    <footer>
+        Sistema Finaxis - Manual de Usuario
+    </footer>
+</div>
+
+</body>
+</html>

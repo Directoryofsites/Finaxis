@@ -41,7 +41,7 @@ export default function GestionEmpresasPage() {
                 <h1 className="text-2xl font-bold text-gray-800">Gestión de Empresas Clientes</h1>
                 <div className="flex gap-2">
                     <button
-                        onClick={() => window.open('/manual?file=capitulo_5_empresas.md', '_blank')}
+                        onClick={() => window.open('/manual/capitulo_5_empresas.html', '_blank')}
                         className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2 flex items-center"
                         title="Ver Manual de Usuario"
                     >

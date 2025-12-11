@@ -162,7 +162,7 @@ export default function EditarTipoDocumento() {
                     </div>
                     <div className="flex gap-2">
                         <button
-                            onClick={() => window.open('/manual?file=capitulo_9_consecutivos.md', '_blank')}
+                            onClick={() => window.open('/manual/capitulo_9_consecutivos.html', '_blank')}
                             className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2 flex items-center"
                             title="Ver Manual de Usuario"
                         >
