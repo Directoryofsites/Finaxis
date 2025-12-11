@@ -1014,6 +1014,14 @@ def _upsert_manual_seguro(db, model, json_key, natural_key, data_source, target_
         
         clean_data = {k: v for k, v in data.items() if k in valid_columns}
         
+        # ARREGLO: Validar y corregir foreign keys de usuarios antes de procesar
+        for user_field in ['created_by', 'updated_by', 'usuario_creador_id', 'usuario_modificador_id']:
+            if user_field in clean_data and clean_data[user_field] is not None:
+                # Verificar si el usuario existe, si no, usar el usuario actual
+                user_exists = db.query(Usuario).filter(Usuario.id == clean_data[user_field]).first()
+                if not user_exists:
+                    clean_data[user_field] = user_id
+        
         if id_maps:
             for field, mapping in id_maps.items():
                 old_val = clean_data.get(field)
@@ -1052,7 +1060,9 @@ def _upsert_manual_seguro(db, model, json_key, natural_key, data_source, target_
                     setattr(obj, k, v)
         else:
             clean_data['empresa_id'] = target_empresa_id
+            # ARREGLO: Manejar todos los campos de foreign key a usuarios
             if hasattr(model, 'created_by'): clean_data['created_by'] = user_id
+            if hasattr(model, 'updated_by'): clean_data['updated_by'] = user_id
             new_obj = model(**clean_data)
             db.add(new_obj)
             existing_map[key_val] = new_obj
