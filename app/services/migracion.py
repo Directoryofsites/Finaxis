@@ -979,9 +979,20 @@ def _restore_jerarquico(db, model, json_key, parent_field, data_source, target_e
             if key not in exist_map:
                 new_item = item.copy()
                 for k in ['id', '_sa_instance_state', 'created_at']: new_item.pop(k, None)
+                
+                # ARREGLO: Validar y corregir foreign keys de usuarios
+                for user_field in ['created_by', 'updated_by', 'usuario_creador_id', 'usuario_modificador_id']:
+                    if user_field in new_item and new_item[user_field] is not None:
+                        # Verificar si el usuario existe, si no, usar el usuario actual
+                        user_exists = db.query(Usuario).filter(Usuario.id == new_item[user_field]).first()
+                        if not user_exists:
+                            new_item[user_field] = user_id
+                
                 new_item['empresa_id'] = target_empresa_id
                 new_item[parent_field] = None 
+                # ARREGLO: Manejar todos los campos de foreign key a usuarios
                 if hasattr(model, 'created_by'): new_item['created_by'] = user_id
+                if hasattr(model, 'updated_by'): new_item['updated_by'] = user_id
                 obj = model(**new_item)
                 db.add(obj)
                 exist_map[key] = obj
@@ -992,7 +1003,15 @@ def _restore_jerarquico(db, model, json_key, parent_field, data_source, target_e
                 new_name = item.get('nombre')
                 if new_name and existing_obj.nombre != new_name:
                     existing_obj.nombre = new_name
-                    # db.add(existing_obj) # Not strictly necessary as it's attached to session, but good for clarity
+                
+                # ARREGLO: Validar campos de usuario en actualizaciones también
+                for user_field in ['updated_by']:
+                    if user_field in item and item[user_field] is not None:
+                        user_exists = db.query(Usuario).filter(Usuario.id == item[user_field]).first()
+                        if not user_exists:
+                            setattr(existing_obj, user_field, user_id)
+                        else:
+                            setattr(existing_obj, user_field, item[user_field])
 
     return count
 
