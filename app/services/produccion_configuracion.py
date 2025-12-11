@@ -15,6 +15,10 @@ def save_configuracion(db: Session, config_data: ConfigProduccionCreate, empresa
         db_config.tipo_documento_orden_id = config_data.tipo_documento_orden_id
     if config_data.tipo_documento_anulacion_id is not None:
         db_config.tipo_documento_anulacion_id = config_data.tipo_documento_anulacion_id
+    if config_data.tipo_documento_consumo_id is not None:
+        db_config.tipo_documento_consumo_id = config_data.tipo_documento_consumo_id
+    if config_data.tipo_documento_entrada_pt_id is not None:
+        db_config.tipo_documento_entrada_pt_id = config_data.tipo_documento_entrada_pt_id
     
     db.commit()
     db.refresh(db_config)

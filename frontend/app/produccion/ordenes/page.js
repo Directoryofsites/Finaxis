@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import { FaPlus, FaList, FaSave, FaSearch, FaCogs, FaCheckCircle, FaArrowRight, FaIndustry, FaBoxOpen, FaTrash, FaArchive, FaUndo, FaFilePdf, FaBan, FaEye } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
-import { getOrdenes, createOrden, getRecetas, registrarConsumo, cerrarOrden, anularOrden, archivarOrden, deleteOrden, downloadOrdenPDF } from '../../../lib/produccionService';
+import { getOrdenes, getOrdenById, createOrden, getRecetas, registrarConsumo, cerrarOrden, anularOrden, archivarOrden, deleteOrden, downloadOrdenPDF } from '../../../lib/produccionService';
 import { getBodegas } from '../../../lib/bodegaService';
 import Link from 'next/link';
 
@@ -190,21 +190,35 @@ export default function GestionOrdenesPage() {
         }
     };
 
-    const handleOpenConsumo = (orden) => {
-        setSelectedOrden(orden);
-        // Pre-cargar items necesarios según receta restante (simple lógica)
-        // En un sistema real, se calcula lo pendiente. Aquí cargamos todo lo de la receta base * cantidad orden
-        // Ajustado a la proporción
-        const factor = orden.cantidad_planeada / orden.receta.cantidad_base;
-        const itemsSugeridos = orden.receta.detalles.map(d => ({
-            insumo_id: d.insumo_id,
-            producto_nombre: d.insumo ? d.insumo.nombre : `Insumo #${d.insumo_id}`, // Fallback si no viene populado
-            cantidad: d.cantidad * factor
-        }));
-        setConsumoItems(itemsSugeridos);
-        setCantidadCierre(orden.cantidad_planeada); // Sugerir planeado
-        // Abrir modal o cambiar vista
-        document.getElementById('modal_acciones').showModal();
+    const handleOpenConsumo = async (orden) => {
+        try {
+            setLoading(true);
+            const ordenFull = await getOrdenById(orden.id); // Fetch all details (including recipe ingredients)
+
+            setSelectedOrden(ordenFull);
+
+            // Si la receta viene poblada
+            if (ordenFull.receta && ordenFull.receta.detalles) {
+                const factor = ordenFull.cantidad_planeada / (ordenFull.receta.cantidad_base || 1);
+                const itemsSugeridos = ordenFull.receta.detalles.map(d => ({
+                    insumo_id: d.insumo_id,
+                    producto_nombre: d.insumo ? d.insumo.nombre : `Insumo #${d.insumo_id}`,
+                    cantidad: d.cantidad * factor
+                }));
+                setConsumoItems(itemsSugeridos);
+            } else {
+                setConsumoItems([]);
+                toast.warning("La receta no tiene detalles o no se pudo cargar completa.");
+            }
+
+            setCantidadCierre(ordenFull.cantidad_planeada);
+            document.getElementById('modal_acciones').showModal();
+        } catch (error) {
+            console.error("Error cargando detalles orden:", error);
+            toast.error("Error al cargar los detalles de la orden.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleRegistrarConsumo = async () => {

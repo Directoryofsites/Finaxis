@@ -66,7 +66,7 @@ def get_ordenes(
 ):
     return service_prod.get_ordenes(db, current_user.empresa_id)
 
-@router.get("/ordenes/{orden_id}", response_model=schemas_prod.OrdenProduccionResponse)
+@router.get("/ordenes/{orden_id}", response_model=schemas_prod.OrdenProduccionDetalleResponse)
 def get_orden(
     orden_id: int,
     db: Session = Depends(database.get_db),

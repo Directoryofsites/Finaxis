@@ -13,4 +13,8 @@ class ConfiguracionProduccion(Base):
     # Document Type for Annulment/Reversal (Devoluciones)
     tipo_documento_anulacion_id = Column(Integer, ForeignKey('tipos_documento.id'), nullable=True)
 
+    # Nuevo: Documentos para movimientos de inventario
+    tipo_documento_consumo_id = Column(Integer, ForeignKey('tipos_documento.id'), nullable=True)
+    tipo_documento_entrada_pt_id = Column(Integer, ForeignKey('tipos_documento.id'), nullable=True)
+
     # Puede haber más configs aquí (bodegas por defecto, etc.)

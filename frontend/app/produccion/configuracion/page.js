@@ -9,7 +9,9 @@ import { getTiposDocumento } from '../../../lib/tiposDocumentoService';
 export default function ProduccionConfigPage() {
     const [config, setConfig] = useState({
         tipo_documento_orden_id: '',
-        tipo_documento_anulacion_id: ''
+        tipo_documento_anulacion_id: '',
+        tipo_documento_consumo_id: '',
+        tipo_documento_entrada_pt_id: ''
     });
     const [tiposDocumento, setTiposDocumento] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -28,7 +30,9 @@ export default function ProduccionConfigPage() {
             if (cfg) {
                 setConfig({
                     tipo_documento_orden_id: cfg.tipo_documento_orden_id || '',
-                    tipo_documento_anulacion_id: cfg.tipo_documento_anulacion_id || ''
+                    tipo_documento_anulacion_id: cfg.tipo_documento_anulacion_id || '',
+                    tipo_documento_consumo_id: cfg.tipo_documento_consumo_id || '',
+                    tipo_documento_entrada_pt_id: cfg.tipo_documento_entrada_pt_id || ''
                 });
             }
             setTiposDocumento(tips);
@@ -110,6 +114,38 @@ export default function ProduccionConfigPage() {
                                     ))}
                                 </select>
                                 <p className="text-xs text-gray-400 mt-1">Usado para reversar movimientos de inventario y costo.</p>
+                            </div>
+
+                            <div className="border-t pt-4 mt-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Tipo de Documento para Consumo de Materia Prima
+                                </label>
+                                <select
+                                    value={config.tipo_documento_consumo_id}
+                                    onChange={(e) => setConfig({ ...config, tipo_documento_consumo_id: e.target.value })}
+                                    className="w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 p-2 border"
+                                >
+                                    <option value="">-- Seleccionar --</option>
+                                    {tiposDocumento.map(t => (
+                                        <option key={t.id} value={t.id}>{t.nombre} ({t.codigo})</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Tipo de Documento para Entrada de Producto Terminado
+                                </label>
+                                <select
+                                    value={config.tipo_documento_entrada_pt_id}
+                                    onChange={(e) => setConfig({ ...config, tipo_documento_entrada_pt_id: e.target.value })}
+                                    className="w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 p-2 border"
+                                >
+                                    <option value="">-- Seleccionar --</option>
+                                    {tiposDocumento.map(t => (
+                                        <option key={t.id} value={t.id}>{t.nombre} ({t.codigo})</option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
                     </div>

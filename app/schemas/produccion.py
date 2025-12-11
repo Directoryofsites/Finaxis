@@ -1,7 +1,7 @@
 from typing import List, Optional
 from datetime import date, datetime
 from pydantic import BaseModel, Field
-from .inventario import ProductoResponse, Bodega as BodegaResponse # Importar esquemas
+from .inventario import ProductoResponse, ProductoSimple, Bodega as BodegaResponse # Importar esquemas
 
 # --- Recetas ---
 
@@ -14,7 +14,7 @@ class RecetaDetalleCreate(RecetaDetalleBase):
 
 class RecetaDetalleResponse(RecetaDetalleBase):
     id: int
-    insumo: Optional[ProductoResponse] = None
+    insumo: Optional[ProductoSimple] = None # Usar esquema ligero
 
     class Config:
         orm_mode = True
@@ -61,7 +61,17 @@ class RecetaResponse(RecetaBase):
     fecha_creacion: datetime
     detalles: List[RecetaDetalleResponse] = []
     recursos: List[RecetaRecursoResponse] = []
-    producto: Optional[ProductoResponse] = None # El producto que produce
+    producto: Optional[ProductoSimple] = None # Usar esquema ligero para el PT también
+
+    class Config:
+        orm_mode = True
+
+class RecetaSimple(RecetaBase):
+    """Schema ligero de Receta sin detalles ni recursos, para listados."""
+    id: int
+    empresa_id: int
+    fecha_creacion: datetime
+    producto: Optional[ProductoSimple] = None # Usar esquema ligero
 
     class Config:
         orm_mode = True
@@ -76,7 +86,7 @@ class OrdenProduccionInsumoResponse(BaseModel):
     costo_unitario_historico: float
     costo_total: float
     fecha_despacho: datetime
-    insumo: Optional[ProductoResponse] = None
+    insumo: Optional[ProductoSimple] = None # Usar esquema ligero
     bodega_origen: Optional[BodegaResponse] = None
 
     class Config:
@@ -126,12 +136,19 @@ class OrdenProduccionResponse(OrdenProduccionBase):
     costo_total_cif: float
     costo_unitario_final: float
 
-    producto: Optional[ProductoResponse] = None
-    bodega_destino: Optional[BodegaResponse] = None
-    receta: Optional[RecetaResponse] = None
+    producto: Optional[ProductoSimple] = None # Usar esquema ligero
+    bodega_destino: Optional[BodegaResponse] = None # BodegaResponse es ligero (solo id, nombre)
+    receta: Optional[RecetaSimple] = None # Usar esquema ligero
     
     insumos: List[OrdenProduccionInsumoResponse] = []
     recursos: List[OrdenProduccionRecursoResponse] = []
+
+    class Config:
+        orm_mode = True
+
+class OrdenProduccionDetalleResponse(OrdenProduccionResponse):
+    """Schema detallado para ver una orden individual (incluye ingredientes de receta)."""
+    receta: Optional[RecetaResponse] = None # Usar esquema completo
 
     class Config:
         orm_mode = True
@@ -141,6 +158,8 @@ class OrdenProduccionResponse(OrdenProduccionBase):
 class ConfigProduccionBase(BaseModel):
     tipo_documento_orden_id: Optional[int] = None
     tipo_documento_anulacion_id: Optional[int] = None
+    tipo_documento_consumo_id: Optional[int] = None
+    tipo_documento_entrada_pt_id: Optional[int] = None
 
 class ConfigProduccionCreate(ConfigProduccionBase):
     pass

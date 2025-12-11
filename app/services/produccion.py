@@ -55,7 +55,11 @@ def create_receta(db: Session, receta: schemas_prod.RecetaCreate, empresa_id: in
     return db_receta
 
 def get_recetas(db: Session, empresa_id: int):
-    return db.query(models_prod.Receta).filter(models_prod.Receta.empresa_id == empresa_id).all()
+    return db.query(models_prod.Receta).options(
+        selectinload(models_prod.Receta.detalles).selectinload(models_prod.RecetaDetalle.insumo),
+        selectinload(models_prod.Receta.recursos),
+        selectinload(models_prod.Receta.producto)
+    ).filter(models_prod.Receta.empresa_id == empresa_id).all()
 
 def get_receta_by_id(db: Session, receta_id: int, empresa_id: int):
     return db.query(models_prod.Receta).options(
@@ -172,7 +176,17 @@ def create_orden(db: Session, orden: schemas_prod.OrdenProduccionCreate, empresa
 def get_ordenes(db: Session, empresa_id: int):
     return db.query(models_prod.OrdenProduccion).options(
         selectinload(models_prod.OrdenProduccion.producto),
-        selectinload(models_prod.OrdenProduccion.receta)
+        selectinload(models_prod.OrdenProduccion.bodega_destino),
+        selectinload(models_prod.OrdenProduccion.insumos).options(
+            selectinload(models_prod.OrdenProduccionInsumo.insumo),
+            selectinload(models_prod.OrdenProduccionInsumo.bodega_origen)
+        ),
+        selectinload(models_prod.OrdenProduccion.recursos),
+        selectinload(models_prod.OrdenProduccion.receta).options(
+            selectinload(models_prod.Receta.detalles).selectinload(models_prod.RecetaDetalle.insumo),
+            selectinload(models_prod.Receta.recursos),
+            selectinload(models_prod.Receta.producto)
+        )
     ).filter(models_prod.OrdenProduccion.empresa_id == empresa_id).order_by(models_prod.OrdenProduccion.id.desc()).all()
 
 def get_orden_by_id(db: Session, orden_id: int, empresa_id: int):
@@ -200,19 +214,26 @@ def procesar_consumo_mp(db: Session, orden_id: int, items_consumo: list[schemas_
     if orden.estado == models_prod.EstadoOrdenProduccion.CERRADA:
          raise HTTPException(status_code=400, detail="Orden ya cerrada")
 
-    # A. Buscar Tipo Documento para Producción (Debe existir o crearse)
-    # Buscamos por función especial 'produccion_consumo' o similar. Si no existe, usamos un genérico.
-    # Por ahora, asumimos que existe un tipo con función 'SALIDA_PRODUCCION'
-    # TODO: Parametrizar esto correctamente. 
-    tipo_doc = db.query(models_doc.TipoDocumento).filter(
-        models_doc.TipoDocumento.empresa_id == empresa_id,
-        # models_doc.TipoDocumento.funcion_especial == 'salida_produccion' # Ideal
-        models_doc.TipoDocumento.nombre.ilike('%CONSUMO%') # Fallback temporal
-    ).first()
+    # A. Buscar Tipo Documento para Producción
+    config_prod = get_configuracion(db, empresa_id)
+    tipo_doc = None
+    
+    if config_prod and config_prod.tipo_documento_consumo_id:
+         tipo_doc = db.query(models_doc.TipoDocumento).filter(models_doc.TipoDocumento.id == config_prod.tipo_documento_consumo_id).first()
     
     if not tipo_doc:
-        # Fallback de emergencia, usar Nota Contable o similar
-        raise HTTPException(status_code=400, detail="No existe Tipo de Documento para Consumo de Producción configurado.")
+        # Fallback: Buscamos por nombre
+        tipo_doc = db.query(models_doc.TipoDocumento).filter(
+            models_doc.TipoDocumento.empresa_id == empresa_id,
+            models_doc.TipoDocumento.nombre.ilike('%CONSUMO%') 
+        ).first()
+    
+    if not tipo_doc:
+        # Fallback de emergencia
+        debug_info = f"Config ID: {config_prod.id if config_prod else 'None'}, DocConsumoID: {config_prod.tipo_documento_consumo_id if config_prod else 'None'}"
+        err_msg = f"No se encontró Tipo de Documento de Consumo. (Debug: {debug_info}). Revise Configuración."
+        print(f"[ERROR PRODUCCION] {err_msg}")
+        raise HTTPException(status_code=400, detail=err_msg)
 
     movimientos_contables = []
     total_costo_lote = 0.0
@@ -220,12 +241,24 @@ def procesar_consumo_mp(db: Session, orden_id: int, items_consumo: list[schemas_
     # B. Preparar Movimientos
     for item in items_consumo:
         producto = service_inventario.get_producto_by_id(db, item.insumo_id, empresa_id)
+        if not producto: continue
+
+        grupo = producto.grupo_inventario
+        if not grupo:
+             err_msg = f"El producto '{producto.nombre}' no tiene Grupo de Inventario asignado."
+             print(f"[ERROR PRODUCCION] {err_msg}")
+             raise HTTPException(status_code=400, detail=err_msg)
+
+        if not grupo.cuenta_inventario_id or not grupo.cuenta_costo_produccion_id:
+             missing = []
+             if not grupo.cuenta_inventario_id: missing.append("Cuenta Inventario")
+             if not grupo.cuenta_costo_produccion_id: missing.append("Cuenta Costo Producción")
+             err_msg = f"Error en Grupo '{grupo.nombre}' (Producto: {producto.nombre}): Faltan cuentas: {', '.join(missing)}."
+             print(f"[ERROR PRODUCCION] {err_msg}")
+             raise HTTPException(status_code=400, detail=err_msg)
+
         costo_unitario = producto.costo_promedio or 0.0
         costo_total_linea = costo_unitario * item.cantidad
-        
-        grupo = producto.grupo_inventario
-        if not grupo or not grupo.cuenta_inventario_id or not grupo.cuenta_costo_produccion_id:
-             raise HTTPException(status_code=400, detail=f"Producto {producto.nombre} no tiene cuentas configuradas (Inv/CostoProd) en su grupo.")
 
         # 1. CRÉDITO a INVENTARIO (14) - Salida de Bodega
         movimientos_contables.append(schemas_doc.MovimientoContableCreate(
@@ -341,10 +374,17 @@ def cerrar_orden(db: Session, orden_id: int, cantidad_real_obtenida: float, empr
     costo_unitario_final = costo_total_orden / cantidad_real_obtenida
     
     # 2. Crear Documento de Entrada PT (Tipo: 'ENTRADA_PRODUCCION')
-    tipo_doc = db.query(models_doc.TipoDocumento).filter(
-        models_doc.TipoDocumento.empresa_id == empresa_id,
-        models_doc.TipoDocumento.nombre.ilike('%ENTRADA%PROD%') 
-    ).first()
+    config_prod = get_configuracion(db, empresa_id)
+    tipo_doc = None
+
+    if config_prod and config_prod.tipo_documento_entrada_pt_id:
+         tipo_doc = db.query(models_doc.TipoDocumento).filter(models_doc.TipoDocumento.id == config_prod.tipo_documento_entrada_pt_id).first()
+
+    if not tipo_doc:
+        tipo_doc = db.query(models_doc.TipoDocumento).filter(
+            models_doc.TipoDocumento.empresa_id == empresa_id,
+            models_doc.TipoDocumento.nombre.ilike('%ENTRADA%PROD%') 
+        ).first()
     
     if not tipo_doc:
         # Fallback, buscar cualquier entrada o nota
