@@ -81,7 +81,7 @@ def delete_tipo_nomina(id: int, db: Session = Depends(get_db), current_user: Usu
 # --- ROUTES EMPLEADOS ---
 
 @router.post("/empleados", response_model=EmpleadoResponse)
-def create_empleado(empleado: EmpleadoCreate, db: Session = Depends(get_db)):
+def create_empleado(empleado: EmpleadoCreate, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     tercero = None
 
     # 1. Si viene tercero_id, buscarlo directamente
@@ -110,9 +110,17 @@ def create_empleado(empleado: EmpleadoCreate, db: Session = Depends(get_db)):
         tercero = nuevo_tercero
     
     # Validar si ya existe un empleado activo con ese tercero o documento para evitar duplicados en nómina
-    # (Opcional pero recomendable)
+    # AHORA VALIDAMOS por documento y empresa
+    existing_emp = db.query(models.Empleado).filter(
+        models.Empleado.numero_documento == empleado.numero_documento,
+        models.Empleado.empresa_id == current_user.empresa_id
+    ).first()
+    
+    if existing_emp:
+        raise HTTPException(status_code=400, detail="Ya existe un empleado con este documento en la empresa.")
     
     db_empleado = models.Empleado(
+        empresa_id=current_user.empresa_id,
         nombres=empleado.nombres,
         apellidos=empleado.apellidos,
         numero_documento=empleado.numero_documento,
@@ -128,15 +136,19 @@ def create_empleado(empleado: EmpleadoCreate, db: Session = Depends(get_db)):
     return db_empleado
 
 @router.get("/empleados", response_model=List[EmpleadoResponse])
-def get_empleados(tipo_nomina_id: Optional[int] = None, db: Session = Depends(get_db)):
-    query = db.query(models.Empleado)
+def get_empleados(tipo_nomina_id: Optional[int] = None, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    query = db.query(models.Empleado).filter(models.Empleado.empresa_id == current_user.empresa_id)
     if tipo_nomina_id:
         query = query.filter(models.Empleado.tipo_nomina_id == tipo_nomina_id)
     return query.all()
 
 @router.put("/empleados/{id}", response_model=EmpleadoResponse)
-def update_empleado(id: int, empleado: EmpleadoCreate, db: Session = Depends(get_db)):
-    db_empleado = db.query(models.Empleado).filter(models.Empleado.id == id).first()
+def update_empleado(id: int, empleado: EmpleadoCreate, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    db_empleado = db.query(models.Empleado).filter(
+        models.Empleado.id == id,
+        models.Empleado.empresa_id == current_user.empresa_id
+    ).first()
+    
     if not db_empleado:
         raise HTTPException(status_code=404, detail="Empleado no encontrado")
         
@@ -260,11 +272,12 @@ def guardar_liquidacion_route(
         raise HTTPException(status_code=500, detail="Error interno al guardar la nómina.")
 
 @router.get("/historial")
-def get_historial_nomina(db: Session = Depends(get_db)):
+def get_historial_nomina(db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     """
     Retorna lista plana de desprendibles generados (DetalleNomina).
     """
-    detalles = db.query(models.DetalleNomina).all()
+    # Filtrar por empresa del usuario
+    detalles = db.query(models.DetalleNomina).join(models.Nomina).filter(models.Nomina.empresa_id == current_user.empresa_id).all()
     # Enriquecer o usar response_model
     # Para simplicidad retornamos lista de dicts
     res = []
@@ -285,8 +298,22 @@ from fastapi.responses import StreamingResponse
 from app.services.nomina.reportes import ReportesNominaService
 import io
 
+@router.delete("/desprendibles/{id}")
+def eliminar_desprendible(id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    detalle = db.query(models.DetalleNomina).get(id)
+    if not detalle:
+        raise HTTPException(status_code=404, detail="Desprendible no encontrado")
+        
+    # Validar permisos o estado si fuera necesario
+    # ...
+    
+    # Eliminar
+    db.delete(detalle)
+    db.commit()
+    return {"message": "Desprendible eliminado correctamente"}
+
 @router.get("/desprendibles/{id}/pdf")
-def descargar_desprendible_pdf(id: int, db: Session = Depends(get_db)):
+def descargar_desprendible_pdf(id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     try:
         pdf_bytes, filename = ReportesNominaService.generar_pdf_desprendible(db, id)
         headers = {
@@ -298,3 +325,32 @@ def descargar_desprendible_pdf(id: int, db: Session = Depends(get_db)):
         traceback.print_exc()
         print(f"ERROR PDF: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Error generando PDF: {str(e)}")
+
+@router.get("/resumen-pdf")
+def descargar_resumen_pdf(
+    anio: int, 
+    mes: int, 
+    tipo_nomina_id: Optional[int] = None, 
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    try:
+        pdf_bytes, filename = ReportesNominaService.generar_pdf_resumen_nomina(
+            db=db, 
+            empresa_id=current_user.empresa_id, 
+            anio=anio, 
+            mes=mes,
+            tipo_nomina_id=tipo_nomina_id
+        )
+        headers = {
+            'Content-Disposition': f'attachment; filename="{filename}"'
+        }
+        return StreamingResponse(io.BytesIO(pdf_bytes), media_type='application/pdf', headers=headers)
+    except ValueError as ve:
+         raise HTTPException(status_code=404, detail=str(ve))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"ERROR PDF RESUMEN: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generando PDF: {str(e)}")
+

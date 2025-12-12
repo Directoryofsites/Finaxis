@@ -1,9 +1,9 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { getEmpleados, previewLiquidacion, guardarLiquidacion, getTiposNomina } from '../../../lib/nominaService';
+import { getEmpleados, previewLiquidacion, guardarLiquidacion, getTiposNomina, downloadResumenNomina } from '../../../lib/nominaService';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { FaCalculator, FaMoneyBillWave, FaFilter, FaCheckSquare, FaSquare, FaSave, FaPlay } from 'react-icons/fa';
+import { FaCalculator, FaMoneyBillWave, FaFilter, FaCheckSquare, FaSquare, FaSave, FaPlay, FaFilePdf } from 'react-icons/fa';
 
 export default function LiquidadorPage() {
     // 1. Configuración Inicial
@@ -17,6 +17,7 @@ export default function LiquidadorPage() {
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(false);
     const [processing, setProcessing] = useState(false); // For bulk actions
+    const [downloading, setDownloading] = useState(false);
 
     // 3. Load Tipos
     useEffect(() => {
@@ -151,8 +152,12 @@ export default function LiquidadorPage() {
                     updatedRows[idx] = {
                         ...updatedRows[idx],
                         status: 'ERROR',
-                        errorMsg: 'Error guardando'
+                        errorMsg: error.response?.data?.detail || 'Error guardando'
                     };
+                    // Mostrar error específico si es el candado
+                    if (error.response?.data?.detail) {
+                        toast.error(`${row.nombres}: ${error.response.data.detail}`);
+                    }
                 }
             }
         });
@@ -161,6 +166,20 @@ export default function LiquidadorPage() {
         setRows(updatedRows);
         setProcessing(false);
         if (successCount > 0) toast.success(`${successCount} liquidaciones guardadas!`);
+    };
+
+    const handleDownloadReport = async () => {
+        if (!selectedTipo) return toast.warning("Seleccione una nómina.");
+        setDownloading(true);
+        try {
+            await downloadResumenNomina(anio, mes, selectedTipo);
+            toast.success("Informe generado correctamente.");
+        } catch (error) {
+            console.error(error);
+            toast.error("Error generando informe. Verifique que existan empleados liquidados.");
+        } finally {
+            setDownloading(false);
+        }
     };
 
     // Stats
@@ -226,6 +245,14 @@ export default function LiquidadorPage() {
                                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow flex items-center"
                             >
                                 <FaSave className="mr-2" size={12} /> Guardar Definitivo
+                            </button>
+                            <button
+                                onClick={handleDownloadReport}
+                                disabled={processing || downloading}
+                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded shadow flex items-center ml-2"
+                                title="Ver Informe PDF de la Nómina Liquidada"
+                            >
+                                {downloading ? 'Generando...' : <><FaFilePdf className="mr-2" size={12} /> Ver Informe</>}
                             </button>
                         </div>
                         <div className="text-xs text-gray-400">
