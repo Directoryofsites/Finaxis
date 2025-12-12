@@ -7,7 +7,7 @@ class Empresa(Base):
 
     id = Column(Integer, primary_key=True)
     razon_social = Column(String(255), nullable=False)
-    nit = Column(String(20))
+    nit = Column(String(20), unique=True, index=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     fecha_inicio_operaciones = Column(Date, nullable=True)
     limite_registros = Column(Integer, nullable=True, default=None)

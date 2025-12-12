@@ -6,9 +6,11 @@ import { useAuth } from '../../context/AuthContext';
 import { getOrdenes, getOrdenById, createOrden, getRecetas, registrarConsumo, cerrarOrden, anularOrden, archivarOrden, deleteOrden, downloadOrdenPDF } from '../../../lib/produccionService';
 import { getBodegas } from '../../../lib/bodegaService';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 export default function GestionOrdenesPage() {
-    const { user } = useAuth();
+    const { user, authLoading } = useAuth(); // Destructuramos authLoading
+    const searchParams = useSearchParams(); // Hook para leer URL params
     const [activeTab, setActiveTab] = useState('list'); // 'list' | 'create'
     const [ordenes, setOrdenes] = useState([]);
     const [recetas, setRecetas] = useState([]);
@@ -137,8 +139,11 @@ export default function GestionOrdenesPage() {
     };
 
     useEffect(() => {
-        loadData();
-    }, []);
+        // Solo cargamos datos si el usuario está autenticado y la carga de auth terminó
+        if (!authLoading && user) {
+            loadData();
+        }
+    }, [authLoading, user]);
 
     const loadData = async () => {
         setLoading(true);
@@ -149,8 +154,20 @@ export default function GestionOrdenesPage() {
                 getBodegas()
             ]);
             setOrdenes(ords);
-            setRecetas(recs.filter(r => r.activa)); // Solo activas
+            const activeRecs = recs.filter(r => r.activa);
+            setRecetas(activeRecs);
             setBodegas(bods);
+
+            // Handle "Producir desde Receta" Redirect
+            const action = searchParams.get('action');
+            const rid = searchParams.get('receta_id');
+            if (action === 'create' && rid) {
+                setActiveTab('create');
+                const targetReceta = activeRecs.find(r => r.id === parseInt(rid));
+                if (targetReceta) {
+                    setSelectedReceta(targetReceta);
+                }
+            }
         } catch (error) {
             console.error(error);
             toast.error("Error cargando datos de producción.");
@@ -336,7 +353,14 @@ export default function GestionOrdenesPage() {
                                 <FaSearch className="mr-1" /> BUSCAR
                             </button>
                         </div>
-                        <div className="ml-auto">
+                        <div className="ml-auto flex gap-2">
+                            <button
+                                onClick={loadData}
+                                className="btn btn-sm btn-outline gap-2 text-blue-600 hover:bg-blue-50"
+                                title="Recargar datos manualmente"
+                            >
+                                <FaUndo /> Actualizar
+                            </button>
                             <Link href="/produccion/configuracion" className="btn btn-sm btn-ghost gap-2 text-gray-600">
                                 <FaCogs /> Configurar
                             </Link>

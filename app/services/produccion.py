@@ -249,6 +249,21 @@ def procesar_consumo_mp(db: Session, orden_id: int, items_consumo: list[schemas_
              print(f"[ERROR PRODUCCION] {err_msg}")
              raise HTTPException(status_code=400, detail=err_msg)
 
+        # --- VALIDACIÓN CRÍTICA DE STOCK ---
+        # Verificar que exista suficiente stock ANTES de procesar
+        stock_bodega = db.query(models_inv.StockBodega).filter(
+            models_inv.StockBodega.producto_id == item.insumo_id,
+            models_inv.StockBodega.bodega_id == bodega_origen_id
+        ).first()
+        
+        stock_actual = stock_bodega.stock_actual if stock_bodega else 0.0
+        
+        if stock_actual < item.cantidad:
+            err_msg = f"Stock insuficiente para insumo: {producto.nombre}. Disponible: {stock_actual}, Requerido: {item.cantidad}."
+            raise HTTPException(status_code=400, detail=err_msg)
+        # -----------------------------------
+
+
         if not grupo.cuenta_inventario_id or not grupo.cuenta_costo_produccion_id:
              missing = []
              if not grupo.cuenta_inventario_id: missing.append("Cuenta Inventario")

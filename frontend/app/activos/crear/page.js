@@ -55,7 +55,28 @@ export default function CrearActivoPage() {
         e.preventDefault();
         setLoading(true);
         try {
-            await apiService.post('/activos/', formData);
+            // ARREGLO: Convertir strings vacíos a null para campos opcionales
+            const dataToSend = { ...formData };
+            
+            // Validar campo requerido
+            if (!dataToSend.categoria_id || dataToSend.categoria_id === '') {
+                alert('Por favor selecciona una categoría de activo.');
+                return;
+            }
+            
+            // Convertir campos de ID a enteros
+            dataToSend.categoria_id = parseInt(dataToSend.categoria_id);
+            if (dataToSend.responsable_id === '' || !dataToSend.responsable_id) {
+                dataToSend.responsable_id = null;
+            } else {
+                dataToSend.responsable_id = parseInt(dataToSend.responsable_id);
+            }
+            
+            // Convertir números
+            dataToSend.costo_adquisicion = parseFloat(dataToSend.costo_adquisicion) || 0;
+            dataToSend.valor_residual = parseFloat(dataToSend.valor_residual) || 0;
+            
+            await apiService.post('/activos/', dataToSend);
             alert('Activo Fijo creado exitosamente.');
             router.push('/activos');
         } catch (error) {

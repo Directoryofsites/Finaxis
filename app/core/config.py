@@ -22,9 +22,9 @@ load_dotenv(dotenv_path=dotenv_path)
 
 
 class Settings(BaseSettings):
-    # --- SEGURIDAD: CLAVE MAESTRA INCRUSTADA (FALLBACK DE PRODUCCIÓN) ---
+    # --- SEGURIDAD: REVERTIDO A CLAVE DE DESARROLLO (Kiro/Backup) ---
     # Si no existe archivo .env, se usará esta conexión por defecto.
-    DATABASE_URL: str = "postgresql://postgres:Jh_811880_:Panica_33195_/*@localhost:5432/contapy_db"
+    DATABASE_URL: str = "postgresql://postgres:mysecretpassword@localhost:5432/contapy_db"
     
     SECRET_KEY: str = "secret_key_por_defecto_para_produccion_segura"
     ALGORITHM: str = "HS256"

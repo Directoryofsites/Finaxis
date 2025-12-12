@@ -978,9 +978,10 @@ def _restore_jerarquico(db, model, json_key, parent_field, data_source, target_e
             key = str(item.get('codigo')).strip()
             if key not in exist_map:
                 new_item = item.copy()
-                for k in ['id', '_sa_instance_state', 'created_at']: new_item.pop(k, None)
+                # CORRECCIÓN COMBINADA: Limpiar campos de auditoría antiguos (Antigravity + Kiro)
+                for k in ['id', '_sa_instance_state', 'created_at', 'updated_at']: new_item.pop(k, None)
                 
-                # ARREGLO: Validar y corregir foreign keys de usuarios
+                # ARREGLO KIRO: Validar y corregir foreign keys de usuarios antes de procesar
                 for user_field in ['created_by', 'updated_by', 'usuario_creador_id', 'usuario_modificador_id']:
                     if user_field in new_item and new_item[user_field] is not None:
                         # Verificar si el usuario existe, si no, usar el usuario actual
@@ -990,7 +991,8 @@ def _restore_jerarquico(db, model, json_key, parent_field, data_source, target_e
                 
                 new_item['empresa_id'] = target_empresa_id
                 new_item[parent_field] = None 
-                # ARREGLO: Manejar todos los campos de foreign key a usuarios
+                
+                # ARREGLO COMBINADO: Manejar todos los campos de foreign key a usuarios
                 if hasattr(model, 'created_by'): new_item['created_by'] = user_id
                 if hasattr(model, 'updated_by'): new_item['updated_by'] = user_id
                 obj = model(**new_item)
@@ -1004,7 +1006,7 @@ def _restore_jerarquico(db, model, json_key, parent_field, data_source, target_e
                 if new_name and existing_obj.nombre != new_name:
                     existing_obj.nombre = new_name
                 
-                # ARREGLO: Validar campos de usuario en actualizaciones también
+                # ARREGLO COMBINADO: Validar campos de usuario en actualizaciones (Kiro + Antigravity)
                 for user_field in ['updated_by']:
                     if user_field in item and item[user_field] is not None:
                         user_exists = db.query(Usuario).filter(Usuario.id == item[user_field]).first()
@@ -1012,6 +1014,9 @@ def _restore_jerarquico(db, model, json_key, parent_field, data_source, target_e
                             setattr(existing_obj, user_field, user_id)
                         else:
                             setattr(existing_obj, user_field, item[user_field])
+                    elif hasattr(model, user_field):
+                        # Si no hay valor en item, usar user_id actual (mejora de Antigravity)
+                        setattr(existing_obj, user_field, user_id)
 
     return count
 
@@ -1029,7 +1034,8 @@ def _upsert_manual_seguro(db, model, json_key, natural_key, data_source, target_
     count = 0
     for r in rows:
         data = r.copy()
-        for k in ['id', '_sa_instance_state', 'created_at', 'updated_at', 'fecha_creacion']: data.pop(k, None)
+        # CORRECCIÓN: Eliminar updated_by del diccionario origen para evitar FK Error
+        for k in ['id', '_sa_instance_state', 'created_at', 'updated_at', 'fecha_creacion', 'updated_by']: data.pop(k, None)
         
         clean_data = {k: v for k, v in data.items() if k in valid_columns}
         
@@ -1077,6 +1083,7 @@ def _upsert_manual_seguro(db, model, json_key, natural_key, data_source, target_
             for k, v in clean_data.items():
                 if k not in immutable_cols:
                     setattr(obj, k, v)
+            if hasattr(model, 'updated_by'): obj.updated_by = user_id
         else:
             clean_data['empresa_id'] = target_empresa_id
             # ARREGLO: Manejar todos los campos de foreign key a usuarios
