@@ -115,14 +115,31 @@ def val_decimal(val):
 # --- MOTOR DE DEPRECIACIÓN ---
 
 def ejecutar_depreciacion(db: Session, empresa_id: int, anio: int, mes: int, user_id: int, tipo_documento_id: int):
+    """
+    Ejecuta el proceso de depreciación masiva para el mes/año indicados.
+    VERSIÓN PROFESIONAL con validaciones completas y múltiples métodos.
+    """
     # 1. Validar Período
     import calendar
     ultimo_dia = calendar.monthrange(anio, mes)[1]
     fecha_cierre = date(anio, mes, ultimo_dia)
     
-    # service_periodo.validar_periodo_abierto(db, empresa_id, fecha_cierre) # Descomentar cuando esté listo
+    # Validar que no se deprecie el futuro
+    if fecha_cierre > date.today():
+        raise HTTPException(status_code=400, detail="No se puede depreciar períodos futuros.")
     
-    # 2. Obtener Tipo de Documento
+    # 2. Validar que no se haya depreciado ya este período
+    depreciaciones_existentes = db.query(models_nov.ActivoNovedad).filter(
+        models_nov.ActivoNovedad.empresa_id == empresa_id,
+        models_nov.ActivoNovedad.tipo == models_nov.TipoNovedadActivo.DEPRECIACION,
+        func.extract('year', models_nov.ActivoNovedad.fecha) == anio,
+        func.extract('month', models_nov.ActivoNovedad.fecha) == mes
+    ).first()
+    
+    if depreciaciones_existentes:
+        raise HTTPException(status_code=400, detail=f"Ya se ejecutó la depreciación para {mes:02d}/{anio}.")
+    
+    # 3. Obtener Tipo de Documento
     tipo_doc = db.query(models_tipo.TipoDocumento).filter(
         models_tipo.TipoDocumento.id == tipo_documento_id,
         models_tipo.TipoDocumento.empresa_id == empresa_id
@@ -130,12 +147,13 @@ def ejecutar_depreciacion(db: Session, empresa_id: int, anio: int, mes: int, use
     if not tipo_doc:
         raise HTTPException(status_code=404, detail="Tipo de documento no encontrado.")
     
-    # 3. Buscar Activos Depreciables
-    # Modificación Robustez: Si fecha_inicio_uso es NULL, usar fecha_compra
+    # 4. Buscar Activos Depreciables con validaciones mejoradas
     from sqlalchemy import or_
-    activos = db.query(models.ActivoFijo).filter(
+    activos = db.query(models.ActivoFijo).join(models_cat.ActivoCategoria).filter(
         models.ActivoFijo.empresa_id == empresa_id,
         models.ActivoFijo.estado == models.EstadoActivo.ACTIVO,
+        models_cat.ActivoCategoria.metodo_depreciacion != models_cat.MetodoDepreciacion.NO_DEPRECIAR,
+        models_cat.ActivoCategoria.vida_util_niif_meses > 0,
         or_(
             models.ActivoFijo.fecha_inicio_uso <= fecha_cierre,
             and_(models.ActivoFijo.fecha_inicio_uso.is_(None), models.ActivoFijo.fecha_compra <= fecha_cierre)
@@ -143,15 +161,27 @@ def ejecutar_depreciacion(db: Session, empresa_id: int, anio: int, mes: int, use
     ).all()
     
     if not activos:
-        raise HTTPException(status_code=400, detail="No hay activos aptos para depreciar en este período (o no han iniciado uso).")
+        raise HTTPException(status_code=400, detail="No hay activos aptos para depreciar en este período.")
+
+    # 5. Validar configuración contable
+    activos_sin_config = []
+    for activo in activos:
+        if not (activo.categoria.cuenta_gasto_depreciacion_id and activo.categoria.cuenta_depreciacion_acumulada_id):
+            activos_sin_config.append(activo.codigo)
+    
+    if activos_sin_config:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Los siguientes activos no tienen configuración contable completa: {', '.join(activos_sin_config)}"
+        )
 
     movimientos_contables = []
     total_depreciacion_mes = 0
+    activos_depreciados = []
 
-    # 4. Crear Cabecera del Documento
+    # 6. Crear Cabecera del Documento
     numero_doc = (tipo_doc.consecutivo_actual or 0) + 1
     
-    # Importante: Fecha operación hora actual, fecha documento cierre de mes
     nuevo_documento = models_doc.Documento(
         empresa_id=empresa_id,
         tipo_documento_id=tipo_documento_id,
@@ -160,94 +190,142 @@ def ejecutar_depreciacion(db: Session, empresa_id: int, anio: int, mes: int, use
         fecha_operacion=datetime.utcnow(),
         usuario_creador_id=user_id,
         estado="ACTIVO",
-        centro_costo_id=None 
+        centro_costo_id=None,
+        observaciones=f"Depreciación automática {mes:02d}/{anio}"
     )
     db.add(nuevo_documento)
     db.flush()
 
-    # 5. Iterar Activos
+    # 7. Iterar Activos con cálculos profesionales
     for activo in activos:
-        # Lógica NIIF Simplificada: Línea Recta
-        base_niif = float(activo.costo_adquisicion) - float(activo.valor_residual)
-        vida_util = activo.categoria.vida_util_niif_meses
+        cuota_mes = calcular_depreciacion_mensual(activo, fecha_cierre)
         
-        if vida_util > 0 and base_niif > 0:
-            cuota_mes = base_niif / vida_util
+        if cuota_mes > 0:
+            # Actualizar Activo
+            activo.depreciacion_acumulada_niif += val_decimal(cuota_mes)
             
-            # Control de Saldo para no depreciar de más
-            dep_acum_actual = float(activo.depreciacion_acumulada_niif)
-            saldo_pendiente = base_niif - dep_acum_actual
+            # Crear Novedad
+            novedad = models_nov.ActivoNovedad(
+                empresa_id=empresa_id,
+                activo_id=activo.id,
+                fecha=fecha_cierre,
+                tipo=models_nov.TipoNovedadActivo.DEPRECIACION,
+                valor=cuota_mes,
+                documento_contable_id=nuevo_documento.id,
+                observacion=f"Depreciación {mes:02d}/{anio} - {activo.categoria.metodo_depreciacion.value}",
+                created_by=user_id
+            )
+            db.add(novedad)
             
-            # Si ya está depreciado, saltar
-            if saldo_pendiente <= 0:
-                continue
+            # Agrupar movimientos por cuenta para consolidar
+            cuenta_gasto = activo.categoria.cuenta_gasto_depreciacion_id
+            cuenta_acum = activo.categoria.cuenta_depreciacion_acumulada_id
+            
+            # Buscar si ya existe movimiento para esta cuenta
+            mov_gasto = next((m for m in movimientos_contables if m["cuenta_id"] == cuenta_gasto and m["debito"] > 0), None)
+            mov_acum = next((m for m in movimientos_contables if m["cuenta_id"] == cuenta_acum and m["credito"] > 0), None)
+            
+            if mov_gasto:
+                mov_gasto["debito"] += cuota_mes
+                mov_gasto["concepto"] += f", {activo.codigo}"
+            else:
+                movimientos_contables.append({
+                    "cuenta_id": cuenta_gasto,
+                    "debito": cuota_mes,
+                    "credito": 0,
+                    "concepto": f"Depreciación {mes:02d}/{anio} - {activo.codigo}"
+                })
+            
+            if mov_acum:
+                mov_acum["credito"] += cuota_mes
+                mov_acum["concepto"] += f", {activo.codigo}"
+            else:
+                movimientos_contables.append({
+                    "cuenta_id": cuenta_acum,
+                    "debito": 0,
+                    "credito": cuota_mes,
+                    "concepto": f"Dep. Acum. {mes:02d}/{anio} - {activo.codigo}"
+                })
+            
+            total_depreciacion_mes += cuota_mes
+            activos_depreciados.append(activo.codigo)
 
-            # Ajuste fina
-            if cuota_mes > saldo_pendiente:
-                cuota_mes = saldo_pendiente
-            
-            if cuota_mes > 0:
-                # Actualizar Activo
-                activo.depreciacion_acumulada_niif += val_decimal(cuota_mes)
-                
-                # Crear Novedad
-                novedad = models_nov.ActivoNovedad(
-                    empresa_id=empresa_id,
-                    activo_id=activo.id,
-                    fecha=fecha_cierre,
-                    tipo=models_nov.TipoNovedadActivo.DEPRECIACION,
-                    valor=cuota_mes,
-                    documento_contable_id=nuevo_documento.id,
-                    observacion=f"Cierre {mes}/{anio}",
-                    created_by=user_id
-                )
-                db.add(novedad)
-                
-                # Preparar Movimientos Contables
-                # GASTO (DEBITO)
-                if activo.categoria.cuenta_gasto_depreciacion_id:
-                    movimientos_contables.append({
-                        "cuenta_id": activo.categoria.cuenta_gasto_depreciacion_id,
-                        "debito": cuota_mes,
-                        "credito": 0,
-                        "concepto": f"Deprec. {activo.codigo} {activo.nombre}"
-                    })
-                
-                # ACUMULADA (CREDITO)
-                if activo.categoria.cuenta_depreciacion_acumulada_id:
-                     movimientos_contables.append({
-                        "cuenta_id": activo.categoria.cuenta_depreciacion_acumulada_id,
-                        "debito": 0,
-                        "credito": cuota_mes,
-                        "concepto": f"Deprec. {activo.codigo} {activo.nombre}"
-                    })
-                
-                total_depreciacion_mes += cuota_mes
-
+    # 8. Validar que hubo depreciaciones
     if total_depreciacion_mes == 0:
-         # Si llegó hasta aquí pero no hubo valores, puede que todos estén depreciados.
-         # Opcional: Lanzar error o solo loguear.
-         pass # Permitimos crear el documento vacío o con 0? Mejor lanzar error si está vacío.
-    
-    if not movimientos_contables:
-          # Rollback manual o raise
-          # raise HTTPException(status_code=400, detail="Todos los activos están totalmente depreciados.")
-          pass 
+        db.rollback()
+        raise HTTPException(status_code=400, detail="No se calcularon depreciaciones. Todos los activos pueden estar totalmente depreciados.")
 
-    # 6. Insertar Movimientos
+    # 9. Insertar Movimientos Contables
     for mov in movimientos_contables:
         db_mov = models_mov.MovimientoContable(
             documento_id=nuevo_documento.id,
             cuenta_id=mov["cuenta_id"],
-            debito=mov["debito"],
-            credito=mov["credito"],
-            concepto=mov["concepto"]
+            debito=val_decimal(mov["debito"]),
+            credito=val_decimal(mov["credito"]),
+            concepto=mov["concepto"][:200]  # Limitar longitud
         )
         db.add(db_mov)
 
-    # Actualizar consecutivo
+    # 10. Actualizar consecutivo
     tipo_doc.consecutivo_actual = numero_doc
     
     db.commit()
     db.refresh(nuevo_documento)
+    
+    # Log del resultado
+    print(f"✅ Depreciación ejecutada: {len(activos_depreciados)} activos, Total: ${total_depreciacion_mes:,.0f}")
+    
     return nuevo_documento
+
+def calcular_depreciacion_mensual(activo: models.ActivoFijo, fecha_calculo: date) -> float:
+    """
+    Calcula la depreciación mensual de un activo según su método configurado.
+    VERSIÓN PROFESIONAL que maneja múltiples métodos.
+    """
+    if not activo.categoria:
+        return 0
+    
+    # Determinar fecha de inicio de depreciación
+    fecha_inicio = activo.fecha_inicio_uso or activo.fecha_compra
+    if not fecha_inicio or fecha_inicio > fecha_calculo:
+        return 0
+    
+    # Base depreciable
+    base_depreciable = float(activo.costo_adquisicion) - float(activo.valor_residual)
+    vida_util_meses = activo.categoria.vida_util_niif_meses
+    
+    if base_depreciable <= 0 or vida_util_meses <= 0:
+        return 0
+    
+    # Verificar si ya está totalmente depreciado
+    dep_acum_actual = float(activo.depreciacion_acumulada_niif)
+    saldo_pendiente = base_depreciable - dep_acum_actual
+    
+    if saldo_pendiente <= 0:
+        return 0
+    
+    # Calcular según método
+    metodo = activo.categoria.metodo_depreciacion
+    
+    if metodo == models_cat.MetodoDepreciacion.LINEA_RECTA:
+        cuota_mensual = base_depreciable / vida_util_meses
+        
+    elif metodo == models_cat.MetodoDepreciacion.REDUCCION_SALDOS:
+        # Método de reducción de saldos (doble saldo decreciente)
+        tasa_anual = 2 / (vida_util_meses / 12)  # Doble de la tasa lineal
+        tasa_mensual = tasa_anual / 12
+        valor_neto = float(activo.costo_adquisicion) - dep_acum_actual
+        cuota_mensual = valor_neto * tasa_mensual
+        
+    elif metodo == models_cat.MetodoDepreciacion.UNIDADES_PRODUCCION:
+        # Por ahora usar línea recta (requiere implementar control de unidades)
+        cuota_mensual = base_depreciable / vida_util_meses
+        
+    else:  # NO_DEPRECIAR
+        return 0
+    
+    # Ajustar si excede el saldo pendiente
+    if cuota_mensual > saldo_pendiente:
+        cuota_mensual = saldo_pendiente
+    
+    return round(cuota_mensual, 2)

@@ -108,3 +108,71 @@ def ejecutar_depreciacion_route(
     )
     return {"mensaje": "Depreciación exitosa", "documento_id": documento.id, "numero": documento.numero}
 
+# --- REPORTES PDF ---
+
+@router.get("/reportes/maestro-pdf")
+def generar_reporte_maestro_pdf(
+    categoria_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Genera PDF con el reporte maestro de activos fijos
+    """
+    from ...services.pdf_activos_fijos import generar_reporte_maestro_activos
+    from fastapi.responses import StreamingResponse
+    
+    buffer = generar_reporte_maestro_activos(db, current_user.empresa_id, categoria_id)
+    
+    return StreamingResponse(
+        io.BytesIO(buffer.read()),
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=reporte_maestro_activos.pdf"}
+    )
+
+@router.get("/reportes/depreciacion-pdf")
+def generar_reporte_depreciacion_pdf(
+    anio: int,
+    mes: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Genera PDF con el reporte de depreciación mensual
+    """
+    from ...services.pdf_activos_fijos import generar_reporte_depreciacion_mensual
+    from fastapi.responses import StreamingResponse
+    import io
+    
+    buffer = generar_reporte_depreciacion_mensual(db, current_user.empresa_id, anio, mes)
+    
+    return StreamingResponse(
+        io.BytesIO(buffer.read()),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=depreciacion_{mes:02d}_{anio}.pdf"}
+    )
+
+@router.get("/{id}/hoja-vida-pdf")
+def generar_hoja_vida_pdf(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Genera PDF con la hoja de vida completa de un activo
+    """
+    from ...services.pdf_activos_fijos import generar_hoja_vida_activo
+    from fastapi.responses import StreamingResponse
+    import io
+    
+    buffer = generar_hoja_vida_activo(db, id, current_user.empresa_id)
+    
+    activo = service.get_activo_by_id(db, id, current_user.empresa_id)
+    filename = f"hoja_vida_{activo.codigo}.pdf" if activo else "hoja_vida_activo.pdf"
+    
+    return StreamingResponse(
+        io.BytesIO(buffer.read()),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
