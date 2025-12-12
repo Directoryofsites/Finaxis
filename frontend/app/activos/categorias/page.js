@@ -123,7 +123,7 @@ export default function CategoriasActivosPage() {
             return;
         }
         
-        if (!confirm(`¿Está seguro de ejecutar la depreciación para ${mes:02d}/${anio}?\n\nEsto generará documentos contables automáticamente.\n\n💡 Si ya existe depreciación para este período, se creará una adicional.`)) {
+        if (!confirm(`¿Está seguro de ejecutar la depreciación para ${mes.toString().padStart(2, '0')}/${anio}?\n\nEsto generará documentos contables automáticamente.\n\n💡 Si ya existe depreciación para este período, se creará una adicional.`)) {
             return;
         }
         
