@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { toast, ToastContainer } from 'react-toastify';
-import { FaPlus, FaList, FaSave, FaSearch, FaTimes, FaFlask, FaEdit, FaTrash, FaMoneyBillWave, FaFilePdf } from 'react-icons/fa';
+import { FaPlus, FaList, FaSave, FaSearch, FaTimes, FaFlask, FaEdit, FaTrash, FaMoneyBillWave, FaFilePdf, FaIndustry } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { getRecetas, createReceta, updateReceta, deleteReceta, downloadRecetaPDF } from '../../../lib/produccionService';
 import { getProductosByEmpresa as getProductos } from '../../../lib/productosService'; // Necesitamos buscar productos (MP y PT)
@@ -11,6 +12,7 @@ export default function GestionRecetasPage() {
     const [activeTab, setActiveTab] = useState('list'); // 'list' | 'create'
     const [recetas, setRecetas] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [searchTermList, setSearchTermList] = useState(''); // Estado para filtro de lista
 
     // Estado para Crear/Editar Receta
     const [editMode, setEditMode] = useState(false);
@@ -256,52 +258,86 @@ export default function GestionRecetasPage() {
             {activeTab === 'list' ? (
                 // --- VISTA LISTADO ---
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+
+                    {/* SEARCH BAR & FILTERS */}
+                    <div className="flex flex-col md:flex-row gap-4 mb-6">
+                        <div className="relative flex-1 group">
+                            <FaSearch className="absolute left-3 top-3.5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                            <input
+                                type="text"
+                                placeholder="Buscar por Nombre de Receta o Producto Terminado..."
+                                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                                value={searchTermList}
+                                onChange={(e) => setSearchTermList(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
                     {loading ? (
                         <p className="text-gray-500 text-center py-8">Cargando recetas...</p>
-                    ) : recetas.length === 0 ? (
+                    ) : (recetas.filter(r =>
+                        (r.nombre?.toLowerCase() || '').includes(searchTermList.toLowerCase()) ||
+                        (r.producto?.nombre?.toLowerCase() || '').includes(searchTermList.toLowerCase())
+                    ).length === 0) ? (
                         <div className="text-center py-10 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-                            <p className="text-gray-500 mb-4">No hay recetas configuradas.</p>
-                            <button onClick={() => setActiveTab('create')} className="text-blue-600 hover:underline">Crear la primera receta</button>
+                            <p className="text-gray-500 mb-4">No se encontraron recetas.</p>
+                            {recetas.length === 0 && <button onClick={() => setActiveTab('create')} className="text-blue-600 hover:underline">Crear la primera receta</button>}
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="border-b border-gray-200 text-gray-600 text-sm uppercas tracking-wider">
-                                        <th className="p-4 font-semibold">Producto Terminado</th>
-                                        <th className="p-4 font-semibold">Nombre Receta</th>
-                                        <th className="p-4 font-semibold text-center">Insumos</th>
-                                        <th className="p-4 font-semibold text-center">Estado</th>
-                                        <th className="p-4 font-semibold text-right">Acciones</th>
+                                    <tr className="border-b border-gray-200 text-gray-600 text-xs uppercase tracking-wider bg-gray-50/50">
+                                        <th className="px-3 py-3 font-bold">Producto Terminado</th>
+                                        <th className="px-3 py-3 font-bold">Nombre Receta</th>
+                                        <th className="px-3 py-3 font-bold text-center">Insumos</th>
+                                        <th className="px-3 py-3 font-bold text-center">Estado</th>
+                                        <th className="px-3 py-3 font-bold text-right">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    {recetas.map(receta => (
-                                        <tr key={receta.id} className="hover:bg-blue-50 transition-colors">
-                                            <td className="p-4 text-gray-800 font-medium">
-                                                {receta.producto ? receta.producto.nombre : 'Producto Eliminado'}
+                                    {recetas.filter(r =>
+                                        (r.nombre?.toLowerCase() || '').includes(searchTermList.toLowerCase()) ||
+                                        (r.producto?.nombre?.toLowerCase() || '').includes(searchTermList.toLowerCase())
+                                    ).map(receta => (
+                                        <tr key={receta.id} className="hover:bg-blue-50/50 transition-colors text-sm">
+                                            <td className="px-3 py-2 text-gray-800 font-medium whitespace-nowrap">
+                                                {receta.producto ? receta.producto.nombre : <span className="text-red-400 italic">Producto Eliminado</span>}
                                             </td>
-                                            <td className="p-4 text-gray-600">{receta.nombre}</td>
-                                            <td className="p-4 text-center">
-                                                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-bold">
+                                            <td className="px-3 py-2 text-gray-600">
+                                                {receta.nombre}
+                                            </td>
+                                            <td className="px-3 py-2 text-center">
+                                                <span className="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded-full font-bold border border-gray-200">
                                                     {receta.detalles ? receta.detalles.length : 0} ítems
                                                 </span>
                                             </td>
-                                            <td className="p-4 text-center">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${receta.activa ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                            <td className="px-3 py-2 text-center">
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${receta.activa ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
                                                     {receta.activa ? 'Activa' : 'Inactiva'}
                                                 </span>
                                             </td>
-                                            <td className="p-4 text-right">
-                                                <button onClick={() => downloadRecetaPDF(receta.id)} className="text-gray-500 hover:text-gray-700 mx-2 transition-colors" title="Imprimir"><FaFilePdf size={18} /></button>
+                                            <td className="px-3 py-2 text-right whitespace-nowrap">
+                                                <Link
+                                                    href={`/produccion/ordenes?action=create&receta_id=${receta.id}`}
+                                                    className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700 mx-1 transition-all"
+                                                    title="Producir (Crear Orden)"
+                                                >
+                                                    <FaIndustry size={14} />
+                                                </Link>
+                                                <button onClick={() => downloadRecetaPDF(receta.id)} className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700 mx-1 transition-all" title="Imprimir">
+                                                    <FaFilePdf size={14} />
+                                                </button>
                                                 <button
                                                     onClick={() => handleEdit(receta)}
-                                                    className="text-indigo-600 hover:text-indigo-800 mx-2 transition-colors"
+                                                    className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 mx-1 transition-all"
                                                     title="Editar"
                                                 >
-                                                    <FaEdit size={18} />
+                                                    <FaEdit size={14} />
                                                 </button>
-                                                <button onClick={() => handleDelete(receta)} className="text-red-500 hover:text-red-700 transition-colors" title="Eliminar"><FaTrash size={18} /></button>
+                                                <button onClick={() => handleDelete(receta)} className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 mx-1 transition-all" title="Eliminar">
+                                                    <FaTrash size={14} />
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}

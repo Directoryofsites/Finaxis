@@ -55,9 +55,64 @@ const ICON_POOL = [
     FaStar, FaPlus, FaRocket, FaGem, FaBolt, FaMagic
 ];
 
+// LISTA MAESTRA DE ÍCONOS - Mapeo exacto Ruta -> Ícono
+const MASTER_ICON_MAP = {
+    // --- CONTABILIDAD ---
+    '/contabilidad/documentos/crear': FaFileAlt,
+    '/contabilidad/documentos': FaFileInvoiceDollar,
+    '/contabilidad/reportes/balance-prueba': FaBalanceScale,
+    '/contabilidad/reportes/libro-diario': FaBook,
+    '/contabilidad/reportes/estado-situacion': FaChartBar,
+    '/contabilidad/reportes/estado-resultado': FaChartLine,
+    '/contabilidad/reportes/movimiento-analitico': FaChartArea,
+    '/contabilidad/reportes/estado-resultados-cc-detallado': FaChartPie,
+    '/contabilidad/reportes/super-informe': FaRocket,
+
+    // --- TERCEROS ---
+    '/admin/terceros': FaUsers,
+    '/admin/terceros/crear': FaUserPlus,
+    '/cartera/informe-edades': FaClock,
+    '/cartera/cuentas-por-cobrar': FaHandshake,
+
+    // --- INVENTARIO ---
+    '/admin/inventario/productos': FaBoxes,
+    '/admin/inventario/bodegas': FaWarehouse,
+    '/admin/inventario/grupos': FaLayerGroup,
+    '/admin/inventario/parametros': FaCogs,
+    '/admin/inventario': FaBoxes,
+    '/inventario/ajuste': FaWrench,
+    '/inventario/kardex': FaClipboardList,
+
+    // --- FACTURACIÓN & VENTAS ---
+    '/facturacion/crear': FaCashRegister,
+    '/facturacion/pos': FaShoppingCart,
+    '/facturacion/facturas': FaReceipt,
+    '/cotizaciones/crear': FaFileContract,
+    '/remisiones/crear': FaTruck,
+
+    // --- PRODUCCIÓN ---
+    '/produccion/recetas': FaListUl,
+    '/produccion/ordenes': FaIndustry,
+
+    // --- UTILIDADES & ADMIN ---
+    '/admin/utilidades/configuracion-favoritos': FaStar,
+    '/admin/utilidades/migracion-datos': FaDatabase,
+    '/admin/empresas': FaBuilding,
+    '/admin/usuarios': FaUserShield,
+    '/admin/papelera': FaTimes
+};
+
 // FUNCIÓN INTELIGENTE: Mapeo específico por funcionalidad real
 const getSmartIconForRoute = (route) => {
     if (!route) return ICON_POOL[0];
+
+    // 1. Prioridad: Revisar Lista Maestra Exacta
+    // Normalizamos quitando slash final por si acaso
+    const cleanRoute = route.endsWith('/') && route.length > 1 ? route.slice(0, -1) : route;
+    if (MASTER_ICON_MAP[cleanRoute]) {
+        return MASTER_ICON_MAP[cleanRoute];
+    }
+
     const routeLower = route.toLowerCase();
 
     // Lógica de mapeo de íconos (Idéntica a la anterior - abreviada donde posible)
