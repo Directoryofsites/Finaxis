@@ -1,14 +1,17 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { apiService } from '../../../lib/apiService';
-import { FaPlus, FaCog, FaEdit, FaFileDownload, FaCalculator } from 'react-icons/fa';
+import { FaPlus, FaCog, FaEdit, FaFileDownload, FaCalculator, FaFileInvoiceDollar } from 'react-icons/fa';
 import BotonRegresar from '../../components/BotonRegresar';
 
 export default function CategoriasActivosPage() {
     const [categorias, setCategorias] = useState([]);
     const [cuentas, setCuentas] = useState([]);
+    const [tiposDocumento, setTiposDocumento] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [showDepreciacionModal, setShowDepreciacionModal] = useState(false);
     const [editingCategoria, setEditingCategoria] = useState(null);
 
     const [formData, setFormData] = useState({
@@ -27,12 +30,16 @@ export default function CategoriasActivosPage() {
 
     const loadData = async () => {
         try {
-            const [resCat, resCuentas] = await Promise.all([
+            const [resCat, resCuentas, resTipos] = await Promise.all([
                 apiService.get('/activos/categorias'),
-                apiService.get('/plan-cuentas/')
+                apiService.get('/plan-cuentas/'),
+                apiService.get('/tipos-documento/')
             ]);
             setCategorias(resCat.data);
             setCuentas(resCuentas.data);
+            setTiposDocumento(resTipos.data);
+            
+
         } catch (error) {
             console.error("Error cargando datos:", error);
         } finally {
@@ -97,27 +104,44 @@ export default function CategoriasActivosPage() {
         setShowModal(true);
     };
 
-    const ejecutarDepreciacion = async () => {
-        const anio = new Date().getFullYear();
-        const mes = new Date().getMonth() + 1;
+    const ejecutarDepreciacion = async (tipoDocumentoId) => {
+        // Permitir seleccionar mes y año para pruebas
+        const anioActual = new Date().getFullYear();
+        const mesActual = new Date().getMonth() + 1;
         
-        const tipoDocId = prompt('Ingrese el ID del tipo de documento para depreciación:');
-        if (!tipoDocId) return;
+        const anioInput = prompt(`Año para depreciación (actual: ${anioActual}):`, anioActual);
+        if (!anioInput) return;
+        
+        const mesInput = prompt(`Mes para depreciación (1-12, actual: ${mesActual}):`, mesActual);
+        if (!mesInput) return;
+        
+        const anio = parseInt(anioInput);
+        const mes = parseInt(mesInput);
+        
+        if (mes < 1 || mes > 12) {
+            alert('❌ El mes debe estar entre 1 y 12');
+            return;
+        }
+        
+        if (!confirm(`¿Está seguro de ejecutar la depreciación para ${mes:02d}/${anio}?\n\nEsto generará documentos contables automáticamente.\n\n💡 Si ya existe depreciación para este período, se creará una adicional.`)) {
+            return;
+        }
         
         try {
             const response = await apiService.post('/activos/depreciar', {
                 anio: anio,
                 mes: mes,
-                tipo_documento_id: parseInt(tipoDocId)
+                tipo_documento_id: parseInt(tipoDocumentoId)
             });
             
-            alert(`Depreciación ejecutada exitosamente. Documento: ${response.data.numero}`);
+            alert(`✅ ¡Depreciación ejecutada exitosamente!\n\nDocumento generado: ${response.data.numero}`);
+            setShowDepreciacionModal(false);
             
             // Descargar PDF automáticamente
             window.open(`/api/activos/reportes/depreciacion-pdf?anio=${anio}&mes=${mes}`, '_blank');
         } catch (error) {
             console.error(error);
-            alert('Error en depreciación: ' + (error.response?.data?.detail || error.message));
+            alert('❌ Error en depreciación: ' + (error.response?.data?.detail || error.message));
         }
     };
 
@@ -139,6 +163,12 @@ export default function CategoriasActivosPage() {
                 </div>
                 
                 <div className="flex gap-2">
+                    <Link
+                        href="/activos/movimientos-contables"
+                        className="bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-purple-700 transition flex items-center gap-2"
+                    >
+                        <FaFileInvoiceDollar /> Ver Contabilidad
+                    </Link>
                     <button
                         onClick={descargarReporteMaestro}
                         className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-green-700 transition flex items-center gap-2"
@@ -146,7 +176,7 @@ export default function CategoriasActivosPage() {
                         <FaFileDownload /> Reporte PDF
                     </button>
                     <button
-                        onClick={ejecutarDepreciacion}
+                        onClick={() => setShowDepreciacionModal(true)}
                         className="bg-orange-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-orange-700 transition flex items-center gap-2"
                     >
                         <FaCalculator /> Ejecutar Depreciación
@@ -318,12 +348,13 @@ export default function CategoriasActivosPage() {
                                             onChange={(e) => setFormData({...formData, cuenta_depreciacion_acumulada_id: e.target.value})}
                                         >
                                             <option value="">Seleccione...</option>
-                                            {cuentas.filter(c => c.codigo.startsWith('159')).map(cuenta => (
+                                            {cuentas.filter(c => c.codigo && c.codigo.startsWith('159')).map(cuenta => (
                                                 <option key={cuenta.id} value={cuenta.id}>
                                                     {cuenta.codigo} - {cuenta.nombre}
                                                 </option>
                                             ))}
                                         </select>
+
                                     </div>
                                 </div>
                             </div>
@@ -348,6 +379,80 @@ export default function CategoriasActivosPage() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de Depreciación */}
+            {showDepreciacionModal && (
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                    <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-md shadow-lg rounded-md bg-white">
+                        <div className="text-center">
+                            <FaCalculator className="mx-auto text-4xl text-orange-600 mb-4" />
+                            <h3 className="text-lg font-bold text-gray-900 mb-4">
+                                Ejecutar Depreciación Mensual
+                            </h3>
+                            <p className="text-sm text-gray-600 mb-6">
+                                Seleccione el tipo de documento contable que se utilizará para registrar la depreciación:
+                            </p>
+                            
+                            <div className="space-y-3 mb-6">
+                                {tiposDocumento
+                                    .filter(tipo => tipo.nombre.toLowerCase().includes('nota') || 
+                                                   tipo.nombre.toLowerCase().includes('comprobante') ||
+                                                   tipo.codigo.toLowerCase().includes('nc') ||
+                                                   tipo.codigo.toLowerCase().includes('cp'))
+                                    .map(tipo => (
+                                    <button
+                                        key={tipo.id}
+                                        onClick={() => ejecutarDepreciacion(tipo.id)}
+                                        className="w-full p-3 text-left border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-500 transition"
+                                    >
+                                        <div className="font-semibold text-gray-800">
+                                            {tipo.codigo} - {tipo.nombre}
+                                        </div>
+                                        <div className="text-xs text-gray-500">
+                                            Consecutivo actual: {tipo.consecutivo_actual || 0}
+                                        </div>
+                                    </button>
+                                ))}
+                                
+                                {/* Si no hay tipos filtrados, mostrar todos */}
+                                {tiposDocumento.filter(tipo => 
+                                    tipo.nombre.toLowerCase().includes('nota') || 
+                                    tipo.nombre.toLowerCase().includes('comprobante') ||
+                                    tipo.codigo.toLowerCase().includes('nc') ||
+                                    tipo.codigo.toLowerCase().includes('cp')
+                                ).length === 0 && (
+                                    <div>
+                                        <p className="text-sm text-gray-500 mb-3">Tipos de documento disponibles:</p>
+                                        {tiposDocumento.slice(0, 5).map(tipo => (
+                                            <button
+                                                key={tipo.id}
+                                                onClick={() => ejecutarDepreciacion(tipo.id)}
+                                                className="w-full p-3 text-left border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-500 transition mb-2"
+                                            >
+                                                <div className="font-semibold text-gray-800">
+                                                    {tipo.codigo} - {tipo.nombre}
+                                                </div>
+                                                <div className="text-xs text-gray-500">
+                                                    Consecutivo: {tipo.consecutivo_actual || 0}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div className="flex justify-center gap-3">
+                                <button
+                                    onClick={() => setShowDepreciacionModal(false)}
+                                    className="px-4 py-2 text-gray-600 font-semibold hover:bg-gray-100 rounded-lg transition"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

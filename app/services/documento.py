@@ -68,7 +68,8 @@ from app.models import (
     FormatoImpresion as models_formato,
     AplicacionPago as models_aplica,
     CentroCosto as models_centro_costo,
-    Usuario as models_usuario
+    Usuario as models_usuario,
+    Producto as models_producto
 )
 
 from app.models.grupo_inventario import GrupoInventario as models_grupo
@@ -508,12 +509,15 @@ def get_documentos(db: Session, empresa_id: int, filtros: dict, skip: int = 0, l
         models_doc.fecha,
         models_doc.numero,
         models_doc.anulado,
+        models_doc.estado,
+        models_doc.observaciones,
+        models_tipo.codigo.label("tipo_documento_codigo"),
         models_tipo.nombre.label("tipo_documento_nombre"),
         models_tercero.razon_social.label("beneficiario_nombre"),
         subquery.c.total_debito
     ).join(
         subquery, models_doc.id == subquery.c.documento_id
-    ).join(
+    ).outerjoin(
         models_tipo, models_doc.tipo_documento_id == models_tipo.id
     ).outerjoin(
         models_tercero, models_doc.beneficiario_id == models_tercero.id
@@ -538,6 +542,10 @@ def get_documentos(db: Session, empresa_id: int, filtros: dict, skip: int = 0, l
         # 4. Filtro de Tercero
         if filtros.get("tercero_id"):
             filter_conditions.append(models_doc.beneficiario_id == filtros["tercero_id"])
+            
+        # 5. NUEVO: Filtro por Observaciones
+        if filtros.get("observaciones"):
+            filter_conditions.append(models_doc.observaciones.ilike(f"%{filtros['observaciones']}%"))
 
         # Aplicar todos los filtros acumulados
         if filter_conditions:

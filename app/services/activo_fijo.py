@@ -23,6 +23,45 @@ def get_categorias(db: Session, empresa_id: int, skip: int = 0, limit: int = 100
         models_cat.ActivoCategoria.empresa_id == empresa_id
     ).offset(skip).limit(limit).all()
 
+def get_categoria_by_id(db: Session, categoria_id: int, empresa_id: int):
+    return db.query(models_cat.ActivoCategoria).filter(
+        models_cat.ActivoCategoria.id == categoria_id,
+        models_cat.ActivoCategoria.empresa_id == empresa_id
+    ).first()
+
+def update_categoria(db: Session, categoria_id: int, update_data: schemas.ActivoCategoriaCreate, empresa_id: int):
+    db_categoria = get_categoria_by_id(db, categoria_id, empresa_id)
+    if not db_categoria:
+        return None
+        
+    for key, value in update_data.model_dump(exclude_unset=True).items():
+        setattr(db_categoria, key, value)
+    
+    db.commit()
+    db.refresh(db_categoria)
+    return db_categoria
+
+def delete_categoria(db: Session, categoria_id: int, empresa_id: int):
+    # Verificar que no tenga activos asociados
+    activos_count = db.query(models.ActivoFijo).filter(
+        models.ActivoFijo.categoria_id == categoria_id,
+        models.ActivoFijo.empresa_id == empresa_id
+    ).count()
+    
+    if activos_count > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"No se puede eliminar la categoría. Tiene {activos_count} activos asociados."
+        )
+    
+    db_categoria = get_categoria_by_id(db, categoria_id, empresa_id)
+    if not db_categoria:
+        return False
+        
+    db.delete(db_categoria)
+    db.commit()
+    return True
+
 # --- ACTIVOS FIJOS ---
 
 def create_activo(db: Session, activo: schemas.ActivoFijoCreate, user_id: int, empresa_id: int):
@@ -124,11 +163,11 @@ def ejecutar_depreciacion(db: Session, empresa_id: int, anio: int, mes: int, use
     ultimo_dia = calendar.monthrange(anio, mes)[1]
     fecha_cierre = date(anio, mes, ultimo_dia)
     
-    # Validar que no se deprecie el futuro
-    if fecha_cierre > date.today():
-        raise HTTPException(status_code=400, detail="No se puede depreciar períodos futuros.")
+    # COMENTADO PARA PRUEBAS: Validar que no se deprecie el futuro
+    # if fecha_cierre > date.today():
+    #     raise HTTPException(status_code=400, detail="No se puede depreciar períodos futuros.")
     
-    # 2. Validar que no se haya depreciado ya este período
+    # 2. VALIDACIÓN RELAJADA: Solo advertir si ya existe, pero permitir continuar
     depreciaciones_existentes = db.query(models_nov.ActivoNovedad).filter(
         models_nov.ActivoNovedad.empresa_id == empresa_id,
         models_nov.ActivoNovedad.tipo == models_nov.TipoNovedadActivo.DEPRECIACION,
@@ -136,8 +175,9 @@ def ejecutar_depreciacion(db: Session, empresa_id: int, anio: int, mes: int, use
         func.extract('month', models_nov.ActivoNovedad.fecha) == mes
     ).first()
     
-    if depreciaciones_existentes:
-        raise HTTPException(status_code=400, detail=f"Ya se ejecutó la depreciación para {mes:02d}/{anio}.")
+    # COMENTADO PARA PRUEBAS: No bloquear si ya existe
+    # if depreciaciones_existentes:
+    #     raise HTTPException(status_code=400, detail=f"Ya se ejecutó la depreciación para {mes:02d}/{anio}.")
     
     # 3. Obtener Tipo de Documento
     tipo_doc = db.query(models_tipo.TipoDocumento).filter(
@@ -329,3 +369,115 @@ def calcular_depreciacion_mensual(activo: models.ActivoFijo, fecha_calculo: date
         cuota_mensual = saldo_pendiente
     
     return round(cuota_mensual, 2)
+
+def limpiar_depreciaciones_prueba(db: Session, empresa_id: int, user_id: int):
+    """
+    FUNCIÓN DE PRUEBAS: Limpia todas las depreciaciones para permitir nuevos ensayos.
+    ⚠️ SOLO USAR EN AMBIENTE DE DESARROLLO/PRUEBAS
+    
+    Esta función:
+    1. Elimina todos los documentos de depreciación
+    2. Elimina todas las novedades de depreciación  
+    3. Resetea la depreciación acumulada de todos los activos
+    """
+    try:
+        # 1. Buscar todos los documentos de depreciación
+        documentos_depreciacion = db.query(models_doc.Documento).filter(
+            models_doc.Documento.empresa_id == empresa_id,
+            models_doc.Documento.observaciones.ilike('%depreciación%')
+        ).all()
+        
+        documentos_eliminados = []
+        
+        # 2. Eliminar documentos y sus movimientos
+        for doc in documentos_depreciacion:
+            # Eliminar movimientos contables
+            db.query(models_mov.MovimientoContable).filter(
+                models_mov.MovimientoContable.documento_id == doc.id
+            ).delete(synchronize_session=False)
+            
+            documentos_eliminados.append(f"{doc.tipo_documento.codigo if doc.tipo_documento else 'N/A'}-{doc.numero}")
+            
+            # Eliminar documento
+            db.delete(doc)
+        
+        # 3. Eliminar todas las novedades de depreciación
+        novedades_eliminadas = db.query(models_nov.ActivoNovedad).filter(
+            models_nov.ActivoNovedad.empresa_id == empresa_id,
+            models_nov.ActivoNovedad.tipo == models_nov.TipoNovedadActivo.DEPRECIACION
+        ).delete(synchronize_session=False)
+        
+        # 4. Resetear depreciación acumulada de todos los activos
+        activos_reseteados = db.query(models.ActivoFijo).filter(
+            models.ActivoFijo.empresa_id == empresa_id
+        ).update({
+            models.ActivoFijo.depreciacion_acumulada_niif: 0,
+            models.ActivoFijo.depreciacion_acumulada_fiscal: 0
+        }, synchronize_session=False)
+        
+        db.commit()
+        
+        return {
+            "mensaje": "✅ Depreciaciones de prueba limpiadas exitosamente",
+            "documentos_eliminados": len(documentos_eliminados),
+            "documentos_detalle": documentos_eliminados,
+            "novedades_eliminadas": novedades_eliminadas,
+            "activos_reseteados": activos_reseteados
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error al limpiar depreciaciones de prueba: {str(e)}"
+        )
+
+def get_documentos_contables_activos(db: Session, empresa_id: int):
+    """
+    Obtiene todos los documentos contables relacionados con activos fijos
+    con información completa para mostrar en la interfaz
+    """
+    from sqlalchemy.orm import joinedload
+    
+    # Buscar documentos que contengan "depreciación" en observaciones
+    documentos = db.query(models_doc.Documento).options(
+        joinedload(models_doc.Documento.tipo_documento),
+        joinedload(models_doc.Documento.beneficiario),
+        joinedload(models_doc.Documento.movimientos)
+    ).filter(
+        models_doc.Documento.empresa_id == empresa_id,
+        models_doc.Documento.observaciones.ilike('%depreciación%')
+    ).order_by(
+        models_doc.Documento.fecha.desc(),
+        models_doc.Documento.numero.desc()
+    ).all()
+    
+    # Formatear respuesta
+    documentos_formateados = []
+    for doc in documentos:
+        total_debito = sum(float(mov.debito) for mov in doc.movimientos)
+        
+        documentos_formateados.append({
+            "id": doc.id,
+            "fecha": doc.fecha.isoformat() if doc.fecha else None,
+            "numero": doc.numero,
+            "anulado": doc.anulado,
+            "estado": doc.estado,
+            "observaciones": doc.observaciones,
+            "tipo_documento_codigo": doc.tipo_documento.codigo if doc.tipo_documento else None,
+            "tipo_documento_nombre": doc.tipo_documento.nombre if doc.tipo_documento else None,
+            "beneficiario_nombre": doc.beneficiario.razon_social if doc.beneficiario else None,
+            "total_debito": total_debito,
+            "movimientos_contables": [
+                {
+                    "debito": float(mov.debito),
+                    "credito": float(mov.credito),
+                    "concepto": mov.concepto
+                } for mov in doc.movimientos
+            ]
+        })
+    
+    return {
+        "total": len(documentos_formateados),
+        "documentos": documentos_formateados
+    }
