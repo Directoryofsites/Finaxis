@@ -439,12 +439,12 @@ def get_documentos_contables_activos(db: Session, empresa_id: int):
     """
     try:
         # Buscar documentos que contengan "depreciación" en observaciones
-        documentos = db.query(models_doc).filter(
-            models_doc.empresa_id == empresa_id,
-            models_doc.observaciones.ilike('%depreciación%')
+        documentos = db.query(models_doc.Documento).filter(
+            models_doc.Documento.empresa_id == empresa_id,
+            models_doc.Documento.observaciones.ilike('%depreciación%')
         ).order_by(
-            models_doc.fecha.desc(),
-            models_doc.numero.desc()
+            models_doc.Documento.fecha.desc(),
+            models_doc.Documento.numero.desc()
         ).all()
         
         # Formatear respuesta
@@ -495,3 +495,73 @@ def get_documentos_contables_activos(db: Session, empresa_id: int):
             "total": 0,
             "documentos": []
         }
+
+def eliminar_todos_documentos_activos(db: Session, empresa_id: int, user_id: int):
+    """
+    FUNCIÓN DE PRUEBAS: Elimina TODOS los documentos contables de activos fijos de una vez.
+    ⚠️ SOLO USAR EN AMBIENTE DE DESARROLLO/PRUEBAS
+    
+    Esta función es más eficiente que eliminar uno por uno desde el frontend.
+    """
+    try:
+        # 1. Buscar todos los documentos de activos fijos (depreciación)
+        documentos_activos = db.query(models_doc.Documento).filter(
+            models_doc.Documento.empresa_id == empresa_id,
+            models_doc.Documento.observaciones.ilike('%depreciación%')
+        ).all()
+        
+        if not documentos_activos:
+            return {
+                "mensaje": "No hay documentos de activos fijos para eliminar",
+                "documentos_eliminados": 0,
+                "novedades_eliminadas": 0,
+                "activos_reseteados": 0
+            }
+        
+        documentos_eliminados = []
+        
+        # 2. Eliminar documentos y movimientos en lotes
+        for doc in documentos_activos:
+            # Eliminar movimientos contables
+            movimientos_eliminados = db.query(models_mov.MovimientoContable).filter(
+                models_mov.MovimientoContable.documento_id == doc.id
+            ).delete(synchronize_session=False)
+            
+            doc_nombre = f"{doc.tipo_documento.codigo if doc.tipo_documento else 'N/A'}-{doc.numero}"
+            documentos_eliminados.append(doc_nombre)
+            
+            # Eliminar documento
+            db.delete(doc)
+        
+        # 3. Eliminar todas las novedades de depreciación
+        novedades_eliminadas = db.query(models_nov.ActivoNovedad).filter(
+            models_nov.ActivoNovedad.empresa_id == empresa_id,
+            models_nov.ActivoNovedad.tipo == models_nov.TipoNovedadActivo.DEPRECIACION
+        ).delete(synchronize_session=False)
+        
+        # 4. Resetear depreciación acumulada de todos los activos
+        activos_reseteados = db.query(models.ActivoFijo).filter(
+            models.ActivoFijo.empresa_id == empresa_id
+        ).update({
+            models.ActivoFijo.depreciacion_acumulada_niif: 0,
+            models.ActivoFijo.depreciacion_acumulada_fiscal: 0
+        }, synchronize_session=False)
+        
+        # 5. Commit de todos los cambios
+        db.commit()
+        
+        return {
+            "mensaje": "✅ Eliminación masiva completada exitosamente",
+            "documentos_eliminados": len(documentos_eliminados),
+            "documentos_detalle": documentos_eliminados[:10],  # Solo mostrar primeros 10
+            "novedades_eliminadas": novedades_eliminadas,
+            "activos_reseteados": activos_reseteados,
+            "total_procesado": len(documentos_eliminados)
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error en eliminación masiva: {str(e)}"
+        )

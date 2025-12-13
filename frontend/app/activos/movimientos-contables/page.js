@@ -21,13 +21,8 @@ export default function MovimientosContablesActivosPage() {
         try {
             setLoading(true);
             
-            // Usar el endpoint de documentos con filtro por observaciones
-            const response = await apiService.get('/documentos/', {
-                params: {
-                    observaciones: 'depreciación',
-                    limit: 100
-                }
-            });
+            // Usar el endpoint específico de activos fijos
+            const response = await apiService.get('/activos/documentos-contables');
             
             // La API devuelve {total: number, documentos: array}
             const documentosData = response.data?.documentos || [];
@@ -50,17 +45,36 @@ export default function MovimientosContablesActivosPage() {
         try {
             setLoading(true);
             
-            const params = {
-                observaciones: 'depreciación',
-                limit: 100
-            };
+            // Por ahora usar el endpoint de activos sin filtros adicionales
+            // TODO: Implementar filtros en el endpoint de activos si es necesario
+            const response = await apiService.get('/activos/documentos-contables');
+            let documentosData = response.data?.documentos || [];
             
-            if (filtros.fechaInicio) params.fecha_inicio = filtros.fechaInicio;
-            if (filtros.fechaFin) params.fecha_fin = filtros.fechaFin;
-            if (filtros.busqueda) params.numero = filtros.busqueda;
+            // Aplicar filtros en el frontend
+            if (filtros.fechaInicio || filtros.fechaFin || filtros.busqueda) {
+                documentosData = documentosData.filter(doc => {
+                    let incluir = true;
+                    
+                    if (filtros.fechaInicio) {
+                        const fechaDoc = new Date(doc.fecha);
+                        const fechaInicio = new Date(filtros.fechaInicio);
+                        incluir = incluir && fechaDoc >= fechaInicio;
+                    }
+                    
+                    if (filtros.fechaFin) {
+                        const fechaDoc = new Date(doc.fecha);
+                        const fechaFin = new Date(filtros.fechaFin);
+                        incluir = incluir && fechaDoc <= fechaFin;
+                    }
+                    
+                    if (filtros.busqueda) {
+                        incluir = incluir && doc.numero.toString().includes(filtros.busqueda);
+                    }
+                    
+                    return incluir;
+                });
+            }
             
-            const response = await apiService.get('/documentos/', { params });
-            const documentosData = response.data?.documentos || [];
             setDocumentos(documentosData);
         } catch (error) {
             console.error("Error filtrando:", error);
@@ -74,7 +88,7 @@ export default function MovimientosContablesActivosPage() {
     };
 
     const descargarPDF = (documentoId) => {
-        window.open(`/api/documentos/${documentoId}/pdf`, '_blank');
+        window.open(`http://localhost:8002/api/documentos/${documentoId}/pdf`, '_blank');
     };
 
     const eliminarDocumento = async (documentoId, numeroDoc) => {
@@ -93,6 +107,37 @@ export default function MovimientosContablesActivosPage() {
         } catch (error) {
             console.error("Error eliminando documento:", error);
             alert('❌ Error al eliminar: ' + (error.response?.data?.detail || error.message));
+        }
+    };
+
+    const eliminarTodosLosDocumentos = async () => {
+        const totalDocs = Array.isArray(documentos) ? documentos.length : 0;
+        
+        if (totalDocs === 0) {
+            alert('No hay documentos para eliminar.');
+            return;
+        }
+
+        if (!confirm(`🗑️ ¿ELIMINAR TODOS LOS ${totalDocs} DOCUMENTOS?\n\n⚠️ ESTA ACCIÓN NO SE PUEDE DESHACER\n\nEsto eliminará:\n- ${totalDocs} documentos contables\n- Todos sus movimientos contables\n- Las novedades de depreciación asociadas\n- Resetear depreciación acumulada de activos\n\n¿Estás COMPLETAMENTE SEGURO?`)) {
+            return;
+        }
+
+        // Doble confirmación para operación masiva
+        if (!confirm(`⚠️ CONFIRMACIÓN FINAL ⚠️\n\nVas a eliminar ${totalDocs} documentos.\n\n¿CONTINUAR CON LA ELIMINACIÓN MASIVA?`)) {
+            return;
+        }
+
+        try {
+            // Usar endpoint optimizado para eliminación masiva
+            const response = await apiService.delete('/activos/eliminar-todos-documentos');
+            
+            const resultado = response.data;
+            alert(`✅ ¡Eliminación masiva completada!\n\n📊 Resultados:\n- Documentos eliminados: ${resultado.documentos_eliminados}\n- Novedades eliminadas: ${resultado.novedades_eliminadas}\n- Activos reseteados: ${resultado.activos_reseteados}\n\n🎯 Ya puedes hacer nuevas pruebas de depreciación.`);
+            
+            loadMovimientosContables(); // Recargar la lista
+        } catch (error) {
+            console.error("Error en eliminación masiva:", error);
+            alert('❌ Error en eliminación masiva: ' + (error.response?.data?.detail || error.message));
         }
     };
 
@@ -153,6 +198,13 @@ export default function MovimientosContablesActivosPage() {
                 </div>
                 
                 <div className="flex gap-2">
+                    <button
+                        onClick={eliminarTodosLosDocumentos}
+                        className="bg-red-700 text-white px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-red-800 transition flex items-center gap-2"
+                        title="Eliminar TODOS los documentos de activos fijos mostrados en esta página"
+                    >
+                        <FaTrash /> Eliminar Todas ({Array.isArray(documentos) ? documentos.length : 0})
+                    </button>
                     <button
                         onClick={limpiarDepreciacionesPrueba}
                         className="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-red-700 transition flex items-center gap-2"

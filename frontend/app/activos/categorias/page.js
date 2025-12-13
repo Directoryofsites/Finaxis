@@ -138,7 +138,7 @@ export default function CategoriasActivosPage() {
             setShowDepreciacionModal(false);
             
             // Descargar PDF automáticamente
-            window.open(`/api/activos/reportes/depreciacion-pdf?anio=${anio}&mes=${mes}`, '_blank');
+            window.open(`http://localhost:8002/api/activos/reportes/depreciacion-pdf?anio=${anio}&mes=${mes}`, '_blank');
         } catch (error) {
             console.error(error);
             alert('❌ Error en depreciación: ' + (error.response?.data?.detail || error.message));
@@ -146,7 +146,7 @@ export default function CategoriasActivosPage() {
     };
 
     const descargarReporteMaestro = () => {
-        window.open('/api/activos/reportes/maestro-pdf', '_blank');
+        window.open('http://localhost:8002/api/activos/reportes/maestro-pdf', '_blank');
     };
 
     const inputClass = "w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2";

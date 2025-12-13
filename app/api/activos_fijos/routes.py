@@ -232,3 +232,14 @@ def obtener_documentos_contables_activos(
     """
     return service.get_documentos_contables_activos(db, current_user.empresa_id)
 
+@router.delete("/eliminar-todos-documentos")
+def eliminar_todos_documentos_activos(
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    FUNCIÓN DE PRUEBAS: Elimina TODOS los documentos contables de activos fijos de una vez.
+    ⚠️ SOLO USAR EN AMBIENTE DE DESARROLLO/PRUEBAS
+    """
+    return service.eliminar_todos_documentos_activos(db, current_user.empresa_id, current_user.id)
+

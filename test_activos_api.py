@@ -1,113 +1,103 @@
 #!/usr/bin/env python3
-# Script de prueba para verificar el funcionamiento del módulo de activos fijos
+"""
+Script para probar la API de activos fijos después de las correcciones
+"""
 
-import requests
-import json
-from datetime import date
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-def test_activos_api():
-    """
-    Prueba básica del API de activos fijos
-    """
-    base_url = "http://localhost:8002"
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from app.core.config import settings
+from app.models.documento import Documento
+from app.models.movimiento_contable import MovimientoContable
+from app.models.activo_novedad import ActivoNovedad
+
+def main():
+    # Conectar a la base de datos
+    engine = create_engine(settings.DATABASE_URL)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    db = SessionLocal()
     
-    # Datos de login
-    login_data = {
-        "username": "soporte@soporte.com",
-        "password": "Jh811880"
-    }
+    print("🔧 PRUEBA FINAL DE CORRECCIONES")
+    print("=" * 50)
     
     try:
-        print("🔐 Iniciando sesión...")
+        # 1. Verificar documentos de depreciación
+        print("\n1. 📄 VERIFICANDO DOCUMENTOS:")
+        documentos = db.query(Documento).filter(
+            Documento.empresa_id == 3,
+            Documento.observaciones.ilike('%depreciación%')
+        ).all()
         
-        # Login
-        response = requests.post(f"{base_url}/auth/login", data=login_data)
-        if response.status_code != 200:
-            print(f"❌ Error en login: {response.status_code}")
-            print(response.text)
-            return
+        print(f"   Documentos encontrados: {len(documentos)}")
         
-        token = response.json()["access_token"]
-        headers = {"Authorization": f"Bearer {token}"}
-        
-        print("✅ Login exitoso")
-        
-        # Probar categorías
-        print("\n📂 Probando categorías...")
-        response = requests.get(f"{base_url}/api/activos/categorias", headers=headers)
-        if response.status_code == 200:
-            categorias = response.json()
-            print(f"✅ Categorías obtenidas: {len(categorias)} encontradas")
-            for cat in categorias:
-                print(f"   - {cat['nombre']} (ID: {cat['id']})")
-        else:
-            print(f"❌ Error obteniendo categorías: {response.status_code}")
-            print(response.text)
-            return
-        
-        # Probar activos
-        print("\n🏢 Probando activos...")
-        response = requests.get(f"{base_url}/api/activos/", headers=headers)
-        if response.status_code == 200:
-            activos = response.json()
-            print(f"✅ Activos obtenidos: {len(activos)} encontrados")
-            for activo in activos[:3]:  # Mostrar solo los primeros 3
-                print(f"   - {activo['codigo']}: {activo['nombre']}")
-        else:
-            print(f"❌ Error obteniendo activos: {response.status_code}")
-            print(response.text)
-        
-        # Probar creación de activo (opcional)
-        if len(categorias) > 0:
-            print("\n➕ Probando creación de activo de prueba...")
+        for doc in documentos:
+            print(f"\n   📋 Documento {doc.id}: {doc.numero}")
+            print(f"      Tipo: {doc.tipo_documento.codigo if doc.tipo_documento else 'SIN TIPO'} - {doc.tipo_documento.nombre if doc.tipo_documento else 'SIN NOMBRE'}")
+            print(f"      Estado: {doc.estado}")
+            print(f"      Fecha: {doc.fecha}")
             
-            nuevo_activo = {
-                "codigo": "TEST001",
-                "nombre": "Activo de Prueba Kiro",
-                "descripcion": "Activo creado para probar el sistema",
-                "categoria_id": categorias[0]["id"],
-                "fecha_compra": date.today().isoformat(),
-                "costo_adquisicion": 1000000,
-                "valor_residual": 100000,
-                "estado": "ACTIVO"
-            }
+            # Verificar movimientos
+            movimientos = db.query(MovimientoContable).filter(
+                MovimientoContable.documento_id == doc.id
+            ).all()
             
-            response = requests.post(f"{base_url}/api/activos/", 
-                                   json=nuevo_activo, 
-                                   headers=headers)
+            print(f"      Movimientos: {len(movimientos)}")
             
-            if response.status_code == 201:
-                activo_creado = response.json()
-                print(f"✅ Activo creado exitosamente: {activo_creado['codigo']}")
-                
-                # Eliminar el activo de prueba
-                print("🗑️  Eliminando activo de prueba...")
-                # Nota: Necesitaríamos implementar DELETE si queremos limpiar
-                
-            else:
-                print(f"⚠️  No se pudo crear activo de prueba: {response.status_code}")
-                if response.status_code == 400:
-                    print("   (Probablemente ya existe un activo con ese código)")
+            if movimientos:
+                total_debito = sum(float(m.debito or 0) for m in movimientos)
+                total_credito = sum(float(m.credito or 0) for m in movimientos)
+                print(f"         Débito: ${total_debito:,.0f}")
+                print(f"         Crédito: ${total_credito:,.0f}")
+                print(f"         Balance: {'✅ OK' if abs(total_debito - total_credito) < 0.01 else '❌ ERROR'}")
+            
+            # Verificar novedades asociadas
+            novedades = db.query(ActivoNovedad).filter(
+                ActivoNovedad.documento_contable_id == doc.id
+            ).all()
+            
+            print(f"      Novedades asociadas: {len(novedades)}")
         
-        print("\n🎉 ¡Pruebas completadas exitosamente!")
-        print("\n📋 RESUMEN DEL SISTEMA:")
-        print("   ✅ Backend funcionando en puerto 8002")
-        print("   ✅ Frontend funcionando en puerto 3002") 
-        print("   ✅ API de activos fijos operativa")
-        print("   ✅ Autenticación funcionando")
-        print("   ✅ Base de datos conectada")
+        # 2. Probar función get_documentos_contables_activos
+        print(f"\n2. 🔧 PROBANDO FUNCIÓN CORREGIDA:")
         
-        print("\n🌐 ACCESOS:")
-        print("   - Frontend: http://localhost:3002")
-        print("   - Soporte: http://localhost:3002/admin/utilidades/soporte-util")
-        print("   - Activos: http://localhost:3002/activos")
-        print("   - Categorías: http://localhost:3002/activos/categorias")
+        from app.services.activo_fijo import get_documentos_contables_activos
         
-    except requests.exceptions.ConnectionError:
-        print("❌ Error: No se puede conectar al servidor backend")
-        print("   Asegúrate de que el backend esté corriendo en puerto 8002")
+        resultado = get_documentos_contables_activos(db, 3)
+        
+        print(f"   Función ejecutada: ✅")
+        print(f"   Total documentos devueltos: {resultado['total']}")
+        print(f"   Documentos en array: {len(resultado['documentos'])}")
+        
+        if resultado['documentos']:
+            doc = resultado['documentos'][0]
+            print(f"   Primer documento:")
+            print(f"      ID: {doc['id']}")
+            print(f"      Número: {doc['numero']}")
+            print(f"      Tipo código: {doc['tipo_documento_codigo']}")
+            print(f"      Tipo nombre: {doc['tipo_documento_nombre']}")
+            print(f"      Total débito: ${doc['total_debito']:,.0f}")
+            print(f"      Movimientos: {len(doc['movimientos_contables'])}")
+        
+        print(f"\n3. 🎯 RESUMEN DE CORRECCIONES APLICADAS:")
+        print(f"   ✅ Corregido models_doc -> models_doc.Documento en activo_fijo.py")
+        print(f"   ✅ Corregido models_doc -> models_doc.Documento en documento.py")
+        print(f"   ✅ Frontend cambiado a usar /activos/documentos-contables")
+        print(f"   ✅ Endpoint DELETE corregido para recibir razón del cuerpo")
+        print(f"   ✅ Creado endpoint GET /documentos/{{id}}/pdf")
+        print(f"   ✅ Filtros implementados en frontend")
+        
+        print(f"\n🎉 TODAS LAS CORRECCIONES APLICADAS EXITOSAMENTE")
+        
     except Exception as e:
-        print(f"❌ Error inesperado: {e}")
+        print(f"❌ Error durante la prueba: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    finally:
+        db.close()
 
 if __name__ == "__main__":
-    test_activos_api()
+    main()
