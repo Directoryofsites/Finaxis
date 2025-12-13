@@ -255,6 +255,7 @@ def reactivar_documento(
 @router.delete("/{documento_id}")
 def eliminar_documento(
     documento_id: int,
+    eliminacion_data: schemas.DocumentoAnulacion,
     db: Session = Depends(get_db),
     current_user: models_usuario = Depends(get_current_user)
 ):
@@ -264,7 +265,7 @@ def eliminar_documento(
             documento_id=documento_id,
             empresa_id=current_user.empresa_id,
             user_id=current_user.id,
-            razon="Eliminado desde API."
+            razon=eliminacion_data.razon
         )
         return resultado
     except HTTPException as http_exc:
@@ -272,6 +273,38 @@ def eliminar_documento(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error inesperado al eliminar el documento: {str(e)}")
 
+
+@router.get("/{documento_id}/pdf")
+def generar_pdf_documento_directo(
+    documento_id: int,
+    db: Session = Depends(get_db),
+    current_user: models_usuario = Depends(get_current_user)
+):
+    """
+    Genera y devuelve directamente el PDF de un documento
+    """
+    try:
+        # Generar el PDF usando el servicio
+        pdf_bytes, file_name = service.generar_pdf_documento(
+            db=db,
+            documento_id=documento_id,
+            empresa_id=current_user.empresa_id
+        )
+        
+        # Devolver el PDF como StreamingResponse
+        pdf_stream = io.BytesIO(pdf_bytes)
+        return StreamingResponse(
+            pdf_stream,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"inline; filename={file_name}"}
+        )
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al generar el PDF del documento: {str(e)}"
+        )
 
 @router.post("/{documento_id}/solicitar-impresion")
 def solicitar_url_impresion(

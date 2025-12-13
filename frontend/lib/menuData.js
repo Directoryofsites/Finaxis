@@ -141,7 +141,6 @@ export const menuStructure = [
         icon: FaTractor,
         links: [
             { name: "Listado de Activos", href: "/activos", icon: FaListUl },
-            { name: "Registrar Nuevo Activo", href: "/activos/crear", icon: FaPlus },
             { name: "Categorías y Vidas Útiles", href: "/activos/categorias", icon: FaCogs },
         ]
     },

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { apiService } from '../../lib/apiService';
-import { FaPlus, FaSearch, FaCogs, FaTractor, FaCalculator, FaPlay } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaCogs, FaTractor, FaCalculator, FaFileInvoiceDollar, FaPlay } from 'react-icons/fa';
 import BotonRegresar from '../components/BotonRegresar';
 
 export default function ActivosFijosListPage() {
@@ -105,6 +105,13 @@ export default function ActivosFijosListPage() {
                         <FaCalculator /> Ejecutar Depreciación
                     </button>
 
+                    <Link
+                        href="/activos/movimientos-contables"
+                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 font-medium shadow-sm"
+                        title="Ver documentos contables generados por depreciaciones"
+                    >
+                        <FaFileInvoiceDollar /> Movimientos Contables
+                    </Link>
                     <Link
                         href="/activos/categorias"
                         className="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center gap-2 font-medium shadow-sm"

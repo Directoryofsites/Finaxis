@@ -978,15 +978,23 @@ def _restore_jerarquico(db, model, json_key, parent_field, data_source, target_e
             key = str(item.get('codigo')).strip()
             if key not in exist_map:
                 new_item = item.copy()
-                # CORRECCIÓN: Limpiar campos de auditoría antiguos
-                for k in ['id', '_sa_instance_state', 'created_at', 'updated_at', 'updated_by']: new_item.pop(k, None)
+                # CORRECCIÓN COMBINADA: Limpiar campos de auditoría antiguos (Antigravity + Kiro)
+                for k in ['id', '_sa_instance_state', 'created_at', 'updated_at']: new_item.pop(k, None)
+                
+                # ARREGLO KIRO: Validar y corregir foreign keys de usuarios antes de procesar
+                for user_field in ['created_by', 'updated_by', 'usuario_creador_id', 'usuario_modificador_id']:
+                    if user_field in new_item and new_item[user_field] is not None:
+                        # Verificar si el usuario existe, si no, usar el usuario actual
+                        user_exists = db.query(Usuario).filter(Usuario.id == new_item[user_field]).first()
+                        if not user_exists:
+                            new_item[user_field] = user_id
+                
                 new_item['empresa_id'] = target_empresa_id
                 new_item[parent_field] = None 
                 
-                # Asignar auditoría actual
+                # ARREGLO COMBINADO: Manejar todos los campos de foreign key a usuarios
                 if hasattr(model, 'created_by'): new_item['created_by'] = user_id
                 if hasattr(model, 'updated_by'): new_item['updated_by'] = user_id
-                
                 obj = model(**new_item)
                 db.add(obj)
                 exist_map[key] = obj
@@ -997,7 +1005,18 @@ def _restore_jerarquico(db, model, json_key, parent_field, data_source, target_e
                 new_name = item.get('nombre')
                 if new_name and existing_obj.nombre != new_name:
                     existing_obj.nombre = new_name
-                    if hasattr(model, 'updated_by'): existing_obj.updated_by = user_id # Actualizar también el usuario que modifica
+                
+                # ARREGLO COMBINADO: Validar campos de usuario en actualizaciones (Kiro + Antigravity)
+                for user_field in ['updated_by']:
+                    if user_field in item and item[user_field] is not None:
+                        user_exists = db.query(Usuario).filter(Usuario.id == item[user_field]).first()
+                        if not user_exists:
+                            setattr(existing_obj, user_field, user_id)
+                        else:
+                            setattr(existing_obj, user_field, item[user_field])
+                    elif hasattr(model, user_field):
+                        # Si no hay valor en item, usar user_id actual (mejora de Antigravity)
+                        setattr(existing_obj, user_field, user_id)
 
     return count
 
@@ -1019,6 +1038,14 @@ def _upsert_manual_seguro(db, model, json_key, natural_key, data_source, target_
         for k in ['id', '_sa_instance_state', 'created_at', 'updated_at', 'fecha_creacion', 'updated_by']: data.pop(k, None)
         
         clean_data = {k: v for k, v in data.items() if k in valid_columns}
+        
+        # ARREGLO: Validar y corregir foreign keys de usuarios antes de procesar
+        for user_field in ['created_by', 'updated_by', 'usuario_creador_id', 'usuario_modificador_id']:
+            if user_field in clean_data and clean_data[user_field] is not None:
+                # Verificar si el usuario existe, si no, usar el usuario actual
+                user_exists = db.query(Usuario).filter(Usuario.id == clean_data[user_field]).first()
+                if not user_exists:
+                    clean_data[user_field] = user_id
         
         if id_maps:
             for field, mapping in id_maps.items():
@@ -1059,6 +1086,7 @@ def _upsert_manual_seguro(db, model, json_key, natural_key, data_source, target_
             if hasattr(model, 'updated_by'): obj.updated_by = user_id
         else:
             clean_data['empresa_id'] = target_empresa_id
+            # ARREGLO: Manejar todos los campos de foreign key a usuarios
             if hasattr(model, 'created_by'): clean_data['created_by'] = user_id
             if hasattr(model, 'updated_by'): clean_data['updated_by'] = user_id
             new_obj = model(**clean_data)
