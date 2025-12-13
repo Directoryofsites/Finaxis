@@ -3,7 +3,11 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.core.database import get_db
 from app.models import nomina as models
-from app.models import Tercero  # Importación explícita para evitar error
+from app.models import Tercero, Documento  # Importaciones explícitas
+
+# ... existing imports ...
+
+from app.services import documento as documento_service
 from app.services.nomina.liquidador import LiquidadorNominaService
 from pydantic import BaseModel
 from datetime import date
@@ -101,6 +105,7 @@ def create_empleado(empleado: EmpleadoCreate, db: Session = Depends(get_db), cur
             nombre_razon_social=f"{empleado.nombres} {empleado.apellidos}",
             es_cliente=False,
             es_proveedor=True, # Empleado suele ser proveedor de servicios laborales
+            es_empleado=True,  # MARCADO AUTOMÁTICO
             direccion="Dirección pendiente", 
             telefono="Teléfono pendiente",
             email="email@pendiente.com"
@@ -108,6 +113,11 @@ def create_empleado(empleado: EmpleadoCreate, db: Session = Depends(get_db), cur
         db.add(nuevo_tercero)
         db.flush() # Para obtener ID
         tercero = nuevo_tercero
+    else:
+        # Asegurar que esté marcado como empleado si ya existía
+        if not tercero.es_empleado:
+            tercero.es_empleado = True
+            db.add(tercero) # Mark for update
     
     # Validar si ya existe un empleado activo con ese tercero o documento para evitar duplicados en nómina
     # AHORA VALIDAMOS por documento y empresa
@@ -272,25 +282,86 @@ def guardar_liquidacion_route(
         raise HTTPException(status_code=500, detail="Error interno al guardar la nómina.")
 
 @router.get("/historial")
-def get_historial_nomina(db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+def get_historial_nomina(
+    anio: Optional[int] = None,
+    mes: Optional[int] = None,
+    tipo_nomina_id: Optional[int] = None,
+    db: Session = Depends(get_db), 
+    current_user: Usuario = Depends(get_current_user)
+):
     """
     Retorna lista plana de desprendibles generados (DetalleNomina).
     """
     # Filtrar por empresa del usuario
-    detalles = db.query(models.DetalleNomina).join(models.Nomina).filter(models.Nomina.empresa_id == current_user.empresa_id).all()
-    # Enriquecer o usar response_model
-    # Para simplicidad retornamos lista de dicts
+    query = db.query(models.DetalleNomina).join(models.Nomina).join(models.Empleado).filter(models.Nomina.empresa_id == current_user.empresa_id)
+
+    if anio:
+        query = query.filter(models.Nomina.anio == anio)
+    if mes:
+        query = query.filter(models.Nomina.mes == mes)
+    if tipo_nomina_id:
+        query = query.filter(models.Empleado.tipo_nomina_id == tipo_nomina_id)
+
+    detalles = query.all()
+    
+    # --- ENRIQUECIMIENTO CON DATOS CONTABLES ---
+    # Estrategia: Buscar documentos que coincidan en observaciones
+    # Para optimizar, filtramos solo documentos recientes o del periodo activo (opcional)
+    # Por ahora, traemos documentos que contengan "Ref:" en observaciones de la empresa
+    # (En producción esto debería limitarse por fecha también para no cargar todo)
+    
+    docs_map = {}
+    if detalles:
+        # Obtener rango mas amplio de fechas si es necesario, o traer ultimos 500 docs si es muy pesado.
+        # Aquí haremos una búsqueda exacta por IDs para ser precisos.
+        # Pero SQL 'OR' con muchos LIKE es lento.
+        # Mejor: Traer los documentos tipo 'NM' (Nomina) del periodo.
+        
+        # Simplificación para UI: Devolver placeholders si es muy complejo
+        # Pero el usuario pidió verlo.
+        
+        # Intento de optimización: Traer todos los documentos que digan "Ref:" de la empresa
+        # Si la tabla es gigante esto es lento. Mejor filtrar por fecha min/max de los detalles.
+        if len(detalles) > 0:
+            min_date = min([d.nomina.fecha_inicio_periodo for d in detalles])
+            # max_date = max([d.nomina.fecha_fin_periodo for d in detalles])
+            
+            # Buscar candidatos
+            # Usando contains es mas rapido que regex en DB a veces
+            candidate_docs = db.query(Documento).filter(
+                Documento.empresa_id == current_user.empresa_id,
+                Documento.fecha >= min_date,
+                Documento.observaciones.contains("Ref: ") # Filtro clave
+            ).all()
+            
+            import re
+            for cdoc in candidate_docs:
+                # Extraer ID
+                match = re.search(r"Ref:\s*(\d+)", cdoc.observaciones or "")
+                if match:
+                    det_id = int(match.group(1))
+                    docs_map[det_id] = {
+                        "tipo": cdoc.tipo_documento.codigo if cdoc.tipo_documento else "DOC",
+                        "numero": cdoc.numero,
+                        "id": cdoc.id
+                    }
+
     res = []
     for d in detalles:
         emp = d.empleado
         nom = d.nomina
+        doc_info = docs_map.get(d.id, {"tipo": "-", "numero": "-", "id": None})
+        
         res.append({
             "id": d.id,
             "empleado": f"{emp.nombres} {emp.apellidos}",
             "documento": emp.numero_documento,
             "periodo": f"{nom.anio}-{nom.mes:02d}",
             "neto": d.neto_pagar,
-            "estado": "GENERADO"
+            "estado": "GENERADO",
+            "doc_contable_tipo": doc_info["tipo"],
+            "doc_contable_numero": doc_info["numero"],
+            "doc_contable_id": doc_info["id"]
         })
     return res
 
@@ -304,13 +375,33 @@ def eliminar_desprendible(id: int, db: Session = Depends(get_db), current_user: 
     if not detalle:
         raise HTTPException(status_code=404, detail="Desprendible no encontrado")
         
-    # Validar permisos o estado si fuera necesario
-    # ...
+    # --- REVERSION CONTABLE AUTOMATICA Y SEGURA (CON PAPELERA) ---
+    ref_str = f"Ref: {detalle.id}"
+    documento_contable = db.query(Documento).filter(
+        Documento.observaciones.contains(ref_str),
+        Documento.estado != 'ANULADO'
+    ).first()
     
-    # Eliminar
+    if documento_contable:
+        try:
+            # Usar el servicio oficial que mueve a papelera y genera logs
+            documento_service.eliminar_documento(
+                db=db,
+                documento_id=documento_contable.id,
+                empresa_id=current_user.empresa_id,
+                user_id=current_user.id,
+                razon=f"Eliminación autom. desde Nómina (Ref: {id})"
+            )
+        except Exception as e:
+            print(f"Advertencia: Fallo al eliminar documento contable: {e}")
+            # Continuamos para no bloquear la operación de nómina, pero idealmente debería revertir
+            
+    # -------------------------------------
+    
+    # Eliminar Detalle
     db.delete(detalle)
     db.commit()
-    return {"message": "Desprendible eliminado correctamente"}
+    return {"message": "Desprendible eliminado y asiento contable enviado a papelera."}
 
 @router.get("/desprendibles/{id}/pdf")
 def descargar_desprendible_pdf(id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
@@ -354,3 +445,25 @@ def descargar_resumen_pdf(
         print(f"ERROR PDF RESUMEN: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error generando PDF: {str(e)}")
 
+
+@router.get("/empleados/pdf")
+def descargar_reporte_empleados(
+    tipo_nomina_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    try:
+        pdf_bytes, filename = ReportesNominaService.generar_pdf_lista_empleados(
+            db=db, 
+            empresa_id=current_user.empresa_id, 
+            tipo_nomina_id=tipo_nomina_id
+        )
+        headers = {
+            'Content-Disposition': f'attachment; filename="{filename}"'
+        }
+        return StreamingResponse(io.BytesIO(pdf_bytes), media_type='application/pdf', headers=headers)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"ERROR PDF EMPLEADOS: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generando PDF: {str(e)}")

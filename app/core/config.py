@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     
     SECRET_KEY: str = "secret_key_por_defecto_para_produccion_segura"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440 # 24 horas para evitar desconexiones
     PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 30
     
     # --- AÑADIDO PARA LA IMPRESIÓN SEGURA ---

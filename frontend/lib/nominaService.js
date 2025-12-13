@@ -70,9 +70,9 @@ export const saveConfig = async (config) => {
     }
 };
 
-export const getHistorial = async () => {
+export const getHistorial = async (params = {}) => {
     try {
-        const response = await apiService.get('/nomina/historial');
+        const response = await apiService.get('/nomina/historial', { params });
         return response.data;
     } catch (error) {
         throw error;
@@ -155,6 +155,31 @@ export const updateTipoNomina = async (id, tipoData) => {
     try {
         const response = await apiService.put(`/nomina/tipos/${id}`, tipoData);
         return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+
+export const downloadEmpleadosPdf = async (tipoNominaId, filename) => {
+    try {
+        const params = {};
+        if (tipoNominaId) params.tipo_nomina_id = tipoNominaId;
+
+        const response = await apiService.get('/nomina/empleados/pdf', {
+            params,
+            responseType: 'blob'
+        });
+
+        // Crear Blob y Descargar
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename || `Empleados_Listado.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        return true;
     } catch (error) {
         throw error;
     }

@@ -165,6 +165,7 @@ class LiquidadorNominaService:
             neto_pagar=valores['neto_pagar']
         )
         db.add(detalle)
+        db.flush() # CRITICAL: Ensure detalle has ID for reference in Documento
         
         # 5. Contabilización Automática
         # Buscar configuración: Prioridad Específica > Global

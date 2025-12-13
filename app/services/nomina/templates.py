@@ -123,3 +123,78 @@ NOMINA_TEMPLATE = """
 </body>
 </html>
 """
+
+NOMINA_EMPLEADOS_TEMPLATE = """
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        @page { size: letter; margin: 2cm; }
+        body { font-family: 'Helvetica', Arial, sans-serif; font-size: 10px; color: #333; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #5a67d8; padding-bottom: 10px; }
+        .header h1 { margin: 0; color: #2d3748; font-size: 18px; text-transform: uppercase; }
+        .header p { margin: 2px 0; color: #718096; font-size: 10px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background: #5a67d8; color: white; text-align: left; padding: 10px; font-weight: bold; font-size: 9px; text-transform: uppercase; }
+        td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; font-size: 10px; vertical-align: middle; }
+        tr:nth-child(even) { background-color: #f7fafc; }
+        
+        .currency { font-family: monospace; text-align: right; }
+        .status-active { color: #2f855a; font-weight: bold; }
+        .status-inactive { color: #c53030; }
+        
+        .footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 8px; color: #cbd5e0; padding: 10px; border-top: 1px solid #eee; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa.nombre }}</h1>
+        <p>NIT: {{ empresa.nit }} - Reporte Generado: {{ fecha_generacion }}</p>
+        <h2 style="font-size: 14px; color: #5a67d8; margin-top: 10px;">DIRECTORIO DE EMPLEADOS ACITVOS</h2>
+        {% if tipo_nomina %}
+        <p style="font-weight: bold;">FILTRO: NÓMINA {{ tipo_nomina|upper }}</p>
+        {% endif %}
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Documento</th>
+                <th>Empleado</th>
+                <th>Cargo</th>
+                <th>Fecha Ingreso</th>
+                <th>Tipo Nómina</th>
+                <th class="currency">Salario Base</th>
+                <th class="currency">Aux. Transp.</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for emp in empleados %}
+            <tr>
+                <td>{{ emp.documento }}</td>
+                <td>
+                    <strong>{{ emp.nombre_completo }}</strong><br>
+                    <span style="color: #718096; font-size: 8px;">{{ emp.email or '' }}</span>
+                </td>
+                <td>{{ emp.cargo }}</td>
+                <td>{{ emp.fecha_ingreso }}</td>
+                <td>{{ emp.tipo_nomina }}</td>
+                <td class="currency" style="font-weight: bold;">{{ emp.salario_fmt }}</td>
+                <td class="currency">{{ "SÍ" if emp.auxilio else "NO" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div style="margin-top: 30px; font-size: 10px; color: #718096;">
+        <p><strong>Total Empleados Listados:</strong> {{ empleados|length }}</p>
+    </div>
+
+    <div class="footer">
+        Generado por Finaxis Software Contable
+    </div>
+</body>
+</html>
+"""
+

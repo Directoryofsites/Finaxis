@@ -153,3 +153,66 @@ class ReportesNominaService:
         pdf_bytes = HTML(string=html_content).write_pdf(font_config=font_config)
         return pdf_bytes, f"Resumen_Nomina_{anio}_{mes}.pdf"
 
+
+    @staticmethod
+    def generar_pdf_lista_empleados(db, empresa_id: int, tipo_nomina_id: int = None):
+        # 1. Query Employees
+        query = db.query(models.Empleado).filter(
+            models.Empleado.empresa_id == empresa_id,
+            models.Empleado.estado == models.EstadoEmpleado.ACTIVO
+        )
+        
+        if tipo_nomina_id:
+             query = query.filter(models.Empleado.tipo_nomina_id == tipo_nomina_id)
+        
+        empleados = query.order_by(models.Empleado.apellidos).all()
+        
+        # 2. Get Employee Data
+        lista_empleados = []
+        for emp in empleados:
+            lista_empleados.append({
+                "documento": emp.numero_documento,
+                "nombre_completo": f"{emp.apellidos} {emp.nombres}",
+                "email": emp.email,
+                "cargo": emp.cargo or "N/A",
+                "fecha_ingreso": emp.fecha_ingreso,
+                "auxilio": emp.auxilio_transporte,
+                "salario_fmt": ReportesNominaService.currency_format(emp.salario_base),
+                "tipo_nomina": emp.tipo_nomina.nombre if emp.tipo_nomina else "N/A"
+            })
+            
+
+        # 3. Get Enterprise Data
+        # Fix: Don't rely on relationship 'empresa' which might not be eager loaded or exist.
+        empresa = None
+        if not empresa:
+            from app.models import Empresa
+            empresa = db.query(Empresa).get(empresa_id)
+
+        # 4. Context for Template
+        from app.services.nomina.templates import NOMINA_EMPLEADOS_TEMPLATE
+        
+        tipo_nomina_nombre = ""
+        if tipo_nomina_id:
+             tipo_obj = db.query(models.TipoNomina).get(tipo_nomina_id)
+             if tipo_obj: tipo_nomina_nombre = tipo_obj.nombre
+
+        context = {
+            "empresa": {
+                 "nombre": empresa.razon_social if empresa else "Empresa Demo",
+                 "nit": f"{empresa.nit}" if empresa else "NIT"
+            },
+            "fecha_generacion": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "empleados": lista_empleados,
+            "tipo_nomina": tipo_nomina_nombre 
+        }
+        
+        template = Template(NOMINA_EMPLEADOS_TEMPLATE)
+        html_content = template.render(**context)
+        
+        try:
+            pdf_bytes = HTML(string=html_content).write_pdf(font_config=font_config)
+            return pdf_bytes, f"Empleados_{datetime.now().strftime('%Y%m%d')}.pdf"
+        except Exception as e:
+            print(f"Error WeasyPrint: {e}")
+            raise e
