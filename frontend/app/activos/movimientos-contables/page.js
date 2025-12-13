@@ -21,8 +21,13 @@ export default function MovimientosContablesActivosPage() {
         try {
             setLoading(true);
             
-            // Usar el endpoint específico para documentos de activos fijos
-            const response = await apiService.get('/activos/documentos-contables');
+            // Usar el endpoint de documentos con filtro por observaciones
+            const response = await apiService.get('/documentos/', {
+                params: {
+                    observaciones: 'depreciación',
+                    limit: 100
+                }
+            });
             
             // La API devuelve {total: number, documentos: array}
             const documentosData = response.data?.documentos || [];
