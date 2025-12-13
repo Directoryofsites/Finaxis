@@ -437,47 +437,61 @@ def get_documentos_contables_activos(db: Session, empresa_id: int):
     Obtiene todos los documentos contables relacionados con activos fijos
     con información completa para mostrar en la interfaz
     """
-    from sqlalchemy.orm import joinedload
-    
-    # Buscar documentos que contengan "depreciación" en observaciones
-    documentos = db.query(models_doc.Documento).options(
-        joinedload(models_doc.Documento.tipo_documento),
-        joinedload(models_doc.Documento.beneficiario),
-        joinedload(models_doc.Documento.movimientos)
-    ).filter(
-        models_doc.Documento.empresa_id == empresa_id,
-        models_doc.Documento.observaciones.ilike('%depreciación%')
-    ).order_by(
-        models_doc.Documento.fecha.desc(),
-        models_doc.Documento.numero.desc()
-    ).all()
-    
-    # Formatear respuesta
-    documentos_formateados = []
-    for doc in documentos:
-        total_debito = sum(float(mov.debito) for mov in doc.movimientos)
+    try:
+        # Buscar documentos que contengan "depreciación" en observaciones
+        documentos = db.query(models_doc).filter(
+            models_doc.empresa_id == empresa_id,
+            models_doc.observaciones.ilike('%depreciación%')
+        ).order_by(
+            models_doc.fecha.desc(),
+            models_doc.numero.desc()
+        ).all()
         
-        documentos_formateados.append({
-            "id": doc.id,
-            "fecha": doc.fecha.isoformat() if doc.fecha else None,
-            "numero": doc.numero,
-            "anulado": doc.anulado,
-            "estado": doc.estado,
-            "observaciones": doc.observaciones,
-            "tipo_documento_codigo": doc.tipo_documento.codigo if doc.tipo_documento else None,
-            "tipo_documento_nombre": doc.tipo_documento.nombre if doc.tipo_documento else None,
-            "beneficiario_nombre": doc.beneficiario.razon_social if doc.beneficiario else None,
-            "total_debito": total_debito,
-            "movimientos_contables": [
-                {
-                    "debito": float(mov.debito),
-                    "credito": float(mov.credito),
-                    "concepto": mov.concepto
-                } for mov in doc.movimientos
-            ]
-        })
-    
-    return {
-        "total": len(documentos_formateados),
-        "documentos": documentos_formateados
-    }
+        # Formatear respuesta
+        documentos_formateados = []
+        for doc in documentos:
+            # Calcular total de débitos de forma segura
+            total_debito = 0
+            movimientos_contables = []
+            
+            try:
+                for mov in doc.movimientos:
+                    debito = float(mov.debito) if mov.debito else 0
+                    credito = float(mov.credito) if mov.credito else 0
+                    total_debito += debito
+                    
+                    movimientos_contables.append({
+                        "debito": debito,
+                        "credito": credito,
+                        "concepto": mov.concepto or ""
+                    })
+            except Exception as e:
+                print(f"Error procesando movimientos del documento {doc.id}: {e}")
+                movimientos_contables = []
+            
+            documentos_formateados.append({
+                "id": doc.id,
+                "fecha": doc.fecha.isoformat() if doc.fecha else None,
+                "numero": doc.numero,
+                "anulado": doc.anulado or False,
+                "estado": doc.estado or "ACTIVO",
+                "observaciones": doc.observaciones or "",
+                "tipo_documento_codigo": doc.tipo_documento.codigo if doc.tipo_documento else None,
+                "tipo_documento_nombre": doc.tipo_documento.nombre if doc.tipo_documento else None,
+                "beneficiario_nombre": doc.beneficiario.razon_social if doc.beneficiario else None,
+                "total_debito": total_debito,
+                "movimientos_contables": movimientos_contables
+            })
+        
+        return {
+            "total": len(documentos_formateados),
+            "documentos": documentos_formateados
+        }
+        
+    except Exception as e:
+        print(f"Error en get_documentos_contables_activos: {e}")
+        # Retornar respuesta vacía en caso de error
+        return {
+            "total": 0,
+            "documentos": []
+        }
