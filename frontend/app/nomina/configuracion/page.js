@@ -98,7 +98,8 @@ export default function NominaConfiguracion() {
             const keys = [
                 'tipo_documento_id', 'cuenta_sueldo_id', 'cuenta_auxilio_transporte_id',
                 'cuenta_horas_extras_id', 'cuenta_comisiones_id', 'cuenta_salarios_por_pagar_id',
-                'cuenta_aporte_salud_id', 'cuenta_aporte_pension_id', 'cuenta_fondo_solidaridad_id'
+                'cuenta_aporte_salud_id', 'cuenta_aporte_pension_id', 'cuenta_fondo_solidaridad_id',
+                'cuenta_otros_devengados_id', 'cuenta_otras_deducciones_id'
             ];
             keys.forEach(k => mapped[k] = configData[k] || '');
             setCurrentConfig(mapped);
@@ -343,6 +344,7 @@ export default function NominaConfiguracion() {
                                             {renderConfigSelect("Auxilio de Transporte", "cuenta_auxilio_transporte_id")}
                                             {renderConfigSelect("Horas Extras y Recargos", "cuenta_horas_extras_id")}
                                             {renderConfigSelect("Comisiones", "cuenta_comisiones_id")}
+                                            {renderConfigSelect("Otros Devengados", "cuenta_otros_devengados_id", "Bonificaciones no salariales, Auxilios extra, etc.")}
                                         </div>
 
                                         <div className="bg-white p-6 rounded shadow border-l-4 border-red-500">
@@ -351,6 +353,7 @@ export default function NominaConfiguracion() {
                                             {renderConfigSelect("Aporte Salud (Total)", "cuenta_aporte_salud_id")}
                                             {renderConfigSelect("Aporte Pensión (Total)", "cuenta_aporte_pension_id")}
                                             {renderConfigSelect("Fondo Solidaridad", "cuenta_fondo_solidaridad_id")}
+                                            {renderConfigSelect("Otras Deducciones", "cuenta_otras_deducciones_id", "Libranzas, Préstamos, etc.")}
                                         </div>
                                     </div>
 

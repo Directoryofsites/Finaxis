@@ -7,7 +7,7 @@ import BotonRegresar from '../../../../components/BotonRegresar';
 import BuscadorTerceros from '../../../../../components/BuscadorTerceros';
 import { phService } from '../../../../../lib/phService';
 import { getTerceroById } from '../../../../../lib/terceroService';
-import { FaSave, FaBuilding, FaCar, FaPaw, FaTrash, FaPlus, FaPen } from 'react-icons/fa';
+import { FaSave, FaBuilding, FaCar, FaPaw, FaTrash, FaPlus, FaPen, FaLayerGroup } from 'react-icons/fa';
 
 // Estilos
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
@@ -31,10 +31,12 @@ export default function EditarUnidadPage() {
         area_privada: 0,
         coeficiente: 0,
         observaciones: '',
-        propietario_principal_id: null
+        propietario_principal_id: null,
+        modulos_ids: []
     });
 
     const [selectedPropietario, setSelectedPropietario] = useState(null);
+    const [availableModulos, setAvailableModulos] = useState([]);
 
     // Estado para Listas Anidadas
     const [vehiculos, setVehiculos] = useState([]);
@@ -46,7 +48,15 @@ export default function EditarUnidadPage() {
             const fetchData = async () => {
                 try {
                     setLoading(true);
-                    const data = await phService.getUnidadById(id);
+
+                    // Cargar Unidad y Módulos en paralelo
+                    const [data, mods] = await Promise.all([
+                        phService.getUnidadById(id),
+                        phService.getModulos()
+                    ]);
+
+                    setAvailableModulos(mods);
+
                     setFormData({
                         codigo: data.codigo,
                         tipo: data.tipo,
@@ -55,7 +65,8 @@ export default function EditarUnidadPage() {
                         area_privada: data.area_privada || 0,
                         coeficiente: data.coeficiente || 0,
                         observaciones: data.observaciones || '',
-                        propietario_principal_id: data.propietario_principal_id || null
+                        propietario_principal_id: data.propietario_principal_id || null,
+                        modulos_ids: data.modulos_contribucion ? data.modulos_contribucion.map(m => m.id) : []
                     });
                     setVehiculos(data.vehiculos || []);
                     setMascotas(data.mascotas || []);
@@ -72,6 +83,7 @@ export default function EditarUnidadPage() {
 
                 } catch (err) {
                     setError("No se pudo cargar la unidad.");
+                    console.error(err);
                 } finally {
                     setLoading(false);
                 }
@@ -83,6 +95,18 @@ export default function EditarUnidadPage() {
     const handlePropietarioSelect = (tercero) => {
         setSelectedPropietario(tercero);
         setFormData(prev => ({ ...prev, propietario_principal_id: tercero ? tercero.id : null }));
+    };
+
+    // Handler Módulos
+    const toggleModulo = (id) => {
+        setFormData(prev => {
+            const current = prev.modulos_ids || [];
+            if (current.includes(id)) {
+                return { ...prev, modulos_ids: current.filter(x => x !== id) };
+            } else {
+                return { ...prev, modulos_ids: [...current, id] };
+            }
+        });
     };
 
 
@@ -218,6 +242,42 @@ export default function EditarUnidadPage() {
                                 <input name="matricula_inmobiliaria" className={inputClass} value={formData.matricula_inmobiliaria} onChange={handleChange} />
                             </div>
                         </div>
+                    </div>
+
+                    {/* MÓDULOS DE CONTRIBUCIÓN (PH MIXTA) */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h2 className={sectionTitleClass}><FaLayerGroup /> Módulos de Contribución (PH Mixta)</h2>
+                        <p className="text-xs text-gray-400 mb-3">
+                            Selecciona los sectores a los que pertenece esta unidad. Esto determinará qué gastos debe pagar.
+                        </p>
+
+                        {availableModulos.length === 0 ? (
+                            <div className="bg-yellow-50 p-3 rounded-lg text-yellow-700 text-sm">
+                                No hay módulos creados aún. Ve a Configuración &gt; Módulos.
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                {availableModulos.map(mod => (
+                                    <div
+                                        key={mod.id}
+                                        onClick={() => toggleModulo(mod.id)}
+                                        className={`cursor-pointer p-3 rounded-lg border flex items-center gap-3 transition-all ${formData.modulos_ids.includes(mod.id)
+                                                ? 'bg-indigo-50 border-indigo-500 ring-1 ring-indigo-500'
+                                                : 'bg-white border-gray-200 hover:border-indigo-300'
+                                            }`}
+                                    >
+                                        <div className={`w-5 h-5 rounded border flex items-center justify-center ${formData.modulos_ids.includes(mod.id) ? 'bg-indigo-600 border-indigo-600' : 'border-gray-300'
+                                            }`}>
+                                            {formData.modulos_ids.includes(mod.id) && <span className="text-white text-xs font-bold">✓</span>}
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-gray-700 text-sm">{mod.nombre}</p>
+                                            <p className="text-xs text-gray-400">{mod.tipo_distribucion}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* VEHÍCULOS */}

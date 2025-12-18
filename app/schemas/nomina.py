@@ -48,7 +48,11 @@ class LiquidarRequest(BaseModel):
     empleado_id: int
     dias_trabajados: int = 30
     horas_extras: float = 0
+
     comisiones: float = 0
+    otros_devengados: float = 0
+    otras_deducciones: float = 0
+
     
 class GuardarNominaRequest(BaseModel):
     empleado_id: int
@@ -56,7 +60,11 @@ class GuardarNominaRequest(BaseModel):
     mes: int
     dias_trabajados: int = 30
     horas_extras: float = 0
+
     comisiones: float = 0
+    otros_devengados: float = 0
+    otras_deducciones: float = 0
+
 
 # --- CONFIGURACION PUC ---
 
@@ -71,6 +79,9 @@ class ConfigNominaSchema(BaseModel):
     cuenta_aporte_salud_id: Optional[int] = None
     cuenta_aporte_pension_id: Optional[int] = None
     cuenta_fondo_solidaridad_id: Optional[int] = None
+    cuenta_otros_devengados_id: Optional[int] = None
+    cuenta_otras_deducciones_id: Optional[int] = None
+    
     
     class Config:
         from_attributes = True

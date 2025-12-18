@@ -1,0 +1,27 @@
+
+# -*- coding: utf-8 -*-
+import os
+
+content = """# PostgreSQL
+DATABASE_URL=postgresql://postgres:mysecretpassword@localhost:5432/contapy_db
+
+# DATABASE_URL="sqlite:///./contapy_local.db"
+
+# JWT
+SECRET_KEY="4af644a993b9f44e700e7257b7ee90c826cd0c886b36e23a7855e86402aabd53"
+ALGORITHM="HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES=480
+
+PASSWORD_RESET_TOKEN_EXPIRE_MINUTES=60
+
+# --- AÑADIDO PARA LA IMPRESIÓN SEGURA ---
+BASE_URL="http://localhost:8000"
+
+# --- CONFIGURACIÓN KIRO (PUERTO SEGURO) ---
+PORT=8000
+"""
+
+with open('.env', 'w', encoding='utf-8') as f:
+    f.write(content)
+
+print("Successfully updated .env with UTF-8 encoding.")

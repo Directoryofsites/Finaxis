@@ -71,6 +71,29 @@ def eliminar_categoria(
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
     return {"mensaje": "Categoría eliminada exitosamente"}
 
+# --- DOCUMENTOS CONTABLES (Static Routes First) ---
+
+@router.get("/documentos-contables")
+def obtener_documentos_contables_activos(
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Obtiene todos los documentos contables relacionados con activos fijos
+    """
+    return service.get_documentos_contables_activos(db, current_user.empresa_id)
+
+@router.delete("/eliminar-todos-documentos")
+def eliminar_todos_documentos_activos(
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    FUNCIÓN DE PRUEBAS: Elimina TODOS los documentos contables de activos fijos de una vez.
+    ⚠️ SOLO USAR EN AMBIENTE DE DESARROLLO/PRUEBAS
+    """
+    return service.eliminar_todos_documentos_activos(db, current_user.empresa_id, current_user.id)
+
 # --- ACTIVOS FIJOS ---
 
 @router.post("/", response_model=schemas.ActivoFijo, status_code=status.HTTP_201_CREATED)

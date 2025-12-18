@@ -24,6 +24,7 @@ class Documento(Base):
     fecha_vencimiento = Column(Date)
     beneficiario_id = Column(Integer, ForeignKey("terceros.id"))
     centro_costo_id = Column(Integer, ForeignKey("centros_costo.id"))
+    unidad_ph_id = Column(Integer, ForeignKey("ph_unidades.id"), nullable=True) # Enlace Propter Rem para PH
     anulado = Column(Boolean, nullable=False, default=False)
     estado = Column(String, default='ACTIVO', nullable=False)
     observaciones = Column(Text, nullable=True)
@@ -37,6 +38,7 @@ class Documento(Base):
     tipo_documento = relationship("TipoDocumento")
     beneficiario = relationship("Tercero", back_populates="documentos")
     centro_costo = relationship("CentroCosto")
+    unidad_ph = relationship("app.models.propiedad_horizontal.unidad.PHUnidad")
     usuario_creador = relationship("Usuario")
     movimientos = relationship("MovimientoContable", back_populates="documento", cascade="all, delete-orphan")
 

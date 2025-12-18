@@ -224,6 +224,10 @@ def save_configuracion(config: ConfigNominaSchema, db: Session = Depends(get_db)
     db_config.cuenta_aporte_pension_id = config.cuenta_aporte_pension_id
     db_config.cuenta_fondo_solidaridad_id = config.cuenta_fondo_solidaridad_id
     
+    # NUEVOS CAMPOS
+    db_config.cuenta_otros_devengados_id = config.cuenta_otros_devengados_id
+    db_config.cuenta_otras_deducciones_id = config.cuenta_otras_deducciones_id
+    
     db.commit()
     db.refresh(db_config)
     return db_config
@@ -243,21 +247,17 @@ def liquidar_preview(req: LiquidarRequest, db: Session = Depends(get_db)):
         dias_trabajados=req.dias_trabajados,
         tiene_auxilio=empleado.auxilio_transporte,
         horas_extras=Decimal(req.horas_extras),
-        comisiones=Decimal(req.comisiones)
+        comisiones=Decimal(req.comisiones),
+        otros_devengados=Decimal(req.otros_devengados),
+        otras_deducciones=Decimal(req.otras_deducciones)
     )
+
     
     return {
         "empleado": f"{empleado.nombres} {empleado.apellidos}",
         "detalle": resultado
     }
 
-class GuardarNominaRequest(BaseModel):
-    empleado_id: int
-    anio: int
-    mes: int
-    dias_trabajados: int = 30
-    horas_extras: float = 0
-    comisiones: float = 0
 
 @router.post("/liquidar/guardar")
 def guardar_liquidacion_route(
@@ -274,7 +274,9 @@ def guardar_liquidacion_route(
             empleado_id=req.empleado_id,
             dias=req.dias_trabajados,
             extras=Decimal(req.horas_extras),
-            comisiones=Decimal(req.comisiones)
+            comisiones=Decimal(req.comisiones),
+            otros_devengados=Decimal(req.otros_devengados),
+            otras_deducciones=Decimal(req.otras_deducciones)
         )
         return {"status": "success", "mensaje": "Liquidación guardada correctamente", "detalle_id": detalle.id}
     except ValueError as val_err:
@@ -375,26 +377,29 @@ def eliminar_desprendible(id: int, db: Session = Depends(get_db), current_user: 
     if not detalle:
         raise HTTPException(status_code=404, detail="Desprendible no encontrado")
         
-    # --- REVERSION CONTABLE AUTOMATICA Y SEGURA (CON PAPELERA) ---
-    ref_str = f"Ref: {detalle.id}"
-    documento_contable = db.query(Documento).filter(
-        Documento.observaciones.contains(ref_str),
-        Documento.estado != 'ANULADO'
-    ).first()
+    # --- REVERSION CONTABLE AUTOMATICA Y SEGURA (CON ID) ---
+    doc_id = detalle.documento_contable_id
     
-    if documento_contable:
-        try:
-            # Usar el servicio oficial que mueve a papelera y genera logs
-            documento_service.eliminar_documento(
-                db=db,
-                documento_id=documento_contable.id,
-                empresa_id=current_user.empresa_id,
-                user_id=current_user.id,
-                razon=f"Eliminación autom. desde Nómina (Ref: {id})"
-            )
-        except Exception as e:
-            print(f"Advertencia: Fallo al eliminar documento contable: {e}")
-            # Continuamos para no bloquear la operación de nómina, pero idealmente debería revertir
+    # Fallback (Compatibilidad hacia atrás): Buscar por Ref string si no tiene ID
+    if not doc_id:
+        ref_str = f"Ref: {detalle.id}"
+        documento_contable = db.query(Documento).filter(
+            Documento.observaciones.contains(ref_str),
+            Documento.estado != 'ANULADO'
+        ).first()
+        if documento_contable:
+            doc_id = documento_contable.id
+
+    if doc_id:
+        # STRICT DELETION: Si falla la contabilidad, debe fallar todo para evitar inconsistencias.
+        # Nada de "try/except pass" aquí.
+        documento_service.eliminar_documento(
+            db=db,
+            documento_id=doc_id,
+            empresa_id=current_user.empresa_id,
+            user_id=current_user.id,
+            razon=f"Eliminación autom. desde Nómina (Ref: {id})"
+        )
             
     # -------------------------------------
     

@@ -115,6 +115,8 @@ class ConfiguracionNomina(Base):
     cuenta_auxilio_transporte_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # 510527
     cuenta_horas_extras_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # 510555
     cuenta_comisiones_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # 510518
+    cuenta_otros_devengados_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # NUEVO
+    
     
     # Pasivos (Por Pagar) / Deducciones
     cuenta_salarios_por_pagar_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # 250501
@@ -122,6 +124,8 @@ class ConfiguracionNomina(Base):
     cuenta_aporte_pension_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # 238030 (Total)
     cuenta_fondo_solidaridad_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # 238030 o similar
     cuenta_retencion_fuente_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # 236505
+    cuenta_otras_deducciones_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # NUEVO
+    
     
     # Provisiones (Gastos vs Pasivos Estimados) - Futuro
     # cuenta_gasto_cesantias_id...
@@ -166,6 +170,9 @@ class DetalleNomina(Base):
     id = Column(Integer, primary_key=True, index=True)
     nomina_id = Column(Integer, ForeignKey("nomina_documentos.id"))
     empleado_id = Column(Integer, ForeignKey("nomina_empleados.id"))
+    
+    # NUEVO: Vínculo directo a contabilidad
+    documento_contable_id = Column(Integer, ForeignKey("documentos.id"), nullable=True)
     
     dias_trabajados = Column(Integer, default=30)
     dias_incapacidad = Column(Integer, default=0)

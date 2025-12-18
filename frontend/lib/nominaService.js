@@ -27,13 +27,15 @@ export const updateEmpleado = async (id, empleadoData) => {
     }
 };
 
-export const previewLiquidacion = async (empleadoId, diasTrabajados, horasExtras = 0, comisiones = 0) => {
+export const previewLiquidacion = async (empleadoId, diasTrabajados, horasExtras = 0, comisiones = 0, otrosDevengados = 0, otrasDeducciones = 0) => {
     try {
         const payload = {
             empleado_id: empleadoId,
             dias_trabajados: diasTrabajados,
             horas_extras: horasExtras,
-            comisiones: comisiones
+            comisiones: comisiones,
+            otros_devengados: otrosDevengados,
+            otras_deducciones: otrasDeducciones
         };
         const response = await apiService.post('/nomina/liquidar-preview', payload);
         return response.data;

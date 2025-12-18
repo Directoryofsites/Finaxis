@@ -1,11 +1,13 @@
+'use client';
+
 import Link from 'next/link';
 import { FaArrowLeft } from 'react-icons/fa';
 
-export default function BotonRegresar() {
+export default function BotonRegresar({ href }) {
   return (
     <div className="mb-6">
-      <Link 
-        href="/"
+      <Link
+        href={href || "/"}
         className="
             inline-flex items-center gap-2 px-5 py-2.5 
             bg-white border border-gray-200 rounded-xl shadow-sm 

@@ -2,7 +2,10 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import Script from 'next/script';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+
 import {
     FaSearch,
     FaPlus,
@@ -80,8 +83,8 @@ export default function GestionUnidadesPage() {
 
     // --- PDF EXPORT FUNCTION ---
     const handleExportPDF = () => {
-        if (typeof window !== 'undefined' && window.jspdf && window.jspdf.jsPDF) {
-            const doc = new window.jspdf.jsPDF();
+        try {
+            const doc = new jsPDF();
 
             // Header
             doc.setFontSize(18);
@@ -102,7 +105,7 @@ export default function GestionUnidadesPage() {
             ]);
 
             // AutoTable
-            doc.autoTable({
+            autoTable(doc, {
                 head: [tableColumn],
                 body: tableRows,
                 startY: 40,
@@ -112,8 +115,9 @@ export default function GestionUnidadesPage() {
             });
 
             doc.save(`unidades_ph_${new Date().toISOString().slice(0, 10)}.pdf`);
-        } else {
-            alert('Librería PDF no cargada. Por favor recarga la página.');
+        } catch (error) {
+            console.error("Error exporting PDF:", error);
+            alert("Error al generar el PDF. Por favor intente nuevamente.");
         }
     };
 
@@ -129,9 +133,6 @@ export default function GestionUnidadesPage() {
     return (
         <div className="min-h-screen bg-gray-50 p-6 font-sans pb-20">
             {/* Scripts for PDF */}
-            <Script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" strategy="afterInteractive" />
-            <Script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js" strategy="afterInteractive" />
-
             <div className="max-w-7xl mx-auto">
 
                 {/* ENCABEZADO */}

@@ -58,9 +58,20 @@ class PHUnidad(Base):
     mascotas = relationship("PHMascota", back_populates="unidad", cascade="all, delete-orphan")
     historial_coeficientes = relationship("PHCoeficienteHistorial", back_populates="unidad", cascade="all, delete-orphan")
 
+    # Módulos de Contribución (PH Mixta)
+    modulos_contribucion = relationship(
+        "app.models.propiedad_horizontal.modulo_contribucion.PHModuloContribucion",
+        secondary="ph_unidad_modulo_association",
+        back_populates="unidades"
+    )
+
     @property
     def propietario_nombre(self):
         return self.propietario_principal.razon_social if self.propietario_principal else None
+
+    @property
+    def torre_nombre(self):
+        return self.torre.nombre if self.torre else None
 
 class PHVehiculo(Base):
     __tablename__ = "ph_vehiculos"

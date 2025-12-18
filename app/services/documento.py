@@ -235,7 +235,8 @@ def create_documento(db: Session, documento: schemas_doc.DocumentoCreate, user_i
             fecha_vencimiento=documento.fecha_vencimiento,
             beneficiario_id=documento.beneficiario_id,
             centro_costo_id=documento.centro_costo_id,
-            usuario_creador_id=user_id
+            usuario_creador_id=user_id,
+            unidad_ph_id=documento.unidad_ph_id # Added for PH Module
         )
 
         for mov_in in documento.movimientos:
@@ -393,9 +394,9 @@ def anular_documento(db: Session, documento_id: int, empresa_id: int, user_id: i
 def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id: int, razon: str):
     # 1. Buscamos el documento (Lectura simple)
     # Usamos query directa para no cargar relaciones pesadas si va a fallar
-    db_documento_check = db.query(models_doc.Documento).filter(
-        models_doc.Documento.id == documento_id, 
-        models_doc.Documento.empresa_id == empresa_id
+    db_documento_check = db.query(models_doc).filter(
+        models_doc.id == documento_id, 
+        models_doc.empresa_id == empresa_id
     ).first()
     
     if not db_documento_check:

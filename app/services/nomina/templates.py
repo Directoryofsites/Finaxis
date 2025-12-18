@@ -79,6 +79,13 @@ NOMINA_TEMPLATE = """
                 <td class="num"></td>
             </tr>
             {% endif %}
+            {% if otros_devengados > 0 %}
+            <tr>
+                <td>Otros Devengados</td>
+                <td class="num">{{ otros_devengados_fmt }}</td>
+                <td class="num"></td>
+            </tr>
+            {% endif %}
             
             <!-- DEDUCCIONES -->
             <tr>
@@ -96,6 +103,13 @@ NOMINA_TEMPLATE = """
                 <td>Fondo Solidaridad Pensional</td>
                 <td class="num"></td>
                 <td class="num">{{ fsp_fmt }}</td>
+            </tr>
+            {% endif %}
+            {% if otras_deducciones > 0 %}
+            <tr>
+                <td>Otras Deducciones/Préstamos</td>
+                <td class="num"></td>
+                <td class="num">{{ otras_deducciones_fmt }}</td>
             </tr>
             {% endif %}
         </tbody>

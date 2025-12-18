@@ -118,5 +118,5 @@ Thumbs.db
 # Project specific
 backend_logs.txt
 *.log
-debug_*.py
+
 !frontend/lib/

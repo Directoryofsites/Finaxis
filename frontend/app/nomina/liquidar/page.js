@@ -37,9 +37,12 @@ export default function LiquidadorPage() {
                         dias: 30,
                         extras: 0,
                         comisiones: 0,
+                        otros_devengados: 0,
+                        otras_deducciones: 0,
                         selected: true, // Select all by default for convenience
                         status: 'PENDIENTE', // PENDIENTE | CALCULADO | GUARDADO | ERROR
                         liquidacion: null,
+
                         errorMsg: ''
                     }));
                     setRows(initialRows);
@@ -83,7 +86,14 @@ export default function LiquidadorPage() {
         // Process in parallel requests (could limit concurrency if list is huge)
         const promises = toSimulate.map(async (row) => {
             try {
-                const res = await previewLiquidacion(row.id, row.dias, row.extras, row.comisiones);
+                const res = await previewLiquidacion(
+                    row.id,
+                    row.dias,
+                    row.extras,
+                    row.comisiones,
+                    row.otros_devengados,
+                    row.otras_deducciones
+                );
                 const idx = updatedRows.findIndex(r => r.id === row.id);
                 if (idx !== -1) {
                     updatedRows[idx] = {
@@ -134,7 +144,12 @@ export default function LiquidadorPage() {
                     mes: mes,
                     dias_trabajados: row.dias,
                     horas_extras: row.extras,
-                    comisiones: row.comisiones
+                    mes: mes,
+                    dias_trabajados: row.dias,
+                    horas_extras: row.extras,
+                    comisiones: row.comisiones,
+                    otros_devengados: row.otros_devengados,
+                    otras_deducciones: row.otras_deducciones
                 });
 
                 const idx = updatedRows.findIndex(r => r.id === row.id);
@@ -271,7 +286,10 @@ export default function LiquidadorPage() {
                                     <th className="p-3">Empleado</th>
                                     <th className="p-3 w-24">Días</th>
                                     <th className="p-3 w-32">Hrs Extras ($)</th>
+
                                     <th className="p-3 w-32">Comisiones ($)</th>
+                                    <th className="p-3 w-32">Otros Dev. ($)</th>
+                                    <th className="p-3 w-32">Otras Ded. ($)</th>
                                     <th className="p-3 w-32">Neto Pagar</th>
                                     <th className="p-3 w-28">Estado</th>
                                 </tr>
@@ -314,6 +332,22 @@ export default function LiquidadorPage() {
                                                 className="w-full border rounded p-1 text-right"
                                                 value={row.comisiones}
                                                 onChange={(e) => handleRowChange(row.id, 'comisiones', parseInt(e.target.value) || 0)}
+                                            />
+                                        </td>
+                                        <td className="p-3">
+                                            <input
+                                                type="number"
+                                                className="w-full border rounded p-1 text-right bg-blue-50"
+                                                value={row.otros_devengados}
+                                                onChange={(e) => handleRowChange(row.id, 'otros_devengados', parseInt(e.target.value) || 0)}
+                                            />
+                                        </td>
+                                        <td className="p-3">
+                                            <input
+                                                type="number"
+                                                className="w-full border rounded p-1 text-right bg-red-50"
+                                                value={row.otras_deducciones}
+                                                onChange={(e) => handleRowChange(row.id, 'otras_deducciones', parseInt(e.target.value) || 0)}
                                             />
                                         </td>
                                         <td className="p-3 font-bold text-green-700 text-right">

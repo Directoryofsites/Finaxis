@@ -158,32 +158,58 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
 
         # Procesar Cruces CXC
         if docs_cxc_ordenados and pagos_cxc_ordenados:
-            facturas_pendientes = {item['doc'].id: item for item in docs_cxc_ordenados}
             
-            # Ordenar pagos por fecha para aplicar
+            # Ordenar pagos por fecha
             pagos_cxc_ordenados.sort(key=lambda x: (x['doc'].fecha, x['doc'].id))
             
+            # Ordenar facturas por fecha (Base)
+            docs_cxc_ordenados.sort(key=lambda x: (x['doc'].fecha, x['doc'].id))
+
             for pago in pagos_cxc_ordenados:
                 valor_pago = pago['monto']
-                # Aplicar a facturas ordenadas por fecha (FIFO)
-                # Iterar sobre la lista original para mantener orden
-                for factura_data in docs_cxc_ordenados:
-                    if valor_pago <= 0: break
-                    if factura_data['saldo'] > 0:
-                        valor_a_aplicar = min(valor_pago, factura_data['saldo'])
-                        if valor_a_aplicar > 0:
-                            nueva_aplicacion = models_aplica(
-                                documento_factura_id=factura_data['doc'].id, 
-                                documento_pago_id=pago['doc'].id, 
-                                valor_aplicado=valor_a_aplicar
-                            )
-                            db.add(nueva_aplicacion)
-                            factura_data['saldo'] -= valor_a_aplicar
-                            valor_pago -= valor_a_aplicar
+                pago_unidad_id = pago['doc'].unidad_ph_id
+                
+                # ESTRATEGIA DE CRUCE PH (Prioridad Unidad):
+                # 1. Intentar cruzar con facturas de la MISMA UNIDAD (si el pago tiene unidad)
+                # 2. Si sobra dinero, cruzar con las demás facturas (para no dejar saldos huerfanos)
+                
+                # Fase 1: Misma Unidad
+                if pago_unidad_id:
+                    for factura_data in docs_cxc_ordenados:
+                        if valor_pago <= 0: break
+                        
+                        # Solo procesar si coincide unidad y tiene saldo
+                        if factura_data['doc'].unidad_ph_id == pago_unidad_id and factura_data['saldo'] > 0:
+                            valor_a_aplicar = min(valor_pago, factura_data['saldo'])
+                            if valor_a_aplicar > 0:
+                                nueva_aplicacion = models_aplica(
+                                    documento_factura_id=factura_data['doc'].id, 
+                                    documento_pago_id=pago['doc'].id, 
+                                    valor_aplicado=valor_a_aplicar
+                                )
+                                db.add(nueva_aplicacion)
+                                factura_data['saldo'] -= valor_a_aplicar
+                                valor_pago -= valor_a_aplicar
 
-        # Procesar Cruces CXP
+                # Fase 2: Resto (Global del tercero)
+                if valor_pago > 0:
+                    for factura_data in docs_cxc_ordenados:
+                        if valor_pago <= 0: break
+                        if factura_data['saldo'] > 0:
+                            valor_a_aplicar = min(valor_pago, factura_data['saldo'])
+                            if valor_a_aplicar > 0:
+                                nueva_aplicacion = models_aplica(
+                                    documento_factura_id=factura_data['doc'].id, 
+                                    documento_pago_id=pago['doc'].id, 
+                                    valor_aplicado=valor_a_aplicar
+                                )
+                                db.add(nueva_aplicacion)
+                                factura_data['saldo'] -= valor_a_aplicar
+                                valor_pago -= valor_a_aplicar
+
+        # Procesar Cruces CXP (Sin cambios, FIFO puro)
         if docs_cxp_ordenados and pagos_cxp_ordenados:
-            facturas_compra_pendientes = {item['doc'].id: item for item in docs_cxp_ordenados}
+            docs_cxp_ordenados.sort(key=lambda x: (x['doc'].fecha, x['doc'].id))
             pagos_cxp_ordenados.sort(key=lambda x: (x['doc'].fecha, x['doc'].id))
 
             for pago in pagos_cxp_ordenados:

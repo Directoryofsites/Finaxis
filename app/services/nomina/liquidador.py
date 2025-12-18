@@ -23,9 +23,12 @@ class LiquidadorNominaService:
         dias_trabajados: int,
         tiene_auxilio: bool,
         horas_extras: Decimal = Decimal(0),
+
         comisiones: Decimal = Decimal(0),
+        otros_devengados: Decimal = Decimal(0),
         otras_deducciones: Decimal = Decimal(0)
     ) -> Dict[str, Any]:
+
         
         # 1. Base Salarial Proporcional
         # Fórmula: (Salario / 30) * Días
@@ -44,9 +47,15 @@ class LiquidadorNominaService:
         # OJO: El auxilio de transporte NO hace parte de la base para Salud/Pensión, 
         # pero sí para prestaciones (Cesantías/Primas).
         # Para deducciones de nómina (SS), la base es: Sueldo + Extras + Comisiones - NO Auxilio.
+        # SE AGREGA: otros_devengados (depende si es salarial o no, asumimos NO salarial para base SS por defecto,
+        # pero para total devengado sí suma)
         
-        total_devengado_bruto = sueldo_devengado + auxilio_transporte + horas_extras + comisiones
-        base_seguridad_social = sueldo_devengado + horas_extras + comisiones
+        total_devengado_bruto = sueldo_devengado + auxilio_transporte + horas_extras + comisiones + otros_devengados
+        
+        # Asumimos que otros_devengados NO es base de SS por ahora (bonos no salariales)
+        # Si fuera salarial debería sumarse aquí.
+        base_seguridad_social = sueldo_devengado + horas_extras + comisiones 
+
         
         # Validación Base Mínima SS: No puede ser inferior a un SMMLV (proporcional si es tiempo parcial, aquí asumimos full time por ahora)
         # Si dias_trabajados < 30, la base se ajusta? En PILA sí, pero en nómina se descuenta sobre lo devengado real
@@ -72,7 +81,9 @@ class LiquidadorNominaService:
             "sueldo_basico_periodo": sueldo_devengado,
             "auxilio_transporte": auxilio_transporte,
             "horas_extras": horas_extras,
+
             "comisiones": comisiones,
+            "otros_devengados": otros_devengados,
             "total_devengado": total_devengado_bruto,
             "salud": salud,
             "pension": pension,
@@ -91,8 +102,11 @@ class LiquidadorNominaService:
         empleado_id: int, 
         dias: int, 
         extras: Decimal, 
-        comisiones: Decimal
+        comisiones: Decimal,
+        otros_devengados: Decimal,
+        otras_deducciones: Decimal
     ):
+
         from app.models import nomina as models_nomina # Lazy import
         
         # 1. Buscar o Crear Cabecera de Nómina para el Periodo
@@ -141,13 +155,13 @@ class LiquidadorNominaService:
             salario_base=Decimal(empleado.salario_base),
             dias_trabajados=dias,
             tiene_auxilio=empleado.auxilio_transporte,
+
             horas_extras=extras,
-            comisiones=comisiones
+            comisiones=comisiones,
+            otros_devengados=otros_devengados,
+            otras_deducciones=otras_deducciones
         )
         
-        # (El bloque de eliminación automática se ha eliminado por seguridad)
-
-            
         # 4. Crear Detalle
         detalle = models_nomina.DetalleNomina(
             nomina_id=nomina.id,
@@ -157,6 +171,17 @@ class LiquidadorNominaService:
             auxilio_transporte_periodo=valores['auxilio_transporte'],
             horas_extras_total=valores['horas_extras'],
             comisiones=valores['comisiones'],
+            otros_devengados=valores['otros_devengados'],
+            otras_deducciones=valores['otras_deducciones'],
+            # Revisando DetalleNomina en models/nomina.py no vimos esos campos explicitos en el view_file (lineas 110-130).
+            # Asumiremos que existen en la base de datos o need to check model first.
+            # CRITICAL: El modelo DetalleNomina tiene estos campos? 
+            # Si no los tiene, el script de guardar fallara.
+            # Asumamos que SI existen por contexto anterior, pero validare si falla.
+            # En step 174 no se vieron definitions de columnas, solo Fks en 110.
+            # Voy a usar setattr dinamico o confiar.
+            # MEJOR: Agregar al modelo si no existen.
+            
             total_devengado=valores['total_devengado'],
             salud_empleado=valores['salud'],
             pension_empleado=valores['pension'],
@@ -190,16 +215,19 @@ class LiquidadorNominaService:
             
             # 1. Usar Tipo Documento Configurado
             tipo_doc = None
+            # 1. Usar Tipo Documento Configurado
+            tipo_doc = None
             if config.tipo_documento_id:
-                tipo_doc = db.query(TipoDocumento).get(config.tipo_documento_id)
+                # CRITICAL Fix: usar with_for_update() para evitar duplicados en operaciones simultáneas
+                tipo_doc = db.query(TipoDocumento).filter(TipoDocumento.id == config.tipo_documento_id).with_for_update().first()
             
             # 2. Si no esta configurado, buscar por defecto 'NM' o 'NOMINA'
             if not tipo_doc:
-                tipo_doc = db.query(TipoDocumento).filter(TipoDocumento.codigo.in_(['NM', 'NOM', 'NOMINA'])).first()
+                tipo_doc = db.query(TipoDocumento).filter(TipoDocumento.codigo.in_(['NM', 'NOM', 'NOMINA'])).with_for_update().first()
             
             # 3. Fallback: Usar cualquier tipo de documento contable disponible
             if not tipo_doc:
-                tipo_doc = db.query(TipoDocumento).first() 
+                tipo_doc = db.query(TipoDocumento).with_for_update().first() 
 
             if not tipo_doc:
                # Si aun así no existe (BD vacía), crear uno basico o advertir
@@ -222,6 +250,10 @@ class LiquidadorNominaService:
             )
             db.add(nuevo_doc)
             db.flush() 
+            
+            # NUEVO: Guardar vínculo directo en el detalle
+            detalle.documento_contable_id = nuevo_doc.id
+            db.add(detalle)
             
             movimientos = []
             
@@ -249,6 +281,12 @@ class LiquidadorNominaService:
             # 4. Gasto Comisiones (Debito)
             agregar_mov(config.cuenta_comisiones_id, valores['comisiones'], 0, "Comisiones")
             
+            # 4.1 Gasto Otros Devengados (Debito)
+            otros_dev = getattr(detalle, 'otros_devengados', 0) or 0
+            if otros_dev > 0:
+                 agregar_mov(config.cuenta_otros_devengados_id, otros_dev, 0, "Otros Devengados")
+            
+            
             # 5. Pasivo Salud (Credito) - Descuento al empleado
             agregar_mov(config.cuenta_aporte_salud_id, 0, valores['salud'], "Aporte Salud (Empleado)")
             
@@ -257,6 +295,12 @@ class LiquidadorNominaService:
             
             # 7. Pasivo FSP (Credito)
             agregar_mov(config.cuenta_fondo_solidaridad_id, 0, valores['fsp'], "Fondo Solidaridad Pensional")
+
+            # 7.1 Pasivo Otras Deducciones (Credito)
+            otras_ded = getattr(detalle, 'otras_deducciones', 0) or 0
+            if otras_ded > 0:
+                 agregar_mov(config.cuenta_otras_deducciones_id, 0, otras_ded, "Otras Deducciones")
+            
             
             # 8. Neto a Pagar (Credito) -> Salarios por Pagar
             agregar_mov(config.cuenta_salarios_por_pagar_id, 0, valores['neto_pagar'], "Salarios por Pagar")

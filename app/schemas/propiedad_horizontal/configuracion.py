@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
+from app.schemas.plan_cuenta import PlanCuentaSimple
 
 # --- CONFIGURACION ---
 class PHConfiguracionBase(BaseModel):
@@ -11,10 +12,12 @@ class PHConfiguracionBase(BaseModel):
     descuento_pronto_pago: float = Field(default=0.0, ge=0)
     mensaje_factura: Optional[str] = None
     tipo_documento_factura_id: Optional[int] = None
-    tipo_documento_factura_id: Optional[int] = None
+    # Duplicate line removed in cleanup, keeping one
     tipo_documento_recibo_id: Optional[int] = None
     cuenta_cartera_id: Optional[int] = None
     cuenta_caja_id: Optional[int] = None
+    cuenta_ingreso_intereses_id: Optional[int] = None
+    interes_mora_habilitado: bool = True
 
 class PHConfiguracionUpdate(PHConfiguracionBase):
     pass
@@ -22,6 +25,11 @@ class PHConfiguracionUpdate(PHConfiguracionBase):
 class PHConfiguracionResponse(PHConfiguracionBase):
     id: int
     empresa_id: int
+    
+    # Relationships for UI
+    cuenta_cartera: Optional[PlanCuentaSimple] = None
+    cuenta_caja: Optional[PlanCuentaSimple] = None
+    cuenta_ingreso_intereses: Optional[PlanCuentaSimple] = None
 
     class Config:
         from_attributes = True
@@ -52,7 +60,7 @@ class PHConceptoUpdate(BaseModel):
     tipo_documento_recibo_id: Optional[int] = None
     cuenta_caja_id: Optional[int] = None
 
-from app.schemas.plan_cuenta import PlanCuentaSimple
+
 
 class PHConceptoResponse(PHConceptoBase):
     id: int

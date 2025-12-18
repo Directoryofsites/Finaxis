@@ -1,19 +1,20 @@
-La reunión del Comité de Reglamento tuvo como eje central la revisión crítica y propositiva del documento interno de la Iglesia Bíblica Gracia y Vida (IBGV), con el propósito de evaluar su redacción, coherencia doctrinal y aplicabilidad práctica. La conversación reflejó un trabajo colegiado sobre un borrador en desarrollo, en el que se identificaron ajustes de forma, precisiones conceptuales y se señalaron secciones que requieren un estudio bíblico más profundo antes de su redacción definitiva. No obstante, más allá del carácter preliminar del documento, el comité logró consensuar una serie de acuerdos sustantivos que orientarán de manera directa la modificación del reglamento. Dichos acuerdos pueden sintetizarse de la siguiente manera.
+@echo off
+TITLE Backend Server - ContaPY
 
-En primer lugar, se establecieron con claridad los fundamentos que deben regir todo el trabajo reglamentario de la iglesia. El comité acordó que cualquier ajuste, adición o reformulación de políticas internas debe estar sometido de manera explícita a la autoridad suprema de las Escrituras, en coherencia doctrinal con la Confesión Bautista de Londres de 1689 y enmarcado dentro de un entendimiento congregacional de la vida y el gobierno de la iglesia. Este principio fue asumido no solo como un criterio teológico, sino también como un marco hermenéutico y práctico para la toma de decisiones.
+:: Cambia al directorio del proyecto en el disco C
+cd /d "C:\ContaPY2"
 
-En segundo lugar, se decidió reformular el propósito introductorio del documento. El comité consideró necesario que la introducción exprese de forma más directa que el reglamento tiene como finalidad regular, delimitar y ordenar la vida interna de la iglesia, contribuyendo a la preservación de la unidad, al buen funcionamiento del cuerpo congregacional y a la prevención de conflictos innecesarios. Asimismo, se acordó destacar su carácter formativo, reconociendo que el reglamento cumple también una función pedagógica al instruir a la membresía sobre los principios bíblicos que gobiernan la vida eclesial.
+echo Activando entorno virtual...
+:: Activa el entorno virtual.
+call .\.venv\Scripts\activate.bat
+echo Entorno activado.
 
-En tercer lugar, se abordó el tema de la edad mínima para el bautismo. El comité dejó consignada la propuesta de modificar el requisito etario, reduciéndolo de dieciocho a quince años. Esta propuesta no elimina, sino que reafirma, la necesidad de una evaluación pastoral cuidadosa que considere tanto la madurez espiritual como la evidencia creíble de un nuevo nacimiento, de modo que el criterio principal siga siendo espiritual y no meramente cronológico.
+echo Iniciando servidor a través del lanzador personalizado...
+:: --- INICIO DE LA MODIFICACIÓN FINAL ---
+:: En lugar de llamar a 'uvicorn' directamente, se ejecuta el script 'run.py'.
+:: Esto asegura que nuestra configuración de entorno se aplique primero.
+.\.venv\Scripts\python.exe run.py
+:: --- FIN DE LA MODIFICACIÓN FINAL ---
 
-En cuarto lugar, se reafirmó la relación directa entre bautismo y membresía. El comité confirmó la política de que el bautismo implica la incorporación inmediata a la membresía oficial de la iglesia, entendiendo que, según el testimonio bíblico, el acto del bautismo y la integración al cuerpo visible de creyentes aparecen intrínsecamente unidos y no como realidades separadas o diferidas en el tiempo.
-
-En quinto lugar, se definió con mayor precisión la administración de las ordenanzas. Se acordó que tanto el Bautismo como la Cena del Señor deben ser administrados exclusivamente por oficiales reconocidos de la iglesia, es decir, ancianos o pastores. En situaciones en las que la iglesia local no cuente con un pastor en funciones, se estableció como criterio buscar el apoyo de un pastor de otra iglesia que comparta la misma convicción doctrinal, evitando soluciones improvisadas que comprometan el orden eclesial.
-
-En sexto lugar, se ratificó el procedimiento para el manejo de objeciones relacionadas con el bautismo. El comité mantuvo la práctica de presentar a la asamblea el listado de candidatos durante un período de quince días, con el fin de permitir que se manifiesten posibles objeciones. Al mismo tiempo, se confirmó que dichas objeciones deben ser comunicadas de manera privada a los ancianos, quienes tendrán la responsabilidad de tratarlas con prudencia, sabiduría pastoral y un espíritu piadoso, evitando exposiciones públicas innecesarias.
-
-En séptimo lugar, se discutió la administración de la Cena del Señor en contextos excepcionales. El comité acordó que, en caso de que la iglesia atraviese un período prolongado sin pastor —sugiriéndose como referencia un lapso de aproximadamente dos meses—, la asamblea deberá reunirse para considerar el nombramiento de un “hermano dotado” que pueda administrar la Cena. No obstante, se dejó claramente establecido que, ante la ausencia de una persona debidamente calificada, es preferible la abstención temporal de la ordenanza antes que su administración por alguien que no cumpla los criterios espirituales y eclesiales necesarios.
-
-En octavo lugar, se confirmó la práctica de una Cena del Señor de carácter semiabierto o semicerrado. Junto con esta confirmación, se acordó incluir de manera explícita la responsabilidad del oficial que preside la ordenanza de emitir una advertencia clara y pastoral a la congregación, especificando quiénes deben participar de la Cena, es decir, creyentes bautizados, con el fin de preservar el carácter reverente y bíblico de la celebración.
-
-Finalmente, se dejó constancia de que el comité delegó a Fernando y Hector la responsabilidad de fortalecer el discipulado y el seguimiento pastoral de aquellas personas que, aunque llevan tiempo asistiendo a la iglesia, aún no han asumido un compromiso formal. Este punto fue deliberadamente diferenciado del reglamento, al considerarse un asunto propio del desarrollo ministerial y pastoral, y no una política normativa que deba quedar consignada en el documento reglamentario.
+:: Pausa al final para ver la salida si el servidor se detiene.
+pause

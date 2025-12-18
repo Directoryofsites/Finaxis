@@ -36,10 +36,12 @@ NOMINA_RESUMEN_TEMPLATE = """
                 <th class="num">Aux. Trans.</th>
                 <th class="num">Extras</th>
                 <th class="num">Comis.</th>
+                <th class="num">Otros Dev.</th>
                 <th class="num" style="background: #e3f2fd;">Total Dev.</th>
                 <th class="num">Salud</th>
                 <th class="num">Pensión</th>
                 <th class="num">FSP</th>
+                <th class="num">Otras Ded.</th>
                 <th class="num" style="background: #ffebee;">Total Ded.</th>
                 <th class="num" style="background: #e8f5e9;">NETO PAGAR</th>
             </tr>
@@ -54,10 +56,12 @@ NOMINA_RESUMEN_TEMPLATE = """
                 <td class="num">{{ item.auxilio_fmt }}</td>
                 <td class="num">{{ item.extras_fmt }}</td>
                 <td class="num">{{ item.comisiones_fmt }}</td>
+                <td class="num">{{ item.otros_dev_fmt }}</td>
                 <td class="num" style="font-weight:bold;">{{ item.total_dev_fmt }}</td>
                 <td class="num">{{ item.salud_fmt }}</td>
                 <td class="num">{{ item.pension_fmt }}</td>
                 <td class="num">{{ item.fsp_fmt }}</td>
+                <td class="num">{{ item.otras_ded_fmt }}</td>
                 <td class="num" style="font-weight:bold;">{{ item.total_ded_fmt }}</td>
                 <td class="num" style="font-weight:bold; color: #2e7d32;">{{ item.neto_fmt }}</td>
             </tr>
@@ -70,10 +74,12 @@ NOMINA_RESUMEN_TEMPLATE = """
                 <td class="num">{{ totales.auxilio_fmt }}</td>
                 <td class="num">{{ totales.extras_fmt }}</td>
                 <td class="num">{{ totales.comisiones_fmt }}</td>
+                <td class="num">{{ totales.otros_dev_fmt }}</td>
                 <td class="num">{{ totales.total_dev_fmt }}</td>
                 <td class="num">{{ totales.salud_fmt }}</td>
                 <td class="num">{{ totales.pension_fmt }}</td>
                 <td class="num">{{ totales.fsp_fmt }}</td>
+                <td class="num">{{ totales.otras_ded_fmt }}</td>
                 <td class="num">{{ totales.total_ded_fmt }}</td>
                 <td class="num" style="color: #2e7d32;">{{ totales.neto_fmt }}</td>
             </tr>

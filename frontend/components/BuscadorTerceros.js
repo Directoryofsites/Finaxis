@@ -50,9 +50,13 @@ export default function BuscadorTerceros({ onSelect, selected, label = "Buscar T
 
     const handleSelect = (tercero) => {
         onSelect(tercero);
-        setQuery('');
-        setResults([]);
-        setShowResults(false);
+        // Deferimos la limpieza para evitar conflictos de "removeChild" 
+        // cuando React intenta desmontar el nodo que disparó el evento click.
+        setTimeout(() => {
+            setQuery('');
+            setResults([]);
+            setShowResults(false);
+        }, 0);
     };
 
     const handleClear = () => {

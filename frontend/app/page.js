@@ -36,24 +36,42 @@ import { getFavoritos } from '../lib/favoritosService';
  * Componente que define el estilo de botón 'Tile' (Tarjeta de Favoritos)
  * para ser usado en el ExplorerView.
  */
-const ModuleTile = ({ title, description, icon, onClick, isFolder = false }) => {
+const ModuleTile = ({ title, description, icon, onClick, isFolder = false, index = 0 }) => {
     const IconComponent = icon || FaFileAlt;
-    const colorClass = isFolder ? 'text-blue-600' : 'text-green-600'; // Carpetas en azul, Archivos/Enlaces en verde/negro
+
+    // Paleta de colores vibrantes estilo PH
+    const palette = [
+        { border: 'border-blue-200 hover:border-blue-500', shadow: 'hover:shadow-blue-100', icon: 'text-blue-500', bgIcon: 'bg-blue-50' },     // 0: Azul
+        { border: 'border-green-200 hover:border-green-500', shadow: 'hover:shadow-green-100', icon: 'text-green-500', bgIcon: 'bg-green-50' },  // 1: Verde
+        { border: 'border-purple-200 hover:border-purple-500', shadow: 'hover:shadow-purple-100', icon: 'text-purple-500', bgIcon: 'bg-purple-50' }, // 2: Morado
+        { border: 'border-orange-200 hover:border-orange-500', shadow: 'hover:shadow-orange-100', icon: 'text-orange-500', bgIcon: 'bg-orange-50' }, // 3: Naranja
+        { border: 'border-indigo-200 hover:border-indigo-500', shadow: 'hover:shadow-indigo-100', icon: 'text-indigo-500', bgIcon: 'bg-indigo-50' }, // 4: Indigo
+        { border: 'border-teal-200 hover:border-teal-500', shadow: 'hover:shadow-teal-100', icon: 'text-teal-500', bgIcon: 'bg-teal-50' },       // 5: Teal
+        { border: 'border-pink-200 hover:border-pink-500', shadow: 'hover:shadow-pink-100', icon: 'text-pink-500', bgIcon: 'bg-pink-50' },       // 6: Rosa
+        { border: 'border-cyan-200 hover:border-cyan-500', shadow: 'hover:shadow-cyan-100', icon: 'text-cyan-500', bgIcon: 'bg-cyan-50' },       // 7: Cyan
+        { border: 'border-emerald-200 hover:border-emerald-500', shadow: 'hover:shadow-emerald-100', icon: 'text-emerald-500', bgIcon: 'bg-emerald-50' }, // 8: Esmeralda
+        { border: 'border-red-200 hover:border-red-500', shadow: 'hover:shadow-red-100', icon: 'text-red-500', bgIcon: 'bg-red-50' },           // 9: Rojo
+    ];
+
+    // Selección cíclica del tema basada en el índice
+    const theme = palette[index % palette.length];
+
+    const containerClasses = `bg-white p-6 rounded-xl border-2 ${theme.border} shadow-sm ${theme.shadow} transition-all duration-300 transform hover:-translate-y-1 cursor-pointer h-full flex flex-col items-center text-center gap-2 group w-full`;
+    const iconContainerClasses = `p-4 rounded-full mb-2 transition-colors ${theme.bgIcon} group-hover:bg-opacity-80`;
+    const iconClasses = `text-4xl ${theme.icon} transition-colors`;
+    const titleClasses = "text-lg font-bold text-gray-800 leading-tight";
+    const descClasses = "text-sm text-gray-500";
 
     return (
-        <button
-            onClick={onClick}
-            className="flex flex-col items-start justify-start p-4 h-24 text-left bg-white border border-gray-200 rounded-lg shadow-sm hover:border-blue-500 hover:shadow-md transition duration-200 group transform hover:scale-[1.01] w-full"
-            title={title}
-        >
-            <div className="flex items-center space-x-3">
-                <IconComponent size={24} className={`mb-1 ${colorClass} group-hover:text-blue-700`} />
-                <span className="text-sm font-semibold truncate text-gray-800">{title}</span>
+        <div onClick={onClick} className={containerClasses}>
+            <div className={iconContainerClasses}>
+                <IconComponent className={iconClasses} />
             </div>
-            {/* Solo mostramos la descripción para los enlaces que son Nivel 3 */}
-            {isFolder && <span className="text-xs text-gray-500 mt-1 truncate max-w-full">Explorar sub-opciones...</span>}
-            {!isFolder && <span className="text-xs text-gray-500 mt-1 truncate max-w-full">Ejecutar función</span>}
-        </button>
+            <h3 className={titleClasses}>{title}</h3>
+            {description && <p className={descClasses}>{description}</p>}
+            {!description && isFolder && <p className={descClasses}>Explorar carpeta...</p>}
+            {!description && !isFolder && <p className={descClasses}>Acceder a función</p>}
+        </div>
     );
 };
 
@@ -902,11 +920,12 @@ const ExplorerView = ({ activeModuleId, router }) => {
                         Selecciona un Área de Configuración
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {module.subgroups.map(subgroup => (
+                        {module.subgroups.map((subgroup, index) => (
                             <ModuleTile
                                 key={subgroup.title}
+                                index={index}
                                 title={subgroup.title}
-                                description="Haz clic para ver las opciones de gestión."
+                                description={subgroup.description || "Haz clic para ver las opciones de gestión."}
                                 icon={subgroup.icon || FaFolder}
                                 isFolder={true}
                                 onClick={() => setActiveSubgroup(subgroup)}
@@ -935,14 +954,14 @@ const ExplorerView = ({ activeModuleId, router }) => {
                     {currentSubgroup.title}
                 </h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {currentSubgroup.links.map(link => (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {currentSubgroup.links.map((link, index) => (
                         <Link key={link.href} href={link.href} passHref>
                             <ModuleTile
+                                index={index}
                                 title={link.name}
-                                description={`Ir a: ${link.name}`}
+                                description={link.description || `Ir a: ${link.name}`}
                                 icon={link.icon || FaFile}
-                                onClick={() => router.push(link.href)}
                             />
                         </Link>
                     ))}
@@ -961,15 +980,15 @@ const ExplorerView = ({ activeModuleId, router }) => {
                 Explorador de Módulos: <strong className="font-semibold ml-2">{module.name}</strong>
             </h1>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-                {explorerItems.map((link) => (
+                {explorerItems.map((link, index) => (
                     <Link key={link.href} href={link.href} passHref>
                         <ModuleTile
+                            index={index}
                             title={link.name}
-                            description={`Ir a: ${link.name}`}
+                            description={link.description || `Ir a: ${link.name}`}
                             icon={link.icon || FaFile}
-                            onClick={() => router.push(link.href)}
                         />
                     </Link>
                 ))}

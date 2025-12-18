@@ -58,6 +58,7 @@ class DocumentoBase(BaseModel):
     beneficiario_id: Optional[int] = None
     centro_costo_id: Optional[int] = None
     fecha_vencimiento: Optional[date] = None
+    unidad_ph_id: Optional[int] = None # Added for PH Module
 
 class DocumentoCreate(DocumentoBase):
     empresa_id: Optional[int] = None

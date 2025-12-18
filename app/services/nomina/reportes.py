@@ -51,18 +51,20 @@ class ReportesNominaService:
             "auxilio": detalle.auxilio_transporte_periodo,
             "extras": detalle.horas_extras_total,
             "comisiones": detalle.comisiones,
+            "otros_devengados": detalle.otros_devengados,
             "total_devengado": detalle.total_devengado,
             
             "salud": detalle.salud_empleado,
             "pension": detalle.pension_empleado,
             "fsp": detalle.fondo_solidaridad,
+            "otras_deducciones": detalle.otras_deducciones,
             "total_deducciones": detalle.total_deducciones,
             "neto": detalle.neto_pagar
         }
         
         # Helper currency format
         formatted_context = context.copy()
-        numeric_keys = ["sueldo", "auxilio", "extras", "comisiones", "total_devengado", "salud", "pension", "fsp", "total_deducciones", "neto"]
+        numeric_keys = ["sueldo", "auxilio", "extras", "comisiones", "otros_devengados", "total_devengado", "salud", "pension", "fsp", "otras_deducciones", "total_deducciones", "neto"]
         for key in numeric_keys:
              formatted_context[f"{key}_fmt"] = ReportesNominaService.currency_format(context[key])
 
@@ -95,8 +97,8 @@ class ReportesNominaService:
         # 3. Preparar Datos
         lista_detalles = []
         totales = {
-            "basico": 0, "auxilio": 0, "extras": 0, "comisiones": 0,
-            "total_dev": 0, "salud": 0, "pension": 0, "fsp": 0,
+            "basico": 0, "auxilio": 0, "extras": 0, "comisiones": 0, "otros_dev": 0,
+            "total_dev": 0, "salud": 0, "pension": 0, "fsp": 0, "otras_ded": 0,
             "total_ded": 0, "neto": 0
         }
         
@@ -110,10 +112,12 @@ class ReportesNominaService:
                 "auxilio_fmt": ReportesNominaService.currency_format(d.auxilio_transporte_periodo),
                 "extras_fmt": ReportesNominaService.currency_format(d.horas_extras_total),
                 "comisiones_fmt": ReportesNominaService.currency_format(d.comisiones),
+                "otros_dev_fmt": ReportesNominaService.currency_format(d.otros_devengados),
                 "total_dev_fmt": ReportesNominaService.currency_format(d.total_devengado),
                 "salud_fmt": ReportesNominaService.currency_format(d.salud_empleado),
                 "pension_fmt": ReportesNominaService.currency_format(d.pension_empleado),
                 "fsp_fmt": ReportesNominaService.currency_format(d.fondo_solidaridad),
+                "otras_ded_fmt": ReportesNominaService.currency_format(d.otras_deducciones),
                 "total_ded_fmt": ReportesNominaService.currency_format(d.total_deducciones),
                 "neto_fmt": ReportesNominaService.currency_format(d.neto_pagar)
             }
@@ -124,10 +128,12 @@ class ReportesNominaService:
             totales["auxilio"] += d.auxilio_transporte_periodo or 0
             totales["extras"] += d.horas_extras_total or 0
             totales["comisiones"] += d.comisiones or 0
+            totales["otros_dev"] += d.otros_devengados or 0
             totales["total_dev"] += d.total_devengado or 0
             totales["salud"] += d.salud_empleado or 0
             totales["pension"] += d.pension_empleado or 0
             totales["fsp"] += d.fondo_solidaridad or 0
+            totales["otras_ded"] += d.otras_deducciones or 0
             totales["total_ded"] += d.total_deducciones or 0
             totales["neto"] += d.neto_pagar or 0
 

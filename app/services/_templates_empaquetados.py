@@ -3563,6 +3563,78 @@ TEMPLATES_EMPAQUETADOS = {
 </html>
 ''',
 
+    'reports/detalle_facturacion_report.html': r'''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Detalle de Facturación PH</title>
+    <style>
+        @page { size: letter portrait; margin: 1.5cm; }
+        body { font-family: Arial, sans-serif; font-size: 10px; }
+        h1, h2, h3 { text-align: center; color: #333; margin: 0; }
+        h1 { font-size: 1.4em; margin-bottom: 5px; }
+        h2 { font-size: 1.1em; font-weight: normal; margin-bottom: 10px; }
+        .company-info { text-align: center; margin-bottom: 20px; }
+        .report-info { margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+        th { background-color: #4CAF50; color: white; text-align: center; font-weight: bold; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        .estado-activo { color: green; font-weight: bold; }
+        .estado-anulado { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="company-info">
+        <h1>{{ empresa.razon_social }}</h1>
+        <h2>NIT: {{ empresa.nit }}</h2>
+    </div>
+    
+    <div class="report-info">
+        <h3>Detalle de Facturación - Propiedad Horizontal</h3>
+        <p style="text-align: center; margin-top: 5px;"><strong>Periodo:</strong> {{ periodo }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 10%;">Factura</th>
+                <th style="width: 15%;">Fecha</th>
+                <th style="width: 30%;">Tercero / Propietario</th>
+                <th style="width: 15%;">Unidad</th>
+                <th style="width: 15%;">Total</th>
+                <th style="width: 15%;">Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="text-center">{{ item.consecutivo }}</td>
+                <td class="text-center">{{ item.fecha }}</td>
+                <td>{{ item.tercero_nombre }}</td>
+                <td class="text-center">{{ item.unidad }}</td>
+                <td class="text-right">{{ "{:,.0f}".format(item.total).replace(",", ".") }}</td>
+                <td class="text-center">
+                    <span class="{{ 'estado-activo' if item.estado == 'ACTIVO' else 'estado-anulado' }}">
+                        {{ item.estado }}
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="4" class="text-right"><strong>TOTAL FACTURADO:</strong></td>
+                <td class="text-right"><strong>{{ "{:,.0f}".format(total_general).replace(",", ".") }}</strong></td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
+</body>
+</html>
+''',
 }
 
 

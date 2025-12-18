@@ -4,9 +4,34 @@ from app.schemas.propiedad_horizontal import unidad as schemas
 from typing import List, Optional
 
 def get_unidades(db: Session, empresa_id: int, skip: int = 0, limit: int = 100):
-    return db.query(PHUnidad).filter(PHUnidad.empresa_id == empresa_id)\
+    unidades = db.query(PHUnidad).filter(PHUnidad.empresa_id == empresa_id)\
         .options(joinedload(PHUnidad.torre), joinedload(PHUnidad.propietario_principal))\
         .offset(skip).limit(limit).all()
+    
+    # Manually construct dicts to avoid stale ORM property crash
+    results = []
+    for u in unidades:
+        results.append({
+            "id": u.id,
+            "empresa_id": u.empresa_id,
+            "torre_id": u.torre_id,
+            "codigo": u.codigo,
+            "tipo": u.tipo,
+            "matricula_inmobiliaria": u.matricula_inmobiliaria,
+            "area_privada": u.area_privada,
+            "coeficiente": u.coeficiente,
+            "propietario_principal_id": u.propietario_principal_id,
+            "residente_actual_id": u.residente_actual_id,
+            "activo": u.activo,
+            "observaciones": u.observaciones,
+            # Handle computed fields manually
+            "torre_nombre": u.torre.nombre if u.torre else None,
+            "propietario_nombre": u.propietario_principal.razon_social if u.propietario_principal else None,
+            # Nested lists (empty by default for summary view, or can load if needed)
+            "vehiculos": u.vehiculos,
+            "mascotas": u.mascotas
+        })
+    return results
 
 def crear_unidad(db: Session, unidad: schemas.PHUnidadCreate, empresa_id: int):
     # 1. Crear Unidad base
@@ -50,13 +75,19 @@ def crear_unidad(db: Session, unidad: schemas.PHUnidadCreate, empresa_id: int):
             )
             db.add(db_mascota)
             
+    # 4. Asignar Módulos de Contribución
+    if unidad.modulos_ids:
+        from app.models.propiedad_horizontal.modulo_contribucion import PHModuloContribucion
+        modulos = db.query(PHModuloContribucion).filter(PHModuloContribucion.id.in_(unidad.modulos_ids)).all()
+        db_unidad.modulos_contribucion = modulos
+            
     db.commit()
     db.refresh(db_unidad)
     return db_unidad
 
 def get_unidad_by_id(db: Session, unidad_id: int, empresa_id: int):
     return db.query(PHUnidad).filter(PHUnidad.id == unidad_id, PHUnidad.empresa_id == empresa_id)\
-        .options(joinedload(PHUnidad.vehiculos), joinedload(PHUnidad.mascotas))\
+        .options(joinedload(PHUnidad.vehiculos), joinedload(PHUnidad.mascotas), joinedload(PHUnidad.modulos_contribucion))\
         .first()
 
 def update_unidad(db: Session, unidad_id: int, unidad_update: schemas.PHUnidadCreate, empresa_id: int, usuario_id: Optional[int] = None):
@@ -121,6 +152,12 @@ def update_unidad(db: Session, unidad_id: int, unidad_update: schemas.PHUnidadCr
             )
             db.add(new_m)
             
+    # Modules Assignment (Many-to-Many - Replace List)
+    if unidad_update.modulos_ids is not None:
+        from app.models.propiedad_horizontal.modulo_contribucion import PHModuloContribucion
+        modulos = db.query(PHModuloContribucion).filter(PHModuloContribucion.id.in_(unidad_update.modulos_ids)).all()
+        db_unidad.modulos_contribucion = modulos
+            
     db.commit()
     db.refresh(db_unidad)
     return db_unidad
@@ -130,6 +167,41 @@ def delete_unidad(db: Session, unidad_id: int, empresa_id: int):
     if not db_unidad:
         return False
     
-    db.delete(db_unidad)
-    db.commit()
-    return True
+
+def get_propietarios_resumen(db: Session, empresa_id: int):
+    """
+    Retorna una lista consolidada de propietarios (Terceros) que tienen unidades asociadas.
+    Incluye el resumen de sus unidades y coeficientes.
+    """
+    from app.models.tercero import Tercero
+    
+    # query join units -> owners
+    propietarios_query = db.query(Tercero).join(PHUnidad, PHUnidad.propietario_principal_id == Tercero.id)\
+        .filter(PHUnidad.empresa_id == empresa_id)\
+        .distinct()
+        
+    resultados = []
+    
+    for tercero in propietarios_query.all():
+        # Get units for this owner
+        unidades = db.query(PHUnidad).filter(
+            PHUnidad.empresa_id == empresa_id,
+            PHUnidad.propietario_principal_id == tercero.id
+        ).all()
+        
+        info_unidades = [{"id": u.id, "codigo": u.codigo} for u in unidades]
+        total_coeficiente = sum(float(u.coeficiente) if u.coeficiente else 0 for u in unidades)
+        
+        resultados.append({
+            "tercero_id": tercero.id,
+            "razon_social": tercero.razon_social,
+            "numero_documento": f"{tercero.nit}-{tercero.dv}" if tercero.dv else tercero.nit,
+            "contacto_telefono": tercero.telefono or "N/A",
+            "contacto_email": tercero.email or "N/A",
+            "unidades": info_unidades,
+            "total_unidades": len(unidades),
+            "total_coeficiente": total_coeficiente,
+            "es_moroso": False # Placeholder logic for future wallet integration
+        })
+        
+    return resultados

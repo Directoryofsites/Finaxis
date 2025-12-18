@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from decimal import Decimal
+from .modulo_contribucion import PHModuloContribucionResponse
 
 # --- TORRES ---
 class PHTorreBase(BaseModel):
@@ -68,9 +69,10 @@ class PHUnidadBase(BaseModel):
 class PHUnidadCreate(PHUnidadBase):
     vehiculos: Optional[List[PHVehiculoCreate]] = []
     mascotas: Optional[List[PHMascotaCreate]] = []
+    modulos_ids: Optional[List[int]] = []
 
 class PHUnidadUpdate(PHUnidadBase):
-    pass
+    modulos_ids: Optional[List[int]] = []
 
 class PHUnidad(PHUnidadBase):
     id: int
@@ -81,6 +83,7 @@ class PHUnidad(PHUnidadBase):
     mascotas: List[PHMascota] = []
     vehiculos: List[PHVehiculo] = []
     propietario_nombre: Optional[str] = None
+    modulos_contribucion: List["PHModuloContribucionResponse"] = []
 
     class Config:
         from_attributes = True
