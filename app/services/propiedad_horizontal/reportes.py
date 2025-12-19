@@ -18,12 +18,14 @@ def get_movimientos_ph_report(
     propietario_id: Optional[int] = None,
     tipo_documento_id: Optional[int] = None,
     concepto_id: Optional[int] = None,
-    numero_doc: Optional[str] = None
+    numero_doc: Optional[str] = None,
+    tipo_movimiento: Optional[str] = None # 'FACTURAS', 'RECIBOS', 'TODOS'
 ):
     """
     Genera un reporte detallado de movimientos para PH.
     Permite filtrar por múltiples criterios.
     """
+    from app.models.propiedad_horizontal.configuracion import PHConfiguracion
     
     # Base Query: Movimientos Contables enlazados a Documentos
     # Seleccionamos campos relevantes
@@ -66,6 +68,18 @@ def get_movimientos_ph_report(
     if numero_doc:
         from sqlalchemy import cast, String
         query = query.filter(cast(Documento.numero, String).ilike(f"%{numero_doc}%"))
+
+    # Filtro por Tipo de Movimiento (Facturas vs Recibos)
+    if tipo_movimiento and tipo_movimiento in ['FACTURAS', 'RECIBOS']:
+        config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
+        
+        if config:
+            if tipo_movimiento == 'FACTURAS':
+                if config.tipo_documento_factura_id:
+                    query = query.filter(Documento.tipo_documento_id == config.tipo_documento_factura_id)
+            elif tipo_movimiento == 'RECIBOS':
+                if config.tipo_documento_recibo_id:
+                    query = query.filter(Documento.tipo_documento_id == config.tipo_documento_recibo_id)
 
     # Filtro Especial por Concepto de PH
     # Si se selecciona un concepto PH, buscamos movimientos que afecten a la cuenta de ingreso asociada.

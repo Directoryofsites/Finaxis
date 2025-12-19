@@ -69,7 +69,8 @@ from app.models import (
     AplicacionPago as models_aplica,
     CentroCosto as models_centro_costo,
     Usuario as models_usuario,
-    Producto as models_producto
+    Producto as models_producto,
+    MovimientoInventario as models_mov_inv
 )
 
 from app.models.grupo_inventario import GrupoInventario as models_grupo
@@ -2703,31 +2704,31 @@ def get_detalle_comercial_por_documento(db: Session, documento_id: int, empresa_
     
     query_items = (
         db.query(
-            models_producto.Producto.id.label("producto_id"),
-            models_producto.Producto.nombre.label("nombre_producto"),
-            func.sum(models_producto.MovimientoInventario.cantidad).label("cantidad"),
+            models_producto.id.label("producto_id"),
+            models_producto.nombre.label("nombre_producto"),
+            func.sum(models_mov_inv.cantidad).label("cantidad"), # Ojo: MovimientoInventario no esta importado como alias?
             func.sum(models_mov.credito).label("venta_total_linea"),
             # --- CAMBIO CLAVE: Añadimos el costo unitario a la consulta ---
-            func.avg(models_producto.MovimientoInventario.costo_unitario).label("costo_unitario")
+            func.avg(models_mov_inv.costo_unitario).label("costo_unitario")
         )
-        .join(models_doc, models_producto.MovimientoInventario.documento_id == models_doc.id)
-        .join(models_producto.Producto, models_producto.MovimientoInventario.producto_id == models_producto.Producto.id)
-        .join(models_grupo, models_producto.Producto.grupo_id == models_grupo.id)
+        .join(models_doc, models_mov_inv.documento_id == models_doc.id)
+        .join(models_producto, models_mov_inv.producto_id == models_producto.id)
+        .join(models_grupo, models_producto.grupo_id == models_grupo.id)
         .join(models_mov, and_(
             models_mov.documento_id == models_doc.id,
             models_mov.cuenta_id == models_grupo.cuenta_ingreso_id,
-            models_mov.producto_id == models_producto.Producto.id,
+            models_mov.producto_id == models_producto.id,
             models_mov.credito > 0
         ))
         .where(
             models_doc.empresa_id == empresa_id,
             models_doc.id == documento_id,
-            models_producto.MovimientoInventario.tipo_movimiento == 'SALIDA_VENTA',
+            models_mov_inv.tipo_movimiento == 'SALIDA_VENTA',
             models_doc.anulado == False
         )
         .group_by(
-            models_producto.Producto.id,
-            models_producto.Producto.nombre
+            models_producto.id,
+            models_producto.nombre
         )
     )
 

@@ -263,6 +263,25 @@ def get_historial_cuenta(
         fecha_fin=fecha_fin
     )
 
+@router.get("/pagos/historial-propietario/{propietario_id}")
+def get_historial_cuenta_propietario_route(
+    propietario_id: int,
+    fecha_inicio: Optional[date] = None,
+    fecha_fin: Optional[date] = None,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    return pago_service.get_historial_cuenta_unidad(
+        db, 
+        unidad_id=None, 
+        empresa_id=current_user.empresa_id,
+        fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin,
+        propietario_id=propietario_id
+    )
+
+
+
 @router.get("/pagos/estado-cuenta-propietario/{propietario_id}")
 def get_estado_cuenta_propietario(
     propietario_id: int,
@@ -295,6 +314,7 @@ def get_reporte_movimientos(
     tipo_documento_id: Optional[int] = None,
     concepto_id: Optional[int] = None,
     numero_doc: Optional[str] = None,
+    tipo_movimiento: Optional[str] = None, # Nuevo filtro
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
@@ -307,5 +327,6 @@ def get_reporte_movimientos(
         propietario_id=propietario_id,
         tipo_documento_id=tipo_documento_id,
         concepto_id=concepto_id,
-        numero_doc=numero_doc
+        numero_doc=numero_doc,
+        tipo_movimiento=tipo_movimiento
     )

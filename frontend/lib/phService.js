@@ -139,6 +139,13 @@ export const phService = {
         return response.data;
     },
 
+    getHistorialCuentaPropietarioDetailed: async (propietarioId, params = {}) => {
+        const response = await apiService.get(`/ph/pagos/historial-propietario/${propietarioId}`, { params });
+        return response.data;
+    },
+
+
+
     getCarteraPendiente: async (params) => {
         // params: { unidad_id, propietario_id }
         const response = await apiService.get('/ph/pagos/cartera-pendiente', { params });

@@ -96,21 +96,22 @@ export default function EstadoCuentaPage() {
 
             } else {
                 // Modo Propietario
-                const [cons, pend] = await Promise.all([
+                // Ahora si traemos el historial unificado
+                const [cons, pend, hist] = await Promise.all([
                     phService.getEstadoCuentaPropietario(id),
-                    phService.getCarteraPendiente({ propietario_id: id })
+                    phService.getCarteraPendiente({ propietario_id: id }),
+                    phService.getHistorialCuentaPropietarioDetailed(id, {
+                        fecha_inicio: fechaInicio || undefined,
+                        fecha_fin: fechaFin || undefined
+                    })
                 ]);
 
-                // El endpoint consolidado ya trae desglose, pero no historial unificado aun.
-                // Si historial unificado fuera critico, habria que implementarlo.
-                // Por ahora usamos la data consolidada.
                 dataResumen = {
                     saldo_total: cons.saldo_total_consolidado,
                     propietario_nombre: cons.propietario.nombre
                 };
                 dataPendientes = pend;
-                // Dejamos historial vacio o inactivo en este modo por ahora si backend no lo soporta
-                dataHistorial = [];
+                dataHistorial = hist.transacciones || [];
             }
 
             setResumen(dataResumen);
@@ -119,7 +120,7 @@ export default function EstadoCuentaPage() {
 
         } catch (error) {
             console.error("Error loading details", error);
-            alert("Error cargando información.");
+            alert("Error cargando información: " + error.message);
         } finally {
             setLoading(false);
         }
@@ -315,9 +316,7 @@ export default function EstadoCuentaPage() {
                                 </button>
                                 <button
                                     onClick={() => setViewMode('HISTORY')}
-                                    disabled={searchMode === 'OWNER'} // Deshabilitar historial consolidado por ahora
-                                    className={`px-4 py-2 rounded-md font-medium text-sm transition-all flex items-center gap-2 ${viewMode === 'HISTORY' ? 'bg-blue-600 text-white shadow' : 'text-gray-300 hover:text-white'} ${searchMode === 'OWNER' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    title={searchMode === 'OWNER' ? 'Historial detallado solo disponible por unidad' : ''}
+                                    className={`px-4 py-2 rounded-md font-medium text-sm transition-all flex items-center gap-2 ${viewMode === 'HISTORY' ? 'bg-blue-600 text-white shadow' : 'text-gray-300 hover:text-white'}`}
                                 >
                                     <FaHistory /> Historial Detallado
                                 </button>

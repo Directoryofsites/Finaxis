@@ -235,7 +235,7 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
         db.rollback()
         raise e
             
-def get_facturas_pendientes_por_tercero(db: Session, tercero_id: int, empresa_id: int):
+def get_facturas_pendientes_por_tercero(db: Session, tercero_id: int, empresa_id: int, unidad_ph_id: int = None):
     cuentas_cxc_ids = get_cuentas_especiales_ids(db, empresa_id, 'cxc')
     if not cuentas_cxc_ids:
         return []
@@ -256,8 +256,8 @@ def get_facturas_pendientes_por_tercero(db: Session, tercero_id: int, empresa_id
         models_doc.anulado == False
     ).group_by(models_aplica.documento_factura_id).subquery()
 
-    facturas_pendientes = db.query(
-        models_doc.id, models_doc.numero, models_doc.fecha,
+    query = db.query(
+        models_doc.id, models_doc.numero, models_doc.fecha, models_doc.fecha_vencimiento,
         subquery_valor_total.c.valor_total,
         func.coalesce(subquery_valor_aplicado.c.total_aplicado, 0).label("total_aplicado")
     ).join(
@@ -271,7 +271,12 @@ def get_facturas_pendientes_por_tercero(db: Session, tercero_id: int, empresa_id
         models_doc.empresa_id == empresa_id,
         models_doc.anulado == False,
         subquery_valor_total.c.valor_total > func.coalesce(subquery_valor_aplicado.c.total_aplicado, 0)
-    ).order_by(models_doc.fecha).all()
+    )
+
+    if unidad_ph_id:
+        query = query.filter(models_doc.unidad_ph_id == unidad_ph_id)
+    
+    facturas_pendientes = query.order_by(models_doc.fecha).all()
 
     resultado_formateado = []
     for factura in facturas_pendientes:
@@ -280,7 +285,8 @@ def get_facturas_pendientes_por_tercero(db: Session, tercero_id: int, empresa_id
             "id": factura.id, "numero": factura.numero,
             "fecha": factura.fecha.isoformat(),
             "valor_total": float(factura.valor_total),
-            "saldo_pendiente": float(saldo_pendiente)
+            "saldo_pendiente": float(saldo_pendiente),
+            "fecha_vencimiento": factura.fecha_vencimiento.isoformat() if factura.fecha_vencimiento else None
         })
     return resultado_formateado
 

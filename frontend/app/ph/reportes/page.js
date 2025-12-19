@@ -18,6 +18,7 @@ export default function ReportesPHPage() {
     const [concepto, setConcepto] = useState(''); // ID del concepto PH
     const [tipoDoc, setTipoDoc] = useState('');
     const [numeroDoc, setNumeroDoc] = useState('');
+    const [filterText, setFilterText] = useState(''); // Nuevo Filtro de Texto Cliente
 
     // Listas para Selects
     const [unidades, setUnidades] = useState([]);
@@ -27,7 +28,8 @@ export default function ReportesPHPage() {
     // Resultados
     const [reporte, setReporte] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [totales, setTotales] = useState({ debito: 0, credito: 0, saldo: 0 });
+    // REMOVE STATE: Totales ahora son dinámicos
+    // const [totales, setTotales] = useState({ debito: 0, credito: 0, saldo: 0 });
 
     useEffect(() => {
         cargarMaestros();
@@ -70,23 +72,16 @@ export default function ReportesPHPage() {
                 unidad_id: unidad?.id,
                 propietario_id: propietario?.tercero_id,
                 concepto_id: concepto || undefined,
-                numero_doc: numeroDoc || undefined
+                concepto_id: concepto || undefined,
+                numero_doc: numeroDoc || undefined,
+                tipo_movimiento: tipoDoc || undefined // Enviamos el valor del select ('FACTURAS', 'RECIBOS' o '')
             };
             console.log("--- [LOG ESPIA] Parámetros enviados:", params);
 
             const data = await phService.getReporteMovimientos(params);
             console.log(`--- [LOG ESPIA] Datos recibidos: ${data.length} registros ---`);
             setReporte(data);
-
-            // Calcular Totales
-            const totalDebito = data.reduce((acc, row) => acc + row.debito, 0);
-            const totalCredito = data.reduce((acc, row) => acc + row.credito, 0);
-            setTotales({
-                debito: totalDebito,
-                credito: totalCredito,
-                saldo: totalDebito - totalCredito
-            });
-
+            // Totales se calcularán dinámicamente sobre filteredReporte
         } catch (error) {
             console.error("--- [LOG ESPIA] ERROR GENERANDO REPORTE ---", error);
             alert("Error al generar el reporte. Verifique los filtros.");
@@ -101,10 +96,32 @@ export default function ReportesPHPage() {
         setUnidad(null);
         setPropietario(null);
         setConcepto('');
+        setTipoDoc(''); // Limpiar filtro
         setNumeroDoc('');
+        setFilterText('');
         setReporte([]);
-        setTotales({ debito: 0, credito: 0, saldo: 0 });
     };
+
+    // --- FILTRADO CLIENTE (Múltiples Campos) ---
+    // --- FILTRADO CLIENTE (Solo Concepto/Detalle) ---
+    const filteredReporte = reporte.filter(row => {
+        if (!filterText) return true;
+        const text = filterText.toLowerCase();
+
+        // Buscamos SOLO en detalle y observaciones como pidió el usuario
+        const detalle = (row.detalle || '').toLowerCase();
+        const obs = (row.observaciones || '').toLowerCase();
+
+        return detalle.includes(text) || obs.includes(text);
+    });
+
+    // Calcular Totales Dinámicos
+    const totalesDin = {
+        debito: filteredReporte.reduce((acc, row) => acc + row.debito, 0),
+        credito: filteredReporte.reduce((acc, row) => acc + row.credito, 0),
+        saldo: 0
+    };
+    totalesDin.saldo = totalesDin.debito - totalesDin.credito;
 
     // --- PDF EXPORT FUNCTION ---
     const handleExportPDF = () => {
@@ -126,13 +143,13 @@ export default function ReportesPHPage() {
             // Totales Header
             doc.setFontSize(10);
             doc.setTextColor(0);
-            doc.text(`Total Débito: ${formatCurrency(totales.debito)}`, 14, 42);
-            doc.text(`Total Crédito: ${formatCurrency(totales.credito)}`, 80, 42);
-            doc.text(`Saldo: ${formatCurrency(totales.saldo)}`, 150, 42);
+            doc.text(`Total Débito: ${formatCurrency(totalesDin.debito)}`, 14, 42);
+            doc.text(`Total Crédito: ${formatCurrency(totalesDin.credito)}`, 80, 42);
+            doc.text(`Saldo: ${formatCurrency(totalesDin.saldo)}`, 150, 42);
 
             // Table Data
             const tableColumn = ["Fecha", "Doc", "Nro", "Unidad", "Propietario", "Detalle", "Débito", "Crédito"];
-            const tableRows = reporte.map(row => [
+            const tableRows = filteredReporte.map(row => [
                 row.fecha,
                 row.tipo_doc,
                 row.numero,
@@ -264,61 +281,95 @@ export default function ReportesPHPage() {
                                 onChange={(e) => setNumeroDoc(e.target.value)}
                             />
                         </div>
-                    </div>
 
-                    <div className="flex justify-end gap-3 mt-6">
-                        <button
-                            onClick={limpiarFiltros}
-                            className="px-4 py-2 text-gray-500 hover:text-gray-700 font-medium transition-colors"
-                        >
-                            Limpiar
-                        </button>
-                        <button
-                            onClick={generarReporte}
-                            disabled={loading}
-                            className={`px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-all font-semibold flex items-center gap-2 ${loading ? 'opacity-70 cursor-wait' : ''}`}
-                        >
-                            {loading ? 'Generando...' : <><FaSearch /> Generar Reporte</>}
-                        </button>
-                        {reporte.length > 0 && (
-                            <button
-                                onClick={handleExportPDF}
-                                className="px-6 py-2 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition-all font-semibold flex items-center gap-2"
+                        {/* Nuevo Filtro: Tipo de Movimiento */}
+                        <div>
+                            <label className="block text-gray-600 mb-1 font-medium">Tipo Movimiento</label>
+                            <select
+                                className="w-full border rounded-lg p-2 bg-white"
+                                value={tipoDoc} // Reutilizamos 'tipoDoc' o creamos uno nuevo? El codigo usa 'tipoDoc' state pero no lo usaba en API?
+                                // Ah, linea 19: const [tipoDoc, setTipoDoc] = useState(''); Estaba declarado pero no conectado en UI anterior.
+                                // Usaremos ese Estado para este proposito
+                                onChange={(e) => setTipoDoc(e.target.value)}
                             >
-                                <FaFileExcel /> Exportar PDF
-                            </button>
-                        )}
+                                <option value="">-- Todos --</option>
+                                <option value="FACTURAS">Facturas (Cargos)</option>
+                                <option value="RECIBOS">Recibos (Abonos)</option>
+                            </select>
+                        </div>
+
+                        {/* Filtro Texto (Integrado en Grid) */}
+                        <div>
+                            <label className="block text-gray-600 mb-1 font-medium">Filtrar por Concepto</label>
+                            <input
+                                type="text"
+                                className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                                placeholder="Escribe para buscar..."
+                                value={filterText}
+                                onChange={(e) => setFilterText(e.target.value)}
+                            />
+                        </div>
                     </div>
                 </div>
 
+                <div className="flex justify-end gap-3 mt-6">
+                    <button
+                        onClick={limpiarFiltros}
+                        className="px-4 py-2 text-gray-500 hover:text-gray-700 font-medium transition-colors"
+                    >
+                        Limpiar
+                    </button>
+                    <button
+                        onClick={generarReporte}
+                        disabled={loading}
+                        className={`px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-all font-semibold flex items-center gap-2 ${loading ? 'opacity-70 cursor-wait' : ''}`}
+                    >
+                        {loading ? 'Generando...' : <><FaSearch /> Generar Reporte</>}
+                    </button>
+                    {reporte.length > 0 && (
+                        <button
+                            onClick={handleExportPDF}
+                            className="px-6 py-2 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition-all font-semibold flex items-center gap-2"
+                        >
+                            <FaFileExcel /> Exportar PDF
+                        </button>
+                    )}
+                </div>
+
+
+
+
+
                 {/* Resumen Cards */}
-                {reporte.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                        <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-500 flex items-center justify-between">
-                            <div>
-                                <p className="text-gray-500 text-xs uppercase tracking-wide">Total Débitos (Cargos)</p>
-                                <p className="text-xl font-bold text-gray-800">{formatCurrency(totales.debito)}</p>
+                {
+                    reporte.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                            <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-500 flex items-center justify-between">
+                                <div>
+                                    <p className="text-gray-500 text-xs uppercase tracking-wide">Total Débitos (Cargos)</p>
+                                    <p className="text-xl font-bold text-gray-800">{formatCurrency(totalesDin.debito)}</p>
+                                </div>
+                                <div className="p-3 bg-blue-50 text-blue-600 rounded-full"><FaMoneyBillWave /></div>
                             </div>
-                            <div className="p-3 bg-blue-50 text-blue-600 rounded-full"><FaMoneyBillWave /></div>
-                        </div>
-                        <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-green-500 flex items-center justify-between">
-                            <div>
-                                <p className="text-gray-500 text-xs uppercase tracking-wide">Total Créditos (Pagos)</p>
-                                <p className="text-xl font-bold text-gray-800">{formatCurrency(totales.credito)}</p>
+                            <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-green-500 flex items-center justify-between">
+                                <div>
+                                    <p className="text-gray-500 text-xs uppercase tracking-wide">Total Créditos (Pagos)</p>
+                                    <p className="text-xl font-bold text-gray-800">{formatCurrency(totalesDin.credito)}</p>
+                                </div>
+                                <div className="p-3 bg-green-50 text-green-600 rounded-full"><FaMoneyBillWave /></div>
                             </div>
-                            <div className="p-3 bg-green-50 text-green-600 rounded-full"><FaMoneyBillWave /></div>
-                        </div>
-                        <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-gray-500 flex items-center justify-between">
-                            <div>
-                                <p className="text-gray-500 text-xs uppercase tracking-wide">Saldo Neto (Periodo)</p>
-                                <p className={`text-xl font-bold ${totales.saldo >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
-                                    {formatCurrency(totales.saldo)}
-                                </p>
+                            <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-gray-500 flex items-center justify-between">
+                                <div>
+                                    <p className="text-gray-500 text-xs uppercase tracking-wide">Saldo Neto (Filtrado)</p>
+                                    <p className={`text-xl font-bold ${totalesDin.saldo >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
+                                        {formatCurrency(totalesDin.saldo)}
+                                    </p>
+                                </div>
+                                <div className="p-3 bg-gray-100 text-gray-600 rounded-full"><FaBuilding /></div>
                             </div>
-                            <div className="p-3 bg-gray-100 text-gray-600 rounded-full"><FaBuilding /></div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
                 {/* Tabla de Resultados */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -336,14 +387,14 @@ export default function ReportesPHPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {reporte.length === 0 ? (
+                                {filteredReporte.length === 0 ? (
                                     <tr>
                                         <td colSpan="7" className="p-8 text-center text-gray-400">
-                                            {loading ? 'Cargando datos...' : 'No hay datos para mostrar. Aplique filtros y presione Generar.'}
+                                            {loading ? 'Cargando datos...' : (filterText ? 'No hay coincidencias con el filtro.' : 'No hay datos para mostrar.')}
                                         </td>
                                     </tr>
                                 ) : (
-                                    reporte.map((row, idx) => (
+                                    filteredReporte.map((row, idx) => (
                                         <tr key={idx} className="hover:bg-blue-50 transition-colors text-gray-700">
                                             <td className="p-4 whitespace-nowrap">{row.fecha}</td>
                                             <td className="p-4 font-medium text-blue-600">
@@ -370,7 +421,7 @@ export default function ReportesPHPage() {
                     </div>
                     {reporte.length > 0 && (
                         <div className="p-4 bg-gray-50 border-t flex justify-between text-xs text-gray-500">
-                            <span>Mostrando {reporte.length} registros</span>
+                            <span>Mostrando {filteredReporte.length} de {reporte.length} registros</span>
                             <span>Generado el {new Date().toLocaleDateString()}</span>
                         </div>
                     )}

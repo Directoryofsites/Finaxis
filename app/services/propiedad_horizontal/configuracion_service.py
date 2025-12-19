@@ -25,6 +25,7 @@ def update_configuracion(db: Session, empresa_id: int, config_update: schemas.PH
     config.mensaje_factura = config_update.mensaje_factura
     config.tipo_documento_factura_id = config_update.tipo_documento_factura_id
     config.tipo_documento_recibo_id = config_update.tipo_documento_recibo_id
+    config.cuenta_ingreso_intereses_id = config_update.cuenta_ingreso_intereses_id
     
     db.commit()
     db.refresh(config)

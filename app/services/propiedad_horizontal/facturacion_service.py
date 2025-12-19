@@ -109,19 +109,27 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
                     from app.services.cartera import get_facturas_pendientes_por_tercero
                     from datetime import datetime
                     
-                    # Obtener facturas pendientes del propietario
-                    pendientes = get_facturas_pendientes_por_tercero(db, unidad.propietario_principal_id, empresa_id)
+                    # Obtener facturas pendientes del propietario, FILTRADAS POR LA UNIDAD ACTUAL
+                    # Esto evita que se sumen deudas de otros apartamentos del mismo dueño
+                    pendientes = get_facturas_pendientes_por_tercero(
+                        db, 
+                        unidad.propietario_principal_id, 
+                        empresa_id, 
+                        unidad_ph_id=unidad.id
+                    )
                     
                     saldo_mora = 0
                     primer_dia_mes_factura = fecha_factura.replace(day=1)
 
                     for fact in pendientes:
-                        # Convertir fecha factura (string ISO) a date
-                        fecha_doc = datetime.fromisoformat(fact['fecha']).date()
+                        # Convertir fecha vencimiento (string ISO) a date
+                        # Si no tiene fecha vencimiento, usamos la fecha documento como fallback
+                        fecha_ref_str = fact.get('fecha_vencimiento') or fact['fecha']
+                        fecha_ref = datetime.fromisoformat(fecha_ref_str).date()
                         
-                        # Si es anterior al mes que estamos facturando, suma mora
-                        # (Ej: Factura de Enero vence en Enero. Si estamos en Febrero, es mora)
-                        if fecha_doc < primer_dia_mes_factura:
+                        # Si la fecha de VENCIMIENTO es anterior al primer día del mes actual, 
+                        # significa que ya venció el mes pasado y debe pagar mora.
+                        if fecha_ref < primer_dia_mes_factura:
                             saldo_mora += fact['saldo_pendiente']
                     
                     if saldo_mora > 0:

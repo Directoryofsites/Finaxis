@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session, joinedload, selectinload
+from typing import Optional
 from fastapi import HTTPException
 from app.models.propiedad_horizontal import PHUnidad, PHConfiguracion
 from app.models.documento import Documento
@@ -49,13 +50,17 @@ def get_estado_cuenta_unidad(db: Session, unidad_id: int, empresa_id: int):
         "facturas_pendientes": facturas_pendientes
     }
 
-def get_historial_cuenta_unidad(db: Session, unidad_id: int, empresa_id: int, fecha_inicio: date = None, fecha_fin: date = None):
+def get_historial_cuenta_unidad(db: Session, unidad_id: Optional[int], empresa_id: int, fecha_inicio: date = None, fecha_fin: date = None, propietario_id: Optional[int] = None):
     # 1. Obtener Datos Básicos
-    unidad = db.query(PHUnidad).filter(PHUnidad.id == unidad_id, PHUnidad.empresa_id == empresa_id).first()
-    if not unidad:
-        raise HTTPException(status_code=404, detail="Unidad no encontrada")
+    unidad = None
+    tercero_id = propietario_id
+
+    if unidad_id:
+        unidad = db.query(PHUnidad).filter(PHUnidad.id == unidad_id, PHUnidad.empresa_id == empresa_id).first()
+        if not unidad:
+            raise HTTPException(status_code=404, detail="Unidad no encontrada")
+        tercero_id = unidad.propietario_principal_id
     
-    tercero_id = unidad.propietario_principal_id
     if not tercero_id:
          return {"unidad": unidad, "transacciones": [], "saldo_actual": 0}
 
@@ -65,13 +70,16 @@ def get_historial_cuenta_unidad(db: Session, unidad_id: int, empresa_id: int, fe
     
     query = db.query(Documento).options(
         joinedload(Documento.tipo_documento),
+        joinedload(Documento.unidad_ph), # Cargar Unidad relacionada
         selectinload(Documento.movimientos).joinedload(MovimientoContable.cuenta)
     ).filter(
         Documento.empresa_id == empresa_id,
         Documento.beneficiario_id == tercero_id,
-        Documento.unidad_ph_id == unidad_id, # FILTRO AGREGADO PARA EVITAR MEZCLAS
         Documento.estado.in_(['ACTIVO', 'PROCESADO'])
     )
+
+    if unidad_id:
+        query = query.filter(Documento.unidad_ph_id == unidad_id)
 
     # Filtros de Fecha
     if fecha_inicio:
@@ -100,12 +108,17 @@ def get_historial_cuenta_unidad(db: Session, unidad_id: int, empresa_id: int, fe
         
         if impacto_cxc != 0:
             saldo += impacto_cxc
+            
+            # Construir detalle con Unidad
+            unidad_texto = f"Unidad {doc.unidad_ph.codigo}" if doc.unidad_ph else "Unidad General"
+            concepto = f"{unidad_texto} - {doc.observaciones}" if doc.observaciones else unidad_texto
+
             transacciones.append({
                 "fecha": doc.fecha,
                 "documento": f"{doc.tipo_documento.codigo} - {doc.numero}",
                 "tipo": doc.tipo_documento.nombre,
-                # Usar observaciones como concepto/detalle o el primer movimiento visible
-                "concepto": doc.observaciones or "Movimiento de Cartera",
+                # Usar Unit Code como detalle principal
+                "concepto": concepto,
                 "debito": impacto_cxc if impacto_cxc > 0 else 0, # Cargos
                 "credito": abs(impacto_cxc) if impacto_cxc < 0 else 0, # Pagos
                 "saldo": saldo,
@@ -116,7 +129,8 @@ def get_historial_cuenta_unidad(db: Session, unidad_id: int, empresa_id: int, fe
 
     return {
         "unidad": unidad,
-        "propietario": unidad.propietario_principal,
+        "propietario": unidad.propietario_principal if unidad else None,
+        "propietario_id": tercero_id, # Retornamos ID del tercero
         "transacciones": transacciones,
         "saldo_actual": saldo
     }
