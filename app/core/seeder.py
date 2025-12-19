@@ -45,7 +45,45 @@ def seed_database():
                 "papelera:usar",
                 "plantilla:crear",
                 "inventario:eliminar_producto", # Añadido en misión anterior
-                "inventario:ver_super_informe" # <-- NUEVO PERMISO AÑADIDO
+                "inventario:ver_super_informe", # <-- NUEVO PERMISO AÑADIDO
+                # Permisos de Conciliación Bancaria
+                "conciliacion_bancaria:ver",
+                "conciliacion_bancaria:configurar",
+                "conciliacion_bancaria:importar",
+                "conciliacion_bancaria:conciliar",
+                "conciliacion_bancaria:ajustar",
+                "conciliacion_bancaria:reportes",
+                "conciliacion_bancaria:auditoria"
+            ],
+            "operador_bancario": [
+                # Rol especializado para conciliación bancaria
+                "conciliacion_bancaria:ver",
+                "conciliacion_bancaria:configurar",
+                "conciliacion_bancaria:importar",
+                "conciliacion_bancaria:conciliar",
+                "conciliacion_bancaria:ajustar",
+                "conciliacion_bancaria:reportes",
+                "inventario:ver_reportes"
+            ],
+            "Administrador": [
+                # Rol Administrador con mayúscula (usado por el sistema)
+                "utilidades:migracion",
+                "inventario:ver_reportes",
+                "reportes:rentabilidad_producto",
+                "ventas:ver_reporte_gestion",
+                "reportes:ver_facturacion_detallado",
+                "papelera:usar",
+                "plantilla:crear",
+                "inventario:eliminar_producto",
+                "inventario:ver_super_informe",
+                # Permisos de Conciliación Bancaria
+                "conciliacion_bancaria:ver",
+                "conciliacion_bancaria:configurar",
+                "conciliacion_bancaria:importar",
+                "conciliacion_bancaria:conciliar",
+                "conciliacion_bancaria:ajustar",
+                "conciliacion_bancaria:reportes",
+                "conciliacion_bancaria:auditoria"
             ]
             # Añadir aquí permisos para 'contador' o 'invitado' si es necesario
         }
@@ -63,7 +101,7 @@ def seed_database():
         db.flush()
 
         print("--> Asegurando la existencia de todos los roles...")
-        roles_a_crear = ["soporte", "administrador", "contador", "invitado"]
+        roles_a_crear = ["soporte", "administrador", "Administrador", "contador", "invitado", "operador_bancario"]
         for nombre_rol in roles_a_crear:
             if not db.query(models_permiso.Rol).filter(models_permiso.Rol.nombre == nombre_rol).first():
                 db.add(models_permiso.Rol(nombre=nombre_rol, descripcion=f"Rol para {nombre_rol}"))

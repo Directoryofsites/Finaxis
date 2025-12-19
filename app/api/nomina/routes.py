@@ -392,7 +392,6 @@ def eliminar_desprendible(id: int, db: Session = Depends(get_db), current_user: 
 
     if doc_id:
         # STRICT DELETION: Si falla la contabilidad, debe fallar todo para evitar inconsistencias.
-        # Nada de "try/except pass" aquí.
         documento_service.eliminar_documento(
             db=db,
             documento_id=doc_id,

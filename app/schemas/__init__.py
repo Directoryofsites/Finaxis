@@ -32,3 +32,4 @@ from . import tipo_documento
 from . import token
 from . import usuario
 from . import traslado_inventario
+from . import conciliacion_bancaria

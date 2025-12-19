@@ -155,13 +155,11 @@ class LiquidadorNominaService:
             salario_base=Decimal(empleado.salario_base),
             dias_trabajados=dias,
             tiene_auxilio=empleado.auxilio_transporte,
-
             horas_extras=extras,
             comisiones=comisiones,
             otros_devengados=otros_devengados,
             otras_deducciones=otras_deducciones
         )
-        
         # 4. Crear Detalle
         detalle = models_nomina.DetalleNomina(
             nomina_id=nomina.id,

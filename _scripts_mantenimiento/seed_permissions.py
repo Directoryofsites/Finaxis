@@ -32,6 +32,15 @@ PERMISOS_DATA = [
     
     # Panel de Soporte (para el super-admin)
     {"nombre": "soporte:acceder_panel", "descripcion": "Acceder al panel de herramientas de soporte."},
+    
+    # Módulo de Conciliación Bancaria
+    {"nombre": "conciliacion_bancaria:ver", "descripcion": "Ver el módulo de conciliación bancaria y sus datos."},
+    {"nombre": "conciliacion_bancaria:configurar", "descripcion": "Configurar importaciones y cuentas contables para conciliación."},
+    {"nombre": "conciliacion_bancaria:importar", "descripcion": "Importar extractos bancarios y validar archivos."},
+    {"nombre": "conciliacion_bancaria:conciliar", "descripcion": "Realizar conciliaciones manuales y automáticas."},
+    {"nombre": "conciliacion_bancaria:ajustar", "descripcion": "Generar y aplicar ajustes automáticos."},
+    {"nombre": "conciliacion_bancaria:reportes", "descripcion": "Ver y exportar reportes de conciliación."},
+    {"nombre": "conciliacion_bancaria:auditoria", "descripcion": "Ver auditoría y actividad sospechosa en conciliaciones."},
 ]
 
 # --- DEFINICIÓN DE ROLES INICIALES ---
@@ -51,6 +60,18 @@ ROLES_DATA = {
         "permisos": [
             "contabilidad:crear_documento",
             "contabilidad:editar_documento",
+            "contabilidad:ver_reportes",
+        ]
+    },
+    "Operador Bancario": {
+        "descripcion": "Especializado en conciliación bancaria con acceso completo al módulo.",
+        "permisos": [
+            "conciliacion_bancaria:ver",
+            "conciliacion_bancaria:configurar",
+            "conciliacion_bancaria:importar",
+            "conciliacion_bancaria:conciliar",
+            "conciliacion_bancaria:ajustar",
+            "conciliacion_bancaria:reportes",
             "contabilidad:ver_reportes",
         ]
     }
