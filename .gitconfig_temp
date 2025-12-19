@@ -1,0 +1,5 @@
+[core]
+    pager = cat
+[pager]
+    branch = false
+    status = false

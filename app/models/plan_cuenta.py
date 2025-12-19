@@ -23,6 +23,10 @@ class PlanCuenta(Base):
     es_cuenta_de_ingresos = Column(Boolean, nullable=False, server_default='f', default=False, index=True)
     # --- FIN: NUEVA COLUMNA AÑADIDA ---
     
+    # --- CONCILIACION BANCARIA: NUEVA COLUMNA ---
+    is_bank_reconciliation_account = Column(Boolean, default=False, index=True)
+    # --- FIN CONCILIACION BANCARIA ---
+    
     cuenta_padre_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True)
 
     created_by = Column(Integer, ForeignKey("usuarios.id"), nullable=True)

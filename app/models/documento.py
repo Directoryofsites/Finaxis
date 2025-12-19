@@ -31,6 +31,10 @@ class Documento(Base):
 
     # --- CORRECCIÓN: Se elimina el server_default PostgreSQL-específico ---
     fecha_operacion = Column(TIMESTAMP(timezone=True))
+    
+    # --- CONCILIACION BANCARIA: NUEVA COLUMNA ---
+    reconciliation_reference = Column(String(255), nullable=True)
+    # --- FIN CONCILIACION BANCARIA ---
 
     # Relaciones existentes
     empresa = relationship("Empresa")

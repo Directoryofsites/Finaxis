@@ -29,6 +29,17 @@ from app.core.seeder import seed_database
 seed_database()
 # --- FIN: LÓGICA DE SEMBRADO AUTOMÁTICO ---
 
+# --- INICIO: MIGRACIÓN AUTOMÁTICA DE PERMISOS CONCILIACIÓN BANCARIA ---
+try:
+    import sys
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from migrate_conciliacion_permissions import migrate_conciliacion_permissions
+    migrate_conciliacion_permissions()
+except Exception as e:
+    print(f"⚠️ Error en migración de permisos de conciliación bancaria: {e}")
+# --- FIN: MIGRACIÓN AUTOMÁTICA ---
+
 # Se importan los routers de la API
 from app.core.database import get_db
 from app.api.auth import routes as auth_router
@@ -332,6 +343,12 @@ app.include_router(router_nomina.router, prefix="/api", tags=["Nómina"])
 # --- MODULO PRODUCCION ---
 from app.api.endpoints import produccion as produccion_router
 app.include_router(produccion_router.router, prefix="/api/produccion", tags=["Producción"])
+
+# --- MODULO CONCILIACION BANCARIA ---
+from app.api.conciliacion_bancaria import routes as conciliacion_bancaria_router
+app.include_router(conciliacion_bancaria_router.router, prefix="/api", tags=["Conciliación Bancaria"])
+
+# Los permisos de conciliación bancaria ahora se crean automáticamente en el seeder
 
 if __name__ == "__main__":
     import uvicorn

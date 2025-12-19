@@ -125,6 +125,18 @@ class LiquidadorNominaService:
         if not empleado:
             raise ValueError("Empleado no encontrado")
             
+        # --- VALIDACIÓN CANDADO (PREVENIR DUPLICADOS) ---
+        # Verificar si ya existe liquidación para este empleado en este periodo
+        # La única forma de reliquidar es eliminando explícitamente la anterior
+        existing_detalle = db.query(models_nomina.DetalleNomina).filter(
+            models_nomina.DetalleNomina.nomina_id == nomina.id,
+            models_nomina.DetalleNomina.empleado_id == empleado_id
+        ).first()
+        
+        if existing_detalle:
+            raise ValueError(f"Ya existe una liquidación para {empleado.nombres} en el periodo {anio}-{mes}. Elimine la anterior para reliquidar.")
+        # -----------------------------------------------
+
         valores = LiquidadorNominaService.calcular_devengados_deducciones(
             salario_base=Decimal(empleado.salario_base),
             dias_trabajados=dias,
@@ -133,14 +145,8 @@ class LiquidadorNominaService:
             comisiones=comisiones
         )
         
-        # 3. Eliminar detalle previo si existe (para re-liquidar)
-        prev_detalle = db.query(models_nomina.DetalleNomina).filter(
-            models_nomina.DetalleNomina.nomina_id == nomina.id,
-            models_nomina.DetalleNomina.empleado_id == empleado_id
-        ).first()
-        
-        if prev_detalle:
-            db.delete(prev_detalle)
+        # (El bloque de eliminación automática se ha eliminado por seguridad)
+
             
         # 4. Crear Detalle
         detalle = models_nomina.DetalleNomina(
@@ -159,6 +165,7 @@ class LiquidadorNominaService:
             neto_pagar=valores['neto_pagar']
         )
         db.add(detalle)
+        db.flush() # CRITICAL: Ensure detalle has ID for reference in Documento
         
         # 5. Contabilización Automática
         # Buscar configuración: Prioridad Específica > Global

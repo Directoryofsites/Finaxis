@@ -4,7 +4,7 @@
     FaClipboardList, FaWrench, FaHandshake, FaTruckMoving, FaReceipt, FaLock,
     FaListUl, FaDollarSign, FaChartLine, FaChartPie, FaPercentage, FaFileContract,
     FaRedoAlt, FaCalendarAlt, FaTools, FaTimes, FaChartArea, FaStar, FaBuilding,
-    FaStamp, FaShoppingCart, FaMoneyBillWave, FaTractor, FaCogs, FaHome, FaIndustry
+    FaTractor, FaCogs, FaHome, FaIndustry, FaExchangeAlt, FaUpload, FaEye
 } from 'react-icons/fa';
 
 // Módulos definidos externamente para claridad
@@ -44,6 +44,20 @@ const PRODUCCION_MODULE = {
     links: [
         { name: 'Gestión de Recetas', href: '/produccion/recetas', icon: FaListUl },
         { name: 'Órdenes Producción', href: '/produccion/ordenes', icon: FaClipboardList },
+    ]
+};
+
+// --- MODULO CONCILIACION BANCARIA (NUEVO) ---
+const CONCILIACION_BANCARIA_MODULE = {
+    id: 'conciliacion_bancaria',
+    name: 'Conciliación Bancaria',
+    icon: FaExchangeAlt,
+    links: [
+        { name: 'Dashboard', href: '/conciliacion-bancaria', icon: FaChartBar },
+        { name: 'Conciliación Manual', href: '/conciliacion-bancaria?tab=manual', icon: FaExchangeAlt },
+        { name: 'Importar Extractos', href: '/conciliacion-bancaria?tab=import', icon: FaUpload },
+        { name: 'Reportes', href: '/conciliacion-bancaria?tab=reports', icon: FaEye },
+        { name: 'Configuración', href: '/conciliacion-bancaria?tab=config', icon: FaCog },
     ]
 };
 
@@ -150,7 +164,9 @@ export const menuStructure = [
     NOMINA_MODULE,
     // 11. Producción
     PRODUCCION_MODULE,
-    // 12. Administración y Configuración
+    // 12. Conciliación Bancaria
+    CONCILIACION_BANCARIA_MODULE,
+    // 13. Administración y Configuración
     {
         id: 'administracion',
         name: 'Administración y Configuración',
@@ -188,6 +204,6 @@ export const menuStructure = [
             },
         ]
     },
-    // 13. Favoritos
+    // 14. Favoritos
     FAVORITOS_MODULE,
 ];

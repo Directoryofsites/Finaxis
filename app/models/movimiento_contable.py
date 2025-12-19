@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, Text, Numeric
+from sqlalchemy import Column, Integer, ForeignKey, Text, Numeric, String
 from sqlalchemy.orm import relationship
 from ..core.database import Base
 from sqlalchemy.schema import UniqueConstraint
@@ -20,6 +20,10 @@ class MovimientoContable(Base):
     concepto = Column(Text)
     debito = Column(Numeric(15, 2), default=0)
     credito = Column(Numeric(15, 2), default=0)
+    
+    # --- CONCILIACION BANCARIA: NUEVA COLUMNA ---
+    reconciliation_status = Column(String(50), default='UNRECONCILED')  # UNRECONCILED, RECONCILED
+    # --- FIN CONCILIACION BANCARIA ---
 
     # Relaciones
     cuenta = relationship("PlanCuenta")

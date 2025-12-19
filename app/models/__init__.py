@@ -56,3 +56,9 @@ from .propiedad_horizontal import PHTorre, PHUnidad, PHVehiculo, PHMascota
 # --- PRODUCCION (Nuevo Módulo) ---
 from .produccion import Receta, RecetaDetalle, RecetaRecurso, OrdenProduccion, OrdenProduccionInsumo, OrdenProduccionRecurso
 from .configuracion_produccion import ConfiguracionProduccion
+
+# --- CONCILIACION BANCARIA (Nuevo Módulo) ---
+from .conciliacion_bancaria import (
+    ImportConfig, ImportSession, BankMovement, Reconciliation, 
+    ReconciliationMovement, AccountingConfig, ReconciliationAudit
+)
