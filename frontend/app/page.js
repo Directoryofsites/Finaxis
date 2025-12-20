@@ -20,6 +20,9 @@ import { toast, ToastContainer } from 'react-toastify';
 
 // --- Importación de Componentes CRÍTICOS ---
 
+// --- Componentes ---
+import SmartSearchSection from './components/SmartSearchSection';
+
 // --- Servicios Frontend ---
 import { getFinancialRatios, getHorizontalAnalysis, getVerticalAnalysis } from '../lib/dashboardService';
 
@@ -1022,11 +1025,7 @@ function HomePageContent() {
                    Si hay módulo activo -> Muestra ExplorerView (Contenido).
                 */}
                 {!activeModuleId ? (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-400 bg-white/50">
-                        <img src="/logo_finaxis_real.png" alt="Sistema Finaxis" className="h-24 mb-6 opacity-90 drop-shadow-md" />
-                        <h2 className="text-2xl font-light text-gray-600">Bienvenido</h2>
-                        <p className="mt-2 text-sm text-gray-400">Selecciona una opción del menú superior o tus favoritos a la izquierda.</p>
-                    </div>
+                    <SmartSearchSection />
                 ) : (
                     <div className="h-full overflow-y-auto bg-gray-50 animate-in fade-in duration-300">
                         {/* Header Local del Módulo (Opcional, ya que la barra dice dónde estás) */}

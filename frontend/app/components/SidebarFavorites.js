@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { getFavoritos } from '@/lib/favoritosService';
 import {
     FaPlus, FaCog, FaRocket, FaGem, FaBolt, FaMagic,
@@ -129,9 +129,16 @@ const getSmartIconForRoute = (route) => {
 
 export default function SidebarFavorites() {
     const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+
+    // ZEN MODE LOGIC
+    const isZenMode = pathname === '/' && !searchParams.get('module');
+
     const [favoritos, setFavoritos] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
 
+    // ... (fetchFavs kept same) ...
     const fetchFavs = () => {
         getFavoritos().then(data => {
             if (Array.isArray(data)) {
@@ -154,49 +161,71 @@ export default function SidebarFavorites() {
         return () => window.removeEventListener('favoritesUpdated', handleUpdate);
     }, []);
 
+    // Determinar clases de visibilidad según Modo
+    // Normal: w-2 opacity-50 (Sliver visible) -> Hover: w-16 opacity-100
+    // Zen: w-0 opacity-0 (Invisible) -> Hover (via state): w-16 opacity-100
+    // Nota: En ZenMode, el div principal tiene w-0 cuando cerrado, por lo que requiere un trigger externo.
+
+    // Si NO es ZenMode, usamos el comportamiento 'sliver' (w-2).
+    // Si ES ZenMode, usamos w-0.
+    const closedClass = isZenMode ? 'w-0 opacity-0 pointer-events-none' : 'w-2 opacity-50 hover:w-16 hover:opacity-100';
+
     return (
-        <div
-            className={`fixed left-0 top-1/2 -translate-y-1/2 h-auto max-h-[80vh] bg-white shadow-2xl rounded-r-2xl border-y border-r border-gray-200 z-50 flex flex-col transition-all duration-300 ease-in-out overflow-hidden group ${isOpen ? 'w-16 opacity-100' : 'w-2 opacity-50 hover:w-16 hover:opacity-100'}`}
-            onMouseEnter={() => setIsOpen(true)}
-            onMouseLeave={() => setIsOpen(false)}
-            style={{ minHeight: '100px' }}
-        >
-            {/* Banda decorativa cuando está cerrado */}
-            {!isOpen && (
-                <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-blue-400 to-purple-500"></div>
+        <>
+            {/* Trigger Zone para ZenMode (Borde Izquierdo) */}
+            {(isZenMode && !isOpen) && (
+                <div
+                    className="fixed left-0 top-0 bottom-0 w-4 z-[49] bg-transparent hover:bg-transparent cursor-pointer"
+                    onMouseEnter={() => setIsOpen(true)}
+                    title="Mostrar Favoritos"
+                />
             )}
 
-            {/* Contenido del Sidebar */}
-            <div className="flex flex-col items-center py-4 w-16 scrollbar-hide overflow-y-auto">
+            <div
+                className={`fixed left-0 top-1/2 -translate-y-1/2 h-auto max-h-[80vh] bg-white shadow-2xl rounded-r-2xl border-y border-r border-gray-200 z-50 flex flex-col transition-all duration-300 ease-in-out overflow-hidden group 
+                    ${isOpen ? 'w-16 opacity-100' : closedClass}
+                `}
+                onMouseEnter={() => setIsOpen(true)}
+                onMouseLeave={() => setIsOpen(false)}
+                style={{ minHeight: '100px' }}
+            >
+                {/* Banda decorativa cuando está cerrado (Solo visible en modo Normal) */}
+                {(!isOpen && !isZenMode) && (
+                    <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-blue-400 to-purple-500"></div>
+                )}
 
-                {/* Botón Configurar (Siempre Primero) */}
-                <button
-                    onClick={() => router.push('/admin/utilidades/configuracion-favoritos')}
-                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors mb-2 shadow-sm tooltip tooltip-right"
-                    title="Configurar Favoritos"
-                >
-                    <FaCog className="text-lg" />
-                </button>
+                {/* Contenido del Sidebar */}
+                <div className="flex flex-col items-center py-4 w-16 scrollbar-hide overflow-y-auto">
 
-                <div className="w-8 h-[1px] bg-gray-200 my-2"></div>
+                    {/* Botón Configurar (Siempre Primero) */}
+                    <button
+                        onClick={() => router.push('/admin/utilidades/configuracion-favoritos')}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors mb-2 shadow-sm tooltip tooltip-right"
+                        title="Configurar Favoritos"
+                    >
+                        <FaCog className="text-lg" />
+                    </button>
 
-                {/* Lista de Favoritos */}
-                {Array.isArray(favoritos) && favoritos.map((item) => {
-                    const IconComponent = getSmartIconForRoute(item.ruta_enlace);
-                    return (
-                        <Link
-                            key={item.id}
-                            href={item.ruta_enlace}
-                            className="w-10 h-10 flex items-center justify-center mb-2 rounded-xl text-gray-400 hover:bg-gradient-to-br hover:from-blue-500 hover:to-purple-600 hover:text-white hover:shadow-lg transition-all transform hover:scale-110"
-                            title={item.nombre_personalizado}
-                        >
-                            <IconComponent className="text-lg" />
-                        </Link>
-                    );
-                })}
+                    <div className="w-8 h-[1px] bg-gray-200 my-2"></div>
+
+                    {/* Lista de Favoritos */}
+                    {Array.isArray(favoritos) && favoritos.map((item) => {
+                        const IconComponent = getSmartIconForRoute(item.ruta_enlace);
+                        return (
+                            <Link
+                                key={item.id}
+                                href={item.ruta_enlace}
+                                className="w-10 h-10 flex items-center justify-center mb-2 rounded-xl text-gray-400 hover:bg-gradient-to-br hover:from-blue-500 hover:to-purple-600 hover:text-white hover:shadow-lg transition-all transform hover:scale-110"
+                                title={item.nombre_personalizado}
+                            >
+                                <IconComponent className="text-lg" />
+                            </Link>
+                        );
+                    })}
 
 
+                </div>
             </div>
-        </div>
+        </>
     );
 }

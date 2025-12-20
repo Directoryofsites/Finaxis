@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo, useRef, useContext } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { FaUserCircle, FaSignOutAlt, FaSearch, FaTimes, FaKeyboard, FaArrowRight, FaCog } from 'react-icons/fa';
 import { menuStructure } from '../lib/menuData';
 import { useAuth } from '../app/context/AuthContext';
@@ -13,24 +13,44 @@ import { useAuth } from '../app/context/AuthContext';
  * 2. Mnemonic Logic: keys mapped to visual characters.
  */
 export default function TopNavigationBar() {
-    const router = useRouter();
     const { user, logout } = useAuth();
+    const router = useRouter(); // Explicitly defining router here if not already defined
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
 
-
+    // ZEN MODE LOGIC:
+    // Si estamos en la raíz ('/') y NO hay un módulo activo (?module=...), activamos el modo Zen (Menu oculto).
+    // En cualquier otro caso (dentro de un módulo), el menú debe estar visible (Pinned).
+    const isZenMode = pathname === '/' && !searchParams.get('module');
 
     // Estados
-    const [isVisible, setIsVisible] = useState(false);
+    const [isVisible, setIsVisible] = useState(!isZenMode); // Inicialmente visible si NO es ZenMode
     const [isMenuOpen, setIsMenuOpen] = useState(null);
     const [activeDropdownLeft, setActiveDropdownLeft] = useState(0);
     const [altPressed, setAltPressed] = useState(false);
     const [focusedLinkIndex, setFocusedLinkIndex] = useState(-1);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
 
+    // Efecto para controlar la visibilidad basada en el modo
+    useEffect(() => {
+        if (!isZenMode) {
+            setIsVisible(true);
+        } else {
+            setIsVisible(false);
+        }
+    }, [isZenMode]);
+
     // Referencias
     const buttonsRef = useRef({});
     const hoverTimeoutRef = useRef(null);
 
-    // Mapeo de Teclas
+    // ... (rest of code) ...
+
+
+
+    // ...
+
+
     const menuMap = useMemo(() => {
         const map = {};
         menuStructure.forEach(item => {
@@ -44,8 +64,11 @@ export default function TopNavigationBar() {
     const closeAll = () => {
         setIsMenuOpen(null);
         setUserMenuOpen(false);
-        setIsVisible(false); // Only hide bar if user explicitly closes or navigates? Actually hovering out usually keeps bar visible if it was pinned? User said auto-hiding bar. 
-        // Logic check: The bar auto-hides `(!isVisible)`. If we close menu, do we hide bar? Yes, looks like `closeAll` sets `isVisible(false)`.
+        // En ZenMode, ocultamos la barra al "cerrar todo" (mouseleave). 
+        // En modo normal, la barra se queda visible.
+        if (isZenMode) {
+            setIsVisible(false);
+        }
         setFocusedLinkIndex(-1);
     };
 
@@ -298,9 +321,9 @@ export default function TopNavigationBar() {
 
     return (
         <>
-            {!isVisible && (
+            {(!isVisible && isZenMode) && (
                 <div
-                    className="fixed top-0 left-0 right-0 h-2 z-[9900] bg-transparent hover:bg-blue-400/10 cursor-pointer"
+                    className="fixed top-0 left-0 right-0 h-4 z-[9900] bg-transparent hover:bg-transparent cursor-pointer"
                     onMouseEnter={() => setIsVisible(true)}
                     title="Mostrar Menú"
                 />

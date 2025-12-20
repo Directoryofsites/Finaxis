@@ -142,13 +142,8 @@ export default function AuxiliarPorCuentaPage() {
             const signedToken = signedUrlRes.data.signed_url_token;
             const finalPdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/reports/account-ledger/imprimir?signed_token=${signedToken}`;
 
-            // Descarga directa
-            const link = document.createElement('a');
-            link.href = finalPdfUrl;
-            link.setAttribute('download', `Auxiliar_Cuenta_${startDate}_${endDate}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // Abrir PDF en nueva pestaña (Solución Bug "Rompe Página")
+            window.open(finalPdfUrl, '_blank');
 
         } catch (err) {
             setError(err.response?.data?.detail || 'Error al obtener el PDF.');

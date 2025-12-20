@@ -335,6 +335,10 @@ app.include_router(router_nomina.router, prefix="/api", tags=["Nómina"])
 from app.api.endpoints import produccion as produccion_router
 app.include_router(produccion_router.router, prefix="/api/produccion", tags=["Producción"])
 
+# --- MODULO SMART SEARCH (BÚSQUEDA INTELIGENTE) ---
+from app.api.endpoints import search as search_router
+app.include_router(search_router.router, prefix="/api/search", tags=["Búsqueda Inteligente"])
+
 # --- MODULO CONCILIACION BANCARIA ---
 from app.api.conciliacion_bancaria import routes as conciliacion_bancaria_router
 app.include_router(conciliacion_bancaria_router.router, prefix="/api", tags=["Conciliación Bancaria"])
