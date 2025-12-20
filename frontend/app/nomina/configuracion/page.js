@@ -5,6 +5,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { FaCog, FaSave, FaPlus, FaEdit, FaTrash, FaCheck, FaTimes, FaMoneyCheckAlt, FaArrowLeft, FaFileInvoiceDollar, FaCalculator } from 'react-icons/fa';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 // Services
 import { getTiposNomina, createTipoNomina, updateTipoNomina, deleteTipoNomina, getConfig, saveConfig } from '../../../lib/nominaService';
@@ -29,10 +30,20 @@ export default function NominaConfiguracion() {
     // Forms
     const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm();
 
+    const searchParams = useSearchParams();
+
     // -- INITIAL LOAD --
     useEffect(() => {
         loadInitialData();
-    }, []);
+
+        // Deep Link Trigger
+        const trigger = searchParams.get('trigger');
+        if (trigger === 'new_payroll_type') {
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, '', newUrl);
+            setTimeout(() => openNew(), 500); // Wait for data load? 
+        }
+    }, [searchParams]);
 
     const loadInitialData = async () => {
         setLoading(true);

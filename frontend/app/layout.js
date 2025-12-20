@@ -4,6 +4,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer } from 'react-toastify';
 import { AuthProvider } from "./context/AuthContext";
 import SidebarFavorites from "./components/SidebarFavorites";
+import GlobalHotkeys from "./components/GlobalHotkeys";
 
 export const metadata = {
   title: "Sistema Finaxis",
@@ -17,6 +18,7 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           <TopNavigationBar />
           <SidebarFavorites />
+          <GlobalHotkeys />
           {children}
           <ToastContainer position="bottom-right" autoClose={3000} />
         </AuthProvider>

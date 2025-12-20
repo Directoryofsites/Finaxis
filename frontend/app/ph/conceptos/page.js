@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { phService } from '../../../lib/phService';
 
 import { FaFileInvoiceDollar, FaPlus, FaEdit, FaTrash, FaSave, FaTimes, FaLayerGroup } from 'react-icons/fa';
@@ -34,9 +35,20 @@ export default function ConceptosPage() {
         modulos_ids: []
     });
 
+
+
+    const searchParams = useSearchParams();
+
     useEffect(() => {
         loadData();
-    }, []);
+
+        const trigger = searchParams.get('trigger');
+        if (trigger === 'new_ph_concept') {
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, '', newUrl);
+            setTimeout(() => openNew(), 500);
+        }
+    }, [searchParams]);
 
     const loadData = async () => {
         try {

@@ -6,6 +6,7 @@
 // =============================================================================
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
 
@@ -440,6 +441,19 @@ export default function ParametrosInventarioPage() {
     }, []);
 
     useEffect(() => { if (user) fetchData(); }, [user, fetchData]);
+
+    // --- DEEP LINKING TRIGGER ---
+    const searchParams = useSearchParams();
+    useEffect(() => {
+        const trigger = searchParams.get('trigger');
+        if (trigger) {
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, '', newUrl);
+
+            if (trigger === 'tab_groups') setActiveTab('grupos');
+            else if (trigger === 'tab_warehouses') setActiveTab('bodegas');
+        }
+    }, [searchParams]);
 
     // --- HANDLERS DE APERTURA MODALES SECUNDARIOS (FIX) ---
     const handleOpenCaracteristicas = (grupo) => setGrupoCaracteristicas(grupo);

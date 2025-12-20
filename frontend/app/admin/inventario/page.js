@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Select, { components } from 'react-select';
 import {
     FaEdit,
@@ -57,9 +57,29 @@ const SELECT_ALL_OPTION = { label: "Seleccionar Todos", value: "all" };
 export default function GestionInventarioPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     // Estados
     const [productos, setProductos] = useState([]);
+    // ... rest of state
+
+    useEffect(() => {
+        // Listening for Deep Linking triggers
+        const trigger = searchParams.get('trigger');
+        if (trigger === 'new_item') {
+            // Limpiamos el param de la URL para evitar re-aperturas no deseadas al recargar
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, '', newUrl);
+
+            // Forzamos apertura del modal
+            // Necesitamos esperar un tick para asegurar que todo el componente montó
+            setTimeout(() => {
+                handleOpenModal();
+            }, 500);
+        }
+    }, [searchParams]);
+
+
     const [gruposOptions, setGruposOptions] = useState([]);
     const [selectedGroups, setSelectedGroups] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');

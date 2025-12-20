@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { FaBook } from 'react-icons/fa';
 
 
@@ -459,6 +460,16 @@ export default function SoporteUtilPage() {
         }
         setIsLoading(false);
     }, []);
+
+    const searchParams = useSearchParams();
+    useEffect(() => {
+        const trigger = searchParams.get('trigger');
+        if (trigger === 'tab_create_company') {
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, '', newUrl);
+            setActiveTab('crearEmpresa');
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         if (soporteIsLoggedIn) {
