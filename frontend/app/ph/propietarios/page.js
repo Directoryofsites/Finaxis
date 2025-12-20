@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { FaUsers, FaBuilding, FaSearch, FaPhone, FaEnvelope, FaIdCard, FaFileExcel, FaHandshake, FaPlus, FaFilePdf, FaExchangeAlt } from 'react-icons/fa';
-import BotonRegresar from '../../components/BotonRegresar';
+
 import { useAuth } from '../../context/AuthContext';
 import { phService } from '../../../lib/phService';
 
@@ -96,7 +96,6 @@ export default function DirectorioPropietariosPage() {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                     <div>
-                        <BotonRegresar href="/ph" />
                         <div className="flex items-center gap-3 mt-3">
                             <div className="p-3 bg-blue-100 rounded-xl text-blue-600">
                                 <FaUsers className="text-2xl" />

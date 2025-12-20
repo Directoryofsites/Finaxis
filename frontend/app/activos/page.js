@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { apiService } from '../../lib/apiService';
 import { FaPlus, FaSearch, FaCogs, FaTractor, FaCalculator, FaFileInvoiceDollar, FaPlay } from 'react-icons/fa';
-import BotonRegresar from '../components/BotonRegresar';
+
 
 export default function ActivosFijosListPage() {
     const [activos, setActivos] = useState([]);
@@ -86,7 +86,6 @@ export default function ActivosFijosListPage() {
         <div className="p-6 max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-8">
                 <div className="flex items-center gap-4">
-                    <BotonRegresar href="/" />
                     <div>
                         <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
                             <FaTractor className="text-blue-600" />

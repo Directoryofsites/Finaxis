@@ -17,7 +17,7 @@ import {
   FaBook
 } from 'react-icons/fa';
 
-import BotonRegresar from '../../components/BotonRegresar';
+
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../../lib/apiService';
 
@@ -150,26 +150,27 @@ export default function GestionTercerosPage() {
           {/* ENCABEZADO */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
-              <BotonRegresar />
               <div className="flex items-center gap-3 mt-3">
                 <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
                   <FaUsers className="text-2xl" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-800">Gestión de Terceros</h1>
+                  <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
+                    Gestión de Terceros
+                    <button
+                      onClick={() => window.open('/manual/capitulo_34_gestion_terceros.html', '_blank')}
+                      className="flex items-center gap-2 px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors font-medium shadow-sm text-sm"
+                      title="Ver Manual de Usuario"
+                    >
+                      <FaBook /> <span className="hidden md:inline">Manual</span>
+                    </button>
+                  </h1>
                   <p className="text-gray-500 text-sm">Directorio de clientes, proveedores y empleados.</p>
                 </div>
               </div>
             </div>
 
             <div className="flex gap-3">
-              <button
-                onClick={() => window.open('/manual/capitulo_34_gestion_terceros.html', '_blank')}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors font-medium shadow-sm"
-                title="Ver Manual de Usuario"
-              >
-                <FaBook /> <span>Manual</span>
-              </button>
               <Link href="/admin/terceros/fusionar" className="flex items-center gap-2 px-4 py-2 bg-white border border-amber-500 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors font-medium shadow-sm">
                 <FaObjectGroup /> <span>Fusionar</span>
               </Link>

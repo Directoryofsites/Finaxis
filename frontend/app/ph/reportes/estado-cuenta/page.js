@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Script from 'next/script';
 import { useAuth } from '../../../context/AuthContext';
-import BotonRegresar from '../../../components/BotonRegresar';
+
 import { phService } from '../../../../lib/phService';
 import { FaFilePdf, FaBuilding, FaUser, FaMoneyBillWave, FaSearch, FaHistory } from 'react-icons/fa';
 
@@ -113,7 +113,6 @@ export default function EstadoCuentaPage() {
             <div className="max-w-5xl mx-auto">
                 {/* HEADER */}
                 <div className="mb-8">
-                    <BotonRegresar />
                     <div className="flex items-center gap-3 mt-3">
                         <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
                             <FaHistory className="text-2xl" />

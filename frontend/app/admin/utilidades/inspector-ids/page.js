@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import BotonRegresar from '../../../components/BotonRegresar';
+
 
 export default function InspectorIdsPage() {
-  
+
   // Lista de entidades que el backend puede resolver
   const entidadesSoportadas = [
     'Documento',
@@ -48,7 +48,7 @@ export default function InspectorIdsPage() {
       if (!res.ok) {
         throw new Error(data.message || `Error ${res.status} del servidor.`);
       }
-      
+
       setResultado(data);
 
     } catch (err) {
@@ -62,7 +62,7 @@ export default function InspectorIdsPage() {
     <div className="container mx-auto p-4 max-w-4xl">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold text-gray-800">Herramienta de Soporte: Inspector de IDs</h1>
-        <BotonRegresar />
+
       </div>
       <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6" role="alert">
         <p>Esta herramienta permite consultar la información detallada de un registro a partir de su ID de base de datos.</p>

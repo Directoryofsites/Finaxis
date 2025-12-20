@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import BotonRegresar from '../../../../components/BotonRegresar';
+
 import { useAuth } from '../../../../context/AuthContext';
 import { apiService } from '../../../../../lib/apiService';
 
@@ -156,19 +156,21 @@ export default function EditarTipoDocumento() {
                             <FaFileInvoice className="text-2xl" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Editar Tipo Documento</h1>
+                            <div className="flex items-center gap-3">
+                                <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Editar Tipo Documento</h1>
+                                <button
+                                    onClick={() => window.open('/manual/capitulo_9_consecutivos.html', '_blank')}
+                                    className="flex items-center gap-2 px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors font-medium shadow-sm"
+                                    type="button"
+                                >
+                                    <FaBook /> <span className="hidden md:inline">Manual</span>
+                                </button>
+                            </div>
                             <p className="text-gray-500 text-sm mt-1">Ajuste la configuración contable y operativa.</p>
                         </div>
                     </div>
                     <div className="flex gap-2">
-                        <button
-                            onClick={() => window.open('/manual/capitulo_9_consecutivos.html', '_blank')}
-                            className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2 flex items-center"
-                            title="Ver Manual de Usuario"
-                        >
-                            <FaBook className="text-lg" /> <span className="font-bold hidden md:inline">Manual</span>
-                        </button>
-                        <BotonRegresar href="/admin/tipos-documento" />
+                        {/* Actions consolidated */}
                     </div>
                 </div>
 

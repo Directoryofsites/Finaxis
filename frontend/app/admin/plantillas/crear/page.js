@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import BotonRegresar from '../../../components/BotonRegresar';
+
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
 
@@ -45,8 +45,8 @@ export default function CrearPlantillaPage() {
           const aplanarCuentas = (cuentas) => {
             let listaPlana = [];
             const recorrer = (cuenta) => {
-                if (cuenta.permite_movimiento) listaPlana.push(cuenta);
-                if (cuenta.children) cuenta.children.forEach(recorrer);
+              if (cuenta.permite_movimiento) listaPlana.push(cuenta);
+              if (cuenta.children) cuenta.children.forEach(recorrer);
             };
             cuentas.forEach(recorrer);
             return listaPlana;
@@ -62,11 +62,11 @@ export default function CrearPlantillaPage() {
       };
       fetchMaestros();
     } else if (!authLoading && !user) {
-        setPageIsLoading(false);
-        setError('No se pudo identificar al usuario. Por favor, inicie sesión de nuevo.');
+      setPageIsLoading(false);
+      setError('No se pudo identificar al usuario. Por favor, inicie sesión de nuevo.');
     }
   }, [user, authLoading]);
-  
+
   const handleMaestraChange = (e) => {
     const { name, value } = e.target;
     setMaestra(prev => ({ ...prev, [name]: value }));
@@ -91,8 +91,8 @@ export default function CrearPlantillaPage() {
     setError(null);
 
     if (!maestra.nombre_plantilla || maestra.nombre_plantilla.trim() === '') {
-        setError('El nombre de la plantilla es obligatorio.');
-        return;
+      setError('El nombre de la plantilla es obligatorio.');
+      return;
     }
     const detallesValidos = detalles.filter(d => d.cuenta_id || d.debito || d.credito);
     if (detallesValidos.length === 0) {
@@ -109,7 +109,7 @@ export default function CrearPlantillaPage() {
       setError('La plantilla debe estar balanceada y los totales deben ser mayores a cero.');
       return;
     }
-    
+
     setIsSubmitting(true);
     try {
       const sanitizedDetalles = detallesValidos.map(d => ({
@@ -123,7 +123,7 @@ export default function CrearPlantillaPage() {
         tipo_documento_id_sugerido: maestra.tipo_documento_id_sugerido ? parseInt(maestra.tipo_documento_id_sugerido) : null,
         beneficiario_id_sugerido: maestra.beneficiario_id_sugerido ? parseInt(maestra.beneficiario_id_sugerido) : null,
         centro_costo_id_sugerido: maestra.centro_costo_id_sugerido ? parseInt(maestra.centro_costo_id_sugerido) : null,
-        
+
         detalles: sanitizedDetalles,
       };
       await apiService.post('/plantillas/', payload);
@@ -132,23 +132,23 @@ export default function CrearPlantillaPage() {
     } catch (err) {
       let errorMessage = 'Error desconocido al guardar la plantilla.';
       if (Array.isArray(err.response?.data?.detail)) {
-          const errorDetail = err.response.data.detail[0];
-          const fieldPath = errorDetail.loc.slice(1).join(' -> ');
-          errorMessage = `Error en el campo '${fieldPath}': ${errorDetail.msg}`;
+        const errorDetail = err.response.data.detail[0];
+        const fieldPath = errorDetail.loc.slice(1).join(' -> ');
+        errorMessage = `Error en el campo '${fieldPath}': ${errorDetail.msg}`;
       } else if (err.response?.data?.detail) {
-          errorMessage = err.response.data.detail;
+        errorMessage = err.response.data.detail;
       }
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
-  
+
   if (authLoading || pageIsLoading) return <div className="text-center mt-10">Cargando datos maestros...</div>;
 
   return (
     <div className="container mx-auto p-4">
-      <BotonRegresar />
+
       <h1 className="text-3xl font-bold mb-6 text-gray-800">Crear Nueva Plantilla</h1>
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="bg-white p-6 rounded-lg shadow-md">
@@ -202,7 +202,7 @@ export default function CrearPlantillaPage() {
           <button type="button" onClick={agregarFila} className="mt-4 px-4 py-2 border border-gray-400 rounded-md text-sm font-medium hover:bg-gray-100">Agregar Fila</button>
           <div className="flex justify-end mt-4 border-t pt-2">
             <p className={`font-bold text-lg ${estaBalanceado ? 'text-green-600' : 'text-red-600'}`}>
-              Total Débitos: {totales.debito.toLocaleString('es-CO', {style:'currency', currency:'COP'})} | Total Créditos: {totales.credito.toLocaleString('es-CO', {style:'currency', currency:'COP'})} | {estaBalanceado ? 'BALANCEADO' : 'DESBALANCEADO'}
+              Total Débitos: {totales.debito.toLocaleString('es-CO', { style: 'currency', currency: 'COP' })} | Total Créditos: {totales.credito.toLocaleString('es-CO', { style: 'currency', currency: 'COP' })} | {estaBalanceado ? 'BALANCEADO' : 'DESBALANCEADO'}
             </p>
           </div>
         </div>

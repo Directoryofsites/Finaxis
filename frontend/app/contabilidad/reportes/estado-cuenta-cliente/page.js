@@ -16,7 +16,6 @@ import {
     FaBook
 } from 'react-icons/fa';
 
-import BotonRegresar from '../../../components/BotonRegresar';
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
 
@@ -178,25 +177,25 @@ export default function EstadoCuentaClientePage() {
                     {/* ENCABEZADO */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                         <div>
-                            <BotonRegresar />
                             <div className="flex items-center gap-3 mt-3">
                                 <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
                                     <FaUserTag className="text-2xl" />
                                 </div>
                                 <div>
-                                    <h1 className="text-3xl font-bold text-gray-800">Estado de Cuenta (Clientes)</h1>
+                                    <div className="flex items-center gap-4">
+                                        <h1 className="text-3xl font-bold text-gray-800">Estado de Cuenta (Clientes)</h1>
+                                        <button
+                                            onClick={() => window.open('/manual/capitulo_36_estado_cuenta_cliente.html', '_blank')}
+                                            className="flex items-center gap-2 px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors font-medium shadow-sm"
+                                            title="Ver Manual de Usuario"
+                                        >
+                                            <span className="text-lg">📖</span> <span className="font-bold text-sm hidden md:inline">Manual</span>
+                                        </button>
+                                    </div>
                                     <p className="text-gray-500 text-sm">Análisis detallado de facturas pendientes y vencimientos.</p>
                                 </div>
                             </div>
                         </div>
-
-                        <button
-                            onClick={() => window.open('/manual/capitulo_36_estado_cuenta_cliente.html', '_blank')}
-                            className="flex items-center gap-2 px-4 py-2 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors font-medium shadow-sm"
-                            title="Ver Manual de Usuario"
-                        >
-                            <FaBook /> <span>Manual</span>
-                        </button>
                     </div>
 
                     {/* CARD 1: FILTROS */}

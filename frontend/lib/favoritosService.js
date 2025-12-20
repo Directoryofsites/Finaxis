@@ -14,7 +14,7 @@ export const getFavoritos = async () => {
     } catch (error) {
         console.error('Error al obtener los favoritos:', error);
         // Si no hay favoritos o hay un error, devuelve un array vacío para no romper la UI
-        return []; 
+        return [];
     }
 };
 
@@ -25,6 +25,7 @@ export const getFavoritos = async () => {
 export const createFavorito = async (data) => {
     // Llama al endpoint POST /api/favoritos/
     const response = await apiService.post('/favoritos/', data);
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('favoritesUpdated'));
     return response.data;
 };
 
@@ -36,6 +37,7 @@ export const createFavorito = async (data) => {
 export const updateFavorito = async (id, data) => {
     // Llama al endpoint PUT /api/favoritos/{id}
     const response = await apiService.put(`/favoritos/${id}`, data);
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('favoritesUpdated'));
     return response.data;
 };
 
@@ -46,5 +48,6 @@ export const updateFavorito = async (id, data) => {
 export const deleteFavorito = async (id) => {
     // Llama al endpoint DELETE /api/favoritos/{id}
     await apiService.delete(`/favoritos/${id}`);
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('favoritesUpdated'));
     return true;
 };

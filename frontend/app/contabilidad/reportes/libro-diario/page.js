@@ -15,7 +15,6 @@ import {
 
 import { useAuth } from '../../../../app/context/AuthContext'; // Ajusta la ruta si es necesario según tu estructura real
 import { apiService } from '../../../../lib/apiService';
-import BotonRegresar from '../../../../app/components/BotonRegresar'; // Ajusta ruta
 
 // Estilos reusables (Manual v2.0)
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
@@ -179,24 +178,25 @@ export default function LibroDiarioPage() {
                     {/* ENCABEZADO */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                         <div>
-                            <BotonRegresar />
                             <div className="flex items-center gap-3 mt-3">
                                 <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
                                     <FaBook className="text-2xl" />
                                 </div>
                                 <div>
-                                    <h1 className="text-3xl font-bold text-gray-800">Libro Diario</h1>
+                                    <div className="flex items-center gap-4">
+                                        <h1 className="text-3xl font-bold text-gray-800">Libro Diario</h1>
+                                        <button
+                                            onClick={() => window.open('/manual/capitulo_27_libro_diario.html', '_blank')}
+                                            className="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded-md flex items-center gap-2 transition-colors"
+                                            title="Ver Manual de Usuario"
+                                        >
+                                            <span className="text-lg">📖</span> <span className="font-bold text-sm hidden md:inline">Manual</span>
+                                        </button>
+                                    </div>
                                     <p className="text-gray-500 text-sm">Consulta cronológica de todos los movimientos contables.</p>
                                 </div>
                             </div>
                         </div>
-                        <button
-                            onClick={() => window.open('/manual/capitulo_27_libro_diario.html', '_blank')}
-                            className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors"
-                            title="Ver Manual de Usuario"
-                        >
-                            <FaBook className="text-lg" /> <span className="font-bold text-sm">Manual</span>
-                        </button>
                     </div>
 
                     {/* CARD 1: FILTROS */}

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
-import BotonRegresar from '../../../components/BotonRegresar';
+
 import { FaBook, FaPrint, FaTimes } from 'react-icons/fa';
 
 export default function PapeleraPage() {
@@ -73,7 +73,6 @@ export default function PapeleraPage() {
             <div className="container mx-auto p-8 text-center">
                 <div className="flex justify-between items-center mb-8">
                     <h1 className="text-3xl font-bold text-gray-800">Papelera de Reciclaje</h1>
-                    <BotonRegresar />
                 </div>
                 <p className="text-center text-red-500 p-8 bg-red-50 rounded-lg">{mensaje.text}</p>
             </div>
@@ -85,17 +84,16 @@ export default function PapeleraPage() {
     return (
         <div className="container mx-auto p-8">
             <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold text-gray-800">Papelera de Reciclaje</h1>
-                <div className="flex items-center gap-4">
+                <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
+                    Papelera de Reciclaje
                     <button
                         onClick={() => window.open('/manual/capitulo_12_papelera.html', '_blank')}
-                        className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2 flex items-center"
+                        className="flex items-center gap-2 px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors font-medium shadow-sm text-sm"
                         title="Ver Manual de Usuario"
                     >
-                        <FaBook className="text-lg" /> <span className="font-bold hidden md:inline">Manual</span>
+                        <FaBook /> <span className="hidden md:inline">Manual</span>
                     </button>
-                    <BotonRegresar />
-                </div>
+                </h1>
             </div>
 
             {mensaje.text && mensaje.type === 'success' && (

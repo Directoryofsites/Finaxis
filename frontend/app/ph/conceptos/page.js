@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { phService } from '../../../lib/phService';
-import BotonRegresar from '../../components/BotonRegresar';
+
 import { FaFileInvoiceDollar, FaPlus, FaEdit, FaTrash, FaSave, FaTimes, FaLayerGroup } from 'react-icons/fa';
 import BuscadorCuentas from '../../../components/BuscadorCuentas';
 
@@ -151,7 +151,6 @@ export default function ConceptosPage() {
             <div className="max-w-6xl mx-auto">
                 <div className="flex justify-between items-center mb-6">
                     <div>
-                        <BotonRegresar href="/ph" />
                         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2 mt-2">
                             <FaFileInvoiceDollar className="text-green-600" /> Conceptos de Facturación
                         </h1>

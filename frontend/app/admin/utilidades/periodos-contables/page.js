@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { getPeriodosCerrados, cerrarPeriodo, reabrirPeriodo } from '../../../../lib/periodosService';
 import { apiService } from '../../../../lib/apiService';
-import BotonRegresar from '../../../components/BotonRegresar';
 import { FaBook } from 'react-icons/fa';
 
 export default function GestionPeriodosPage() {
@@ -121,18 +120,15 @@ export default function GestionPeriodosPage() {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex items-center gap-4 mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Gestión de Períodos Contables</h1>
-        <div className="flex gap-2">
-          <BotonRegresar />
-          <button
-            onClick={() => window.open('/manual/capitulo_7_cierre.html', '_blank')}
-            className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2 flex items-center"
-            title="Ver Manual de Usuario"
-          >
-            <FaBook className="text-lg" /> <span className="font-bold hidden md:inline">Manual</span>
-          </button>
-        </div>
+        <button
+          onClick={() => window.open('/manual/capitulo_7_cierre.html', '_blank')}
+          className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2 flex items-center px-2"
+          title="Ver Manual de Usuario"
+        >
+          <FaBook className="text-lg" /> <span className="font-bold hidden md:inline">Manual</span>
+        </button>
       </div>
 
       {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">{error}</div>}

@@ -29,16 +29,7 @@ from app.core.seeder import seed_database
 seed_database()
 # --- FIN: LÓGICA DE SEMBRADO AUTOMÁTICO ---
 
-# --- INICIO: MIGRACIÓN AUTOMÁTICA DE PERMISOS CONCILIACIÓN BANCARIA ---
-try:
-    import sys
-    import os
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from migrate_conciliacion_permissions import migrate_conciliacion_permissions
-    migrate_conciliacion_permissions()
-except Exception as e:
-    print(f"⚠️ Error en migración de permisos de conciliación bancaria: {e}")
-# --- FIN: MIGRACIÓN AUTOMÁTICA ---
+
 
 # Se importan los routers de la API
 from app.core.database import get_db

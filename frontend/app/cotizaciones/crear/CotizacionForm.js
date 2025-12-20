@@ -8,7 +8,7 @@ import { FaSave, FaPlus, FaTrash, FaCalendarAlt, FaUserTag, FaBoxOpen, FaCheckCi
 
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../../lib/apiService';
-import BotonRegresar from '../../components/BotonRegresar';
+
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -233,7 +233,6 @@ export default function CreateCotizacionPage() {
             <ToastContainer />
             <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-4">
-                    <BotonRegresar href="/cotizaciones" />
                     <div>
                         <h1 className="text-2xl font-bold text-gray-800">{curCotizacionId ? `Cotización #${curCotizacionId}` : 'Nueva Cotización'}</h1>
                         <span className={`text-xs font-bold px-2 py-1 rounded ${estado === 'BORRADOR' ? 'bg-gray-200' : 'bg-blue-200 text-blue-800'}`}>

@@ -16,7 +16,6 @@ import {
     FaBook
 } from 'react-icons/fa';
 
-import BotonRegresar from '../../../components/BotonRegresar';
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
 
@@ -174,24 +173,25 @@ export default function EstadoResultadosPage() {
                     {/* ENCABEZADO */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                         <div>
-                            <BotonRegresar />
                             <div className="flex items-center gap-3 mt-3">
                                 <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
                                     <FaChartLine className="text-2xl" />
                                 </div>
                                 <div>
-                                    <h1 className="text-3xl font-bold text-gray-800">Estado de Resultados</h1>
+                                    <div className="flex items-center gap-4">
+                                        <h1 className="text-3xl font-bold text-gray-800">Estado de Resultados</h1>
+                                        <button
+                                            onClick={() => window.open('/manual/capitulo_29_estado_resultados.html', '_blank')}
+                                            className="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded-md flex items-center gap-2 transition-colors"
+                                            title="Ver Manual de Usuario"
+                                        >
+                                            <span className="text-lg">📖</span> <span className="font-bold text-sm hidden md:inline">Manual</span>
+                                        </button>
+                                    </div>
                                     <p className="text-gray-500 text-sm">Análisis de rentabilidad: Ingresos, Costos y Gastos.</p>
                                 </div>
                             </div>
                         </div>
-                        <button
-                            onClick={() => window.open('/manual/capitulo_29_estado_resultados.html', '_blank')}
-                            className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors"
-                            title="Ver Manual de Usuario"
-                        >
-                            <FaBook className="text-lg" /> <span className="font-bold text-sm">Manual</span>
-                        </button>
                     </div>
 
                     {/* CARD 1: FILTROS */}

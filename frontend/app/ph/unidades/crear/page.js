@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
-import BotonRegresar from '../../../components/BotonRegresar';
+
 import BuscadorTerceros from '../../../../components/BuscadorTerceros';
 import { phService } from '../../../../lib/phService';
 import { FaSave, FaBuilding, FaCar, FaPaw, FaTrash, FaPlus, FaLayerGroup } from 'react-icons/fa';
@@ -144,7 +144,6 @@ export default function CrearUnidadPage() {
                 {/* HEADER */}
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center gap-4">
-                        <BotonRegresar />
                         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                             <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600"><FaBuilding /></div>
                             Nueva Unidad Privada

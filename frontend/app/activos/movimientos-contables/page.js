@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../../../lib/apiService';
 import { FaFileInvoiceDollar, FaCalendarAlt, FaSearch, FaEye, FaDownload, FaTrash, FaExclamationTriangle } from 'react-icons/fa';
-import BotonRegresar from '../../components/BotonRegresar';
+
 
 export default function MovimientosContablesActivosPage() {
     const [documentos, setDocumentos] = useState([]);
@@ -20,10 +20,10 @@ export default function MovimientosContablesActivosPage() {
     const loadMovimientosContables = async () => {
         try {
             setLoading(true);
-            
+
             // Usar el endpoint específico de activos fijos
             const response = await apiService.get('/activos/documentos-contables');
-            
+
             // La API devuelve {total: number, documentos: array}
             const documentosData = response.data?.documentos || [];
             setDocumentos(documentosData);
@@ -31,7 +31,7 @@ export default function MovimientosContablesActivosPage() {
             console.error("Error cargando movimientos contables:", error);
             // En caso de error, establecer array vacío
             setDocumentos([]);
-            
+
             // Solo mostrar alerta si no es un error 404 (no hay documentos)
             if (error.response?.status !== 404) {
                 alert("Error al cargar los movimientos contables de activos fijos");
@@ -44,37 +44,37 @@ export default function MovimientosContablesActivosPage() {
     const handleFiltrar = async () => {
         try {
             setLoading(true);
-            
+
             // Por ahora usar el endpoint de activos sin filtros adicionales
             // TODO: Implementar filtros en el endpoint de activos si es necesario
             const response = await apiService.get('/activos/documentos-contables');
             let documentosData = response.data?.documentos || [];
-            
+
             // Aplicar filtros en el frontend
             if (filtros.fechaInicio || filtros.fechaFin || filtros.busqueda) {
                 documentosData = documentosData.filter(doc => {
                     let incluir = true;
-                    
+
                     if (filtros.fechaInicio) {
                         const fechaDoc = new Date(doc.fecha);
                         const fechaInicio = new Date(filtros.fechaInicio);
                         incluir = incluir && fechaDoc >= fechaInicio;
                     }
-                    
+
                     if (filtros.fechaFin) {
                         const fechaDoc = new Date(doc.fecha);
                         const fechaFin = new Date(filtros.fechaFin);
                         incluir = incluir && fechaDoc <= fechaFin;
                     }
-                    
+
                     if (filtros.busqueda) {
                         incluir = incluir && doc.numero.toString().includes(filtros.busqueda);
                     }
-                    
+
                     return incluir;
                 });
             }
-            
+
             setDocumentos(documentosData);
         } catch (error) {
             console.error("Error filtrando:", error);
@@ -101,7 +101,7 @@ export default function MovimientosContablesActivosPage() {
             await apiService.delete(`/documentos/${documentoId}`, {
                 data: { razon }
             });
-            
+
             alert(`✅ Documento ${numeroDoc} eliminado exitosamente`);
             loadMovimientosContables(); // Recargar la lista
         } catch (error) {
@@ -112,7 +112,7 @@ export default function MovimientosContablesActivosPage() {
 
     const eliminarTodosLosDocumentos = async () => {
         const totalDocs = Array.isArray(documentos) ? documentos.length : 0;
-        
+
         if (totalDocs === 0) {
             alert('No hay documentos para eliminar.');
             return;
@@ -130,10 +130,10 @@ export default function MovimientosContablesActivosPage() {
         try {
             // Usar endpoint optimizado para eliminación masiva
             const response = await apiService.delete('/activos/eliminar-todos-documentos');
-            
+
             const resultado = response.data;
             alert(`✅ ¡Eliminación masiva completada!\n\n📊 Resultados:\n- Documentos eliminados: ${resultado.documentos_eliminados}\n- Novedades eliminadas: ${resultado.novedades_eliminadas}\n- Activos reseteados: ${resultado.activos_reseteados}\n\n🎯 Ya puedes hacer nuevas pruebas de depreciación.`);
-            
+
             loadMovimientosContables(); // Recargar la lista
         } catch (error) {
             console.error("Error en eliminación masiva:", error);
@@ -149,7 +149,7 @@ export default function MovimientosContablesActivosPage() {
         try {
             // Llamar a un endpoint especial para limpiar depreciaciones
             await apiService.post('/activos/limpiar-depreciaciones-prueba');
-            
+
             alert(`✅ ¡Depreciaciones de prueba limpiadas!\n\nYa puedes ejecutar nuevas depreciaciones para tus ensayos.`);
             loadMovimientosContables(); // Recargar la lista
         } catch (error) {
@@ -185,7 +185,6 @@ export default function MovimientosContablesActivosPage() {
         <div className="p-6">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
-                    <BotonRegresar href="/activos" />
                     <div>
                         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                             <FaFileInvoiceDollar className="text-blue-600" />
@@ -196,7 +195,7 @@ export default function MovimientosContablesActivosPage() {
                         </p>
                     </div>
                 </div>
-                
+
                 <div className="flex gap-2">
                     <button
                         onClick={eliminarTodosLosDocumentos}
@@ -228,7 +227,7 @@ export default function MovimientosContablesActivosPage() {
                             type="date"
                             className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2"
                             value={filtros.fechaInicio}
-                            onChange={(e) => setFiltros({...filtros, fechaInicio: e.target.value})}
+                            onChange={(e) => setFiltros({ ...filtros, fechaInicio: e.target.value })}
                         />
                     </div>
                     <div>
@@ -240,7 +239,7 @@ export default function MovimientosContablesActivosPage() {
                             type="date"
                             className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2"
                             value={filtros.fechaFin}
-                            onChange={(e) => setFiltros({...filtros, fechaFin: e.target.value})}
+                            onChange={(e) => setFiltros({ ...filtros, fechaFin: e.target.value })}
                         />
                     </div>
                     <div>
@@ -253,7 +252,7 @@ export default function MovimientosContablesActivosPage() {
                             placeholder="Buscar por número..."
                             className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2"
                             value={filtros.busqueda}
-                            onChange={(e) => setFiltros({...filtros, busqueda: e.target.value})}
+                            onChange={(e) => setFiltros({ ...filtros, busqueda: e.target.value })}
                         />
                     </div>
                     <div className="flex items-end">
@@ -356,11 +355,10 @@ export default function MovimientosContablesActivosPage() {
                                             {formatearMoneda(calcularTotalDocumento(documento))}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                                documento.estado === 'ACTIVO' 
-                                                    ? 'bg-green-100 text-green-800' 
-                                                    : 'bg-red-100 text-red-800'
-                                            }`}>
+                                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${documento.estado === 'ACTIVO'
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-red-100 text-red-800'
+                                                }`}>
                                                 {documento.estado}
                                             </span>
                                         </td>

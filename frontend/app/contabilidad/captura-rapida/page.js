@@ -20,7 +20,7 @@ import {
 // Importaciones
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../../lib/apiService';
-import BotonRegresar from '../../components/BotonRegresar';
+
 
 // Estilos reusables
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
@@ -43,7 +43,7 @@ export default function CapturaRapidaPage() {
   const [error, setError] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [isSubmittingDoc, setIsSubmittingDoc] = useState(false);
-  
+
   // Estados de Modales y Formularios Auxiliares
   const [isTerceroModalOpen, setIsTerceroModalOpen] = useState(false);
   const [isConceptoModalOpen, setIsConceptoModalOpen] = useState(false);
@@ -108,15 +108,15 @@ export default function CapturaRapidaPage() {
     if (monto === 0) return;
 
     const nuevosMovs = movimientos.map(m => {
-        return {
-            ...m,
-            debito: m.naturaleza === 'D' ? monto : 0,
-            credito: m.naturaleza === 'C' ? monto : 0
-        };
+      return {
+        ...m,
+        debito: m.naturaleza === 'D' ? monto : 0,
+        credito: m.naturaleza === 'C' ? monto : 0
+      };
     });
-    
+
     setMovimientos(nuevosMovs);
-    setTotales({ debito: monto, credito: monto }); 
+    setTotales({ debito: monto, credito: monto });
   };
 
   const handleConceptoChange = (index, val) => {
@@ -127,7 +127,7 @@ export default function CapturaRapidaPage() {
     // Si escribo en la primera línea (index 0), replicar automáticamente a la segunda (index 1)
     // Esto agiliza la digitación en asientos simples.
     if (index === 0 && newMovs.length > 1) {
-        newMovs[1].concepto = val;
+      newMovs[1].concepto = val;
     }
 
     setMovimientos(newMovs);
@@ -150,43 +150,43 @@ export default function CapturaRapidaPage() {
     setMensaje('');
 
     if (!plantillaId || !estaBalanceado) {
-        setError('Seleccione una plantilla válida y asegúrese de que el asiento esté balanceado.');
-        return;
+      setError('Seleccione una plantilla válida y asegúrese de que el asiento esté balanceado.');
+      return;
     }
 
     setIsSubmittingDoc(true);
     try {
-        const plantillaSeleccionada = plantillas.find(p => p.id === parseInt(plantillaId));
-        if (!plantillaSeleccionada) throw new Error("Plantilla no encontrada.");
-        
-        const tipoDocId = plantillaSeleccionada.tipo_documento_id_sugerido; 
-        if (!tipoDocId) throw new Error("La plantilla no tiene un Tipo de Documento asociado.");
+      const plantillaSeleccionada = plantillas.find(p => p.id === parseInt(plantillaId));
+      if (!plantillaSeleccionada) throw new Error("Plantilla no encontrada.");
 
-        const payload = {
-            fecha: fecha.toISOString().split('T')[0],
-            tipo_documento_id: tipoDocId,
-            beneficiario_id: beneficiarioId ? parseInt(beneficiarioId) : null,
-            centro_costo_id: centroCostoId ? parseInt(centroCostoId) : null,
-            movimientos: movimientos.map(m => ({
-                cuenta_id: m.cuenta_id,
-                centro_costo_id: centroCostoId ? parseInt(centroCostoId) : (m.centro_costo_id || null),
-                concepto: m.concepto,
-                debito: m.debito,
-                credito: m.credito,
-            }))
-        };
+      const tipoDocId = plantillaSeleccionada.tipo_documento_id_sugerido;
+      if (!tipoDocId) throw new Error("La plantilla no tiene un Tipo de Documento asociado.");
 
-        const response = await apiService.post('/documentos/', payload);
-        setMensaje(`✅ Documento #${response.data.numero} guardado exitosamente.`);
-        resetFormulario();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+      const payload = {
+        fecha: fecha.toISOString().split('T')[0],
+        tipo_documento_id: tipoDocId,
+        beneficiario_id: beneficiarioId ? parseInt(beneficiarioId) : null,
+        centro_costo_id: centroCostoId ? parseInt(centroCostoId) : null,
+        movimientos: movimientos.map(m => ({
+          cuenta_id: m.cuenta_id,
+          centro_costo_id: centroCostoId ? parseInt(centroCostoId) : (m.centro_costo_id || null),
+          concepto: m.concepto,
+          debito: m.debito,
+          credito: m.credito,
+        }))
+      };
+
+      const response = await apiService.post('/documentos/', payload);
+      setMensaje(`✅ Documento #${response.data.numero} guardado exitosamente.`);
+      resetFormulario();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch (err) {
-        const errorMsg = err.response?.data?.detail || err.message || 'Error al guardar el documento.';
-        console.error("Error en handleSubmit:", err);
-        setError(errorMsg);
+      const errorMsg = err.response?.data?.detail || err.message || 'Error al guardar el documento.';
+      console.error("Error en handleSubmit:", err);
+      setError(errorMsg);
     } finally {
-        setIsSubmittingDoc(false);
+      setIsSubmittingDoc(false);
     }
   };
 
@@ -220,16 +220,16 @@ export default function CapturaRapidaPage() {
     if (!nuevoConcepto.descripcion) return;
     setIsSubmittingConcepto(true);
     try {
-        const payload = { ...nuevoConcepto, empresa_id: user.empresaId };
-        // --- CORRECCIÓN API: Ruta correcta basada en estructura backend ---
-        await apiService.post('/conceptos-favoritos/', payload); 
-        setIsConceptoModalOpen(false);
-        setMensaje("Concepto guardado en librería.");
+      const payload = { ...nuevoConcepto, empresa_id: user.empresaId };
+      // --- CORRECCIÓN API: Ruta correcta basada en estructura backend ---
+      await apiService.post('/conceptos-favoritos/', payload);
+      setIsConceptoModalOpen(false);
+      setMensaje("Concepto guardado en librería.");
     } catch (err) {
-        console.error("Error creando concepto:", err);
-        setConceptoModalError("Error al guardar concepto. Verifique conexión.");
+      console.error("Error creando concepto:", err);
+      setConceptoModalError("Error al guardar concepto. Verifique conexión.");
     } finally {
-        setIsSubmittingConcepto(false);
+      setIsSubmittingConcepto(false);
     }
   };
 
@@ -269,7 +269,7 @@ export default function CapturaRapidaPage() {
           apiService.get('/plantillas/'),
           apiService.get('/favoritos/')
         ]);
-        
+
         const aplanarCuentas = (cuentas) => {
           let listaPlana = [];
           const recorrer = (cuenta) => {
@@ -282,7 +282,7 @@ export default function CapturaRapidaPage() {
 
         setCuentas(aplanarCuentas(cuentasRes.data));
         setTerceros(tercerosRes.data);
-        setCentrosCosto(ccostoRes.data); 
+        setCentrosCosto(ccostoRes.data);
         setPlantillas(plantillasRes.data);
         setConceptos(conceptosRes.data);
       } catch (err) {
@@ -317,7 +317,7 @@ export default function CapturaRapidaPage() {
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Error de Carga</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <div className="flex justify-center">
-            <BotonRegresar />
+            {/* Botón de regreso eliminado */}
           </div>
         </div>
       </div>
@@ -331,24 +331,25 @@ export default function CapturaRapidaPage() {
         {/* ENCABEZADO */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
-            <BotonRegresar />
-            <div className="flex items-center gap-3 mt-3">
+            <div className="flex items-center gap-3">
               <div className="p-2 bg-amber-100 rounded-lg text-amber-600">
                 <FaBolt />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-800">Captura Rápida</h1>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-3xl font-bold text-gray-800">Captura Rápida</h1>
+                  <button
+                    onClick={() => window.open('/manual/capitulo_25_captura_rapida.html', '_blank')}
+                    className="flex items-center gap-2 px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors font-medium shadow-sm"
+                    title="Ver Manual de Usuario"
+                  >
+                    <FaBook /> <span className="hidden md:inline">Manual</span>
+                  </button>
+                </div>
                 <p className="text-gray-500 text-sm">Contabilización acelerada basada en plantillas.</p>
               </div>
             </div>
           </div>
-          <button
-            onClick={() => window.open('/manual/capitulo_25_captura_rapida.html', '_blank')}
-            className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors"
-            title="Ver Manual de Usuario"
-          >
-            <FaBook className="text-lg" /> <span className="font-bold text-sm">Manual</span>
-          </button>
         </div>
 
         {/* NOTIFICACIONES */}

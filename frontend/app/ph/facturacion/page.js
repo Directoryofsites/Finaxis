@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import BotonRegresar from '../../components/BotonRegresar';
+
 import { phService } from '../../../lib/phService';
 import {
     FaFileInvoiceDollar,
@@ -222,7 +222,6 @@ export default function FacturacionPHPage() {
             <div className="max-w-6xl mx-auto">
                 {/* HEADER */}
                 <div className="mb-8">
-                    <BotonRegresar />
                     <div className="flex items-center gap-3 mt-4">
                         <div className="p-3 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-xl text-white shadow-lg">
                             <FaFileInvoiceDollar className="text-3xl" />

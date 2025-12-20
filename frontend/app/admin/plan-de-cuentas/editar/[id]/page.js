@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 // 1. IMPORTACIONES CORREGIDAS Y AÑADIDAS
 
-import BotonRegresar from '../../../../components/BotonRegresar';
+
 import { useAuth } from '../../../../context/AuthContext';
 import { apiService } from '../../../../../lib/apiService';
 
@@ -79,9 +79,9 @@ export default function EditarCuentaPage() {
 
     // Creamos el payload con los tipos de datos correctos
     const updateData = {
-        ...formData,
-        nivel: parseInt(formData.nivel, 10),
-        funcion_especial: formData.funcion_especial || null
+      ...formData,
+      nivel: parseInt(formData.nivel, 10),
+      funcion_especial: formData.funcion_especial || null
     };
 
     try {
@@ -94,18 +94,17 @@ export default function EditarCuentaPage() {
       setIsLoading(false);
     }
   };
-  
+
   if (isLoading) {
-     return <div className="text-center mt-10">Cargando datos de la cuenta...</div>;
+    return <div className="text-center mt-10">Cargando datos de la cuenta...</div>;
   }
-  
+
   if (error) {
     return <div className="text-center mt-10 text-red-500">Error: {error}</div>;
   }
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
-      <BotonRegresar />
       <h1 className="text-2xl font-bold mb-4">Editar Cuenta Contable</h1>
 
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md space-y-4">
@@ -147,7 +146,7 @@ export default function EditarCuentaPage() {
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
           />
         </div>
-        
+
         <div>
           <label htmlFor="funcion_especial" className="block text-sm font-medium text-gray-700">Función Especial</label>
           <select
@@ -174,11 +173,11 @@ export default function EditarCuentaPage() {
           />
           <label htmlFor="permite_movimiento" className="ml-2 block text-sm text-gray-900">Permite Movimiento (Cuenta Auxiliar)</label>
         </div>
-        
+
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
         <div className="text-right">
-          <button 
+          <button
             type="submit"
             disabled={isLoading}
             className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-300"

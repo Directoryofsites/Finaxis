@@ -8,7 +8,7 @@ import { FaSave, FaPlus, FaTrash, FaCalendarAlt, FaUserTag, FaBoxOpen, FaWarehou
 
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../../lib/apiService';
-import BotonRegresar from '../../components/BotonRegresar';
+
 
 const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 text-sm outline-none";
 const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 text-sm outline-none bg-white";
@@ -265,7 +265,6 @@ export default function CreateRemisionPage() {
         <div className="p-6 max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-4">
-                    <BotonRegresar href="/remisiones" />
                     <h1 className="text-2xl font-bold text-gray-800">{curRemisionId ? `Editar Remisión #${curRemisionId}` : 'Nueva Remisión'}</h1>
                 </div>
                 <button

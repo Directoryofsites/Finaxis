@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../../../lib/apiService';
-import BotonRegresar from '../../components/BotonRegresar';
+
 import { FaFileInvoice, FaSync, FaFileContract } from 'react-icons/fa';
 
 export default function ReporteRemisionesPage() {
@@ -109,7 +109,6 @@ export default function ReporteRemisionesPage() {
         <div className="p-6 max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-4">
-                    <BotonRegresar href="/" />
                     <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                         <FaFileInvoice /> Reporte: Remisionado vs Facturado
                     </h1>
@@ -209,6 +208,6 @@ export default function ReporteRemisionesPage() {
                     </tbody>
                 </table>
             </div>
-        </div>
+        </div >
     );
 }

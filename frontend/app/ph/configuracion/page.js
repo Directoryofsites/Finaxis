@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../../context/AuthContext';
-import BotonRegresar from '../../components/BotonRegresar';
+
 import { phService } from '../../../lib/phService';
 import BuscadorCuentas from '../../../components/BuscadorCuentas';
 import { FaCogs, FaSave, FaPlus, FaTrash, FaEdit, FaExclamationTriangle, FaListUl, FaMoneyBillWave, FaLayerGroup } from 'react-icons/fa';
@@ -95,7 +95,6 @@ export default function ConfiguracionPHPage() {
             <div className="max-w-6xl mx-auto">
                 {/* HEAD */}
                 <div className="mb-8">
-                    <BotonRegresar />
                     <div className="flex items-center gap-3 mt-3">
                         <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
                             <FaCogs className="text-2xl" />

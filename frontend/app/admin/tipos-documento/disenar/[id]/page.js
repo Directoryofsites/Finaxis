@@ -5,11 +5,11 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '../../../../context/AuthContext';
 import { apiService } from '../../../../../lib/apiService';
-import BotonRegresar from '../../../../components/BotonRegresar';
 
-import { 
-    FaPalette, FaCode, FaSave, FaEye, FaMagic, 
-    FaSyncAlt 
+
+import {
+    FaPalette, FaCode, FaSave, FaEye, FaMagic,
+    FaSyncAlt
 } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -131,7 +131,7 @@ export default function DisenarFormatoHibridoPage() {
     const { user, loading: authLoading } = useAuth();
 
     // Estados
-    const [mode, setMode] = useState('visual'); 
+    const [mode, setMode] = useState('visual');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [formatoId, setFormatoId] = useState(null);
@@ -161,11 +161,11 @@ export default function DisenarFormatoHibridoPage() {
 
                     // 2. Cargar Formato existente (si hay)
                     const resFormato = await apiService.get(`/formatos-impresion?tipo_documento_id=${tipoDocumentoId}`);
-                    
+
                     if (resFormato.data && resFormato.data.length > 0) {
                         const formato = resFormato.data[0];
                         setFormatoId(formato.id);
-                        
+
                         if (formato.variables_ejemplo_json && formato.variables_ejemplo_json.visualConfig) {
                             setVisualConfig(formato.variables_ejemplo_json.visualConfig);
                         }
@@ -203,7 +203,7 @@ export default function DisenarFormatoHibridoPage() {
             .replace(/{{empresa.nit}}/g, "900.123.456-7")
             .replace(/{{empresa.direccion}}/g, "Calle 123 # 45-67")
             .replace(/{{empresa.telefono}}/g, "(601) 555-5555")
-            .replace(/{{empresa.logo_url}}/g, "/logo.png") 
+            .replace(/{{empresa.logo_url}}/g, "/logo.png")
             .replace(/{{documento.tipo_nombre}}/g, visualConfig.tituloDocumento || "COMPROBANTE")
             .replace(/{{documento.consecutivo}}/g, "1045")
             .replace(/{{documento.fecha_emision}}/g, "24/11/2025")
@@ -261,7 +261,7 @@ export default function DisenarFormatoHibridoPage() {
         } catch (error) {
             console.error(error);
             // Mostrar error legible si es duplicado
-            if(error.response?.data?.detail?.includes("UniqueViolation")) {
+            if (error.response?.data?.detail?.includes("UniqueViolation")) {
                 toast.error("Error: Ya existe un formato con este nombre. Intenta cambiar el título.");
             } else {
                 toast.error("Error al guardar el diseño.");
@@ -276,7 +276,7 @@ export default function DisenarFormatoHibridoPage() {
     return (
         <div className="min-h-screen bg-gray-50 p-4 font-sans pb-20">
             <ToastContainer />
-            
+
             <div className="max-w-7xl mx-auto flex justify-between items-center mb-6">
                 <div className="flex items-center gap-3">
                     <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl shadow-sm">
@@ -288,7 +288,7 @@ export default function DisenarFormatoHibridoPage() {
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <BotonRegresar />
+
                     <button onClick={handleSave} disabled={isSaving} className="btn btn-primary bg-indigo-600 text-white gap-2 shadow-lg">
                         <FaSave /> {isSaving ? 'Guardando...' : 'Guardar Diseño'}
                     </button>
@@ -296,7 +296,7 @@ export default function DisenarFormatoHibridoPage() {
             </div>
 
             <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 h-[85vh]">
-                
+
                 {/* EDITOR */}
                 <div className="flex flex-col bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
                     <div className="flex border-b border-gray-200 bg-gray-50">
@@ -335,7 +335,7 @@ export default function DisenarFormatoHibridoPage() {
                             </div>
                         ) : (
                             <div className="h-full flex flex-col">
-                                <textarea 
+                                <textarea
                                     className="flex-1 w-full font-mono text-xs p-4 bg-slate-900 text-green-400 rounded-lg focus:outline-none resize-none leading-relaxed"
                                     value={htmlCode}
                                     onChange={(e) => setHtmlCode(e.target.value)}
@@ -351,7 +351,7 @@ export default function DisenarFormatoHibridoPage() {
                     <div className="absolute top-4 right-4 bg-white/90 px-3 py-1 rounded-full text-xs font-bold text-gray-500 shadow-sm flex items-center gap-2 z-10">
                         <FaEye /> Vista Previa
                     </div>
-                    <div 
+                    <div
                         className="bg-white shadow-2xl origin-top transform scale-90 lg:scale-100"
                         style={{ width: '210mm', minHeight: '297mm', padding: '15mm' }}
                         dangerouslySetInnerHTML={{ __html: previewHtml }}

@@ -12,6 +12,18 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* HIDE NEXT.JS DEV TOOLS */
+[data-nextjs-toast],
+[data-nextjs-dev-overlay],
+#next-route-announcer,
+.nextjs-static-indicator,
+nextjs-portal {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;

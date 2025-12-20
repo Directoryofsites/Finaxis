@@ -163,22 +163,24 @@ export default function DocumentoDetallePage() {
   return (
     <div className="container mx-auto p-8 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">
-          {isEditing ? `Editando Documento` : `Detalle del Documento`}
-        </h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-bold text-gray-800">
+            {isEditing ? `Editando Documento` : `Detalle del Documento`}
+          </h1>
+          {!isEditing && (
+            <button
+              onClick={() => window.open('/manual/capitulo_10_edicion.html', '_blank')}
+              className="px-2 py-1 text-indigo-600 hover:bg-indigo-50 rounded-md font-bold flex items-center gap-2"
+              title="Ver Manual de Usuario"
+            >
+              <span className="text-lg">📖</span> <span className="hidden md:inline">Manual</span>
+            </button>
+          )}
+        </div>
+
         <div className="flex gap-2">
           {!isEditing ? (
             <>
-              <button
-                onClick={() => window.open('/manual/capitulo_10_edicion.html', '_blank')}
-                className="px-4 py-2 text-indigo-600 hover:bg-indigo-50 rounded-md font-bold flex items-center gap-2"
-                title="Ver Manual de Usuario"
-              >
-                Manual
-              </button>
-              <Link href={returnPath || "/contabilidad/explorador"} className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600">
-                &larr; Volver
-              </Link>
               {!documento.anulado && (
                 <button onClick={() => { setIsEditing(true); setEditedDocument(JSON.parse(JSON.stringify(documento))); }} className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Editar</button>
               )}

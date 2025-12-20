@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import BotonRegresar from '../../../components/BotonRegresar';
+
 import { apiService } from '../../../../lib/apiService';
 
 export default function FusionarTercerosPage() {
@@ -10,7 +10,7 @@ export default function FusionarTercerosPage() {
   const [terceros, setTerceros] = useState([]);
   const [origenId, setOrigenId] = useState('');
   const [destinoId, setDestinoId] = useState('');
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState('');
@@ -21,13 +21,13 @@ export default function FusionarTercerosPage() {
       try {
         // CAMBIO FINAL Y VICTORIOSO: Extraemos la propiedad 'data' de la respuesta de Axios.
         const { data } = await apiService.get('/terceros');
-        
+
         if (Array.isArray(data)) {
-            setTerceros(data);
+          setTerceros(data);
         } else {
-            console.error("La respuesta interna de la API no es un array:", data);
-            setTerceros([]);
-            setError('La estructura de la respuesta del servidor no fue la esperada.');
+          console.error("La respuesta interna de la API no es un array:", data);
+          setTerceros([]);
+          setError('La estructura de la respuesta del servidor no fue la esperada.');
         }
       } catch (err) {
         setError(err.response?.data?.detail || err.message || 'No se pudo cargar la lista de terceros.');
@@ -46,11 +46,11 @@ export default function FusionarTercerosPage() {
       setError('El tercero de origen y destino no pueden ser el mismo.');
       return;
     }
-    
+
     // Doble confirmación para una acción tan delicada
     const confirmacion1 = window.confirm(`¿Está SEGURO de que desea mover TODOS los documentos del tercero seleccionado como ORIGEN al tercero de DESTINO?`);
     if (!confirmacion1) return;
-    
+
     const confirmacion2 = window.confirm(`ESTA ACCIÓN ES IRREVERSIBLE y el tercero de origen será ELIMINADO. ¿Desea continuar?`);
     if (!confirmacion2) return;
 
@@ -60,13 +60,13 @@ export default function FusionarTercerosPage() {
 
     try {
       // Usamos apiService.post para mantener la consistencia y la autenticación automática
-      const result = await apiService.post('/terceros/fusionar', { 
-        origenId: parseInt(origenId), 
-        destinoId: parseInt(destinoId) 
+      const result = await apiService.post('/terceros/fusionar', {
+        origenId: parseInt(origenId),
+        destinoId: parseInt(destinoId)
       });
-      
+
       setSuccess(`${result.data.message} Se movieron ${result.data.documentosMovidos} documento(s).`);
-      
+
       setTimeout(() => {
         router.push('/admin/terceros');
       }, 4000);
@@ -80,10 +80,10 @@ export default function FusionarTercerosPage() {
 
   return (
     <div className="container mx-auto p-4">
-      <BotonRegresar />
+
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-6 text-gray-800">Utilidad de Fusión de Terceros</h1>
-        
+
         <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6" role="alert">
           <p className="font-bold">¡Atención! Acción Peligrosa</p>
           <p>Esta herramienta transfiere todos los movimientos de un tercero (origen) a otro (destino) y luego elimina permanentemente al tercero de origen. Úsela con extrema precaución.</p>
@@ -109,9 +109,9 @@ export default function FusionarTercerosPage() {
               {terceros.map(t => <option key={t.id} value={t.id}>ID: {t.id} | NIT: {t.nit} | Nombre: {t.razon_social}</option>)}
             </select>
           </div>
-          
+
           <div className="pt-4">
-            <button 
+            <button
               onClick={handleFusion}
               disabled={isSubmitting}
               className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-red-600 hover:bg-red-700 disabled:bg-gray-400"
@@ -120,7 +120,7 @@ export default function FusionarTercerosPage() {
             </button>
           </div>
         </div>
-        
+
         {error && <p className="text-center text-red-600 font-bold mt-4">{error}</p>}
         {success && <p className="text-center text-green-600 font-bold mt-4">{success}</p>}
       </div>

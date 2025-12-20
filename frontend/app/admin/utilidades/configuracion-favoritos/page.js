@@ -5,15 +5,15 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FaTrash, FaCheck, FaExclamationTriangle, FaPlus } from 'react-icons/fa';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 // La importación de CSS debe estar en globals.css
 // import 'react-toastify/dist/react-toastify.css';
 
 // --- Servicios ---
 import { getFavoritos, createFavorito, deleteFavorito } from '@/lib/favoritosService';
 // Importamos la estructura del menú desde la librería centralizada
+// Importamos la estructura del menú desde la librería centralizada
 import { menuStructure } from '@/lib/menuData';
-import BotonRegresar from '@/app/components/BotonRegresar'; // Asumiendo esta ruta
 
 // ====================================================================
 // CONSTANTE DE CAPACIDAD CENTRALIZADA (FIX CRÍTICO)
@@ -187,12 +187,8 @@ export default function ConfiguracionFavoritosPage() {
 
     return (
         <div className="container mx-auto p-4 md:p-8">
-            <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
-            <div className="flex justify-between items-center mb-6">
+            <div className="mb-6">
                 <h1 className="text-2xl md:text-3xl font-bold">🛠️ Configuración de Accesos Rápidos</h1>
-                <Link href="/" className="btn btn-sm btn-outline">
-                    Regresar al Panel Principal
-                </Link>
             </div>
 
             <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
@@ -223,10 +219,10 @@ export default function ConfiguracionFavoritosPage() {
                                     </td>
                                 </tr>
                             ))}
+                            {favoritos.length === 0 && (
+                                <tr><td colSpan="4" className="text-center text-gray-500 py-4 italic">No hay accesos rápidos configurados.</td></tr>
+                            )}
                         </tbody>
-                        {favoritos.length === 0 && (
-                            <tfoot><tr><td colSpan="4" className="text-center text-gray-500 py-4 italic">No hay accesos rápidos configurados.</td></tr></tfoot>
-                        )}
                     </table>
                 </div>
 

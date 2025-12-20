@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import BotonRegresar from '../../../components/BotonRegresar';
+
 import { apiService } from '../../../../lib/apiService';
 import Swal from 'sweetalert2';
 
@@ -123,7 +123,6 @@ export default function GestionAnuladosPage() {
     <div className="container mx-auto p-4 md:p-8 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Gestión de Documentos Anulados</h1>
-        <BotonRegresar />
       </div>
       <div className="bg-white p-4 md:p-6 rounded-lg shadow-md">
         {renderContent()}

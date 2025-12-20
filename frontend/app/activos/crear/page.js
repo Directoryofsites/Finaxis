@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiService } from '../../../lib/apiService';
 import { FaSave, FaBarcode, FaMapMarkerAlt, FaCalendarAlt, FaDollarSign } from 'react-icons/fa';
-import BotonRegresar from '../../components/BotonRegresar';
+
 
 export default function CrearActivoPage() {
     const router = useRouter();
@@ -57,13 +57,13 @@ export default function CrearActivoPage() {
         try {
             // ARREGLO: Convertir strings vacíos a null para campos opcionales
             const dataToSend = { ...formData };
-            
+
             // Validar campo requerido
             if (!dataToSend.categoria_id || dataToSend.categoria_id === '') {
                 alert('Por favor selecciona una categoría de activo.');
                 return;
             }
-            
+
             // Convertir campos de ID a enteros
             dataToSend.categoria_id = parseInt(dataToSend.categoria_id);
             if (dataToSend.responsable_id === '' || !dataToSend.responsable_id) {
@@ -71,11 +71,11 @@ export default function CrearActivoPage() {
             } else {
                 dataToSend.responsable_id = parseInt(dataToSend.responsable_id);
             }
-            
+
             // Convertir números
             dataToSend.costo_adquisicion = parseFloat(dataToSend.costo_adquisicion) || 0;
             dataToSend.valor_residual = parseFloat(dataToSend.valor_residual) || 0;
-            
+
             await apiService.post('/activos/', dataToSend);
             alert('Activo Fijo creado exitosamente.');
             router.push('/activos');
@@ -93,7 +93,6 @@ export default function CrearActivoPage() {
     return (
         <div className="p-6 max-w-4xl mx-auto">
             <div className="flex items-center gap-4 mb-6">
-                <BotonRegresar href="/activos" />
                 <h1 className="text-2xl font-bold text-gray-800">Registrar Nuevo Activo Fijo</h1>
             </div>
 

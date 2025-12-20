@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { apiService } from '../../../lib/apiService';
 import { FaPlus, FaCog, FaEdit, FaFileDownload, FaCalculator, FaFileInvoiceDollar } from 'react-icons/fa';
-import BotonRegresar from '../../components/BotonRegresar';
+
 
 export default function CategoriasActivosPage() {
     const [categorias, setCategorias] = useState([]);
@@ -38,7 +38,7 @@ export default function CategoriasActivosPage() {
             setCategorias(resCat.data);
             setCuentas(resCuentas.data);
             setTiposDocumento(resTipos.data);
-            
+
 
         } catch (error) {
             console.error("Error cargando datos:", error);
@@ -51,13 +51,13 @@ export default function CategoriasActivosPage() {
         e.preventDefault();
         try {
             const dataToSend = { ...formData };
-            
+
             // Convertir campos vacíos a null
             ['cuenta_activo_id', 'cuenta_gasto_depreciacion_id', 'cuenta_depreciacion_acumulada_id'].forEach(field => {
                 if (dataToSend[field] === '') dataToSend[field] = null;
                 else if (dataToSend[field]) dataToSend[field] = parseInt(dataToSend[field]);
             });
-            
+
             dataToSend.vida_util_niif_meses = parseInt(dataToSend.vida_util_niif_meses);
             dataToSend.vida_util_fiscal_meses = parseInt(dataToSend.vida_util_fiscal_meses);
 
@@ -66,7 +66,7 @@ export default function CategoriasActivosPage() {
             } else {
                 await apiService.post('/activos/categorias', dataToSend);
             }
-            
+
             setShowModal(false);
             setEditingCategoria(null);
             resetForm();
@@ -108,35 +108,35 @@ export default function CategoriasActivosPage() {
         // Permitir seleccionar mes y año para pruebas
         const anioActual = new Date().getFullYear();
         const mesActual = new Date().getMonth() + 1;
-        
+
         const anioInput = prompt(`Año para depreciación (actual: ${anioActual}):`, anioActual);
         if (!anioInput) return;
-        
+
         const mesInput = prompt(`Mes para depreciación (1-12, actual: ${mesActual}):`, mesActual);
         if (!mesInput) return;
-        
+
         const anio = parseInt(anioInput);
         const mes = parseInt(mesInput);
-        
+
         if (mes < 1 || mes > 12) {
             alert('❌ El mes debe estar entre 1 y 12');
             return;
         }
-        
+
         if (!confirm(`¿Está seguro de ejecutar la depreciación para ${mes.toString().padStart(2, '0')}/${anio}?\n\nEsto generará documentos contables automáticamente.\n\n💡 Si ya existe depreciación para este período, se creará una adicional.`)) {
             return;
         }
-        
+
         try {
             const response = await apiService.post('/activos/depreciar', {
                 anio: anio,
                 mes: mes,
                 tipo_documento_id: parseInt(tipoDocumentoId)
             });
-            
+
             alert(`✅ ¡Depreciación ejecutada exitosamente!\n\nDocumento generado: ${response.data.numero}`);
             setShowDepreciacionModal(false);
-            
+
             // Descargar PDF automáticamente
             window.open(`http://localhost:8002/api/activos/reportes/depreciacion-pdf?anio=${anio}&mes=${mes}`, '_blank');
         } catch (error) {
@@ -158,10 +158,9 @@ export default function CategoriasActivosPage() {
         <div className="p-6">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
-                    <BotonRegresar href="/activos" />
                     <h1 className="text-2xl font-bold text-gray-800">Categorías de Activos Fijos</h1>
                 </div>
-                
+
                 <div className="flex gap-2">
                     <Link
                         href="/activos/movimientos-contables"
@@ -204,10 +203,10 @@ export default function CategoriasActivosPage() {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                         {categorias.map((categoria) => {
-                            const configuracionCompleta = categoria.cuenta_activo_id && 
-                                                        categoria.cuenta_gasto_depreciacion_id && 
-                                                        categoria.cuenta_depreciacion_acumulada_id;
-                            
+                            const configuracionCompleta = categoria.cuenta_activo_id &&
+                                categoria.cuenta_gasto_depreciacion_id &&
+                                categoria.cuenta_depreciacion_acumulada_id;
+
                             return (
                                 <tr key={categoria.id} className="hover:bg-gray-50">
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -220,11 +219,10 @@ export default function CategoriasActivosPage() {
                                         {categoria.metodo_depreciacion.replace('_', ' ')}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                            configuracionCompleta 
-                                                ? 'bg-green-100 text-green-800' 
-                                                : 'bg-red-100 text-red-800'
-                                        }`}>
+                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${configuracionCompleta
+                                            ? 'bg-green-100 text-green-800'
+                                            : 'bg-red-100 text-red-800'
+                                            }`}>
                                             {configuracionCompleta ? 'Completa' : 'Incompleta'}
                                         </span>
                                     </td>
@@ -250,7 +248,7 @@ export default function CategoriasActivosPage() {
                         <h3 className="text-lg font-bold text-gray-900 mb-4">
                             {editingCategoria ? 'Editar Categoría' : 'Nueva Categoría'}
                         </h3>
-                        
+
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className={labelClass}>Nombre de la Categoría *</label>
@@ -259,7 +257,7 @@ export default function CategoriasActivosPage() {
                                     required
                                     className={inputClass}
                                     value={formData.nombre}
-                                    onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
                                     placeholder="Ej: Equipos de Oficina"
                                 />
                             </div>
@@ -273,7 +271,7 @@ export default function CategoriasActivosPage() {
                                         min="1"
                                         className={inputClass}
                                         value={formData.vida_util_niif_meses}
-                                        onChange={(e) => setFormData({...formData, vida_util_niif_meses: e.target.value})}
+                                        onChange={(e) => setFormData({ ...formData, vida_util_niif_meses: e.target.value })}
                                     />
                                 </div>
                                 <div>
@@ -284,7 +282,7 @@ export default function CategoriasActivosPage() {
                                         min="1"
                                         className={inputClass}
                                         value={formData.vida_util_fiscal_meses}
-                                        onChange={(e) => setFormData({...formData, vida_util_fiscal_meses: e.target.value})}
+                                        onChange={(e) => setFormData({ ...formData, vida_util_fiscal_meses: e.target.value })}
                                     />
                                 </div>
                             </div>
@@ -295,7 +293,7 @@ export default function CategoriasActivosPage() {
                                     required
                                     className={inputClass}
                                     value={formData.metodo_depreciacion}
-                                    onChange={(e) => setFormData({...formData, metodo_depreciacion: e.target.value})}
+                                    onChange={(e) => setFormData({ ...formData, metodo_depreciacion: e.target.value })}
                                 >
                                     <option value="LINEA_RECTA">Línea Recta</option>
                                     <option value="REDUCCION_SALDOS">Reducción de Saldos</option>
@@ -306,14 +304,14 @@ export default function CategoriasActivosPage() {
 
                             <div className="border-t pt-4">
                                 <h4 className="font-semibold text-gray-700 mb-3">Configuración Contable</h4>
-                                
+
                                 <div className="space-y-3">
                                     <div>
                                         <label className={labelClass}>Cuenta del Activo (15xx)</label>
                                         <select
                                             className={inputClass}
                                             value={formData.cuenta_activo_id}
-                                            onChange={(e) => setFormData({...formData, cuenta_activo_id: e.target.value})}
+                                            onChange={(e) => setFormData({ ...formData, cuenta_activo_id: e.target.value })}
                                         >
                                             <option value="">Seleccione...</option>
                                             {cuentas.filter(c => c.codigo.startsWith('15')).map(cuenta => (
@@ -329,7 +327,7 @@ export default function CategoriasActivosPage() {
                                         <select
                                             className={inputClass}
                                             value={formData.cuenta_gasto_depreciacion_id}
-                                            onChange={(e) => setFormData({...formData, cuenta_gasto_depreciacion_id: e.target.value})}
+                                            onChange={(e) => setFormData({ ...formData, cuenta_gasto_depreciacion_id: e.target.value })}
                                         >
                                             <option value="">Seleccione...</option>
                                             {cuentas.filter(c => c.codigo.startsWith('51')).map(cuenta => (
@@ -345,7 +343,7 @@ export default function CategoriasActivosPage() {
                                         <select
                                             className={inputClass}
                                             value={formData.cuenta_depreciacion_acumulada_id}
-                                            onChange={(e) => setFormData({...formData, cuenta_depreciacion_acumulada_id: e.target.value})}
+                                            onChange={(e) => setFormData({ ...formData, cuenta_depreciacion_acumulada_id: e.target.value })}
                                         >
                                             <option value="">Seleccione...</option>
                                             {cuentas.filter(c => c.codigo && c.codigo.startsWith('159')).map(cuenta => (
@@ -395,55 +393,55 @@ export default function CategoriasActivosPage() {
                             <p className="text-sm text-gray-600 mb-6">
                                 Seleccione el tipo de documento contable que se utilizará para registrar la depreciación:
                             </p>
-                            
+
                             <div className="space-y-3 mb-6">
                                 {tiposDocumento
-                                    .filter(tipo => tipo.nombre.toLowerCase().includes('nota') || 
-                                                   tipo.nombre.toLowerCase().includes('comprobante') ||
-                                                   tipo.codigo.toLowerCase().includes('nc') ||
-                                                   tipo.codigo.toLowerCase().includes('cp'))
+                                    .filter(tipo => tipo.nombre.toLowerCase().includes('nota') ||
+                                        tipo.nombre.toLowerCase().includes('comprobante') ||
+                                        tipo.codigo.toLowerCase().includes('nc') ||
+                                        tipo.codigo.toLowerCase().includes('cp'))
                                     .map(tipo => (
-                                    <button
-                                        key={tipo.id}
-                                        onClick={() => ejecutarDepreciacion(tipo.id)}
-                                        className="w-full p-3 text-left border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-500 transition"
-                                    >
-                                        <div className="font-semibold text-gray-800">
-                                            {tipo.codigo} - {tipo.nombre}
-                                        </div>
-                                        <div className="text-xs text-gray-500">
-                                            Consecutivo actual: {tipo.consecutivo_actual || 0}
-                                        </div>
-                                    </button>
-                                ))}
-                                
+                                        <button
+                                            key={tipo.id}
+                                            onClick={() => ejecutarDepreciacion(tipo.id)}
+                                            className="w-full p-3 text-left border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-500 transition"
+                                        >
+                                            <div className="font-semibold text-gray-800">
+                                                {tipo.codigo} - {tipo.nombre}
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                                Consecutivo actual: {tipo.consecutivo_actual || 0}
+                                            </div>
+                                        </button>
+                                    ))}
+
                                 {/* Si no hay tipos filtrados, mostrar todos */}
-                                {tiposDocumento.filter(tipo => 
-                                    tipo.nombre.toLowerCase().includes('nota') || 
+                                {tiposDocumento.filter(tipo =>
+                                    tipo.nombre.toLowerCase().includes('nota') ||
                                     tipo.nombre.toLowerCase().includes('comprobante') ||
                                     tipo.codigo.toLowerCase().includes('nc') ||
                                     tipo.codigo.toLowerCase().includes('cp')
                                 ).length === 0 && (
-                                    <div>
-                                        <p className="text-sm text-gray-500 mb-3">Tipos de documento disponibles:</p>
-                                        {tiposDocumento.slice(0, 5).map(tipo => (
-                                            <button
-                                                key={tipo.id}
-                                                onClick={() => ejecutarDepreciacion(tipo.id)}
-                                                className="w-full p-3 text-left border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-500 transition mb-2"
-                                            >
-                                                <div className="font-semibold text-gray-800">
-                                                    {tipo.codigo} - {tipo.nombre}
-                                                </div>
-                                                <div className="text-xs text-gray-500">
-                                                    Consecutivo: {tipo.consecutivo_actual || 0}
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
+                                        <div>
+                                            <p className="text-sm text-gray-500 mb-3">Tipos de documento disponibles:</p>
+                                            {tiposDocumento.slice(0, 5).map(tipo => (
+                                                <button
+                                                    key={tipo.id}
+                                                    onClick={() => ejecutarDepreciacion(tipo.id)}
+                                                    className="w-full p-3 text-left border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-500 transition mb-2"
+                                                >
+                                                    <div className="font-semibold text-gray-800">
+                                                        {tipo.codigo} - {tipo.nombre}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        Consecutivo: {tipo.consecutivo_actual || 0}
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                             </div>
-                            
+
                             <div className="flex justify-center gap-3">
                                 <button
                                     onClick={() => setShowDepreciacionModal(false)}

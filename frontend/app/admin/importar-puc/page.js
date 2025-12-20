@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Script from 'next/script';
-import BotonRegresar from '../../components/BotonRegresar';
+
 
 export default function ImportarPucPage() {
   const [file, setFile] = useState(null);
@@ -18,7 +18,7 @@ export default function ImportarPucPage() {
     setSuccessMessage(null);
     setParsedData([]);
     const selectedFile = e.target.files[0];
-    
+
     if (selectedFile && selectedFile.name.toLowerCase().endsWith('.csv')) {
       setFile(selectedFile);
     } else {
@@ -34,16 +34,16 @@ export default function ImportarPucPage() {
     }
     setIsLoading(true);
     setSuccessMessage(null);
-    
+
     // --- INICIO DEL BLOQUE CORREGIDO ---
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       delimiter: ";", // Acepta punto y coma como separador
       bom: true,      // Ignora el "BOM" invisible de Excel
-      
+
       // Función que transforma los encabezados para que coincidan con lo esperado
-      transformHeader: function(header) {
+      transformHeader: function (header) {
         let lowerCaseHeader = header.toLowerCase();
         let snakeCaseHeader = lowerCaseHeader.replace(/ /g, '_');
         return snakeCaseHeader.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -76,7 +76,7 @@ export default function ImportarPucPage() {
       setError("No hay datos para importar. Por favor, procesa un archivo primero.");
       return;
     }
-    
+
     setIsLoading(true);
     setError(null);
     setSuccessMessage(null);
@@ -96,12 +96,12 @@ export default function ImportarPucPage() {
       if (!res.ok) {
         throw new Error(result.details || result.message || 'Ocurrió un error en el servidor.');
       }
-      
+
       setSuccessMessage(result.message);
       setParsedData([]);
       setFile(null);
-      
-      if(document.querySelector('input[type="file"]')) {
+
+      if (document.querySelector('input[type="file"]')) {
         document.querySelector('input[type="file"]').value = '';
       }
 
@@ -114,17 +114,18 @@ export default function ImportarPucPage() {
 
   return (
     <>
-      <Script 
+      <Script
         src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"
         strategy="lazyOnload"
       />
 
       <div className="container mx-auto p-4 max-w-4xl">
-        <BotonRegresar />
-        <h1 className="text-2xl font-bold mb-2">Importar Plan de Cuentas (PUC) desde CSV</h1>
-        <p className="text-gray-600 mb-4">
-          Sube un archivo en formato CSV para importar masivamente tu plan de cuentas.
-        </p>
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">Importar Plan de Cuentas (PUC)</h1>
+            <p className="text-gray-600">Importación masiva desde archivo CSV.</p>
+          </div>
+        </div>
 
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-lg font-semibold mb-2">Paso 1: Seleccionar Archivo</h2>

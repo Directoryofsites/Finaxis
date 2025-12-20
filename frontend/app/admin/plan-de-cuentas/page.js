@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
-import BotonRegresar from '@/app/components/BotonRegresar';
+
 
 // --- Iconos Estándar v2.0 ---
 import {
@@ -316,7 +316,17 @@ export default function PlanDeCuentasPage() {
               <FaSitemap className="text-2xl" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Plan de Cuentas</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Plan de Cuentas</h1>
+                <button
+                  onClick={() => window.open('/manual/capitulo_1_puc.html', '_blank')}
+                  className="flex items-center gap-2 px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors font-medium shadow-sm"
+                  title="Ver Manual de Capacitación"
+                  type="button"
+                >
+                  <FaBook /> <span className="hidden md:inline">Manual</span>
+                </button>
+              </div>
               <p className="text-gray-500 text-sm mt-1">Gestión jerárquica del Plan Único de Cuentas (PUC).</p>
             </div>
           </div>
@@ -324,20 +334,12 @@ export default function PlanDeCuentasPage() {
           {/* Botones de Acción Superior */}
           <div className="flex gap-2">
             <button
-              onClick={() => window.open('/manual/capitulo_1_puc.html', '_blank')}
-              className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2"
-              title="Ver Manual de Capacitación"
-            >
-              <FaBook className="text-lg" /> <span className="hidden md:inline">Manual</span>
-            </button>
-            <button
               onClick={() => setIsImportModalOpen(true)}
               className="btn btn-ghost text-green-700 bg-green-50 hover:bg-green-100 gap-2 font-bold"
               title="Importar PUC desde JSON"
             >
               <FaPlus className="text-lg" /> Importar
             </button>
-            <BotonRegresar />
           </div>
         </div>
 

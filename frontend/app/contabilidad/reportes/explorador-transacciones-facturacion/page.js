@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import BotonRegresar from '@/app/components/BotonRegresar';
+
 import { generarReporteFacturacion, generarPdfDirectoReporteFacturacion } from '@/lib/reportesFacturacionService'; // <--- FIX: Usar la función de GENERACIÓN DIRECTA
 import { apiService } from '@/lib/apiService';
 import { toast, ToastContainer } from 'react-toastify'; // Importar Toast
@@ -55,7 +55,7 @@ const ExploradorTransaccionesPage = () => {
     setLoading(true);
     setError('');
     setReporteData(null);
-    
+
     try {
       const filtrosParaAPI = {
         ...filtros,
@@ -64,7 +64,7 @@ const ExploradorTransaccionesPage = () => {
       };
       const data = await generarReporteFacturacion(filtrosParaAPI);
       setReporteData(data);
-    } catch (err) { 
+    } catch (err) {
       // Si err.message es "Network Error" o similar, la API no se alcanzó
       setError(err.response?.data?.detail || err.message || 'Error al generar el reporte.');
     } finally {
@@ -75,32 +75,32 @@ const ExploradorTransaccionesPage = () => {
   // --- INICIO: LÓGICA DE EXPORTACIÓN REEMPLAZADA ---
   const handleExportPDF = async () => {
     if (!reporteData) {
-        toast.warning("Genere el reporte primero antes de exportar.");
-        return;
+      toast.warning("Genere el reporte primero antes de exportar.");
+      return;
     }
 
     setIsExportingPdf(true);
     setError('');
 
     try {
-        const filtrosParaAPI = {
-            ...filtros,
-            tercero_id: filtros.tercero_id ? parseInt(filtros.tercero_id, 10) : null,
-            centro_costo_id: filtros.centro_costo_id ? parseInt(filtros.centro_costo_id, 10) : null,
-        };
+      const filtrosParaAPI = {
+        ...filtros,
+        tercero_id: filtros.tercero_id ? parseInt(filtros.tercero_id, 10) : null,
+        centro_costo_id: filtros.centro_costo_id ? parseInt(filtros.centro_costo_id, 10) : null,
+      };
 
-        // 1. Llamar a la función de Generación Directa (que maneja el blob y la descarga)
-        // Se asume que generarPdfDirectoReporteFacturacion existe en el servicio.
-        await generarPdfDirectoReporteFacturacion(filtrosParaAPI);
-        
-        toast.success("El PDF se está descargando...");
-        
+      // 1. Llamar a la función de Generación Directa (que maneja el blob y la descarga)
+      // Se asume que generarPdfDirectoReporteFacturacion existe en el servicio.
+      await generarPdfDirectoReporteFacturacion(filtrosParaAPI);
+
+      toast.success("El PDF se está descargando...");
+
     } catch (err) {
-        const errorMsg = err.response?.data?.detail || err.message || 'Error al generar el PDF.';
-        setError(errorMsg);
-        toast.error(`Error de PDF: ${errorMsg}`);
+      const errorMsg = err.response?.data?.detail || err.message || 'Error al generar el PDF.';
+      setError(errorMsg);
+      toast.error(`Error de PDF: ${errorMsg}`);
     } finally {
-        setIsExportingPdf(false);
+      setIsExportingPdf(false);
     }
   };
   // --- FIN: LÓGICA DE EXPORTACIÓN REEMPLAZADA ---
@@ -111,12 +111,11 @@ const ExploradorTransaccionesPage = () => {
       <ToastContainer position="top-right" autoClose={3000} />
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Explorador de Transacciones</h1>
-        <BotonRegresar />
       </div>
 
       <div className="card bg-base-100 shadow-xl mb-6">
         <div className="card-body">
-           <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
               <div>
                 <label className="label"><span className="label-text font-bold">Tipo de Reporte</span></label>
@@ -157,13 +156,13 @@ const ExploradorTransaccionesPage = () => {
 
       {loading && <div className="text-center my-10"><span className="loading loading-spinner loading-lg text-primary"></span></div>}
       {error && <div className="alert alert-error"><span>{error}</span></div>}
-      
+
       {reporteData && (
         <div className="space-y-6">
           <div className="flex justify-end gap-2">
-             <button onClick={handleExportPDF} className="btn btn-secondary" disabled={isExportingPdf || !reporteData}>
-                {isExportingPdf ? 'Generando PDF...' : 'Exportar a PDF'}
-             </button>
+            <button onClick={handleExportPDF} className="btn btn-secondary" disabled={isExportingPdf || !reporteData}>
+              {isExportingPdf ? 'Generando PDF...' : 'Exportar a PDF'}
+            </button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="stat bg-base-200 rounded-lg p-4 text-center">

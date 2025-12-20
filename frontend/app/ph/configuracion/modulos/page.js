@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { phService } from '../../../../lib/phService';
-import BotonRegresar from '../../../components/BotonRegresar';
+
 import { FaLayerGroup, FaPlus, FaEdit, FaTrash, FaSave, FaTimes } from 'react-icons/fa';
 
 export default function ModulosConfigPage() {
@@ -91,7 +91,6 @@ export default function ModulosConfigPage() {
             <div className="max-w-4xl mx-auto">
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center gap-4">
-                        <BotonRegresar />
                         <div>
                             <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                                 <div className="p-2 bg-purple-100 rounded-lg text-purple-600"><FaLayerGroup /></div>

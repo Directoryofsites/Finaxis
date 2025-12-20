@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import BotonRegresar from '../../../components/BotonRegresar';
+
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
 import { FaBuilding, FaSave, FaUsers, FaExclamationTriangle } from 'react-icons/fa';
@@ -39,7 +39,7 @@ export default function DetalleEmpresaPage() {
                     // 1. Cargar Datos de la Empresa
                     const resEmpresa = await apiService.get(`/empresas/${id}`);
                     const emp = resEmpresa.data;
-                    
+
                     // Pre-llenar formulario (usamos || '' para evitar warnings de React)
                     setFormData({
                         razon_social: emp.razon_social || '',
@@ -98,15 +98,14 @@ export default function DetalleEmpresaPage() {
         <div className="container mx-auto p-6 max-w-5xl font-sans pb-20">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    <FaBuilding className="text-indigo-600"/> Gestión de Empresa
+                    <FaBuilding className="text-indigo-600" /> Gestión de Empresa
                 </h1>
-                <BotonRegresar url="/admin/empresas" />
             </div>
 
             {/* 1. FORMULARIO DE DATOS (SOLUCIÓN A TU PROBLEMA DE DIRECCIÓN/TELÉFONO) */}
             <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 mb-8">
                 <h2 className="text-lg font-bold text-gray-700 mb-4 border-b pb-2">Datos Generales (Para Impresión)</h2>
-                
+
                 <form onSubmit={handleUpdateEmpresa}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>

@@ -3,21 +3,21 @@
 import React, { useState, useEffect } from 'react';
 import Script from 'next/script';
 import { useRouter } from 'next/navigation';
-import { 
-  FaChartPie, 
-  FaCalendarAlt, 
-  FaBuilding, 
-  FaSearch, 
-  FaFileCsv, 
-  FaFilePdf, 
-  FaExclamationTriangle 
+import {
+    FaChartPie,
+    FaCalendarAlt,
+    FaBuilding,
+    FaSearch,
+    FaFileCsv,
+    FaFilePdf,
+    FaExclamationTriangle
 } from 'react-icons/fa';
 
-import { 
-FaBook,
+import {
+    FaBook,
 } from 'react-icons/fa';
 
-import BotonRegresar from '../../../components/BotonRegresar';
+
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
 
@@ -41,7 +41,7 @@ export default function EstadoResultadosCCPage() {
     const [isPageReady, setPageReady] = useState(false);
 
     // --- EFECTOS (Lógica Original) ---
-    
+
     // Redirección si no hay usuario
     useEffect(() => {
         if (!authLoading) {
@@ -115,8 +115,8 @@ export default function EstadoResultadosCCPage() {
 
         const dataToExport = [];
         dataToExport.push(['Estado de Resultados por Centro de Costo']);
-        const centroCostoName = selectedCentroCostoId ? 
-            centrosCosto.find(cc => cc.id == selectedCentroCostoId)?.nombre || 'Desconocido' : 
+        const centroCostoName = selectedCentroCostoId ?
+            centrosCosto.find(cc => cc.id == selectedCentroCostoId)?.nombre || 'Desconocido' :
             'Todos los Centros de Costo';
         dataToExport.push(['Centro de Costo:', centroCostoName]);
         dataToExport.push([`Del ${startDate} al ${endDate}`]);
@@ -220,38 +220,29 @@ export default function EstadoResultadosCCPage() {
     return (
         <>
             <Script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" />
-            
+
             <div className="min-h-screen bg-gray-50 p-6 font-sans pb-20">
                 <div className="max-w-5xl mx-auto">
-                    
+
                     {/* ENCABEZADO */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                         <div>
-
-
-                           <div className="flex items-center gap-3 mb-3">
-                            
-                            {/* 1. Botón Regresar (Izquierda) */}
-                            <BotonRegresar />
-
-                            {/* 2. Botón Manual (Derecha) */}
-                            <button
-                                onClick={() => window.open('/manual/capitulo_53_estado_resultados_cc_detallado.html', '_blank')}
-                                className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors font-bold text-sm"
-                                type="button"
-                            >
-                                <FaBook className="text-lg" /> Manual
-                            </button>
-
-                        </div>
-
-
                             <div className="flex items-center gap-3 mt-3">
                                 <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
                                     <FaChartPie className="text-2xl" />
                                 </div>
                                 <div>
-                                    <h1 className="text-3xl font-bold text-gray-800">Estado de Resultados (CC)</h1>
+                                    <div className="flex items-center gap-4">
+                                        <h1 className="text-3xl font-bold text-gray-800">Estado de Resultados (CC)</h1>
+                                        <button
+                                            onClick={() => window.open('/manual/capitulo_53_estado_resultados_cc_detallado.html', '_blank')}
+                                            className="flex items-center gap-2 px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors font-medium shadow-sm"
+                                            type="button"
+                                            title="Ver Manual de Usuario"
+                                        >
+                                            <span className="text-lg">📖</span> <span className="font-bold text-sm hidden md:inline">Manual</span>
+                                        </button>
+                                    </div>
                                     <p className="text-gray-500 text-sm">Rentabilidad detallada por Centro de Costo.</p>
                                 </div>
                             </div>
@@ -261,7 +252,7 @@ export default function EstadoResultadosCCPage() {
                     {/* CARD 1: FILTROS */}
                     <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 animate-fadeIn mb-8">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-                            
+
                             {/* Selector Centro Costo */}
                             <div className="md:col-span-1">
                                 <label className={labelClass}>Centro de Costo</label>
@@ -337,7 +328,7 @@ export default function EstadoResultadosCCPage() {
                     {/* CARD 2: RESULTADOS (CONDICIONAL) */}
                     {reportData && (
                         <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden animate-slideDown">
-                            
+
                             {/* Cabecera del Reporte */}
                             <div className="p-6 bg-gray-50 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
                                 <div>
@@ -357,7 +348,7 @@ export default function EstadoResultadosCCPage() {
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <tbody className="divide-y divide-gray-100">
-                                        
+
                                         {/* SECCIÓN: INGRESOS */}
                                         <tr className="bg-emerald-50"><td colSpan="3" className="px-6 py-3 text-sm font-bold text-emerald-800 uppercase tracking-wider">Ingresos Operacionales</td></tr>
                                         {reportData.ingresos.map((item, index) => (

@@ -14,19 +14,14 @@ import {
     FaGg, FaRedoAlt, FaBalanceScale, FaChartPie, FaChartArea, FaDollarSign, FaMoneyCheckAlt,
     FaExclamationTriangle, FaCheckCircle, FaExclamationCircle, FaSkullCrossbones, FaArrowUp, FaMoneyBillWave,
     FaStar, FaChevronRight, FaFolder, FaFile, FaCalendarAlt, FaPlayCircle, FaArrowLeft, FaLock,
-    FaFileInvoiceDollar, FaBuilding, FaStamp, FaShoppingCart
+    FaFileInvoiceDollar, FaBuilding, FaStamp, FaShoppingCart, FaRocket
 } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
 
 // --- Importación de Componentes CRÍTICOS ---
-import QuickAccessGrid from './components/QuickAccessGrid';
-import ConsumoWidget from './components/dashboard/ConsumoWidget';
-import Sidebar from '../components/Sidebar'; // Usamos el nuevo componente Sidebar
-import { menuStructure } from '../lib/menuData'; // Usamos la data centralizada
 
 // --- Servicios Frontend ---
 import { getFinancialRatios, getHorizontalAnalysis, getVerticalAnalysis } from '../lib/dashboardService';
-import { getFavoritos } from '../lib/favoritosService';
 
 // =============================================================
 // II. COMPONENTES REUTILIZABLES: TILES Y LÓGICA DE EXPLORADOR
@@ -828,48 +823,11 @@ const FinancialAnalysisModule = ({ user }) => {
 /**
  * Componente que renderiza el contenido del Módulo 'Favoritos' (QuickAccessGrid reubicado).
  */
-const FavoritesModule = ({ user, router }) => {
-    const [favoritos, setFavoritos] = useState([]);
-    const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        setLoading(true);
-        getFavoritos().then(res => {
-            setFavoritos(res);
-            setLoading(false);
-        }).catch(err => {
-            console.error("Error al cargar favoritos:", err);
-            toast.error(`Fallo al cargar favoritos: ${err.message || "Verifique la conexión."}`);
-            setLoading(false);
-        });
-    }, []);
-
-    if (loading && favoritos.length === 0) {
-        return (
-            <div className="p-6 w-full h-full flex items-center justify-center">
-                <span className="loading loading-spinner loading-lg text-blue-500"></span>
-                <p className="text-gray-500 ml-3">Cargando accesos rápidos...</p>
-            </div>
-        );
-    }
-
-    return (
-        <div className="p-6 w-full">
-            {/* --- AQUÍ INSERTAMOS EL WIDGET DE CONSUMO --- */}
-            <div className="mb-8">
-                <ConsumoWidget />
-            </div>
-            {/* -------------------------------------------- */}
-
-            <QuickAccessGrid favoritos={favoritos} router={router} />
-        </div>
-    );
-};
-
 
 // =============================================================
 // III. NÚCLEO DEL EXPLORADOR: Vistas dinámicas y Layout principal
 // =============================================================
+
 
 /**
  * Componente que renderiza el contenido dinámico del módulo seleccionado.
@@ -998,13 +956,18 @@ const ExplorerView = ({ activeModuleId, router }) => {
 };
 
 
+// IMPORTAR LOS NUEVOS COMPONENTES
+import TopNavigationBar from '../components/TopNavigationBar';
+import CleanHomePage from '../components/CleanHomePage';
+
 /**
  * El Componente Principal que define el Layout de la aplicación.
+ * REFACTORIZADO 2025: Arquitectura Desktop-Style
  */
 function HomePageContent() {
     const { user, logout, loading: authLoading } = useAuth();
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [activeModuleId, setActiveModuleId] = useState('favoritos');
+    // const [isMenuOpen, setIsMenuOpen] = useState(false); // DEPRECATED: Sidebar logic
+    const [activeModuleId, setActiveModuleId] = useState(null); // NULL por defecto = Clean Slate
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -1043,58 +1006,39 @@ function HomePageContent() {
         );
     }
 
-    // Manejador de clics en el menú principal (Sidebar)
-    const handleMenuClick = (moduleId) => {
-        if (isMenuOpen) {
-            setIsMenuOpen(false);
-        }
-
-        const module = menuStructure.find(m => m.id === moduleId);
-        if (module && module.route) {
-            router.push(module.route);
-        } else {
-            setActiveModuleId(moduleId);
-            // Optional: Update URL without reloading to keep state shareable
-            // router.replace(`/?module=${moduleId}`, undefined, { shallow: true });
-        }
-    };
-
-    // Vista para usuarios autenticados
+    // Renderizado Estilo Desktop "Zen Mode"
     return (
-        <div className="flex h-screen bg-gray-100">
-            {/* Botón de Menú para móvil */}
-            <button
-                className="p-4 text-blue-600 fixed top-0 left-0 z-40 md:hidden"
-                onClick={() => setIsMenuOpen(true)}
-            >
-                <FaBars size={24} />
-            </button>
+        <div className="flex flex-col h-screen bg-gray-100 overflow-hidden">
 
-            {/* --- Columna Izquierda: Sidebar (Menú Principal) --- */}
-            <Sidebar
-                activeModuleId={activeModuleId}
-                onMenuClick={handleMenuClick}
-                isMenuOpen={isMenuOpen}
-                setIsMenuOpen={setIsMenuOpen}
-                user={user}
-                logout={logout}
-            />
+            {/* 1. BARRA SUPERIOR (Manejada Globalmente en Layout.js) */}
 
-            {/* --- Columna Derecha: Contenido Principal (El Explorador Dinámico) --- */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-start px-6 shadow-sm">
-                    <div className="text-2xl font-light text-slate-800">
-                        {menuStructure.find(m => m.id === activeModuleId)?.name || 'Explorador'}
+            {/* 2. ÁREA DE TRABAJO PRINCIPAL (Debajo de la barra) */}
+            {/* pt-0 para maximizar espacio. La barra es Overlay/Fixed. */}
+            <main className="flex-1 pt-0 overflow-hidden relative">
+
+                {/* 
+                   CONDICIONAL CRÍTICO: 
+                   Si no hay módulo activo -> Muestra CleanHomePage (Lienzo en Blanco).
+                   Si hay módulo activo -> Muestra ExplorerView (Contenido).
+                */}
+                {!activeModuleId ? (
+                    <div className="flex flex-col items-center justify-center h-full text-gray-400 bg-white/50">
+                        <img src="/logo_finaxis_real.png" alt="Sistema Finaxis" className="h-24 mb-6 opacity-90 drop-shadow-md" />
+                        <h2 className="text-2xl font-light text-gray-600">Bienvenido</h2>
+                        <p className="mt-2 text-sm text-gray-400">Selecciona una opción del menú superior o tus favoritos a la izquierda.</p>
                     </div>
-                </header>
+                ) : (
+                    <div className="h-full overflow-y-auto bg-gray-50 animate-in fade-in duration-300">
+                        {/* Header Local del Módulo (Opcional, ya que la barra dice dónde estás) */}
+                        {/* Podríamos quitarlo para maximizar espacio vertical */}
+                        <ExplorerView
+                            activeModuleId={activeModuleId}
+                            router={router}
+                        />
+                    </div>
+                )}
 
-                <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
-                    <ExplorerView
-                        activeModuleId={activeModuleId}
-                        router={router}
-                    />
-                </main>
-            </div>
+            </main>
 
         </div>
     );

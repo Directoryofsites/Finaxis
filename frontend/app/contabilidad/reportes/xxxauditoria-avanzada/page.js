@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import BotonRegresar from '../../../components/BotonRegresar';
+
 import Script from 'next/script';
 
 export default function AuditoriaAvanzadaPage() {
@@ -12,7 +12,7 @@ export default function AuditoriaAvanzadaPage() {
   const [terceros, setTerceros] = useState([]);
   const [cuentas, setCuentas] = useState([]);
   const [centrosCosto, setCentrosCosto] = useState([]);
-  
+
   const [filtros, setFiltros] = useState({
     tipoDocId: '', numero: '', beneficiarioId: '', cuentaId: '',
     centroCostoId: '', fechaInicio: '', fechaFin: '',
@@ -26,9 +26,9 @@ export default function AuditoriaAvanzadaPage() {
 
   const totales = useMemo(() => {
     return resultados.reduce((acc, mov) => {
-        acc.debito += parseFloat(mov.debito) || 0;
-        acc.credito += parseFloat(mov.credito) || 0;
-        return acc;
+      acc.debito += parseFloat(mov.debito) || 0;
+      acc.credito += parseFloat(mov.credito) || 0;
+      return acc;
     }, { debito: 0, credito: 0 });
   }, [resultados]);
 
@@ -125,17 +125,17 @@ export default function AuditoriaAvanzadaPage() {
 
   const handleExportPDF = () => {
     if (resultados.length === 0) return alert("No hay datos para generar el PDF.");
-    
+
     // VERIFICACIÓN DE SEGURIDAD (MODELO ESTÁNDAR)
     if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
       alert("La librería para generar PDF no está lista. Por favor, intente de nuevo en un segundo.");
       return;
     }
-    
+
     try {
-      const { jsPDF } = window.jspdf; 
+      const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation: 'landscape' });
-      
+
       if (typeof doc.autoTable !== 'function') {
         alert("La extensión para tablas PDF (autoTable) no está lista. Por favor, intente de nuevo.");
         return;
@@ -153,15 +153,15 @@ export default function AuditoriaAvanzadaPage() {
         new Intl.NumberFormat('es-CO').format(r.debito), new Intl.NumberFormat('es-CO').format(r.credito)
       ]);
       body.push([
-          { content: 'SUMA TOTALES:', colSpan: 6, styles: { halign: 'right', fontStyle: 'bold' } },
-          { content: new Intl.NumberFormat('es-CO').format(totales.debito), styles: { halign: 'right', fontStyle: 'bold' } },
-          { content: new Intl.NumberFormat('es-CO').format(totales.credito), styles: { halign: 'right', fontStyle: 'bold' } }
+        { content: 'SUMA TOTALES:', colSpan: 6, styles: { halign: 'right', fontStyle: 'bold' } },
+        { content: new Intl.NumberFormat('es-CO').format(totales.debito), styles: { halign: 'right', fontStyle: 'bold' } },
+        { content: new Intl.NumberFormat('es-CO').format(totales.credito), styles: { halign: 'right', fontStyle: 'bold' } }
       ]);
       body.push([
-          { content: 'DIFERENCIA (Débito - Crédito):', colSpan: 6, styles: { halign: 'right', fontStyle: 'bold' } },
-          { content: new Intl.NumberFormat('es-CO').format(totales.debito - totales.credito), colSpan: 2, styles: { halign: 'center', fontStyle: 'bold', fontSize: 9 } }
+        { content: 'DIFERENCIA (Débito - Crédito):', colSpan: 6, styles: { halign: 'right', fontStyle: 'bold' } },
+        { content: new Intl.NumberFormat('es-CO').format(totales.debito - totales.credito), colSpan: 2, styles: { halign: 'center', fontStyle: 'bold', fontSize: 9 } }
       ]);
-      
+
       doc.autoTable({
         startY: 32, head: head, body: body, theme: 'striped',
         styles: { fontSize: 7, cellPadding: 1.5 }, headStyles: { fillColor: [44, 62, 80] }
@@ -173,13 +173,12 @@ export default function AuditoriaAvanzadaPage() {
   };
 
   if (isLoading) return <p className="text-center p-8">Cargando datos del formulario...</p>;
-  
+
   return (
     <>
       <div className="container mx-auto p-8 bg-gray-50 min-h-screen">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Auditoría Avanzada de Movimientos</h1>
-          <BotonRegresar />
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
@@ -250,7 +249,7 @@ export default function AuditoriaAvanzadaPage() {
             {isSearching ? 'Buscando...' : 'Buscar Movimientos'}
           </button>
         </div>
-        
+
         <div className="mt-8">
           {isSearching && <p className="text-center">Buscando...</p>}
           {error && !resultados.length && <p className="text-center text-gray-600 bg-yellow-100 p-4 rounded-md">{error}</p>}
@@ -259,15 +258,15 @@ export default function AuditoriaAvanzadaPage() {
               <h2 className="text-xl font-semibold mb-4">Resultados de la Auditoría</h2>
               {/* ===== BOTONES SIMPLIFICADOS ===== */}
               <div className="flex justify-end gap-4 mb-4">
-                <button 
-                  onClick={handleExportCSV} 
+                <button
+                  onClick={handleExportCSV}
                   disabled={isSearching || resultados.length === 0}
                   className="px-4 py-2 bg-green-700 text-white text-sm font-medium rounded-md hover:bg-green-800 disabled:bg-gray-400"
                 >
                   Exportar a CSV
                 </button>
-                <button 
-                  onClick={handleExportPDF} 
+                <button
+                  onClick={handleExportPDF}
                   disabled={isSearching || resultados.length === 0}
                   className="px-4 py-2 bg-red-700 text-white text-sm font-medium rounded-md hover:bg-red-800 disabled:bg-gray-400"
                 >
@@ -314,7 +313,7 @@ export default function AuditoriaAvanzadaPage() {
           )}
         </div>
       </div>
-      
+
       {/* ===== SCRIPTS ESTÁNDAR DESDE CDN ===== */}
       <Script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" />
       <Script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" />

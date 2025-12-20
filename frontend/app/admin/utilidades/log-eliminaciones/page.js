@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Script from 'next/script';
-import { useAuth } from '../../../context/AuthContext'; 
+import { useAuth } from '../../../context/AuthContext';
 
 export default function LogEliminacionesPage() {
   const { user } = useAuth();
@@ -68,7 +68,7 @@ export default function LogEliminacionesPage() {
         'Tipo Operación': log.tipo_operacion,
         'Justificación': log.razon,
         '---': '---', // Separador
-        'Doc. Tipo': '', 'Doc. Número': '', 'Doc. Fecha': '', 'Doc. Beneficiario': '', 
+        'Doc. Tipo': '', 'Doc. Número': '', 'Doc. Fecha': '', 'Doc. Beneficiario': '',
         'Mov. Código': '', 'Mov. Cuenta': '', 'Mov. Débito': '', 'Mov. Crédito': ''
       });
       if (log.documentos_eliminados && Array.isArray(log.documentos_eliminados)) {
@@ -127,48 +127,48 @@ export default function LogEliminacionesPage() {
 
       logs.forEach((log, logIndex) => {
         if (logIndex > 0) {
-            doc.addPage();
+          doc.addPage();
         }
         doc.autoTable({
-            body: [
-                [{content: 'Usuario:', styles: {fontStyle: 'bold'}}, log.email_usuario],
-                [{content: 'Fecha Operación:', styles: {fontStyle: 'bold'}}, formatDate(log.fecha_operacion)],
-                [{content: 'Operación:', styles: {fontStyle: 'bold'}}, log.tipo_operacion],
-                [{content: 'Justificación:', styles: {fontStyle: 'bold'}}, log.razon],
-            ],
-            startY: 35, theme: 'plain', styles: { fontSize: 10 }
+          body: [
+            [{ content: 'Usuario:', styles: { fontStyle: 'bold' } }, log.email_usuario],
+            [{ content: 'Fecha Operación:', styles: { fontStyle: 'bold' } }, formatDate(log.fecha_operacion)],
+            [{ content: 'Operación:', styles: { fontStyle: 'bold' } }, log.tipo_operacion],
+            [{ content: 'Justificación:', styles: { fontStyle: 'bold' } }, log.razon],
+          ],
+          startY: 35, theme: 'plain', styles: { fontSize: 10 }
         });
         const lastY = doc.lastAutoTable.finalY;
 
         if (log.documentos_eliminados && log.documentos_eliminados.length > 0) {
-            doc.setFontSize(12);
-            doc.text("Detalle de Documentos y Movimientos Afectados", 14, lastY + 10);
-            const body = [];
-            log.documentos_eliminados.forEach(docAfectado => {
+          doc.setFontSize(12);
+          doc.text("Detalle de Documentos y Movimientos Afectados", 14, lastY + 10);
+          const body = [];
+          log.documentos_eliminados.forEach(docAfectado => {
+            body.push([
+              { content: `Doc: ${docAfectado.tipo_documento} #${docAfectado.numero} | Fecha: ${new Date(docAfectado.fecha).toLocaleDateString('es-CO')} | Benef: ${docAfectado.beneficiario}`, colSpan: 4, styles: { fontStyle: 'bold', fillColor: [230, 230, 230] } }
+            ]);
+            body.push([
+              { content: 'Cód. Cuenta', styles: { fontStyle: 'bold', halign: 'left' } },
+              { content: 'Nombre Cuenta', styles: { fontStyle: 'bold', halign: 'left' } },
+              { content: 'Débito', styles: { fontStyle: 'bold', halign: 'right' } },
+              { content: 'Crédito', styles: { fontStyle: 'bold', halign: 'right' } }
+            ]);
+            if (docAfectado.movimientos && Array.isArray(docAfectado.movimientos)) {
+              docAfectado.movimientos.forEach(mov => {
                 body.push([
-                    { content: `Doc: ${docAfectado.tipo_documento} #${docAfectado.numero} | Fecha: ${new Date(docAfectado.fecha).toLocaleDateString('es-CO')} | Benef: ${docAfectado.beneficiario}`, colSpan: 4, styles: { fontStyle: 'bold', fillColor: [230, 230, 230] } }
+                  mov.cuenta_codigo, mov.cuenta_nombre,
+                  { content: (parseFloat(mov.debito) || 0).toLocaleString('es-CO'), styles: { halign: 'right' } },
+                  { content: (parseFloat(mov.credito) || 0).toLocaleString('es-CO'), styles: { halign: 'right' } }
                 ]);
-                body.push([
-                    { content: 'Cód. Cuenta', styles: { fontStyle: 'bold', halign: 'left' } },
-                    { content: 'Nombre Cuenta', styles: { fontStyle: 'bold', halign: 'left' } },
-                    { content: 'Débito', styles: { fontStyle: 'bold', halign: 'right' } },
-                    { content: 'Crédito', styles: { fontStyle: 'bold', halign: 'right' } }
-                ]);
-                if (docAfectado.movimientos && Array.isArray(docAfectado.movimientos)) {
-                  docAfectado.movimientos.forEach(mov => {
-                      body.push([
-                          mov.cuenta_codigo, mov.cuenta_nombre,
-                          { content: (parseFloat(mov.debito) || 0).toLocaleString('es-CO'), styles: { halign: 'right' } },
-                          { content: (parseFloat(mov.credito) || 0).toLocaleString('es-CO'), styles: { halign: 'right' } }
-                      ]);
-                  });
-                }
-            });
-            doc.autoTable({
-                body: body, startY: lastY + 15, theme: 'grid',
-                styles: { fontSize: 8, cellPadding: 1.5 },
-                columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' } }
-            });
+              });
+            }
+          });
+          doc.autoTable({
+            body: body, startY: lastY + 15, theme: 'grid',
+            styles: { fontSize: 8, cellPadding: 1.5 },
+            columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' } }
+          });
         }
       });
       doc.save('informe_auditoria_operaciones.pdf');
@@ -176,7 +176,7 @@ export default function LogEliminacionesPage() {
       alert("Error al generar PDF: " + e.message);
     }
   };
-  
+
   const formatDate = (isoString) => {
     if (!isoString) return 'N/A';
     return new Date(isoString).toLocaleString('es-CO', {
@@ -195,24 +195,23 @@ export default function LogEliminacionesPage() {
       <Script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" />
 
       <div className="container mx-auto p-8 bg-gray-50 min-h-screen">
-        <div className="flex justify-between items-center mb-8">
+        <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Informe de Auditoría de Operaciones</h1>
-          <Link href="/" className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600">&larr; Regresar al Inicio</Link>
         </div>
 
         <div className="bg-white p-4 rounded-lg shadow-md mb-8 flex items-end gap-4">
           <div>
             <label htmlFor="fechaInicio" className="block text-sm font-medium text-gray-700">Desde</label>
-            <input type="date" id="fechaInicio" value={fechas.inicio} onChange={(e) => setFechas({ ...fechas, inicio: e.target.value })} className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm"/>
+            <input type="date" id="fechaInicio" value={fechas.inicio} onChange={(e) => setFechas({ ...fechas, inicio: e.target.value })} className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm" />
           </div>
           <div>
             <label htmlFor="fechaFin" className="block text-sm font-medium text-gray-700">Hasta</label>
-            <input type="date" id="fechaFin" value={fechas.fin} onChange={(e) => setFechas({ ...fechas, fin: e.target.value })} className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm"/>
+            <input type="date" id="fechaFin" value={fechas.fin} onChange={(e) => setFechas({ ...fechas, fin: e.target.value })} className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm" />
           </div>
           <button onClick={handleFiltrar} disabled={isLoading} className="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded-lg shadow-md disabled:bg-gray-400">
             {isLoading ? 'Filtrando...' : 'Filtrar'}
           </button>
-          
+
           {/* PASO 3: BOTONES SIMPLIFICADOS (CSV AÑADIDO) */}
           <div className="flex-grow flex justify-end gap-2">
             <button onClick={handleExportCSV} disabled={logs.length === 0} className="bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-4 rounded-lg shadow-md disabled:bg-gray-400">
@@ -223,7 +222,7 @@ export default function LogEliminacionesPage() {
             </button>
           </div>
         </div>
-        
+
         {isLoading ? (
           <p className="text-center p-4">Buscando registros...</p>
         ) : error ? (
@@ -310,7 +309,7 @@ export default function LogEliminacionesPage() {
           </div>
         ) : (
 
-        <p className="text-center text-gray-500 mt-8">Por favor, selecciona un rango de fechas y haz clic en Filtrar para ver el registro de auditoría.</p>
+          <p className="text-center text-gray-500 mt-8">Por favor, selecciona un rango de fechas y haz clic en Filtrar para ver el registro de auditoría.</p>
         )}
       </div>
     </>

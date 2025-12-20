@@ -5,7 +5,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
 import { apiService } from '@/lib/apiService';
-import BotonRegresar from '@/app/components/BotonRegresar';
 
 // --- Iconos Estándar v2.0 ---
 import {
@@ -157,19 +156,18 @@ export default function ExploradorDocumentosPage() {
                             <FaFileInvoice className="text-2xl" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Explorador de Documentos</h1>
+                            <div className="flex items-center gap-4">
+                                <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Explorador de Documentos</h1>
+                                <button
+                                    onClick={() => window.open('/manual/capitulo_26_explorador.html', '_blank')}
+                                    className="btn btn-sm btn-ghost text-indigo-600 gap-2"
+                                    title="Ver Manual"
+                                >
+                                    <FaBook /> Manual
+                                </button>
+                            </div>
                             <p className="text-gray-500 text-sm mt-1">Consulta histórica y reimpresión de comprobantes.</p>
                         </div>
-                    </div>
-                    <div className="flex gap-2">
-                        <BotonRegresar />
-                        <button
-                            onClick={() => window.open('/manual/capitulo_26_explorador.html', '_blank')}
-                            className="btn btn-sm btn-ghost text-indigo-600 gap-2"
-                            title="Ver Manual"
-                        >
-                            <FaBook /> Manual
-                        </button>
                     </div>
                 </div>
 

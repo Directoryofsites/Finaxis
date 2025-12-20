@@ -32,7 +32,7 @@ import { getCentrosCosto } from '../../../lib/centrosCostoService';
 import facturacionService from '../../../lib/facturacionService';
 import { apiService } from '../../../lib/apiService';
 // --- Componentes ---
-import BotonRegresar from '../../components/BotonRegresar';
+
 import ProductSelectionModal from '../../components/Facturacion/ProductSelectionModal';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -411,28 +411,25 @@ export default function NuevaFacturaPage() {
                 <ToastContainer position="top-right" autoClose={5000} />
 
                 {/* ENCABEZADO */}
+                {/* ENCABEZADO */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                     <div>
-                        {/* 1. BLOQUE DE BOTONES DE NAVEGACIÓN (En Fila) */}
-                        <div className="flex items-center gap-3 mb-2">
-                            <BotonRegresar />
-
-                            <button
-                                onClick={() => window.open('/manual/capitulo_41_facturacion.html', '_blank')}
-                                className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors font-bold text-sm"
-                                type="button"
-                            >
-                                <FaBook className="text-lg" /> Manual
-                            </button>
-                        </div>
-
                         {/* 2. TÍTULO E ICONO */}
                         <div className="flex items-center gap-3 mt-3">
                             <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
                                 <FaFileInvoiceDollar className="text-2xl" />
                             </div>
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-800">Nueva Factura</h1>
+                                <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
+                                    Nueva Factura
+                                    <button
+                                        onClick={() => window.open('/manual/capitulo_41_facturacion.html', '_blank')}
+                                        className="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded-md flex items-center gap-2 transition-colors font-bold text-sm border border-indigo-100 shadow-sm"
+                                        type="button"
+                                    >
+                                        <FaBook className="text-lg" /> <span className="hidden md:inline">Manual</span>
+                                    </button>
+                                </h1>
                                 <p className="text-gray-500 text-sm">Gestión de ventas y salida de inventario.</p>
                             </div>
                         </div>

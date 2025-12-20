@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 // import axios from 'axios'; // REMOVED raw axios
-import BotonRegresar from '../../components/BotonRegresar';
+
 import { FaCalendarAlt, FaFilter, FaSearch, FaFileExcel, FaUsers, FaBuilding, FaMoneyBillWave } from 'react-icons/fa';
 import AutocompleteInput from '../../components/AutocompleteInput';
 import { phService } from '../../../lib/phService'; // IMPORT phService
@@ -196,7 +196,6 @@ export default function ReportesPHPage() {
                 {/* Header */}
                 <div className="mb-6 flex justify-between items-center">
                     <div>
-                        <BotonRegresar href="/ph" />
                         <h1 className="text-2xl font-bold text-gray-800 mt-2 flex items-center gap-2">
                             <FaFilter className="text-blue-600" />
                             Reportes Propiedad Horizontal

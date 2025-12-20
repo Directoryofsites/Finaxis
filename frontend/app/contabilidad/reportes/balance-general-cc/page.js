@@ -2,25 +2,25 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  FaBalanceScale, 
-  FaCalendarAlt, 
-  FaSearch, 
-  FaFilePdf, 
-  FaBuilding, 
-  FaMoneyBillWave, 
-  FaLandmark, 
-  FaChartPie,
-  FaExclamationTriangle,
-  FaCheckCircle,
-  FaLayerGroup
+import {
+    FaBalanceScale,
+    FaCalendarAlt,
+    FaSearch,
+    FaFilePdf,
+    FaBuilding,
+    FaMoneyBillWave,
+    FaLandmark,
+    FaChartPie,
+    FaExclamationTriangle,
+    FaCheckCircle,
+    FaLayerGroup
 } from 'react-icons/fa';
 
-import { 
-FaBook,
+import {
+    FaBook,
 } from 'react-icons/fa';
 
-import BotonRegresar from '../../../components/BotonRegresar';
+
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
 
@@ -51,7 +51,7 @@ export default function BalanceGeneralCCPage() {
                         // Aplicamos el filtro de seguridad para mostrar solo los que permiten movimiento (o todos si se desea consolidar)
                         // Usualmente en reportes se quiere ver todo, pero para filtrar mejor usamos la lógica de 'permite_movimiento' si aplica
                         // En este caso, dejaremos que el usuario elija cualquiera, pero es mejor si el backend soporta consolidación.
-                        setCentrosCosto(res.data); 
+                        setCentrosCosto(res.data);
                         setPageReady(true);
                     } catch (err) {
                         setError("No se pudieron cargar los centros de costo: " + (err.response?.data?.detail || err.message));
@@ -101,10 +101,10 @@ export default function BalanceGeneralCCPage() {
             };
             const res = await apiService.get('/reports/balance-sheet-cc/get-signed-url', { params });
             const signedToken = res.data.signed_url_token;
-            
+
             const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
             const pdfDownloadUrl = `${baseUrl}/api/reports/balance-sheet-cc/imprimir?signed_token=${signedToken}`;
-            
+
             const link = document.createElement('a');
             link.href = pdfDownloadUrl;
             link.setAttribute('download', `Balance_CC_${fechaCorte}.pdf`);
@@ -160,35 +160,26 @@ export default function BalanceGeneralCCPage() {
     return (
         <div className="min-h-screen bg-gray-50 p-6 font-sans pb-20">
             <div className="max-w-5xl mx-auto">
-                
+
                 {/* ENCABEZADO */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                     <div>
-
-
-                       <div className="flex items-center gap-3 mb-3">
-                            
-                            {/* 1. Botón Regresar (Izquierda) */}
-                            <BotonRegresar />
-
-                            {/* 2. Botón Manual (Derecha) */}
-                            <button
-                                onClick={() => window.open('/manual/capitulo_52_balance_general_cc.html', '_blank')}
-                                className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors font-bold text-sm"
-                                type="button"
-                            >
-                                <FaBook className="text-lg" /> Manual
-                            </button>
-
-                        </div>
-
-
                         <div className="flex items-center gap-3 mt-3">
                             <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
                                 <FaBuilding className="text-2xl" />
                             </div>
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-800">Balance por Centro de Costo</h1>
+                                <div className="flex items-center gap-4">
+                                    <h1 className="text-3xl font-bold text-gray-800">Balance por Centro de Costo</h1>
+                                    <button
+                                        onClick={() => window.open('/manual/capitulo_52_balance_general_cc.html', '_blank')}
+                                        className="flex items-center gap-2 px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors font-medium shadow-sm"
+                                        type="button"
+                                        title="Ver Manual de Usuario"
+                                    >
+                                        <span className="text-lg">📖</span> <span className="font-bold text-sm hidden md:inline">Manual</span>
+                                    </button>
+                                </div>
                                 <p className="text-gray-500 text-sm">Análisis financiero segmentado por unidad de negocio.</p>
                             </div>
                         </div>
@@ -202,10 +193,10 @@ export default function BalanceGeneralCCPage() {
                         <div className="md:col-span-1">
                             <label htmlFor="centroCosto" className={labelClass}>Centro de Costo</label>
                             <div className="relative">
-                                <select 
-                                    id="centroCosto" 
-                                    value={centroCostoId} 
-                                    onChange={(e) => setCentroCostoId(e.target.value)} 
+                                <select
+                                    id="centroCosto"
+                                    value={centroCostoId}
+                                    onChange={(e) => setCentroCostoId(e.target.value)}
                                     className={selectClass}
                                 >
                                     <option value="">-- Todos (Consolidado) --</option>
@@ -223,22 +214,22 @@ export default function BalanceGeneralCCPage() {
                         <div className="md:col-span-1">
                             <label htmlFor="fechaCorte" className={labelClass}>Fecha de Corte</label>
                             <div className="relative">
-                                <input 
-                                    type="date" 
-                                    id="fechaCorte" 
-                                    value={fechaCorte} 
-                                    onChange={(e) => setFechaCorte(e.target.value)} 
-                                    className={inputClass} 
+                                <input
+                                    type="date"
+                                    id="fechaCorte"
+                                    value={fechaCorte}
+                                    onChange={(e) => setFechaCorte(e.target.value)}
+                                    className={inputClass}
                                 />
                                 <FaCalendarAlt className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
                             </div>
                         </div>
-                        
+
                         {/* Botones */}
                         <div className="md:col-span-1 flex flex-col md:flex-row justify-end gap-3">
-                            <button 
-                                onClick={handleGenerateReport} 
-                                disabled={isLoading} 
+                            <button
+                                onClick={handleGenerateReport}
+                                disabled={isLoading}
                                 className={`
                                     w-full px-6 py-2 rounded-lg shadow-md font-bold text-white transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2
                                     ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}
@@ -246,14 +237,14 @@ export default function BalanceGeneralCCPage() {
                             >
                                 {isLoading ? <span className="loading loading-spinner loading-sm"></span> : <><FaSearch /> Generar</>}
                             </button>
-                            
-                            <button 
-                                onClick={handleExportPDF} 
-                                disabled={!reporte || isLoading} 
+
+                            <button
+                                onClick={handleExportPDF}
+                                disabled={!reporte || isLoading}
                                 className={`
                                     w-full md:w-auto px-4 py-2 rounded-lg shadow-md font-bold border transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2
-                                    ${!reporte || isLoading 
-                                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' 
+                                    ${!reporte || isLoading
+                                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                                         : 'bg-white text-red-600 border-red-100 hover:bg-red-50'}
                                 `}
                             >
@@ -261,7 +252,7 @@ export default function BalanceGeneralCCPage() {
                             </button>
                         </div>
                     </div>
-                    
+
                     {error && (
                         <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-lg flex items-center gap-3 animate-pulse">
                             <FaExclamationTriangle className="text-xl" />
@@ -278,12 +269,12 @@ export default function BalanceGeneralCCPage() {
                             <h2 className="text-xl font-bold text-gray-800">{user?.nombre_empresa}</h2>
                             <p className="text-sm text-gray-500 font-medium mt-1">{getSelectedCcName()}</p>
                             <p className="text-indigo-600 font-bold mt-2 flex items-center justify-center gap-2">
-                                <FaCalendarAlt /> Corte a: {new Date(fechaCorte).toLocaleDateString('es-CO', {timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric'})}
+                                <FaCalendarAlt /> Corte a: {new Date(fechaCorte).toLocaleDateString('es-CO', { timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric' })}
                             </p>
                         </div>
 
                         <div className="p-6 space-y-8">
-                            
+
                             {/* ACTIVOS */}
                             <section>
                                 <div className="flex items-center gap-2 mb-4 pb-2 border-b-2 border-emerald-100">
@@ -291,8 +282,8 @@ export default function BalanceGeneralCCPage() {
                                     <h3 className="text-xl font-bold text-gray-700">Activos</h3>
                                 </div>
                                 <div className="pl-2 md:pl-4 space-y-1">
-                                    {reporte.activos.length === 0 ? <p className="text-gray-400 italic text-sm">Sin registros.</p> : 
-                                        reporte.activos.map((item, index) => <AccountRow key={`act-${index}`} {...item} saldo={item.saldo} colorClass="text-emerald-700"/>)
+                                    {reporte.activos.length === 0 ? <p className="text-gray-400 italic text-sm">Sin registros.</p> :
+                                        reporte.activos.map((item, index) => <AccountRow key={`act-${index}`} {...item} saldo={item.saldo} colorClass="text-emerald-700" />)
                                     }
                                 </div>
                                 <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200 bg-emerald-50/50 p-3 rounded-lg">
@@ -308,8 +299,8 @@ export default function BalanceGeneralCCPage() {
                                     <h3 className="text-xl font-bold text-gray-700">Pasivos</h3>
                                 </div>
                                 <div className="pl-2 md:pl-4 space-y-1">
-                                    {reporte.pasivos.length === 0 ? <p className="text-gray-400 italic text-sm">Sin registros.</p> : 
-                                        reporte.pasivos.map((item, index) => <AccountRow key={`pas-${index}`} {...item} saldo={item.saldo} colorClass="text-rose-700"/>)
+                                    {reporte.pasivos.length === 0 ? <p className="text-gray-400 italic text-sm">Sin registros.</p> :
+                                        reporte.pasivos.map((item, index) => <AccountRow key={`pas-${index}`} {...item} saldo={item.saldo} colorClass="text-rose-700" />)
                                     }
                                 </div>
                                 <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200 bg-rose-50/50 p-3 rounded-lg">
@@ -325,8 +316,8 @@ export default function BalanceGeneralCCPage() {
                                     <h3 className="text-xl font-bold text-gray-700">Patrimonio</h3>
                                 </div>
                                 <div className="pl-2 md:pl-4 space-y-1">
-                                    {reporte.patrimonio.map((item, index) => <AccountRow key={`pat-${index}`} {...item} saldo={item.saldo} colorClass="text-blue-700"/>)}
-                                    
+                                    {reporte.patrimonio.map((item, index) => <AccountRow key={`pat-${index}`} {...item} saldo={item.saldo} colorClass="text-blue-700" />)}
+
                                     {/* Utilidad Ejercicio */}
                                     <div className="flex justify-between items-center py-2 px-2 bg-blue-50 rounded border border-blue-100 mt-2">
                                         <div className="flex gap-3 items-center">
@@ -358,7 +349,7 @@ export default function BalanceGeneralCCPage() {
                                         {formatCurrency(reporte.total_pasivo_patrimonio)}
                                     </div>
                                 </div>
-                                
+
                                 {/* Verificación Visual */}
                                 {Math.abs(reporte.total_activos - reporte.total_pasivo_patrimonio) < 1 ? (
                                     <p className="text-center text-green-600 font-bold mt-3 flex justify-center items-center gap-2">

@@ -24,7 +24,6 @@ import {
 // Importaciones de dependencias
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../../lib/apiService';
-import BotonRegresar from '../../components/BotonRegresar';
 import { FuncionEspecial } from '../../../lib/constants';
 
 // Estilos reusables (Manual v2.0)
@@ -851,7 +850,7 @@ export default function NuevoDocumentoPage() {
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Error de Carga</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <div className="flex justify-center">
-            <BotonRegresar />
+            <button onClick={() => router.push('/')} className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Ir al Inicio</button>
           </div>
         </div>
       </div>
@@ -865,24 +864,25 @@ export default function NuevoDocumentoPage() {
         {/* ENCABEZADO */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
-            <BotonRegresar />
             <div className="flex items-center gap-3 mt-3">
               <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
                 <FaFileAlt className="text-2xl" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-800">Documento Contable</h1>
+                <div className="flex items-center gap-4">
+                  <h1 className="text-3xl font-bold text-gray-800">Documento Contable</h1>
+                  <button
+                    onClick={() => window.open('/manual/capitulo_24_nuevo_documento.html', '_blank')}
+                    className="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded-md flex items-center gap-2 transition-colors"
+                    title="Ver Manual de Usuario"
+                  >
+                    <span className="text-lg">📖</span> <span className="font-bold text-sm hidden md:inline">Manual</span>
+                  </button>
+                </div>
                 <p className="text-gray-500 text-sm">Registro manual de asientos, notas y comprobantes.</p>
               </div>
             </div>
           </div>
-          <button
-            onClick={() => window.open('/manual/capitulo_24_nuevo_documento.html', '_blank')}
-            className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors"
-            title="Ver Manual de Usuario"
-          >
-            <FaBook className="text-lg" /> <span className="font-bold text-sm">Manual</span>
-          </button>
         </div>
 
         {/* NOTIFICACIONES */}

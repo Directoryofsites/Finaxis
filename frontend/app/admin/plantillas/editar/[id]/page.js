@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import BotonRegresar from '../../../../components/BotonRegresar';
+
 import { useAuth } from '../../../../context/AuthContext';
 // --- ARQUITECTURA ESTANDARIZADA ---
 import { apiService } from '../../../../../lib/apiService';
@@ -39,22 +39,22 @@ export default function EditarPlantillaPage() {
       // 1. Cargar la plantilla específica (URL corregida, sin empresa_id)
       const plantillaRes = await apiService.get(`/plantillas/${id}`);
       const plantillaData = plantillaRes.data;
-      
+
       setNombrePlantilla(plantillaData.nombre_plantilla);
       setBeneficiarioId(plantillaData.beneficiario_id_sugerido || '');
       setTipoDocId(plantillaData.tipo_documento_id_sugerido || '');
       setCentroCostoId(plantillaData.centro_costo_id_sugerido || '');
-      setDetalles(plantillaData.detalles.map(d => ({...d, rowId: Date.now() + Math.random()})));
+      setDetalles(plantillaData.detalles.map(d => ({ ...d, rowId: Date.now() + Math.random() })));
 
       // 2. Cargar los maestros para los menús
-  const [tercerosRes, pucRes, tiposDocRes, centrosCostoRes] = await Promise.all([
-    apiService.get('/terceros/'),
-    apiService.get('/plan-cuentas/list-flat/?permite_movimiento=true'),
-    apiService.get('/tipos-documento/'),
-    // --- INICIO: LÍNEA CORREGIDA ---
-    apiService.get('/centros-costo/get-flat?permite_movimiento=true'),
-    // --- FIN: LÍNEA CORREGIDA ---
-  ]);
+      const [tercerosRes, pucRes, tiposDocRes, centrosCostoRes] = await Promise.all([
+        apiService.get('/terceros/'),
+        apiService.get('/plan-cuentas/list-flat/?permite_movimiento=true'),
+        apiService.get('/tipos-documento/'),
+        // --- INICIO: LÍNEA CORREGIDA ---
+        apiService.get('/centros-costo/get-flat?permite_movimiento=true'),
+        // --- FIN: LÍNEA CORREGIDA ---
+      ]);
 
       setTerceros(tercerosRes.data.terceros || tercerosRes.data);
       setCuentas(pucRes.data);
@@ -80,7 +80,7 @@ export default function EditarPlantillaPage() {
 
     if (field === 'debito' && value !== '') updatedDetalle.credito = '';
     else if (field === 'credito' && value !== '') updatedDetalle.debito = '';
-    
+
     updatedDetalle[field] = value;
     nuevosDetalles[index] = updatedDetalle;
     setDetalles(nuevosDetalles);
@@ -145,12 +145,11 @@ export default function EditarPlantillaPage() {
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">Editar Plantilla</h1>
-          <BotonRegresar />
+        <h1 className="text-3xl font-bold text-gray-800">Editar Plantilla</h1>
       </div>
-      
+
       {error && <div className="bg-red-100 text-red-700 p-4 rounded-md mb-6">{error}</div>}
-      
+
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold mb-4">Datos Generales</h2>
@@ -202,13 +201,13 @@ export default function EditarPlantillaPage() {
             </table>
           </div>
           <button type="button" onClick={agregarFila} className="mt-4 px-4 py-2 border rounded-md text-sm font-medium">Agregar Fila</button>
-           <div className="flex justify-end mt-4 border-t pt-2">
+          <div className="flex justify-end mt-4 border-t pt-2">
             <p className={`font-bold ${estaBalanceado ? 'text-green-600' : 'text-red-600'}`}>
               Débitos: {totales.debito.toLocaleString('es-CO')} | Créditos: {totales.credito.toLocaleString('es-CO')} | {estaBalanceado ? 'BALANCEADO' : 'NO BALANCEADO'}
             </p>
           </div>
         </div>
-        
+
         <div className="flex justify-end">
           <button type="submit" disabled={isSubmitting || !estaBalanceado} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow-md disabled:bg-gray-400">
             {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}

@@ -17,7 +17,7 @@ import {
 
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
-import BotonRegresar from '../../../components/BotonRegresar';
+
 
 // Estilos reusables (Manual v2.0)
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
@@ -286,24 +286,25 @@ export default function EliminacionMasivaPage() {
         {/* ENCABEZADO */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
-            <BotonRegresar />
             <div className="flex items-center gap-3 mt-3">
               <div className="p-2 bg-red-100 rounded-lg text-red-600">
                 <FaTrash className="text-xl" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-800">Gestión Masiva de Documentos</h1>
+                <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
+                  Gestión Masiva de Documentos
+                  <button
+                    onClick={() => window.open('/manual/capitulo_11_eliminacion.html', '_blank')}
+                    className="flex items-center gap-2 px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors font-medium shadow-sm text-sm"
+                    title="Ver Manual de Usuario"
+                  >
+                    <FaBook /> <span className="hidden md:inline">Manual</span>
+                  </button>
+                </h1>
                 <p className="text-gray-500 text-sm">Búsqueda avanzada para anular, eliminar o modificar documentos.</p>
               </div>
             </div>
           </div>
-          <button
-            onClick={() => window.open('/manual/capitulo_11_eliminacion.html', '_blank')}
-            className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2 flex items-center"
-            title="Ver Manual de Usuario"
-          >
-            <FaBook className="text-lg" /> <span className="font-bold hidden md:inline">Manual</span>
-          </button>
         </div>
 
         {/* CARD 1: FILTROS DE BÚSQUEDA */}

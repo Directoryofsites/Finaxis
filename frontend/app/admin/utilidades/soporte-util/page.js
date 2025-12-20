@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { FaBook } from 'react-icons/fa';
-import BotonRegresar from '@/app/components/BotonRegresar';
+
 
 import {
     soporteApiService,
@@ -535,7 +535,6 @@ export default function SoporteUtilPage() {
                 <h1 className="text-3xl font-extrabold text-gray-900">Panel de Herramientas de Soporte</h1>
                 <div>
                     <button onClick={handleLogout} className="text-sm text-red-600 hover:underline mr-4">Cerrar Sesión</button>
-                    <BotonRegresar />
                 </div>
             </div>
             <div className="flex border-b mb-6 overflow-x-auto">

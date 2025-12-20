@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import BotonRegresar from '../../components/BotonRegresar';
+
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../../lib/apiService';
 import { FaBook } from 'react-icons/fa';
@@ -59,16 +59,15 @@ export default function GestionPlantillasPage() {
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Administración de Plantillas de Documentos</h1>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-gray-800">Administración de Plantillas de Documentos</h1>
           <button
             onClick={() => window.open('/manual/capitulo_3_plantillas.html', '_blank')}
-            className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2 flex items-center"
+            className="flex items-center gap-2 px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors font-medium shadow-sm"
             title="Ver Manual de Usuario"
           >
-            <FaBook className="text-lg" /> <span className="hidden md:inline font-bold">Manual</span>
+            <FaBook /> <span className="hidden md:inline">Manual</span>
           </button>
-          <BotonRegresar />
         </div>
       </div>
 

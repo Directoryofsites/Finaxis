@@ -12,7 +12,7 @@ import {
     FaInfoCircle
 } from 'react-icons/fa';
 
-import BotonRegresar from '@/app/components/BotonRegresar';
+
 import { apiService } from '@/lib/apiService';
 
 // Estilos Reusables (Manual v2.0)
@@ -117,24 +117,25 @@ const LibrosOficialesPage = () => {
                 {/* ENCABEZADO */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                     <div>
-                        <BotonRegresar />
                         <div className="flex items-center gap-3 mt-3">
                             <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
                                 <FaBook className="text-2xl" />
                             </div>
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-800">Libros Oficiales</h1>
+                                <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
+                                    Libros Oficiales
+                                    <button
+                                        onClick={() => window.open('/manual/capitulo_32_libros_oficiales.html', '_blank')}
+                                        className="flex items-center gap-2 px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors font-medium shadow-sm text-sm"
+                                        title="Ver Manual de Usuario"
+                                    >
+                                        <FaBook /> <span className="hidden md:inline">Manual</span>
+                                    </button>
+                                </h1>
                                 <p className="text-gray-500 text-sm">Generación y cierre de libros contables oficiales.</p>
                             </div>
                         </div>
                     </div>
-                    <button
-                        onClick={() => window.open('/manual/capitulo_32_libros_oficiales.html', '_blank')}
-                        className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors"
-                        title="Ver Manual de Usuario"
-                    >
-                        <FaBook className="text-lg" /> <span className="font-bold text-sm">Manual</span>
-                    </button>
                 </div>
 
                 {/* CARD PRINCIPAL */}

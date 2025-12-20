@@ -17,7 +17,7 @@ class RecetaDetalleResponse(RecetaDetalleBase):
     insumo: Optional[ProductoSimple] = None # Usar esquema ligero
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # --- Recursos de Receta (MOD/CIF) ---
 
@@ -34,7 +34,7 @@ class RecetaRecursoResponse(RecetaRecursoBase):
     id: int
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class RecetaBase(BaseModel):
     producto_id: int
@@ -64,7 +64,7 @@ class RecetaResponse(RecetaBase):
     producto: Optional[ProductoSimple] = None # Usar esquema ligero para el PT también
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class RecetaSimple(RecetaBase):
     """Schema ligero de Receta sin detalles ni recursos, para listados."""
@@ -74,7 +74,7 @@ class RecetaSimple(RecetaBase):
     producto: Optional[ProductoSimple] = None # Usar esquema ligero
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # --- Ordenes de Producción ---
 
@@ -90,7 +90,7 @@ class OrdenProduccionInsumoResponse(BaseModel):
     bodega_origen: Optional[BodegaResponse] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class OrdenProduccionRecursoCreate(BaseModel):
     descripcion: str
@@ -102,7 +102,7 @@ class OrdenProduccionRecursoResponse(OrdenProduccionRecursoCreate):
     fecha_registro: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class OrdenProduccionBase(BaseModel):
     producto_id: int
@@ -144,14 +144,14 @@ class OrdenProduccionResponse(OrdenProduccionBase):
     recursos: List[OrdenProduccionRecursoResponse] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class OrdenProduccionDetalleResponse(OrdenProduccionResponse):
     """Schema detallado para ver una orden individual (incluye ingredientes de receta)."""
     receta: Optional[RecetaResponse] = None # Usar esquema completo
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # --- Configuracion (Lifecycle) ---
 
@@ -169,4 +169,4 @@ class ConfigProduccionResponse(ConfigProduccionBase):
     empresa_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True

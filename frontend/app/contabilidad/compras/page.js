@@ -32,7 +32,7 @@ import { getCentrosCosto } from '../../../lib/centrosCostoService';
 import comprasService from '../../../lib/comprasService';
 
 // --- Componentes ---
-import BotonRegresar from '../../components/BotonRegresar';
+
 import ProductSelectionModal from '../../components/Facturacion/ProductSelectionModal';
 
 // Estilos reusables (Manual v2.0)
@@ -234,25 +234,28 @@ export default function NuevaCompraPage() {
                 <ToastContainer position="top-right" autoClose={5000} />
 
                 {/* ENCABEZADO */}
+                {/* ENCABEZADO */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                     <div>
-                        <BotonRegresar />
                         <div className="flex items-center gap-3 mt-3">
                             <div className="p-2 bg-green-100 rounded-lg text-green-600">
                                 <FaShoppingCart className="text-2xl" />
                             </div>
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-800">Nueva Compra</h1>
+                                <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
+                                    Nueva Compra
+                                    <button
+                                        onClick={() => window.open('/manual/capitulo_40_compras.html', '_blank')}
+                                        className="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded-md flex items-center gap-2 transition-colors font-bold text-sm border border-indigo-100 shadow-sm"
+                                        type="button"
+                                    >
+                                        <FaBook className="text-lg" /> <span className="hidden md:inline">Manual</span>
+                                    </button>
+                                </h1>
                                 <p className="text-gray-500 text-sm">Registro de facturas de proveedores e ingreso de inventario.</p>
                             </div>
                         </div>
                     </div>
-                    <button
-                        onClick={() => window.open('/manual/capitulo_40_compras.html', '_blank')}
-                        className="btn btn-ghost btn-sm gap-2 text-green-600"
-                    >
-                        <FaBook /> Manual
-                    </button>
                 </div>
 
                 {/* CARD 1: DATOS GENERALES */}

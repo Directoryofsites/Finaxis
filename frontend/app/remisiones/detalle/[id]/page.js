@@ -3,7 +3,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiService } from '../../../../lib/apiService';
 import { FaEdit } from 'react-icons/fa';
-import BotonRegresar from '@/app/components/BotonRegresar';
+
 
 export default function DetalleRemisionPage({ params }) {
     const { id } = use(params);
@@ -86,7 +86,7 @@ export default function DetalleRemisionPage({ params }) {
 
     return (
         <div className="p-6 max-w-5xl mx-auto">
-            <BotonRegresar href="/remisiones" />
+
 
             <div className="flex justify-between items-start mt-4 mb-6">
                 <div>

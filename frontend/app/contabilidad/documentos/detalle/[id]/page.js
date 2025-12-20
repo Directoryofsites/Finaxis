@@ -6,7 +6,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useAuth } from '../../../../context/AuthContext';
 import { apiService } from '../../../../../lib/apiService';
-import BotonRegresar from '../../../../components/BotonRegresar';
+
 
 export default function DetalleDocumentoPage() {
   const router = useRouter();
@@ -124,18 +124,18 @@ export default function DetalleDocumentoPage() {
     } else if (field === 'credito' && value !== '') {
       newMovimientos[index]['debito'] = '';
     }
-    
+
     setMovimientos(newMovimientos);
   };
 
   const handleCuentaBlur = (index, value) => {
     if (!value) return;
 
-    const cuentaEncontrada = cuentas.find(c => 
-      c.codigo === value || 
+    const cuentaEncontrada = cuentas.find(c =>
+      c.codigo === value ||
       (c.nombre && c.nombre.toLowerCase() === value.toLowerCase())
     );
-    
+
     if (cuentaEncontrada) {
       const newMovimientos = [...movimientos];
       newMovimientos[index]['cuentaId'] = cuentaEncontrada.id;
@@ -175,12 +175,12 @@ export default function DetalleDocumentoPage() {
       setDocumentoOriginal(res.data);
 
     } catch (err) {
-        const detail = err.response?.data?.detail;
-        if (typeof detail === 'string') {
-          setError(detail);
-        } else {
-          setError('Ocurrió un error al actualizar el documento.');
-        }
+      const detail = err.response?.data?.detail;
+      if (typeof detail === 'string') {
+        setError(detail);
+      } else {
+        setError('Ocurrió un error al actualizar el documento.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -207,7 +207,6 @@ export default function DetalleDocumentoPage() {
           Editando Documento: {tipoDocActual?.nombre || ''} #{documentoOriginal?.numero}
           {documentoOriginal?.anulado && <span className="text-red-500 ml-4">(ANULADO)</span>}
         </h1>
-        <BotonRegresar defaultPath={fromPath} />
       </div>
 
       {mensaje && <div className="p-3 my-4 rounded-md bg-blue-100 text-blue-800">{mensaje}</div>}
@@ -217,10 +216,10 @@ export default function DetalleDocumentoPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div>
             <label htmlFor="fecha" className="block text-sm font-medium text-gray-700">Fecha</label>
-            <DatePicker 
-              selected={fecha} 
-              onChange={(date) => setFecha(date || new Date())} 
-              dateFormat="dd/MM/yyyy" 
+            <DatePicker
+              selected={fecha}
+              onChange={(date) => setFecha(date || new Date())}
+              dateFormat="dd/MM/yyyy"
               className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
               disabled={isReadOnly}
             />
@@ -229,18 +228,18 @@ export default function DetalleDocumentoPage() {
             <label className="block text-sm font-medium text-gray-700">Tipo de Documento</label>
             <input type="text" value={tipoDocActual?.nombre || ''} disabled className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md bg-gray-100" />
           </div>
-           <div>
+          <div>
             <label className="block text-sm font-medium text-gray-700">Número</label>
             <input type="text" value={documentoOriginal?.numero || ''} disabled className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md bg-gray-100" />
           </div>
           <div>
             <label htmlFor="beneficiario" className="block text-sm font-medium text-gray-700">Beneficiario</label>
-            <select 
+            <select
               id="beneficiario"
-              value={beneficiarioId} 
-              onChange={e => setBeneficiarioId(e.target.value)} 
+              value={beneficiarioId}
+              onChange={e => setBeneficiarioId(e.target.value)}
               className="mt-1 block w-full py-2 border-gray-300 rounded-md"
-              disabled={isReadOnly} 
+              disabled={isReadOnly}
             >
               <option value="">Seleccione...</option>
               {terceros.map(t => <option key={t.id} value={t.id}>{t.razon_social}</option>)}
@@ -248,10 +247,10 @@ export default function DetalleDocumentoPage() {
           </div>
           <div>
             <label htmlFor="centroCosto" className="block text-sm font-medium text-gray-700">Centro de Costo</label>
-            <select 
+            <select
               id="centroCosto"
-              value={centroCostoId} 
-              onChange={e => setCentroCostoId(e.target.value)} 
+              value={centroCostoId}
+              onChange={e => setCentroCostoId(e.target.value)}
               className="mt-1 block w-full py-2 border-gray-300 rounded-md"
               disabled={isReadOnly}
             >
@@ -262,79 +261,79 @@ export default function DetalleDocumentoPage() {
         </div>
       </div>
 
-       <div className="bg-white p-6 rounded-lg shadow-lg border">
+      <div className="bg-white p-6 rounded-lg shadow-lg border">
         <h2 className="text-xl font-semibold mb-4">Movimientos Contables</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead className="bg-slate-50">
-                <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-2/5">Cuenta</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-2/5">Concepto</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Débito</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Crédito</th>
-                    {!isReadOnly && <th className="px-4 py-2"></th>}
-                </tr>
+              <tr>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-2/5">Cuenta</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-2/5">Concepto</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Débito</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Crédito</th>
+                {!isReadOnly && <th className="px-4 py-2"></th>}
+              </tr>
             </thead>
             <tbody>
               {movimientos.map((mov, index) => (
-                  <tr key={mov.rowId}>
+                <tr key={mov.rowId}>
 
-                    <td className="p-2">
-                <input 
-                    list="cuentas-list" 
-                    placeholder="Digita código o nombre..." 
-                    value={mov.cuentaInput} 
-                    onChange={e => handleMovimientoChange(index, 'cuentaInput', e.target.value)}
-                    onBlur={e => (mov.cuentaId === '' || mov.cuentaId === null) && handleCuentaBlur(index, e.target.value)}
-                    className="w-full border-gray-300 rounded-md" 
-                    disabled={isReadOnly}
-                />
-                <datalist id="cuentas-list">
-                    {cuentas.map(c => <option key={c.id} value={c.codigo}>{`${c.codigo} - ${c.nombre}`}</option>)}
-                </datalist>
-            </td>
+                  <td className="p-2">
+                    <input
+                      list="cuentas-list"
+                      placeholder="Digita código o nombre..."
+                      value={mov.cuentaInput}
+                      onChange={e => handleMovimientoChange(index, 'cuentaInput', e.target.value)}
+                      onBlur={e => (mov.cuentaId === '' || mov.cuentaId === null) && handleCuentaBlur(index, e.target.value)}
+                      className="w-full border-gray-300 rounded-md"
+                      disabled={isReadOnly}
+                    />
+                    <datalist id="cuentas-list">
+                      {cuentas.map(c => <option key={c.id} value={c.codigo}>{`${c.codigo} - ${c.nombre}`}</option>)}
+                    </datalist>
+                  </td>
 
-                    <td className="p-2">
-                        <input 
-                            type="text" 
-                            placeholder="Concepto del movimiento" 
-                            value={mov.concepto || ''} 
-                            onChange={e => handleMovimientoChange(index, 'concepto', e.target.value)} 
-                            className="w-full border-gray-300 rounded-md" 
-                            disabled={isReadOnly}
-                        />
+                  <td className="p-2">
+                    <input
+                      type="text"
+                      placeholder="Concepto del movimiento"
+                      value={mov.concepto || ''}
+                      onChange={e => handleMovimientoChange(index, 'concepto', e.target.value)}
+                      className="w-full border-gray-300 rounded-md"
+                      disabled={isReadOnly}
+                    />
+                  </td>
+                  <td className="p-2">
+                    <input
+                      type="number"
+                      placeholder="0.00"
+                      value={mov.debito || ''}
+                      onChange={e => handleMovimientoChange(index, 'debito', e.target.value)}
+                      className="w-full border-gray-300 rounded-md text-right"
+                      disabled={isReadOnly}
+                    />
+                  </td>
+                  <td className="p-2">
+                    <input
+                      type="number"
+                      placeholder="0.00"
+                      value={mov.credito || ''}
+                      onChange={e => handleMovimientoChange(index, 'credito', e.target.value)}
+                      className="w-full border-gray-300 rounded-md text-right"
+                      disabled={isReadOnly}
+                    />
+                  </td>
+                  {!isReadOnly && (
+                    <td className="p-2 text-center">
+                      <button
+                        type="button"
+                        onClick={() => eliminarFila(index)}
+                        className="text-red-500 hover:text-red-800 text-2xl font-bold px-2"
+                      >&times;</button>
                     </td>
-                    <td className="p-2">
-                        <input 
-                            type="number" 
-                            placeholder="0.00" 
-                            value={mov.debito || ''} 
-                            onChange={e => handleMovimientoChange(index, 'debito', e.target.value)} 
-                            className="w-full border-gray-300 rounded-md text-right" 
-                            disabled={isReadOnly}
-                        />
-                    </td>
-                    <td className="p-2">
-                        <input 
-                            type="number" 
-                            placeholder="0.00"
-                            value={mov.credito || ''} 
-                            onChange={e => handleMovimientoChange(index, 'credito', e.target.value)} 
-                            className="w-full border-gray-300 rounded-md text-right"
-                            disabled={isReadOnly}
-                        />
-                    </td>
-                    {!isReadOnly && (
-                      <td className="p-2 text-center">
-                          <button 
-                              type="button" 
-                              onClick={() => eliminarFila(index)} 
-                              className="text-red-500 hover:text-red-800 text-2xl font-bold px-2"
-                          >&times;</button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
+                  )}
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

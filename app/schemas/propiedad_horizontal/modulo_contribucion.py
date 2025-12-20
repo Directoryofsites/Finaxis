@@ -17,4 +17,4 @@ class PHModuloContribucionResponse(PHModuloContribucionBase):
     empresa_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True

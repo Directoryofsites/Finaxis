@@ -21,7 +21,7 @@ import {
     FaBook
 } from 'react-icons/fa';
 
-import BotonRegresar from '../../components/BotonRegresar';
+
 import { useAuth } from '../../context/AuthContext';
 import { phService } from '../../../lib/phService';
 
@@ -138,7 +138,6 @@ export default function GestionUnidadesPage() {
                 {/* ENCABEZADO */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                     <div>
-                        <BotonRegresar />
                         <div className="flex items-center gap-3 mt-3">
                             <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
                                 <FaHome className="text-2xl" />

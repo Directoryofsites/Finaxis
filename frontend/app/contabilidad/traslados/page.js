@@ -4,17 +4,17 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { 
-  FaTruckMoving, 
-  FaSave, 
-  FaPlus, 
-  FaCalendarAlt, 
-  FaExchangeAlt, 
-  FaTrash,
-  FaBook, 
-  FaWarehouse,
-  FaArrowRight,
-  FaCommentDots
+import {
+    FaTruckMoving,
+    FaSave,
+    FaPlus,
+    FaCalendarAlt,
+    FaExchangeAlt,
+    FaTrash,
+    FaBook,
+    FaWarehouse,
+    FaArrowRight,
+    FaCommentDots
 } from 'react-icons/fa';
 
 import { useAuth } from '../../context/AuthContext';
@@ -24,8 +24,8 @@ import 'react-toastify/dist/ReactToastify.css';
 // --- Servicios ---
 import { getBodegas } from '../../../lib/bodegaService'; // Ajuste de importación correcto
 import { getTiposDocumento } from '../../../lib/tiposDocumentoService';
-import trasladoService from '../../../lib/trasladoInventarioService'; 
-import BotonRegresar from '../../components/BotonRegresar';
+import trasladoService from '../../../lib/trasladoInventarioService';
+
 import ProductSelectionModal from '../../components/Facturacion/ProductSelectionModal';
 
 // Estilos Reusables (Manual v2.0)
@@ -57,7 +57,7 @@ export default function NuevoTrasladoPage() {
     const totalCantidad = useMemo(() => {
         return items.reduce((acc, item) => acc + (parseFloat(item.cantidad) || 0), 0);
     }, [items]);
-    
+
     const TR_DOC_ID = useMemo(() => {
         const trasladoDoc = maestros.tiposDocumento.find(td => td.funcion_especial === 'traslado_inventario');
         return trasladoDoc ? String(trasladoDoc.id) : '';
@@ -77,7 +77,7 @@ export default function NuevoTrasladoPage() {
             ]);
 
             setMaestros({
-                tiposDocumento: tiposDocRes.filter(td => td.funcion_especial === 'traslado_inventario'), 
+                tiposDocumento: tiposDocRes.filter(td => td.funcion_especial === 'traslado_inventario'),
                 bodegas: bodegasRes,
             });
 
@@ -192,7 +192,7 @@ export default function NuevoTrasladoPage() {
             </div>
         );
     }
-    
+
     const bodegasOtras = maestros.bodegas.filter(b => String(b.id) !== bodegaOrigenId);
 
     return (
@@ -200,34 +200,26 @@ export default function NuevoTrasladoPage() {
             <div className="max-w-5xl mx-auto">
                 <ToastContainer position="top-right" autoClose={5000} />
 
-                
+
+                {/* ENCABEZADO */}
                 {/* ENCABEZADO */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                     <div>
-
-                        <div className="flex items-center gap-3 mb-3">
-                            
-                            {/* 1. Botón Regresar (Izquierda) */}
-                            <BotonRegresar />
-
-                            {/* 2. Botón Manual (Derecha) */}
-                            <button
-                                onClick={() => window.open('/manual/capitulo_42_traslados.html', '_blank')}
-                                className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors font-bold text-sm"
-                                type="button"
-                            >
-                                <FaBook className="text-lg" /> Manual
-                            </button>
-
-                        </div>
-
-
                         <div className="flex items-center gap-3 mt-3">
                             <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
                                 <FaTruckMoving className="text-2xl" />
                             </div>
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-800">Traslado de Inventario</h1>
+                                <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
+                                    Traslado de Inventario
+                                    <button
+                                        onClick={() => window.open('/manual/capitulo_42_traslados.html', '_blank')}
+                                        className="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded-md flex items-center gap-2 transition-colors font-bold text-sm border border-indigo-100 shadow-sm"
+                                        type="button"
+                                    >
+                                        <FaBook className="text-lg" /> <span className="hidden md:inline">Manual</span>
+                                    </button>
+                                </h1>
                                 <p className="text-gray-500 text-sm">Movimiento de mercancía entre bodegas.</p>
                             </div>
                         </div>
@@ -237,7 +229,7 @@ export default function NuevoTrasladoPage() {
 
                 {/* CARD 1: LOGÍSTICA */}
                 <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 animate-fadeIn mb-8">
-                    
+
                     {/* Fecha */}
                     <div className="mb-6 w-full md:w-1/3">
                         <label htmlFor="fecha" className={labelClass}>Fecha Traslado</label>
@@ -254,13 +246,13 @@ export default function NuevoTrasladoPage() {
 
                     {/* ZONA DE INTERCAMBIO */}
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50 p-6 rounded-xl border border-slate-200 relative">
-                        
+
                         {/* Origen */}
                         <div className="w-full md:w-5/12">
                             <label className="block text-xs font-bold text-red-600 uppercase mb-1 tracking-wide">Bodega Origen (Salida)</label>
                             <div className="relative">
                                 <select
-                                    value={bodegaOrigenId} 
+                                    value={bodegaOrigenId}
                                     onChange={e => setBodegaOrigenId(e.target.value)}
                                     className={`${selectClass} border-red-200 bg-red-50 text-red-800 font-medium`}
                                 >
@@ -273,8 +265,8 @@ export default function NuevoTrasladoPage() {
 
                         {/* Flecha / Swap */}
                         <div className="flex items-center justify-center w-full md:w-2/12 py-2 md:py-0">
-                            <button 
-                                onClick={handleSwapBodegas} 
+                            <button
+                                onClick={handleSwapBodegas}
                                 className="p-3 bg-white border border-gray-300 rounded-full shadow-sm hover:shadow-md hover:bg-indigo-50 text-indigo-600 transition-all transform hover:rotate-180"
                                 title="Intercambiar Bodegas"
                                 disabled={!bodegaOrigenId && !bodegaDestinoId}
@@ -288,7 +280,7 @@ export default function NuevoTrasladoPage() {
                             <label className="block text-xs font-bold text-green-600 uppercase mb-1 tracking-wide">Bodega Destino (Entrada)</label>
                             <div className="relative">
                                 <select
-                                    value={bodegaDestinoId} 
+                                    value={bodegaDestinoId}
                                     onChange={e => setBodegaDestinoId(e.target.value)}
                                     className={`${selectClass} border-green-200 bg-green-50 text-green-800 font-medium`}
                                 >
@@ -307,7 +299,7 @@ export default function NuevoTrasladoPage() {
                             <input
                                 type="text" id="observaciones" value={observaciones} onChange={e => setObservaciones(e.target.value)}
                                 className={inputClass}
-                                maxLength="255" 
+                                maxLength="255"
                                 placeholder="Motivo del traslado..."
                             />
                             <FaCommentDots className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
@@ -319,13 +311,13 @@ export default function NuevoTrasladoPage() {
                 <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 animate-slideDown">
                     <div className="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
                         <h2 className="text-lg font-bold text-gray-700 flex items-center gap-2">
-                            <span className="bg-indigo-100 text-indigo-600 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span> 
+                            <span className="bg-indigo-100 text-indigo-600 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span>
                             Mercancía a Mover
                         </h2>
                         <button
                             type="button" onClick={() => setIsModalOpen(true)}
                             className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-md flex items-center gap-2 transition-colors disabled:bg-gray-300"
-                            disabled={!bodegaOrigenId || !bodegaDestinoId} 
+                            disabled={!bodegaOrigenId || !bodegaDestinoId}
                         >
                             <FaPlus /> Añadir Productos
                         </button>
@@ -354,7 +346,7 @@ export default function NuevoTrasladoPage() {
                                                     type="number" value={item.cantidad}
                                                     onChange={e => handleItemChange(item.producto_id, 'cantidad', e.target.value)}
                                                     className="w-full px-2 py-1 border border-gray-300 rounded text-right focus:ring-2 focus:ring-indigo-200 outline-none font-bold text-indigo-700"
-                                                    min="0.01" step="any" 
+                                                    min="0.01" step="any"
                                                 />
                                             </td>
                                             <td className="px-6 py-3 text-center">
@@ -386,8 +378,8 @@ export default function NuevoTrasladoPage() {
                         disabled={isSubmitting || items.length === 0 || !bodegaOrigenId || !bodegaDestinoId}
                         className={`
                             px-10 py-4 rounded-xl shadow-lg font-bold text-white text-lg transition-all transform hover:-translate-y-1 flex items-center gap-3
-                            ${isSubmitting || items.length === 0 
-                                ? 'bg-gray-400 cursor-not-allowed' 
+                            ${isSubmitting || items.length === 0
+                                ? 'bg-gray-400 cursor-not-allowed'
                                 : 'bg-green-600 hover:bg-green-700 hover:shadow-green-200'}
                         `}
                     >
@@ -403,8 +395,8 @@ export default function NuevoTrasladoPage() {
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                     onAddProducts={handleAddProducts}
-                    mode="traslado" 
-                    bodegaIdSeleccionada={parseInt(bodegaOrigenId) || null} 
+                    mode="traslado"
+                    bodegaIdSeleccionada={parseInt(bodegaOrigenId) || null}
                 />
             </div>
         </div>

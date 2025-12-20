@@ -5,7 +5,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { apiService } from '../../lib/apiService';
 import { FaCalendarAlt, FaSearch, FaFilter, FaTimes, FaFileContract } from 'react-icons/fa';
-import BotonRegresar from '../components/BotonRegresar';
+
 
 export default function RemisionesListPage() {
     const [remisiones, setRemisiones] = useState([]);
@@ -123,8 +123,6 @@ export default function RemisionesListPage() {
         <div className="p-6 max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-4">
-                    {/* User request: "SI ES BOOTN PRINCIOPAL, AHI SI VA AL MENIU PRINCIPAL" */}
-                    <BotonRegresar href="/" />
                     <h1 className="text-2xl font-bold text-gray-800">Remisiones</h1>
                 </div>
                 <div className="flex gap-2">

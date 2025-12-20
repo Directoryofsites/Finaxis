@@ -2,12 +2,10 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../context/AuthContext'; // Assuming AuthContext is in frontend/app/context
-import { FaFileInvoiceDollar, FaChartLine, FaUniversity, FaStamp, FaShoppingCart, FaBuilding, FaMoneyBillWave, FaCalendarAlt, FaFileAlt, FaBars } from 'react-icons/fa';
-import Sidebar from '../../components/Sidebar';
+import { useAuth } from '../context/AuthContext';
+import { FaFileInvoiceDollar, FaChartLine, FaUniversity, FaStamp, FaShoppingCart, FaBuilding, FaMoneyBillWave, FaCalendarAlt, FaFileAlt } from 'react-icons/fa';
 import { menuStructure } from '../../lib/menuData';
 
-// Reusable ModuleTile component (Matching Inventario/Global Style)
 // Reusable ModuleTile component (Matching Global Style with Colors)
 const ModuleTile = ({ title, description, icon, onClick, href, index = 0 }) => {
     const IconComponent = icon || FaFileAlt;
@@ -53,9 +51,8 @@ const ModuleTile = ({ title, description, icon, onClick, href, index = 0 }) => {
 };
 
 export default function ImpuestosDashboard() {
-    const { user, logout } = useAuth();
-    const router = useRouter();
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const { user } = useAuth();
+    // const router = useRouter(); // NO LONGER NEEDED IF ModuleTile uses Link directly
 
     const impuestos = [
         { id: 'iva', nombre: 'IVA', icon: FaFileInvoiceDollar, desc: 'Gestión de Impuesto al Valor Agregado' },
@@ -68,37 +65,9 @@ export default function ImpuestosDashboard() {
         { id: 'calendario', nombre: 'Calendario y Obligaciones', icon: FaCalendarAlt, desc: 'Vencimientos, Plazos y Estado de Obligaciones' },
     ];
 
-    const handleMenuClick = (moduleId) => {
-        const module = menuStructure.find(m => m.id === moduleId);
-        if (module && module.route) {
-            router.push(module.route);
-        } else {
-            // Redirect to home with module query param to activate the correct view
-            router.push(`/?module=${moduleId}`);
-        }
-    };
-
     return (
         <div className="flex h-screen bg-gray-100">
-            {/* Botón de Menú para móvil */}
-            <button
-                className="p-4 text-blue-600 fixed top-0 left-0 z-40 md:hidden"
-                onClick={() => setIsMenuOpen(true)}
-            >
-                <FaBars size={24} />
-            </button>
-
-            {/* Sidebar Reutilizable */}
-            <Sidebar
-                activeModuleId="impuestos"
-                onMenuClick={handleMenuClick}
-                isMenuOpen={isMenuOpen}
-                setIsMenuOpen={setIsMenuOpen}
-                user={user}
-                logout={logout}
-            />
-
-            {/* Contenido Principal */}
+            {/* Contenido Principal Full Width */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-start px-6 shadow-sm">
                     <div className="text-2xl font-light text-slate-800 flex items-center">
@@ -106,6 +75,7 @@ export default function ImpuestosDashboard() {
                         Explorador de Módulos: <strong className="font-semibold ml-2">Impuestos</strong>
                     </div>
                 </header>
+
 
                 <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

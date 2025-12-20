@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FaDatabase, FaExclamationTriangle, FaCheckCircle, FaSpinner, FaBook } from 'react-icons/fa'; // Iconos para feedback visual
 import { useAuth } from '../../../context/AuthContext';
-import BotonRegresar from '../../../components/BotonRegresar';
+
 
 import { apiService } from '../../../../lib/apiService';
 import ExportacionForm from '../../../components/Migracion/ExportacionForm';
@@ -99,7 +99,7 @@ export default function MigracionDatosPage() {
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Error de Inicialización</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <div className="flex justify-center">
-            <BotonRegresar />
+            <button onClick={() => window.history.back()} className="text-indigo-600 hover:underline">Regresar</button>
           </div>
         </div>
       </div>
@@ -114,33 +114,25 @@ export default function MigracionDatosPage() {
         {/* ENCABEZADO CON JERARQUÍA VISUAL */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
-            <div className="flex justify-between items-center w-full md:w-auto gap-4">
-              <BotonRegresar />
-              <button
-                onClick={() => window.open('/manual/capitulo_6_copias.html', '_blank')}
-                className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2 flex items-center md:hidden"
-                title="Ver Manual de Usuario"
-              >
-                <FaBook className="text-lg" /> <span className="font-bold">Manual</span>
-              </button>
-            </div>
             <div className="flex items-center gap-3 mt-3">
               <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
                 <FaDatabase />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-800">Migración de Datos</h1>
+                <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
+                  Migración de Datos
+                  <button
+                    onClick={() => window.open('/manual/capitulo_6_copias.html', '_blank')}
+                    className="flex items-center gap-2 px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors font-medium shadow-sm text-sm"
+                    title="Ver Manual de Usuario"
+                  >
+                    <FaBook /> <span className="hidden md:inline">Manual</span>
+                  </button>
+                </h1>
                 <p className="text-gray-500 text-sm">Herramientas de Exportación, Restauración y Transformación Masiva.</p>
               </div>
             </div>
           </div>
-          <button
-            onClick={() => window.open('/manual/capitulo_6_copias.html', '_blank')}
-            className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2 hidden md:flex items-center"
-            title="Ver Manual de Usuario"
-          >
-            <FaBook className="text-lg" /> <span className="font-bold">Manual</span>
-          </button>
         </div>
 
         {/* ZONA DE NOTIFICACIONES Y ESTADO */}

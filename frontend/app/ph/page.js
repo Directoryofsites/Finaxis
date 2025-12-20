@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
-import BotonRegresar from '../components/BotonRegresar';
+
 import {
     FaBuilding,
     FaUsers,
@@ -83,7 +83,6 @@ export default function DashboardPHPage() {
         <div className="min-h-screen bg-gray-50 p-6 font-sans">
             <div className="max-w-6xl mx-auto">
                 <div className="mb-8">
-                    <BotonRegresar link="/dashboard" />
                     <h1 className="text-3xl font-bold text-gray-800 mt-4 flex items-center gap-3">
                         <FaBuilding className="text-gray-400" />
                         Gestión de Propiedad Horizontal

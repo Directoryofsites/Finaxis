@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
-import BotonRegresar from '../../../components/BotonRegresar';
+
 import {
     FaTrashAlt, FaPencilAlt, FaTags, FaPercentage,
     FaWarehouse, FaLayerGroup, FaHandHoldingUsd, FaListOl, FaPlus, FaBook
@@ -633,21 +633,19 @@ export default function ParametrosInventarioPage() {
 
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-800">Configuración de Inventario</h1>
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-3xl font-bold text-gray-800">Configuración de Inventario</h1>
+                        <button
+                            onClick={() => window.open('/manual/capitulo_39_parametros_inventario.html', '_blank')}
+                            className="flex items-center gap-2 px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors font-medium shadow-sm"
+                        >
+                            <FaBook /> <span className="hidden md:inline">Manual</span>
+                        </button>
+                    </div>
                     <p className="text-gray-500 mt-1">Administra los parámetros maestros del sistema.</p>
                 </div>
                 <div className="flex gap-2">
-
-
-                    <button
-                        onClick={() => window.open('/manual/capitulo_39_parametros_inventario.html', '_blank')}
-                        className="btn btn-ghost btn-sm gap-2 text-indigo-600"
-                    >
-                        <FaBook /> Manual
-                    </button>
-
-
-                    <BotonRegresar />
+                    {/* Actions consolidated */}
                 </div>
             </div>
 

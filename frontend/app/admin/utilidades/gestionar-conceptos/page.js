@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
-import BotonRegresar from '../../../components/BotonRegresar';
+
 import { FaBook } from 'react-icons/fa';
 
 // Función auxiliar para un manejo de errores consistente
@@ -179,7 +179,6 @@ export default function GestionarConceptosPage() {
     // Si el error es durante la carga inicial y no hay mensaje de éxito
     return (
       <div className="p-4">
-        <BotonRegresar />
         <h1 className="text-2xl font-semibold mb-6 text-gray-800">Gestionar Conceptos Favoritos</h1>
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
           <strong className="font-bold">Error:</strong>
@@ -201,7 +200,6 @@ export default function GestionarConceptosPage() {
           >
             <FaBook className="text-lg" /> <span className="hidden md:inline font-bold">Manual</span>
           </button>
-          <BotonRegresar />
         </div>
       </div>
 

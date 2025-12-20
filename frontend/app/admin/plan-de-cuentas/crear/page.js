@@ -2,22 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import BotonRegresar from '../../../components/BotonRegresar';
+
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
 
 // Lista de funciones especiales para el dropdown
 const funcionesEspeciales = [
-  { value: '', label: 'Ninguna (Cuenta estándar)' },
-  { value: 'CUENTA_CARTERA', label: 'Cuenta de Cartera (Clientes)' },
-  { value: 'CUENTA_PROVEEDORES', label: 'Cuenta de Proveedores' },
-  { value: 'CUENTA_BANCARIA', label: 'Cuenta Bancaria (Tesorería)' },
-  { value: 'CUENTA_IVA_GENERADO', label: 'IVA Generado' },
-  { value: 'CUENTA_IVA_DESCONTABLE', label: 'IVA Descontable' },
-  { value: 'CUENTA_RETENCION_FUENTE', label: 'Retención en la Fuente' },
-  { value: 'CIERRE_EJERCICIO', label: 'Cierre del Ejercicio' },
-  { value: 'CUENTA_INVENTARIO', label: 'Cuenta de Inventario' },
-  { value: 'CUENTA_COSTO_VENTA', label: 'Costo de Venta' },
+    { value: '', label: 'Ninguna (Cuenta estándar)' },
+    { value: 'CUENTA_CARTERA', label: 'Cuenta de Cartera (Clientes)' },
+    { value: 'CUENTA_PROVEEDORES', label: 'Cuenta de Proveedores' },
+    { value: 'CUENTA_BANCARIA', label: 'Cuenta Bancaria (Tesorería)' },
+    { value: 'CUENTA_IVA_GENERADO', label: 'IVA Generado' },
+    { value: 'CUENTA_IVA_DESCONTABLE', label: 'IVA Descontable' },
+    { value: 'CUENTA_RETENCION_FUENTE', label: 'Retención en la Fuente' },
+    { value: 'CIERRE_EJERCICIO', label: 'Cierre del Ejercicio' },
+    { value: 'CUENTA_INVENTARIO', label: 'Cuenta de Inventario' },
+    { value: 'CUENTA_COSTO_VENTA', label: 'Costo de Venta' },
 ];
 
 export default function CrearCuentaPage() {
@@ -85,7 +85,7 @@ export default function CrearCuentaPage() {
                     return;
                 }
             }
-            
+
             // Construcción del payload final y completo para enviar al backend
             const payload = {
                 codigo: formData.codigo,
@@ -122,7 +122,6 @@ export default function CrearCuentaPage() {
 
     return (
         <div className="container mx-auto p-4 max-w-2xl">
-            <BotonRegresar />
             <h1 className="text-2xl font-bold mb-4">Crear Nueva Cuenta Contable</h1>
             <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md space-y-4">
                 <div>

@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import BotonRegresar from '../../../components/BotonRegresar';
+
 
 export default function ErradicarDocumentoPage() {
   const { user } = useAuth();
-  
+
   const [empresas, setEmpresas] = useState([]);
   const [tiposDocumento, setTiposDocumento] = useState([]);
 
@@ -29,13 +29,13 @@ export default function ErradicarDocumentoPage() {
       try {
         const [resEmpresas, resTipos] = await Promise.all([
 
-         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/empresas`),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/empresas`),
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tipos-documento`)
 
         ]);
         if (!resEmpresas.ok) throw new Error('No se pudieron cargar las empresas');
         if (!resTipos.ok) throw new Error('No se pudieron cargar los tipos de documento');
-        
+
         setEmpresas(await resEmpresas.json());
         setTiposDocumento(await resTipos.json());
       } catch (err) {
@@ -44,7 +44,7 @@ export default function ErradicarDocumentoPage() {
     };
     fetchData();
   }, []);
-  
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -59,16 +59,16 @@ export default function ErradicarDocumentoPage() {
       return;
     }
     if (confirmationText !== 'BORRAR') {
-        setError("Debe escribir la palabra BORRAR en mayúsculas en el campo de confirmación para proceder.");
-        return;
+      setError("Debe escribir la palabra BORRAR en mayúsculas en el campo de confirmación para proceder.");
+      return;
     }
-    
+
     setIsSubmitting(true);
     try {
       // Preparamos el payload basado en el modo
       const isMassiveMode = formData.numero.trim() === '*.*';
       const isListMode = formData.numero.includes(',');
-      
+
       const payload = {
         empresaId: formData.empresaId,
         tipoDocId: formData.tipoDocId,
@@ -110,7 +110,6 @@ export default function ErradicarDocumentoPage() {
     <div className="container mx-auto p-4 max-w-2xl">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold text-red-700">Herramienta de Soporte: Erradicación</h1>
-        <BotonRegresar />
       </div>
       <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
         <p className="font-bold">¡ADVERTENCIA DE ALTO RIESGO!</p>
@@ -123,7 +122,7 @@ export default function ErradicarDocumentoPage() {
           <select id="empresaId" name="empresaId" value={formData.empresaId} onChange={handleInputChange} className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm">
             <option value="">-- Seleccionar Empresa --</option>
 
-          {empresas.map(e => <option key={e.id} value={e.id}>{e.razon_social}</option>)}
+            {empresas.map(e => <option key={e.id} value={e.id}>{e.razon_social}</option>)}
           </select>
         </div>
 
@@ -137,10 +136,10 @@ export default function ErradicarDocumentoPage() {
 
         <div>
           <label htmlFor="numero" className="block text-sm font-medium text-gray-700">3. Ingrese Número(s) de Documento</label>
-          <input type="text" id="numero" name="numero" value={formData.numero} onChange={handleInputChange} className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm" placeholder="Ej: 101 | 101,205,310 | *.*"/>
+          <input type="text" id="numero" name="numero" value={formData.numero} onChange={handleInputChange} className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm" placeholder="Ej: 101 | 101,205,310 | *.*" />
           <p className="text-xs text-gray-500 mt-1">Use un número, una lista separada por comas, o <code className="bg-gray-200 px-1 rounded">*.*</code> para un rango de fechas.</p>
         </div>
-        
+
         {/* --- LÓGICA DE FECHAS CONDICIONAL --- */}
         {isIndividualMode && (
           <div>
@@ -148,7 +147,7 @@ export default function ErradicarDocumentoPage() {
             <input type="date" id="fecha" name="fecha" value={formData.fecha} onChange={handleInputChange} className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm" />
           </div>
         )}
-        
+
         {isMassiveMode && (
           <div className="p-4 bg-yellow-100 border border-yellow-300 rounded-md">
             <p className="font-bold text-yellow-800 mb-2">Modo Masivo Activado</p>
@@ -166,25 +165,25 @@ export default function ErradicarDocumentoPage() {
         )}
 
         {isListMode && (
-            <div className="p-3 bg-blue-100 border border-blue-300 rounded-md">
-                <p className="text-sm text-blue-800">Se buscarán los números de la lista en **todas las fechas**.</p>
-            </div>
+          <div className="p-3 bg-blue-100 border border-blue-300 rounded-md">
+            <p className="text-sm text-blue-800">Se buscarán los números de la lista en **todas las fechas**.</p>
+          </div>
         )}
 
         <div className="mt-4 pt-4 border-t">
-            <label htmlFor="confirmationText" className="block text-sm font-medium text-yellow-600">Para confirmar la operación, escriba BORRAR aquí:</label>
-            <input 
-                type="text"
-                id="confirmationText"
-                name="confirmationText"
-                value={confirmationText}
-                onChange={(e) => setConfirmationText(e.target.value)}
-                className="mt-1 block w-full py-2 px-3 border border-red-500 rounded-md shadow-sm font-bold uppercase"
-                autoComplete="off"
-            />
+          <label htmlFor="confirmationText" className="block text-sm font-medium text-yellow-600">Para confirmar la operación, escriba BORRAR aquí:</label>
+          <input
+            type="text"
+            id="confirmationText"
+            name="confirmationText"
+            value={confirmationText}
+            onChange={(e) => setConfirmationText(e.target.value)}
+            className="mt-1 block w-full py-2 px-3 border border-red-500 rounded-md shadow-sm font-bold uppercase"
+            autoComplete="off"
+          />
         </div>
       </div>
-      
+
       <div className="mt-6">
         <button onClick={handleErradicar} disabled={isButtonDisabled} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-gray-400 disabled:cursor-not-allowed">
           {isSubmitting ? 'Procesando...' : 'ERRADICAR DATOS PERMANENTEMENTE'}

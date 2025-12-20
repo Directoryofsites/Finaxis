@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '../../../../context/AuthContext';
-import BotonRegresar from '../../../../components/BotonRegresar';
+
 import BuscadorTerceros from '../../../../../components/BuscadorTerceros';
 import { phService } from '../../../../../lib/phService';
 import { getTerceroById } from '../../../../../lib/terceroService';
@@ -183,7 +183,6 @@ export default function EditarUnidadPage() {
                 {/* HEADER */}
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center gap-4">
-                        <BotonRegresar />
                         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                             <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600"><FaPen /></div>
                             Editar Unidad {formData.codigo}
@@ -262,8 +261,8 @@ export default function EditarUnidadPage() {
                                         key={mod.id}
                                         onClick={() => toggleModulo(mod.id)}
                                         className={`cursor-pointer p-3 rounded-lg border flex items-center gap-3 transition-all ${formData.modulos_ids.includes(mod.id)
-                                                ? 'bg-indigo-50 border-indigo-500 ring-1 ring-indigo-500'
-                                                : 'bg-white border-gray-200 hover:border-indigo-300'
+                                            ? 'bg-indigo-50 border-indigo-500 ring-1 ring-indigo-500'
+                                            : 'bg-white border-gray-200 hover:border-indigo-300'
                                             }`}
                                     >
                                         <div className={`w-5 h-5 rounded border flex items-center justify-center ${formData.modulos_ids.includes(mod.id) ? 'bg-indigo-600 border-indigo-600' : 'border-gray-300'

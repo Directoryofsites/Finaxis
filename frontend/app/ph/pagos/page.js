@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import BotonRegresar from '../../components/BotonRegresar';
+
 import { phService } from '../../../lib/phService';
 import { FaMoneyBillWave, FaUser, FaBuilding, FaCheckCircle, FaExclamationTriangle, FaCalendarAlt } from 'react-icons/fa';
 
@@ -93,7 +93,6 @@ export default function PagosPHPage() {
         <div className="min-h-screen bg-gray-50 p-6 font-sans pb-20">
             <div className="max-w-5xl mx-auto">
                 <div className="mb-6">
-                    <BotonRegresar />
                     <div className="flex items-center gap-3 mt-3">
                         <div className="p-2 bg-green-100 rounded-lg text-green-600">
                             <FaMoneyBillWave className="text-2xl" />

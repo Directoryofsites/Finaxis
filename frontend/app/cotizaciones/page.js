@@ -5,7 +5,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { apiService } from '../../lib/apiService';
 import { FaCalendarAlt, FaSearch, FaFilter, FaTimes, FaFileContract, FaPlus } from 'react-icons/fa';
-import BotonRegresar from '../components/BotonRegresar';
+
 
 export default function CotizacionesListPage() {
     const [cotizaciones, setCotizaciones] = useState([]);
@@ -95,7 +95,6 @@ export default function CotizacionesListPage() {
         <div className="p-6 max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-4">
-                    <BotonRegresar href="/" />
                     <h1 className="text-2xl font-bold text-gray-800">Cotizaciones</h1>
                 </div>
                 <div className="flex gap-2">
