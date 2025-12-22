@@ -1,16 +1,17 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { apiService } from '@/lib/apiService'; // Using alias for consistency
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Upload, 
-  FileText, 
-  AlertCircle, 
+import {
+  Upload,
+  FileText,
+  AlertCircle,
   CheckCircle,
   Loader2,
   Settings,
@@ -39,11 +40,8 @@ export default function FileImportInterface({ selectedBankAccount, onBankAccount
 
   const loadConfigurations = async () => {
     try {
-      const response = await fetch('/api/conciliacion-bancaria/import-configs');
-      if (response.ok) {
-        const data = await response.json();
-        setConfigurations(data);
-      }
+      const response = await apiService.get('/conciliacion-bancaria/import-configs');
+      setConfigurations(response.data);
     } catch (error) {
       console.error('Error cargando configuraciones:', error);
     }
@@ -51,11 +49,9 @@ export default function FileImportInterface({ selectedBankAccount, onBankAccount
 
   const loadBankAccounts = async () => {
     try {
-      const response = await fetch('/api/plan-cuentas?tipo=banco');
-      if (response.ok) {
-        const data = await response.json();
-        setBankAccounts(data);
-      }
+      // Usamos el endpoint específico que filtra bancos reales (1110/1120)
+      const response = await apiService.get('/conciliacion-bancaria/bank-accounts');
+      setBankAccounts(response.data);
     } catch (error) {
       console.error('Error cargando cuentas bancarias:', error);
     }
@@ -78,26 +74,19 @@ export default function FileImportInterface({ selectedBankAccount, onBankAccount
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`/api/conciliacion-bancaria/import-configs/${selectedConfig.id}/validate`, {
-        method: 'POST',
-        body: formData
-      });
+      // axios maneja el content-type multipart automáticamente cuando ve FormData
+      const response = await apiService.post(
+        `/conciliacion-bancaria/import-configs/${selectedConfig.id}/validate`,
+        formData
+      );
 
-      if (response.ok) {
-        const result = await response.json();
-        setValidationResult(result);
-      } else {
-        const error = await response.json();
-        setValidationResult({
-          is_valid: false,
-          errors: [error.detail || 'Error validando archivo']
-        });
-      }
+      setValidationResult(response.data);
     } catch (error) {
       console.error('Error validando archivo:', error);
+      const errorDetail = error.response?.data?.detail || 'Error de conexión al validar archivo';
       setValidationResult({
         is_valid: false,
-        errors: ['Error de conexión al validar archivo']
+        errors: [errorDetail]
       });
     } finally {
       setLoading(false);
@@ -116,31 +105,20 @@ export default function FileImportInterface({ selectedBankAccount, onBankAccount
       formData.append('config_id', selectedConfig.id);
       formData.append('bank_account_id', selectedBankAccount.id);
 
-      const response = await fetch('/api/conciliacion-bancaria/import', {
-        method: 'POST',
-        body: formData
-      });
+      const response = await apiService.post('/conciliacion-bancaria/import', formData);
 
-      if (response.ok) {
-        const result = await response.json();
-        setImportResult(result);
-        
-        // Notificar al componente padre
-        if (onImportComplete) {
-          onImportComplete(result);
-        }
-      } else {
-        const error = await response.json();
-        setImportResult({
-          success: false,
-          error: error.detail || 'Error importando archivo'
-        });
+      setImportResult(response.data);
+
+      // Notificar al componente padre
+      if (onImportComplete) {
+        onImportComplete(response.data);
       }
     } catch (error) {
       console.error('Error importando archivo:', error);
+      const errorDetail = error.response?.data?.detail || 'Error importando archivo';
       setImportResult({
         success: false,
-        error: 'Error de conexión al importar archivo'
+        error: errorDetail
       });
     } finally {
       setLoading(false);
@@ -459,7 +437,7 @@ export default function FileImportInterface({ selectedBankAccount, onBankAccount
                           <span className="font-medium">Importados exitosamente:</span> {importResult.successful_imports || 0}
                         </div>
                         <div>
-                          <span className="font-medium">Estado:</span> 
+                          <span className="font-medium">Estado:</span>
                           <Badge variant={importResult.status === 'COMPLETED' ? 'success' : 'warning'} className="ml-2">
                             {importResult.status}
                           </Badge>
@@ -474,7 +452,7 @@ export default function FileImportInterface({ selectedBankAccount, onBankAccount
                       <Alert className="border-yellow-200 bg-yellow-50">
                         <AlertCircle className="h-4 w-4 text-yellow-600" />
                         <AlertDescription className="text-yellow-800">
-                          Se encontraron {importResult.duplicate_report.total_duplicates} posibles duplicados. 
+                          Se encontraron {importResult.duplicate_report.total_duplicates} posibles duplicados.
                           Revise la importación antes de continuar.
                         </AlertDescription>
                       </Alert>
