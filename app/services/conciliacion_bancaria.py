@@ -740,10 +740,42 @@ class ConfigurationManager:
         missing_fields = [field for field in required_fields if field not in field_mapping]
         if missing_fields:
             raise ValueError(f"Campos obligatorios faltantes en el mapeo: {missing_fields}")
-        
+            
+        # [PARCHE ANTIGRAVITY] Resolver bank_id si falta
+        bank_id = config_data.get('bank_id')
+        if not bank_id and 'bank_name' in config_data:
+            from ..models.tercero import Tercero
+            # Intentar encontrar por nombre
+            bank_name = config_data['bank_name']
+            print(f"[CONFIG MANAGER] Buscando banco por nombre: {bank_name}")
+            
+            # Buscar coincidencia aproximada
+            bank = self.db.query(Tercero).filter(
+                Tercero.nombre_comercial.ilike(f"%{bank_name}%"),
+                Tercero.empresa_id == empresa_id
+            ).first()
+            
+            if bank:
+                print(f"[CONFIG MANAGER] Banco encontrado: {bank.nombre_comercial} (ID: {bank.id})")
+                bank_id = bank.id
+            else:
+                # Fallback: Usar el primer tercero disponible (para no romper)
+                print(f"[CONFIG MANAGER] Banco no encontrado. Usando fallback.")
+                fallback = self.db.query(Tercero).filter(Tercero.empresa_id == empresa_id).first()
+                if fallback:
+                    bank_id = fallback.id
+                    
+        if not bank_id:
+             # Si aún así no hay ID (db vacía?), usar 0 o lanzar error
+             if 'bank_id' in config_data: 
+                 bank_id = config_data['bank_id']
+             else:
+                 # Default extremo
+                 bank_id = 1 
+
         config = ImportConfig(
             name=config_data['name'],
-            bank_id=config_data['bank_id'],
+            bank_id=bank_id,
             file_format=config_data['file_format'],
             delimiter=config_data.get('delimiter', ','),
             date_format=config_data['date_format'],

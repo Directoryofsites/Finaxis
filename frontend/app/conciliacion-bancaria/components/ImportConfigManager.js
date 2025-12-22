@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Settings, 
+import {
+  Settings,
   Plus,
   Edit,
   Trash2,
@@ -63,11 +63,8 @@ export default function ImportConfigManager() {
   const loadConfigurations = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/conciliacion-bancaria/import-configs');
-      if (response.ok) {
-        const data = await response.json();
-        setConfigs(data);
-      }
+      const response = await apiService.get('/conciliacion-bancaria/import-configs');
+      setConfigs(response.data);
     } catch (error) {
       console.error('Error cargando configuraciones:', error);
     } finally {
@@ -80,7 +77,7 @@ export default function ImportConfigManager() {
     setIsCreating(true);
     setIsEditing(false);
     setSelectedConfig(null);
-    
+
     const initialFormData = {
       name: '',
       bank_name: '',
@@ -104,7 +101,7 @@ export default function ImportConfigManager() {
         amount_validation: true
       }
     };
-    
+
     console.log(`🆕 [CREATE NEW] FormData inicial:`, initialFormData);
     setFormData(initialFormData);
   };
@@ -119,14 +116,14 @@ export default function ImportConfigManager() {
   const handleSave = async () => {
     console.log(`💾 [SAVE] Iniciando guardado...`);
     console.log(`💾 [SAVE] FormData a guardar:`, formData);
-    
+
     // Validaciones básicas
     if (!formData.name.trim()) {
       console.log(`❌ [SAVE] Error: Nombre vacío`);
       alert('El nombre de la configuración es obligatorio');
       return;
     }
-    
+
     if (!formData.bank_name.trim()) {
       console.log(`❌ [SAVE] Error: Nombre del banco vacío`);
       alert('El nombre del banco es obligatorio');
@@ -135,44 +132,32 @@ export default function ImportConfigManager() {
 
     console.log(`💾 [SAVE] Validaciones pasadas, enviando a API...`);
     setLoading(true);
-    
+
     try {
-      const url = isCreating 
-        ? '/api/conciliacion-bancaria/import-configs'
-        : `/api/conciliacion-bancaria/import-configs/${selectedConfig.id}`;
-      
-      const method = isCreating ? 'POST' : 'PUT';
-      
+      const url = isCreating
+        ? '/conciliacion-bancaria/import-configs'
+        : `/conciliacion-bancaria/import-configs/${selectedConfig.id}`;
+
+      const method = isCreating ? 'post' : 'put';
+
       console.log(`💾 [SAVE] URL: ${url}, Método: ${method}`);
       console.log(`💾 [SAVE] Payload:`, JSON.stringify(formData, null, 2));
-      
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
 
-      console.log(`💾 [SAVE] Respuesta del servidor:`, response.status, response.statusText);
+      const response = await apiService[method](url, formData);
 
-      if (response.ok) {
-        const responseData = await response.json();
-        console.log(`✅ [SAVE] Guardado exitoso:`, responseData);
-        
-        await loadConfigurations();
-        setIsCreating(false);
-        setIsEditing(false);
-        setSelectedConfig(null);
-        alert('Configuración guardada exitosamente');
-      } else {
-        const errorData = await response.json();
-        console.log(`❌ [SAVE] Error del servidor:`, errorData);
-        alert(`Error al guardar: ${errorData.detail || 'Error desconocido'}`);
-      }
+      console.log(`✅ [SAVE] Guardado exitoso:`, response.data);
+
+      await loadConfigurations();
+      setIsCreating(false);
+      setIsEditing(false);
+      setSelectedConfig(null);
+      alert('Configuración guardada exitosamente');
+
     } catch (error) {
-      console.error('💥 [SAVE] Error de conexión:', error);
-      alert('Error de conexión al guardar la configuración');
+      console.error('💥 [SAVE] Error:', error);
+      const errorMessage = error.response?.data?.detail || 'Error desconocido al guardar';
+      console.log(`❌ [SAVE] Error del servidor:`, errorMessage);
+      alert(`Error al guardar: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -185,15 +170,11 @@ export default function ImportConfigManager() {
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/conciliacion-bancaria/import-configs/${configId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        await loadConfigurations();
-      }
+      await apiService.delete(`/conciliacion-bancaria/import-configs/${configId}`);
+      await loadConfigurations();
     } catch (error) {
       console.error('Error eliminando configuración:', error);
+      alert('Error al eliminar la configuración');
     } finally {
       setLoading(false);
     }
@@ -202,21 +183,16 @@ export default function ImportConfigManager() {
   const handleTestConfig = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/conciliacion-bancaria/import-configs/test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      // Nota: Si test requiere archivo, apiService necesita Content-Type multipart/form-data si enviamos FormData.
+      // Pero aquí parece que enviamos JSON (config_data) según la ruta /import-configs/test (sin file)
+      // Si es /test con file, sería diferente. Revisando routes.py:
+      // /import-configs/test -> test_configuration_without_file (recibe config_data: dict)
 
-      if (response.ok) {
-        const result = await response.json();
-        setTestResult(result);
-      }
+      const response = await apiService.post('/conciliacion-bancaria/import-configs/test', formData);
+      setTestResult(response.data);
     } catch (error) {
       console.error('Error probando configuración:', error);
-      setTestResult({ success: false, error: 'Error de conexión' });
+      setTestResult({ success: false, error: 'Error de conexión o validación' });
     } finally {
       setLoading(false);
     }
@@ -225,7 +201,7 @@ export default function ImportConfigManager() {
   const handleFieldMappingChange = (field, value) => {
     console.log(`🗺️ [FIELD MAPPING] Campo: ${field}, Valor: "${value}"`);
     console.log(`🗺️ [FIELD MAPPING] Mappings anteriores:`, formData.field_mappings);
-    
+
     setFormData(prev => {
       const newState = {
         ...prev,
@@ -242,7 +218,7 @@ export default function ImportConfigManager() {
   const handleInputChange = (field, value) => {
     console.log(`🔍 [INPUT CHANGE] Campo: ${field}, Valor: "${value}", Tipo: ${typeof value}`);
     console.log(`🔍 [INPUT CHANGE] Estado anterior:`, formData[field]);
-    
+
     setFormData(prev => {
       const newState = {
         ...prev,
@@ -268,13 +244,13 @@ export default function ImportConfigManager() {
               <Save className="h-4 w-4 mr-2" />
               {loading ? 'Guardando...' : 'Guardar'}
             </Button>
-            <Button 
+            <Button
               onClick={() => {
                 setIsCreating(false);
                 setIsEditing(false);
                 setSelectedConfig(null);
-              }} 
-              variant="outline" 
+              }}
+              variant="outline"
               size="sm"
             >
               Cancelar
@@ -356,10 +332,10 @@ export default function ImportConfigManager() {
               <div key={field}>
                 <Label htmlFor={`mapping_${field}`}>
                   {field === 'date' ? 'Fecha' :
-                   field === 'description' ? 'Descripción' :
-                   field === 'amount' ? 'Monto' :
-                   field === 'reference' ? 'Referencia' :
-                   field === 'balance' ? 'Saldo' : field}
+                    field === 'description' ? 'Descripción' :
+                      field === 'amount' ? 'Monto' :
+                        field === 'reference' ? 'Referencia' :
+                          field === 'balance' ? 'Saldo' : field}
                 </Label>
                 <Input
                   id={`mapping_${field}`}
@@ -418,7 +394,7 @@ export default function ImportConfigManager() {
           <Alert variant={testResult.success ? 'success' : 'destructive'}>
             {testResult.success ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
             <AlertDescription>
-              {testResult.success 
+              {testResult.success
                 ? `Configuración válida. Se procesaron ${testResult.records_processed} registros.`
                 : `Error en la configuración: ${testResult.error}`
               }
@@ -471,22 +447,22 @@ export default function ImportConfigManager() {
                     Formato: {config.date_format} | {config.amount_format}
                   </div>
                 </div>
-                
+
                 <div className="flex justify-between items-center pt-2">
                   <div className="flex gap-2">
                     <Button onClick={() => handleEdit(config)} variant="outline" size="sm">
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button 
-                      onClick={() => handleDelete(config.id)} 
-                      variant="outline" 
+                    <Button
+                      onClick={() => handleDelete(config.id)}
+                      variant="outline"
                       size="sm"
                       className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                  
+
                   <div className="text-xs text-gray-500">
                     {config.created_at && new Date(config.created_at).toLocaleDateString()}
                   </div>
@@ -494,7 +470,7 @@ export default function ImportConfigManager() {
               </CardContent>
             </Card>
           ))}
-          
+
           {configs.length === 0 && !loading && (
             <div className="col-span-full">
               <Alert>
