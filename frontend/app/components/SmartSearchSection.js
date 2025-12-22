@@ -536,71 +536,20 @@ export default function SmartSearchSection() {
                         )}
                     </div>
                 )}
-                                                    ? (index === selectedIndex ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-green-500')
-                                                    : (index === selectedIndex ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500')
-                                                }
-                                            `}>
-                                                {item.icon ? <item.icon /> : <FaExternalLinkAlt />}
-                                            </span>
-                                            <div className="flex-1">
-                                                <div className={`font-medium text-base flex items-center gap-2 ${isCommandMode ? 'text-green-800 font-mono' : 'text-gray-800'}`}>
-                                                    {item.name}
-                                                    {item.aliases && item.aliases.length > 0 && (
-                                                        <span className="text-[10px] bg-green-200 text-green-900 border border-green-300 px-1.5 py-0.5 rounded font-bold tracking-wide">
-                                                            :{item.aliases[0].toUpperCase()}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="text-xs text-gray-400">{item.category} • {item.description}</div>
-                                            </div>
-                                            {index === selectedIndex && <FaArrowRight className="text-gray-400 text-sm" />}
-                                        </li>
-                                    ))}
-                                </ul>
-                                <div className="px-4 py-2 bg-gray-50 text-xs text-center text-gray-400 border-t border-gray-100">
-                                    Presiona <strong>Enter</strong> para ejecutar
-                                </div>
-                            </>
-                        ) : (
-                            /* CASE 2: COMMAND HISTORY */
-                            <div className="py-2">
-                                <div className="px-6 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider flex justify-between items-center">
-                                    <span>Últimos Comandos (Historial)</span>
-                                </div>
-                                <ul>
-                                    {commandHistory.map((cmd, idx) => (
-                                        <li
-                                            key={idx}
-                                            onClick={() => handleHistoryClick(cmd)}
-                                            className="px-6 py-3 cursor-pointer hover:bg-purple-50 flex items-center gap-3 group transition-colors border-b border-gray-50 last:border-0"
-                                        >
-                                            <div className="p-2 bg-purple-100 text-purple-600 rounded-full group-hover:bg-purple-200 transition-colors">
-                                                <FaMicrophone className="text-xs" />
-                                            </div>
-                                            <span className="text-gray-600 group-hover:text-purple-700 flex-1 font-medium">{cmd}</span>
-                                            <span className="text-xs text-purple-400 opacity-0 group-hover:opacity-100">Editar</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
->>>>>>> 9250a6a3e593a32cdb41438c5310e90c13a18667
-                    </div>
-                )}
-            </div>
 
-            {/* AI Status Text */}
-            <div className="mt-8 h-6 text-center">
-                {isThinking && (
-                    <p className="text-sm text-purple-600 font-semibold animate-pulse flex items-center gap-2 justify-center">
-                        <FaMagic /> Procesando solicitud...
-                    </p>
-                )}
-                {isListening && (
-                    <p className="text-sm text-red-600 font-semibold animate-pulse flex items-center gap-2 justify-center">
-                        <FaMicrophone /> Escuchando...
-                    </p>
-                )}
+                {/* AI Status Text */}
+                <div className="mt-8 h-6 text-center">
+                    {isThinking && (
+                        <p className="text-sm text-purple-600 font-semibold animate-pulse flex items-center gap-2 justify-center">
+                            <FaMagic /> Procesando solicitud...
+                        </p>
+                    )}
+                    {isListening && (
+                        <p className="text-sm text-red-600 font-semibold animate-pulse flex items-center gap-2 justify-center">
+                            <FaMicrophone /> Escuchando...
+                        </p>
+                    )}
+                </div>
             </div>
         </div>
     );
