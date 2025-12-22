@@ -21,6 +21,8 @@ import {
   Upload
 } from 'lucide-react';
 
+import DebugPanel from './DebugPanel';
+
 export default function ImportConfigManager() {
   const [configs, setConfigs] = useState([]);
   const [selectedConfig, setSelectedConfig] = useState(null);
@@ -74,10 +76,12 @@ export default function ImportConfigManager() {
   };
 
   const handleCreateNew = () => {
+    console.log(`🆕 [CREATE NEW] Iniciando creación de nueva configuración`);
     setIsCreating(true);
     setIsEditing(false);
     setSelectedConfig(null);
-    setFormData({
+    
+    const initialFormData = {
       name: '',
       bank_name: '',
       file_format: 'csv',
@@ -99,7 +103,10 @@ export default function ImportConfigManager() {
         date_validation: true,
         amount_validation: true
       }
-    });
+    };
+    
+    console.log(`🆕 [CREATE NEW] FormData inicial:`, initialFormData);
+    setFormData(initialFormData);
   };
 
   const handleEdit = (config) => {
@@ -110,13 +117,34 @@ export default function ImportConfigManager() {
   };
 
   const handleSave = async () => {
+    console.log(`💾 [SAVE] Iniciando guardado...`);
+    console.log(`💾 [SAVE] FormData a guardar:`, formData);
+    
+    // Validaciones básicas
+    if (!formData.name.trim()) {
+      console.log(`❌ [SAVE] Error: Nombre vacío`);
+      alert('El nombre de la configuración es obligatorio');
+      return;
+    }
+    
+    if (!formData.bank_name.trim()) {
+      console.log(`❌ [SAVE] Error: Nombre del banco vacío`);
+      alert('El nombre del banco es obligatorio');
+      return;
+    }
+
+    console.log(`💾 [SAVE] Validaciones pasadas, enviando a API...`);
     setLoading(true);
+    
     try {
       const url = isCreating 
         ? '/api/conciliacion-bancaria/import-configs'
         : `/api/conciliacion-bancaria/import-configs/${selectedConfig.id}`;
       
       const method = isCreating ? 'POST' : 'PUT';
+      
+      console.log(`💾 [SAVE] URL: ${url}, Método: ${method}`);
+      console.log(`💾 [SAVE] Payload:`, JSON.stringify(formData, null, 2));
       
       const response = await fetch(url, {
         method,
@@ -126,14 +154,25 @@ export default function ImportConfigManager() {
         body: JSON.stringify(formData),
       });
 
+      console.log(`💾 [SAVE] Respuesta del servidor:`, response.status, response.statusText);
+
       if (response.ok) {
+        const responseData = await response.json();
+        console.log(`✅ [SAVE] Guardado exitoso:`, responseData);
+        
         await loadConfigurations();
         setIsCreating(false);
         setIsEditing(false);
         setSelectedConfig(null);
+        alert('Configuración guardada exitosamente');
+      } else {
+        const errorData = await response.json();
+        console.log(`❌ [SAVE] Error del servidor:`, errorData);
+        alert(`Error al guardar: ${errorData.detail || 'Error desconocido'}`);
       }
     } catch (error) {
-      console.error('Error guardando configuración:', error);
+      console.error('💥 [SAVE] Error de conexión:', error);
+      alert('Error de conexión al guardar la configuración');
     } finally {
       setLoading(false);
     }
@@ -184,13 +223,35 @@ export default function ImportConfigManager() {
   };
 
   const handleFieldMappingChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      field_mappings: {
-        ...prev.field_mappings,
+    console.log(`🗺️ [FIELD MAPPING] Campo: ${field}, Valor: "${value}"`);
+    console.log(`🗺️ [FIELD MAPPING] Mappings anteriores:`, formData.field_mappings);
+    
+    setFormData(prev => {
+      const newState = {
+        ...prev,
+        field_mappings: {
+          ...prev.field_mappings,
+          [field]: value
+        }
+      };
+      console.log(`🗺️ [FIELD MAPPING] Nuevos mappings:`, newState.field_mappings);
+      return newState;
+    });
+  };
+
+  const handleInputChange = (field, value) => {
+    console.log(`🔍 [INPUT CHANGE] Campo: ${field}, Valor: "${value}", Tipo: ${typeof value}`);
+    console.log(`🔍 [INPUT CHANGE] Estado anterior:`, formData[field]);
+    
+    setFormData(prev => {
+      const newState = {
+        ...prev,
         [field]: value
-      }
-    }));
+      };
+      console.log(`🔍 [INPUT CHANGE] Nuevo estado para ${field}:`, newState[field]);
+      console.log(`🔍 [INPUT CHANGE] Estado completo:`, newState);
+      return newState;
+    });
   };
 
   const ConfigurationForm = () => (
@@ -199,13 +260,24 @@ export default function ImportConfigManager() {
         <CardTitle className="flex items-center justify-between">
           <span>{isCreating ? 'Nueva Configuración' : 'Editar Configuración'}</span>
           <div className="flex gap-2">
-            <Button onClick={handleTestConfig} variant="outline" size="sm">
+            <Button onClick={handleTestConfig} variant="outline" size="sm" disabled={loading}>
               <TestTube className="h-4 w-4 mr-2" />
               Probar
             </Button>
-            <Button onClick={handleSave} size="sm">
+            <Button onClick={handleSave} size="sm" disabled={loading}>
               <Save className="h-4 w-4 mr-2" />
-              Guardar
+              {loading ? 'Guardando...' : 'Guardar'}
+            </Button>
+            <Button 
+              onClick={() => {
+                setIsCreating(false);
+                setIsEditing(false);
+                setSelectedConfig(null);
+              }} 
+              variant="outline" 
+              size="sm"
+            >
+              Cancelar
             </Button>
           </div>
         </CardTitle>
@@ -218,8 +290,9 @@ export default function ImportConfigManager() {
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e) => handleInputChange('name', e.target.value)}
               placeholder="Ej: Banco Nacional CSV"
+              className="conciliacion-input"
             />
           </div>
           <div>
@@ -227,8 +300,9 @@ export default function ImportConfigManager() {
             <Input
               id="bank_name"
               value={formData.bank_name}
-              onChange={(e) => setFormData(prev => ({ ...prev, bank_name: e.target.value }))}
+              onChange={(e) => handleInputChange('bank_name', e.target.value)}
               placeholder="Ej: Banco Nacional"
+              className="conciliacion-input"
             />
           </div>
         </div>
@@ -237,23 +311,25 @@ export default function ImportConfigManager() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="file_format">Formato de archivo</Label>
-            <select
-              id="file_format"
-              className="w-full p-2 border rounded-md"
-              value={formData.file_format}
-              onChange={(e) => setFormData(prev => ({ ...prev, file_format: e.target.value }))}
-            >
-              <option value="csv">CSV</option>
-              <option value="txt">TXT</option>
-              <option value="excel">Excel</option>
-            </select>
+            <div className="conciliacion-select">
+              <select
+                id="file_format"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white conciliacion-input"
+                value={formData.file_format}
+                onChange={(e) => handleInputChange('file_format', e.target.value)}
+              >
+                <option value="csv">CSV</option>
+                <option value="txt">TXT</option>
+                <option value="excel">Excel</option>
+              </select>
+            </div>
           </div>
           <div>
             <Label htmlFor="delimiter">Delimitador</Label>
             <Input
               id="delimiter"
               value={formData.delimiter}
-              onChange={(e) => setFormData(prev => ({ ...prev, delimiter: e.target.value }))}
+              onChange={(e) => handleInputChange('delimiter', e.target.value)}
               placeholder=","
             />
           </div>
@@ -261,9 +337,9 @@ export default function ImportConfigManager() {
             <Label htmlFor="encoding">Codificación</Label>
             <select
               id="encoding"
-              className="w-full p-2 border rounded-md"
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
               value={formData.encoding}
-              onChange={(e) => setFormData(prev => ({ ...prev, encoding: e.target.value }))}
+              onChange={(e) => handleInputChange('encoding', e.target.value)}
             >
               <option value="utf-8">UTF-8</option>
               <option value="latin-1">Latin-1</option>
@@ -302,9 +378,9 @@ export default function ImportConfigManager() {
             <Label htmlFor="date_format">Formato de fecha</Label>
             <select
               id="date_format"
-              className="w-full p-2 border rounded-md"
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
               value={formData.date_format}
-              onChange={(e) => setFormData(prev => ({ ...prev, date_format: e.target.value }))}
+              onChange={(e) => handleInputChange('date_format', e.target.value)}
             >
               <option value="DD/MM/YYYY">DD/MM/YYYY</option>
               <option value="MM/DD/YYYY">MM/DD/YYYY</option>
@@ -316,9 +392,9 @@ export default function ImportConfigManager() {
             <Label htmlFor="amount_format">Formato de monto</Label>
             <select
               id="amount_format"
-              className="w-full p-2 border rounded-md"
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
               value={formData.amount_format}
-              onChange={(e) => setFormData(prev => ({ ...prev, amount_format: e.target.value }))}
+              onChange={(e) => handleInputChange('amount_format', e.target.value)}
             >
               <option value="decimal">Decimal (1234.56)</option>
               <option value="comma">Coma europea (1234,56)</option>
@@ -331,7 +407,7 @@ export default function ImportConfigManager() {
               id="skip_rows"
               type="number"
               value={formData.skip_rows}
-              onChange={(e) => setFormData(prev => ({ ...prev, skip_rows: parseInt(e.target.value) || 0 }))}
+              onChange={(e) => handleInputChange('skip_rows', parseInt(e.target.value) || 0)}
               min="0"
             />
           </div>
@@ -434,6 +510,9 @@ export default function ImportConfigManager() {
 
       {/* Formulario de creación/edición */}
       {(isCreating || isEditing) && <ConfigurationForm />}
+
+      {/* Panel de Debug */}
+      <DebugPanel formData={formData} />
     </div>
   );
 }

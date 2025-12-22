@@ -48,7 +48,11 @@ export default function ExportacionForm({
       modulos_especializados: {
         propiedad_horizontal: false,
         activos_fijos: false,
-        favoritos: false
+        favoritos: false,
+        // --- NUEVOS MÓDULOS AGREGADOS ---
+        cotizaciones: false,
+        produccion: false,
+        conciliacion_bancaria: false
       },
       transacciones: false,
       configuraciones: {
@@ -240,12 +244,33 @@ export default function ExportacionForm({
               <FaDatabase className="text-indigo-600" /> Módulos Especializados
             </h3>
             <div className="space-y-2 pl-1">
-              {Object.keys(filtros.paquetes.modulos_especializados).map(key => (
-                <label key={key} className="flex items-center cursor-pointer hover:text-indigo-800 transition-colors">
-                  <input type="checkbox" name={key} data-category="modulos_especializados" checked={filtros.paquetes.modulos_especializados[key]} onChange={handlePaqueteChange} className={checkboxClass} />
-                  <span className="text-sm capitalize font-bold">{key.replace(/_/g, ' ')}</span>
-                </label>
-              ))}
+              {Object.keys(filtros.paquetes.modulos_especializados).map(key => {
+                const descriptions = {
+                  propiedad_horizontal: "Propiedad Horizontal - Torres, unidades, conceptos y configuraciones",
+                  activos_fijos: "Activos Fijos - Categorías, activos y novedades",
+                  favoritos: "Favoritos - Menús y accesos rápidos de usuarios",
+                  cotizaciones: "Cotizaciones - Cotizaciones maestras y sus detalles",
+                  produccion: "Producción - Recetas, órdenes, recursos e insumos",
+                  conciliacion_bancaria: "Conciliación Bancaria - Configuraciones, sesiones y movimientos"
+                };
+                
+                return (
+                  <label key={key} className="flex items-start cursor-pointer hover:text-indigo-800 transition-colors">
+                    <input 
+                      type="checkbox" 
+                      name={key} 
+                      data-category="modulos_especializados" 
+                      checked={filtros.paquetes.modulos_especializados[key]} 
+                      onChange={handlePaqueteChange} 
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded cursor-pointer mr-2 mt-0.5" 
+                    />
+                    <div>
+                      <span className="text-sm font-bold capitalize">{key.replace(/_/g, ' ')}</span>
+                      <p className="text-xs text-indigo-600 mt-0.5">{descriptions[key]}</p>
+                    </div>
+                  </label>
+                );
+              })}
             </div>
           </div>
 

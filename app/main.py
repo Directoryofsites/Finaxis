@@ -347,6 +347,6 @@ app.include_router(conciliacion_bancaria_router.router, prefix="/api", tags=["Co
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8002)
 
 # FORCE RELOAD TRIGGER - PH MODULE UPDATE

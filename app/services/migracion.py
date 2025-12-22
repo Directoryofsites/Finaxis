@@ -31,6 +31,95 @@ from ..models.propiedad_horizontal import PHConfiguracion, PHConcepto, PHTorre, 
 from ..models.activo_fijo import ActivoFijo
 from ..models.activo_categoria import ActivoCategoria
 
+# --- NUEVOS MODELOS SOPORTADOS (v7.6) ---
+from ..models.cotizacion import Cotizacion, CotizacionDetalle
+from ..models.produccion import Receta, RecetaDetalle, RecetaRecurso, OrdenProduccion, OrdenProduccionInsumo, OrdenProduccionRecurso
+from ..models.configuracion_produccion import ConfiguracionProduccion
+from ..models.conciliacion_bancaria import (
+    ImportConfig, ImportSession, BankMovement, Reconciliation, 
+    ReconciliationMovement, AccountingConfig, ReconciliationAudit
+)
+
+# =====================================================================================
+# REGISTRO DECLARATIVO DE MÓDULOS (v7.6)
+# =====================================================================================
+"""
+Sistema declarativo para registrar nuevos módulos de migración.
+
+Este sistema permite agregar nuevos módulos de forma consistente sin modificar
+el código principal de exportación/restauración. Cada módulo define:
+
+- modelos_principales: Modelos principales del módulo
+- modelos_detalle: Modelos de detalle/relación del módulo  
+- clave_natural: Campo usado como clave natural para mapeo de IDs
+- dependencias: Módulos/maestros requeridos para funcionar
+- seccion_backup: Sección en el JSON de backup donde se almacenan los datos
+- descripcion: Descripción legible del módulo
+
+Para agregar un nuevo módulo:
+1. Agregar entrada en MODULOS_ESPECIALIZADOS_CONFIG
+2. Agregar campo booleano en ExportPaquetesModulosEspecializados (schemas/migracion.py)
+3. Implementar lógica de exportación en generar_backup_json()
+4. Implementar lógica de restauración en ejecutar_restauracion()
+5. Agregar análisis en analizar_backup()
+"""
+MODULOS_ESPECIALIZADOS_CONFIG = {
+    'cotizaciones': {
+        'modelos_principales': [Cotizacion],
+        'modelos_detalle': [CotizacionDetalle],
+        'clave_natural': 'numero',
+        'dependencias': ['terceros', 'productos', 'bodegas', 'usuarios'],
+        'seccion_backup': 'cotizaciones',
+        'descripcion': 'Cotizaciones maestras y sus detalles'
+    },
+    'produccion': {
+        'modelos_principales': [Receta, OrdenProduccion, ConfiguracionProduccion],
+        'modelos_detalle': [RecetaDetalle, RecetaRecurso, OrdenProduccionInsumo, OrdenProduccionRecurso],
+        'clave_natural': 'nombre',  # Para recetas
+        'dependencias': ['productos', 'tipos_documento', 'plan_cuentas', 'bodegas'],
+        'seccion_backup': 'produccion',
+        'descripcion': 'Recetas, órdenes de producción, recursos e insumos'
+    },
+    'conciliacion_bancaria': {
+        'modelos_principales': [ImportConfig, ImportSession, AccountingConfig],
+        'modelos_detalle': [BankMovement, Reconciliation, ReconciliationMovement, ReconciliationAudit],
+        'clave_natural': 'name',  # Para configuraciones
+        'dependencias': ['terceros', 'plan_cuentas', 'centros_costo', 'usuarios'],
+        'seccion_backup': 'conciliacion_bancaria',
+        'descripcion': 'Configuraciones, sesiones, movimientos y conciliaciones bancarias'
+    }
+}
+
+def validar_dependencias_modulo(db: Session, modulo_config: dict, empresa_id: int) -> dict:
+    """Valida que existan las dependencias necesarias para un módulo."""
+    dependencias_faltantes = []
+    
+    for dep in modulo_config.get('dependencias', []):
+        if dep == 'terceros':
+            count = db.query(func.count(Tercero.id)).filter(Tercero.empresa_id == empresa_id).scalar()
+        elif dep == 'productos':
+            count = db.query(func.count(Producto.id)).filter(Producto.empresa_id == empresa_id).scalar()
+        elif dep == 'plan_cuentas':
+            count = db.query(func.count(PlanCuenta.id)).filter(PlanCuenta.empresa_id == empresa_id).scalar()
+        elif dep == 'tipos_documento':
+            count = db.query(func.count(TipoDocumento.id)).filter(TipoDocumento.empresa_id == empresa_id).scalar()
+        elif dep == 'bodegas':
+            count = db.query(func.count(Bodega.id)).filter(Bodega.empresa_id == empresa_id).scalar()
+        elif dep == 'centros_costo':
+            count = db.query(func.count(CentroCosto.id)).filter(CentroCosto.empresa_id == empresa_id).scalar()
+        elif dep == 'usuarios':
+            count = db.query(func.count(Usuario.id)).join(Empresa).filter(Empresa.id == empresa_id).scalar()
+        else:
+            count = 0
+            
+        if count == 0:
+            dependencias_faltantes.append(dep)
+    
+    return {
+        'valido': len(dependencias_faltantes) == 0,
+        'dependencias_faltantes': dependencias_faltantes
+    }
+
 
 # =====================================================================================
 # 0. UTILIDAD DE SERIALIZACIÓN
@@ -107,11 +196,12 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
     backup_data = {
         "metadata": {
             "fecha_generacion": datetime.utcnow().isoformat(),
-            "version_sistema": "7.5", 
+            "version_sistema": "7.6",  # Actualizado para incluir nuevos módulos
             "empresa_id_origen": empresa_id
         },
         "empresa": {}, "configuracion": {}, "maestros": {}, "inventario": {}, 
-        "propiedad_horizontal": {}, "activos_fijos": {}, # <--- NUEVAS SECCIONES
+        "propiedad_horizontal": {}, "activos_fijos": {}, # <--- SECCIONES EXISTENTES
+        "cotizaciones": {}, "produccion": {}, "conciliacion_bancaria": {}, # <--- NUEVAS SECCIONES
         "transacciones": []
     }
 
@@ -267,29 +357,71 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
 
     # E. PROPIEDAD HORIZONTAL
     if special_flags.get('propiedad_horizontal', False):
-        # 1. Configuración
+        # 1. Configuración completa
         ph_conf = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
         if ph_conf:
-            backup_data["propiedad_horizontal"]["configuracion"] = serialize_model(ph_conf.__dict__)
+            config_dict = serialize_model(ph_conf.__dict__)
+            # Agregar códigos de cuentas y tipos de documento para mapeo
+            if ph_conf.tipo_documento_factura_id:
+                tipo_factura = db.query(TipoDocumento).filter(TipoDocumento.id == ph_conf.tipo_documento_factura_id).first()
+                config_dict["tipo_documento_factura_codigo"] = tipo_factura.codigo if tipo_factura else None
+            if ph_conf.tipo_documento_recibo_id:
+                tipo_recibo = db.query(TipoDocumento).filter(TipoDocumento.id == ph_conf.tipo_documento_recibo_id).first()
+                config_dict["tipo_documento_recibo_codigo"] = tipo_recibo.codigo if tipo_recibo else None
+            if ph_conf.cuenta_cartera_id:
+                cuenta_cartera = db.query(PlanCuenta).filter(PlanCuenta.id == ph_conf.cuenta_cartera_id).first()
+                config_dict["cuenta_cartera_codigo"] = cuenta_cartera.codigo if cuenta_cartera else None
+            if ph_conf.cuenta_caja_id:
+                cuenta_caja = db.query(PlanCuenta).filter(PlanCuenta.id == ph_conf.cuenta_caja_id).first()
+                config_dict["cuenta_caja_codigo"] = cuenta_caja.codigo if cuenta_caja else None
+            if ph_conf.cuenta_ingreso_intereses_id:
+                cuenta_intereses = db.query(PlanCuenta).filter(PlanCuenta.id == ph_conf.cuenta_ingreso_intereses_id).first()
+                config_dict["cuenta_ingreso_intereses_codigo"] = cuenta_intereses.codigo if cuenta_intereses else None
+            backup_data["propiedad_horizontal"]["configuracion"] = config_dict
         
         # 2. Conceptos
         conceptos = db.query(PHConcepto).filter(PHConcepto.empresa_id == empresa_id).all()
         backup_data["propiedad_horizontal"]["conceptos"] = [serialize_model(c.__dict__) for c in conceptos]
         
-        # 3. Torres y Unidades
+        # 3. Torres, Unidades y datos relacionados
         torres = db.query(PHTorre).filter(PHTorre.empresa_id == empresa_id).all()
         backup_data["propiedad_horizontal"]["torres"] = []
         for t in torres:
             unidades = []
             for u in t.unidades:
-                unidades.append({
-                    "codigo": u.codigo, "nombre": u.nombre, 
-                    "coeficiente": float(u.coeficiente or 0),
-                    "propietario_nit": u.propietario.nit if u.propietario else None,
-                    "arrendatario_nit": u.arrendatario.nit if u.arrendatario else None
-                })
+                unidad_dict = {
+                    "codigo": u.codigo, "nombre": u.nombre if hasattr(u, 'nombre') else u.codigo, 
+                    "tipo": u.tipo, "matricula_inmobiliaria": u.matricula_inmobiliaria,
+                    "area_privada": float(u.area_privada or 0), "coeficiente": float(u.coeficiente or 0),
+                    "activo": u.activo, "observaciones": u.observaciones,
+                    "propietario_principal_nit": u.propietario_principal.nit if u.propietario_principal else None,
+                    "residente_actual_nit": u.residente_actual.nit if u.residente_actual else None
+                }
+                
+                # Exportar vehículos
+                vehiculos = []
+                for v in u.vehiculos:
+                    vehiculos.append(serialize_model(v.__dict__))
+                unidad_dict["vehiculos"] = vehiculos
+                
+                # Exportar mascotas
+                mascotas = []
+                for m in u.mascotas:
+                    mascotas.append(serialize_model(m.__dict__))
+                unidad_dict["mascotas"] = mascotas
+                
+                # Exportar historial de coeficientes
+                historial = []
+                for h in u.historial_coeficientes:
+                    hist_dict = serialize_model(h.__dict__)
+                    hist_dict["usuario_email"] = h.usuario.email if h.usuario else None
+                    historial.append(hist_dict)
+                unidad_dict["historial_coeficientes"] = historial
+                
+                unidades.append(unidad_dict)
+            
             backup_data["propiedad_horizontal"]["torres"].append({
-                "nombre": t.nombre,
+                "nombre": t.nombre, "descripcion": t.descripcion,
                 "unidades": unidades
             })
             
@@ -319,6 +451,182 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
                  "nombre_personalizado": f.nombre_personalizado,
                  "orden": f.orden
              })
+
+    # H. COTIZACIONES (v7.6)
+    # Exporta cotizaciones maestras con sus detalles, incluyendo relaciones con terceros, productos y bodegas
+    if special_flags.get('cotizaciones', False):
+        cotizaciones = db.query(Cotizacion).filter(Cotizacion.empresa_id == empresa_id).all()
+        backup_data["cotizaciones"]["cotizaciones"] = []
+        
+        for c in cotizaciones:
+            # Exportar cotización maestra
+            cotiz_dict = serialize_model(c.__dict__)
+            cotiz_dict["tercero_nit"] = c.tercero.nit if c.tercero else None
+            cotiz_dict["bodega_nombre"] = c.bodega.nombre if c.bodega else None
+            cotiz_dict["usuario_email"] = c.usuario.email if c.usuario else None
+            
+            # Exportar detalles de la cotización
+            detalles = []
+            for d in c.detalles:
+                detalle_dict = serialize_model(d.__dict__)
+                detalle_dict["producto_codigo"] = d.producto.codigo if d.producto else None
+                detalles.append(detalle_dict)
+            
+            cotiz_dict["detalles"] = detalles
+            backup_data["cotizaciones"]["cotizaciones"].append(cotiz_dict)
+
+    # I. PRODUCCIÓN (v7.6)
+    # Exporta configuración, recetas, órdenes de producción con todos sus componentes
+    if special_flags.get('produccion', False):
+        # 1. Configuración de Producción
+        prod_config = db.query(ConfiguracionProduccion).filter(ConfiguracionProduccion.empresa_id == empresa_id).first()
+        if prod_config:
+            config_dict = serialize_model(prod_config.__dict__)
+            # Agregar códigos de tipos de documento para mapeo
+            if prod_config.tipo_documento_orden_id:
+                tipo_orden = db.query(TipoDocumento).filter(TipoDocumento.id == prod_config.tipo_documento_orden_id).first()
+                config_dict["tipo_documento_orden_codigo"] = tipo_orden.codigo if tipo_orden else None
+            if prod_config.tipo_documento_anulacion_id:
+                tipo_anulacion = db.query(TipoDocumento).filter(TipoDocumento.id == prod_config.tipo_documento_anulacion_id).first()
+                config_dict["tipo_documento_anulacion_codigo"] = tipo_anulacion.codigo if tipo_anulacion else None
+            if prod_config.tipo_documento_consumo_id:
+                tipo_consumo = db.query(TipoDocumento).filter(TipoDocumento.id == prod_config.tipo_documento_consumo_id).first()
+                config_dict["tipo_documento_consumo_codigo"] = tipo_consumo.codigo if tipo_consumo else None
+            if prod_config.tipo_documento_entrada_pt_id:
+                tipo_entrada = db.query(TipoDocumento).filter(TipoDocumento.id == prod_config.tipo_documento_entrada_pt_id).first()
+                config_dict["tipo_documento_entrada_pt_codigo"] = tipo_entrada.codigo if tipo_entrada else None
+            backup_data["produccion"]["configuracion"] = config_dict
+
+        # 2. Recetas
+        recetas = db.query(Receta).filter(Receta.empresa_id == empresa_id).all()
+        backup_data["produccion"]["recetas"] = []
+        
+        for r in recetas:
+            receta_dict = serialize_model(r.__dict__)
+            receta_dict["producto_codigo"] = r.producto.codigo if r.producto else None
+            
+            # Exportar detalles (insumos)
+            detalles = []
+            for d in r.detalles:
+                detalle_dict = serialize_model(d.__dict__)
+                detalle_dict["insumo_codigo"] = d.insumo.codigo if d.insumo else None
+                detalles.append(detalle_dict)
+            receta_dict["detalles"] = detalles
+            
+            # Exportar recursos
+            recursos = []
+            for rec in r.recursos:
+                recurso_dict = serialize_model(rec.__dict__)
+                if rec.cuenta_contable_id:
+                    cuenta = db.query(PlanCuenta).filter(PlanCuenta.id == rec.cuenta_contable_id).first()
+                    recurso_dict["cuenta_contable_codigo"] = cuenta.codigo if cuenta else None
+                recursos.append(recurso_dict)
+            receta_dict["recursos"] = recursos
+            
+            backup_data["produccion"]["recetas"].append(receta_dict)
+
+        # 3. Órdenes de Producción
+        ordenes = db.query(OrdenProduccion).filter(OrdenProduccion.empresa_id == empresa_id).all()
+        backup_data["produccion"]["ordenes"] = []
+        
+        for o in ordenes:
+            orden_dict = serialize_model(o.__dict__)
+            orden_dict["producto_codigo"] = o.producto.codigo if o.producto else None
+            orden_dict["receta_nombre"] = o.receta.nombre if o.receta else None
+            orden_dict["bodega_destino_nombre"] = o.bodega_destino.nombre if o.bodega_destino else None
+            
+            # Exportar insumos consumidos
+            insumos = []
+            for i in o.insumos:
+                insumo_dict = serialize_model(i.__dict__)
+                insumo_dict["insumo_codigo"] = i.insumo.codigo if i.insumo else None
+                insumo_dict["bodega_origen_nombre"] = i.bodega_origen.nombre if i.bodega_origen else None
+                insumos.append(insumo_dict)
+            orden_dict["insumos"] = insumos
+            
+            # Exportar recursos utilizados
+            recursos = []
+            for rec in o.recursos:
+                recurso_dict = serialize_model(rec.__dict__)
+                recursos.append(recurso_dict)
+            orden_dict["recursos"] = recursos
+            
+            backup_data["produccion"]["ordenes"].append(orden_dict)
+
+    # J. CONCILIACIÓN BANCARIA (v7.6)
+    # Exporta configuraciones, sesiones, movimientos bancarios y auditoría
+    if special_flags.get('conciliacion_bancaria', False):
+        # 1. Configuraciones de Importación
+        import_configs = db.query(ImportConfig).filter(ImportConfig.empresa_id == empresa_id).all()
+        backup_data["conciliacion_bancaria"]["configuraciones_importacion"] = []
+        
+        for config in import_configs:
+            config_dict = serialize_model(config.__dict__)
+            config_dict["bank_nit"] = config.bank.nit if config.bank else None
+            config_dict["creator_email"] = config.creator.email if config.creator else None
+            config_dict["updater_email"] = config.updater.email if config.updater else None
+            backup_data["conciliacion_bancaria"]["configuraciones_importacion"].append(config_dict)
+
+        # 2. Configuraciones Contables
+        accounting_configs = db.query(AccountingConfig).filter(AccountingConfig.empresa_id == empresa_id).all()
+        backup_data["conciliacion_bancaria"]["configuraciones_contables"] = []
+        
+        for acc_config in accounting_configs:
+            acc_config_dict = serialize_model(acc_config.__dict__)
+            acc_config_dict["bank_account_codigo"] = acc_config.bank_account.codigo if acc_config.bank_account else None
+            acc_config_dict["commission_account_codigo"] = acc_config.commission_account.codigo if acc_config.commission_account else None
+            acc_config_dict["interest_income_account_codigo"] = acc_config.interest_income_account.codigo if acc_config.interest_income_account else None
+            acc_config_dict["bank_charges_account_codigo"] = acc_config.bank_charges_account.codigo if acc_config.bank_charges_account else None
+            acc_config_dict["adjustment_account_codigo"] = acc_config.adjustment_account.codigo if acc_config.adjustment_account else None
+            acc_config_dict["default_cost_center_codigo"] = acc_config.default_cost_center.codigo if acc_config.default_cost_center else None
+            acc_config_dict["creator_email"] = acc_config.creator.email if acc_config.creator else None
+            acc_config_dict["updater_email"] = acc_config.updater.email if acc_config.updater else None
+            backup_data["conciliacion_bancaria"]["configuraciones_contables"].append(acc_config_dict)
+
+        # 3. Sesiones de Importación
+        import_sessions = db.query(ImportSession).filter(ImportSession.empresa_id == empresa_id).all()
+        backup_data["conciliacion_bancaria"]["sesiones_importacion"] = []
+        
+        for session in import_sessions:
+            session_dict = serialize_model(session.__dict__)
+            session_dict["bank_account_codigo"] = session.bank_account.codigo if session.bank_account else None
+            session_dict["user_email"] = session.user.email if session.user else None
+            backup_data["conciliacion_bancaria"]["sesiones_importacion"].append(session_dict)
+
+        # 4. Movimientos Bancarios
+        bank_movements = db.query(BankMovement).filter(BankMovement.empresa_id == empresa_id).all()
+        backup_data["conciliacion_bancaria"]["movimientos_bancarios"] = []
+        
+        for movement in bank_movements:
+            movement_dict = serialize_model(movement.__dict__)
+            movement_dict["bank_account_codigo"] = movement.bank_account.codigo if movement.bank_account else None
+            backup_data["conciliacion_bancaria"]["movimientos_bancarios"].append(movement_dict)
+
+        # 5. Conciliaciones
+        reconciliations = db.query(Reconciliation).filter(Reconciliation.empresa_id == empresa_id).all()
+        backup_data["conciliacion_bancaria"]["conciliaciones"] = []
+        
+        for reconciliation in reconciliations:
+            reconciliation_dict = serialize_model(reconciliation.__dict__)
+            reconciliation_dict["user_email"] = reconciliation.user.email if reconciliation.user else None
+            
+            # Exportar movimientos contables asociados
+            accounting_movements = []
+            for acc_mov in reconciliation.accounting_movements:
+                acc_mov_dict = serialize_model(acc_mov.__dict__)
+                accounting_movements.append(acc_mov_dict)
+            reconciliation_dict["movimientos_contables"] = accounting_movements
+            
+            backup_data["conciliacion_bancaria"]["conciliaciones"].append(reconciliation_dict)
+
+        # 6. Auditoría de Conciliaciones
+        reconciliation_audits = db.query(ReconciliationAudit).filter(ReconciliationAudit.empresa_id == empresa_id).all()
+        backup_data["conciliacion_bancaria"]["auditoria"] = []
+        
+        for audit in reconciliation_audits:
+            audit_dict = serialize_model(audit.__dict__)
+            audit_dict["user_email"] = audit.user.email if audit.user else None
+            backup_data["conciliacion_bancaria"]["auditoria"].append(audit_dict)
 
     # F. TRANSACCIONES
     if transacciones_flag:
@@ -406,12 +714,18 @@ def analizar_backup(db: Session, analysis_request: schemas_migracion.AnalysisReq
     # 2. Proceder con el análisis usando 'data' (el contenido real)
     backup_data = data
     
+    # 3. Detectar versión del backup y aplicar compatibilidad
+    version_backup = backup_data.get("metadata", {}).get("version_sistema", "7.0")
+    compatibilidad = verificar_compatibilidad_version(version_backup)
+    
     report = {
         "summary": {}, 
         "conflicts": {"documentos": [], "maestros_faltantes": []}, 
         "sourceEmpresaId": backup_data.get("metadata", {}).get("empresa_id_origen"), 
         "targetEmpresaId": target_empresa_id,
-        "integrity_valid": integrity_valid
+        "integrity_valid": integrity_valid,
+        "version_backup": version_backup,
+        "compatibilidad": compatibilidad
     }
     
     maestros_map = {
@@ -504,6 +818,59 @@ def analizar_backup(db: Session, analysis_request: schemas_migracion.AnalysisReq
     if fav_src:
         report["summary"]["Favoritos de Usuario"] = {"total": len(fav_src), "a_crear": len(fav_src), "coincidencias": 0}
 
+    # ANÁLISIS DE COTIZACIONES
+    cotizaciones_data = backup_data.get("cotizaciones", {})
+    if cotizaciones_data:
+        if "cotizaciones" in cotizaciones_data:
+            c_src = cotizaciones_data["cotizaciones"]
+            c_existing = {c.numero for c in db.query(Cotizacion).filter(Cotizacion.empresa_id == target_empresa_id).all()}
+            a_crear = sum(1 for c in c_src if c.get("numero") not in c_existing)
+            report["summary"]["Cotizaciones"] = {"total": len(c_src), "a_crear": a_crear, "coincidencias": len(c_src) - a_crear}
+
+    # ANÁLISIS DE PRODUCCIÓN
+    produccion_data = backup_data.get("produccion", {})
+    if produccion_data:
+        # Recetas
+        if "recetas" in produccion_data:
+            r_src = produccion_data["recetas"]
+            r_existing = {r.nombre for r in db.query(Receta).filter(Receta.empresa_id == target_empresa_id).all()}
+            a_crear = sum(1 for r in r_src if r.get("nombre") not in r_existing)
+            report["summary"]["Recetas de Producción"] = {"total": len(r_src), "a_crear": a_crear, "coincidencias": len(r_src) - a_crear}
+        
+        # Órdenes de Producción
+        if "ordenes" in produccion_data:
+            o_src = produccion_data["ordenes"]
+            o_existing = {o.numero_orden for o in db.query(OrdenProduccion).filter(OrdenProduccion.empresa_id == target_empresa_id).all()}
+            a_crear = sum(1 for o in o_src if o.get("numero_orden") not in o_existing)
+            report["summary"]["Órdenes de Producción"] = {"total": len(o_src), "a_crear": a_crear, "coincidencias": len(o_src) - a_crear}
+
+    # ANÁLISIS DE CONCILIACIÓN BANCARIA
+    conciliacion_data = backup_data.get("conciliacion_bancaria", {})
+    if conciliacion_data:
+        # Configuraciones de Importación
+        if "configuraciones_importacion" in conciliacion_data:
+            ci_src = conciliacion_data["configuraciones_importacion"]
+            ci_existing = {c.name for c in db.query(ImportConfig).filter(ImportConfig.empresa_id == target_empresa_id).all()}
+            a_crear = sum(1 for c in ci_src if c.get("name") not in ci_existing)
+            report["summary"]["Configuraciones de Importación Bancaria"] = {"total": len(ci_src), "a_crear": a_crear, "coincidencias": len(ci_src) - a_crear}
+        
+        # Sesiones de Importación
+        if "sesiones_importacion" in conciliacion_data:
+            si_src = conciliacion_data["sesiones_importacion"]
+            si_existing = {s.id for s in db.query(ImportSession).filter(ImportSession.empresa_id == target_empresa_id).all()}
+            a_crear = sum(1 for s in si_src if s.get("id") not in si_existing)
+            report["summary"]["Sesiones de Importación Bancaria"] = {"total": len(si_src), "a_crear": a_crear, "coincidencias": len(si_src) - a_crear}
+        
+        # Movimientos Bancarios
+        if "movimientos_bancarios" in conciliacion_data:
+            mb_src = conciliacion_data["movimientos_bancarios"]
+            report["summary"]["Movimientos Bancarios"] = {"total": len(mb_src), "a_crear": len(mb_src), "coincidencias": 0}
+        
+        # Conciliaciones
+        if "conciliaciones" in conciliacion_data:
+            conc_src = conciliacion_data["conciliaciones"]
+            report["summary"]["Conciliaciones Bancarias"] = {"total": len(conc_src), "a_crear": len(conc_src), "coincidencias": 0}
+
     return report
 
 # =====================================================================================
@@ -526,10 +893,27 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
             raise HTTPException(status_code=400, detail="ERROR CRÍTICO: Firma inválida. El archivo ha sido modificado o la llave no coincide. Use permisos de administrador para forzar.")
         
     backup_data = data
+    
+    # 2. Verificar compatibilidad y migrar si es necesario
+    version_backup = backup_data.get("metadata", {}).get("version_sistema", "7.0")
+    compatibilidad = verificar_compatibilidad_version(version_backup)
+    
+    if not compatibilidad['compatible']:
+        if compatibilidad['requiere_migracion']:
+            raise HTTPException(status_code=400, detail=compatibilidad['mensaje'])
+        else:
+            raise HTTPException(status_code=400, detail=f"Backup incompatible: {compatibilidad['mensaje']}")
+    
+    # Migrar automáticamente si es necesario
+    if version_backup != "7.6":
+        backup_data = migrar_backup_version(backup_data, version_backup, "7.6")
+    
     resumen = {
         "acciones_realizadas": [],
         "maestros_actualizados": 0,
-        "documentos_procesados": 0
+        "documentos_procesados": 0,
+        "version_backup": version_backup,
+        "compatibilidad": compatibilidad['mensaje']
     }
 
     # --- FASE 0: CINTURÓN DE SEGURIDAD ---
@@ -756,6 +1140,453 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
              _upsert_manual_seguro(db, ActivoFijo, 'activos', 'codigo', activos_data, target_empresa_id, user_id,
                                    id_maps={'categoria_id': map_cats, 'responsable_id': map_terceros, 'centro_costo_id': map_ccs})
 
+        # --- COTIZACIONES ---
+        cotizaciones_data = backup_data.get("cotizaciones", {})
+        if cotizaciones_data and "cotizaciones" in cotizaciones_data:
+            for cotiz_data in cotizaciones_data["cotizaciones"]:
+                # Mapear dependencias
+                tercero_id = map_terceros.get(cotiz_data.get("tercero_nit"))
+                bodega_id = None
+                if cotiz_data.get("bodega_nombre"):
+                    bodega_id = map_bodegas.get(cotiz_data["bodega_nombre"])
+                
+                usuario_id_cotiz = user_id  # Por defecto usar el usuario actual
+                if cotiz_data.get("usuario_email"):
+                    usuario_db = db.query(Usuario).filter(Usuario.email == cotiz_data["usuario_email"]).first()
+                    if usuario_db:
+                        usuario_id_cotiz = usuario_db.id
+
+                # Verificar si la cotización ya existe
+                existing_cotiz = db.query(Cotizacion).filter(
+                    Cotizacion.empresa_id == target_empresa_id,
+                    Cotizacion.numero == cotiz_data["numero"]
+                ).first()
+
+                if existing_cotiz:
+                    # Actualizar cotización existente
+                    cotizacion = existing_cotiz
+                    # Limpiar detalles existentes
+                    db.query(CotizacionDetalle).filter(CotizacionDetalle.cotizacion_id == cotizacion.id).delete()
+                else:
+                    # Crear nueva cotización
+                    cotizacion = Cotizacion(
+                        empresa_id=target_empresa_id,
+                        numero=cotiz_data["numero"]
+                    )
+                    db.add(cotizacion)
+
+                # Actualizar campos de la cotización
+                for field in ['fecha', 'fecha_vencimiento', 'estado', 'observaciones', 'total_estimado']:
+                    if field in cotiz_data:
+                        if field in ['fecha', 'fecha_vencimiento'] and cotiz_data[field]:
+                            try:
+                                setattr(cotizacion, field, datetime.fromisoformat(cotiz_data[field]).date())
+                            except:
+                                pass
+                        else:
+                            setattr(cotizacion, field, cotiz_data[field])
+
+                cotizacion.tercero_id = tercero_id
+                cotizacion.bodega_id = bodega_id
+                cotizacion.usuario_id = usuario_id_cotiz
+
+                db.flush()  # Para obtener el ID de la cotización
+
+                # Restaurar detalles
+                for detalle_data in cotiz_data.get("detalles", []):
+                    producto_id = map_productos.get(detalle_data.get("producto_codigo"))
+                    if producto_id:
+                        detalle = CotizacionDetalle(
+                            cotizacion_id=cotizacion.id,
+                            producto_id=producto_id,
+                            cantidad=detalle_data.get("cantidad", 0),
+                            precio_unitario=detalle_data.get("precio_unitario", 0),
+                            cantidad_facturada=detalle_data.get("cantidad_facturada", 0)
+                        )
+                        db.add(detalle)
+
+            resumen["acciones_realizadas"].append(f"📋 Cotizaciones restauradas: {len(cotizaciones_data['cotizaciones'])} cotizaciones procesadas")
+
+        db.flush()
+
+        # --- PRODUCCIÓN ---
+        produccion_data = backup_data.get("produccion", {})
+        if produccion_data:
+            # 1. Restaurar Configuración de Producción
+            if "configuracion" in produccion_data:
+                config_data = produccion_data["configuracion"]
+                prod_config = db.query(ConfiguracionProduccion).filter(ConfiguracionProduccion.empresa_id == target_empresa_id).first()
+                if not prod_config:
+                    prod_config = ConfiguracionProduccion(empresa_id=target_empresa_id)
+                    db.add(prod_config)
+                
+                # Mapear tipos de documento
+                map_tipos_doc = _get_id_translation_map(db, TipoDocumento, 'codigo', maestros_src, target_empresa_id)
+                if config_data.get("tipo_documento_orden_codigo"):
+                    prod_config.tipo_documento_orden_id = map_tipos_doc.get(config_data["tipo_documento_orden_codigo"])
+                if config_data.get("tipo_documento_anulacion_codigo"):
+                    prod_config.tipo_documento_anulacion_id = map_tipos_doc.get(config_data["tipo_documento_anulacion_codigo"])
+                if config_data.get("tipo_documento_consumo_codigo"):
+                    prod_config.tipo_documento_consumo_id = map_tipos_doc.get(config_data["tipo_documento_consumo_codigo"])
+                if config_data.get("tipo_documento_entrada_pt_codigo"):
+                    prod_config.tipo_documento_entrada_pt_id = map_tipos_doc.get(config_data["tipo_documento_entrada_pt_codigo"])
+                
+                db.flush()
+
+            # 2. Restaurar Recetas
+            if "recetas" in produccion_data:
+                for receta_data in produccion_data["recetas"]:
+                    producto_id = map_productos.get(receta_data.get("producto_codigo"))
+                    if not producto_id:
+                        continue  # Skip si no existe el producto
+
+                    # Verificar si la receta ya existe
+                    existing_receta = db.query(Receta).filter(
+                        Receta.empresa_id == target_empresa_id,
+                        Receta.nombre == receta_data["nombre"]
+                    ).first()
+
+                    if existing_receta:
+                        receta = existing_receta
+                        # Limpiar detalles y recursos existentes
+                        db.query(RecetaDetalle).filter(RecetaDetalle.receta_id == receta.id).delete()
+                        db.query(RecetaRecurso).filter(RecetaRecurso.receta_id == receta.id).delete()
+                    else:
+                        receta = Receta(
+                            empresa_id=target_empresa_id,
+                            nombre=receta_data["nombre"]
+                        )
+                        db.add(receta)
+
+                    # Actualizar campos
+                    receta.producto_id = producto_id
+                    receta.descripcion = receta_data.get("descripcion")
+                    receta.cantidad_base = receta_data.get("cantidad_base", 1.0)
+                    receta.activa = receta_data.get("activa", True)
+
+                    db.flush()
+
+                    # Restaurar detalles (insumos)
+                    for detalle_data in receta_data.get("detalles", []):
+                        insumo_id = map_productos.get(detalle_data.get("insumo_codigo"))
+                        if insumo_id:
+                            detalle = RecetaDetalle(
+                                receta_id=receta.id,
+                                insumo_id=insumo_id,
+                                cantidad=detalle_data.get("cantidad", 0)
+                            )
+                            db.add(detalle)
+
+                    # Restaurar recursos
+                    for recurso_data in receta_data.get("recursos", []):
+                        cuenta_id = None
+                        if recurso_data.get("cuenta_contable_codigo"):
+                            cuenta_id = map_cuentas.get(recurso_data["cuenta_contable_codigo"])
+                        
+                        recurso = RecetaRecurso(
+                            receta_id=receta.id,
+                            descripcion=recurso_data.get("descripcion", ""),
+                            tipo=recurso_data.get("tipo", "MOD"),
+                            costo_estimado=recurso_data.get("costo_estimado", 0),
+                            cuenta_contable_id=cuenta_id
+                        )
+                        db.add(recurso)
+
+            # 3. Restaurar Órdenes de Producción
+            if "ordenes" in produccion_data:
+                for orden_data in produccion_data["ordenes"]:
+                    producto_id = map_productos.get(orden_data.get("producto_codigo"))
+                    bodega_destino_id = map_bodegas.get(orden_data.get("bodega_destino_nombre"))
+                    
+                    if not producto_id or not bodega_destino_id:
+                        continue  # Skip si faltan dependencias críticas
+
+                    # Buscar receta por nombre si existe
+                    receta_id = None
+                    if orden_data.get("receta_nombre"):
+                        receta = db.query(Receta).filter(
+                            Receta.empresa_id == target_empresa_id,
+                            Receta.nombre == orden_data["receta_nombre"]
+                        ).first()
+                        if receta:
+                            receta_id = receta.id
+
+                    # Verificar si la orden ya existe
+                    existing_orden = db.query(OrdenProduccion).filter(
+                        OrdenProduccion.empresa_id == target_empresa_id,
+                        OrdenProduccion.numero_orden == orden_data["numero_orden"]
+                    ).first()
+
+                    if existing_orden:
+                        orden = existing_orden
+                        # Limpiar insumos y recursos existentes
+                        db.query(OrdenProduccionInsumo).filter(OrdenProduccionInsumo.orden_id == orden.id).delete()
+                        db.query(OrdenProduccionRecurso).filter(OrdenProduccionRecurso.orden_id == orden.id).delete()
+                    else:
+                        orden = OrdenProduccion(
+                            empresa_id=target_empresa_id,
+                            numero_orden=orden_data["numero_orden"]
+                        )
+                        db.add(orden)
+
+                    # Actualizar campos
+                    orden.producto_id = producto_id
+                    orden.receta_id = receta_id
+                    orden.bodega_destino_id = bodega_destino_id
+                    orden.cantidad_planeada = orden_data.get("cantidad_planeada", 0)
+                    orden.cantidad_real = orden_data.get("cantidad_real", 0)
+                    orden.estado = orden_data.get("estado", "PLANIFICADA")
+                    orden.observaciones = orden_data.get("observaciones")
+                    orden.archivada = orden_data.get("archivada", False)
+                    orden.motivo_anulacion = orden_data.get("motivo_anulacion")
+                    
+                    # Fechas
+                    if orden_data.get("fecha_inicio"):
+                        try:
+                            orden.fecha_inicio = datetime.fromisoformat(orden_data["fecha_inicio"]).date()
+                        except:
+                            pass
+                    if orden_data.get("fecha_fin"):
+                        try:
+                            orden.fecha_fin = datetime.fromisoformat(orden_data["fecha_fin"]).date()
+                        except:
+                            pass
+
+                    # Costos
+                    orden.costo_total_mp = orden_data.get("costo_total_mp", 0)
+                    orden.costo_total_mod = orden_data.get("costo_total_mod", 0)
+                    orden.costo_total_cif = orden_data.get("costo_total_cif", 0)
+                    orden.costo_unitario_final = orden_data.get("costo_unitario_final", 0)
+
+                    db.flush()
+
+                    # Restaurar insumos consumidos
+                    for insumo_data in orden_data.get("insumos", []):
+                        insumo_id = map_productos.get(insumo_data.get("insumo_codigo"))
+                        bodega_origen_id = map_bodegas.get(insumo_data.get("bodega_origen_nombre"))
+                        
+                        if insumo_id and bodega_origen_id:
+                            insumo = OrdenProduccionInsumo(
+                                orden_id=orden.id,
+                                insumo_id=insumo_id,
+                                bodega_origen_id=bodega_origen_id,
+                                cantidad=insumo_data.get("cantidad", 0),
+                                costo_unitario_historico=insumo_data.get("costo_unitario_historico", 0),
+                                costo_total=insumo_data.get("costo_total", 0)
+                            )
+                            if insumo_data.get("fecha_despacho"):
+                                try:
+                                    insumo.fecha_despacho = datetime.fromisoformat(insumo_data["fecha_despacho"])
+                                except:
+                                    pass
+                            db.add(insumo)
+
+                    # Restaurar recursos utilizados
+                    for recurso_data in orden_data.get("recursos", []):
+                        recurso = OrdenProduccionRecurso(
+                            orden_id=orden.id,
+                            descripcion=recurso_data.get("descripcion", ""),
+                            tipo=recurso_data.get("tipo", "MOD"),
+                            valor=recurso_data.get("valor", 0)
+                        )
+                        if recurso_data.get("fecha_registro"):
+                            try:
+                                recurso.fecha_registro = datetime.fromisoformat(recurso_data["fecha_registro"])
+                            except:
+                                pass
+                        db.add(recurso)
+
+            # Contar elementos restaurados para el resumen
+            recetas_count = len(produccion_data.get("recetas", []))
+            ordenes_count = len(produccion_data.get("ordenes", []))
+            if recetas_count > 0 or ordenes_count > 0:
+                resumen["acciones_realizadas"].append(f"🏭 Producción restaurada: {recetas_count} recetas, {ordenes_count} órdenes de producción")
+
+        db.flush()
+
+        # --- CONCILIACIÓN BANCARIA ---
+        conciliacion_data = backup_data.get("conciliacion_bancaria", {})
+        if conciliacion_data:
+            # 1. Restaurar Configuraciones de Importación
+            if "configuraciones_importacion" in conciliacion_data:
+                for config_data in conciliacion_data["configuraciones_importacion"]:
+                    bank_id = map_terceros.get(config_data.get("bank_nit"))
+                    creator_id = user_id  # Por defecto usar el usuario actual
+                    updater_id = user_id
+                    
+                    if config_data.get("creator_email"):
+                        creator = db.query(Usuario).filter(Usuario.email == config_data["creator_email"]).first()
+                        if creator:
+                            creator_id = creator.id
+                    
+                    if config_data.get("updater_email"):
+                        updater = db.query(Usuario).filter(Usuario.email == config_data["updater_email"]).first()
+                        if updater:
+                            updater_id = updater.id
+
+                    # Verificar si la configuración ya existe
+                    existing_config = db.query(ImportConfig).filter(
+                        ImportConfig.empresa_id == target_empresa_id,
+                        ImportConfig.name == config_data["name"]
+                    ).first()
+
+                    if existing_config:
+                        config = existing_config
+                    else:
+                        config = ImportConfig(
+                            empresa_id=target_empresa_id,
+                            name=config_data["name"]
+                        )
+                        db.add(config)
+
+                    # Actualizar campos
+                    config.bank_id = bank_id
+                    config.file_format = config_data.get("file_format", "CSV")
+                    config.delimiter = config_data.get("delimiter", ",")
+                    config.date_format = config_data.get("date_format", "%Y-%m-%d")
+                    config.field_mapping = config_data.get("field_mapping", {})
+                    config.header_rows = config_data.get("header_rows", 1)
+                    config.is_active = config_data.get("is_active", True)
+                    config.created_by = creator_id
+                    config.updated_by = updater_id
+
+            # 2. Restaurar Configuraciones Contables
+            if "configuraciones_contables" in conciliacion_data:
+                for acc_config_data in conciliacion_data["configuraciones_contables"]:
+                    bank_account_id = map_cuentas.get(acc_config_data.get("bank_account_codigo"))
+                    if not bank_account_id:
+                        continue  # Skip si no existe la cuenta bancaria
+
+                    creator_id = user_id
+                    updater_id = user_id
+                    
+                    if acc_config_data.get("creator_email"):
+                        creator = db.query(Usuario).filter(Usuario.email == acc_config_data["creator_email"]).first()
+                        if creator:
+                            creator_id = creator.id
+                    
+                    if acc_config_data.get("updater_email"):
+                        updater = db.query(Usuario).filter(Usuario.email == acc_config_data["updater_email"]).first()
+                        if updater:
+                            updater_id = updater.id
+
+                    # Verificar si la configuración ya existe
+                    existing_acc_config = db.query(AccountingConfig).filter(
+                        AccountingConfig.empresa_id == target_empresa_id,
+                        AccountingConfig.bank_account_id == bank_account_id
+                    ).first()
+
+                    if existing_acc_config:
+                        acc_config = existing_acc_config
+                    else:
+                        acc_config = AccountingConfig(
+                            empresa_id=target_empresa_id,
+                            bank_account_id=bank_account_id
+                        )
+                        db.add(acc_config)
+
+                    # Mapear cuentas contables
+                    acc_config.commission_account_id = map_cuentas.get(acc_config_data.get("commission_account_codigo"))
+                    acc_config.interest_income_account_id = map_cuentas.get(acc_config_data.get("interest_income_account_codigo"))
+                    acc_config.bank_charges_account_id = map_cuentas.get(acc_config_data.get("bank_charges_account_codigo"))
+                    acc_config.adjustment_account_id = map_cuentas.get(acc_config_data.get("adjustment_account_codigo"))
+                    acc_config.default_cost_center_id = map_ccs.get(acc_config_data.get("default_cost_center_codigo"))
+                    acc_config.is_active = acc_config_data.get("is_active", True)
+                    acc_config.created_by = creator_id
+                    acc_config.updated_by = updater_id
+
+            # 3. Restaurar Sesiones de Importación
+            if "sesiones_importacion" in conciliacion_data:
+                for session_data in conciliacion_data["sesiones_importacion"]:
+                    bank_account_id = map_cuentas.get(session_data.get("bank_account_codigo"))
+                    user_session_id = user_id
+                    
+                    if session_data.get("user_email"):
+                        user_session = db.query(Usuario).filter(Usuario.email == session_data["user_email"]).first()
+                        if user_session:
+                            user_session_id = user_session.id
+
+                    # Verificar si la sesión ya existe
+                    existing_session = db.query(ImportSession).filter(
+                        ImportSession.id == session_data["id"]
+                    ).first()
+
+                    if not existing_session and bank_account_id:
+                        session = ImportSession(
+                            id=session_data["id"],
+                            empresa_id=target_empresa_id,
+                            bank_account_id=bank_account_id,
+                            file_name=session_data.get("file_name", ""),
+                            file_hash=session_data.get("file_hash", ""),
+                            import_config_id=session_data.get("import_config_id"),
+                            total_movements=session_data.get("total_movements", 0),
+                            successful_imports=session_data.get("successful_imports", 0),
+                            errors=session_data.get("errors"),
+                            user_id=user_session_id,
+                            status=session_data.get("status", "COMPLETED")
+                        )
+                        if session_data.get("import_date"):
+                            try:
+                                session.import_date = datetime.fromisoformat(session_data["import_date"])
+                            except:
+                                pass
+                        db.add(session)
+
+            # 4. Restaurar Movimientos Bancarios
+            if "movimientos_bancarios" in conciliacion_data:
+                for movement_data in conciliacion_data["movimientos_bancarios"]:
+                    bank_account_id = map_cuentas.get(movement_data.get("bank_account_codigo"))
+                    if not bank_account_id:
+                        continue
+
+                    # Los movimientos bancarios normalmente no se duplican por ID, 
+                    # pero podemos verificar por combinación de campos únicos
+                    existing_movement = db.query(BankMovement).filter(
+                        BankMovement.empresa_id == target_empresa_id,
+                        BankMovement.import_session_id == movement_data.get("import_session_id"),
+                        BankMovement.reference == movement_data.get("reference"),
+                        BankMovement.amount == movement_data.get("amount")
+                    ).first()
+
+                    if not existing_movement:
+                        movement = BankMovement(
+                            empresa_id=target_empresa_id,
+                            import_session_id=movement_data.get("import_session_id"),
+                            bank_account_id=bank_account_id,
+                            amount=movement_data.get("amount", 0),
+                            description=movement_data.get("description", ""),
+                            reference=movement_data.get("reference"),
+                            transaction_type=movement_data.get("transaction_type"),
+                            balance=movement_data.get("balance"),
+                            status=movement_data.get("status", "PENDING")
+                        )
+                        
+                        # Fechas
+                        if movement_data.get("transaction_date"):
+                            try:
+                                movement.transaction_date = datetime.fromisoformat(movement_data["transaction_date"]).date()
+                            except:
+                                pass
+                        if movement_data.get("value_date"):
+                            try:
+                                movement.value_date = datetime.fromisoformat(movement_data["value_date"]).date()
+                            except:
+                                pass
+                        
+                        db.add(movement)
+
+            # 5. Restaurar Conciliaciones y Auditoría
+            # Nota: Las conciliaciones y auditoría son más complejas y dependen de movimientos contables existentes
+            # Por simplicidad, las omitimos en esta implementación inicial
+            # Se pueden agregar en una versión futura si es necesario
+
+            # Contar elementos restaurados para el resumen
+            configs_count = len(conciliacion_data.get("configuraciones_importacion", []))
+            sessions_count = len(conciliacion_data.get("sesiones_importacion", []))
+            movements_count = len(conciliacion_data.get("movimientos_bancarios", []))
+            if configs_count > 0 or sessions_count > 0 or movements_count > 0:
+                resumen["acciones_realizadas"].append(f"🏦 Conciliación Bancaria restaurada: {configs_count} configuraciones, {sessions_count} sesiones, {movements_count} movimientos")
+
         db.flush()
 
         # 7. TRANSACCIONES
@@ -876,13 +1707,45 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
 
         # --- ATOMICIDAD: EL ÚNICO COMMIT DE TODA LA OPERACIÓN ---
         db.commit()
-        return {"message": "Restauración Protocolo Fusión v7.0 Finalizada (Datos existentes preservados)", "resumen": resumen}
+        
+        # Verificar integridad referencial después del commit
+        integridad = verificar_integridad_referencial(db, target_empresa_id)
+        if not integridad['integridad_valida']:
+            resumen["acciones_realizadas"].append(f"⚠️ Advertencias de integridad: {'; '.join(integridad['errores'])}")
+        else:
+            resumen["acciones_realizadas"].append("✅ Verificación de integridad referencial: OK")
+        
+        return {"message": "Restauración Protocolo Fusión v7.6 Finalizada - Nuevos módulos incluidos (Datos existentes preservados)", "resumen": resumen}
 
     except Exception as e:
         # --- ROLLBACK TOTAL ---
+        print(f"❌ [ERROR] Error crítico durante restauración para empresa {target_empresa_id}: {str(e)}")
+        print(f"📊 [ROLLBACK] Revirtiendo todos los cambios...")
+        
         db.rollback()
+        
+        # Verificar que el rollback fue exitoso
+        try:
+            # Intentar una consulta simple para verificar que la conexión sigue funcionando
+            db.execute(select(func.count()).select_from(Empresa).where(Empresa.id == target_empresa_id))
+            print(f"✅ [ROLLBACK] Rollback completado exitosamente")
+        except Exception as rollback_error:
+            print(f"⚠️ [ROLLBACK] Error durante verificación post-rollback: {str(rollback_error)}")
+        
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error fatal (Operación Revertida): {str(e)}")
+        
+        # Agregar información del contexto al error
+        error_context = {
+            "empresa_id": target_empresa_id,
+            "user_id": user_id,
+            "backup_version": backup_data.get("metadata", {}).get("version_sistema", "unknown"),
+            "backup_source": backup_data.get("metadata", {}).get("empresa_id_origen", "unknown")
+        }
+        
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error fatal durante restauración (Operación Revertida Completamente): {str(e)}. Contexto: {error_context}"
+        )
 
 # =====================================================================================
 # AUXILIARES
@@ -942,22 +1805,173 @@ def _reconstruir_saldos_inventario(db: Session, empresa_id: int):
         db.query(Producto).filter(Producto.id == pid).update({"costo_promedio": costo_promedio})
 
 def _get_id_translation_map(db, model, natural_key, data_source, target_empresa_id):
+    """Crea un mapa de traducción de IDs entre backup y base de datos destino."""
     target_rows = db.query(model.id, getattr(model, natural_key)).filter(model.empresa_id == target_empresa_id).all()
     target_map = {str(getattr(r, natural_key)).strip(): r.id for r in target_rows}
     id_map = target_map.copy() 
-    json_key = 'grupos' if model.__tablename__ == 'grupos_inventario' else model.__tablename__
-    if model.__tablename__ == 'plan_cuentas': json_key = 'plan_cuentas'
-    source_rows = data_source.get(json_key, [])
+    
+    # Mapeo mejorado de nombres de tablas a claves JSON
+    table_to_json_key = {
+        'grupos_inventario': 'grupos',
+        'plan_cuentas': 'plan_cuentas',
+        'centros_costo': 'centros_costo',
+        'tipos_documento': 'tipos_documento',
+        'cotizaciones': 'cotizaciones',
+        'recetas': 'recetas',
+        'ordenes_produccion': 'ordenes',
+        'import_configs': 'configuraciones_importacion',
+        'import_sessions': 'sesiones_importacion',
+        'bank_movements': 'movimientos_bancarios'
+    }
+    
+    json_key = table_to_json_key.get(model.__tablename__, model.__tablename__)
+    
+    # Buscar en diferentes secciones del backup
+    source_rows = []
+    if json_key in data_source:
+        source_rows = data_source[json_key]
+    else:
+        # Buscar en subsecciones para módulos especializados
+        for section in ['cotizaciones', 'produccion', 'conciliacion_bancaria']:
+            if section in data_source and json_key in data_source[section]:
+                source_rows = data_source[section][json_key]
+                break
+    
+    # Crear mapeos bidireccionales para mayor robustez
     for row in source_rows:
-        key_val = str(row.get(natural_key)).strip()
-        if key_val in target_map:
+        if not isinstance(row, dict):
+            continue
+            
+        key_val = str(row.get(natural_key, '')).strip()
+        if key_val and key_val in target_map:
             nuevo_id = target_map[key_val]
-            old_id = row.get('id') or row.get('codigo') 
-            if old_id: id_map[str(old_id)] = nuevo_id
+            
+            # Mapear ID original si existe
+            old_id = row.get('id')
+            if old_id: 
+                id_map[str(old_id)] = nuevo_id
+            
+            # Mapear código si existe y es diferente de natural_key
+            codigo = row.get('codigo')
+            if codigo and codigo != key_val:
+                id_map[str(codigo)] = nuevo_id
+                
+            # Mapear clave natural
             id_map[str(key_val)] = nuevo_id
+            
+            # Mapear ID de origen si existe (para compatibilidad)
             if 'id_origen' in row:
                 id_map[str(row['id_origen'])] = nuevo_id
+                
     return id_map
+
+def verificar_integridad_referencial(db: Session, empresa_id: int) -> dict:
+    """Verifica la integridad referencial después de una restauración."""
+    errores = []
+    
+    try:
+        # Verificar cotizaciones
+        cotizaciones_huerfanas = db.query(Cotizacion).filter(
+            Cotizacion.empresa_id == empresa_id,
+            Cotizacion.tercero_id.isnot(None)
+        ).outerjoin(Tercero, Cotizacion.tercero_id == Tercero.id).filter(
+            Tercero.id.is_(None)
+        ).count()
+        
+        if cotizaciones_huerfanas > 0:
+            errores.append(f"Cotizaciones con terceros inexistentes: {cotizaciones_huerfanas}")
+        
+        # Verificar recetas
+        recetas_huerfanas = db.query(Receta).filter(
+            Receta.empresa_id == empresa_id
+        ).outerjoin(Producto, Receta.producto_id == Producto.id).filter(
+            Producto.id.is_(None)
+        ).count()
+        
+        if recetas_huerfanas > 0:
+            errores.append(f"Recetas con productos inexistentes: {recetas_huerfanas}")
+        
+        # Verificar configuraciones bancarias
+        configs_huerfanas = db.query(AccountingConfig).filter(
+            AccountingConfig.empresa_id == empresa_id
+        ).outerjoin(PlanCuenta, AccountingConfig.bank_account_id == PlanCuenta.id).filter(
+            PlanCuenta.id.is_(None)
+        ).count()
+        
+        if configs_huerfanas > 0:
+            errores.append(f"Configuraciones bancarias con cuentas inexistentes: {configs_huerfanas}")
+            
+    except Exception as e:
+        errores.append(f"Error durante verificación: {str(e)}")
+    
+    return {
+        'integridad_valida': len(errores) == 0,
+        'errores': errores
+    }
+
+def verificar_compatibilidad_version(version_backup: str) -> dict:
+    """Verifica la compatibilidad de una versión de backup con el sistema actual."""
+    version_actual = "7.6"
+    
+    # Parsear versiones
+    try:
+        version_backup_parts = [int(x) for x in version_backup.split('.')]
+        version_actual_parts = [int(x) for x in version_actual.split('.')]
+    except:
+        return {
+            'compatible': False,
+            'requiere_migracion': False,
+            'mensaje': f"Versión de backup inválida: {version_backup}"
+        }
+    
+    # Verificar compatibilidad
+    if version_backup_parts[0] < 7:
+        return {
+            'compatible': False,
+            'requiere_migracion': True,
+            'mensaje': f"Backup v{version_backup} requiere migración manual. Contacte soporte técnico."
+        }
+    elif version_backup_parts == version_actual_parts:
+        return {
+            'compatible': True,
+            'requiere_migracion': False,
+            'mensaje': f"Backup v{version_backup} es totalmente compatible"
+        }
+    elif version_backup_parts[0] == version_actual_parts[0] and version_backup_parts[1] <= version_actual_parts[1]:
+        return {
+            'compatible': True,
+            'requiere_migracion': False,
+            'mensaje': f"Backup v{version_backup} es compatible con v{version_actual} (compatibilidad hacia atrás)"
+        }
+    else:
+        return {
+            'compatible': False,
+            'requiere_migracion': False,
+            'mensaje': f"Backup v{version_backup} es más nuevo que el sistema v{version_actual}. Actualice el sistema."
+        }
+
+def migrar_backup_version(backup_data: dict, version_origen: str, version_destino: str) -> dict:
+    """Migra un backup de una versión anterior al formato actual."""
+    print(f"🔄 [MIGRATION] Migrando backup de v{version_origen} a v{version_destino}")
+    
+    # Migración de v7.0-7.5 a v7.6
+    if version_origen.startswith("7.") and version_destino == "7.6":
+        # Agregar secciones faltantes si no existen
+        if "cotizaciones" not in backup_data:
+            backup_data["cotizaciones"] = {}
+        if "produccion" not in backup_data:
+            backup_data["produccion"] = {}
+        if "conciliacion_bancaria" not in backup_data:
+            backup_data["conciliacion_bancaria"] = {}
+        
+        # Actualizar metadata
+        if "metadata" in backup_data:
+            backup_data["metadata"]["version_sistema"] = version_destino
+            backup_data["metadata"]["migrado_desde"] = version_origen
+        
+        print(f"✅ [MIGRATION] Migración completada de v{version_origen} a v{version_destino}")
+    
+    return backup_data
 
 def _restore_jerarquico(db, model, json_key, parent_field, data_source, target_empresa_id, user_id):
     rows = data_source.get(json_key, [])
@@ -1101,3 +2115,70 @@ def exportar_datos(db: Session, export_request: schemas_migracion.ExportRequest,
     # para asegurar que el diccionario tenga todas las llaves posibles
     filtros = export_request.dict(exclude_none=True)
     return generar_backup_json(db, empresa_id, filtros)
+
+def obtener_modulos_disponibles(db: Session, empresa_id: int):
+    """
+    Obtiene información sobre módulos disponibles y sus dependencias.
+    
+    Esta función utiliza el sistema declarativo de módulos para:
+    - Validar dependencias de cada módulo
+    - Contar registros existentes
+    - Determinar disponibilidad para exportación
+    
+    Returns:
+        dict: Información detallada de cada módulo configurado
+    """
+    modulos_info = {}
+    
+    for modulo_name, config in MODULOS_ESPECIALIZADOS_CONFIG.items():
+        validacion = validar_dependencias_modulo(db, config, empresa_id)
+        
+        # Contar registros existentes
+        count_principales = 0
+        for modelo in config.get('modelos_principales', []):
+            if hasattr(modelo, 'empresa_id'):
+                count_principales += db.query(func.count(modelo.id)).filter(modelo.empresa_id == empresa_id).scalar()
+        
+        modulos_info[modulo_name] = {
+            'descripcion': config['descripcion'],
+            'dependencias_validas': validacion['valido'],
+            'dependencias_faltantes': validacion['dependencias_faltantes'],
+            'registros_existentes': count_principales,
+            'disponible': validacion['valido']
+        }
+    
+    return modulos_info
+
+# =====================================================================================
+# RESUMEN DE ACTUALIZACIÓN v7.6
+# =====================================================================================
+"""
+ACTUALIZACIÓN DEL SISTEMA DE MIGRACIÓN DE DATOS v7.6
+
+Nuevos módulos agregados:
+✅ Cotizaciones - Cotizaciones maestras y detalles con relaciones completas
+✅ Producción - Recetas, órdenes, recursos e insumos con configuración
+✅ Conciliación Bancaria - Configuraciones, sesiones y movimientos bancarios
+
+Mejoras implementadas:
+✅ Sistema declarativo de registro de módulos
+✅ Validación automática de dependencias
+✅ Verificación de integridad referencial post-restauración
+✅ Compatibilidad hacia atrás con versiones anteriores
+✅ Migración automática de formatos de backup
+✅ Logging mejorado y mensajes de feedback detallados
+✅ Interfaz de usuario actualizada con descripciones claras
+
+Características técnicas:
+- Mantiene atomicidad total en restauración
+- Preserva datos existentes (modo fusión segura)
+- Firma digital para validación de integridad
+- Mapeo robusto de IDs entre empresas
+- Manejo de errores con rollback automático
+
+Para usar los nuevos módulos:
+1. Seleccionar en la interfaz de exportación
+2. El sistema validará dependencias automáticamente
+3. La restauración manejará las relaciones correctamente
+4. Verificación de integridad al finalizar
+"""

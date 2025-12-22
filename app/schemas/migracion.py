@@ -24,6 +24,10 @@ class ExportPaquetesModulosEspecializados(BaseModel):
     propiedad_horizontal: bool = False
     activos_fijos: bool = False
     favoritos: bool = False # Favoritos de usuario y menús
+    # --- NUEVOS MÓDULOS AGREGADOS ---
+    cotizaciones: bool = False # Cotizaciones y sus detalles
+    produccion: bool = False # Recetas, órdenes de producción, recursos e insumos
+    conciliacion_bancaria: bool = False # Configuraciones, sesiones, movimientos y conciliaciones bancarias
 
 class ExportPaquetes(BaseModel):
     """ Define qué paquetes de datos se incluirán en la exportación. """

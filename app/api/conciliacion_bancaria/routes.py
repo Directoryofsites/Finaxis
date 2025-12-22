@@ -889,6 +889,46 @@ async def get_accounting_configuration(
         raise HTTPException(status_code=500, detail=f"Error obteniendo configuración: {str(e)}")
 
 
+@router.get("/test-bank-accounts")
+async def test_bank_accounts(
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Endpoint de prueba para verificar cuentas bancarias"""
+    try:
+        from ...models.plan_cuenta import PlanCuenta
+        
+        print(f"[TEST] Buscando cuentas para empresa: {current_user.empresa_id}")
+        
+        # Buscar todas las cuentas que empiecen con 111
+        bank_accounts = db.query(PlanCuenta).filter(
+            PlanCuenta.codigo.like('111%'),
+            PlanCuenta.empresa_id == current_user.empresa_id
+        ).all()
+        
+        print(f"[TEST] Cuentas encontradas: {len(bank_accounts)}")
+        
+        result = []
+        for acc in bank_accounts:
+            print(f"[TEST] - {acc.codigo}: {acc.nombre} (ID: {acc.id})")
+            result.append({
+                "id": acc.id,
+                "codigo": acc.codigo,
+                "nombre": acc.nombre,
+                "permite_movimiento": acc.permite_movimiento
+            })
+        
+        return {
+            "empresa_id": current_user.empresa_id,
+            "total_cuentas": len(result),
+            "cuentas": result
+        }
+        
+    except Exception as e:
+        print(f"[TEST] Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
 @router.put("/accounting-config/{bank_account_id}")
 async def update_accounting_configuration(
     bank_account_id: int,
@@ -897,8 +937,53 @@ async def update_accounting_configuration(
     db: Session = Depends(get_db)
 ):
     """Actualizar o crear configuración contable para una cuenta bancaria"""
+    print(f"[ACCOUNTING CONFIG] ===== INICIO ENDPOINT =====")
+    print(f"[ACCOUNTING CONFIG] bank_account_id recibido: {bank_account_id}")
+    print(f"[ACCOUNTING CONFIG] config_data recibido: {config_data}")
+    print(f"[ACCOUNTING CONFIG] empresa_id: {current_user.empresa_id}")
+    
     try:
         from ...models.conciliacion_bancaria import AccountingConfig
+        from ...models.plan_cuenta import PlanCuenta
+        
+        # SOLUCIÓN: Buscar la cuenta bancaria real por código en lugar de asumir el ID
+        print(f"[ACCOUNTING CONFIG] Buscando cuenta bancaria con ID: {bank_account_id}")
+        
+        # Primero, intentar encontrar la cuenta por ID
+        bank_account = db.query(PlanCuenta).filter(
+            PlanCuenta.id == bank_account_id,
+            PlanCuenta.empresa_id == current_user.empresa_id
+        ).first()
+        
+        print(f"[ACCOUNTING CONFIG] Cuenta encontrada por ID: {bank_account is not None}")
+        
+        # Si no se encuentra por ID, buscar por código común de cuentas bancarias
+        if not bank_account:
+            print(f"[ACCOUNTING CONFIG] Buscando cuentas bancarias con código 111% para empresa {current_user.empresa_id}")
+            
+            # Buscar cuentas que empiecen con 111 (cuentas bancarias típicas)
+            bank_accounts = db.query(PlanCuenta).filter(
+                PlanCuenta.codigo.like('111%'),
+                PlanCuenta.empresa_id == current_user.empresa_id,
+                PlanCuenta.permite_movimiento == True
+            ).all()
+            
+            print(f"[ACCOUNTING CONFIG] Cuentas bancarias encontradas: {len(bank_accounts)}")
+            for acc in bank_accounts:
+                print(f"[ACCOUNTING CONFIG] - {acc.codigo}: {acc.nombre} (ID: {acc.id})")
+            
+            if bank_accounts:
+                # Tomar la primera cuenta bancaria encontrada
+                bank_account = bank_accounts[0]
+                # Actualizar el bank_account_id para usar el ID correcto
+                bank_account_id = bank_account.id
+                print(f"[ACCOUNTING CONFIG] Usando cuenta bancaria: {bank_account.codigo} (ID: {bank_account.id})")
+            else:
+                print(f"[ACCOUNTING CONFIG] ERROR: No se encontraron cuentas bancarias")
+                raise HTTPException(
+                    status_code=404, 
+                    detail="No se encontró ninguna cuenta bancaria válida. Asegúrate de tener cuentas que empiecen con '111' en tu plan de cuentas."
+                )
         
         # Buscar configuración existente
         config = db.query(AccountingConfig).filter(
@@ -937,6 +1022,8 @@ async def update_accounting_configuration(
         return {
             "id": config.id,
             "bank_account_id": config.bank_account_id,
+            "bank_account_code": bank_account.codigo,
+            "bank_account_name": bank_account.nombre,
             "commission_account_id": config.commission_account_id,
             "interest_income_account_id": config.interest_income_account_id,
             "bank_charges_account_id": config.bank_charges_account_id,

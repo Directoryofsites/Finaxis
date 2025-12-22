@@ -28,6 +28,12 @@ import BreadcrumbNavigation from './components/BreadcrumbNavigation';
 import ContextualHelp from './components/ContextualHelp';
 import NotificationCenter from './components/NotificationCenter';
 import ConnectionStatus from './components/ConnectionStatus';
+import TestForm from './components/TestForm';
+import EventMonitor from './components/EventMonitor';
+import InputDiagnostic from './components/InputDiagnostic';
+
+// Importar estilos específicos
+import './conciliacion-bancaria.css';
 
 export default function ConciliacionBancariaPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -37,12 +43,21 @@ export default function ConciliacionBancariaPage() {
 
   // Leer parámetro tab de la URL al cargar la página
   useEffect(() => {
+    console.log('🚀 [PAGE LOAD] Cargando página de conciliación bancaria...');
+    console.log('🚀 [PAGE LOAD] URL:', window.location.href);
+    console.log('🚀 [PAGE LOAD] User Agent:', navigator.userAgent);
+    
     const tabParam = searchParams.get('tab');
+    console.log('🚀 [PAGE LOAD] Tab parameter:', tabParam);
+    
     if (tabParam) {
       // Validar que el tab existe
-      const validTabs = ['dashboard', 'import', 'manual', 'adjustments', 'reports', 'config'];
+      const validTabs = ['dashboard', 'import', 'manual', 'adjustments', 'reports', 'config', 'test'];
       if (validTabs.includes(tabParam)) {
+        console.log('🚀 [PAGE LOAD] Setting active tab to:', tabParam);
         setActiveTab(tabParam);
+      } else {
+        console.log('❌ [PAGE LOAD] Invalid tab parameter:', tabParam);
       }
     }
   }, [searchParams]);
@@ -164,7 +179,7 @@ export default function ConciliacionBancariaPage() {
 
       {/* Navegación principal */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="dashboard" className="flex items-center space-x-2">
             <BarChart3 className="h-4 w-4" />
             <span>Dashboard</span>
@@ -188,6 +203,10 @@ export default function ConciliacionBancariaPage() {
           <TabsTrigger value="config" className="flex items-center space-x-2">
             <Settings className="h-4 w-4" />
             <span>Configuración</span>
+          </TabsTrigger>
+          <TabsTrigger value="test" className="flex items-center space-x-2">
+            <AlertCircle className="h-4 w-4" />
+            <span>Test</span>
           </TabsTrigger>
         </TabsList>
 
@@ -255,12 +274,26 @@ export default function ConciliacionBancariaPage() {
             )}
           </div>
         </TabsContent>
+
+        {/* Test */}
+        <TabsContent value="test" className="space-y-6">
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-2xl font-bold mb-4">Formulario de Prueba</h2>
+            <p className="text-gray-600 mb-6">
+              Use este formulario para probar que los inputs funcionen correctamente.
+              Si puede escribir normalmente aquí, el problema está en los otros componentes.
+            </p>
+            <TestForm />
+          </div>
+        </TabsContent>
       </Tabs>
       
       {/* Componentes flotantes */}
       <ContextualHelp activeTab={activeTab} />
       <NotificationCenter />
       <ConnectionStatus />
+      <EventMonitor />
+      <InputDiagnostic />
     </div>
   );
 }

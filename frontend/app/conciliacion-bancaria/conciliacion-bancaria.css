@@ -1,0 +1,164 @@
+/* Estilos específicos para conciliación bancaria */
+
+/* Asegurar que los dropdowns funcionen correctamente */
+.conciliacion-select {
+  position: relative;
+  z-index: 10;
+}
+
+/* Prevenir problemas de re-renderizado en inputs */
+.conciliacion-input,
+.conciliacion-select select {
+  will-change: auto;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Asegurar que los inputs mantengan el foco */
+.conciliacion-input:focus,
+.conciliacion-select select:focus {
+  position: relative;
+  z-index: 20;
+}
+
+.conciliacion-select select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 16px;
+  padding-right: 32px;
+}
+
+.conciliacion-select select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Mejorar la apariencia de los inputs */
+.conciliacion-input {
+  transition: all 0.2s ease-in-out;
+}
+
+.conciliacion-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Estilos para las cards */
+.conciliacion-card {
+  transition: all 0.2s ease-in-out;
+}
+
+.conciliacion-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos para botones */
+.conciliacion-button {
+  transition: all 0.2s ease-in-out;
+}
+
+.conciliacion-button:hover {
+  transform: translateY(-1px);
+}
+
+.conciliacion-button:active {
+  transform: translateY(0);
+}
+
+/* Estilos para alertas */
+.conciliacion-alert {
+  border-radius: 8px;
+  border-left-width: 4px;
+}
+
+.conciliacion-alert.success {
+  background-color: #f0fdf4;
+  border-left-color: #22c55e;
+  color: #166534;
+}
+
+.conciliacion-alert.error {
+  background-color: #fef2f2;
+  border-left-color: #ef4444;
+  color: #991b1b;
+}
+
+.conciliacion-alert.warning {
+  background-color: #fffbeb;
+  border-left-color: #f59e0b;
+  color: #92400e;
+}
+
+/* Estilos para formularios */
+.conciliacion-form-group {
+  margin-bottom: 1rem;
+}
+
+.conciliacion-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .conciliacion-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .conciliacion-form-row {
+    flex-direction: column;
+  }
+  
+  .conciliacion-button-group {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.conciliacion-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Loading states */
+.conciliacion-loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.conciliacion-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f4f6;
+  border-radius: 50%;
+  border-top-color: #3b82f6;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
