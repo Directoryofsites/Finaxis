@@ -141,9 +141,16 @@ export default function ImportConfigManager() {
       const method = isCreating ? 'post' : 'put';
 
       console.log(`💾 [SAVE] URL: ${url}, Método: ${method}`);
-      console.log(`💾 [SAVE] Payload:`, JSON.stringify(formData, null, 2));
+      // [PARCHE] Transformar field_mappings a field_mapping para el backend
+      const payload = { ...formData };
+      if (payload.field_mappings) {
+        payload.field_mapping = payload.field_mappings;
+        delete payload.field_mappings;
+      }
 
-      const response = await apiService[method](url, formData);
+      console.log(`💾 [SAVE] Payload:`, JSON.stringify(payload, null, 2));
+
+      const response = await apiService[method](url, payload);
 
       console.log(`✅ [SAVE] Guardado exitoso:`, response.data);
 
