@@ -5,11 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  BarChart3, 
-  TrendingUp, 
-  Clock, 
-  CheckCircle, 
+import {
+  BarChart3,
+  TrendingUp,
+  Clock,
+  CheckCircle,
   AlertCircle,
   Calendar,
   RefreshCw,
@@ -20,12 +20,12 @@ import {
   Upload
 } from 'lucide-react';
 
-export default function ReconciliationDashboard({ 
-  selectedBankAccount, 
-  onBankAccountChange, 
+export default function ReconciliationDashboard({
+  selectedBankAccount,
+  onBankAccountChange,
   reconciliationSummary,
   onSummaryUpdate,
-  onNavigate 
+  onNavigate
 }) {
   const [bankAccounts, setBankAccounts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -34,18 +34,27 @@ export default function ReconciliationDashboard({
   // Cargar cuentas bancarias disponibles
   const loadBankAccounts = async () => {
     try {
-      // Aquí deberías hacer la llamada real a tu API para obtener las cuentas bancarias
-      // Por ahora, simulamos algunas cuentas
-      const mockAccounts = [
-        { id: 1, codigo: '1110501', nombre: 'Banco Nacional - Cuenta Corriente', saldo: 15000000 },
-        { id: 2, codigo: '1110502', nombre: 'Banco Popular - Cuenta Ahorros', saldo: 8500000 },
-        { id: 3, codigo: '1110503', nombre: 'Bancolombia - Cuenta Corriente', saldo: 22000000 }
-      ];
-      setBankAccounts(mockAccounts);
-      
-      // Seleccionar la primera cuenta por defecto si no hay ninguna seleccionada
-      if (!selectedBankAccount && mockAccounts.length > 0) {
-        onBankAccountChange(mockAccounts[0]);
+      // Importamos apiService si no está importado, pero asumimos que ya está o lo añadiremos
+      // NOTA: Asegurarse de importar apiService arriba si no existe. 
+      // Vemos que no está importado en el archivo original, así que usaré fetch con token o reemplazaré todo si es necesario.
+      // Mejor: usar fetch directo con el token del localStorage para ser consistente con AuthContext si apiService no está accesible, 
+      // PERO ya cambiamos ImportConfigManager a apiService. Deberíamos ser consistentes.
+      // Sin embargo, para no romper imports, usaré apiService.get y aseguro de añadir el import si falta.
+
+      const response = await fetch('/api/conciliacion-bancaria/bank-accounts', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+
+      if (response.ok) {
+        const accounts = await response.json();
+        setBankAccounts(accounts);
+
+        // Seleccionar la primera cuenta por defecto si no hay ninguna seleccionada
+        if (!selectedBankAccount && accounts.length > 0) {
+          onBankAccountChange(accounts[0]);
+        }
       }
     } catch (error) {
       console.error('Error cargando cuentas bancarias:', error);
@@ -146,11 +155,10 @@ export default function ReconciliationDashboard({
             {bankAccounts.map((account) => (
               <div
                 key={account.id}
-                className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                  selectedBankAccount?.id === account.id
+                className={`border rounded-lg p-4 cursor-pointer transition-all ${selectedBankAccount?.id === account.id
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300'
-                }`}
+                  }`}
                 onClick={() => onBankAccountChange(account)}
               >
                 <div className="font-medium">{account.nombre}</div>
@@ -216,8 +224,8 @@ export default function ReconciliationDashboard({
                   <GitMerge className="h-8 w-8 text-purple-500" />
                   <div>
                     <div className="text-2xl font-bold text-purple-600">
-                      {(reconciliationSummary?.reconciliations?.automatic || 0) + 
-                       (reconciliationSummary?.reconciliations?.manual || 0)}
+                      {(reconciliationSummary?.reconciliations?.automatic || 0) +
+                        (reconciliationSummary?.reconciliations?.manual || 0)}
                     </div>
                     <div className="text-sm text-gray-600">Total Conciliaciones</div>
                   </div>
@@ -231,9 +239,9 @@ export default function ReconciliationDashboard({
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Acciones Rápidas</span>
-                <Button 
-                  onClick={onSummaryUpdate} 
-                  variant="outline" 
+                <Button
+                  onClick={onSummaryUpdate}
+                  variant="outline"
                   size="sm"
                   disabled={loading}
                 >
@@ -244,7 +252,7 @@ export default function ReconciliationDashboard({
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <Button 
+                <Button
                   variant="outline"
                   className="h-20 flex flex-col items-center justify-center"
                   onClick={() => onNavigate('import')}
@@ -253,7 +261,7 @@ export default function ReconciliationDashboard({
                   <span className="text-xs text-center">Importar Extracto</span>
                 </Button>
 
-                <Button 
+                <Button
                   onClick={runAutoReconciliation}
                   disabled={loading}
                   className="h-20 flex flex-col items-center justify-center"
@@ -266,7 +274,7 @@ export default function ReconciliationDashboard({
                   <span className="text-xs text-center">Conciliación Automática</span>
                 </Button>
 
-                <Button 
+                <Button
                   variant="outline"
                   className="h-20 flex flex-col items-center justify-center"
                   onClick={() => onNavigate('manual')}
@@ -275,7 +283,7 @@ export default function ReconciliationDashboard({
                   <span className="text-xs text-center">Conciliación Manual</span>
                 </Button>
 
-                <Button 
+                <Button
                   variant="outline"
                   className="h-20 flex flex-col items-center justify-center"
                   onClick={() => onNavigate('adjustments')}
@@ -284,7 +292,7 @@ export default function ReconciliationDashboard({
                   <span className="text-xs text-center">Ajustes Automáticos</span>
                 </Button>
 
-                <Button 
+                <Button
                   variant="outline"
                   className="h-20 flex flex-col items-center justify-center"
                   onClick={() => onNavigate('reports')}
@@ -293,7 +301,7 @@ export default function ReconciliationDashboard({
                   <span className="text-xs text-center">Ver Reportes</span>
                 </Button>
 
-                <Button 
+                <Button
                   variant="outline"
                   className="h-20 flex flex-col items-center justify-center"
                   onClick={() => onNavigate('config')}
@@ -328,8 +336,8 @@ export default function ReconciliationDashboard({
                       <Badge variant="outline">{reconciliationSummary.bank_movements.pending}</Badge>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-600 h-2 rounded-full" 
+                      <div
+                        className="bg-blue-600 h-2 rounded-full"
                         style={{ width: `${getReconciliationPercentage()}%` }}
                       ></div>
                     </div>
@@ -357,11 +365,11 @@ export default function ReconciliationDashboard({
                       <Badge variant="outline">{reconciliationSummary.accounting_movements.unreconciled}</Badge>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-green-600 h-2 rounded-full" 
-                        style={{ 
-                          width: `${reconciliationSummary.accounting_movements.total > 0 ? 
-                            Math.round((reconciliationSummary.accounting_movements.reconciled / reconciliationSummary.accounting_movements.total) * 100) : 0}%` 
+                      <div
+                        className="bg-green-600 h-2 rounded-full"
+                        style={{
+                          width: `${reconciliationSummary.accounting_movements.total > 0 ?
+                            Math.round((reconciliationSummary.accounting_movements.reconciled / reconciliationSummary.accounting_movements.total) * 100) : 0}%`
                         }}
                       ></div>
                     </div>
@@ -392,15 +400,14 @@ export default function ReconciliationDashboard({
                   {recentActivity.map((activity) => (
                     <div key={activity.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex items-center space-x-3">
-                        <div className={`w-2 h-2 rounded-full ${
-                          activity.reconciliation_type === 'AUTO' ? 'bg-blue-500' : 'bg-green-500'
-                        }`}></div>
+                        <div className={`w-2 h-2 rounded-full ${activity.reconciliation_type === 'AUTO' ? 'bg-blue-500' : 'bg-green-500'
+                          }`}></div>
                         <div>
                           <div className="font-medium">
                             {activity.bank_movement.description}
                           </div>
                           <div className="text-sm text-gray-600">
-                            {formatDateTime(activity.reconciliation_date)} • 
+                            {formatDateTime(activity.reconciliation_date)} •
                             {activity.reconciliation_type === 'AUTO' ? 'Automática' : 'Manual'}
                           </div>
                         </div>

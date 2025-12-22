@@ -22,6 +22,36 @@ from ...models.usuario import Usuario
 
 router = APIRouter(prefix="/conciliacion-bancaria", tags=["Conciliación Bancaria"])
 
+# ==================== CUENTAS BANCARIAS ====================
+
+@router.get("/bank-accounts")
+async def get_bank_accounts(
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Obtener listado de cuentas bancarias disponibles"""
+    from ...models.plan_cuenta import PlanCuenta
+    
+    # Buscar cuentas de bancos (1110) y cuentas de ahorro (1120)
+    # y que permitan movimiento
+    accounts = db.query(PlanCuenta).filter(
+        PlanCuenta.empresa_id == current_user.empresa_id,
+        PlanCuenta.permite_movimiento == True,
+        (PlanCuenta.codigo.like('1110%') | PlanCuenta.codigo.like('1120%'))
+    ).all()
+    
+    result = []
+    for acc in accounts:
+        # TODO: Calcular saldo real
+        result.append({
+            "id": acc.id,
+            "codigo": acc.codigo,
+            "nombre": acc.nombre,
+            "saldo": 0  # Se implementará cálculo real después
+        })
+        
+    return result
+
 
 # ==================== CONFIGURACIONES DE IMPORTACIÓN ====================
 
