@@ -861,7 +861,29 @@ async def get_accounting_configuration(
     """Obtener configuración contable para una cuenta bancaria"""
     try:
         from ...models.conciliacion_bancaria import AccountingConfig
+        from ...models.plan_cuenta import PlanCuenta
         
+        # LÓGICA DE RESOLUCIÓN DE CUENTA (IGUAL QUE EN PUT)
+        # Verificar si la cuenta existe por ID
+        bank_account = db.query(PlanCuenta).filter(
+            PlanCuenta.id == bank_account_id,
+            PlanCuenta.empresa_id == current_user.empresa_id
+        ).first()
+        
+        # Si no existe, intentar resolverla buscando cuentas 111%
+        if not bank_account:
+            print(f"[ACCOUNTING CONFIG GET] ID {bank_account_id} no encontrado, buscando fallback...")
+            fallback_account = db.query(PlanCuenta).filter(
+                PlanCuenta.codigo.like('111%'),
+                PlanCuenta.empresa_id == current_user.empresa_id,
+                PlanCuenta.permite_movimiento == True
+            ).first()
+            
+            if fallback_account:
+                print(f"[ACCOUNTING CONFIG GET] Usando cuenta fallback: {fallback_account.codigo} (ID: {fallback_account.id})")
+                bank_account_id = fallback_account.id
+        
+        # Buscar configuración usando el ID (posiblemente resuelto)
         config = db.query(AccountingConfig).filter(
             AccountingConfig.bank_account_id == bank_account_id,
             AccountingConfig.empresa_id == current_user.empresa_id,
@@ -869,7 +891,7 @@ async def get_accounting_configuration(
         ).first()
         
         if not config:
-            raise HTTPException(status_code=404, detail="Configuración contable no encontrada")
+            raise HTTPException(status_code=404, detail=f"Configuración contable no encontrada para cuenta {bank_account_id}")
         
         return {
             "id": config.id,
