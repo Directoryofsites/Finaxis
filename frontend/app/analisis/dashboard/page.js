@@ -6,8 +6,10 @@ import { getFinancialRatios } from '../../../lib/dashboardService';
 import {
     FaChartLine, FaBalanceScale, FaChartPie, FaMoneyCheckAlt, FaPercentage,
     FaRedoAlt, FaChartArea, FaDollarSign, FaMoneyBillWave, FaArrowUp,
-    FaCheckCircle, FaExclamationTriangle, FaExclamationCircle, FaSkullCrossbones, FaClipboardList
+    FaCheckCircle, FaExclamationTriangle, FaExclamationCircle, FaSkullCrossbones, FaClipboardList, FaFilePdf
 } from 'react-icons/fa';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // --- COMPONENTES AUXILIARES (Internalizados para este módulo) ---
 
@@ -354,6 +356,59 @@ export default function AnalysisDashboardPage() {
                 >
                     {loading ? 'Analizando...' : 'Ejecutar Análisis'}
                 </button>
+                {kpisData && (
+                    <button
+                        onClick={() => {
+                            try {
+                                const doc = new jsPDF();
+                                doc.setFontSize(16);
+                                doc.text("Tablero Financiero y Diagnóstico", 14, 15);
+                                doc.setFontSize(10);
+                                doc.text(`Periodo: ${fechaInicio} al ${fechaFin}`, 14, 22);
+
+                                // Seccion Interpretativa
+                                doc.setFillColor(245, 245, 245);
+                                doc.rect(14, 30, 180, 25, 'F');
+                                doc.setFontSize(11);
+                                doc.setTextColor(0, 0, 0);
+                                doc.text(`Escenario: ${kpisData.escenario_general}`, 16, 38);
+                                doc.setFontSize(9);
+                                const splitText = doc.splitTextToSize(kpisData.texto_interpretativo, 175);
+                                doc.text(splitText, 16, 44);
+
+                                // Tabla de Ratios
+                                const ratiosBody = [
+                                    ['Razón Corriente', kpisData.razon_corriente.toFixed(2)],
+                                    ['Prueba Ácida', kpisData.prueba_acida.toFixed(2)],
+                                    ['Capital Trabajo', '$ ' + Number(kpisData.activo_corriente - kpisData.pasivo_corriente).toLocaleString('es-CO')],
+                                    ['Endeudamiento', kpisData.nivel_endeudamiento.toFixed(2) + '%'],
+                                    ['Apalancamiento', kpisData.apalancamiento_financiero.toFixed(2)],
+                                    ['Margen Neto', kpisData.margen_neto_utilidad.toFixed(2) + '%'],
+                                    ['Margen Bruto', kpisData.margen_bruto_utilidad.toFixed(2) + '%'],
+                                    ['ROE', kpisData.rentabilidad_patrimonio.toFixed(2) + '%'],
+                                    ['ROA', kpisData.rentabilidad_activo.toFixed(2) + '%'],
+                                ];
+
+                                autoTable(doc, {
+                                    startY: 65,
+                                    head: [['Indicador', 'Valor']],
+                                    body: ratiosBody,
+                                    theme: 'grid',
+                                    headStyles: { fillColor: [44, 62, 80] },
+                                    columnStyles: { 0: { fontStyle: 'bold' }, 1: { halign: 'right' } }
+                                });
+
+                                doc.save('Analisis_Dashboard.pdf');
+                            } catch (e) {
+                                console.error(e);
+                                alert('Error al exportar PDF');
+                            }
+                        }}
+                        className="bg-red-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-red-700 transition flex items-center gap-2 ml-4"
+                    >
+                        <FaFilePdf /> PDF
+                    </button>
+                )}
             </div>
 
             <RatiosDisplay kpisData={kpisData} />

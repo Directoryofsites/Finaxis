@@ -339,6 +339,10 @@ app.include_router(produccion_router.router, prefix="/api/produccion", tags=["Pr
 from app.api.endpoints import search as search_router
 app.include_router(search_router.router, prefix="/api/search", tags=["Búsqueda Inteligente"])
 
+# --- MODULO AI ASSISTANT (GEMINI) ---
+from app.api.ai import routes as ai_router
+app.include_router(ai_router.router, prefix="/api/ai", tags=["Asistente AI"])
+
 # --- MODULO CONCILIACION BANCARIA ---
 from app.api.conciliacion_bancaria import routes as conciliacion_bancaria_router
 app.include_router(conciliacion_bancaria_router.router, prefix="/api", tags=["Conciliación Bancaria"])

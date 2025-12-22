@@ -2,30 +2,33 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { getFavoritos } from '@/lib/favoritosService';
 import {
-    FaPlus, FaCog, FaRocket, FaGem, FaBolt, FaMagic,
-    // ÍCONOS ESPECÍFICOS DE TU APLICACIÓN
-    FaCalculator, FaChartBar, FaUsers, FaFileInvoiceDollar, FaBoxes,
-    FaFileAlt, FaBook, FaBalanceScale, FaCheckCircle, FaUniversity,
-    FaClipboardList, FaWrench, FaHandshake, FaTruckMoving, FaReceipt, FaLock,
-    FaListUl, FaDollarSign, FaChartLine, FaChartPie, FaPercentage, FaFileContract,
-    FaRedoAlt, FaCalendarAlt, FaTools, FaTimes, FaChartArea, FaStar, FaBuilding,
-    FaStamp, FaShoppingCart, FaMoneyBillWave, FaTractor, FaCogs, FaHome, FaIndustry,
-    // ÍCONOS ADICIONALES ESPECÍFICOS
-    FaMoneyBill, FaCoins, FaCreditCard, FaWallet, FaCashRegister,
-    FaLandmark, FaPiggyBank, FaCubes, FaWarehouse, FaTags, FaBarcode, FaLayerGroup,
-    FaClipboardCheck, FaListAlt, FaSort, FaUserTie, FaUserFriends, FaUserCheck,
-    FaUserPlus, FaUserEdit, FaIdCard, FaAddressCard, FaUserClock, FaUserShield, FaUserTag,
-    FaFilePdf, FaPrint, FaSearch, FaFilter, FaDatabase, FaTable, FaColumns,
-    FaKey, FaShieldAlt, FaServer, FaPlug, FaToggleOn, FaToggleOff, FaAdjust,
-    FaTruck, FaExchangeAlt, FaSync, FaHistory, FaTasks, FaProjectDiagram, FaRoute, FaMapMarkerAlt,
-    FaEnvelope, FaPhone, FaFax, FaComments, FaBell, FaNewspaper, FaAward, FaMedal,
-    FaClock, FaEye, FaEyeSlash, FaStore, FaCity, FaGlobe, FaFlag,
+    FaHistory, FaTrashAlt,
+    // Íconos generales importantes
+    FaFileInvoiceDollar, FaDollarSign, FaReceipt, FaMoneyBillWave, FaCoins, FaCreditCard,
+    FaShoppingCart, FaCashRegister, FaWallet, FaFileContract,
+    FaCalculator, FaBalanceScale, FaChartLine, FaChartPie, FaChartBar, FaChartArea,
+    FaUniversity, FaLandmark, FaPiggyBank, FaMoneyBill, FaPercentage, FaBook,
+    FaBoxes, FaCubes, FaWarehouse, FaTags, FaBarcode, FaLayerGroup,
+    FaIndustry, FaClipboardCheck, FaListUl, FaSort, FaTruckMoving,
+    FaUsers, FaUserTie, FaUserFriends, FaUserCheck, FaUserPlus, FaUserEdit,
+    FaIdCard, FaAddressCard, FaUserClock, FaUserShield, FaUserTag,
+    FaFileAlt, FaFilePdf, FaPrint, FaSearch, FaFilter, FaDatabase, FaTable,
+    FaColumns, FaClipboardList, FaCheckCircle,
+    FaCog, FaCogs, FaTools, FaWrench, FaKey, FaShieldAlt, FaLock,
+    FaServer, FaPlug, FaToggleOn, FaToggleOff, FaAdjust,
+    FaTruck, FaHandshake, FaExchangeAlt, FaSync, FaCalendarAlt,
+    FaTasks, FaProjectDiagram, FaRoute, FaMapMarkerAlt, FaRedoAlt,
+    FaEnvelope, FaPhone, FaFax, FaComments, FaBell, FaNewspaper,
+    FaStamp, FaAward, FaMedal, FaTimes, FaClock,
+    FaEye, FaEyeSlash,
+    FaBuilding, FaStore, FaHome, FaCity, FaGlobe, FaFlag,
     FaLaptop, FaDesktop, FaMobile, FaTablet, FaWifi, FaCloud,
-    FaCar, FaMotorcycle, FaBicycle, FaPlane, FaShip, FaTrain
+    FaCar, FaMotorcycle, FaBicycle, FaPlane, FaShip, FaTrain,
+    FaTractor, FaStar, FaPlus, FaRocket, FaGem, FaBolt, FaMagic
 } from 'react-icons/fa';
-// POOL EXTENSO DE ÍCONOS
+
+// --- ICON POOL PARA HASHING ---
 const ICON_POOL = [
     FaFileInvoiceDollar, FaDollarSign, FaReceipt, FaMoneyBillWave, FaCoins, FaCreditCard,
     FaShoppingCart, FaCashRegister, FaWallet, FaFileContract,
@@ -52,79 +55,47 @@ const ICON_POOL = [
     FaStar, FaPlus, FaRocket, FaGem, FaBolt, FaMagic
 ];
 
-// LISTA MAESTRA DE ÍCONOS - Copia de la lógica para asegurar consistencia
+// --- MAPA DE RUTAS CONOCIDAS ---
 const MASTER_ICON_MAP = {
-    // --- CONTABILIDAD ---
-    '/contabilidad/documentos/crear': FaFileAlt,
     '/contabilidad/documentos': FaFileInvoiceDollar,
-    '/contabilidad/reportes/balance-prueba': FaBalanceScale,
-    '/contabilidad/reportes/libro-diario': FaBook,
-    '/contabilidad/reportes/estado-situacion': FaChartBar,
-    '/contabilidad/reportes/estado-resultado': FaChartLine,
-    '/contabilidad/reportes/movimiento-analitico': FaChartArea,
-    '/contabilidad/reportes/estado-resultados-cc-detallado': FaChartPie,
-    '/contabilidad/reportes/super-informe': FaRocket,
-
-    // --- TERCEROS ---
+    '/contabilidad': FaCalculator,
     '/admin/terceros': FaUsers,
-    '/admin/terceros/crear': FaUserPlus,
-    '/cartera/informe-edades': FaClock,
-    '/cartera/cuentas-por-cobrar': FaHandshake,
-
-    // --- INVENTARIO ---
-    '/admin/inventario/productos': FaBoxes,
-    '/admin/inventario/bodegas': FaWarehouse,
-    '/admin/inventario/grupos': FaLayerGroup,
-    '/admin/inventario/parametros': FaCogs,
     '/admin/inventario': FaBoxes,
-    '/inventario/ajuste': FaWrench,
-    '/inventario/kardex': FaClipboardList,
-
-    // --- FACTURACIÓN & VENTAS ---
     '/facturacion/crear': FaCashRegister,
-    '/facturacion/pos': FaShoppingCart,
-    '/facturacion/facturas': FaReceipt,
-    '/cotizaciones/crear': FaFileContract,
-    '/remisiones/crear': FaTruck,
-
-    // --- PRODUCCIÓN ---
-    '/produccion/recetas': FaListUl,
-    '/produccion/ordenes': FaIndustry,
-
-    // --- UTILIDADES & ADMIN ---
-    '/admin/utilidades/configuracion-favoritos': FaStar,
-    '/admin/utilidades/migracion-datos': FaDatabase,
-    '/admin/empresas': FaBuilding,
-    '/admin/usuarios': FaUserShield,
-    '/admin/papelera': FaTimes
+    '/facturacion': FaReceipt,
+    '/analisis': FaChartBar,
+    '/dashboard': FaChartLine,
 };
 
 const getSmartIconForRoute = (route) => {
-    if (!route) return ICON_POOL[0];
-    const cleanRoute = route.endsWith('/') && route.length > 1 ? route.slice(0, -1) : route;
-    if (MASTER_ICON_MAP[cleanRoute]) {
-        return MASTER_ICON_MAP[cleanRoute];
-    }
-    const routeLower = route.toLowerCase();
+    if (!route) return FaHistory;
 
-    // Fallback logic simplificada pero efectiva
-    if (routeLower.includes('factur')) return FaFileInvoiceDollar;
-    if (routeLower.includes('venta')) return FaDollarSign;
-    if (routeLower.includes('compras')) return FaReceipt;
-    if (routeLower.includes('inventario')) return FaBoxes;
-    if (routeLower.includes('contabil')) return FaCalculator;
-    if (routeLower.includes('nomina')) return FaUsers;
-    if (routeLower.includes('reporte')) return FaChartBar;
+    // Check exact match
+    if (MASTER_ICON_MAP[route]) return MASTER_ICON_MAP[route];
 
-    // Hash fallback
+    // Check partial match
+    const lowerRoute = route.toLowerCase();
+    if (lowerRoute.includes('factura')) return FaFileInvoiceDollar;
+    if (lowerRoute.includes('inventario')) return FaBoxes;
+    if (lowerRoute.includes('terceros')) return FaUsers;
+    if (lowerRoute.includes('analisis')) return FaChartBar;
+    if (lowerRoute.includes('reporte')) return FaFileAlt;
+    if (lowerRoute.includes('config')) return FaCog;
+    if (lowerRoute.includes('utilidades')) return FaTools;
+
+    // Hash Fallback
     let hash = 0;
     for (let i = 0; i < route.length; i++) {
-        const char = route.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash |= 0;
+        hash = route.charCodeAt(i) + ((hash << 5) - hash);
     }
-    const index = Math.abs(hash) % ICON_POOL.length;
-    return ICON_POOL[index];
+    return ICON_POOL[Math.abs(hash) % ICON_POOL.length];
+};
+
+const formatPathName = (path) => {
+    if (path === '/') return 'Inicio';
+    const parts = path.split('/').filter(Boolean);
+    const lastPart = parts[parts.length - 1];
+    return lastPart.charAt(0).toUpperCase() + lastPart.slice(1).replace(/-/g, ' ');
 };
 
 export default function SidebarFavorites() {
@@ -132,52 +103,63 @@ export default function SidebarFavorites() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    // ZEN MODE LOGIC
+    // Estado ZenMode
     const isZenMode = pathname === '/' && !searchParams.get('module');
 
-    const [favoritos, setFavoritos] = useState([]);
+    // Estado Historial
+    const [history, setHistory] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
 
-    // ... (fetchFavs kept same) ...
-    const fetchFavs = () => {
-        getFavoritos().then(data => {
-            if (Array.isArray(data)) {
-                setFavoritos(data);
-            } else {
-                console.warn('Formato de favoritos inesperado:', data);
-                setFavoritos([]);
-            }
-        }).catch(err => {
-            console.error(err);
-            setFavoritos([]);
-        });
-    };
-
+    // Cargar historial inicial
     useEffect(() => {
-        fetchFavs();
-
-        const handleUpdate = () => fetchFavs();
-        window.addEventListener('favoritesUpdated', handleUpdate);
-        return () => window.removeEventListener('favoritesUpdated', handleUpdate);
+        const stored = localStorage.getItem('app_history');
+        if (stored) {
+            try {
+                setHistory(JSON.parse(stored));
+            } catch (e) {
+                console.error("Error parsing history", e);
+            }
+        }
     }, []);
 
-    // Determinar clases de visibilidad según Modo
-    // Normal: w-2 opacity-50 (Sliver visible) -> Hover: w-16 opacity-100
-    // Zen: w-0 opacity-0 (Invisible) -> Hover (via state): w-16 opacity-100
-    // Nota: En ZenMode, el div principal tiene w-0 cuando cerrado, por lo que requiere un trigger externo.
+    // Escuchar cambios de ruta y agregar al historial
+    useEffect(() => {
+        if (!pathname || pathname === '/' || pathname.includes('login')) return;
 
-    // Si NO es ZenMode, usamos el comportamiento 'sliver' (w-2).
-    // Si ES ZenMode, usamos w-0.
+        const newItem = {
+            path: pathname,
+            label: formatPathName(pathname),
+            timestamp: Date.now()
+        };
+
+        setHistory(prev => {
+            // Filtrar si ya existe (para moverlo al principio)
+            const filtered = prev.filter(item => item.path !== pathname);
+            // Agregar al principio
+            const updated = [newItem, ...filtered].slice(0, 8); // Max 8 items
+
+            // Guardar en Storage
+            localStorage.setItem('app_history', JSON.stringify(updated));
+            return updated;
+        });
+    }, [pathname]);
+
+    const clearHistory = () => {
+        setHistory([]);
+        localStorage.removeItem('app_history');
+    };
+
+    // Clases CSS
     const closedClass = isZenMode ? 'w-0 opacity-0 pointer-events-none' : 'w-2 opacity-50 hover:w-16 hover:opacity-100';
 
     return (
         <>
-            {/* Trigger Zone para ZenMode (Borde Izquierdo) */}
+            {/* Trigger Zone para ZenMode */}
             {(isZenMode && !isOpen) && (
                 <div
                     className="fixed left-0 top-0 bottom-0 w-4 z-[49] bg-transparent hover:bg-transparent cursor-pointer"
                     onMouseEnter={() => setIsOpen(true)}
-                    title="Mostrar Favoritos"
+                    title="Mostrar Historial"
                 />
             )}
 
@@ -189,40 +171,58 @@ export default function SidebarFavorites() {
                 onMouseLeave={() => setIsOpen(false)}
                 style={{ minHeight: '100px' }}
             >
-                {/* Banda decorativa cuando está cerrado (Solo visible en modo Normal) */}
+                {/* Banda decorativa (Modo Historia = Verde/Azul) */}
                 {(!isOpen && !isZenMode) && (
-                    <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-blue-400 to-purple-500"></div>
+                    <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-green-400 to-blue-500"></div>
                 )}
 
-                {/* Contenido del Sidebar */}
                 <div className="flex flex-col items-center py-4 w-16 scrollbar-hide overflow-y-auto">
 
-                    {/* Botón Configurar (Siempre Primero) */}
-                    <button
-                        onClick={() => router.push('/admin/utilidades/configuracion-favoritos')}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors mb-2 shadow-sm tooltip tooltip-right"
-                        title="Configurar Favoritos"
-                    >
-                        <FaCog className="text-lg" />
-                    </button>
+                    {/* Título o Icono de Sección */}
+                    <div className="mb-2 text-gray-400 text-xs font-bold uppercase tracking-widest rotate-[-90deg] h-4 w-4 flex items-center justify-center whitespace-nowrap opacity-50">
+                        Historial
+                    </div>
 
-                    <div className="w-8 h-[1px] bg-gray-200 my-2"></div>
+                    <div className="w-8 h-[1px] bg-gray-200 mb-2"></div>
 
-                    {/* Lista de Favoritos */}
-                    {Array.isArray(favoritos) && favoritos.map((item) => {
-                        const IconComponent = getSmartIconForRoute(item.ruta_enlace);
+                    {/* Lista de Historial */}
+                    {history.map((item) => {
+                        const IconComponent = getSmartIconForRoute(item.path);
                         return (
                             <Link
-                                key={item.id}
-                                href={item.ruta_enlace}
-                                className="w-10 h-10 flex items-center justify-center mb-2 rounded-xl text-gray-400 hover:bg-gradient-to-br hover:from-blue-500 hover:to-purple-600 hover:text-white hover:shadow-lg transition-all transform hover:scale-110"
-                                title={item.nombre_personalizado}
+                                key={item.path}
+                                href={item.path}
+                                className={`w-10 h-10 flex items-center justify-center mb-2 rounded-xl transition-all transform hover:scale-110 shadow-sm
+                                    ${pathname === item.path
+                                        ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-300'
+                                        : 'bg-white text-gray-400 hover:bg-gradient-to-br hover:from-green-400 hover:to-blue-500 hover:text-white hover:shadow-lg'
+                                    }
+                                `}
+                                title={`Ir a: ${item.label}`}
                             >
                                 <IconComponent className="text-lg" />
                             </Link>
                         );
                     })}
 
+                    {history.length === 0 && (
+                        <div className="text-gray-300 text-xs text-center px-1">
+                            Vacío
+                        </div>
+                    )}
+
+                    <div className="w-8 h-[1px] bg-gray-200 my-2"></div>
+
+                    {/* Botón Borrar Historial */}
+                    {history.length > 0 && (
+                        <button
+                            onClick={clearHistory}
+                            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                            title="Borrar Historial"
+                        >
+                            <FaTrashAlt className="text-xs" />
+                        </button>
+                    )}
 
                 </div>
             </div>

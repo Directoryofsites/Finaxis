@@ -37,6 +37,18 @@ export default function BalanceGeneralPage() {
         if (!authLoading) {
             if (user && user.empresaId) {
                 setPageReady(true);
+
+                // --- AUTO-CONFIGURACION (IA) ---
+                const urlParams = new URLSearchParams(window.location.search);
+                const aiFechaCorte = urlParams.get('fecha_corte');
+
+                if (aiFechaCorte) {
+                    setFechaCorte(aiFechaCorte);
+                    // Auto-ejecutar reporte si hay fecha
+                    setTimeout(() => {
+                        document.getElementById('btn-generar-balance')?.click();
+                    }, 500);
+                }
             } else {
                 router.push('/login');
             }
@@ -175,6 +187,7 @@ export default function BalanceGeneralPage() {
 
                         <div className="md:col-span-2 flex flex-col md:flex-row justify-end gap-3">
                             <button
+                                id="btn-generar-balance"
                                 onClick={handleGenerateReport}
                                 disabled={isLoading}
                                 className={`

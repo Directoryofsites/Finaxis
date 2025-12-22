@@ -44,6 +44,25 @@ export default function EstadoResultadosPage() {
         }
     }, [user, authLoading, router]);
 
+    // --- AUTO-CONFIGURACION (IA) ---
+    useEffect(() => {
+        if (isPageReady) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const aiInicio = urlParams.get('fecha_inicio');
+            const aiFin = urlParams.get('fecha_fin');
+
+            if (aiInicio && aiFin) {
+                setFechaInicio(aiInicio);
+                setFechaFin(aiFin);
+
+                // Auto-ejecutar
+                setTimeout(() => {
+                    document.getElementById('btn-generar-er')?.click();
+                }, 800);
+            }
+        }
+    }, [isPageReady]);
+
     const handleGenerateReport = async () => {
         if (!fechaInicio || !fechaFin) {
             setError("Por favor, seleccione una fecha de inicio y una fecha de fin.");
@@ -226,6 +245,7 @@ export default function EstadoResultadosPage() {
 
                             <div className="flex flex-col md:flex-row justify-end gap-3">
                                 <button
+                                    id="btn-generar-er"
                                     onClick={handleGenerateReport}
                                     disabled={isLoading}
                                     className={`

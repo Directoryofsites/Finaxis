@@ -66,6 +66,7 @@ export default function GestionInventarioPage() {
     useEffect(() => {
         // Listening for Deep Linking triggers
         const trigger = searchParams.get('trigger');
+
         if (trigger === 'new_item') {
             // Limpiamos el param de la URL para evitar re-aperturas no deseadas al recargar
             const newUrl = window.location.pathname;
