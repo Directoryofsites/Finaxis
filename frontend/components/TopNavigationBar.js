@@ -19,9 +19,8 @@ export default function TopNavigationBar() {
     const searchParams = useSearchParams();
 
     // ZEN MODE LOGIC:
-    // Si estamos en la raíz ('/') y NO hay un módulo activo (?module=...), activamos el modo Zen (Menu oculto).
-    // En cualquier otro caso (dentro de un módulo), el menú debe estar visible (Pinned).
-    const isZenMode = pathname === '/' && !searchParams.get('module');
+    // Global Zen Mode: El menú siempre debe ocultarse automáticamente (replegarse) para maximizar espacio.
+    const isZenMode = true;
 
     // Estados
     const [isVisible, setIsVisible] = useState(!isZenMode); // Inicialmente visible si NO es ZenMode
@@ -88,9 +87,10 @@ export default function TopNavigationBar() {
     };
 
     const handleMouseLeave = () => {
+        const delay = isMenuOpen ? 300 : 50; // Cierre rápido si no hay menú desplagado
         hoverTimeoutRef.current = setTimeout(() => {
             closeAll();
-        }, 300); // 300ms delay to allow moving to dropdown
+        }, delay);
     };
 
     const handleDropdownEnter = () => {

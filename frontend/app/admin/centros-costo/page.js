@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   FaLayerGroup,
   FaPlus,
@@ -161,12 +162,23 @@ const FormModal = ({ isOpen, onClose, onSubmit, centro, setCentro, isLoading, ce
 // --- PÁGINA PRINCIPAL ---
 export default function GestionCentrosCostoPage() {
   const { user, loading: authLoading } = useAuth();
+  const searchParams = useSearchParams();
   const [centros, setCentros] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentCentro, setCurrentCentro] = useState(null);
   const [formIsLoading, setFormIsLoading] = useState(false);
+
+  // --- DEEP LINKING TRIGGER (Nuevo CC) ---
+  useEffect(() => {
+    const trigger = searchParams.get('trigger');
+    if (trigger === 'new_cc') {
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      setTimeout(() => handleOpenCreateModal(), 500);
+    }
+  }, [searchParams]);
 
   const fetchCentrosCosto = useCallback(async () => {
     if (!user) return;

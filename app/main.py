@@ -339,6 +339,10 @@ app.include_router(produccion_router.router, prefix="/api/produccion", tags=["Pr
 from app.api.endpoints import search as search_router
 app.include_router(search_router.router, prefix="/api/search", tags=["Búsqueda Inteligente"])
 
+# --- MODULO AI ASSISTANT (GEMINI) ---
+from app.api.ai import routes as ai_router
+app.include_router(ai_router.router, prefix="/api/ai", tags=["Asistente AI"])
+
 # --- MODULO CONCILIACION BANCARIA ---
 from app.api.conciliacion_bancaria import routes as conciliacion_bancaria_router
 app.include_router(conciliacion_bancaria_router.router, prefix="/api", tags=["Conciliación Bancaria"])
@@ -347,6 +351,34 @@ app.include_router(conciliacion_bancaria_router.router, prefix="/api", tags=["Co
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
-
-# FORCE RELOAD TRIGGER - PH MODULE UPDATE
+    uvicorn.run(app, host="127.0.0.1", port=8000)# Trigger Reload
+# Reload trigger 2
+# Reload trigger 3
+# Reload trigger 4
+# Reload trigger 5
+# Reload trigger 6
+# Reload trigger 7
+# Reload trigger 8
+# Reload trigger 9
+# Reload trigger 11
+# Reload trigger 12
+# Reload trigger 13
+# Reload trigger 14
+# Reload trigger 15
+# Reload trigger 16
+# Reload trigger 17
+# Reload trigger 18
+# Reload trigger 19
+# Reload trigger 20
+# Reload trigger 21
+# Reload trigger 22
+# Reload trigger 23
+# Reload trigger 24
+# Reload trigger 25
+# Reload trigger 26
+# Reload trigger 27
+# Reload trigger 28
+# Reload trigger 29
+# Reload trigger 30
+# Reload trigger 31
+# Reload trigger 32

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import Script from 'next/script';
+
 import { useRouter } from 'next/navigation';
 import {
   FaUserTag,
@@ -63,6 +63,7 @@ export default function ReporteTerceroCuentaPage() {
   const [error, setError] = useState(null);
   const [recalculoStatus, setRecalculoStatus] = useState({ loading: false, message: '', error: '' });
   const [isPageReady, setPageReady] = useState(false);
+  const [shouldAutoRun, setShouldAutoRun] = useState(false);
 
   // Autenticación
   useEffect(() => {
@@ -75,19 +76,90 @@ export default function ReporteTerceroCuentaPage() {
     }
   }, [user, authLoading, router]);
 
-  // Carga de Terceros (Protegida)
+  // Carga de Terceros y Auto-Configuración desde IA (Protegida)
   useEffect(() => {
     if (authLoading || dataFetchedRef.current) return;
     if (user) {
-      const fetchTerceros = async () => {
+      const fetchTercerosAndConfig = async () => {
         try {
+          // 1. Cargar Terceros
           const res = await apiService.get('/terceros');
-          setTerceros(res.data);
+          const tercerosList = res.data;
+          setTerceros(tercerosList);
+
+          // 2. Procesar Parámetros de URL (IA)
+          // Nota: Next.js 13+ App Router usa useSearchParams, para simplificar sin refactorizar todo,
+          // leemos window.location.search directamente o usamos una instancia dummy si no existe hook.
+          const urlParams = new URLSearchParams(window.location.search);
+          const aiTercero = urlParams.get('tercero');
+          const aiFechaInicio = urlParams.get('fecha_inicio');
+          const aiFechaFin = urlParams.get('fecha_fin');
+          const autoPdf = urlParams.get('auto_pdf');
+
+          if (aiTercero) {
+            // Búsqueda difusa simple
+            // Normalizar texto para búsqueda fonética Agresiva (Terceros)
+            // 1. Lowercase, eliminar tildes
+            // 2. v -> b, z/c -> s
+            // 3. g -> j (para Giovana=Jhovana)
+            // 4. h -> "" (h muda, Jhovana=Jovana)
+            const normalize = (str) => {
+              if (!str) return "";
+              return str.toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                .replace(/v/g, "b")
+                .replace(/z/g, "s")
+                .replace(/c/g, "s")
+                .replace(/g/g, "j") // Fonética Gi/Je
+                .replace(/h/g, "")  // H muda
+                .replace(/[^a-z0-9\s]/g, "");
+            };
+
+            const searchNormalized = normalize(aiTercero);
+            const searchWords = searchNormalized.split(" ").filter(w => w.length > 2);
+
+            console.warn("IA Debug - Search Tercero:", searchNormalized);
+
+            // SCORING SYSTEM TERCEROS
+            const scoredTerceros = tercerosList.map(t => {
+              let score = 0;
+              // Combinar Razón Social + Nombre + Apellidos si existen
+              const fullName = (t.razon_social || '') + " " + (t.primer_nombre || '') + " " + (t.primer_apellido || '');
+              const nombreNorm = normalize(fullName);
+              const nitNorm = normalize(t.numero_identificacion || '');
+
+              // Coincidencia exacta del bloque (Alta prioridad)
+              if (nombreNorm.includes(searchNormalized) || nitNorm.includes(searchNormalized)) {
+                score += 100;
+              }
+
+              // Coincidencia parcial por palabras
+              searchWords.forEach(word => {
+                if (nombreNorm.includes(word) || nitNorm.includes(word)) {
+                  score += 20; // Más peso a las palabras del nombre
+                }
+              });
+
+              return { ...t, score };
+            });
+
+            const bestMatches = scoredTerceros.filter(t => t.score > 0).sort((a, b) => b.score - a.score);
+            const found = bestMatches.length > 0 ? bestMatches[0] : null;
+
+            if (found) {
+              setSelectedTercero(found.id);
+              if (aiFechaInicio) setFechas(prev => ({ ...prev, inicio: aiFechaInicio }));
+              if (aiFechaFin) setFechas(prev => ({ ...prev, fin: aiFechaFin }));
+
+              // NOTA: La auto-ejecución se mueve al useEffect de Cuentas para esperar a que carguen
+            }
+          }
+
         } catch (err) {
           setError("Error cargando terceros: " + (err.response?.data?.detail || err.message));
         }
       };
-      fetchTerceros();
+      fetchTercerosAndConfig();
       dataFetchedRef.current = true;
     }
   }, [user, authLoading]);
@@ -98,8 +170,92 @@ export default function ReporteTerceroCuentaPage() {
       const fetchCuentas = async () => {
         try {
           const res = await apiService.get(`/terceros/${selectedTercero}/cuentas`);
-          setCuentasDelTercero(res.data);
-          setSelectedCuentas(['all']);
+          const cuentas = res.data;
+          setCuentasDelTercero(cuentas);
+
+          // --- AUTO-CONFIGURACION CUENTAS Y FECHAS (IA) ---
+          const urlParams = new URLSearchParams(window.location.search);
+          const aiCuenta = urlParams.get('cuenta');
+          const aiFechaInicio = urlParams.get('fecha_inicio');
+          const aiFechaFin = urlParams.get('fecha_fin');
+
+          // 1. Configurar Fechas si vienen en URL (CRITICO: Hacerlo siempre que existan)
+          if (aiFechaInicio && aiFechaFin) {
+            setFechas({ inicio: aiFechaInicio, fin: aiFechaFin });
+          }
+
+          // Normalizar texto para búsqueda fonética agresiva
+          // 1. Lowercase, sin tildes
+          // 2. v -> b
+          // 3. z, c -> s (Aproximación para seseo/ceceo)
+          // 4. Eliminar caracteres especiales
+          if (aiCuenta && cuentas.length > 0) {
+            const normalize = (str) => {
+              if (!str) return "";
+              return str.toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                .replace(/v/g, "b")
+                .replace(/z/g, "s")
+                .replace(/c/g, "s") // Ojo: esto convierte 'casa' en 'sasa', pero 'caza' en 'sasa' tb. Útil para búsqueda fonética.
+                .replace(/[^a-z0-9\s]/g, "");
+            };
+
+            const searchNormalized = normalize(aiCuenta);
+            const searchWords = searchNormalized.split(" ").filter(w => w.length > 2);
+
+            console.warn("IA Debug - Search:", searchNormalized, "Words:", searchWords);
+
+            // SCORING SYSTEM
+            const scoredCuentas = cuentas.map(c => {
+              let score = 0;
+              const codigoNorm = normalize(c.codigo);
+              const nombreNorm = normalize(c.nombre);
+
+              // Coincidencia exacta (agresivamente normalizada)
+              if (codigoNorm.includes(searchNormalized) || nombreNorm.includes(searchNormalized)) {
+                score += 100;
+              }
+
+              // Coincidencia por palabras
+              searchWords.forEach(word => {
+                if (codigoNorm.includes(word) || nombreNorm.includes(word)) {
+                  score += 10;
+                }
+              });
+
+              return { ...c, score };
+            });
+
+            // Filtrar las que tengan algún match y ordenar por puntaje
+            const bestMatches = scoredCuentas.filter(c => c.score > 0).sort((a, b) => b.score - a.score);
+
+            if (bestMatches.length > 0) {
+              // Tomar las mejores (ej: las que tengan el puntaje máximo o cercano)
+              const maxScore = bestMatches[0].score;
+              // Permitir un pequeño margen o solo las top exactas
+              const topCandidates = bestMatches.filter(c => c.score >= maxScore);
+
+              const ids = topCandidates.map(c => c.id);
+              setSelectedCuentas(ids);
+
+              // Auto-ejecutar AHORA que tenemos tercero, fechas y cuentas
+              if (aiFechaInicio && aiFechaFin) {
+                setTimeout(() => setShouldAutoRun(true), 500);
+              }
+            } else {
+              // Si pidió cuenta pero no encontró, advertir al usuario
+              setError(`No se encontró la cuenta "${aiCuenta}". Se seleccionaron todas.`);
+              setSelectedCuentas(['all']);
+            }
+          } else {
+            // Comportamiento normal
+            setSelectedCuentas(['all']);
+            // Si NO pidió cuenta específica, pero ya tenemos tercero y fechas, podemos ejecutar aqui tambien
+            if (aiFechaInicio && aiFechaFin && !aiCuenta) {
+              setTimeout(() => setShouldAutoRun(true), 500);
+            }
+          }
+
         } catch (err) {
           setError("Error cargando cuentas del tercero: " + (err.response?.data?.detail || err.message));
         }
@@ -110,6 +266,14 @@ export default function ReporteTerceroCuentaPage() {
       setSelectedCuentas(['all']);
     }
   }, [selectedTercero, user, authLoading]);
+
+  // EFFECT PARA AUTO-EJECUCION SEGURA
+  useEffect(() => {
+    if (shouldAutoRun && selectedTercero && fechas.inicio && fechas.fin && !isLoading) {
+      handleGenerateReport();
+      setShouldAutoRun(false);
+    }
+  }, [shouldAutoRun, selectedTercero, fechas]);
 
   const handleGenerateReport = async () => {
     if (!selectedTercero || !fechas.inicio || !fechas.fin) {
@@ -162,9 +326,28 @@ export default function ReporteTerceroCuentaPage() {
     }
   };
 
-  const handleExportCSV = () => {
+  const loadPapaParse = () => {
+    return new Promise((resolve, reject) => {
+      if (window.Papa) {
+        resolve(window.Papa);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js';
+      script.onload = () => resolve(window.Papa);
+      script.onerror = () => reject(new Error("Failed to load PapaParse"));
+      document.body.appendChild(script);
+    });
+  };
+
+  const handleExportCSV = async () => {
     if (!reportData) return;
-    if (typeof window.Papa === 'undefined') return alert("Librería CSV no lista.");
+
+    try {
+      await loadPapaParse();
+    } catch (e) {
+      return alert("Librería CSV no pudo cargarse.");
+    }
 
     const dataToExport = [];
     dataToExport.push(['Fecha', 'Documento', 'Cuenta', 'Concepto', 'Débito', 'Crédito', 'Saldo Parcial']);
@@ -219,12 +402,8 @@ export default function ReporteTerceroCuentaPage() {
       const token = res.data.signed_url_token;
       const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/reports/tercero-cuenta/imprimir?signed_token=${token}`;
 
-      const link = document.createElement('a');
-      link.href = pdfUrl;
-      link.setAttribute('download', `Auxiliar_Tercero_${fechas.inicio}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // FIX: Abrir en nueva pestaña en lugar de forzar descarga en la misma ventana
+      window.open(pdfUrl, '_blank');
     } catch (err) {
       setError(err.response?.data?.detail || 'Error PDF.');
     } finally {
@@ -246,235 +425,232 @@ export default function ReporteTerceroCuentaPage() {
   }
 
   return (
-    <>
-      <Script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" />
+    <div className="min-h-screen bg-gray-50 p-6 font-sans pb-20">
+      <div className="max-w-7xl mx-auto">
 
-      <div className="min-h-screen bg-gray-50 p-6 font-sans pb-20">
-        <div className="max-w-7xl mx-auto">
-
-          {/* ENCABEZADO */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-            <div>
-              <div className="flex items-center gap-3 mt-3">
-                <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
-                  <FaUserTag className="text-2xl" />
+        {/* ENCABEZADO */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <div>
+            <div className="flex items-center gap-3 mt-3">
+              <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
+                <FaUserTag className="text-2xl" />
+              </div>
+              <div>
+                <div className="flex items-center gap-4">
+                  <h1 className="text-3xl font-bold text-gray-800">Auxiliar por Tercero</h1>
+                  <button
+                    onClick={() => window.open('/manual/capitulo_35_tercero_cuenta.html', '_blank')}
+                    className="flex items-center gap-2 px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors font-medium shadow-sm"
+                    title="Ver Manual de Usuario"
+                  >
+                    <span className="text-lg">📖</span> <span className="font-bold text-sm hidden md:inline">Manual</span>
+                  </button>
                 </div>
-                <div>
-                  <div className="flex items-center gap-4">
-                    <h1 className="text-3xl font-bold text-gray-800">Auxiliar por Tercero</h1>
-                    <button
-                      onClick={() => window.open('/manual/capitulo_35_tercero_cuenta.html', '_blank')}
-                      className="flex items-center gap-2 px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors font-medium shadow-sm"
-                      title="Ver Manual de Usuario"
-                    >
-                      <span className="text-lg">📖</span> <span className="font-bold text-sm hidden md:inline">Manual</span>
-                    </button>
-                  </div>
-                  <p className="text-gray-500 text-sm">Auditoría detallada de movimientos por cuenta para un tercero.</p>
-                </div>
+                <p className="text-gray-500 text-sm">Auditoría detallada de movimientos por cuenta para un tercero.</p>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* CARD 1: FILTROS */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 animate-fadeIn mb-8">
-            <div className="flex items-center gap-2 mb-6 border-b border-gray-100 pb-2">
-              <FaFilter className="text-indigo-500" />
-              <h2 className="text-lg font-bold text-gray-700">Configuración del Reporte</h2>
-            </div>
+        {/* CARD 1: FILTROS */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 animate-fadeIn mb-8">
+          <div className="flex items-center gap-2 mb-6 border-b border-gray-100 pb-2">
+            <FaFilter className="text-indigo-500" />
+            <h2 className="text-lg font-bold text-gray-700">Configuración del Reporte</h2>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
-              {/* Tercero */}
-              <div className="md:col-span-2">
-                <label className={labelClass}>Tercero</label>
-                <div className="relative">
-                  <select value={selectedTercero} onChange={(e) => setSelectedTercero(e.target.value)} className={selectClass}>
-                    <option value="">-- Seleccione Tercero --</option>
-                    <option value="all">-- Todos los Terceros --</option>
-                    {terceros.map(t => <option key={t.id} value={t.id}>{t.razon_social}</option>)}
-                  </select>
-                  <FaUserTag className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
-                </div>
-              </div>
-
-              {/* Fechas */}
-              <div>
-                <label className={labelClass}>Desde</label>
-                <div className="relative">
-                  <input type="date" value={fechas.inicio} onChange={(e) => setFechas({ ...fechas, inicio: e.target.value })} className={inputClass} />
-                  <FaCalendarAlt className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>Hasta</label>
-                <div className="relative">
-                  <input type="date" value={fechas.fin} onChange={(e) => setFechas({ ...fechas, fin: e.target.value })} className={inputClass} />
-                  <FaCalendarAlt className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
-                </div>
-              </div>
-
-              {/* Cuentas MultiSelect */}
-              <div className="md:col-span-4">
-                <label className={labelClass}>Filtrar Cuentas (Opcional)</label>
-                <MultiSelect options={cuentasDelTercero} selected={selectedCuentas} onChange={setSelectedCuentas} />
-                <p className="text-xs text-gray-400 mt-1">Mantenga presionado Ctrl (Windows) o Cmd (Mac) para seleccionar varias.</p>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
+            {/* Tercero */}
+            <div className="md:col-span-2">
+              <label className={labelClass}>Tercero</label>
+              <div className="relative">
+                <select value={selectedTercero} onChange={(e) => setSelectedTercero(e.target.value)} className={selectClass}>
+                  <option value="">-- Seleccione Tercero --</option>
+                  <option value="all">-- Todos los Terceros --</option>
+                  {terceros.map(t => <option key={t.id} value={t.id}>{t.razon_social}</option>)}
+                </select>
+                <FaUserTag className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
               </div>
             </div>
 
-            <div className="flex justify-end mt-6 pt-4 border-t border-gray-100">
-              <button
-                onClick={handleGenerateReport}
-                disabled={isLoading}
-                className={`
+            {/* Fechas */}
+            <div>
+              <label className={labelClass}>Desde</label>
+              <div className="relative">
+                <input type="date" value={fechas.inicio} onChange={(e) => setFechas({ ...fechas, inicio: e.target.value })} className={inputClass} />
+                <FaCalendarAlt className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+            <div>
+              <label className={labelClass}>Hasta</label>
+              <div className="relative">
+                <input type="date" value={fechas.fin} onChange={(e) => setFechas({ ...fechas, fin: e.target.value })} className={inputClass} />
+                <FaCalendarAlt className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Cuentas MultiSelect */}
+            <div className="md:col-span-4">
+              <label className={labelClass}>Filtrar Cuentas (Opcional)</label>
+              <MultiSelect options={cuentasDelTercero} selected={selectedCuentas} onChange={setSelectedCuentas} />
+              <p className="text-xs text-gray-400 mt-1">Mantenga presionado Ctrl (Windows) o Cmd (Mac) para seleccionar varias.</p>
+            </div>
+          </div>
+
+          <div className="flex justify-end mt-6 pt-4 border-t border-gray-100">
+            <button
+              onClick={handleGenerateReport}
+              disabled={isLoading}
+              className={`
                             px-8 py-2 rounded-lg shadow-md font-bold text-white transition-all transform hover:-translate-y-0.5 flex items-center gap-2
                             ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}
                         `}
-              >
-                {isLoading ? <span className="loading loading-spinner loading-sm"></span> : <><FaSearch /> Consultar Movimientos</>}
-              </button>
-            </div>
+              id="btn-consultar-reporte"
+            >
+              {isLoading ? <span className="loading loading-spinner loading-sm"></span> : <><FaSearch /> Consultar Movimientos</>}
+            </button>
           </div>
+        </div>
 
-          {/* MENSAJES DE ESTADO */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-lg flex items-center gap-3 animate-pulse">
-              <FaExclamationTriangle className="text-xl" />
-              <p className="font-bold">{error}</p>
-            </div>
-          )}
-          {recalculoStatus.error && (
-            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-lg flex items-center gap-3 animate-pulse">
-              <FaExclamationTriangle className="text-xl" />
-              <p>Error de Recálculo: {recalculoStatus.error}</p>
-            </div>
-          )}
-          {recalculoStatus.message && (
-            <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-r-lg flex items-center gap-3 animate-fadeIn">
-              <FaCheckCircle className="text-xl" />
-              <p>{recalculoStatus.message}</p>
-            </div>
-          )}
+        {/* MENSAJES DE ESTADO */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-lg flex items-center gap-3 animate-pulse">
+            <FaExclamationTriangle className="text-xl" />
+            <p className="font-bold">{error}</p>
+          </div>
+        )}
+        {recalculoStatus.error && (
+          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-lg flex items-center gap-3 animate-pulse">
+            <FaExclamationTriangle className="text-xl" />
+            <p>Error de Recálculo: {recalculoStatus.error}</p>
+          </div>
+        )}
+        {recalculoStatus.message && (
+          <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-r-lg flex items-center gap-3 animate-fadeIn">
+            <FaCheckCircle className="text-xl" />
+            <p>{recalculoStatus.message}</p>
+          </div>
+        )}
 
-          {/* CARD 2: RESULTADOS */}
-          {reportData && (
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden animate-slideDown">
-              {/* Cabecera Reporte */}
-              <div className="p-6 bg-gray-50 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-800">
-                    {terceros.find(t => t.id == selectedTercero)?.razon_social}
-                  </h2>
-                  <p className="text-sm text-gray-600 font-medium mt-1">
-                    Periodo: <span className="text-indigo-600">{fechas.inicio}</span> al <span className="text-indigo-600">{fechas.fin}</span>
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap gap-3 justify-end">
-                  <button
-                    onClick={handleRecalcularSaldos}
-                    disabled={isLoading || recalculoStatus.loading}
-                    className="flex items-center gap-2 px-4 py-2 bg-yellow-50 text-yellow-700 border border-yellow-300 rounded-lg hover:bg-yellow-100 font-medium transition-colors shadow-sm disabled:opacity-50"
-                    title="Forzar reconstrucción de saldos"
-                  >
-                    {recalculoStatus.loading ? <span className="loading loading-spinner loading-xs"></span> : <FaSync />} Recalcular
-                  </button>
-                  <button onClick={handleExportCSV} disabled={isLoading} className="flex items-center gap-2 px-4 py-2 bg-white border border-green-500 text-green-600 rounded-lg hover:bg-green-50 font-medium transition-colors shadow-sm disabled:opacity-50"><FaFileCsv /> CSV</button>
-                  <button onClick={handleExportPDF} disabled={isLoading} className="flex items-center gap-2 px-4 py-2 bg-white border border-red-500 text-red-600 rounded-lg hover:bg-red-50 font-medium transition-colors shadow-sm disabled:opacity-50"><FaFilePdf /> PDF</button>
-                </div>
+        {/* CARD 2: RESULTADOS */}
+        {reportData && (
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden animate-slideDown">
+            {/* Cabecera Reporte */}
+            <div className="p-6 bg-gray-50 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">
+                  {terceros.find(t => t.id == selectedTercero)?.razon_social}
+                </h2>
+                <p className="text-sm text-gray-600 font-medium mt-1">
+                  Periodo: <span className="text-indigo-600">{fechas.inicio}</span> al <span className="text-indigo-600">{fechas.fin}</span>
+                </p>
               </div>
 
-              {/* Tabla */}
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-slate-100">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Fecha</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Documento</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Cuenta</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-1/4">Concepto</th>
-                      <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">Débito</th>
-                      <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">Crédito</th>
-                      <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider bg-slate-200/50">Saldo Parcial</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-100">
-                    {/* Saldo Inicial Global */}
-                    <tr className="bg-indigo-50 border-b border-indigo-100">
-                      <td colSpan={6} className="px-4 py-3 text-right text-sm font-bold text-indigo-800 uppercase tracking-wide">
-                        Saldo Inicial Tercero:
-                      </td>
-                      <td className="px-4 py-3 text-right text-sm font-mono font-bold text-indigo-900">
-                        {formatCurrency(reportData.saldoAnterior)}
-                      </td>
-                    </tr>
+              <div className="flex flex-wrap gap-3 justify-end">
+                <button
+                  onClick={handleRecalcularSaldos}
+                  disabled={isLoading || recalculoStatus.loading}
+                  className="flex items-center gap-2 px-4 py-2 bg-yellow-50 text-yellow-700 border border-yellow-300 rounded-lg hover:bg-yellow-100 font-medium transition-colors shadow-sm disabled:opacity-50"
+                  title="Forzar reconstrucción de saldos"
+                >
+                  {recalculoStatus.loading ? <span className="loading loading-spinner loading-xs"></span> : <FaSync />} Recalcular
+                </button>
+                <button onClick={handleExportCSV} disabled={isLoading} className="flex items-center gap-2 px-4 py-2 bg-white border border-green-500 text-green-600 rounded-lg hover:bg-green-50 font-medium transition-colors shadow-sm disabled:opacity-50"><FaFileCsv /> CSV</button>
+                <button onClick={handleExportPDF} disabled={isLoading} className="flex items-center gap-2 px-4 py-2 bg-white border border-red-500 text-red-600 rounded-lg hover:bg-red-50 font-medium transition-colors shadow-sm disabled:opacity-50"><FaFilePdf /> PDF</button>
+              </div>
+            </div>
 
-                    {reportData.movimientos.map((mov, index) => {
-                      const isNewAccountGroup = index === 0 || mov.cuenta_id !== reportData.movimientos[index - 1].cuenta_id;
-                      return (
-                        <React.Fragment key={`group-${mov.cuenta_id}-${index}`}>
-                          {isNewAccountGroup && (
-                            <tr className="bg-gray-100 border-t border-gray-200">
-                              <td colSpan={4} className="px-4 py-2 text-xs font-bold text-gray-600 uppercase">
-                                Cuenta: <span className="text-indigo-600">{mov.cuenta_codigo} - {mov.cuenta_nombre}</span>
-                              </td>
-                              <td colSpan={2} className="px-4 py-2 text-right text-xs font-bold text-gray-500">Saldo Inicial Cuenta:</td>
-                              <td className="px-4 py-2 text-right text-xs font-mono font-bold text-gray-700 bg-gray-200">
-                                {formatCurrency(reportData.saldos_iniciales_por_cuenta[String(mov.cuenta_id)])}
-                              </td>
-                            </tr>
-                          )}
-                          <tr className="hover:bg-indigo-50/20 transition-colors">
-                            <td className="px-4 py-2 text-sm text-gray-600 font-mono whitespace-nowrap">
-                              {new Date(mov.fecha).toLocaleDateString('es-CO', { timeZone: 'UTC' })}
+            {/* Tabla */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-slate-100">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Fecha</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Documento</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Cuenta</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-1/4">Concepto</th>
+                    <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">Débito</th>
+                    <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">Crédito</th>
+                    <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider bg-slate-200/50">Saldo Parcial</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {/* Saldo Inicial Global */}
+                  <tr className="bg-indigo-50 border-b border-indigo-100">
+                    <td colSpan={6} className="px-4 py-3 text-right text-sm font-bold text-indigo-800 uppercase tracking-wide">
+                      Saldo Inicial Tercero:
+                    </td>
+                    <td className="px-4 py-3 text-right text-sm font-mono font-bold text-indigo-900">
+                      {formatCurrency(reportData.saldoAnterior)}
+                    </td>
+                  </tr>
+
+                  {reportData.movimientos.map((mov, index) => {
+                    const isNewAccountGroup = index === 0 || mov.cuenta_id !== reportData.movimientos[index - 1].cuenta_id;
+                    return (
+                      <React.Fragment key={`group-${mov.cuenta_id}-${index}`}>
+                        {isNewAccountGroup && (
+                          <tr className="bg-gray-100 border-t border-gray-200">
+                            <td colSpan={4} className="px-4 py-2 text-xs font-bold text-gray-600 uppercase">
+                              Cuenta: <span className="text-indigo-600">{mov.cuenta_codigo} - {mov.cuenta_nombre}</span>
                             </td>
-                            <td className="px-4 py-2 text-sm font-medium text-gray-800">
-                              {mov.tipo_documento} #{mov.numero_documento}
-                            </td>
-                            <td className="px-4 py-2 text-xs text-gray-500 font-mono">
-                              {mov.cuenta_codigo}
-                            </td>
-                            <td className="px-4 py-2 text-sm text-gray-600 italic truncate max-w-xs" title={mov.concepto}>
-                              {mov.concepto}
-                            </td>
-                            <td className="px-4 py-2 text-right text-sm font-mono text-gray-700">
-                              {parseFloat(mov.debito) > 0 ? formatCurrency(mov.debito) : '-'}
-                            </td>
-                            <td className="px-4 py-2 text-right text-sm font-mono text-gray-700">
-                              {parseFloat(mov.credito) > 0 ? formatCurrency(mov.credito) : '-'}
-                            </td>
-                            <td className="px-4 py-2 text-right text-sm font-mono font-bold text-indigo-900 bg-slate-50">
-                              {formatCurrency(mov.saldo_parcial)}
+                            <td colSpan={2} className="px-4 py-2 text-right text-xs font-bold text-gray-500">Saldo Inicial Cuenta:</td>
+                            <td className="px-4 py-2 text-right text-xs font-mono font-bold text-gray-700 bg-gray-200">
+                              {formatCurrency(reportData.saldos_iniciales_por_cuenta[String(mov.cuenta_id)])}
                             </td>
                           </tr>
-                        </React.Fragment>
-                      );
-                    })}
-                  </tbody>
-
-                  {/* Totales Finales */}
-                  <tfoot className="bg-slate-800 text-white border-t-4 border-indigo-500">
-                    <tr>
-                      <td colSpan={4} className="px-4 py-4 text-right text-sm font-bold uppercase tracking-wider">TOTALES TERCERO:</td>
-                      <td className="px-4 py-4 text-right font-mono font-bold text-green-400">
-                        {formatCurrency(reportData.movimientos.reduce((sum, mov) => sum + parseFloat(mov.debito), 0))}
-                      </td>
-                      <td className="px-4 py-4 text-right font-mono font-bold text-green-400">
-                        {formatCurrency(reportData.movimientos.reduce((sum, mov) => sum + parseFloat(mov.credito), 0))}
-                      </td>
-                      <td className="px-4 py-4 text-right text-lg font-mono font-bold text-white bg-slate-700">
-                        {formatCurrency(reportData.movimientos.length > 0
-                          ? reportData.movimientos[reportData.movimientos.length - 1].saldo_parcial
-                          : reportData.saldoAnterior
                         )}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
+                        <tr className="hover:bg-indigo-50/20 transition-colors">
+                          <td className="px-4 py-2 text-sm text-gray-600 font-mono whitespace-nowrap">
+                            {new Date(mov.fecha).toLocaleDateString('es-CO', { timeZone: 'UTC' })}
+                          </td>
+                          <td className="px-4 py-2 text-sm font-medium text-gray-800">
+                            {mov.tipo_documento} #{mov.numero_documento}
+                          </td>
+                          <td className="px-4 py-2 text-xs text-gray-500 font-mono">
+                            {mov.cuenta_codigo}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-gray-600 italic truncate max-w-xs" title={mov.concepto}>
+                            {mov.concepto}
+                          </td>
+                          <td className="px-4 py-2 text-right text-sm font-mono text-gray-700">
+                            {parseFloat(mov.debito) > 0 ? formatCurrency(mov.debito) : '-'}
+                          </td>
+                          <td className="px-4 py-2 text-right text-sm font-mono text-gray-700">
+                            {parseFloat(mov.credito) > 0 ? formatCurrency(mov.credito) : '-'}
+                          </td>
+                          <td className="px-4 py-2 text-right text-sm font-mono font-bold text-indigo-900 bg-slate-50">
+                            {formatCurrency(mov.saldo_parcial)}
+                          </td>
+                        </tr>
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+
+                {/* Totales Finales */}
+                <tfoot className="bg-slate-800 text-white border-t-4 border-indigo-500">
+                  <tr>
+                    <td colSpan={4} className="px-4 py-4 text-right text-sm font-bold uppercase tracking-wider">TOTALES TERCERO:</td>
+                    <td className="px-4 py-4 text-right font-mono font-bold text-green-400">
+                      {formatCurrency(reportData.movimientos.reduce((sum, mov) => sum + parseFloat(mov.debito), 0))}
+                    </td>
+                    <td className="px-4 py-4 text-right font-mono font-bold text-green-400">
+                      {formatCurrency(reportData.movimientos.reduce((sum, mov) => sum + parseFloat(mov.credito), 0))}
+                    </td>
+                    <td className="px-4 py-4 text-right text-lg font-mono font-bold text-white bg-slate-700">
+                      {formatCurrency(reportData.movimientos.length > 0
+                        ? reportData.movimientos[reportData.movimientos.length - 1].saldo_parcial
+                        : reportData.saldoAnterior
+                      )}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
-    </>
+    </div>
   );
 }

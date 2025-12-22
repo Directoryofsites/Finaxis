@@ -50,6 +50,30 @@ export default function BalancePruebaPage() {
     }
   }, [user, authLoading, router]);
 
+  // --- AUTO-CONFIGURACION (IA) ---
+  useEffect(() => {
+    if (isPageReady) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const aiFechaInicio = urlParams.get('fecha_inicio');
+      const aiFechaFin = urlParams.get('fecha_fin');
+      const aiNivel = urlParams.get('nivel');
+
+      if (aiFechaInicio && aiFechaFin) {
+        setFiltros(prev => ({
+          ...prev,
+          fecha_inicio: aiFechaInicio,
+          fecha_fin: aiFechaFin,
+          nivel_maximo: aiNivel || prev.nivel_maximo
+        }));
+
+        // Auto-ejecutar
+        setTimeout(() => {
+          document.getElementById('btn-generar-bal-prueba')?.click();
+        }, 800);
+      }
+    }
+  }, [isPageReady]);
+
   const handleFiltroChange = (e) => {
     const { name, value } = e.target;
     setFiltros(prev => ({ ...prev, [name]: value }));
@@ -241,6 +265,7 @@ export default function BalancePruebaPage() {
 
           <div className="flex flex-col md:flex-row justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
             <button
+              id="btn-generar-bal-prueba" // Hook para IA
               onClick={handleGenerateReport}
               disabled={isLoading}
               className={`

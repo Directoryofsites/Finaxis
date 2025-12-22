@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import {
@@ -36,6 +36,7 @@ const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-s
 export default function NuevoTrasladoPage() {
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
+    const searchParams = useSearchParams(); // Hook para leer parámetros
 
     // Estados del Formulario
     const [fecha, setFecha] = useState(new Date());
@@ -100,6 +101,18 @@ export default function NuevoTrasladoPage() {
         }
         fetchMaestros();
     }, [user, authLoading, router, fetchMaestros]);
+
+    // --- DEEP LINKING TRIGGER (Nuevo Traslado) ---
+    useEffect(() => {
+        const trigger = searchParams.get('trigger');
+        if (trigger === 'new_transfer') {
+            // Limpiar URL
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, '', newUrl);
+            // Abrir modal con pequeño delay
+            setTimeout(() => setIsModalOpen(true), 500);
+        }
+    }, [searchParams]);
 
 
     const handleAddProducts = (newItems) => {

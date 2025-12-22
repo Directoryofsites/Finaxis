@@ -184,6 +184,21 @@ export default function PlanDeCuentasPage() {
     fetchCuentas();
   }, [fetchCuentas]);
 
+  // --- AUTO-TRIGGER DESDE IA/URL ---
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('trigger') === 'new_account') {
+        // Pequeño delay para asegurar que la página cargó
+        setTimeout(() => {
+          handleOpenCreateModal();
+          // Limpiar URL para no reabrir al recargar
+          window.history.replaceState({}, '', window.location.pathname);
+        }, 500);
+      }
+    }
+  }, []);
+
   // --- LÓGICA DE BÚSQUEDA INTELIGENTE Y AUTO-EXPANSIÓN ---
   const handleSearchChange = (e) => {
     const term = e.target.value;

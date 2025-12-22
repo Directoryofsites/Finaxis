@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
 
@@ -44,6 +45,17 @@ export default function GestionarConceptosPage() {
       fetchConceptos();
     }
   }, [user, authLoading]);
+
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const trigger = searchParams.get('trigger');
+    if (trigger === 'new_fav_concept') {
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      // Wait slightly to ensure page is ready
+      setTimeout(() => openNewModal(), 300);
+    }
+  }, [searchParams]);
 
   // --- Manejo de UI ---
   const handleCheckboxChange = (id) => {

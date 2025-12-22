@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { toast, ToastContainer } from 'react-toastify';
 import { FaPlus, FaList, FaSave, FaSearch, FaTimes, FaFlask, FaEdit, FaTrash, FaMoneyBillWave, FaFilePdf, FaIndustry } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
@@ -9,6 +10,7 @@ import { getProductosByEmpresa as getProductos } from '../../../lib/productosSer
 
 export default function GestionRecetasPage() {
     const { user } = useAuth();
+    const searchParams = useSearchParams();
     const [activeTab, setActiveTab] = useState('list'); // 'list' | 'create'
     const [recetas, setRecetas] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -40,6 +42,17 @@ export default function GestionRecetasPage() {
     const [newRecursoDesc, setNewRecursoDesc] = useState('');
     const [newRecursoTipo, setNewRecursoTipo] = useState('MANO_OBRA_DIRECTA'); // MOD o CIF
     const [newRecursoCosto, setNewRecursoCosto] = useState(0);
+
+    // --- DEEP LINKING TRIGGER ---
+    useEffect(() => {
+        const trigger = searchParams.get('trigger');
+        if (trigger === 'new_recipe') {
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, '', newUrl);
+            resetForm();
+            setTimeout(() => setActiveTab('create'), 100);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         loadRecetas();
