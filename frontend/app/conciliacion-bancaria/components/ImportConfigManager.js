@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { apiService } from '@/lib/apiService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -141,14 +142,43 @@ export default function ImportConfigManager() {
       const method = isCreating ? 'post' : 'put';
 
       console.log(`💾 [SAVE] URL: ${url}, Método: ${method}`);
-      // [PARCHE] Transformar field_mappings a field_mapping para el backend
+
+      // [PARCHE MEJORADO] Transformar field_mappings a field_mapping y convertir letras a números
       const payload = { ...formData };
+
       if (payload.field_mappings) {
-        payload.field_mapping = payload.field_mappings;
-        delete payload.field_mappings;
+        const mapping = { ...payload.field_mappings };
+
+        // Convertir valores (A->0, B->1, "0"->0)
+        Object.keys(mapping).forEach(key => {
+          const val = mapping[key];
+
+          // Si está vacío, lo ignoramos (o el backend validará los requeridos)
+          if (val === '' || val === null || val === undefined) {
+            // No borrar keys obligatorias para que salte la validación correcta del backend si faltan
+            // Pero la conversión solo aplica si hay valor
+            return;
+          }
+
+          // Si es número directo "0", "1"
+          if (!isNaN(val) && val.toString().trim() !== '') {
+            mapping[key] = parseInt(val, 10);
+          }
+          // Si es letra única A, B, C...
+          else if (typeof val === 'string' && val.trim().length === 1 && val.trim().match(/[a-zA-Z]/)) {
+            mapping[key] = val.trim().toUpperCase().charCodeAt(0) - 65;
+          }
+          // Caso borde: alguien escribe "Columna A" -> No lo soportamos aun, fallará validación de tipo int
+        });
+
+        payload.field_mapping = mapping;
+        delete payload.field_mappings; // Eliminar la clave antigua
       }
 
-      console.log(`💾 [SAVE] Payload:`, JSON.stringify(payload, null, 2));
+      // Asegurarse de quitar bank_name si estorba (aunque backend lo usa para fallback)
+      // No quitar bank_name, el backend lo usa.
+
+      console.log(`💾 [SAVE] Payload procesado:`, JSON.stringify(payload, null, 2));
 
       const response = await apiService[method](url, payload);
 
