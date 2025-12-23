@@ -135,10 +135,15 @@ export default function ImportConfigWizard({ onCancel, onSaveSuccess }) {
 
         setLoading(true);
         try {
+            // [CRITICO] Fix FK Violation: El ID seleccionado es PlanCuenta (1110), pero el backend espera Tercero.
+            // Solución: Enviamos 0 para activar la búsqueda por NOMBRE en el backend.
+            const selectedBank = banks.find(b => b.id == formData.bank_id);
+
             // Construir payload limpio
             const payload = {
                 name: formData.name,
-                bank_id: parseInt(formData.bank_id), // Asegurar int
+                bank_id: 0, // Bypass ID mismatch -> Backend buscará Tercero por nombre
+                bank_name: selectedBank ? selectedBank.nombre : formData.name,
                 file_format: formData.file_format, // Ya es mayúscula por default
                 delimiter: formData.delimiter,
                 encoding: formData.encoding,
