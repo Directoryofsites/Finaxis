@@ -164,10 +164,9 @@ export default function ImportConfigManager() {
         Object.keys(mapping).forEach(key => {
           const val = mapping[key];
 
-          // Si está vacío, lo ignoramos (o el backend validará los requeridos)
+          // Si está vacío, borrar la clave para que no falle la validación de tipo (int)
           if (val === '' || val === null || val === undefined) {
-            // No borrar keys obligatorias para que salte la validación correcta del backend si faltan
-            // Pero la conversión solo aplica si hay valor
+            delete mapping[key];
             return;
           }
 
