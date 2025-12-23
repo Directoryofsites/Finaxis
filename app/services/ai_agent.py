@@ -132,6 +132,7 @@ TOOLS_SCHEMA = [
                     "type": "string",
                     "description": "Acción específica (ej: Crear, Listar, Reporte)."
                 }
+            },
             "required": ["modulo"]
         }
     },
