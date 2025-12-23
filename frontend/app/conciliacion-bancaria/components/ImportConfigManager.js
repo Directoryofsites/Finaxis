@@ -157,6 +157,14 @@ export default function ImportConfigManager() {
         payload.bank_id = 0;
       }
 
+      // [CRITICO] Fix 422: Validaciones de Schema (Uppercase y Mapeo)
+      if (payload.file_format) {
+        payload.file_format = payload.file_format.toUpperCase(); // Schema exige MAYÚSCULAS
+      }
+      if (payload.skip_rows !== undefined) {
+        payload.header_rows = parseInt(payload.skip_rows) || 1; // Default a 1 si no hay nada
+      }
+
       if (payload.field_mappings) {
         const mapping = { ...payload.field_mappings };
 
