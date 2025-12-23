@@ -6,11 +6,13 @@ import { toast } from 'react-toastify';
 import { menuStructure } from '../../lib/menuData'; // Importamos la estructura real
 import { commandDictionary } from '../../lib/commandDictionary';
 import { apiService } from '@/lib/apiService';
+import AssistantOverlay from './VoiceAssistant/AssistantOverlay';
 
 export default function SmartSearchSection() {
     const router = useRouter();
     const [commandHistory, setCommandHistory] = useState([]);
     const [showHistory, setShowHistory] = useState(false);
+    const [showAssistant, setShowAssistant] = useState(false);
 
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
@@ -427,6 +429,20 @@ export default function SmartSearchSection() {
                     className="relative h-20 object-contain drop-shadow-2xl transform transition-transform duration-500 hover:scale-105"
                 />
             </div>
+
+            {/* Assistant Trigger Button */}
+            <button
+                onClick={() => setShowAssistant(true)}
+                className="mb-8 flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full font-medium shadow-lg hover:shadow-xl hover:scale-105 transition-all transform animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200"
+            >
+                <FaMicrophone className="animate-pulse" />
+                <span>Modo Asistente Interactivo</span>
+            </button>
+
+            {/* Assistant Overlay Portal */}
+            {showAssistant && (
+                <AssistantOverlay onClose={() => setShowAssistant(false)} />
+            )}
 
             {/* Search Bar Section */}
             <div className="relative w-full max-w-2xl z-50">
