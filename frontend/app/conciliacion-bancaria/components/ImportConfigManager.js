@@ -131,6 +131,12 @@ export default function ImportConfigManager() {
       return;
     }
 
+    // [PARCHE] Validar campos del mapeo obligatorios
+    if (!formData.field_mappings.date || !formData.field_mappings.amount || !formData.field_mappings.description) {
+      alert('Por favor, indica la columna para Fecha, Monto y Descripción (Ej: A, B, C). Son obligatorios.');
+      return;
+    }
+
     console.log(`💾 [SAVE] Validaciones pasadas, enviando a API...`);
     setLoading(true);
 
@@ -145,6 +151,11 @@ export default function ImportConfigManager() {
 
       // [PARCHE MEJORADO] Transformar field_mappings a field_mapping y convertir letras a números
       const payload = { ...formData };
+
+      // [CRITICO] Fix 422: Enviar bank_id = 0 para pasar validación Pydantic
+      if (!payload.bank_id) {
+        payload.bank_id = 0;
+      }
 
       if (payload.field_mappings) {
         const mapping = { ...payload.field_mappings };
