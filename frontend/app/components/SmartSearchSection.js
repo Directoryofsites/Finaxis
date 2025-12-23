@@ -5,6 +5,7 @@ import { FaSearch, FaMagic, FaMicrophone, FaArrowRight, FaExternalLinkAlt, FaTer
 import { toast } from 'react-toastify';
 import { menuStructure } from '../../lib/menuData'; // Importamos la estructura real
 import { commandDictionary } from '../../lib/commandDictionary';
+import { apiService } from '@/lib/apiService';
 
 export default function SmartSearchSection() {
     const router = useRouter();
