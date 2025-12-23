@@ -63,14 +63,16 @@ async def create_import_config(
 ):
     """Crear nueva configuración de importación"""
     try:
-        db_config = ImportConfig(
-            **config.dict(),
+        manager = ConfigurationManager(db)
+        # Convertir Pydantic model a dict para el servicio
+        config_data = config.dict()
+        
+        # [CRITICO] Usar el Manager para que aplique la lógica de fallback de bank_id
+        db_config = manager.create_configuration(
+            config_data=config_data,
             empresa_id=current_user.empresa_id,
-            created_by=current_user.id
+            user_id=current_user.id
         )
-        db.add(db_config)
-        db.commit()
-        db.refresh(db_config)
         return db_config
     except Exception as e:
         db.rollback()
