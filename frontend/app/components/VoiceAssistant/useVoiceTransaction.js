@@ -51,10 +51,11 @@ export const useVoiceTransaction = () => {
                 context: context
             });
 
-            const toolCall = response?.tool_calls?.[0]; // Asumimos estructura de Gemini/OpenAI wrapper
+            // FIXED: El backend devuelve { name: "...", parameters: {...} } directamente, no un array tool_calls wrapper.
+            const toolCall = response?.name ? response : null;
 
             if (toolCall) {
-                const args = toolCall.args || {};
+                const args = toolCall.parameters || toolCall.args || {};
 
                 // CASO 1: La IA decide correctamente usar el extractor
                 if (toolCall.name === 'extraer_datos_documento') {
