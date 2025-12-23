@@ -143,6 +143,27 @@ TOOLS_SCHEMA = [
             "type": "object",
             "properties": {}
         }
+    },
+    {
+        "name": "extraer_datos_documento",
+        "description": "Extrae datos estructurados de lo que dice el usuario para llenar un documento contable (factura, recibo, etc).",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "tipo_documento": { "type": "string", "description": "Tipo de documento detectado (ej: Recibo de Caja, Factura de Venta)." },
+                "tercero": { "type": "string", "description": "Nombre del tercero mencionado." },
+                "fecha": { "type": "string", "description": "Fecha mencionada." },
+                "cuenta": { "type": "string", "description": "Cuenta contable o descripción (ej: Caja General, Bancolombia)." },
+                "concepto": { "type": "string", "description": "Descripción del movimiento o concepto general." },
+                "debito": { "type": "number", "description": "Valor débito." },
+                "credito": { "type": "number", "description": "Valor crédito." },
+                "accion": { 
+                    "type": "string", 
+                    "enum": ["DEFINIR_CABECERA", "AGREGAR_LINEA", "FINALIZAR", "CANCELAR"],
+                    "description": "Acción inferida según el contexto."
+                }
+            }
+        }
     }
 ]
 
@@ -159,13 +180,20 @@ Reglas:
    - Si piden "Estado de Resultados", "P&G", "Ganancias y Pérdidas" -> USA 'generar_estado_resultados'.
    - SOLO si piden explícitamente "Auxiliar por Terceros", "Módulo de Terceros", o "Reporte tradicional" -> USA 'generar_reporte_movimientos'.
 
-4. CREACIÓN DE REGISTROS (IMPORTANTE: Usa siempre el 'tipo' genérico):
+4. MODO ASISTENTE / LLENADO DE DOCUMENTO:
+   - Si el usuario está creando un documento (según el contexto o lo que dice), usa 'extraer_datos_documento'.
+   - Si dice "Crear Recibo", "Nuevo documento" -> accion: "DEFINIR_CABECERA".
+   - Si da valores ("500 pesos a la caja", "pago de servicio") -> accion: "AGREGAR_LINEA".
+   - Si dice "Guardar", "Grabar", "Terminar" -> accion: "FINALIZAR".
+
+5. CREACIÓN DE REGISTROS (IMPORTANTE: Usa siempre el 'tipo' genérico):
    - Si piden "Cliente", "Proveedor", "Empleado", "Socio" -> USA 'crear_recurso' con tipo='tercero'.
    - Si piden "Factura", "Venta" -> USA 'crear_recurso' con tipo='factura'.
    - Si piden "Cuenta", "Auxiliar", "Rubro" -> USA 'crear_recurso' con tipo='cuenta'.
    - Si piden "Documento", "Consecutivo" -> USA 'crear_recurso' con tipo='tipo_documento'.
    - Otros: item, compra, traslado, plantilla, empresa.
-5. CONSULTAS, BÚSQUEDAS Y MOVIMIENTOS (SUPER INFORME - DEFAULT):
+
+6. CONSULTAS, BÚSQUEDAS Y MOVIMIENTOS (SUPER INFORME - DEFAULT):
    - POR DEFECTO: Si piden "Auxiliar", "Movimientos", "Informe de [Tercero]" -> USA 'consultar_documento' (Super Informe).
    - Si piden "Buscar factura X", "Consultar documento Y" -> USA 'consultar_documento'.
    - Si piden explícitamente "Super Informe", "Búsqueda Avanzada" o "Tarjetas" -> USA 'consultar_documento'.
@@ -175,7 +203,7 @@ Reglas:
 7. Si no entiendes, devuelve un JSON con error: {{ "error": "No entendí la solicitud" }}.
 """
 
-async def procesar_comando_natural(texto_usuario: str):
+async def procesar_comando_natural(texto_usuario: str, contexto: dict = None):
     if not api_key:
         return {"error": "API Key no configurada"}
 
@@ -199,7 +227,8 @@ async def procesar_comando_natural(texto_usuario: str):
             model = genai.GenerativeModel(model_name)
             
             # Construimos el prompt final con la instrucción y las herramientas
-            full_prompt = f"{SYSTEM_PROMPT}\n\nUsuario dice: '{texto_usuario}'\n\nResponde SOLO con el JSON de la tool call."
+            ctx_str = f"\nCONTEXTO ACTUAL (FORM STATE): {json.dumps(contexto, ensure_ascii=False)}" if contexto else ""
+            full_prompt = f"{SYSTEM_PROMPT}\n{ctx_str}\nUsuario dice: '{texto_usuario}'\n\nResponde SOLO con el JSON de la tool call."
             
             completion = model.generate_content(
                 full_prompt,
