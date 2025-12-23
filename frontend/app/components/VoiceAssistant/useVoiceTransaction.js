@@ -53,13 +53,31 @@ export const useVoiceTransaction = () => {
 
             const toolCall = response?.tool_calls?.[0]; // Asumimos estructura de Gemini/OpenAI wrapper
 
-            if (toolCall && toolCall.name === 'extraer_datos_documento') {
+            if (toolCall) {
                 const args = toolCall.args || {};
-                handleExtraction(args); // Manejar la lógica de actualización
+
+                // CASO 1: La IA decide correctamente usar el extractor
+                if (toolCall.name === 'extraer_datos_documento') {
+                    handleExtraction(args);
+                }
+                // CASO 2: La IA usa 'crear_recurso' (Fallback)
+                // Si intenta crear una factura/recibo, lo interceptamos para el asistente
+                else if (toolCall.name === 'crear_recurso') {
+                    const docTypes = ['factura', 'compra', 'traslado', 'recibo', 'comprobante', 'documento'];
+                    if (docTypes.some(t => args.tipo && args.tipo.toLowerCase().includes(t))) {
+                        handleExtraction({
+                            accion: 'DEFINIR_CABECERA',
+                            tipo_documento: args.tipo
+                        });
+                    } else {
+                        // Es algo ajeno (crear tercero, crear item), dejamos que pase (o mostramos mensaje)
+                        setAssistantMessage(`Entendido. Te llevaré a crear ${args.tipo}.`);
+                        // Aquí idealmente redirigiríamos, pero por ahora solo feedback
+                    }
+                }
             } else {
                 // Si la IA no detectó intención de documento, quizás es un comando normal
                 setAssistantMessage("Entendido. (Ejecutando acción estándar...)");
-                // Aquí podríamos delegar a la búsqueda normal o dar feedback
                 setDocState(prev => ({ ...prev, step: 'IDLE' }));
             }
 
