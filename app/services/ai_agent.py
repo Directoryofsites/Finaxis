@@ -132,10 +132,9 @@ TOOLS_SCHEMA = [
                     "type": "string",
                     "description": "Acción específica (ej: Crear, Listar, Reporte)."
                 }
-            },
             "required": ["modulo"]
         }
-    }
+    },
     {
         "name": "generar_backup",
         "description": "Genera inmediatamente una copia de seguridad completa (backup, respaldo) de la base de datos en formato JSON.",
