@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import {
     FaListOl,
@@ -25,6 +25,7 @@ const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-s
 export default function AuxiliarPorCuentaPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams(); // Hook para leer URL
 
     const [cuentas, setCuentas] = useState([]);
     const [selectedAccount, setSelectedAccount] = useState('');
@@ -35,6 +36,7 @@ export default function AuxiliarPorCuentaPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isPageReady, setPageReady] = useState(false);
+    const [autoRun, setAutoRun] = useState(false); // Flag para ejecución automática
 
     // Verificación de Sesión y Carga Inicial
     useEffect(() => {
@@ -47,6 +49,45 @@ export default function AuxiliarPorCuentaPage() {
             }
         }
     }, [user, authLoading, router]);
+
+    // EFECTO: Leer Parámetros URL y Auto-llenar
+    useEffect(() => {
+        if (cuentas.length > 0 && searchParams.size > 0 && !autoRun) {
+            const pCuenta = searchParams.get('cuenta');
+            const pInicio = searchParams.get('fecha_inicio');
+            const pFin = searchParams.get('fecha_fin');
+
+            if (pInicio) setStartDate(pInicio);
+            if (pFin) setEndDate(pFin);
+
+            if (pCuenta) {
+                // Buscamos la cuenta por ID, Código o Nombre (Búsqueda inteligente)
+                const term = pCuenta.toLowerCase();
+                const matched = cuentas.find(c =>
+                    c.id.toString() === pCuenta ||
+                    c.codigo === pCuenta ||
+                    c.nombre.toLowerCase().includes(term)
+                );
+
+                if (matched) {
+                    setSelectedAccount(matched.id);
+                    // Si tenemos todo, marcamos para ejecución automática
+                    if (pInicio && pFin) {
+                        setAutoRun(true);
+                    }
+                }
+            }
+        }
+    }, [cuentas, searchParams, autoRun]);
+
+    // EFECTO: Ejecución Automática una vez seteado el estado
+    useEffect(() => {
+        if (autoRun && selectedAccount && startDate && endDate) {
+            fetchReport(selectedAccount, startDate, endDate);
+            setAutoRun(false); // Reset flag para evitar loop
+        }
+    }, [autoRun, selectedAccount, startDate, endDate]);
+
 
     const fetchCuentas = async () => {
         try {
@@ -67,19 +108,16 @@ export default function AuxiliarPorCuentaPage() {
         }
     };
 
-    const handleGenerateReport = async () => {
-        if (!selectedAccount || !startDate || !endDate) {
-            setError('Por favor, selecciona una cuenta y un rango de fechas válido.');
-            return;
-        }
+    // Lógica Central de Consulta
+    const fetchReport = async (accountId, start, end) => {
         setIsLoading(true);
         setError(null);
         setReportData(null);
 
         const params = {
-            cuenta_id: selectedAccount,
-            fecha_inicio: startDate,
-            fecha_fin: endDate,
+            cuenta_id: accountId,
+            fecha_inicio: start,
+            fecha_fin: end,
         };
 
         try {
@@ -90,6 +128,14 @@ export default function AuxiliarPorCuentaPage() {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleGenerateReport = () => {
+        if (!selectedAccount || !startDate || !endDate) {
+            setError('Por favor, selecciona una cuenta y un rango de fechas válido.');
+            return;
+        }
+        fetchReport(selectedAccount, startDate, endDate);
     };
 
     const handleExportToCSV = () => {
