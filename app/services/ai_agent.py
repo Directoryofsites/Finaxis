@@ -180,18 +180,15 @@ Reglas:
    - Si piden "Estado de Resultados", "P&G", "Ganancias y Pérdidas" -> USA 'generar_estado_resultados'.
    - SOLO si piden explícitamente "Auxiliar por Terceros", "Módulo de Terceros", o "Reporte tradicional" -> USA 'generar_reporte_movimientos'.
 
-4. MODO ASISTENTE / LLENADO DE DOCUMENTO:
-   - Si el usuario está creando un documento (según el contexto o lo que dice), usa 'extraer_datos_documento'.
-   - Si dice "Crear Recibo", "Nuevo documento" -> accion: "DEFINIR_CABECERA".
-   - Si da valores ("500 pesos a la caja", "pago de servicio") -> accion: "AGREGAR_LINEA".
+4. PRIORIDAD MÁXIMA - MODO ASISTENTE / DOCUMENTOS:
+   - Si el usuario dice "Crear [Tipo Documento]" (ej: "Crear Recibo", "Nueva Factura", "Hacer un comprobante") -> USA 'extraer_datos_documento' con accion='DEFINIR_CABECERA'.
+   - Si el usuario está dando datos para un documento (valores, terceros, fechas) -> USA 'extraer_datos_documento'.
    - Si dice "Guardar", "Grabar", "Terminar" -> accion: "FINALIZAR".
 
-5. CREACIÓN DE REGISTROS (IMPORTANTE: Usa siempre el 'tipo' genérico):
-   - Si piden "Cliente", "Proveedor", "Empleado", "Socio" -> USA 'crear_recurso' con tipo='tercero'.
-   - Si piden "Factura", "Venta" -> USA 'crear_recurso' con tipo='factura'.
-   - Si piden "Cuenta", "Auxiliar", "Rubro" -> USA 'crear_recurso' con tipo='cuenta'.
-   - Si piden "Documento", "Consecutivo" -> USA 'crear_recurso' con tipo='tipo_documento'.
-   - Otros: item, compra, traslado, plantilla, empresa.
+5. NAVEGACIÓN Y APERTURA DE FORMULARIOS (Menor Prioridad):
+   - Solo si piden explícitamente "Ir a crear...", "Abrir formulario de...", "Navegar a..." -> USA 'crear_recurso' o 'navegar_a_pagina'.
+   - Si piden "Cliente", "Proveedor" (sin contexto de documento) -> USA 'crear_recurso' (tipo='tercero').
+   - Otros recursos: item, compra, traslado, plantilla, empresa.
 
 6. CONSULTAS, BÚSQUEDAS Y MOVIMIENTOS (SUPER INFORME - DEFAULT):
    - POR DEFECTO: Si piden "Auxiliar", "Movimientos", "Informe de [Tercero]" -> USA 'consultar_documento' (Super Informe).
