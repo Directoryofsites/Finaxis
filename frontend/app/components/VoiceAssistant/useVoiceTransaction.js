@@ -61,7 +61,6 @@ export const useVoiceTransaction = () => {
                     handleExtraction(args);
                 }
                 // CASO 2: La IA usa 'crear_recurso' (Fallback)
-                // Si intenta crear una factura/recibo, lo interceptamos para el asistente
                 else if (toolCall.name === 'crear_recurso') {
                     const docTypes = ['factura', 'compra', 'traslado', 'recibo', 'comprobante', 'documento'];
                     if (docTypes.some(t => args.tipo && args.tipo.toLowerCase().includes(t))) {
@@ -70,14 +69,28 @@ export const useVoiceTransaction = () => {
                             tipo_documento: args.tipo
                         });
                     } else {
-                        // Es algo ajeno (crear tercero, crear item), dejamos que pase (o mostramos mensaje)
                         setAssistantMessage(`Entendido. Te llevaré a crear ${args.tipo}.`);
-                        // Aquí idealmente redirigiríamos, pero por ahora solo feedback
                     }
                 }
+                // CASO 3: La IA usa 'navegar_a_pagina' para crear algo (Fallback)
+                else if (toolCall.name === 'navegar_a_pagina') {
+                    if (args.accion && ['crear', 'nuevo', 'alta'].some(a => args.accion.toLowerCase().includes(a))) {
+                        handleExtraction({
+                            accion: 'DEFINIR_CABECERA',
+                            tipo_documento: args.modulo // Usamos el módulo como proxy del tipo
+                        });
+                    } else {
+                        setAssistantMessage(`Navegando a ${args.modulo}...`);
+                        // Aquí podríamos cerrar el overlay automágicamente
+                    }
+                }
+                // CASO 4: Otra herramienta no soportada en modo asistente
+                else {
+                    setAssistantMessage(`Intenté usar '${toolCall.name}', pero no sé cómo manejarlo aquí.`);
+                }
             } else {
-                // Si la IA no detectó intención de documento, quizás es un comando normal
-                setAssistantMessage("Entendido. (Ejecutando acción estándar...)");
+                // No tool call
+                setAssistantMessage("No entendí tu solicitud. Intenta decir: 'Crear recibo de caja'.");
                 setDocState(prev => ({ ...prev, step: 'IDLE' }));
             }
 
