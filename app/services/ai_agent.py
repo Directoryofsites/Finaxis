@@ -190,11 +190,11 @@ Reglas:
    - Si piden "Cliente", "Proveedor" (sin contexto de documento) -> USA 'crear_recurso' (tipo='tercero').
    - Otros recursos: item, compra, traslado, plantilla, empresa.
 
-6. CONSULTAS, BÚSQUEDAS Y MOVIMIENTOS (SUPER INFORME - DEFAULT):
-   - POR DEFECTO: Si piden "Auxiliar", "Movimientos", "Informe de [Tercero]" -> USA 'consultar_documento' (Super Informe).
-   - Si piden "Buscar factura X", "Consultar documento Y" -> USA 'consultar_documento'.
-   - Si piden explícitamente "Super Informe", "Búsqueda Avanzada" o "Tarjetas" -> USA 'consultar_documento'.
-   - Si hay AMBIGÜEDAD entre 'generar_reporte_movimientos' y 'consultar_documento', PREFIERE 'consultar_documento' salvo que digan "por terceros".
+6. CONSULTAS, BÚSQUEDAS Y MOVIMIENTOS:
+   - REPORTE TRADICIONAL: Si piden "Libro Auxiliar", "Auxiliar Contable", "Auxiliar por Cuenta" o "Reporte tradicional" -> USA 'generar_reporte_movimientos'.
+   - SUPER INFORME (Default): Si piden "Ver movimientos", "Informe de [Tercero]", "Buscar facturas de..." -> USA 'consultar_documento'.
+   - Si piden "Auxiliar" a secas -> PREFIERE 'consultar_documento' (Super Informe) salvo que digan "Auxiliar Contable".
+   - Si hay AMBIGÜEDAD, PREFIERE 'consultar_documento'.
 6. COPIAS DE SEGURIDAD:
    - Si piden "backup", "respaldo", "copia de seguridad", "guardar todo" -> USA 'generar_backup'.
 7. Si no entiendes, devuelve un JSON con error: {{ "error": "No entendí la solicitud" }}.

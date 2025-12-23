@@ -430,14 +430,15 @@ export default function SmartSearchSection() {
                 />
             </div>
 
-            {/* Assistant Trigger Button */}
-            <button
+            {/* Assistant Trigger Button (DISABLED TEMPORARILY) 
+            <button 
                 onClick={() => setShowAssistant(true)}
                 className="mb-8 flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full font-medium shadow-lg hover:shadow-xl hover:scale-105 transition-all transform animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200"
             >
                 <FaMicrophone className="animate-pulse" />
                 <span>Modo Asistente Interactivo</span>
             </button>
+            */}
 
             {/* Assistant Overlay Portal */}
             {showAssistant && (
