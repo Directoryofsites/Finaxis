@@ -313,12 +313,23 @@ export default function SmartSearchSection() {
             } else if (actionName === 'generar_reporte_movimientos') {
                 const params = new URLSearchParams();
                 const p = data.parameters;
-                if (p.tercero || p.tercero_nombre) params.set('tercero', p.tercero || p.tercero_nombre);
-                if (p.cuenta || p.cuenta_nombre) params.set('cuenta', p.cuenta || p.cuenta_nombre);
+
+                // Common params
                 if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
                 if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
-                router.push(`/contabilidad/reportes/tercero-cuenta?${params.toString()}`);
-                toast.success('IA: Configurando Auxiliar por Tercero...');
+                if (p.cuenta || p.cuenta_nombre) params.set('cuenta', p.cuenta || p.cuenta_nombre);
+
+                // FIXED: Routing Inteligente
+                // Si hay tercero -> Auxiliar por Tercero
+                if (p.tercero || p.tercero_nombre) {
+                    params.set('tercero', p.tercero || p.tercero_nombre);
+                    router.push(`/contabilidad/reportes/tercero-cuenta?${params.toString()}`);
+                    toast.success('IA: Configurando Auxiliar por Tercero...');
+                } else {
+                    // Si NO hay tercero -> Auxiliar por Cuenta (Libro estándar)
+                    router.push(`/contabilidad/reportes/auxiliar-cuenta?${params.toString()}`);
+                    toast.success('IA: Configurando Auxiliar por Cuenta...');
+                }
 
             } else if (actionName === 'generar_balance_prueba') {
                 const params = new URLSearchParams();
