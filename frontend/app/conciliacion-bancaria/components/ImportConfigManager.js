@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 
 import DebugPanel from './DebugPanel';
+import ImportConfigWizard from './ImportConfigWizard'; // [NEW] Wizard Component
 
 export default function ImportConfigManager() {
   const [configs, setConfigs] = useState([]);
@@ -540,7 +541,20 @@ export default function ImportConfigManager() {
       )}
 
       {/* Formulario de creación/edición */}
-      {(isCreating || isEditing) && <ConfigurationForm />}
+      {/* CREACIÓN: Wizard (Reemplazo total del formulario antiguo) */}
+      {isCreating && (
+        <ImportConfigWizard
+          onCancel={() => setIsCreating(false)}
+          onSaveSuccess={() => {
+            setIsCreating(false);
+            loadConfigurations();
+            alert("¡Configuración creada exitosamente!");
+          }}
+        />
+      )}
+
+      {/* EDICIÓN: Formulario Legacy (Solo para editar existentes) */}
+      {isEditing && <ConfigurationForm />}
 
       {/* Panel de Debug */}
       <DebugPanel formData={formData} />
