@@ -136,6 +136,14 @@ TOOLS_SCHEMA = [
             "required": ["modulo"]
         }
     }
+    {
+        "name": "generar_backup",
+        "description": "Genera inmediatamente una copia de seguridad completa (backup, respaldo) de la base de datos en formato JSON.",
+        "parameters": {
+            "type": "object",
+            "properties": {}
+        }
+    }
 ]
 
 SYSTEM_PROMPT = f"""
@@ -162,7 +170,9 @@ Reglas:
    - Si piden "Buscar factura X", "Consultar documento Y" -> USA 'consultar_documento'.
    - Si piden explícitamente "Super Informe", "Búsqueda Avanzada" o "Tarjetas" -> USA 'consultar_documento'.
    - Si hay AMBIGÜEDAD entre 'generar_reporte_movimientos' y 'consultar_documento', PREFIERE 'consultar_documento' salvo que digan "por terceros".
-6. Si no entiendes, devuelve un JSON con error: {{ "error": "No entendí la solicitud" }}.
+6. COPIAS DE SEGURIDAD:
+   - Si piden "backup", "respaldo", "copia de seguridad", "guardar todo" -> USA 'generar_backup'.
+7. Si no entiendes, devuelve un JSON con error: {{ "error": "No entendí la solicitud" }}.
 """
 
 async def procesar_comando_natural(texto_usuario: str):

@@ -382,6 +382,28 @@ export default function SmartSearchSection() {
                 router.push(`/contabilidad/reportes/super-informe?${params.toString()}`);
                 toast.success('IA: Buscando documentos...');
 
+            } else if (actionName === 'generar_backup') {
+                toast.loading('IA: Generando respaldo completo de la base de datos...', { id: 'backup-toast' });
+                try {
+                    const response = await apiService.post('/utilidades/backup-rapido', {});
+                    // Convertir la respuesta JSON a Blob y descargar
+                    const jsonString = JSON.stringify(response, null, 2);
+                    const blob = new Blob([jsonString], { type: "application/json" });
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+                    link.download = `backup_completo_finaxis_${timestamp}.json`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    toast.success("¡Respaldo generado y descargado exitosamente!", { id: 'backup-toast' });
+                } catch (err) {
+                    console.error(err);
+                    toast.error("Error generando el respaldo.", { id: 'backup-toast' });
+                }
+
             } else {
                 toast.info(`IA sugiere acción desconocida: ${actionName}`);
             }

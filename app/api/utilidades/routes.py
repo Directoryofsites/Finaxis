@@ -178,6 +178,12 @@ def resetear_password(payload: usuario_schema.PasswordResetPayload, db: Session 
 def exportar_datos(export_request: migracion_schemas.ExportRequest, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(has_permission("utilidades:migracion"))): # <-- CAMBIO AQUÍ
     return migracion_service.exportar_datos(db=db, export_request=export_request, empresa_id=current_user.empresa_id)
 
+@router.post("/backup-rapido")
+def backup_rapido(current_user: models_usuario.Usuario = Depends(has_permission("utilidades:migracion")), db: Session = Depends(get_db)):
+    """Genera un backup completo inmediato (para uso por comandos de voz/AI)"""
+    return migracion_service.generar_backup_json(db=db, empresa_id=current_user.empresa_id, filtros=None)
+
+
 # --- RUTAS PARA COPIA AUTOMÁTICA ---
 from app.services import scheduler_backup
 
