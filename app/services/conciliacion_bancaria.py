@@ -765,12 +765,17 @@ class ConfigurationManager:
                 if fallback:
                     bank_id = fallback.id
                     
-        if not bank_id:
-             # Si aún así no hay ID (db vacía?), usar 0 o lanzar error
-             if 'bank_id' in config_data: 
-                 bank_id = config_data['bank_id']
+        if not bank_id or bank_id <= 0:
+             # [CRITICO] Si sigue siendo 0 (por bypass frontend), buscar cualquier ID válido
+             # para evitar error de FK.
+             print(f"[CONFIG MANAGER] Bank ID inválido ({bank_id}). Buscando fallback final.")
+             fallback_final = self.db.query(Tercero).filter(Tercero.empresa_id == empresa_id).first()
+             if fallback_final:
+                 bank_id = fallback_final.id
+                 print(f"[CONFIG MANAGER] Fallback final usado: {bank_id}")
              else:
-                 # Default extremo
+                 # Si no hay terceros en absoluto, esto fallará en FK igual, pero es un caso borde vacio.
+                 # Intentar 1 por si acaso hay seeds.
                  bank_id = 1 
 
         config = ImportConfig(
