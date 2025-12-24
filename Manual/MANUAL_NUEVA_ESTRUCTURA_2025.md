@@ -1,14 +1,31 @@
 # Manual de Navegación: Nueva Estructura de Módulos (Inventarios y Facturación)
 
 ## 1. Introducción
-Para mejorar la eficiencia operativa y separar las labores administrativas de las comerciales, se ha reorganizado el menú principal del sistema. 
+Para mejorar la eficiencia operativa y separar las labores administrativas de las comerciales, se ha reorganizado el menú principal del sistema y se ha potenciado el asistente de Inteligencia Artificial (IA).
 El antiguo módulo gigante de "Inventarios" se ha dividido en dos secciones especializadas: **Inventarios** (Control Logístico) y **Facturación** (Gestión Comercial).
 
 ---
 
-## 2. Nueva Estructura del Menú
+## 2. Asistente Inteligencia Artificial (IA) 🧠
 
-### 2.1. Módulo de Inventarios 📦
+Con la actualización reciente, el sistema cuenta con un **"Cerebro Unificado de IA"**. Esto significa que puede invocar las funciones inteligentes desde cualquier punto:
+
+1.  **Buscador Central (Dashboard):** La barra de búsqueda grande en la página de inicio.
+2.  **Botón Lateral (Barra de Navegación):** El ícono de búsqueda/micrófono en la barra lateral izquierda, accesible desde cualquier página.
+
+**Ambos botones tienen exactamente las mismas capacidades.** Todo lo que se programe o aprenda en el futuro estará disponible automáticamente en ambos accesos.
+
+### Funciones Principales de la IA:
+*   **Navegación por Voz:** "Ir a facturación", "Abrir inventarios", "Ver nómina".
+*   **Creación Rápida:** "Crear nueva factura", "Registrar compra", "Nuevo tercero".
+*   **Reportes Automáticos:** "Generar balance general", "Ver estado de resultados de este año".
+*   **Búsqueda Inteligente de Documentos:** "Buscar factura 123", "Ver comprobante de egreso por $500.000".
+
+---
+
+## 3. Nueva Estructura del Menú
+
+### 3.1. Módulo de Inventarios 📦
 **Enfoque:** Control físico, stock, costos y parametrización.
 Este módulo es exclusivo para el personal encargado del almacén, logística y control de costos.
 
@@ -21,7 +38,7 @@ Este módulo es exclusivo para el personal encargado del almacén, logística y 
 6.  **Ajuste Inventarios:** Corrección de stock físico vs. sistema.
 7.  **% Gestión de Topes:** Control de máximos y mínimos.
 
-### 2.2. Módulo de Facturación 💰 (NUEVO)
+### 3.2. Módulo de Facturación 💰 (NUEVO)
 **Enfoque:** Ventas, compras y rentabilidad.
 Este módulo agrupa todas las operaciones transaccionales comerciales.
 
@@ -35,7 +52,7 @@ Este módulo agrupa todas las operaciones transaccionales comerciales.
 
 ---
 
-## 3. ¿Cómo acceder?
+## 4. ¿Cómo acceder?
 Ambos módulos se encuentran en el **Menú Lateral Izquierdo**.
 
 *   El icono de **Inventarios** sigue siendo la caja (📦).
@@ -45,7 +62,7 @@ Ambos módulos se encuentran en el **Menú Lateral Izquierdo**.
 
 ---
 
-## 4. Preguntas Frecuentes (FAQ)
+## 5. Preguntas Frecuentes (FAQ)
 
 *   **¿Se borró alguna información?**
     No. Absolutamente toda la información (facturas, productos, remisiones) sigue intacta. Solo se han movido los *accesos directos* para que sea más fácil encontrarlos.
@@ -55,3 +72,6 @@ Ambos módulos se encuentran en el **Menú Lateral Izquierdo**.
 
 *   **¿Dónde configuro las Bodegas?**
     Sigue estando en **Inventarios > Parámetros Inventario**.
+
+*   **¿El botón de la barra lateral hace lo mismo que el del centro?**
+    Sí. A partir de ahora funcionan exactamente igual. Puede usar cualquiera según su comodidad.

@@ -24,10 +24,12 @@ export default function SmartSearchSection() {
 
     const handleSearch = (e) => {
         e.preventDefault();
+        // Ejecución prioritaria si hay resultados (Comando o Búsqueda)
         if (results.length > 0) {
             handleSelectResult(results[selectedIndex]);
             return;
         }
+        // Si no hay resultados locales, intentamos enviar a AI
         if (query.trim()) {
             processVoiceCommand(query);
         }
@@ -98,6 +100,7 @@ export default function SmartSearchSection() {
                             autoComplete="off"
                         />
 
+                        {/* Botones Derecha */}
                         <div className="pr-2 flex items-center gap-2">
                             <button
                                 type="button"
@@ -122,9 +125,10 @@ export default function SmartSearchSection() {
                     </div>
                 </form>
 
-                {/* Results Dropdown */}
+                {/* Live Search Results Dropdown */}
                 {(results.length > 0 || (localShowHistory && !query && commandHistory.length > 0)) && (
                     <div className="absolute top-full left-0 right-0 bg-white border border-gray-100 rounded-b-3xl shadow-xl max-h-96 overflow-y-auto animate-in fade-in slide-in-from-top-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent z-40">
+                        {/* CASE 1: SEARCH RESULTS */}
                         {results.length > 0 ? (
                             <>
                                 <ul>
@@ -147,6 +151,11 @@ export default function SmartSearchSection() {
                                             <div className="flex-1">
                                                 <div className={`font-medium text-base flex items-center gap-2 ${isCommandMode ? 'text-green-800 font-mono' : 'text-gray-800'}`}>
                                                     {item.name}
+                                                    {item.aliases && item.aliases.length > 0 && (
+                                                        <span className="text-[10px] bg-green-200 text-green-900 border border-green-300 px-1.5 py-0.5 rounded font-bold tracking-wide">
+                                                            :{item.aliases[0].toUpperCase()}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div className="text-xs text-gray-400">{item.category} • {item.description}</div>
                                             </div>
@@ -159,9 +168,10 @@ export default function SmartSearchSection() {
                                 </div>
                             </>
                         ) : (
+                            /* CASE 2: COMMAND HISTORY */
                             <div className="py-2">
-                                <div className="px-6 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                                    Últimos Comandos
+                                <div className="px-6 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider flex justify-between items-center">
+                                    <span>Últimos Comandos (Historial)</span>
                                 </div>
                                 <ul>
                                     {commandHistory.map((cmd, idx) => (
@@ -174,6 +184,7 @@ export default function SmartSearchSection() {
                                                 <FaMicrophone className="text-xs" />
                                             </div>
                                             <span className="text-gray-600 group-hover:text-purple-700 flex-1 font-medium">{cmd}</span>
+                                            <span className="text-xs text-purple-400 opacity-0 group-hover:opacity-100">Editar</span>
                                         </li>
                                     ))}
                                 </ul>
