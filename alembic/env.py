@@ -58,6 +58,7 @@ from app.models import (
     ActivoFijo,
     ActivoNovedad
 )
+from app.models.usuario_busqueda import UsuarioBusqueda # <--- IMPORTAR NUEVO MODELO
 from app.models.nomina import Empleado, Nomina, DetalleNomina, ConfiguracionNomina
 # --- FIN DE LA CIRUGÍA ARQUITECTÓNICA ---
 

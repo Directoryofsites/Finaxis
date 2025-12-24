@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
 
 import Paginacion from '@/app/components/ui/Paginacion';
@@ -150,6 +151,83 @@ export default function SuperInformeInventariosPage() {
     }, [user, authLoading]);
 
     // --- Handlers ---
+    const searchParams = useSearchParams();
+
+    // AI SEARCH EFFECT
+    useEffect(() => {
+        if (isLoadingMaestros) return;
+        const trigger = searchParams.get('trigger');
+
+        if (trigger === 'ai_search') {
+            const newFiltros = { ...INITIAL_FILTROS_STATE };
+            let changed = false;
+
+            if (searchParams.get('fecha_inicio')) { newFiltros.fecha_inicio = new Date(searchParams.get('fecha_inicio') + 'T00:00:00'); changed = true; }
+            if (searchParams.get('fecha_fin')) { newFiltros.fecha_fin = new Date(searchParams.get('fecha_fin') + 'T00:00:00'); changed = true; }
+            if (searchParams.get('search_term_prod')) { newFiltros.search_term_prod = searchParams.get('search_term_prod'); changed = true; }
+            if (searchParams.get('search_term_doc')) { newFiltros.search_term_doc = searchParams.get('search_term_doc'); changed = true; }
+
+            // --- AI TERCERO MAPPING ---
+            const aiTercero = searchParams.get('ai_tercero');
+
+            if (aiTercero && maestros.terceros.length > 0) {
+                // Simple fuzzy match: Find standard string inclusion
+                const normalize = s => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                const target = normalize(aiTercero);
+
+                const bestMatch = maestros.terceros.find(t => {
+                    const label = normalize(t.label || ''); // Check label which contains name and nit
+                    return label.includes(target);
+                });
+
+                if (bestMatch) {
+                    newFiltros.tercero_id = bestMatch.value;
+                    changed = true;
+                }
+            }
+
+            // --- AI BODEGA MAPPING ---
+            const aiBodega = searchParams.get('ai_bodega');
+            if (aiBodega && maestros.bodegas.length > 0) {
+                const normalize = s => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                const target = normalize(aiBodega);
+
+                const bestMatch = maestros.bodegas.find(b => normalize(b.label || '').includes(target));
+                if (bestMatch) {
+                    newFiltros.bodega_ids = [bestMatch.value]; // Bodega is array
+                    changed = true;
+                }
+            }
+
+            // --- AI GRUPO MAPPING ---
+            const aiGrupo = searchParams.get('ai_grupo');
+            if (aiGrupo && maestros.grupos.length > 0) {
+                const normalize = s => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                const target = normalize(aiGrupo);
+
+                const bestMatch = maestros.grupos.find(g => normalize(g.label || '').includes(target));
+                if (bestMatch) {
+                    newFiltros.grupo_ids = [bestMatch.value]; // Grupo is array
+                    changed = true;
+                }
+            }
+
+            // ALWAYS apply the new filters, effectively resetting any previous state.
+            // We use functional update but ignore 'prev' for the filter values to ensure cleaning.
+            // We only keep 'vista_reporte' if it wasn't valid in INITIAL (though INITIAL has it).
+            setFiltros(newFiltros);
+
+            console.log("AI AUTO-EXECUTE: Applied Filters", newFiltros);
+
+            // ALWAYS trigger search if AI requested it
+            setTimeout(() => {
+                const btn = document.getElementById('btn-inventario-search');
+                if (btn) btn.click();
+                else handleSearch(1); // Fallback
+            }, 500);
+        }
+    }, [searchParams, isLoadingMaestros, maestros]);
+
     const handleFiltroChange = (e) => {
         const { name, value } = e.target;
         setFiltros(prev => ({ ...prev, [name]: value, ...(name !== 'pagina' && { pagina: 1 }) }));
@@ -375,26 +453,34 @@ export default function SuperInformeInventariosPage() {
                                         />
                                     </div>
                                     {/* Tercero */}
-                                    <div>
+                                    <div className="md:col-span-2 lg:col-span-1">
                                         <label className={labelClass}>Tercero</label>
                                         <Select
                                             name="tercero_id" options={maestros.terceros}
                                             placeholder="Todos los terceros"
                                             onChange={(opt) => handleFiltroChange({ target: { name: 'tercero_id', value: opt ? opt.value : '' } })}
+                                            value={maestros.terceros.find(t => t.value == filtros.tercero_id)}
+                                            components={{ ValueContainer: CustomValueContainer }}
                                             styles={customSelectStyles}
                                         />
                                     </div>
-                                    {/* Búsquedas Texto */}
-                                    <div>
-                                        <label className={labelClass}>Búsqueda Producto</label>
-                                        <input type="text" name="search_term_prod" placeholder="Nombre o código..." value={filtros.search_term_prod} onChange={handleFiltroChange} className={inputClass} />
-                                    </div>
-                                    <div>
+                                    <div className="md:col-span-2 lg:col-span-2">
                                         <label className={labelClass}>Ref. Documento</label>
                                         <input type="text" name="search_term_doc" placeholder="Número de factura..." value={filtros.search_term_doc} onChange={handleFiltroChange} className={inputClass} />
                                     </div>
                                 </div>
                             )}
+                        </div>
+
+                        {/* Nivel 3: Búsqueda Producto (Visible Siempre) */}
+                        <div className="mt-6">
+                            <label className={labelClass}>Búsqueda Producto</label>
+                            <div className="relative">
+                                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                    <FaSearch />
+                                </span>
+                                <input type="text" name="search_term_prod" placeholder="Nombre del producto, código, referencia..." value={filtros.search_term_prod} onChange={handleFiltroChange} className={`${inputClass} pl-10`} />
+                            </div>
                         </div>
 
                         {/* Botones de Acción */}
@@ -422,7 +508,7 @@ export default function SuperInformeInventariosPage() {
                                     <FaFilePdf /> Exportar PDF
                                 </button>
 
-                                <button type="submit" disabled={isSearching || isLoadingMaestros} className="btn btn-primary px-6 py-2 shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 font-bold">
+                                <button type="submit" id="btn-inventario-search" disabled={isSearching || isLoadingMaestros} className="btn btn-primary px-6 py-2 shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 font-bold">
                                     <FaSearch className={`mr-2 ${isSearching ? 'animate-spin' : ''}`} />
                                     {isSearching ? 'Procesando...' : 'Generar Reporte'}
                                 </button>
@@ -434,95 +520,97 @@ export default function SuperInformeInventariosPage() {
                 {/* 3. RESULTADOS */}
                 {error && !isSearching && <div className="alert alert-error shadow-lg mb-6 rounded-xl text-white"><span>{error}</span></div>}
 
-                {resultados.length > 0 && !isSearching && (
-                    <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden animate-fadeIn flex flex-col">
-                        <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-                            <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide flex items-center gap-2">
-                                <FaTable className="text-gray-400" /> Resultados
-                            </h2>
-                            <span className="badge badge-primary badge-outline font-mono font-bold">
-                                {pagination.total_registros} Registros
-                            </span>
-                        </div>
+                {
+                    resultados.length > 0 && !isSearching && (
+                        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden animate-fadeIn flex flex-col">
+                            <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                                <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide flex items-center gap-2">
+                                    <FaTable className="text-gray-400" /> Resultados
+                                </h2>
+                                <span className="badge badge-primary badge-outline font-mono font-bold">
+                                    {pagination.total_registros} Registros
+                                </span>
+                            </div>
 
-                        <div className="overflow-x-auto max-h-[65vh]">
-                            <table className="table table-sm w-full">
-                                <thead className="sticky top-0 z-20 shadow-sm">
-                                    <tr>
-                                        {dynamicHeaders.map(key => {
-                                            // Mapping de labels para mantener la tabla compacta
-                                            const labels = {
-                                                'tipo_documento': 'DOC', 'documento_ref': 'REF', 'tipo_documento_codigo': 'TIPO',
-                                                'producto_codigo': 'CÓDIGO', 'producto_nombre': 'PRODUCTO', 'tercero_nombre': 'TERCERO',
-                                                'bodega_nombre': 'BODEGA', 'tipo_movimiento': 'MOV', 'costo_unitario': 'COSTO UNIT',
-                                                'costo_total': 'COSTO TOTAL', 'cantidad': 'CANTIDAD'
-                                            };
-                                            const isNumeric = ['cantidad', 'costo_unitario', 'costo_total', 'saldo_final_cantidad', 'saldo_final_valor'].includes(key);
+                            <div className="overflow-x-auto max-h-[65vh]">
+                                <table className="table table-sm w-full">
+                                    <thead className="sticky top-0 z-20 shadow-sm">
+                                        <tr>
+                                            {dynamicHeaders.map(key => {
+                                                // Mapping de labels para mantener la tabla compacta
+                                                const labels = {
+                                                    'tipo_documento': 'DOC', 'documento_ref': 'REF', 'tipo_documento_codigo': 'TIPO',
+                                                    'producto_codigo': 'CÓDIGO', 'producto_nombre': 'PRODUCTO', 'tercero_nombre': 'TERCERO',
+                                                    'bodega_nombre': 'BODEGA', 'tipo_movimiento': 'MOV', 'costo_unitario': 'COSTO UNIT',
+                                                    'costo_total': 'COSTO TOTAL', 'cantidad': 'CANTIDAD'
+                                                };
+                                                const isNumeric = ['cantidad', 'costo_unitario', 'costo_total', 'saldo_final_cantidad', 'saldo_final_valor'].includes(key);
 
-                                            return (
-                                                <th key={key} className={`py-3 px-4 text-xs font-bold text-gray-600 uppercase bg-slate-100 border-b border-gray-200 whitespace-nowrap ${isNumeric ? 'text-right' : 'text-left'}`}>
-                                                    {labels[key] || key.replace(/_/g, ' ')}
-                                                </th>
-                                            );
-                                        })}
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {resultados.map((item, index) => (
-                                        <tr key={item.movimiento_id || index} className="hover:bg-gray-50 transition-colors duration-150">
-                                            {dynamicHeaders.map((headerKey, cellIndex) => {
-                                                const isNumeric = ['cantidad', 'costo_unitario', 'costo_total', 'saldo_final_cantidad', 'saldo_final_valor'].includes(headerKey);
                                                 return (
-                                                    <td key={`${item.movimiento_id || index}-${headerKey}`}
-                                                        className={`py-2 px-4 text-sm whitespace-nowrap border-b border-gray-50 ${isNumeric ? 'text-right font-mono text-gray-800' : 'text-left text-gray-600'}`}>
-                                                        {renderCellContent(item, cellIndex)}
-                                                    </td>
+                                                    <th key={key} className={`py-3 px-4 text-xs font-bold text-gray-600 uppercase bg-slate-100 border-b border-gray-200 whitespace-nowrap ${isNumeric ? 'text-right' : 'text-left'}`}>
+                                                        {labels[key] || key.replace(/_/g, ' ')}
+                                                    </th>
                                                 );
                                             })}
                                         </tr>
-                                    ))}
-                                </tbody>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {resultados.map((item, index) => (
+                                            <tr key={item.movimiento_id || index} className="hover:bg-gray-50 transition-colors duration-150">
+                                                {dynamicHeaders.map((headerKey, cellIndex) => {
+                                                    const isNumeric = ['cantidad', 'costo_unitario', 'costo_total', 'saldo_final_cantidad', 'saldo_final_valor'].includes(headerKey);
+                                                    return (
+                                                        <td key={`${item.movimiento_id || index}-${headerKey}`}
+                                                            className={`py-2 px-4 text-sm whitespace-nowrap border-b border-gray-50 ${isNumeric ? 'text-right font-mono text-gray-800' : 'text-left text-gray-600'}`}>
+                                                            {renderCellContent(item, cellIndex)}
+                                                        </td>
+                                                    );
+                                                })}
+                                            </tr>
+                                        ))}
+                                    </tbody>
 
-                                {/* FOOTER TOTALES (Estilo v2.0 Oscuro) */}
-                                {totales && filtros.vista_reporte === 'MOVIMIENTOS' && (
-                                    <tfoot className="sticky bottom-0 z-20 shadow-inner">
-                                        <tr className="bg-slate-800 text-white font-bold text-sm">
-                                            {(() => {
-                                                const totalCantidad = totales.total_cantidad || 0;
-                                                const totalCosto = totales.total_costo || 0;
-                                                const cantidadColIndex = dynamicHeaders.indexOf('cantidad');
-                                                const costoTotalColIndex = dynamicHeaders.indexOf('costo_total');
-                                                const colSpan = cantidadColIndex !== -1 ? cantidadColIndex : 1;
+                                    {/* FOOTER TOTALES (Estilo v2.0 Oscuro) */}
+                                    {totales && filtros.vista_reporte === 'MOVIMIENTOS' && (
+                                        <tfoot className="sticky bottom-0 z-20 shadow-inner">
+                                            <tr className="bg-slate-800 text-white font-bold text-sm">
+                                                {(() => {
+                                                    const totalCantidad = totales.total_cantidad || 0;
+                                                    const totalCosto = totales.total_costo || 0;
+                                                    const cantidadColIndex = dynamicHeaders.indexOf('cantidad');
+                                                    const costoTotalColIndex = dynamicHeaders.indexOf('costo_total');
+                                                    const colSpan = cantidadColIndex !== -1 ? cantidadColIndex : 1;
 
-                                                return dynamicHeaders.map((key, index) => {
-                                                    if (index === 0) return <td key="label" colSpan={colSpan} className="py-3 px-4 text-right uppercase tracking-wider bg-slate-800">TOTALES:</td>;
-                                                    if (index < colSpan) return null; // Celdas absorbidas por el colSpan
+                                                    return dynamicHeaders.map((key, index) => {
+                                                        if (index === 0) return <td key="label" colSpan={colSpan} className="py-3 px-4 text-right uppercase tracking-wider bg-slate-800">TOTALES:</td>;
+                                                        if (index < colSpan) return null; // Celdas absorbidas por el colSpan
 
-                                                    if (index === cantidadColIndex) return <td key="tc" className="py-3 px-4 text-right font-mono bg-slate-800">{formatQuantity(totalCantidad)}</td>;
-                                                    if (index === costoTotalColIndex) return <td key="tct" className="py-3 px-4 text-right font-mono bg-slate-800">{formatCurrency(totalCosto)}</td>;
+                                                        if (index === cantidadColIndex) return <td key="tc" className="py-3 px-4 text-right font-mono bg-slate-800">{formatQuantity(totalCantidad)}</td>;
+                                                        if (index === costoTotalColIndex) return <td key="tct" className="py-3 px-4 text-right font-mono bg-slate-800">{formatCurrency(totalCosto)}</td>;
 
-                                                    return <td key={`empty-${index}`} className="bg-slate-800"></td>;
-                                                });
-                                            })()}
-                                        </tr>
-                                    </tfoot>
-                                )}
-                            </table>
-                        </div>
-
-                        {/* Paginación */}
-                        {pagination.total_paginas > 1 && (
-                            <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-center">
-                                <Paginacion
-                                    paginaActual={pagination.pagina_actual}
-                                    totalPaginas={pagination.total_paginas}
-                                    onPageChange={(page) => handleSearch(page)}
-                                />
+                                                        return <td key={`empty-${index}`} className="bg-slate-800"></td>;
+                                                    });
+                                                })()}
+                                            </tr>
+                                        </tfoot>
+                                    )}
+                                </table>
                             </div>
-                        )}
-                    </div>
-                )}
-            </div>
-        </div>
+
+                            {/* Paginación */}
+                            {pagination.total_paginas > 1 && (
+                                <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-center">
+                                    <Paginacion
+                                        paginaActual={pagination.pagina_actual}
+                                        totalPaginas={pagination.total_paginas}
+                                        onPageChange={(page) => handleSearch(page)}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )
+                }
+            </div >
+        </div >
     );
 }

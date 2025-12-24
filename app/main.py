@@ -19,7 +19,7 @@ from app.models import (
     PlantillaMaestra, PlantillaDetalle, ConceptoFavorito, Documento, 
     DocumentoEliminado, MovimientoContable, MovimientoEliminado,
     LogOperacion, PeriodoContableCerrado, FormatoImpresion, AplicacionPago,
-    Remision, RemisionDetalle, ConfiguracionReporte, nomina 
+    Remision, RemisionDetalle, ConfiguracionReporte, nomina, UsuarioBusqueda # <--- Added explicit import
 )
 Base.metadata.create_all(bind=engine)
 # --- FIN: LÓGICA DE AUTO-CREACIÓN ---
@@ -62,6 +62,7 @@ from app.api.reports import routes as reports_router
 from app.api.cartera import routes as cartera_router
 from app.api.proveedores import routes as proveedores_router
 from app.api.usuarios import routes as usuarios_router
+from app.api.usuarios import busquedas as busquedas_guardadas_router # <--- NUEVO ROUTER
 from app.api.auditoria.routes import router as auditoria_router
 from app.api.roles import routes as roles_routes
 from app.api.soporte import routes as soporte_router
@@ -276,6 +277,7 @@ app.include_router(reports_router.router, prefix="/api/reports", tags=["Reportes
 app.include_router(cartera_router.router, prefix="/api/cartera", tags=["Cartera"])
 app.include_router(proveedores_router.router, prefix="/api/proveedores", tags=["Proveedores"])
 app.include_router(usuarios_router.router, prefix="/api/usuarios", tags=["Usuarios"])
+app.include_router(busquedas_guardadas_router.router, prefix="/api/usuarios", tags=["Usuarios - Búsquedas"]) # <--- Prefix ajustado
 app.include_router(auditoria_router, prefix="/api/auditoria", tags=["Auditoría"])
 app.include_router(roles_routes.router, prefix="/api")
 app.include_router(soporte_router.router, prefix="/api/soporte", tags=["Panel de Soporte"])

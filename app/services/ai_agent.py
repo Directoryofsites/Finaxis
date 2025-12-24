@@ -48,6 +48,18 @@ TOOLS_SCHEMA = [
                 "email_destino": {
                     "type": "string",
                     "description": "Correo electrónico si el usuario pide enviar por email. Ej: usuario@gmail.com"
+                },
+                "producto": {
+                    "type": "string",
+                    "description": "Nombre, código, referencia o descripción del producto/artículo para filtrar movimientos de inventario."
+                },
+                "tipo_documento": {
+                    "type": "string",
+                    "description": "Tipo de documento para filtrar (ej: FV, FC, RC, Factura de Venta)."
+                },
+                "numero_documento": {
+                    "type": "string",
+                    "description": "Número o consecutivo del documento específico (ej: 1020, 500, FV-8)."
                 }
             },
             "required": ["fecha_inicio", "fecha_fin"]
@@ -131,7 +143,9 @@ TOOLS_SCHEMA = [
                 "fecha_inicio": { "type": "string", "description": "Fecha inicial (YYYY-MM-DD)." },
                 "fecha_fin": { "type": "string", "description": "Fecha final (YYYY-MM-DD)." },
                 "concepto": { "type": "string", "description": "Palabra clave en el concepto o descripción." },
-                "cuenta": { "type": "string", "description": "Nombre o código de la cuenta contable (ej: Caja, Bancos)." }
+                "cuenta": { "type": "string", "description": "Nombre o código de la cuenta contable (ej: Caja, Bancos)." },
+                "producto": { "type": "string", "description": "Nombre, código o referencia del producto." },
+                "bodega": { "type": "string", "description": "Nombre de la bodega." }
             }
         }
     },
@@ -213,6 +227,7 @@ Reglas:
    - Si piden "Auxiliar" a secas -> PREFIERE 'consultar_documento' (Super Informe) salvo que digan "Auxiliar Contable".
    - Si hay AMBIGÜEDAD, PREFIERE 'consultar_documento'.
 7. Si no entiendes, devuelve un JSON con error: {{ "error": "No entendí la solicitud" }}.
+8. CRÍTICO: NO inventes valores para 'producto'. Si el usuario no menciona un nombre específico de producto o artículo (ej: 'Arroz', 'Cemento', 'Coca Cola'), NO pongas el nombre del reporte (ej: 'Movimientos de inventario', 'Detallado') en el campo 'producto'. Déjalo vacío.
 
 EJEMPLOS PODEROSOS (CHAIN OF THOUGHT):
 - Usuario: "Auxiliar de caja general de este mes en PDF para el wasap 3001234567"
@@ -220,6 +235,12 @@ EJEMPLOS PODEROSOS (CHAIN OF THOUGHT):
 
 - Usuario: "Envíame el balance de prueba al 31 de diciembre"
   Respuesta: {{ "name": "generar_balance_prueba", "parameters": {{ "fecha_inicio": "2024-01-01", "fecha_fin": "2024-12-31" }} }}
+
+- Usuario: "Movimientos de inventario filtrado por documento FV-8"
+  Respuesta: {{ "name": "generar_reporte_movimientos", "parameters": {{ "fecha_inicio": "2024-01-01", "fecha_fin": "2024-12-31", "numero_documento": "FV-8", "tipo_documento": "FV" }} }}
+
+- Usuario: "Movimientos detallados de inventario pero filtrar por Ref. Documento. FV NUMERO 8"
+  Respuesta: {{ "name": "generar_reporte_movimientos", "parameters": {{ "fecha_inicio": "2024-01-01", "fecha_fin": "2024-12-31", "numero_documento": "8", "tipo_documento": "FV" }} }}
 """
 
 async def procesar_comando_natural(texto_usuario: str, contexto: dict = None):
@@ -275,7 +296,9 @@ async def procesar_comando_natural(texto_usuario: str, contexto: dict = None):
             # ---------------------------------
 
             response_text = completion.text
-            return json.loads(response_text)
+            respuesta_json = json.loads(response_text)
+            print(f"--- DEBUG AI RAW RESPONSE: {respuesta_json} ---")
+            return respuesta_json
 
         except Exception as e:
             print(f"Fallo modelo {model_name}: {str(e)}")

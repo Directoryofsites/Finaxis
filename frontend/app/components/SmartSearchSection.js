@@ -335,6 +335,45 @@ export default function SmartSearchSection() {
                 }
             }
 
+            // --- INTERCEPTOR: MOVIMIENTOS INVENTARIO ---
+            const isInventarioIntent = queryLower.includes('inventario') || queryLower.includes('kardex') || queryLower.includes('stock') || queryLower.includes('existencias');
+
+            if (isInventarioIntent && (actionName === 'generar_reporte_movimientos' || actionName === 'consultar_documento')) {
+                const p = data.parameters;
+                const params = new URLSearchParams();
+                if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
+                if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
+
+                // Product variants
+                console.log("AI INVENTORY DEBUG Params (Smart):", p);
+                let prod = p.producto || p.producto_nombre || p.nombre_producto || p.articulo || p.referencia || p.search_term_prod || p.concepto || p.descripcion;
+
+                // --- SAFETY NET: BLOCK GENERIC COMMAND PHRASES ---
+                const invalidPhrases = [
+                    'movimientos detallados de inventario', 'movimientos de inventario',
+                    'reporte de inventario', 'informe de inventario',
+                    'inventario', 'kardex', 'stock', 'existencias',
+                    'movimientos detallados', 'movimientos'
+                ];
+                if (prod && invalidPhrases.some(phrase => prod.toLowerCase().trim() === phrase || prod.toLowerCase().includes('movimientos detallados'))) {
+                    console.warn("AI hallucinated command name as product. Ignoring:", prod);
+                    prod = null;
+                }
+
+                if (prod) params.set('search_term_prod', prod);
+
+                if (p.tercero || p.tercero_nombre || p.ai_tercero) params.set('ai_tercero', p.tercero || p.tercero_nombre || p.ai_tercero);
+                if (p.bodega || p.bodega_nombre) params.set('ai_bodega', p.bodega || p.bodega_nombre);
+                if (p.grupo || p.grupo_nombre) params.set('ai_grupo', p.grupo || p.grupo_nombre);
+
+                params.set('trigger', 'ai_search');
+                params.set('requestId', Date.now().toString()); // FORCE EFFECT RE-EXECUTION
+
+                router.push(`/contabilidad/reportes/super-informe-inventarios?${params.toString()}`);
+                toast.success('IA: Abriendo Movimientos de Inventario...');
+                return;
+            }
+
             if (actionName === 'navegar_a_pagina') {
                 const modulo = data.parameters.modulo.toLowerCase();
                 if (modulo.includes('contabil')) router.push('/contabilidad/documentos');

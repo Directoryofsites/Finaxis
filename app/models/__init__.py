@@ -6,7 +6,9 @@ from .permiso import Rol, Permiso, UsuarioPermisoExcepcion, usuario_roles, rol_p
 
 from .usuario_favorito import UsuarioFavorito # <--- ¡EL ESLABÓN PERDIDO!
 
+from .usuario_busqueda import UsuarioBusqueda # <--- Moved up to prevent circular dependency
 from .usuario import Usuario
+
 
 
 

@@ -34,6 +34,13 @@ class Usuario(Base):
     favoritos = relationship(
         "UsuarioFavorito", 
         back_populates="usuario", 
-        cascade="all, delete-orphan" # Asegura que si el usuario se borra, sus favoritos también
+        cascade="all, delete-orphan" 
+    )
+    
+    # --- BUSQUEDAS GUARDADAS ---
+    busquedas_guardadas = relationship(
+        "UsuarioBusqueda",
+        back_populates="usuario",
+        cascade="all, delete-orphan"
     )
     # >>>>> FIN DE LA CORRECCIÓN <<<<<
