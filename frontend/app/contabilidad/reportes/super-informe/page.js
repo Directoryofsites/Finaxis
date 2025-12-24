@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
 import Paginacion from '../../../components/ui/Paginacion';
@@ -59,6 +60,8 @@ export default function SuperInformePage() {
     pagina_actual: 1
   });
 
+  const searchParams = useSearchParams();
+
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState(null);
   const [isLoadingMaestros, setIsLoadingMaestros] = useState(true);
@@ -107,7 +110,7 @@ export default function SuperInformePage() {
     if (isLoadingMaestros || maestros.tiposDocumento.length === 0) return;
 
     if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
+      const params = searchParams;
       if (params.get('trigger') === 'ai_search') {
 
         setViewMode('cards'); // AUTO-SWITCH TO CARDS FOR AI SEARCH
@@ -224,7 +227,7 @@ export default function SuperInformePage() {
         });
       }
     }
-  }, [isLoadingMaestros, maestros]);
+  }, [isLoadingMaestros, maestros, searchParams]);
 
 
   const preparePayload = (filtrosActuales) => {

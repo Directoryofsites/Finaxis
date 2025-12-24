@@ -28,8 +28,10 @@ class Empresa(Base):
     # --- INICIO: RELACIÓN FALTANTE AÑADIDA ---
     # Esta línea completa la relación con el modelo Usuario, resolviendo el error.
     usuarios = relationship("Usuario", back_populates="empresa")
-    # --- FIN: RELACIÓN FALTANTE AÑADIDA ---
-
-    # En app/models/empresa.py, dentro de la clase Empresa agrega:
+    
+    # Configuración de Correo (One-to-One)
+    config_email = relationship("EmpresaConfigEmail", back_populates="empresa", uselist=False, cascade="all, delete-orphan")
+    
+    # Esto completa la relación con el modelo CupoAdicional
     # ...
     cupos_adicionales = relationship("CupoAdicional", back_populates="empresa", cascade="all, delete-orphan")

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   FaUserTag,
   FaListOl,
@@ -16,6 +16,7 @@ import {
   FaFilter,
   FaBook
 } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
@@ -65,6 +66,12 @@ export default function ReporteTerceroCuentaPage() {
   const [isPageReady, setPageReady] = useState(false);
   const [shouldAutoRun, setShouldAutoRun] = useState(false);
 
+  // Estados para Automatización (Voz)
+  const [autoPdfTrigger, setAutoPdfTrigger] = useState(false);
+  const [wppNumber, setWppNumber] = useState(null);
+  const [emailAddress, setEmailAddress] = useState(null);
+  const lastProcessedParams = useRef('');
+
   // Autenticación
   useEffect(() => {
     if (!authLoading) {
@@ -76,93 +83,83 @@ export default function ReporteTerceroCuentaPage() {
     }
   }, [user, authLoading, router]);
 
-  // Carga de Terceros y Auto-Configuración desde IA (Protegida)
+  const searchParams = useSearchParams();
+
+  // Carga de Terceros (Solo Inicial)
   useEffect(() => {
     if (authLoading || dataFetchedRef.current) return;
     if (user) {
-      const fetchTercerosAndConfig = async () => {
+      const fetchTerceros = async () => {
         try {
-          // 1. Cargar Terceros
           const res = await apiService.get('/terceros');
-          const tercerosList = res.data;
-          setTerceros(tercerosList);
-
-          // 2. Procesar Parámetros de URL (IA)
-          // Nota: Next.js 13+ App Router usa useSearchParams, para simplificar sin refactorizar todo,
-          // leemos window.location.search directamente o usamos una instancia dummy si no existe hook.
-          const urlParams = new URLSearchParams(window.location.search);
-          const aiTercero = urlParams.get('tercero');
-          const aiFechaInicio = urlParams.get('fecha_inicio');
-          const aiFechaFin = urlParams.get('fecha_fin');
-          const autoPdf = urlParams.get('auto_pdf');
-
-          if (aiTercero) {
-            // Búsqueda difusa simple
-            // Normalizar texto para búsqueda fonética Agresiva (Terceros)
-            // 1. Lowercase, eliminar tildes
-            // 2. v -> b, z/c -> s
-            // 3. g -> j (para Giovana=Jhovana)
-            // 4. h -> "" (h muda, Jhovana=Jovana)
-            const normalize = (str) => {
-              if (!str) return "";
-              return str.toLowerCase()
-                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-                .replace(/v/g, "b")
-                .replace(/z/g, "s")
-                .replace(/c/g, "s")
-                .replace(/g/g, "j") // Fonética Gi/Je
-                .replace(/h/g, "")  // H muda
-                .replace(/[^a-z0-9\s]/g, "");
-            };
-
-            const searchNormalized = normalize(aiTercero);
-            const searchWords = searchNormalized.split(" ").filter(w => w.length > 2);
-
-            console.warn("IA Debug - Search Tercero:", searchNormalized);
-
-            // SCORING SYSTEM TERCEROS
-            const scoredTerceros = tercerosList.map(t => {
-              let score = 0;
-              // Combinar Razón Social + Nombre + Apellidos si existen
-              const fullName = (t.razon_social || '') + " " + (t.primer_nombre || '') + " " + (t.primer_apellido || '');
-              const nombreNorm = normalize(fullName);
-              const nitNorm = normalize(t.numero_identificacion || '');
-
-              // Coincidencia exacta del bloque (Alta prioridad)
-              if (nombreNorm.includes(searchNormalized) || nitNorm.includes(searchNormalized)) {
-                score += 100;
-              }
-
-              // Coincidencia parcial por palabras
-              searchWords.forEach(word => {
-                if (nombreNorm.includes(word) || nitNorm.includes(word)) {
-                  score += 20; // Más peso a las palabras del nombre
-                }
-              });
-
-              return { ...t, score };
-            });
-
-            const bestMatches = scoredTerceros.filter(t => t.score > 0).sort((a, b) => b.score - a.score);
-            const found = bestMatches.length > 0 ? bestMatches[0] : null;
-
-            if (found) {
-              setSelectedTercero(found.id);
-              if (aiFechaInicio) setFechas(prev => ({ ...prev, inicio: aiFechaInicio }));
-              if (aiFechaFin) setFechas(prev => ({ ...prev, fin: aiFechaFin }));
-
-              // NOTA: La auto-ejecución se mueve al useEffect de Cuentas para esperar a que carguen
-            }
-          }
-
+          setTerceros(res.data);
+          dataFetchedRef.current = true;
         } catch (err) {
-          setError("Error cargando terceros: " + (err.response?.data?.detail || err.message));
+          setError("Error cargando terceros");
         }
       };
-      fetchTercerosAndConfig();
-      dataFetchedRef.current = true;
+      fetchTerceros();
     }
   }, [user, authLoading]);
+
+  // Carga de Configuración desde IA (Reactiva a URL/SearchParams)
+  useEffect(() => {
+    if (!authLoading && user && terceros.length > 0 && searchParams.size > 0) {
+      const aiTercero = searchParams.get('tercero');
+      const aiFechaInicio = searchParams.get('fecha_inicio');
+      const aiFechaFin = searchParams.get('fecha_fin');
+      const pAutoPdf = searchParams.get('auto_pdf');
+      const pWpp = searchParams.get('wpp');
+      const pEmail = searchParams.get('email');
+
+      const currentSignature = `${aiTercero}-${aiFechaInicio}-${aiFechaFin}-${pAutoPdf}-${pWpp}-${pEmail}`;
+
+      if (lastProcessedParams.current === currentSignature) return;
+
+      if (aiTercero) {
+        const normalize = (str) => {
+          if (!str) return "";
+          return str.toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/v/g, "b")
+            .replace(/z/g, "s")
+            .replace(/c/g, "s")
+            .replace(/g/g, "j").replace(/h/g, "").replace(/[^a-z0-9\s]/g, "");
+        };
+
+        const searchNormalized = normalize(aiTercero);
+        const searchWords = searchNormalized.split(" ").filter(w => w.length > 2);
+
+        const scoredTerceros = terceros.map(t => {
+          let score = 0;
+          const fullName = (t.razon_social || '') + " " + (t.primer_nombre || '') + " " + (t.primer_apellido || '');
+          const nombreNorm = normalize(fullName);
+          const nitNorm = normalize(t.numero_identificacion || '');
+
+          if (nombreNorm.includes(searchNormalized) || nitNorm.includes(searchNormalized)) score += 100;
+          searchWords.forEach(word => {
+            if (nombreNorm.includes(word) || nitNorm.includes(word)) score += 20;
+          });
+          return { ...t, score };
+        });
+
+        const bestMatches = scoredTerceros.filter(t => t.score > 0).sort((a, b) => b.score - a.score);
+        const found = bestMatches.length > 0 ? bestMatches[0] : null;
+
+        if (found) {
+          setSelectedTercero(found.id);
+          if (aiFechaInicio) setFechas(prev => ({ ...prev, inicio: aiFechaInicio }));
+          if (aiFechaFin) setFechas(prev => ({ ...prev, fin: aiFechaFin }));
+
+          if (pAutoPdf === 'true') setAutoPdfTrigger(true);
+          if (pWpp) setWppNumber(pWpp);
+          if (pEmail) setEmailAddress(pEmail);
+
+          lastProcessedParams.current = currentSignature;
+        }
+      }
+    }
+  }, [terceros, searchParams, user, authLoading]);
 
   // Carga de Cuentas al seleccionar Tercero
   useEffect(() => {
@@ -174,10 +171,10 @@ export default function ReporteTerceroCuentaPage() {
           setCuentasDelTercero(cuentas);
 
           // --- AUTO-CONFIGURACION CUENTAS Y FECHAS (IA) ---
-          const urlParams = new URLSearchParams(window.location.search);
-          const aiCuenta = urlParams.get('cuenta');
-          const aiFechaInicio = urlParams.get('fecha_inicio');
-          const aiFechaFin = urlParams.get('fecha_fin');
+          // --- AUTO-CONFIGURACION CUENTAS Y FECHAS (IA) ---
+          const aiCuenta = searchParams.get('cuenta');
+          const aiFechaInicio = searchParams.get('fecha_inicio');
+          const aiFechaFin = searchParams.get('fecha_fin');
 
           // 1. Configurar Fechas si vienen en URL (CRITICO: Hacerlo siempre que existan)
           if (aiFechaInicio && aiFechaFin) {
@@ -240,19 +237,35 @@ export default function ReporteTerceroCuentaPage() {
 
               // Auto-ejecutar AHORA que tenemos tercero, fechas y cuentas
               if (aiFechaInicio && aiFechaFin) {
-                setTimeout(() => setShouldAutoRun(true), 500);
+                setTimeout(() => {
+                  toast.success("⚡ Ejecutando consulta...");
+                  document.getElementById('btn-consultar-reporte')?.click();
+                  setTimeout(() => window.history.replaceState(null, '', window.location.pathname), 2000); // Limpieza diferida
+                }, 1500);
               }
             } else {
-              // Si pidió cuenta pero no encontró, advertir al usuario
+              // Si pidió cuenta pero no encontró, advertir al usuario pero EJECUTAR con todas
               setError(`No se encontró la cuenta "${aiCuenta}". Se seleccionaron todas.`);
+              toast.warn(`⚠️ Cuenta "${aiCuenta}" no encontrada. Mostrando todas.`);
               setSelectedCuentas(['all']);
+              if (aiFechaInicio && aiFechaFin) {
+                setTimeout(() => {
+                  toast.success("⚡ Ejecutando consulta (Todas las cuentas)...");
+                  document.getElementById('btn-consultar-reporte')?.click();
+                  setTimeout(() => window.history.replaceState(null, '', window.location.pathname), 2000);
+                }, 2000); // Un poco más de tiempo para que el usuario lea el warning
+              }
             }
           } else {
-            // Comportamiento normal
+            // Comportamiento normal (o lista vacía)
             setSelectedCuentas(['all']);
-            // Si NO pidió cuenta específica, pero ya tenemos tercero y fechas, podemos ejecutar aqui tambien
-            if (aiFechaInicio && aiFechaFin && !aiCuenta) {
-              setTimeout(() => setShouldAutoRun(true), 500);
+            // Ejecutar siempre que tengamos fechas
+            if (aiFechaInicio && aiFechaFin) {
+              setTimeout(() => {
+                toast.success("⚡ Ejecutando consulta...");
+                document.getElementById('btn-consultar-reporte')?.click();
+                setTimeout(() => window.history.replaceState(null, '', window.location.pathname), 2000);
+              }, 1500);
             }
           }
 
@@ -265,15 +278,70 @@ export default function ReporteTerceroCuentaPage() {
       setCuentasDelTercero([]);
       setSelectedCuentas(['all']);
     }
-  }, [selectedTercero, user, authLoading]);
+  }, [selectedTercero, user, authLoading, searchParams]);
+
+  // HANDLE: Enviar por Correo
+  const handleSendEmail = async () => {
+    if (!reportData || !emailAddress) return;
+    toast.info(`📤 Enviando reporte a ${emailAddress}...`);
+    try {
+      const params = {
+        tercero_id: selectedTercero,
+        fecha_inicio: fechas.inicio,
+        fecha_fin: fechas.fin,
+      };
+      if (selectedCuentas.length > 0 && !selectedCuentas.includes('all')) {
+        params.cuenta_ids = selectedCuentas.join(',');
+      }
+
+      await apiService.post('/reports/dispatch-email', {
+        report_type: 'tercero_cuenta',
+        email_to: emailAddress,
+        filtros: params
+      });
+      toast.success(`✅ Correo enviado a ${emailAddress}`);
+    } catch (err) {
+      console.error("Error sending email:", err);
+      toast.error("❌ Falló el envío del correo.");
+    }
+  };
+
+  // EFECTO: Automatización (PDF -> WhatsApp -> Email)
+  useEffect(() => {
+    if (autoPdfTrigger && reportData && !isLoading) {
+      // 1. PDF
+      handleExportPDF();
+
+      // 2. WhatsApp
+      if (wppNumber) {
+        const terceroName = terceros.find(t => t.id == selectedTercero)?.razon_social || 'el tercero';
+        const message = `Hola, adjunto el Auxiliar de *${terceroName}* del periodo ${fechas.inicio} al ${fechas.fin}.`;
+        const wppUrl = `https://wa.me/${wppNumber}?text=${encodeURIComponent(message)}`;
+        setTimeout(() => window.open(wppUrl, '_blank'), 1500);
+      }
+
+      // 3. Email
+      if (emailAddress) {
+        handleSendEmail();
+      }
+
+      // Reset
+      setAutoPdfTrigger(false);
+      setWppNumber(null);
+      setEmailAddress(null);
+    }
+  }, [reportData, autoPdfTrigger, isLoading, wppNumber, emailAddress]);
 
   // EFFECT PARA AUTO-EJECUCION SEGURA
   useEffect(() => {
     if (shouldAutoRun && selectedTercero && fechas.inicio && fechas.fin && !isLoading) {
+      toast.success("⚡ Consultando movimientos automáticamente...");
       handleGenerateReport();
       setShouldAutoRun(false);
+      // Limpieza URL
+      window.history.replaceState(null, '', window.location.pathname);
     }
-  }, [shouldAutoRun, selectedTercero, fechas]);
+  }, [shouldAutoRun, selectedTercero, fechas, isLoading, selectedCuentas]);
 
   const handleGenerateReport = async () => {
     if (!selectedTercero || !fechas.inicio || !fechas.fin) {
@@ -402,8 +470,8 @@ export default function ReporteTerceroCuentaPage() {
       const token = res.data.signed_url_token;
       const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/reports/tercero-cuenta/imprimir?signed_token=${token}`;
 
-      // FIX: Abrir en nueva pestaña en lugar de forzar descarga en la misma ventana
-      window.open(pdfUrl, '_blank');
+      // MÉTODO BRUTO: Navegación directa para forzar descarga seguro
+      window.location.href = pdfUrl;
     } catch (err) {
       setError(err.response?.data?.detail || 'Error PDF.');
     } finally {
@@ -447,6 +515,12 @@ export default function ReporteTerceroCuentaPage() {
                   </button>
                 </div>
                 <p className="text-gray-500 text-sm">Auditoría detallada de movimientos por cuenta para un tercero.</p>
+                {/* STATUS INDICATOR */}
+                {(wppNumber || autoPdfTrigger || emailAddress) && (
+                  <div className="mt-2 text-sm font-bold text-green-600 flex items-center gap-2 animate-bounce">
+                    <span>⚡ Procesando comando: Generando PDF {wppNumber ? 'para WhatsApp...' : emailAddress ? 'para Email...' : '...'}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -65,6 +65,15 @@ const MASTER_ICON_MAP = {
     '/facturacion': FaReceipt,
     '/analisis': FaChartBar,
     '/dashboard': FaChartLine,
+    '/activos': FaLaptop,
+    '/conciliacion-bancaria': FaUniversity,
+    '/cotizaciones': FaFileInvoiceDollar,
+    '/impuestos': FaPercentage,
+    '/nomina': FaUserTie,
+    '/ph': FaBuilding,
+    '/produccion': FaIndustry,
+    '/remisiones': FaTruck,
+    '/admin/utilidades/configuracion-correo': FaEnvelope,
 };
 
 const getSmartIconForRoute = (route) => {
@@ -82,6 +91,10 @@ const getSmartIconForRoute = (route) => {
     if (lowerRoute.includes('reporte')) return FaFileAlt;
     if (lowerRoute.includes('config')) return FaCog;
     if (lowerRoute.includes('utilidades')) return FaTools;
+    if (lowerRoute.includes('nomina')) return FaUserTie;
+    if (lowerRoute.includes('ph')) return FaBuilding;
+    if (lowerRoute.includes('activos')) return FaLaptop;
+    if (lowerRoute.includes('remision')) return FaTruck;
 
     // Hash Fallback
     let hash = 0;
@@ -150,7 +163,11 @@ export default function SidebarFavorites() {
     };
 
     // Clases CSS
-    const closedClass = isZenMode ? 'w-0 opacity-0 pointer-events-none' : 'w-2 opacity-50 hover:w-16 hover:opacity-100';
+    // Cuando está cerrado en modo normal: w-3 para que sea sutil pero visible
+    // Cuando está expandido (isOpen): w-64 para mostrar texto
+    const containerClasses = isOpen
+        ? 'w-64 opacity-100 shadow-2xl'
+        : (isZenMode ? 'w-0 opacity-0 pointer-events-none' : 'w-3 opacity-60 hover:opacity-100 bg-gray-100 hover:bg-white');
 
     return (
         <>
@@ -164,8 +181,8 @@ export default function SidebarFavorites() {
             )}
 
             <div
-                className={`fixed left-0 top-1/2 -translate-y-1/2 h-auto max-h-[80vh] bg-white shadow-2xl rounded-r-2xl border-y border-r border-gray-200 z-50 flex flex-col transition-all duration-300 ease-in-out overflow-hidden group 
-                    ${isOpen ? 'w-16 opacity-100' : closedClass}
+                className={`fixed left-0 top-1/2 -translate-y-1/2 h-auto max-h-[85vh] bg-white rounded-r-2xl border-y border-r border-gray-200 z-50 flex flex-col transition-all duration-300 ease-in-out overflow-hidden group 
+                    ${containerClasses}
                 `}
                 onMouseEnter={() => setIsOpen(true)}
                 onMouseLeave={() => setIsOpen(false)}
@@ -173,59 +190,86 @@ export default function SidebarFavorites() {
             >
                 {/* Banda decorativa (Modo Historia = Verde/Azul) */}
                 {(!isOpen && !isZenMode) && (
-                    <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-green-400 to-blue-500"></div>
+                    <div className="absolute inset-y-0 left-0 w-full bg-gradient-to-b from-green-400 to-blue-500"></div>
                 )}
 
-                <div className="flex flex-col items-center py-4 w-16 scrollbar-hide overflow-y-auto">
+                <div className={`flex flex-col py-4 h-full overflow-y-auto scrollbar-hide ${isOpen ? 'items-start px-2' : 'items-center'}`}>
 
                     {/* Título o Icono de Sección */}
-                    <div className="mb-2 text-gray-400 text-xs font-bold uppercase tracking-widest rotate-[-90deg] h-4 w-4 flex items-center justify-center whitespace-nowrap opacity-50">
-                        Historial
+                    <div className={`mb-4 flex items-center ${isOpen ? 'w-full justify-between' : 'justify-center'}`}>
+                        {isOpen ? (
+                            <span className="text-gray-500 text-xs font-bold uppercase tracking-widest ml-2">
+                                Historial Reciente
+                            </span>
+                        ) : (
+                            // Texto vertical cuando está cerrado (si cabe) o icono
+                            <div className="text-gray-400 text-[10px] font-bold uppercase tracking-widest rotate-[-90deg] h-4 w-4 flex items-center justify-center whitespace-nowrap opacity-50">
+                                H
+                            </div>
+                        )}
                     </div>
 
-                    <div className="w-8 h-[1px] bg-gray-200 mb-2"></div>
+                    {isOpen && <div className="w-full h-[1px] bg-gray-100 mb-2"></div>}
 
                     {/* Lista de Historial */}
-                    {history.map((item) => {
-                        const IconComponent = getSmartIconForRoute(item.path);
-                        return (
-                            <Link
-                                key={item.path}
-                                href={item.path}
-                                className={`w-10 h-10 flex items-center justify-center mb-2 rounded-xl transition-all transform hover:scale-110 shadow-sm
-                                    ${pathname === item.path
-                                        ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-300'
-                                        : 'bg-white text-gray-400 hover:bg-gradient-to-br hover:from-green-400 hover:to-blue-500 hover:text-white hover:shadow-lg'
-                                    }
-                                `}
-                                title={`Ir a: ${item.label}`}
-                            >
-                                <IconComponent className="text-lg" />
-                            </Link>
-                        );
-                    })}
+                    <div className="w-full flex flex-col gap-2">
+                        {history.map((item) => {
+                            const IconComponent = getSmartIconForRoute(item.path);
+                            // Highlight check
+                            const isActive = pathname === item.path;
+
+                            return (
+                                <Link
+                                    key={item.path}
+                                    href={item.path}
+                                    className={`
+                                        flex items-center transition-all duration-200 rounded-xl
+                                        ${isOpen
+                                            ? 'w-full px-3 py-2 text-sm justify-start space-x-3'
+                                            : 'w-10 h-10 justify-center'
+                                        }
+                                        ${isActive
+                                            ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-200 shadow-sm'
+                                            : 'bg-transparent text-gray-500 hover:bg-gray-50 hover:text-blue-500' // Estilo más limpio, menos arcoiris
+                                        }
+                                    `}
+                                    title={!isOpen ? item.label : ''}
+                                >
+                                    <IconComponent className={`${isOpen ? 'text-lg' : 'text-xl'}`} />
+
+                                    {/* Texto Solo Visible si Open */}
+                                    {isOpen && (
+                                        <span className="font-medium truncate max-w-[160px]">
+                                            {item.label}
+                                        </span>
+                                    )}
+                                </Link>
+                            );
+                        })}
+                    </div>
 
                     {history.length === 0 && (
-                        <div className="text-gray-300 text-xs text-center px-1">
-                            Vacío
+                        <div className="text-gray-300 text-xs text-center px-1 mt-4">
+                            {isOpen ? "No hay historial reciente" : "Vacío"}
                         </div>
                     )}
 
-                    <div className="w-8 h-[1px] bg-gray-200 my-2"></div>
-
-                    {/* Botón Borrar Historial */}
-                    {history.length > 0 && (
-                        <button
-                            onClick={clearHistory}
-                            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
-                            title="Borrar Historial"
-                        >
-                            <FaTrashAlt className="text-xs" />
-                        </button>
+                    {isOpen && history.length > 0 && (
+                        <>
+                            <div className="w-full h-[1px] bg-gray-100 my-4"></div>
+                            {/* Botón Borrar Historial con Texto */}
+                            <button
+                                onClick={clearHistory}
+                                className="w-full flex items-center px-3 py-2 rounded-xl text-red-400 hover:bg-red-50 hover:text-red-500 transition-colors text-sm group/btn"
+                            >
+                                <FaTrashAlt className="text-sm mr-3 group-hover/btn:animate-pulse" />
+                                <span>Borrar Historial</span>
+                            </button>
+                        </>
                     )}
-
                 </div>
             </div>
         </>
     );
 }
+

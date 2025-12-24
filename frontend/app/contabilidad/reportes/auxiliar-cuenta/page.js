@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useState, useEffect, useRef } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Script from 'next/script';
 import {
     FaListOl,
@@ -36,7 +36,11 @@ export default function AuxiliarPorCuentaPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isPageReady, setPageReady] = useState(false);
-    const [autoRun, setAutoRun] = useState(false); // Flag para ejecución automática
+    const [autoPdfTrigger, setAutoPdfTrigger] = useState(false); // Trigger para PDF automático
+    const [wppNumber, setWppNumber] = useState(null); // Número de WhatsApp destino
+    const [emailAddress, setEmailAddress] = useState(null); // Correo destino (Fix: Agregando estado faltante)
+    const pathname = usePathname();
+    const lastProcessedParams = useRef(''); // Ref para evitar loops infinitos
 
     // Verificación de Sesión y Carga Inicial
     useEffect(() => {
@@ -50,18 +54,23 @@ export default function AuxiliarPorCuentaPage() {
         }
     }, [user, authLoading, router]);
 
-    // EFECTO: Leer Parámetros URL y Auto-llenar
+    // EFECTO: Leer Parámetros URL y Ejecutar Reporte
     useEffect(() => {
-        if (cuentas.length > 0 && searchParams.size > 0 && !autoRun) {
+        if (!authLoading && cuentas.length > 0 && searchParams.size > 0) {
             const pCuenta = searchParams.get('cuenta');
             const pInicio = searchParams.get('fecha_inicio');
             const pFin = searchParams.get('fecha_fin');
+            const pAutoPdf = searchParams.get('auto_pdf'); // Capturamos flag PDF
+            const pWpp = searchParams.get('wpp'); // Capturamos WhatsApp
+            const pEmail = searchParams.get('email'); // Capturamos Email
 
-            if (pInicio) setStartDate(pInicio);
-            if (pFin) setEndDate(pFin);
+            const currentParamsSignature = `${pCuenta}-${pInicio}-${pFin}-${pAutoPdf}-${pWpp}-${pEmail}`;
+
+            // Si ya procesamos estos parámetros, salimos (Guardia 1)
+            if (lastProcessedParams.current === currentParamsSignature) return;
 
             if (pCuenta) {
-                // Buscamos la cuenta por ID, Código o Nombre (Búsqueda inteligente)
+                // Buscamos la cuenta
                 const term = pCuenta.toLowerCase();
                 const matched = cuentas.find(c =>
                     c.id.toString() === pCuenta ||
@@ -71,22 +80,59 @@ export default function AuxiliarPorCuentaPage() {
 
                 if (matched) {
                     setSelectedAccount(matched.id);
-                    // Si tenemos todo, marcamos para ejecución automática
+                    if (pInicio) setStartDate(pInicio);
+                    if (pFin) setEndDate(pFin);
+
+                    // Si tenemos fechas, ejecutamos el reporte y LIMPIAMOS la URL
                     if (pInicio && pFin) {
-                        setAutoRun(true);
+                        lastProcessedParams.current = currentParamsSignature;
+
+                        // Si pidieron PDF, activamos el trigger para cuando lleguen los datos
+                        if (pAutoPdf === 'true') {
+                            setAutoPdfTrigger(true);
+                        }
+
+                        // Si pidieron WhatsApp, guardamos el número
+                        if (pWpp) {
+                            setWppNumber(pWpp);
+                        }
+
+                        // Si pidieron Email, guardamos el correo
+                        if (pEmail) {
+                            setEmailAddress(pEmail);
+                        }
+
+                        fetchReport(matched.id, pInicio, pFin);
+
+                        // LIMPIEZA DE URL: Usamos history.replaceState para evitar re-renderizados de React que limpien el estado
+                        window.history.replaceState(null, '', pathname);
                     }
                 }
             }
         }
-    }, [cuentas, searchParams, autoRun]);
+    }, [cuentas, searchParams, authLoading, pathname, router]);
 
-    // EFECTO: Ejecución Automática una vez seteado el estado
+    // EFECTO: Descarga Automática de PDF y WhatsApp cuando llegan los datos
     useEffect(() => {
-        if (autoRun && selectedAccount && startDate && endDate) {
-            fetchReport(selectedAccount, startDate, endDate);
-            setAutoRun(false); // Reset flag para evitar loop
+        if (autoPdfTrigger && reportData && !isLoading) {
+            handleExportPDF();
+
+            // Si hay número de WhatsApp, abrimos el chat
+            if (wppNumber) {
+                const cuentaNombre = cuentas.find(c => c.id == selectedAccount)?.nombre || 'la cuenta';
+                const message = `Hola, adjunto el reporte Auxiliar de *${cuentaNombre}* del periodo ${startDate} al ${endDate}.`;
+                const wppUrl = `https://wa.me/${wppNumber}?text=${encodeURIComponent(message)}`;
+
+                // Pequeño delay para que el navegador no bloquee el popup
+                setTimeout(() => {
+                    window.open(wppUrl, '_blank');
+                }, 1000);
+            }
+
+            setAutoPdfTrigger(false); // Reset trigger
+            setWppNumber(null);
         }
-    }, [autoRun, selectedAccount, startDate, endDate]);
+    }, [reportData, autoPdfTrigger, isLoading, wppNumber]);
 
 
     const fetchCuentas = async () => {
@@ -188,8 +234,9 @@ export default function AuxiliarPorCuentaPage() {
             const signedToken = signedUrlRes.data.signed_url_token;
             const finalPdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/reports/account-ledger/imprimir?signed_token=${signedToken}`;
 
-            // Abrir PDF en nueva pestaña (Solución Bug "Rompe Página")
-            window.open(finalPdfUrl, '_blank');
+            // MÉTODO BRUTO: Navegación directa
+            // Al ser un attachment, el navegador no cambia de página, solo descarga.
+            window.location.href = finalPdfUrl;
 
         } catch (err) {
             setError(err.response?.data?.detail || 'Error al obtener el PDF.');
@@ -218,6 +265,13 @@ export default function AuxiliarPorCuentaPage() {
             <div className="min-h-screen bg-gray-50 p-6 font-sans pb-20">
                 <div className="max-w-6xl mx-auto">
 
+                    {/* DEBUG PANEL - TEMPORARY */}
+                    <div className="bg-yellow-100 text-yellow-800 p-2 text-xs mb-4 rounded border border-yellow-300 font-mono break-all">
+                        <strong>DEBUG PARAMS:</strong> {Array.from(searchParams.entries()).map(([k, v]) => `${k}=${v}`).join(' | ')}
+                        <br />
+                        <strong>STATE:</strong> AutoPdf: {autoPdfTrigger ? 'ON' : 'OFF'} | Wpp: {wppNumber || 'NULL'}
+                    </div>
+
                     {/* ENCABEZADO */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                         <div>
@@ -237,6 +291,13 @@ export default function AuxiliarPorCuentaPage() {
                                         </button>
                                     </div>
                                     <p className="text-gray-500 text-sm">Detalle cronológico de movimientos para una cuenta específica.</p>
+
+                                    {/* STATUS INDICATOR */}
+                                    {(wppNumber || autoPdfTrigger || emailAddress) && (
+                                        <div className="mt-2 text-sm font-bold text-green-600 flex items-center gap-2 animate-bounce">
+                                            <span>⚡ Procesando comando: Generando PDF {wppNumber ? 'para WhatsApp...' : emailAddress ? 'para Email...' : '...'}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

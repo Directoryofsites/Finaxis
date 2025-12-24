@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Script from 'next/script';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
     FaUserTag,
     FaCalendarAlt,
@@ -15,6 +15,7 @@ import {
     FaCheckCircle,
     FaBook
 } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
@@ -39,6 +40,13 @@ export default function EstadoCuentaClientePage() {
     const [error, setError] = useState(null);
     const [isPageReady, setPageReady] = useState(false);
 
+    // Estados para Automatización (Voz/IA)
+    const [autoPdfTrigger, setAutoPdfTrigger] = useState(false);
+    const [wppNumber, setWppNumber] = useState(null);
+    const [emailAddress, setEmailAddress] = useState(null);
+    const [shouldAutoRun, setShouldAutoRun] = useState(false); // Flag para ejecución automática robusta
+    const lastProcessedParams = useRef('');
+
     // Autenticación
     useEffect(() => {
         if (!authLoading) {
@@ -49,6 +57,8 @@ export default function EstadoCuentaClientePage() {
             }
         }
     }, [user, authLoading, router]);
+
+    const searchParams = useSearchParams();
 
     // Carga de Clientes
     useEffect(() => {
@@ -64,6 +74,68 @@ export default function EstadoCuentaClientePage() {
             fetchTerceros();
         }
     }, [user]);
+
+    // AUTO-CONFIGURACIÓN (IA)
+    useEffect(() => {
+        if (!authLoading && user && terceros.length > 0 && searchParams.size > 0) {
+            const aiTercero = searchParams.get('tercero');
+            const aiFechaCorte = searchParams.get('fecha_corte');
+
+            // Automation Params
+            const pAutoPdf = searchParams.get('auto_pdf');
+            const pWpp = searchParams.get('wpp');
+            const pEmail = searchParams.get('email');
+
+            const currentSignature = `${aiTercero}-${aiFechaCorte}-${pAutoPdf}-${pWpp}-${pEmail}`;
+            if (lastProcessedParams.current === currentSignature) return;
+
+            if (aiTercero) {
+                // Normalización para búsqueda
+                const normalize = (str) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
+                const searchNorm = normalize(aiTercero);
+
+                // Buscar mejor coincidencia
+                const found = terceros.find(t => {
+                    const name = normalize(t.razon_social || '');
+                    const nit = normalize(t.numero_identificacion || '');
+                    return name.includes(searchNorm) || nit.includes(searchNorm);
+                });
+
+                if (found) {
+                    setFiltros(prev => ({
+                        ...prev,
+                        terceroId: found.id,
+                        fechaFin: aiFechaCorte || prev.fechaFin
+                    }));
+
+                    // Configurar triggers
+                    if (pAutoPdf === 'true') setAutoPdfTrigger(true);
+                    if (pWpp) setWppNumber(pWpp);
+                    if (pEmail) setEmailAddress(pEmail);
+
+                    // Activar Auto-Ejecución (State-based, más robusto que click())
+                    setShouldAutoRun(true);
+                    toast.info(`⚡ IA: Generando Estado de Cuenta para ${found.razon_social}...`);
+
+                    lastProcessedParams.current = currentSignature;
+
+                    // Limpieza URL diferida
+                    setTimeout(() => window.history.replaceState(null, '', window.location.pathname), 2000);
+                } else {
+                    toast.warning(`No encontré al cliente "${aiTercero}".`);
+                }
+            }
+        }
+    }, [terceros, searchParams, user, authLoading]);
+
+    // EFECTO: Ejecución Robusta (Reactiva)
+    // Se dispara solo cuando shouldAutoRun es true Y el filtro de tercero ya se actualizó
+    useEffect(() => {
+        if (shouldAutoRun && filtros.terceroId) {
+            handleGenerateReport();
+            setShouldAutoRun(false); // Apagar flag para evitar loop
+        }
+    }, [shouldAutoRun, filtros.terceroId]);
 
     const handleFiltroChange = (e) => {
         const { name, value } = e.target;
@@ -147,6 +219,53 @@ export default function EstadoCuentaClientePage() {
             setIsLoading(false);
         }
     };
+
+    // HANDLE: Enviar por Correo
+    const handleSendEmail = async () => {
+        if (!reportData || !emailAddress) return;
+        toast.info(`📤 Enviando Estado de Cuenta a ${emailAddress}...`);
+        try {
+            await apiService.post('/reports/dispatch-email', {
+                report_type: 'estado_cuenta_cliente',
+                email_to: emailAddress,
+                filtros: {
+                    tercero_id: filtros.terceroId,
+                    fecha_fin: filtros.fechaFin
+                }
+            });
+            toast.success(`✅ Correo enviado a ${emailAddress}`);
+        } catch (err) {
+            console.error("Error sending email:", err);
+            toast.error("❌ Falló el envío del correo.");
+        }
+    };
+
+    // EFECTO: Automatización Post-Reporte (PDF -> WhatsApp -> Email)
+    useEffect(() => {
+        if (autoPdfTrigger && reportData && !isLoading) {
+            // 1. PDF
+            handleExportPDF();
+
+            // 2. WhatsApp
+            if (wppNumber) {
+                const cliente = reportData.clienteInfo?.razon_social || 'el cliente';
+                const total = formatCurrency(reportData.saldoTotal);
+                const message = `Hola, adjunto el Estado de Cuenta de *${cliente}* con corte a ${filtros.fechaFin}. Saldo Total: *${total}*.`;
+                const wppUrl = `https://wa.me/${wppNumber}?text=${encodeURIComponent(message)}`;
+                setTimeout(() => window.open(wppUrl, '_blank'), 1500);
+            }
+
+            // 3. Email
+            if (emailAddress) {
+                handleSendEmail();
+            }
+
+            // Reset
+            setAutoPdfTrigger(false);
+            setWppNumber(null);
+            setEmailAddress(null);
+        }
+    }, [reportData, autoPdfTrigger, isLoading, wppNumber, emailAddress]);
 
     const formatCurrency = (value) => {
         if (value === null || value === undefined) return '$ 0';
@@ -238,6 +357,7 @@ export default function EstadoCuentaClientePage() {
                             {/* Botón Generar */}
                             <div className="md:col-span-1">
                                 <button
+                                    id="btn-generar-estado"
                                     onClick={handleGenerateReport}
                                     disabled={isLoading}
                                     className={`

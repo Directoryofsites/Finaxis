@@ -20,15 +20,107 @@ from app.services import libros_oficiales as libros_oficiales_service # <-- NUEV
 
 # Se añade el servicio de períodos para la lógica de cierre
 from app.services import periodo as periodo_service
+from app.services.email_service import email_service # <-- NUEVO SERVICIO EMAIL
 
 # --- FIN: MODIFICACIÓN ARQUITECTÓNICA ---
 
 # Se importan los schemas de los reportes
 from app.schemas import reporte_balance_prueba as schemas_bce
 from app.schemas import reporte_balance_prueba_cc as schemas_bce_cc
+from pydantic import BaseModel, EmailStr
 
+# --- SCHEMAS PARA EMAIL ---
+class EmailDispatchRequest(BaseModel):
+    report_type: str  # 'auxiliar_cuenta', 'balance_prueba', 'balance_general', 'estado_resultados', 'tercero_cuenta'
+    email_to: EmailStr
+    filtros: Dict[str, Any]
 
 router = APIRouter()
+
+# --- NUEVO ENDPOINT CENTRALIZADO PARA ENVÍO DE CORREOS ---
+@router.post("/dispatch-email")
+def dispatch_report_email(
+    payload: EmailDispatchRequest,
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    """
+    Genera el PDF del reporte solicitado y lo envía por correo electrónico.
+    """
+    try:
+        pdf_content = None
+        filename = "Reporte.pdf"
+        subject = "Reporte Contable - Finaxis"
+
+        # 1. BALANCE DE PRUEBA
+        if payload.report_type == 'balance_prueba':
+            filtros = schemas_bce.FiltrosBalancePrueba(**payload.filtros)
+            pdf_content = reports_service.generate_balance_de_prueba_pdf(db, current_user.empresa_id, filtros)
+            filename = f"Balance_Prueba_{filtros.fecha_inicio}_{filtros.fecha_fin}.pdf"
+            subject = f"Balance de Prueba ({filtros.fecha_inicio} al {filtros.fecha_fin})"
+
+        # 2. BALANCE GENERAL
+        elif payload.report_type == 'balance_general':
+            fecha_corte = date.fromisoformat(payload.filtros['fecha_corte'])
+            pdf_content = documento_service.generate_balance_sheet_report_pdf(db, current_user.empresa_id, fecha_corte)
+            filename = f"Balance_General_{fecha_corte}.pdf"
+            subject = f"Balance General a {fecha_corte}"
+
+        # 3. ESTADO DE RESULTADOS
+        elif payload.report_type == 'estado_resultados':
+            fecha_inicio = date.fromisoformat(payload.filtros['fecha_inicio'])
+            fecha_fin = date.fromisoformat(payload.filtros['fecha_fin'])
+            pdf_content = documento_service.generate_income_statement_report_pdf(db, current_user.empresa_id, fecha_inicio, fecha_fin)
+            filename = f"Estado_Resultados_{fecha_inicio}_{fecha_fin}.pdf"
+            subject = f"Estado de Resultados ({fecha_inicio} al {fecha_fin})"
+
+        # 4. AUXILIAR POR CUENTA
+        elif payload.report_type == 'auxiliar_cuenta':
+            cuenta_id = int(payload.filtros['cuenta_id'])
+            fecha_inicio = date.fromisoformat(payload.filtros['fecha_inicio'])
+            fecha_fin = date.fromisoformat(payload.filtros['fecha_fin'])
+            pdf_content = documento_service.generate_account_ledger_report_pdf(db, current_user.empresa_id, cuenta_id, fecha_inicio, fecha_fin)
+            filename = f"Auxiliar_Cuenta_{cuenta_id}.pdf"
+            subject = f"Auxiliar Contable ({fecha_inicio} al {fecha_fin})"
+
+        # 5. AUXILIAR POR TERCERO
+        elif payload.report_type == 'tercero_cuenta':
+            tercero_id = int(payload.filtros['tercero_id'])
+            fecha_inicio = date.fromisoformat(payload.filtros['fecha_inicio'])
+            fecha_fin = date.fromisoformat(payload.filtros['fecha_fin'])
+            cuenta_ids = payload.filtros.get('cuenta_ids') # "1,2,3" or None
+            parsed_ids = [int(id) for id in cuenta_ids.split(',')] if cuenta_ids else None
+            
+            pdf_content = documento_service.generate_tercero_account_ledger_report_pdf(
+                db=db,
+                empresa_id=current_user.empresa_id,
+                tercero_id=tercero_id,
+                fecha_inicio=fecha_inicio,
+                fecha_fin=fecha_fin,
+                cuenta_ids=parsed_ids
+            )
+            filename = f"Auxiliar_Tercero_{tercero_id}.pdf"
+            subject = f"Auxiliar Tercero ({fecha_inicio} al {fecha_fin})"
+
+        else:
+             raise HTTPException(status_code=400, detail=f"Tipo de reporte '{payload.report_type}' no soportado para envío por correo.")
+
+        # ENVIAR CORREO
+        if pdf_content:
+            body = f"Hola,\n\nAdjunto encontrarás el reporte solicitado: {subject}.\n\nGenerado por Finaxis AI."
+            success, msg = email_service.send_email_with_pdf(payload.email_to, subject, body, pdf_content, filename, empresa_id=current_user.empresa_id)
+            
+            if not success:
+                raise HTTPException(status_code=500, detail=msg)
+            
+            return {"message": "Correo enviado exitosamente"}
+        
+        raise HTTPException(status_code=500, detail="No se pudo generar el PDF por razones desconocidas.")
+
+    except Exception as e:
+        print(f"Error dispatching email: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
 
 # --- RUTAS PARA EL BALANCE DE PRUEBA POR CUENTAS (Sin cambios) ---
 @router.post("/balance-de-prueba", response_model=schemas_bce.ReporteBalancePruebaResponse)
@@ -407,7 +499,10 @@ def get_account_ledger_report_pdf(
         fecha_fin=fecha_fin
     )
     from fastapi.responses import Response
-    return Response(content=pdf_content, media_type="application/pdf")
+    headers = {
+        "Content-Disposition": f"attachment; filename=Auxiliar_Cuenta_{cuenta_id}_{fecha_inicio}_{fecha_fin}.pdf"
+    }
+    return Response(content=pdf_content, media_type="application/pdf", headers=headers)
 
 # --- RUTAS PARA REPORTES RESTANTES (Sin cambios) ---
 # ... (el resto del archivo permanece igual) ...
@@ -497,7 +592,10 @@ def get_tercero_cuenta_report_pdf(
         cuenta_ids=cuenta_ids
     )
     from fastapi.responses import Response
-    return Response(content=pdf_content, media_type="application/pdf")
+    headers = {
+        "Content-Disposition": f"attachment; filename=Auxiliar_Tercero_{tercero_id}_{fecha_inicio}_{fecha_fin}.pdf"
+    }
+    return Response(content=pdf_content, media_type="application/pdf", headers=headers)
 
     # --- RUTAS PARA REPORTE ESTADO DE RESULTADOS ---
 @router.get("/income-statement", response_model=Dict[str, Any])

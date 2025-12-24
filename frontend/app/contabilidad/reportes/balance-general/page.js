@@ -15,6 +15,7 @@ import {
     FaBook
 } from 'react-icons/fa';
 
+import { toast } from 'react-toastify';
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
 
@@ -32,28 +33,52 @@ export default function BalanceGeneralPage() {
     const [fechaCorte, setFechaCorte] = useState('');
     const [isPageReady, setPageReady] = useState(false);
 
+    // Automation State
+    const [autoPdfTrigger, setAutoPdfTrigger] = useState(false);
+    const [wppNumber, setWppNumber] = useState(null);
+    const [emailAddress, setEmailAddress] = useState(null);
+    const lastProcessedParams = React.useRef('');
+
     // Efecto de Autenticación
     useEffect(() => {
         if (!authLoading) {
             if (user && user.empresaId) {
                 setPageReady(true);
-
-                // --- AUTO-CONFIGURACION (IA) ---
-                const urlParams = new URLSearchParams(window.location.search);
-                const aiFechaCorte = urlParams.get('fecha_corte');
-
-                if (aiFechaCorte) {
-                    setFechaCorte(aiFechaCorte);
-                    // Auto-ejecutar reporte si hay fecha
-                    setTimeout(() => {
-                        document.getElementById('btn-generar-balance')?.click();
-                    }, 500);
-                }
             } else {
                 router.push('/login');
             }
         }
     }, [user, authLoading, router]);
+
+    // --- AUTO-CONFIGURACION (IA) ---
+    useEffect(() => {
+        if (isPageReady) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const aiFechaCorte = urlParams.get('fecha_corte');
+
+            const pAutoPdf = urlParams.get('auto_pdf');
+            const pWpp = urlParams.get('wpp');
+            const pEmail = urlParams.get('email');
+
+            if (aiFechaCorte) {
+                const currentSignature = `${aiFechaCorte}-${pAutoPdf}-${pWpp}-${pEmail}`;
+                if (lastProcessedParams.current === currentSignature) return;
+                lastProcessedParams.current = currentSignature;
+
+                setFechaCorte(aiFechaCorte);
+
+                if (pAutoPdf === 'true') setAutoPdfTrigger(true);
+                if (pWpp) setWppNumber(pWpp);
+                if (pEmail) setEmailAddress(pEmail);
+
+                // Auto-ejecutar reporte si hay fecha
+                setTimeout(() => {
+                    document.getElementById('btn-generar-balance')?.click();
+                    window.history.replaceState(null, '', window.location.pathname);
+                }, 500);
+            }
+        }
+    }, [isPageReady]);
 
     const handleGenerateReport = async () => {
         if (!fechaCorte) {
@@ -75,6 +100,42 @@ export default function BalanceGeneralPage() {
         }
     };
 
+    // HANDLE: Enviar por Correo
+    const handleSendEmail = async () => {
+        if (!reporte || !emailAddress) return;
+        toast.info(`📤 Enviando reporte a ${emailAddress}...`);
+        try {
+            await apiService.post('/reports/dispatch-email', {
+                report_type: 'balance_general',
+                email_to: emailAddress,
+                filtros: { fecha_corte: fechaCorte }
+            });
+            toast.success(`✅ Correo enviado a ${emailAddress}`);
+        } catch (err) {
+            console.error("Error sending email:", err);
+            toast.error("❌ Falló el envío del correo.");
+        }
+    };
+
+    // EFECTO: Automatización
+    useEffect(() => {
+        if (autoPdfTrigger && reporte && !isLoading) {
+            handleExportPDF();
+
+            if (wppNumber) {
+                const message = `Hola, adjunto el Balance General de ${user.nombre_empresa} con corte a ${fechaCorte}.`;
+                const wppUrl = `https://wa.me/${wppNumber}?text=${encodeURIComponent(message)}`;
+                setTimeout(() => window.open(wppUrl, '_blank'), 1500);
+            }
+
+            if (emailAddress) handleSendEmail();
+
+            setAutoPdfTrigger(false);
+            setWppNumber(null);
+            setEmailAddress(null);
+        }
+    }, [reporte, autoPdfTrigger, isLoading, wppNumber, emailAddress]);
+
     const handleExportPDF = async () => {
         if (!reporte) {
             setError("Primero debe generar un reporte para poder exportarlo.");
@@ -93,12 +154,7 @@ export default function BalanceGeneralPage() {
             const pdfDownloadUrl = `${baseUrl}/api/reports/balance-sheet/imprimir?signed_token=${signedToken}`;
 
             // Técnica de descarga directa (Link Fantasma) para evitar bloqueo de popups
-            const link = document.createElement('a');
-            link.href = pdfDownloadUrl;
-            link.setAttribute('download', `Balance_General_${fechaCorte}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            window.location.href = pdfDownloadUrl;
 
         } catch (err) {
             setError(err.response?.data?.detail || "Error al generar el PDF del reporte.");
@@ -163,6 +219,12 @@ export default function BalanceGeneralPage() {
                                     </button>
                                 </div>
                                 <p className="text-gray-500 text-sm">Situación financiera: Activos, Pasivos y Patrimonio.</p>
+                                {/* STATUS INDICATOR */}
+                                {(wppNumber || autoPdfTrigger || emailAddress) && (
+                                    <div className="mt-2 text-sm font-bold text-green-600 flex items-center gap-2 animate-bounce">
+                                        <span>⚡ Procesando comando: Generando PDF {wppNumber ? 'para WhatsApp...' : emailAddress ? 'para Email...' : '...'}</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

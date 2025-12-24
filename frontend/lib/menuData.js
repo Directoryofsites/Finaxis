@@ -4,7 +4,7 @@
     FaClipboardList, FaWrench, FaHandshake, FaTruckMoving, FaReceipt, FaLock,
     FaListUl, FaDollarSign, FaChartLine, FaChartPie, FaPercentage, FaFileContract,
     FaRedoAlt, FaCalendarAlt, FaTools, FaTimes, FaChartArea, FaStar, FaBuilding,
-    FaTractor, FaCogs, FaHome, FaIndustry, FaExchangeAlt, FaUpload, FaEye, FaArrowUp, FaDatabase
+    FaTractor, FaCogs, FaHome, FaIndustry, FaExchangeAlt, FaUpload, FaEye, FaArrowUp, FaDatabase, FaEnvelope
 } from 'react-icons/fa';
 
 // Módulos definidos externamente para claridad
@@ -239,6 +239,7 @@ export const menuStructure = [
                     { name: 'Edición Masiva', href: '/admin/utilidades/eliminacion-masiva', mnemonic: 'm', icon: FaFileAlt },
                     { name: 'Recodificación', href: '/admin/utilidades/recodificacion-masiva', mnemonic: 'd', icon: FaRedoAlt },
                     { name: 'Papelera', href: '/admin/utilidades/papelera', mnemonic: 'x', icon: FaTimes },
+                    { name: 'Configuración Correo', href: '/admin/utilidades/configuracion-correo', mnemonic: 'e', icon: FaEnvelope },
                 ]
             },
         ]

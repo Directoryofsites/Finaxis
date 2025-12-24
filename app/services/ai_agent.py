@@ -40,6 +40,14 @@ TOOLS_SCHEMA = [
                     "type": "string",
                     "enum": ["PDF", "EXCEL", "PANTALLA"],
                     "description": "Formato de salida solicitado (opcional)."
+                },
+                "whatsapp_destino": {
+                    "type": "string",
+                    "description": "Número de teléfono EXPLICITO si el usuario pide enviar por WhatsApp. Ej: 3001234567. Si dice 'al whatsapp 321...', extrae '321...'."
+                },
+                "email_destino": {
+                    "type": "string",
+                    "description": "Correo electrónico si el usuario pide enviar por email. Ej: usuario@gmail.com"
                 }
             },
             "required": ["fecha_inicio", "fecha_fin"]
@@ -53,7 +61,10 @@ TOOLS_SCHEMA = [
             "properties": {
                 "fecha_inicio": { "type": "string", "format": "date" },
                 "fecha_fin": { "type": "string", "format": "date" },
-                "nivel": { "type": "integer", "description": "Nivel de detalle (1-5). Por defecto 4." }
+                "nivel": { "type": "integer", "description": "Nivel de detalle (1-5). Por defecto 4." },
+                "formato": { "type": "string", "enum": ["PDF", "EXCEL", "PANTALLA"], "description": "Formato de salida solicitado." },
+                "whatsapp_destino": { "type": "string", "description": "Número de teléfono EXPLICITO si pide enviar por WhatsApp." },
+                "email_destino": { "type": "string", "description": "Correo electrónico si pide enviar por email. Ej: usuario@gmail.com" }
             },
             "required": ["fecha_inicio", "fecha_fin"]
         }
@@ -64,8 +75,11 @@ TOOLS_SCHEMA = [
         "parameters": {
             "type": "object",
             "properties": {
-                "fecha_corte": { "type": "string", "format": "date", "description": "Fecha de corte del balance (usualmente fin de mes/año). Si piden rango, usa fecha_fin." },
-                "comparativo": { "type": "boolean", "description": "Si se solicita comparar con año anterior." }
+                "fecha_corte": { "type": "string", "format": "date", "description": "Fecha de corte del balance." },
+                "comparativo": { "type": "boolean", "description": "Si se solicita comparar con año anterior." },
+                "formato": { "type": "string", "enum": ["PDF", "EXCEL", "PANTALLA"], "description": "Formato de salida solicitado." },
+                "whatsapp_destino": { "type": "string", "description": "Número de teléfono EXPLICITO si pide enviar por WhatsApp." },
+                "email_destino": { "type": "string", "description": "Correo electrónico si pide enviar por email. Ej: usuario@gmail.com" }
             },
             "required": ["fecha_corte"]
         }
@@ -77,7 +91,10 @@ TOOLS_SCHEMA = [
             "type": "object",
             "properties": {
                 "fecha_inicio": { "type": "string", "format": "date" },
-                "fecha_fin": { "type": "string", "format": "date" }
+                "fecha_fin": { "type": "string", "format": "date" },
+                "formato": { "type": "string", "enum": ["PDF", "EXCEL", "PANTALLA"], "description": "Formato de salida solicitado." },
+                "whatsapp_destino": { "type": "string", "description": "Número de teléfono EXPLICITO si pide enviar por WhatsApp." },
+                "email_destino": { "type": "string", "description": "Correo electrónico si pide enviar por email. Ej: usuario@gmail.com" }
             },
             "required": ["fecha_inicio", "fecha_fin"]
         }
@@ -195,9 +212,14 @@ Reglas:
    - SUPER INFORME (Default): Si piden "Ver movimientos", "Informe de [Tercero]", "Buscar facturas de..." -> USA 'consultar_documento'.
    - Si piden "Auxiliar" a secas -> PREFIERE 'consultar_documento' (Super Informe) salvo que digan "Auxiliar Contable".
    - Si hay AMBIGÜEDAD, PREFIERE 'consultar_documento'.
-6. COPIAS DE SEGURIDAD:
-   - Si piden "backup", "respaldo", "copia de seguridad", "guardar todo" -> USA 'generar_backup'.
 7. Si no entiendes, devuelve un JSON con error: {{ "error": "No entendí la solicitud" }}.
+
+EJEMPLOS PODEROSOS (CHAIN OF THOUGHT):
+- Usuario: "Auxiliar de caja general de este mes en PDF para el wasap 3001234567"
+  Respuesta: {{ "name": "generar_reporte_movimientos", "parameters": {{ "cuenta": "Caja General", "fecha_inicio": "2024-11-01", "fecha_fin": "2024-11-30", "formato": "PDF", "whatsapp_destino": "3001234567" }} }}
+
+- Usuario: "Envíame el balance de prueba al 31 de diciembre"
+  Respuesta: {{ "name": "generar_balance_prueba", "parameters": {{ "fecha_inicio": "2024-01-01", "fecha_fin": "2024-12-31" }} }}
 """
 
 async def procesar_comando_natural(texto_usuario: str, contexto: dict = None):

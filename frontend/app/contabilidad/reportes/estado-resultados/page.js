@@ -16,6 +16,7 @@ import {
     FaBook
 } from 'react-icons/fa';
 
+import { toast } from 'react-toastify';
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
 
@@ -34,6 +35,12 @@ export default function EstadoResultadosPage() {
     const [fechaFin, setFechaFin] = useState('');
     const [isPageReady, setPageReady] = useState(false);
 
+    // Automation State
+    const [autoPdfTrigger, setAutoPdfTrigger] = useState(false);
+    const [wppNumber, setWppNumber] = useState(null);
+    const [emailAddress, setEmailAddress] = useState(null);
+    const lastProcessedParams = React.useRef('');
+
     useEffect(() => {
         if (!authLoading) {
             if (user && user.empresaId) {
@@ -50,14 +57,26 @@ export default function EstadoResultadosPage() {
             const urlParams = new URLSearchParams(window.location.search);
             const aiInicio = urlParams.get('fecha_inicio');
             const aiFin = urlParams.get('fecha_fin');
+            const pAutoPdf = urlParams.get('auto_pdf');
+            const pWpp = urlParams.get('wpp');
+            const pEmail = urlParams.get('email');
 
             if (aiInicio && aiFin) {
+                const currentSignature = `${aiInicio}-${aiFin}-${pAutoPdf}-${pWpp}-${pEmail}`;
+                if (lastProcessedParams.current === currentSignature) return;
+                lastProcessedParams.current = currentSignature;
+
                 setFechaInicio(aiInicio);
                 setFechaFin(aiFin);
+
+                if (pAutoPdf === 'true') setAutoPdfTrigger(true);
+                if (pWpp) setWppNumber(pWpp);
+                if (pEmail) setEmailAddress(pEmail);
 
                 // Auto-ejecutar
                 setTimeout(() => {
                     document.getElementById('btn-generar-er')?.click();
+                    window.history.replaceState(null, '', window.location.pathname);
                 }, 800);
             }
         }
@@ -132,6 +151,45 @@ export default function EstadoResultadosPage() {
         document.body.removeChild(link);
     };
 
+    // HANDLE: Enviar por Correo
+    const handleSendEmail = async () => {
+        if (!reporte || !emailAddress) return;
+        toast.info(`📤 Enviando reporte a ${emailAddress}...`);
+        try {
+            await apiService.post('/reports/dispatch-email', {
+                report_type: 'estado_resultados',
+                email_to: emailAddress,
+                filtros: {
+                    fecha_inicio: fechaInicio,
+                    fecha_fin: fechaFin
+                }
+            });
+            toast.success(`✅ Correo enviado a ${emailAddress}`);
+        } catch (err) {
+            console.error("Error sending email:", err);
+            toast.error("❌ Falló el envío del correo.");
+        }
+    };
+
+    // EFECTO: Automatización
+    useEffect(() => {
+        if (autoPdfTrigger && reporte && !isLoading) {
+            handleExportPDF();
+
+            if (wppNumber) {
+                const message = `Hola, adjunto el Estado de Resultados de ${user.nombre_empresa} del ${fechaInicio} al ${fechaFin}.`;
+                const wppUrl = `https://wa.me/${wppNumber}?text=${encodeURIComponent(message)}`;
+                setTimeout(() => window.open(wppUrl, '_blank'), 1500);
+            }
+
+            if (emailAddress) handleSendEmail();
+
+            setAutoPdfTrigger(false);
+            setWppNumber(null);
+            setEmailAddress(null);
+        }
+    }, [reporte, autoPdfTrigger, isLoading, wppNumber, emailAddress]);
+
     const handleExportPDF = async () => {
         if (!reporte) return;
         setIsLoading(true);
@@ -145,12 +203,7 @@ export default function EstadoResultadosPage() {
             const signedToken = signedUrlRes.data.signed_url_token;
             const finalPdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/reports/income-statement/imprimir?signed_token=${signedToken}`;
 
-            const link = document.createElement('a');
-            link.href = finalPdfUrl;
-            link.setAttribute('download', `Estado_Resultados_${fechaInicio}_${fechaFin}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            window.location.href = finalPdfUrl;
 
         } catch (err) {
             setError(err.response?.data?.detail || 'Error al obtener la URL firmada para el PDF.');
@@ -208,6 +261,12 @@ export default function EstadoResultadosPage() {
                                         </button>
                                     </div>
                                     <p className="text-gray-500 text-sm">Análisis de rentabilidad: Ingresos, Costos y Gastos.</p>
+                                    {/* STATUS INDICATOR */}
+                                    {(wppNumber || autoPdfTrigger || emailAddress) && (
+                                        <div className="mt-2 text-sm font-bold text-green-600 flex items-center gap-2 animate-bounce">
+                                            <span>⚡ Procesando comando: Generando PDF {wppNumber ? 'para WhatsApp...' : emailAddress ? 'para Email...' : '...'}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

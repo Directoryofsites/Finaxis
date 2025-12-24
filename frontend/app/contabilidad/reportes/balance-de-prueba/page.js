@@ -13,6 +13,7 @@ import {
   FaCheckCircle,
   FaBook
 } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 
 import { useAuth } from '../../../../app/context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
@@ -39,6 +40,11 @@ export default function BalancePruebaPage() {
   const [error, setError] = useState('');
   const [isPageReady, setPageReady] = useState(false);
 
+  const [autoPdfTrigger, setAutoPdfTrigger] = useState(false);
+  const [wppNumber, setWppNumber] = useState(null);
+  const [emailAddress, setEmailAddress] = useState(null);
+  const lastProcessedParams = React.useRef('');
+
   // Verificar sesión
   useEffect(() => {
     if (!authLoading) {
@@ -58,7 +64,15 @@ export default function BalancePruebaPage() {
       const aiFechaFin = urlParams.get('fecha_fin');
       const aiNivel = urlParams.get('nivel');
 
+      const pAutoPdf = urlParams.get('auto_pdf');
+      const pWpp = urlParams.get('wpp');
+      const pEmail = urlParams.get('email');
+
       if (aiFechaInicio && aiFechaFin) {
+        const currentSignature = `${aiFechaInicio}-${aiFechaFin}-${aiNivel}-${pAutoPdf}-${pWpp}-${pEmail}`;
+        if (lastProcessedParams.current === currentSignature) return;
+        lastProcessedParams.current = currentSignature;
+
         setFiltros(prev => ({
           ...prev,
           fecha_inicio: aiFechaInicio,
@@ -66,13 +80,63 @@ export default function BalancePruebaPage() {
           nivel_maximo: aiNivel || prev.nivel_maximo
         }));
 
-        // Auto-ejecutar
+        // Activamos triggers
+        if (pAutoPdf === 'true') setAutoPdfTrigger(true);
+        if (pWpp) setWppNumber(pWpp);
+        if (pEmail) setEmailAddress(pEmail);
+
+        // Auto-ejecutar con pequeño delay para asegurar estado
         setTimeout(() => {
           document.getElementById('btn-generar-bal-prueba')?.click();
-        }, 800);
+          // Limpieza silenciosa URL
+          window.history.replaceState(null, '', window.location.pathname);
+        }, 500);
       }
     }
   }, [isPageReady]);
+
+  // HANDLE: Enviar por Correo
+  const handleSendEmail = async () => {
+    if (!reportData || !emailAddress) return;
+    toast.info(`📤 Enviando reporte a ${emailAddress}...`);
+    try {
+      await apiService.post('/reports/dispatch-email', {
+        report_type: 'balance_prueba',
+        email_to: emailAddress,
+        filtros: { ...filtros, centro_costo_id: filtros.centro_costo_id || undefined }
+      });
+      toast.success(`✅ Correo enviado a ${emailAddress}`);
+    } catch (err) {
+      console.error("Error sending email:", err);
+      toast.error("❌ Falló el envío del correo.");
+    }
+  };
+
+  // EFECTO: Automatización (PDF -> WhatsApp -> Email)
+  useEffect(() => {
+    if (autoPdfTrigger && reportData && !isLoading) {
+      // 1. PDF
+      handleExportPDF();
+
+      // 2. WhatsApp
+      if (wppNumber) {
+        const message = `Hola, adjunto el Balance de Prueba de ${user.nombre_empresa} del periodo ${filtros.fecha_inicio} al ${filtros.fecha_fin}.`;
+        const wppUrl = `https://wa.me/${wppNumber}?text=${encodeURIComponent(message)}`;
+        setTimeout(() => window.open(wppUrl, '_blank'), 1500);
+      }
+
+      // 3. Email
+      if (emailAddress) {
+        handleSendEmail();
+      }
+
+      // Reset
+      setAutoPdfTrigger(false);
+      setWppNumber(null);
+      setEmailAddress(null);
+    }
+  }, [reportData, autoPdfTrigger, isLoading, wppNumber, emailAddress]);
+
 
   const handleFiltroChange = (e) => {
     const { name, value } = e.target;
@@ -119,13 +183,8 @@ export default function BalancePruebaPage() {
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const pdfUrl = `${baseUrl}/api/reports/balance-de-prueba/imprimir?signed_token=${token}`;
 
-      // Descarga segura
-      const link = document.createElement('a');
-      link.href = pdfUrl;
-      link.setAttribute('download', `Balance_Prueba_${filtros.fecha_inicio}_${filtros.fecha_fin}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Descarga segura (Direct Navigation)
+      window.location.href = pdfUrl;
 
     } catch (err) {
       setError(err.response?.data?.detail || 'Error al generar el PDF.');
@@ -189,6 +248,12 @@ export default function BalancePruebaPage() {
                   </button>
                 </div>
                 <p className="text-gray-500 text-sm">Verificación de saldos y movimientos contables.</p>
+                {/* STATUS INDICATOR */}
+                {(wppNumber || autoPdfTrigger || emailAddress) && (
+                  <div className="mt-2 text-sm font-bold text-green-600 flex items-center gap-2 animate-bounce">
+                    <span>⚡ Procesando comando: Generando PDF {wppNumber ? 'para WhatsApp...' : emailAddress ? 'para Email...' : '...'}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

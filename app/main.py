@@ -57,6 +57,7 @@ from app.api.impuestos import routes as impuestos_router
 
 
 from app.api.utilidades import routes as utilidades_router
+from app.api.configuracion import routes as configuracion_routes # <--- NUEVO
 from app.api.reports import routes as reports_router
 from app.api.cartera import routes as cartera_router
 from app.api.proveedores import routes as proveedores_router
@@ -270,6 +271,7 @@ app.include_router(papelera_router.router, prefix="/api/papelera", tags=["Papele
 app.include_router(utilidades_router.router, prefix="/api/utilidades", tags=["Utilidades"])
 app.include_router(periodos_router.router, prefix="/api/periodos", tags=["Períodos"])
 app.include_router(formatos_impresion_router.router, prefix="/api/formatos-impresion", tags=["Plantillas de Impresión"])
+app.include_router(configuracion_routes.router, prefix="/api/config", tags=["Configuración"]) # <--- NUEVO
 app.include_router(reports_router.router, prefix="/api/reports", tags=["Reportes"])
 app.include_router(cartera_router.router, prefix="/api/cartera", tags=["Cartera"])
 app.include_router(proveedores_router.router, prefix="/api/proveedores", tags=["Proveedores"])

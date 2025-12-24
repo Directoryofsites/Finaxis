@@ -302,6 +302,39 @@ export default function SmartSearchSection() {
             // --- AI ACTION HANDLER ---
             const actionName = data.name || data.function_name;
 
+            // --- INTERCEPTOR: ESTADO DE CUENTA / CARTERA ---
+            // Si la intención es Cartera, redirigir al módulo especializado
+            const queryLower = text.toLowerCase();
+            const isCarteraIntent = queryLower.includes('estado de cuenta') || queryLower.includes('cartera') || queryLower.includes('cuanto debe') || queryLower.includes('saldo de');
+
+            if (isCarteraIntent && (actionName === 'generar_reporte_movimientos' || actionName === 'consultar_documento')) {
+                const p = data.parameters;
+                const terceroIdentified = p.tercero || p.tercero_nombre || p.ai_tercero;
+
+                if (terceroIdentified) {
+                    const params = new URLSearchParams();
+                    params.set('tercero', terceroIdentified);
+                    if (p.fecha_corte || p.fecha_fin) params.set('fecha_corte', p.fecha_corte || p.fecha_fin);
+
+                    // AUTOMATION PARAMS (Unificado con RightSidebar)
+                    const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
+                    if (wantsPdf) params.set('auto_pdf', 'true');
+
+                    if (p.whatsapp_destino) {
+                        params.set('wpp', p.whatsapp_destino);
+                        params.set('auto_pdf', 'true');
+                    }
+                    if (p.email_destino) {
+                        params.set('email', p.email_destino);
+                        params.set('auto_pdf', 'true');
+                    }
+
+                    router.push(`/contabilidad/reportes/estado-cuenta-cliente?${params.toString()}`);
+                    toast.success('IA: Abriendo Estado de Cuenta (Cartera)...');
+                    return; // Detener flujo aquí
+                }
+            }
+
             if (actionName === 'navegar_a_pagina') {
                 const modulo = data.parameters.modulo.toLowerCase();
                 if (modulo.includes('contabil')) router.push('/contabilidad/documentos');
@@ -319,16 +352,30 @@ export default function SmartSearchSection() {
                 if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
                 if (p.cuenta || p.cuenta_nombre) params.set('cuenta', p.cuenta || p.cuenta_nombre);
 
+                // DETECCIÓN DE FORMATOS Y CANALES
+                const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
+                if (wantsPdf) params.set('auto_pdf', 'true');
+
+                if (p.whatsapp_destino) {
+                    params.set('wpp', p.whatsapp_destino);
+                    params.set('auto_pdf', 'true'); // WhatsApp requiere PDF
+                }
+
+                if (p.email_destino) {
+                    params.set('email', p.email_destino);
+                    params.set('auto_pdf', 'true'); // Email requiere PDF
+                }
+
                 // FIXED: Routing Inteligente
                 // Si hay tercero -> Auxiliar por Tercero
                 if (p.tercero || p.tercero_nombre) {
                     params.set('tercero', p.tercero || p.tercero_nombre);
                     router.push(`/contabilidad/reportes/tercero-cuenta?${params.toString()}`);
-                    toast.success('IA: Configurando Auxiliar por Tercero...');
+                    toast.success('IA: Procesando Auxiliar por Tercero...');
                 } else {
                     // Si NO hay tercero -> Auxiliar por Cuenta (Libro estándar)
                     router.push(`/contabilidad/reportes/auxiliar-cuenta?${params.toString()}`);
-                    toast.success('IA: Configurando Auxiliar por Cuenta...');
+                    toast.success('IA: Procesando Auxiliar por Cuenta...');
                 }
 
             } else if (actionName === 'generar_balance_prueba') {
@@ -336,6 +383,16 @@ export default function SmartSearchSection() {
                 const p = data.parameters;
                 if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
                 if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
+                if (p.nivel) params.set('nivel', p.nivel);
+
+                // DETECCIÓN DE FORMATOS Y CANALES
+                const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
+                if (wantsPdf) params.set('auto_pdf', 'true');
+                if (p.whatsapp_destino) {
+                    params.set('wpp', p.whatsapp_destino);
+                    params.set('auto_pdf', 'true');
+                }
+
                 router.push(`/contabilidad/reportes/balance-de-prueba?${params.toString()}`);
                 toast.success('IA: Configurando Balance de Prueba...');
 
@@ -344,6 +401,15 @@ export default function SmartSearchSection() {
                 const p = data.parameters;
                 if (p.fecha_corte) params.set('fecha_corte', p.fecha_corte);
                 if (p.comparativo) params.set('comparativo', 'true');
+
+                // DETECCIÓN DE FORMATOS Y CANALES
+                const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
+                if (wantsPdf) params.set('auto_pdf', 'true');
+                if (p.whatsapp_destino) {
+                    params.set('wpp', p.whatsapp_destino);
+                    params.set('auto_pdf', 'true');
+                }
+
                 router.push(`/contabilidad/reportes/balance-general?${params.toString()}`);
                 toast.success('IA: Configurando Balance General...');
 
@@ -352,6 +418,15 @@ export default function SmartSearchSection() {
                 const p = data.parameters;
                 if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
                 if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
+
+                // DETECCIÓN DE FORMATOS Y CANALES
+                const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
+                if (wantsPdf) params.set('auto_pdf', 'true');
+                if (p.whatsapp_destino) {
+                    params.set('wpp', p.whatsapp_destino);
+                    params.set('auto_pdf', 'true');
+                }
+
                 router.push(`/contabilidad/reportes/estado-resultados?${params.toString()}`);
                 toast.success('IA: Configurando Estado de Resultados...');
 
