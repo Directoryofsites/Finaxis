@@ -26,8 +26,8 @@ export default function ExploradorDocumentosPage() {
 
     // --- ESTADOS DE FILTRO ---
     const [filtros, setFiltros] = useState({
-        fecha_inicio: '',
-        fecha_fin: '',
+        fecha_inicio: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
+        fecha_fin: new Date().toISOString().split('T')[0],
         tipo_documento_id: '', // <--- CORREGIDO: Nombre estándar de BD
         tercero_id: '',
         numero: ''

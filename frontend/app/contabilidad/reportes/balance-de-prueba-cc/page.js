@@ -32,8 +32,8 @@ export default function BalancePruebaCCPage() {
     const router = useRouter();
 
     const [filtros, setFiltros] = useState({
-        fecha_inicio: '',
-        fecha_fin: '',
+        fecha_inicio: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
+        fecha_fin: new Date().toISOString().split('T')[0],
         nivel_maximo: 4,
         filtro_centros_costo: 'CON_SALDO_O_MOVIMIENTO',
         cuenta_id: ''

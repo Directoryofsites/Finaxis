@@ -60,6 +60,14 @@ TOOLS_SCHEMA = [
                 "numero_documento": {
                     "type": "string",
                     "description": "Número o consecutivo del documento específico (ej: 1020, 500, FV-8)."
+                },
+                "email": {
+                    "type": "string",
+                    "description": "Dirección de correo electrónico para enviar el reporte (si se solicita envío)."
+                },
+                "accion": {
+                    "type": "string",
+                    "description": "Acción adicional: 'pdf' (descargar), 'email' (enviar correo), 'whatsapp'."
                 }
             },
             "required": ["fecha_inicio", "fecha_fin"]
@@ -94,6 +102,27 @@ TOOLS_SCHEMA = [
                 "email_destino": { "type": "string", "description": "Correo electrónico si pide enviar por email. Ej: usuario@gmail.com" }
             },
             "required": ["fecha_corte"]
+        }
+    },
+
+    {
+        "name": "generar_reporte_rentabilidad",
+        "description": "Genera el reporte de Rentabilidad por Producto o Grupo. Muestra ventas, costos, utilidad y margen.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "fecha_inicio": { "type": "string", "format": "date" },
+                "fecha_fin": { "type": "string", "format": "date" },
+                "grupos": { 
+                    "type": "string", 
+                    "description": "Nombre de los grupos a filtrar. Si pide 'todos', 'todo' o no especifica, usar 'all'." 
+                },
+                "producto": { "type": "string", "description": "Nombre del producto específico (opcional)." },
+                "formato": { "type": "string", "enum": ["PDF", "EXCEL", "PANTALLA"], "description": "Formato de salida." },
+                "email": { "type": "string", "description": "Correo electrónico para envío." },
+                "accion": { "type": "string", "description": "Acción adicional: 'pdf', 'email'." }
+            },
+            "required": ["fecha_inicio", "fecha_fin"]
         }
     },
     {
@@ -188,6 +217,7 @@ TOOLS_SCHEMA = [
                 "concepto": { "type": "string", "description": "Descripción del movimiento o concepto general." },
                 "debito": { "type": "number", "description": "Valor débito." },
                 "credito": { "type": "number", "description": "Valor crédito." },
+                "plantilla": { "type": "string", "description": "Nombre de la plantilla contable a usar (ej: Aseo, Arrendamiento) para captura rápida." },
                 "accion": { 
                     "type": "string", 
                     "enum": ["DEFINIR_CABECERA", "AGREGAR_LINEA", "FINALIZAR", "CANCELAR"],
@@ -221,26 +251,35 @@ Reglas:
    - Si piden "Cliente", "Proveedor" (sin contexto de documento) -> USA 'crear_recurso' (tipo='tercero').
    - Otros recursos: item, compra, traslado, plantilla, empresa.
 
-6. CONSULTAS, BÚSQUEDAS Y MOVIMIENTOS:
-   - REPORTE TRADICIONAL: Si piden "Libro Auxiliar", "Auxiliar Contable", "Auxiliar por Cuenta" o "Reporte tradicional" -> USA 'generar_reporte_movimientos'.
-   - SUPER INFORME (Default): Si piden "Ver movimientos", "Informe de [Tercero]", "Buscar facturas de..." -> USA 'consultar_documento'.
-   - Si piden "Auxiliar" a secas -> PREFIERE 'consultar_documento' (Super Informe) salvo que digan "Auxiliar Contable".
-   - Si hay AMBIGÜEDAD, PREFIERE 'consultar_documento'.
-7. Si no entiendes, devuelve un JSON con error: {{ "error": "No entendí la solicitud" }}.
-8. CRÍTICO: NO inventes valores para 'producto'. Si el usuario no menciona un nombre específico de producto o artículo (ej: 'Arroz', 'Cemento', 'Coca Cola'), NO pongas el nombre del reporte (ej: 'Movimientos de inventario', 'Detallado') en el campo 'producto'. Déjalo vacío.
+6. CONSULTAS Y PRIORIDAD POR MÓDULO (MEGA CRÍTICO):
+   - SUPER EXCEPCIÓN: Si piden "Super Informe", "Auditoría", "Buscador Global" o "Consultar Documento" -> SIEMPRE USA `consultar_documento`, sin importar si mencionan cuenta, tercero o inventario.
+   - MÓDULO EXPLÍCITO: Si el usuario dice "En Contabilidad", "Por Contabilidad", "Ve al módulo contable", PRIORIZA las herramientas de contabilidad (`generar_reporte_movimientos`, `generar_balance...`) sobre las de inventario.
+   - CASO TRAMPA: "Auxiliar de cuenta inventarios".
+     - MAL: Interpretar 'inventarios' como el módulo de inventario (`consultar_documento`, `super_informe`).
+     - BIEN: Interpretar 'inventarios' como EL NOMBRE DE LA CUENTA CONTABLE y usar `generar_reporte_movimientos`.
+   - REGLA DE ORO: Si piden "Auxiliar", "Libro Auxiliar", "Movimientos de cuenta" -> SIEMPRE es `generar_reporte_movimientos`. Solo usa `consultar_documento` si piden "buscar factura", "ver documento", "kardex" o explícitamente "inventario" o "SUPER INFORME".
+
+7. FECHAS POR DEFECTO:
+   - Si el usuario NO da fechas, asume:
+     - `fecha_inicio`: "2024-01-01" (Inicio de año o de la empresa).
+     - `fecha_fin`: La fecha de hoy ({datetime.now().strftime('%Y-%m-%d')}).
+     - NO pedir confirmación, asume el rango histórico completo o anual.
+
+8. Si no entiendes, devuelve JSON con error.
 
 EJEMPLOS PODEROSOS (CHAIN OF THOUGHT):
-- Usuario: "Auxiliar de caja general de este mes en PDF para el wasap 3001234567"
-  Respuesta: {{ "name": "generar_reporte_movimientos", "parameters": {{ "cuenta": "Caja General", "fecha_inicio": "2024-11-01", "fecha_fin": "2024-11-30", "formato": "PDF", "whatsapp_destino": "3001234567" }} }}
+- Usuario: "Auxiliar por cuenta inventarios exentos"
+  Contexto: (Usuario quiere ver el libro auxiliar de la CUENTA llamada 'Inventarios Exentos', no el kardex).
+  Respuesta: {{ "name": "generar_reporte_movimientos", "parameters": {{ "cuenta": "Inventarios Exentos", "fecha_inicio": "2024-01-01", "fecha_fin": "{datetime.now().strftime('%Y-%m-%d')}" }} }}
 
-- Usuario: "Envíame el balance de prueba al 31 de diciembre"
-  Respuesta: {{ "name": "generar_balance_prueba", "parameters": {{ "fecha_inicio": "2024-01-01", "fecha_fin": "2024-12-31" }} }}
+- Usuario: "Por contabilidad dame el auxiliar de la cuenta caja"
+  Respuesta: {{ "name": "generar_reporte_movimientos", "parameters": {{ "cuenta": "Caja", "fecha_inicio": "2024-01-01", "fecha_fin": "{datetime.now().strftime('%Y-%m-%d')}" }} }}
 
 - Usuario: "Movimientos de inventario filtrado por documento FV-8"
-  Respuesta: {{ "name": "generar_reporte_movimientos", "parameters": {{ "fecha_inicio": "2024-01-01", "fecha_fin": "2024-12-31", "numero_documento": "FV-8", "tipo_documento": "FV" }} }}
+  Respuesta: {{ "name": "generar_reporte_movimientos", "parameters": {{ "numero_documento": "FV-8", "tipo_documento": "FV", "fecha_inicio": "2024-01-01", "fecha_fin": "{datetime.now().strftime('%Y-%m-%d')}" }} }}
 
-- Usuario: "Movimientos detallados de inventario pero filtrar por Ref. Documento. FV NUMERO 8"
-  Respuesta: {{ "name": "generar_reporte_movimientos", "parameters": {{ "fecha_inicio": "2024-01-01", "fecha_fin": "2024-12-31", "numero_documento": "8", "tipo_documento": "FV" }} }}
+- Usuario: "Reporte de rentabilidad de todos los grupos"
+  Respuesta: {{ "name": "generar_reporte_rentabilidad", "parameters": {{ "fecha_inicio": "2024-01-01", "fecha_fin": "{datetime.now().strftime('%Y-%m-%d')}", "grupos": "all" }} }}
 """
 
 async def procesar_comando_natural(texto_usuario: str, contexto: dict = None):

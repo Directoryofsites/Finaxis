@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import {
@@ -16,6 +16,7 @@ import {
   FaExclamationTriangle,
   FaMagic
 } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 
 // Importaciones
 import { useAuth } from '../../context/AuthContext';
@@ -27,8 +28,12 @@ const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 trackin
 const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none";
 const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none bg-white";
 
+// Helper
+const formatCurrency = (val) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(val);
+
 export default function CapturaRapidaPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
 
   // --- ESTADOS DE DATOS MAESTROS ---
@@ -234,6 +239,96 @@ export default function CapturaRapidaPage() {
   };
 
   // --- EFECTOS ---
+
+  // --- IA AUTO-FILL STAGE 1: MATCHING (PLANTILLA & TERCERO) ---
+  useEffect(() => {
+    // Stage 1: Solo si hay parametros y maestros, pero NO hemos asignado plantilla aun
+    if (pageIsLoading || plantillas.length === 0 || terceros.length === 0) return;
+    if (plantillaId) return; // Ya se asignó plantilla, evitar re-run
+
+    const aiPlantilla = searchParams.get('ai_plantilla');
+    if (aiPlantilla) {
+      // 1. Fuzzy Match Plantilla
+      const normalize = (str) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
+      const searchNorm = normalize(aiPlantilla);
+
+      const bestPlantilla = plantillas.map(p => {
+        const nameNorm = normalize(p.nombre_plantilla);
+        let score = 0;
+        if (nameNorm === searchNorm) score = 100;
+        else if (nameNorm.includes(searchNorm)) score = 50;
+        else if (searchNorm.split(' ').some(w => nameNorm.includes(w) && w.length > 3)) score = 20;
+        return { ...p, score };
+      }).sort((a, b) => b.score - a.score)[0];
+
+      if (bestPlantilla && bestPlantilla.score > 0) {
+        handlePlantillaChange(bestPlantilla.id);
+        toast.info(`IA: Plantilla detectada: ${bestPlantilla.nombre_plantilla}`);
+
+        // 2. Fuzzy Match Tercero
+        const aiTercero = searchParams.get('ai_tercero');
+        if (aiTercero) {
+          const searchTercero = normalize(aiTercero);
+          const searchWords = searchTercero.split(' ');
+
+          const bestTercero = terceros.map(t => {
+            let score = 0;
+            const name = normalize(t.razon_social + ' ' + (t.primer_nombre || '') + ' ' + (t.primer_apellido || ''));
+            if (name === searchTercero) score += 100;
+            if (name.includes(searchTercero)) score += 50;
+            searchWords.forEach(w => { if (w.length > 3 && name.includes(w)) score += 10; });
+            return { ...t, score };
+          }).sort((a, b) => b.score - a.score)[0];
+
+          if (bestTercero && bestTercero.score > 0) {
+            setBeneficiarioId(bestTercero.id);
+            toast.info(`IA: Beneficiario: ${bestTercero.razon_social}`);
+          }
+        }
+      }
+    }
+  }, [plantillas, terceros, pageIsLoading, searchParams, plantillaId]);
+
+  // --- IA AUTO-FILL STAGE 2: VALUE & EXECUTION ---
+  useEffect(() => {
+    // Stage 2: Esperar a que existan movimientos cargados (producto de Stage 1)
+    if (movimientos.length === 0) return;
+
+    const aiValor = searchParams.get('ai_valor');
+    if (aiValor && !valorUnico) { // Solo si hay valor en URL y no hemos puesto nada aun
+      // Aplicar Valor
+      handleValorUnicoChange(aiValor);
+      toast.success(`IA: Valor asignado: ${formatCurrency(parseInt(aiValor))}`);
+
+      // Limpiar URL para evitar loops
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl); // CLEAN URL HERE
+
+      // Auto Save Trigger?
+      // El usuario pidio "y darle confirmar". 
+      // Podemos dar un pequeño delay para que visualice y guardar.
+      // Pero handleValorUnicoChange es sync, asi que el estado 'totales' cambiara rapido.
+    }
+  }, [movimientos, searchParams, valorUnico]); // Dependencia clave: movimientos
+
+  // --- IA AUTO-FILL STAGE 3: AUTO SAVE ---
+  useEffect(() => {
+    // Si esta balanceado y acabamos de aplicar un valor por IA (podemos inferirlo si el usuario no ha tocado nada)
+    // Para ser seguros, solo auto-guardamos si el form esta 'ready' y pasaron unos segundos del ultimo cambio.
+
+    if (estaBalanceado && totales.debito > 0 && valorUnico) {
+      const timer = setTimeout(() => {
+        const btn = document.getElementById('btn-guardar-captura');
+        if (btn && !btn.disabled) {
+          toast.success("IA: Todo listo. Guardando automáticamente... 💾");
+          btn.click();
+        }
+      }, 2000); // 2 segundos para que el usuario vea el resultado antes de guardar
+      return () => clearTimeout(timer);
+    }
+  }, [estaBalanceado, totales, valorUnico]);
+
+
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === 'Insert') {
@@ -555,6 +650,7 @@ export default function CapturaRapidaPage() {
           <div className="mt-8 flex justify-end">
             <button
               type="submit"
+              id="btn-guardar-captura"
               disabled={!estaBalanceado || isSubmittingDoc}
               className={`
                       px-10 py-4 rounded-xl shadow-lg font-bold text-white text-lg transition-all transform hover:-translate-y-1 flex items-center gap-3

@@ -1301,4 +1301,31 @@ def generar_pdf_movimiento_analitico(
     except Exception as e:
         print(f"Error al renderizar PDF Analítico: {e}")
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error interno al generar el PDF: {str(e)}")
+
+# ==============================================================================
+# === REGISTRY INTEGRATION ===
+# ==============================================================================
+from ..core.reporting_registry import BaseReport, ReportRegistry
+
+@ReportRegistry.register
+class InventoryReportService(BaseReport):
+    key = "super_informe_inventarios"
+    description = "Super Informe de Inventarios (Movimientos y Saldos)"
+    
+    def get_data(self, db: Session, empresa_id: int, filtros: Dict[str, Any]) -> Dict[str, Any]:
+        # Convert dict filters to Schema if needed
+        if isinstance(filtros, dict):
+             filtros_obj = schemas_reportes.SuperInformeFiltros(**filtros)
+        else:
+             filtros_obj = filtros
+             
+        return get_super_informe_inventarios(db, empresa_id, filtros_obj)
+
+    def generate_pdf(self, db: Session, empresa_id: int, filtros: Dict[str, Any]) -> Tuple[bytes, str]:
+        # Convert dict filters to Schema
+        if isinstance(filtros, dict):
+             filtros_obj = schemas_reportes.SuperInformeFiltros(**filtros)
+        else:
+             filtros_obj = filtros
+             
+        return generar_pdf_super_informe(db, empresa_id, filtros_obj)

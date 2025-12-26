@@ -36,8 +36,8 @@ export default function LibroDiarioPage() {
     const [totals, setTotals] = useState({ debito: 0, credito: 0 });
     const [tiposDocumento, setTiposDocumento] = useState([]);
     const [filtros, setFiltros] = useState({
-        inicio: '',
-        fin: '',
+        inicio: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
+        fin: new Date().toISOString().split('T')[0],
         tipoDocId: ''
     });
 

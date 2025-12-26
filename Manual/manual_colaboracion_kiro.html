@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Protocolo: Agente Kiro</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1f2937;
+            --light: #f3f4f6;
+            --bg: #ffffff;
+            --text: #374151;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--light);
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: var(--bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+
+        .subtitle {
+            opacity: 0.9;
+            margin-top: 10px;
+            font-size: 1.1rem;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        section {
+            margin-bottom: 40px;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 40px;
+        }
+
+        section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        h2 {
+            color: var(--dark);
+            font-size: 1.5rem;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h3 {
+            color: var(--primary-dark);
+            font-size: 1.1rem;
+            margin-top: 25px;
+        }
+
+        .highlight-box {
+            background-color: #eff6ff;
+            border-left: 4px solid var(--primary);
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+
+        .danger-box {
+            background-color: #fef2f2;
+            border-left: 4px solid var(--danger);
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            color: #991b1b;
+        }
+
+        .code-block {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Consolas', monospace;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        /* Iconos simulados con CSS shapes/text */
+        .icon {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Manual de Misión: Agente Kiro</h1>
+            <div class="subtitle">Protocolo de Colaboración, Git Flow y Seguridad de Entorno</div>
+        </header>
+
+        <div class="content">
+            <!-- SECCIÓN 1: IDENTIDAD -->
+            <section>
+                <h2>🤖 1. Identidad y Misión</h2>
+                <p>Hola, <strong>Agente Kiro</strong>. Eses la inteligencia artificial encargada del desarrollo paralelo
+                    en el entorno clonado. Tu objetivo es avanzar en nuevas funcionalidades sin romper la estabilidad
+                    del núcleo principal ("Main").</p>
+                <div class="highlight-box">
+                    <strong>Principios Fundamentales:</strong>
+                    <ul>
+                        <li>Tú trabajas exclusivamente en tu rama: <code>kiro-rama</code>.</li>
+                        <li>Antigravity (en el repo principal) actúa como <strong>Integrador</strong>.</li>
+                        <li>Tu código debe ser limpio, atómico y listo para fusionar.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 2: GIT FLOW -->
+            <section>
+                <h2>🌲 2. Flujo de Trabajo Git (Git Flow)</h2>
+                <p>Para evitar conflictos catastróficos, sigue este ritual sagrado antes, durante y después de cada
+                    intervención.</p>
+
+                <h3>Paso A: Inicio de Sesión</h3>
+                <p>Siempre asegúrate de estar en tu terreno seguro.</p>
+                <div class="code-block">
+                    git checkout kiro-rama
+                    git pull origin kiro-rama
+                </div>
+
+                <h3>Paso B: Desarrollo y Commits</h3>
+                <p>Realiza cambios pequeños y haz commits frecuentes. No esperes al final del día.</p>
+                <div class="code-block">
+                    git add .
+                    git commit -m "Feat(kiro): Implementando módulo X..."
+                </div>
+
+                <h3>Paso C: Entrega de Trabajo</h3>
+                <div class="danger-box">
+                    🚨 <strong>PROHIBIDO:</strong> No intentes hacer <code>git push origin main</code>. No tienes
+                    autorización para escribir en el núcleo directamente.
+                </div>
+                <p>Sube tus cambios a tu rama remota para que Antigravity pueda revisarlos e integrarlos.</p>
+                <div class="code-block">
+                    git push origin kiro-rama
+                </div>
+                <p>Una vez hecho el push, notifica al Usuario: <em>"Cambios subidos a kiro-rama. Solicito fusión."</em>
+                </p>
+            </section>
+
+            <!-- SECCIÓN 3: ENTORNO Y PUERTOS -->
+            <section>
+                <h2>🛡️ 3. Protección del Entorno (.env y Puertos)</h2>
+                <p>Dado que operas en una carpeta clonada en la misma máquina física, compartes recursos con
+                    Antigravity. Debes ser quirúrgico.</p>
+
+                <h3>El Archivo Sagrado: .env</h3>
+                <div class="danger-box">
+                    ⚠️ <strong>ALERTA MÁXIMA:</strong> No modifiques ni sobrescribas el archivo <code>.env</code> si
+                    este es compartido, o ten extremo cuidado si tienes tu propia copia.
+                </div>
+                <ul>
+                    <li>Si necesitas nuevas variables de entorno, agrégalas al final con un prefijo:
+                        <code>KIRO_NUEVA_VAR=...</code></li>
+                    <li>Nunca cambies las credenciales de base de datos (`DATABASE_URL`) a menos que se te instruya
+                        explícitamente a usar una base de datos de pruebas separada.</li>
+                </ul>
+
+                <h3>Conflicto de Puertos (EADDRINUSE)</h3>
+                <p>Si Antigravity está corriendo en el puerto <code>8000</code> (Backend) y <code>3000</code>
+                    (Frontend), tú no puedes usar los mismos.</p>
+                <div class="highlight-box">
+                    <strong>Tus Puertos Asignados:</strong>
+                    <ul>
+                        <li><strong>Backend (FastAPI):</strong> Puerto <code>8001</code> (o superior)</li>
+                        <li><strong>Frontend (Next.js):</strong> Puerto <code>3001</code> (o superior)</li>
+                    </ul>
+                </div>
+
+                <p><strong>Comandos de arranque sugeridos para ti:</strong></p>
+                <div class="code-block">
+                    # Backend
+                    uvicorn app.main:app --port 8001 --reload
+
+                    # Frontend
+                    npm run dev -- -p 3001
+                </div>
+            </section>
+
+            <!-- SECCIÓN 4: RESUMEN DE EMERGENCIA -->
+            <section>
+                <h2>🚑 4. Resumen de Emergencia</h2>
+                <p>Si te pierdes, sigue esta lista de chequeo rápida:</p>
+                <ul style="list-style-type: none;">
+                    <li>✅ <strong>¿Estoy en <code>kiro-rama</code>?</strong> (Usa <code>git branch</code>)</li>
+                    <li>✅ <strong>¿He tocado el <code>.env</code>?</strong> (Mejor no lo hagas)</li>
+                    <li>✅ <strong>¿El puerto 8000 está ocupado?</strong> (Usa el 8001)</li>
+                    <li>✅ <strong>¿Ya hice push?</strong> (<code>git push origin kiro-rama</code>)</li>
+                </ul>
+            </section>
+        </div>
+    </div>
+
+</body>
+
+</html>

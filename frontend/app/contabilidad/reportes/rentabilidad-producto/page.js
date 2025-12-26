@@ -20,6 +20,7 @@ import { getGruposInventario, searchProductosAutocomplete } from '../../../../li
 import { getRentabilidadPorGrupo, generarPdfRentabilidad, getRentabilidadPorDocumento } from '../../../../lib/reportesFacturacionService';
 import { getListasPrecio } from '../../../../lib/listaPrecioService';
 import { getTerceros } from '../../../../lib/terceroService';
+import { useAutoReport } from '../../../../hooks/useAutoReport';
 
 
 // --- ESTILOS REUSABLES (Manual v2.0) ---
@@ -95,6 +96,16 @@ export default function RentabilidadProductoPage() {
     const [isProductSearching, setIsProductSearching] = useState(false);
     const [expandedRows, setExpandedRows] = useState({});
 
+    // --- AUTOMATIZACIÓN (HOOK UNIFICADO) ---
+    const { triggerAutoDispatch } = useAutoReport('rentabilidad_producto', () => handleGenerarPDFGlobal());
+
+    // Effect para disparar la acción automática cuando lleguen resultados
+    useEffect(() => {
+        if (reporteData.items.length > 0 && !isSearching) {
+            triggerAutoDispatch(filtros);
+        }
+    }, [reporteData.items, isSearching, filtros, triggerAutoDispatch]);
+
     // --- CÁLCULO DE OPCIONES ---
     const grupoOptions = useMemo(() => {
         if (maestros.grupos.length > 0) {
@@ -159,11 +170,60 @@ export default function RentabilidadProductoPage() {
                     getGruposInventario(),
                     getListasPrecio(),
                 ]);
+
+                const loadedGrupos = gruposRes.map(g => ({ label: g.nombre, value: g.id }));
+
                 setMaestros(prev => ({
                     ...prev,
-                    grupos: gruposRes.map(g => ({ label: g.nombre, value: g.id })),
+                    grupos: loadedGrupos,
                     listasPrecio: listasRes.map(lp => ({ label: lp.nombre, value: lp.id })),
                 }));
+
+                // --- AUTOMATIZACIÓN: LEER PARÁMETROS URL ---
+                // Leemos los params AQUÍ, justo después de cargar maestros, para poder mapear IDs
+                const params = new URLSearchParams(window.location.search);
+                const pFechaInicio = params.get('fecha_inicio');
+                const pFechaFin = params.get('fecha_fin');
+                const pAiGrupo = params.get('ai_grupo');
+                const trigger = params.get('trigger');
+
+                let newFiltros = {};
+                let shouldTriggerSearch = false;
+
+                if (pFechaInicio) newFiltros.fecha_inicio = new Date(pFechaInicio);
+                if (pFechaFin) newFiltros.fecha_fin = new Date(pFechaFin);
+
+                if (pAiGrupo) {
+                    if (pAiGrupo === 'all') {
+                        // Si la IA pide "todos los grupos", seleccionamos la opción mágica "Seleccionar Todo"
+                        // Y también RELLENAMOS todos los grupos reales para que la API entienda
+                        const allOption = { label: "Seleccionar Todo", value: "all" };
+                        // Nota: La lógica de handleFilterChange ya maneja la expansión, pero aquí seteamos directo
+                        // Para simular "Todo", ponemos la opción "all" y TODOS los grupos cargados.
+                        newFiltros.grupo_ids = [allOption, ...loadedGrupos];
+                    } else {
+                        // Intentar buscar el grupo por nombre
+                        const found = loadedGrupos.find(g => g.label.toLowerCase().includes(pAiGrupo.toLowerCase()));
+                        if (found) newFiltros.grupo_ids = [found];
+                    }
+                }
+
+                if (Object.keys(newFiltros).length > 0) {
+                    setFiltros(prev => ({ ...prev, ...newFiltros }));
+                    if (trigger === 'ai_search') {
+                        // Usamos setTimeout para dar tiempo al estado a actualizarse antes de buscar
+                        setTimeout(() => setIsSearching(true), 500);
+                        setTimeout(() => fetchReportePorGrupo({
+                            ...filtros,
+                            ...newFiltros,
+                            // Aseguramos fechas validas si no vinieron en URL
+                            fecha_inicio: newFiltros.fecha_inicio || filtros.fecha_inicio,
+                            fecha_fin: newFiltros.fecha_fin || filtros.fecha_fin,
+                            grupo_ids: newFiltros.grupo_ids || filtros.grupo_ids
+                        }), 600);
+                    }
+                }
+
             } catch (error) {
                 console.error("Error al cargar maestros:", error);
             } finally {
@@ -171,7 +231,7 @@ export default function RentabilidadProductoPage() {
             }
         };
         fetchMaestros();
-    }, [user, authLoading, router]);
+    }, [user, authLoading, router, fetchReportePorGrupo, filtros]); // Añadimos dependencias necesarias
 
     const fetchReportePorGrupo = useCallback(async (currentFiltros) => {
         const grupoIdsFiltrados = currentFiltros.grupo_ids.filter(g => g.value !== 'all').map(g => g.value);

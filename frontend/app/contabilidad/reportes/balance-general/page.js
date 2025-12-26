@@ -30,7 +30,7 @@ export default function BalanceGeneralPage() {
     const [reporte, setReporte] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const [fechaCorte, setFechaCorte] = useState('');
+    const [fechaCorte, setFechaCorte] = useState(new Date().toISOString().split('T')[0]);
     const [isPageReady, setPageReady] = useState(false);
 
     // Automation State

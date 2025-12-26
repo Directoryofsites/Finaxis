@@ -33,8 +33,8 @@ export default function EstadoResultadosCCPage() {
     // --- ESTADOS (Lógica Original) ---
     const [centrosCosto, setCentrosCosto] = useState([]);
     const [selectedCentroCostoId, setSelectedCentroCostoId] = useState('');
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+    const [startDate, setStartDate] = useState(new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0]);
+    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [reportData, setReportData] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);

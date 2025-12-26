@@ -6,7 +6,8 @@ import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
 
 import Paginacion from '@/app/components/ui/Paginacion';
-import { FaSearch, FaFilePdf, FaFilter, FaChevronDown, FaChevronUp, FaEraser, FaTable, FaCheckCircle } from 'react-icons/fa';
+import { FaTable, FaFilter, FaSearch, FaEraser, FaFilePdf, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { useAutoReport } from '@/hooks/useAutoReport';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import Select, { components } from 'react-select';
@@ -121,6 +122,22 @@ export default function SuperInformeInventariosPage() {
     const [isSearching, setIsSearching] = useState(false);
     const [error, setError] = useState(null);
 
+    // --- AUTOMATIZACIÓN (HOOK UNIFICADO) ---
+    // --- AUTOMATIZACIÓN (HOOK UNIFICADO) ---
+    // Este hook maneja la detección de URL (ai_email, ai_accion) y el disparo de acciones
+    // Nota: Pasamos una función anónima a handleExportPDF para evitar problemas de referencia temprana, 
+    // aunque idealmente handleExportPDF debería definirse antes o usar hoisting.
+    // Como handleExportPDF es const (no hoisting), usamos una referencia mutable o un wrapper.
+    const { triggerAutoDispatch } = useAutoReport('super_informe_inventarios', () => handleExportPDF());
+
+    // Efecto para activar el despacho automático cuando lleguen resultados
+    useEffect(() => {
+        if (resultados && resultados.length > 0 && !isSearching) {
+            triggerAutoDispatch(filtros);
+        }
+    }, [resultados, isSearching, filtros, triggerAutoDispatch]);
+
+
     // --- Carga de Maestros ---
     useEffect(() => {
         const fetchMaestros = async () => {
@@ -171,12 +188,11 @@ export default function SuperInformeInventariosPage() {
             const aiTercero = searchParams.get('ai_tercero');
 
             if (aiTercero && maestros.terceros.length > 0) {
-                // Simple fuzzy match: Find standard string inclusion
                 const normalize = s => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
                 const target = normalize(aiTercero);
 
                 const bestMatch = maestros.terceros.find(t => {
-                    const label = normalize(t.label || ''); // Check label which contains name and nit
+                    const label = normalize(t.label || '');
                     return label.includes(target);
                 });
 
@@ -194,7 +210,7 @@ export default function SuperInformeInventariosPage() {
 
                 const bestMatch = maestros.bodegas.find(b => normalize(b.label || '').includes(target));
                 if (bestMatch) {
-                    newFiltros.bodega_ids = [bestMatch.value]; // Bodega is array
+                    newFiltros.bodega_ids = [bestMatch.value];
                     changed = true;
                 }
             }
@@ -207,26 +223,26 @@ export default function SuperInformeInventariosPage() {
 
                 const bestMatch = maestros.grupos.find(g => normalize(g.label || '').includes(target));
                 if (bestMatch) {
-                    newFiltros.grupo_ids = [bestMatch.value]; // Grupo is array
+                    newFiltros.grupo_ids = [bestMatch.value];
                     changed = true;
                 }
             }
 
-            // ALWAYS apply the new filters, effectively resetting any previous state.
-            // We use functional update but ignore 'prev' for the filter values to ensure cleaning.
-            // We only keep 'vista_reporte' if it wasn't valid in INITIAL (though INITIAL has it).
-            setFiltros(newFiltros);
 
-            console.log("AI AUTO-EXECUTE: Applied Filters", newFiltros);
 
-            // ALWAYS trigger search if AI requested it
+            setFiltros(newFiltros); // Apply filters
+
+
+            // TRIGGER SEARCH UI
             setTimeout(() => {
                 const btn = document.getElementById('btn-inventario-search');
                 if (btn) btn.click();
-                else handleSearch(1); // Fallback
             }, 500);
         }
-    }, [searchParams, isLoadingMaestros, maestros]);
+    }, [searchParams, maestros, isLoadingMaestros]);
+
+    // --- AUTO PDF/EMAIL EXECUTION EFFECT ---
+
 
     const handleFiltroChange = (e) => {
         const { name, value } = e.target;

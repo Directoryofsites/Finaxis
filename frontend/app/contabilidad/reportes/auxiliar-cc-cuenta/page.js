@@ -35,8 +35,8 @@ export default function AuxiliarCcCuentaPage() {
     const [filtros, setFiltros] = useState({
         centroCostoId: '',
         cuentaId: '',
-        fechaInicio: '',
-        fechaFin: ''
+        fechaInicio: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
+        fechaFin: new Date().toISOString().split('T')[0]
     });
     const [centrosCosto, setCentrosCosto] = useState([]);
     const [cuentas, setCuentas] = useState([]);

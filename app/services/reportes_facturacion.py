@@ -85,6 +85,9 @@ from ..models import lista_precio as models_lista_precio
 from ..schemas import reportes_facturacion as schemas_reportes
 from ..schemas import reporte_rentabilidad as schemas_rentabilidad 
 
+# --- REGISTRY PATTERN ---
+from ..core.reporting_registry import ReportRegistry, BaseReport 
+
 
 # =================================================================================
 # === FUNCIONES AUXILIARES DE BI (TRAZABILIDAD COMPLETA) ===
@@ -891,3 +894,32 @@ def get_rentabilidad_por_documento(
     # --- SONDA 8: ÉXITO FINAL ---
     print(f"--- SONDA 8: ÉXITO - Rentabilidad Calculada. Lineas: {len(detalle_final)}. Utilidad Total: {total_utilidad} ---")
     return response
+
+
+# =================================================================================
+# === REGISTRY IMPLEMENTATION: RENTABILIDAD ===
+# =================================================================================
+
+@ReportRegistry.register
+class RentabilidadReportService(BaseReport):
+    key = "rentabilidad_producto"
+    description = "Reporte de Análisis de Rentabilidad por Producto o Grupo"
+    
+    # Define schema for filtering
+    filter_schema = schemas_rentabilidad.RentabilidadProductoFiltros
+
+    def get_data(self, db: Session, empresa_id: int, filtros: dict):
+        # Convert dictionary filters to Pydantic model
+        filtros_obj = self.filter_schema(**filtros)
+        return get_rentabilidad_por_grupo(db, empresa_id, filtros_obj)
+
+    def generate_pdf(self, db: Session, empresa_id: int, filtros: dict):
+        # Convert dictionary filters to Pydantic model
+        filtros_obj = self.filter_schema(**filtros)
+        
+        # Call the existing PDF generation function
+        # This function returns bytes (since it calls HTML(...).write_pdf())
+        pdf_bytes = generar_pdf_rentabilidad_producto(db, empresa_id, filtros_obj)
+        
+        filename = f"Rentabilidad_{filtros_obj.fecha_inicio}_a_{filtros_obj.fecha_fin}.pdf"
+        return pdf_bytes, filename

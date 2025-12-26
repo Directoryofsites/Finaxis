@@ -36,7 +36,7 @@ export default function BalanceGeneralCCPage() {
     const [reporte, setReporte] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const [fechaCorte, setFechaCorte] = useState('');
+    const [fechaCorte, setFechaCorte] = useState(new Date().toISOString().split('T')[0]);
     const [centrosCosto, setCentrosCosto] = useState([]);
     const [centroCostoId, setCentroCostoId] = useState('');
     const [isPageReady, setPageReady] = useState(false);

@@ -13,6 +13,7 @@ import {
     FaExclamationTriangle,
     FaBook
 } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
@@ -29,8 +30,8 @@ export default function AuxiliarPorCuentaPage() {
 
     const [cuentas, setCuentas] = useState([]);
     const [selectedAccount, setSelectedAccount] = useState('');
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+    const [startDate, setStartDate] = useState(new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0]);
+    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
 
     const [reportData, setReportData] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -60,53 +61,98 @@ export default function AuxiliarPorCuentaPage() {
             const pCuenta = searchParams.get('cuenta');
             const pInicio = searchParams.get('fecha_inicio');
             const pFin = searchParams.get('fecha_fin');
-            const pAutoPdf = searchParams.get('auto_pdf'); // Capturamos flag PDF
-            const pWpp = searchParams.get('wpp'); // Capturamos WhatsApp
-            const pEmail = searchParams.get('email'); // Capturamos Email
+            const pAutoPdf = searchParams.get('auto_pdf');
+            const pWpp = searchParams.get('wpp');
+            const pEmail = searchParams.get('email');
 
             const currentParamsSignature = `${pCuenta}-${pInicio}-${pFin}-${pAutoPdf}-${pWpp}-${pEmail}`;
 
-            // Si ya procesamos estos parámetros, salimos (Guardia 1)
             if (lastProcessedParams.current === currentParamsSignature) return;
 
             if (pCuenta) {
-                // Buscamos la cuenta
-                const term = pCuenta.toLowerCase();
-                const matched = cuentas.find(c =>
-                    c.id.toString() === pCuenta ||
-                    c.codigo === pCuenta ||
-                    c.nombre.toLowerCase().includes(term)
-                );
+                // --- BÚSQUEDA INTELIGENTE (NORMALIZACIÓN FONÉTICA + SCORING) ---
+                const normalize = (str) => {
+                    if (!str) return "";
+                    return str.toLowerCase()
+                        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Sin tildes
+                        .replace(/v/g, "b")  // Fonética V -> B
+                        .replace(/z/g, "s")  // Fonética Z -> S
+                        .replace(/c/g, "s")  // Fonética C -> S (Casa -> Sasa, Caza -> Sasa)
+                        .replace(/g/g, "j")  // Fonética G -> J (Gente -> Jente)
+                        .replace(/[^a-z0-9\s]/g, ""); // Solo letras y numeros
+                };
+
+                const searchNormalized = normalize(pCuenta);
+                const searchWords = searchNormalized.split(" ").filter(w => w.length > 2); // Palabras clave > 2 letras
+
+                const scoredCuentas = cuentas.map(c => {
+                    let score = 0;
+                    const nombreNorm = normalize(c.nombre);
+                    const codigoNorm = normalize(c.codigo);
+
+                    // 1. Coincidencia Exacta (High priority)
+                    if (nombreNorm === searchNormalized) score += 100;
+                    if (codigoNorm === searchNormalized) score += 100;
+
+                    // 2. Contiene la frase completa
+                    if (nombreNorm.includes(searchNormalized)) score += 50;
+
+                    // 3. Coincidencia por palabras (Bag of words)
+                    searchWords.forEach(word => {
+                        // Match simple
+                        if (nombreNorm.includes(word) || codigoNorm.includes(word)) {
+                            score += 10;
+                        } else {
+                            // Match singular/plural (muy básico: quitar 's' final)
+                            const wordNoS = word.endsWith('s') ? word.slice(0, -1) : word;
+                            if (wordNoS.length > 3 && (nombreNorm.includes(wordNoS) || codigoNorm.includes(wordNoS))) {
+                                score += 8; // Un poco menos que match exacto
+                            }
+                        }
+                    });
+
+                    // 4. Boost para Cuentas Auxiliares (Hojas) -> Priorizar el detalle sobre el grupo
+                    if (c.es_auxiliar) score += 25;
+
+                    return { ...c, score };
+                });
+
+                // Ordenar por score descendente, Y LUEGO POR LONGITUD DE NOMBRE (Más largo = Más específico)
+                const bestMatches = scoredCuentas.filter(c => c.score > 0).sort((a, b) => {
+                    if (b.score !== a.score) return b.score - a.score;
+                    return b.nombre.length - a.nombre.length; // Tie-breaker: Preferir nombre más largo
+                });
+                const matched = bestMatches.length > 0 ? bestMatches[0] : null;
+
+                // DEBUG VISUAL PARA EL USUARIO
+                if (bestMatches.length > 0) {
+                    const top3 = bestMatches.slice(0, 3).map(c => `${c.nombre} (${c.score})`).join(' | ');
+                    toast.info(`IA Matches: ${top3}`, { autoClose: 5000 });
+                }
 
                 if (matched) {
                     setSelectedAccount(matched.id);
                     if (pInicio) setStartDate(pInicio);
                     if (pFin) setEndDate(pFin);
 
-                    // Si tenemos fechas, ejecutamos el reporte y LIMPIAMOS la URL
+                    // Auto-Execute
                     if (pInicio && pFin) {
                         lastProcessedParams.current = currentParamsSignature;
+                        if (pAutoPdf === 'true') setAutoPdfTrigger(true);
+                        if (pWpp) setWppNumber(pWpp);
+                        if (pEmail) setEmailAddress(pEmail);
 
-                        // Si pidieron PDF, activamos el trigger para cuando lleguen los datos
-                        if (pAutoPdf === 'true') {
-                            setAutoPdfTrigger(true);
-                        }
-
-                        // Si pidieron WhatsApp, guardamos el número
-                        if (pWpp) {
-                            setWppNumber(pWpp);
-                        }
-
-                        // Si pidieron Email, guardamos el correo
-                        if (pEmail) {
-                            setEmailAddress(pEmail);
-                        }
-
-                        fetchReport(matched.id, pInicio, pFin);
-
-                        // LIMPIEZA DE URL: Usamos history.replaceState para evitar re-renderizados de React que limpien el estado
-                        window.history.replaceState(null, '', pathname);
+                        // Delay para asegurar render
+                        setTimeout(() => {
+                            fetchReport(matched.id, pInicio, pFin);
+                            window.history.replaceState(null, '', pathname); // Limpieza diferida
+                        }, 500);
+                    } else {
+                        // Si faltan fechas, solo seleccionamos la cuenta pero NO ejecutamos
+                        toast.info(`Cuenta encontrada: ${matched.codigo} - ${matched.nombre}`);
                     }
+                } else {
+                    toast.warning(`No se encontró cuenta similar a: "${pCuenta}"`);
                 }
             }
         }
@@ -141,7 +187,16 @@ export default function AuxiliarPorCuentaPage() {
             const aplanarCuentas = (cuentasArray) => {
                 let listaPlana = [];
                 cuentasArray.forEach(cuenta => {
-                    listaPlana.push({ id: cuenta.id, codigo: cuenta.codigo, nombre: cuenta.nombre });
+                    // Detectar si es auxiliar (hoja) si no tiene hijos o si hijos es vacío
+                    const esAuxiliar = !cuenta.children || cuenta.children.length === 0;
+
+                    listaPlana.push({
+                        id: cuenta.id,
+                        codigo: cuenta.codigo,
+                        nombre: cuenta.nombre,
+                        es_auxiliar: esAuxiliar
+                    });
+
                     if (cuenta.children && cuenta.children.length > 0) {
                         listaPlana = listaPlana.concat(aplanarCuentas(cuenta.children));
                     }
@@ -265,12 +320,7 @@ export default function AuxiliarPorCuentaPage() {
             <div className="min-h-screen bg-gray-50 p-6 font-sans pb-20">
                 <div className="max-w-6xl mx-auto">
 
-                    {/* DEBUG PANEL - TEMPORARY */}
-                    <div className="bg-yellow-100 text-yellow-800 p-2 text-xs mb-4 rounded border border-yellow-300 font-mono break-all">
-                        <strong>DEBUG PARAMS:</strong> {Array.from(searchParams.entries()).map(([k, v]) => `${k}=${v}`).join(' | ')}
-                        <br />
-                        <strong>STATE:</strong> AutoPdf: {autoPdfTrigger ? 'ON' : 'OFF'} | Wpp: {wppNumber || 'NULL'}
-                    </div>
+
 
                     {/* ENCABEZADO */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">

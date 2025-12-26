@@ -52,59 +52,80 @@ def dispatch_report_email(
         filename = "Reporte.pdf"
         subject = "Reporte Contable - Finaxis"
 
-        # 1. BALANCE DE PRUEBA
-        if payload.report_type == 'balance_prueba':
-            filtros = schemas_bce.FiltrosBalancePrueba(**payload.filtros)
-            pdf_content = reports_service.generate_balance_de_prueba_pdf(db, current_user.empresa_id, filtros)
-            filename = f"Balance_Prueba_{filtros.fecha_inicio}_{filtros.fecha_fin}.pdf"
-            subject = f"Balance de Prueba ({filtros.fecha_inicio} al {filtros.fecha_fin})"
-
-        # 2. BALANCE GENERAL
-        elif payload.report_type == 'balance_general':
-            fecha_corte = date.fromisoformat(payload.filtros['fecha_corte'])
-            pdf_content = documento_service.generate_balance_sheet_report_pdf(db, current_user.empresa_id, fecha_corte)
-            filename = f"Balance_General_{fecha_corte}.pdf"
-            subject = f"Balance General a {fecha_corte}"
-
-        # 3. ESTADO DE RESULTADOS
-        elif payload.report_type == 'estado_resultados':
-            fecha_inicio = date.fromisoformat(payload.filtros['fecha_inicio'])
-            fecha_fin = date.fromisoformat(payload.filtros['fecha_fin'])
-            pdf_content = documento_service.generate_income_statement_report_pdf(db, current_user.empresa_id, fecha_inicio, fecha_fin)
-            filename = f"Estado_Resultados_{fecha_inicio}_{fecha_fin}.pdf"
-            subject = f"Estado de Resultados ({fecha_inicio} al {fecha_fin})"
-
-        # 4. AUXILIAR POR CUENTA
-        elif payload.report_type == 'auxiliar_cuenta':
-            cuenta_id = int(payload.filtros['cuenta_id'])
-            fecha_inicio = date.fromisoformat(payload.filtros['fecha_inicio'])
-            fecha_fin = date.fromisoformat(payload.filtros['fecha_fin'])
-            pdf_content = documento_service.generate_account_ledger_report_pdf(db, current_user.empresa_id, cuenta_id, fecha_inicio, fecha_fin)
-            filename = f"Auxiliar_Cuenta_{cuenta_id}.pdf"
-            subject = f"Auxiliar Contable ({fecha_inicio} al {fecha_fin})"
-
-        # 5. AUXILIAR POR TERCERO
-        elif payload.report_type == 'tercero_cuenta':
-            tercero_id = int(payload.filtros['tercero_id'])
-            fecha_inicio = date.fromisoformat(payload.filtros['fecha_inicio'])
-            fecha_fin = date.fromisoformat(payload.filtros['fecha_fin'])
-            cuenta_ids = payload.filtros.get('cuenta_ids') # "1,2,3" or None
-            parsed_ids = [int(id) for id in cuenta_ids.split(',')] if cuenta_ids else None
+        # --- LOGICA UNIFICADA (REGISTRY PATTERN) ---
+        from app.core.reporting_registry import ReportRegistry
+        
+        # 1. Buscar en el registro
+        report_service = ReportRegistry.get(payload.report_type)
+        
+        if report_service:
+            # Polimorfismo: El reporte sabe cómo generarse
+            pdf_content, filename_generated = report_service.generate_pdf(db, current_user.empresa_id, payload.filtros)
+            filename = filename_generated
+            # TODO: Add subject generation to BaseReport interface or keep generic
+            subject = f"Reporte {payload.report_type} - {date.today()}"
             
-            pdf_content = documento_service.generate_tercero_account_ledger_report_pdf(
-                db=db,
-                empresa_id=current_user.empresa_id,
-                tercero_id=tercero_id,
-                fecha_inicio=fecha_inicio,
-                fecha_fin=fecha_fin,
-                cuenta_ids=parsed_ids
-            )
-            filename = f"Auxiliar_Tercero_{tercero_id}.pdf"
-            subject = f"Auxiliar Tercero ({fecha_inicio} al {fecha_fin})"
-
         else:
-             raise HTTPException(status_code=400, detail=f"Tipo de reporte '{payload.report_type}' no soportado para envío por correo.")
+            # --- FALLBACK A LOGICA LEGADO (MANTENEMOS POR COMPATIBILIDAD DURANTE MIGRACION) ---
+            
+            # 1. BALANCE DE PRUEBA
+            if payload.report_type == 'balance_prueba':
+                filtros = schemas_bce.FiltrosBalancePrueba(**payload.filtros)
+                pdf_content = reports_service.generate_balance_de_prueba_pdf(db, current_user.empresa_id, filtros)
+                filename = f"Balance_Prueba_{filtros.fecha_inicio}_{filtros.fecha_fin}.pdf"
+                subject = f"Balance de Prueba ({filtros.fecha_inicio} al {filtros.fecha_fin})"
+    
+            # 2. BALANCE GENERAL
+            elif payload.report_type == 'balance_general':
+                fecha_corte = date.fromisoformat(payload.filtros['fecha_corte'])
+                pdf_content = documento_service.generate_balance_sheet_report_pdf(db, current_user.empresa_id, fecha_corte)
+                filename = f"Balance_General_{fecha_corte}.pdf"
+                subject = f"Balance General a {fecha_corte}"
+    
+            # 3. ESTADO DE RESULTADOS
+            elif payload.report_type == 'estado_resultados':
+                fecha_inicio = date.fromisoformat(payload.filtros['fecha_inicio'])
+                fecha_fin = date.fromisoformat(payload.filtros['fecha_fin'])
+                pdf_content = documento_service.generate_income_statement_report_pdf(db, current_user.empresa_id, fecha_inicio, fecha_fin)
+                filename = f"Estado_Resultados_{fecha_inicio}_{fecha_fin}.pdf"
+                subject = f"Estado de Resultados ({fecha_inicio} al {fecha_fin})"
+    
+            # 4. AUXILIAR POR CUENTA
+            elif payload.report_type == 'auxiliar_cuenta':
+                cuenta_id = int(payload.filtros['cuenta_id'])
+                fecha_inicio = date.fromisoformat(payload.filtros['fecha_inicio'])
+                fecha_fin = date.fromisoformat(payload.filtros['fecha_fin'])
+                pdf_content = documento_service.generate_account_ledger_report_pdf(db, current_user.empresa_id, cuenta_id, fecha_inicio, fecha_fin)
+                filename = f"Auxiliar_Cuenta_{cuenta_id}.pdf"
+                subject = f"Auxiliar Contable ({fecha_inicio} al {fecha_fin})"
+    
+            # 5. AUXILIAR POR TERCERO
+            elif payload.report_type == 'tercero_cuenta':
+                tercero_id = int(payload.filtros['tercero_id'])
+                fecha_inicio = date.fromisoformat(payload.filtros['fecha_inicio'])
+                fecha_fin = date.fromisoformat(payload.filtros['fecha_fin'])
+                cuenta_ids = payload.filtros.get('cuenta_ids') # "1,2,3" or None
+                parsed_ids = [int(id) for id in cuenta_ids.split(',')] if cuenta_ids else None
+                
+                pdf_content = documento_service.generate_tercero_account_ledger_report_pdf(
+                    db=db,
+                    empresa_id=current_user.empresa_id,
+                    tercero_id=tercero_id,
+                    fecha_inicio=fecha_inicio,
+                    fecha_fin=fecha_fin,
+                    cuenta_ids=parsed_ids
+                )
+                filename = f"Auxiliar_Tercero_{tercero_id}.pdf"
+                subject = f"Auxiliar Tercero ({fecha_inicio} al {fecha_fin})"
+    
+            # 6. SUPER INFORME INVENTARIOS (Interceptado por Registry si ya se migró, sino aquí)
+            # Como ya migramos InventoryReportService, el registry.get lo atrapará arriba.
+            
+            else:
+                 raise HTTPException(status_code=400, detail=f"Tipo de reporte '{payload.report_type}' no soportado para envío por correo.")
 
+        # --- FIN LOGICA UNIFICADA ---
+         
         # ENVIAR CORREO
         if pdf_content:
             body = f"Hola,\n\nAdjunto encontrarás el reporte solicitado: {subject}.\n\nGenerado por Finaxis AI."

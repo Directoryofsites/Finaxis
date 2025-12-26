@@ -9,6 +9,7 @@ import Paginacion from '../../../components/ui/Paginacion';
 import MultiSelect from '../../../components/ui/MultiSelect';
 import VerticalTransactionCard from '../../../components/Reportes/VerticalTransactionCard'; // NEW
 import { FaSearch, FaFilePdf, FaFilter, FaChevronDown, FaChevronUp, FaEraser, FaTable, FaBook, FaThList } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 
 const formatCurrency = (value) => {
   if (value === null || value === undefined || isNaN(value)) return '$ 0';
@@ -200,10 +201,26 @@ export default function SuperInformePage() {
                   score += 10;
                 }
               });
+
+              // 4. Boost para Auxiliares (Hojas) -> Priorizar detalle sobre grupo
+              if (c.permite_movimiento) score += 25;
+
               return { ...c, score };
             });
 
-            const bestMatches = scoredCuentas.filter(c => c.score > 0).sort((a, b) => b.score - a.score);
+
+            // Ordenar por score descendente, Y LUEGO POR LONGITUD DE NOMBRE (Tie-Breaker)
+            const bestMatches = scoredCuentas.filter(c => c.score > 0).sort((a, b) => {
+              if (b.score !== a.score) return b.score - a.score;
+              return b.nombre.length - a.nombre.length; // Preferir nombre más largo (más específico)
+            });
+
+            // DEBUG VISUAL PARA EL USUARIO
+            if (bestMatches.length > 0) {
+              const top3 = bestMatches.slice(0, 3).map(c => `${c.nombre} (${c.score})`).join(' | ');
+              toast.info(`IA SuperMatch: ${top3}`, { autoClose: 5000 });
+            }
+
             if (bestMatches.length > 0) {
               // Si hay empate o scores altos, podríamos tomar varios, pero por ahora el mejor
               nuevosFiltros.cuentaIds = [bestMatches[0].id];

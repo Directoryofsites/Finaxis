@@ -31,8 +31,8 @@ export default function EstadoResultadosPage() {
     const [reporte, setReporte] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [fechaInicio, setFechaInicio] = useState('');
-    const [fechaFin, setFechaFin] = useState('');
+    const [fechaInicio, setFechaInicio] = useState(new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0]);
+    const [fechaFin, setFechaFin] = useState(new Date().toISOString().split('T')[0]);
     const [isPageReady, setPageReady] = useState(false);
 
     // Automation State

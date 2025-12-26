@@ -57,7 +57,10 @@ export default function ReporteTerceroCuentaPage() {
   const [selectedTercero, setSelectedTercero] = useState('');
   const [cuentasDelTercero, setCuentasDelTercero] = useState([]);
   const [selectedCuentas, setSelectedCuentas] = useState(['all']);
-  const [fechas, setFechas] = useState({ inicio: '', fin: '' });
+  const [fechas, setFechas] = useState({
+    inicio: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
+    fin: new Date().toISOString().split('T')[0]
+  });
 
   const [reportData, setReportData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);

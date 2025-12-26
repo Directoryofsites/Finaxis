@@ -143,3 +143,154 @@ Aprendizaje crítico sobre cómo lograr que la IA "entienda" parámetros nuevos 
     if (invalidPhrases.includes(prod)) prod = null;
     ```
 -   **Prompt Negativo (Backend):** Instruye explícitamente en el System Prompt: "NO inventes valores. Si no hay producto, déjalo vacío".
+
+## 8. Protocolo de Reportes Unificados (Architecture Shift: Registry & Hooks)
+
+Fecha de Implementación: 24 de Diciembre de 2025
+
+**El Cambio de Paradigma:**
+Inicialmente, cada reporte requería lógica manual en 4 puntos (Frontend, Router, Service, AI Tool). Esto escalaba mal (lógica repetida, errores de copia/pega como `generar_pdf_x` vs `generar_x_pdf`).
+Se migró a una arquitectura de **"Registry + Hooks"**.
+
+### A. Backend: The Registry Pattern
+Ya no se usan `if/else` gigantes en `/dispatch-email`.
+1.  **Registry Base:** Existe `app/core/reporting_registry.py` que define `BaseReport`.
+2.  **Auto-Registro:** Cada servicio de reporte (ej: `reportes_inventario.py`) se decora con `@ReportRegistry.register`.
+3.  **Contrato Único:** Todos deben implementar `generate_pdf(db, empresa_id, filtros)`.
+4.  **Router Universal:** El endpoint `/dispatch-email` busca la clave del reporte en el registro y ejecuta ciegamente.
+
+**Regla para Nuevos Reportes Backend:**
+-   **NO** tocar `routes.py`.
+-   **SÍ** decorar tu clase de servicio con `@ReportRegistry.register`.
+-   **SÍ** definir una `key` única.
+
+### B. Frontend: The Unified Hook (`useAutoReport`)
+Ya no se parsean manualmente los parámetros `ai_email`, `ai_accion` en cada `page.js`.
+1.  **Hook Único:** Se usa `const { triggerAutoDispatch } = useAutoReport('clave_reporte', callbackPdf)`.
+2.  **Responsabilidad:** El hook maneja la lectura de URL, la limpieza de filtros (vacíos -> null), la llamada a la API y el manejo de errores (fallback a descarga si falla email).
+3.  **Seguridad:** El hook usa `apiService` (autenticado) en lugar de `axios` puro.
+
+**Regla para Nuevos Reportes Frontend:**
+-   Importar `useAutoReport`.
+-   Llamar `triggerAutoDispatch(filtros)` dentro del `useEffect` cuando `resultados.length > 0`.
+
+## 9. LECCIONES APRENDIDAS Y PROTOCOLO DE ORO (MIGRACIÓN DE REPORTES)
+
+**"Información Oro" para futuras implementaciones:**
+
+### A. La Trampa del `async/await` en Interceptores
+*   **Problema:** Al agregar lógica a `RightSidebar.js` o cualquier componente de ruta, es fácil copiar código que usa `await` (ej: `await fetch`) dentro de un bloque `if` sin verificar si la función padre es `async`.
+*   **Síntoma:** "Build Error: await isn't allowed in non-async function".
+*   **Solución:** Verificar siempre que `const executeClientAction = async (data) => { ... }` tenga la palabra clave `async`. Y tener CUIDADO EXTREMO al cerrar llaves `}`. Un cierre prematuro saca el código del scope de la función async.
+
+### B. Mapeo de "Magic Strings" de IA (Logic Glue)
+*   **Caso "TODOS":** La IA suele enviar `grupos: "all"` o `grupos: "todos"`. El Backend espera una lista de IDs `[1, 2, 3]`.
+*   **Solución (Frontend Page):**
+    *   No confiar en que la IA adivine los IDs.
+    *   En el `useEffect` que procesa `ai_grupo`, detectar la cadena mágica "all".
+    *   Si es "all", inyectar manualmente la opción de UI `{ label: "Seleccionar Todo", value: "all" }` Y la lista completa de opciones reales cargadas.
+    *   *Código Oro:* `if (pAiGrupo === 'all') newFiltros.grupo_ids = [allOption, ...loadedGrupos];`
+
+### C. La Trampa de Validación Pydantic (Backend)
+*   **Problema:** El frontend envía campos vacíos como strings vacíos `""`. Pydantic (Backend) lanza error si el campo espera `Optional[int]`.
+*   **Error:** `value is not a valid integer`.
+*   **Solución (Hook `useAutoReport`):** El hook DEBE sanitizar antes de enviar.
+    ```javascript
+    Object.keys(filters).forEach(key => {
+        if (filters[key] === '') clean[key] = null; // GOLD FIX
+    });
+    ```
+
+### D. Definición de Herramientas IA (Agent)
+*   **Lección:** No intentar forzar a `generar_reporte_movimientos` para que haga todo.
+*   **Regla:** Si el reporte tiene filtros únicos (ej: "Grupos", "Rentabilidad", "Margen"), **CREAR UNA NUEVA TOOL** en `ai_agent.py` (ej: `generar_reporte_rentabilidad`). Es más barato y preciso que un prompt complejo.
+
+## 10. PROTOCOLO DE CONTEXTO Y AMBIGÜEDAD (INTENT RECOGNITION)
+
+**Reglas de Oro para evitar "Alucinaciones de Módulo":**
+
+### A. Jerarquía de Prioridad (Módulo > Palabra Clave)
+*   **SUPER EXCEPCIÓN:** Si el usuario pide explícitamente "Super Informe", "Auditoría" o "Buscador Global" -> USAR `consultar_documento`. Prioridad absoluta sobre reglas de cuentas.
+*   **Problema:** El usuario dice "Auxiliar de cuenta *inventarios*". La IA ve la palabra "inventarios" y erróneamente asume que debe buscar en el módulo de inventario (Kardex).
+*   **Solución:** Implementar **Prioridad de Módulo Explícito** en el `SYSTEM_PROMPT`.
+    1.  Si el prompt empieza con *"Por Contabilidad"*, *"En el módulo contable"*, *"Desde contabilidad"*:
+    2.  **IGNORAR** palabras clave de otros módulos.
+    3.  FORZAR el uso de herramientas de contabilidad (`generar_reporte_movimientos`).
+*   **Ejemplo:** *"Por contabilidad dame el auxiliar de inventarios"* -> Debe ir a Contabilidad, no a Inventarios.
+
+### B. Ambigüedad Semántica (Diccionario de Sinónimos Estricto)
+*   La IA tiende a confundir términos similares. Se debe "quemar" un diccionario en el prompt:
+    *   **"Auxiliar", "Libro Auxiliar", "Auxiliar Contable":** SIEMPRE = `generar_reporte_movimientos` (Contabilidad).
+    *   **"Kardex", "Existencias", "Movimientos de Stock":** SIEMPRE = `consultar_documento` o `super_informe` (Inventario).
+    *   **"Ver movimiento", "Buscar factura":** = `consultar_documento` (Búsqueda General).
+
+### C. Protocolo de Fechas por Defecto (Zero Friction)
+*   **Problema:** El usuario dice *"Dame el auxiliar de caja"* (sin fechas). La IA suele preguntar "¿De qué fechas?" o fallar.
+*   **Regla:** NO interrumpir al usuario para preguntar fechas obvias.
+*   **Solución:** Asumir un rango generoso por defecto.
+    *   `fecha_inicio`: **1 de Enero del año en curso** (o inicio de la empresa).
+    *   `fecha_fin`: **Hoy**.
+    *   *Filosofía:* Es mejor dar un reporte con *demasiada* información (que el usuario puede filtrar después) a no dar nada.
+
+### D. La Trampa del Interceptor Frontend (Highjacking)
+*   **Problema:** Aunque la IA elija correctamente la herramienta de Contabilidad (`generar_reporte_movimientos`), el Frontend (`RightSidebar.js`) puede tener un *interceptor* que detecta la palabra "inventario" y redirige forzosamente al módulo de Inventarios.
+*   **Solución:** Los interceptores deben ser **Exclusivos**.
+    *   *Código:* `const isInventario = query.includes('inventario') && !query.includes('contabilidad') && !query.includes('cuenta');`
+    *   Si el usuario dice "Cuenta Inventarios" -> Es Contabilidad. NO interceptar.
+
+### E. Búsqueda Difusa, Fonética y Desempate (Account Matching)
+*   **Problema:** Al buscar "Inventarios exentos" o "Inventarios Grabados", el sistema suele fallar por ortografía ("Gravados") o seleccionar el Grupo "14 - Inventarios" en lugar de la cuenta auxiliar.
+*   **Solución "Triple Capa" (Page.js):**
+
+    1.  **Normalización Fonética (Super Tolerante):**
+        *   Convertir todo a minúsculas y quitar tildes.
+        *   **Reemplazos Clave:** `v -> b`, `z -> s`, `c -> s`.
+        *   *Resultado:* "Grabados" empata perfectamente con "Gravados" (+100 Puntos).
+
+    2.  **Prioridad de Hojas (Leaf Boosting):**
+        *   Si la cuenta es un **Auxiliar** (no tiene hijos), sumar **+25 Puntos**.
+        *   *Efecto:* Entre el Grupo (14) y la Cuenta (143505), la cuenta empieza ganando.
+
+    3.  **Desempate por Longitud (Tie-Breaker):**
+        *   Si hay empate final en puntos (ej: ambos coinciden con la palabra "Inventarios"), el sistema elige la cadena de texto **MÁS LARGA**.
+        *   *Lógica:* Los nombres cortos suelen ser títulos de grupo ("Inventarios"). Los nombres largos suelen ser cuentas específicas ("Inventarios de Mercancías Gravados").
+        *   *Resultado:* Gana la cuenta específica.
+
+## 11. PROTOCOLO DE CONTROL POR VOZ EN FORMULARIOS (AUTO-FILL)
+
+**Objetivo:** Permitir que la IA diligencie formularios complejos (como Captura Rápida) basándose en comandos naturales, incluyendo lógica de guardado automático.
+
+### A. Estrategia de "Auto-Fill" Diferido (The 3-Stage Rocket)
+El formulario de Captura Rápida nos enseñó que no se puede hacer todo en un solo `useEffect` debido al problema de "Stale Closures" (variables no actualizadas). Se debe dividir en fases:
+
+1.  **Fase 1 (Matching):** 
+    *   Detecta `ai_plantilla` y `ai_tercero`.
+    *   Ejecuta la búsqueda fuzzy y selecciona los IDs.
+    *   **NO** intenta poner el valor todavía (porque los movimientos no se han renderizado).
+
+2.  **Fase 2 (Value Injection):**
+    *   Escucha cambios en `movimientos`.
+    *   Si `ai_valor` existe en la URL y los movimientos ya cargaron -> Aplica el valor.
+    *   **LIMPIEZA:** Inmediatamente borra los parámetros de la URL (`window.history.replaceState`) para evitar bucles infinitos.
+
+3.  **Fase 3 (Auto-Save):**
+    *   Escucha si el formulario está `balanceado` y si hay un valor total.
+    *   Usa un `setTimeout` de seguridad (ej: 2 segundos) para dar feedback visual al usuario.
+    *   Simula el click físico: `document.getElementById('btn-guardar').click()`.
+
+### B. Lección: "El Portero Ciego" (RightSidebar)
+**El Problema:** La IA enviaba correctamente `{'valor': '35000'}`, pero el Frontend no lo leía.
+**La Causa:** `RightSidebar.js` tenía una lista blanca muy estricta (`p.debito || p.credito`).
+**La Solución:** Ampliar la "visión" del portero para aceptar sinónimos paramétricos:
+```javascript
+const val = p.valor || p.monto || p.debito || p.credito || p.importe;
+```
+
+### C. Feedback de Usuario
+*   Es vital mostrar **Toasts** informativos progresivos:
+    1. "IA: Plantilla detectada..."
+    2. "IA: Beneficiario asignado..."
+    3. "IA: Valor asignado..."
+    4. "IA: Todo listo. Guardando automáticamente... 💾"
+*   Esto convierte una caja negra en una experiencia mágica y transparente.
+
