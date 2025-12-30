@@ -4,40 +4,35 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import {
     FaFileInvoiceDollar,
-    FaSave,
-    FaPlus,
-    FaCalendarAlt,
-    FaUserTag,
-    FaBuilding,
-    FaWarehouse,
-    FaMoneyBillWave,
-    FaTrash,
-    FaTag,
-    FaListOl,
     FaBook,
-    FaCheckCircle,
-    FaExclamationTriangle
+    FaListOl,
+    FaCalendarAlt,
+    FaWarehouse,
+    FaUserTag,
+    FaMoneyBillWave,
+    FaBuilding,
+    FaPlus,
+    FaTrash,
+    FaSave,
+    FaTag
 } from 'react-icons/fa';
 
-
-
 import { useAuth } from '../../context/AuthContext';
-// --- Servicios ---
+import ProductSelectionModal from '../../components/Facturacion/ProductSelectionModal';
+import TerceroSelect from '../../components/Inputs/TerceroSelect';
+
 import { getBodegas } from '../../../lib/bodegaService';
-import { getTerceros, getTerceroById } from '../../../lib/terceroService';
 import { getTiposDocumento } from '../../../lib/tiposDocumentoService';
 import { getCentrosCosto } from '../../../lib/centrosCostoService';
+import { getTerceroById } from '../../../lib/terceroService';
 import facturacionService from '../../../lib/facturacionService';
 import { apiService } from '../../../lib/apiService';
-// --- Componentes ---
 
-import ProductSelectionModal from '../../components/Facturacion/ProductSelectionModal';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-
-// Estilos reusables (Manual v2.0)
+// Estilos reusables
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
 const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all outline-none";
 const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all outline-none bg-white";
@@ -51,7 +46,12 @@ export default function NuevaFacturaPage() {
     const [fechaVencimiento, setFechaVencimiento] = useState(new Date());
 
     const [tipoDocumentoId, setTipoDocumentoId] = useState('');
+
+    // --- CAMBIO: Manejo de Beneficiario con Objeto ---
     const [beneficiarioId, setBeneficiarioId] = useState('');
+    const [beneficiarioOption, setBeneficiarioOption] = useState(null); // {value: id, label: string}
+    // ------------------------------------------------
+
     const [centroCostoId, setCentroCostoId] = useState('');
     const [items, setItems] = useState([]);
     const [condicionPago, setCondicionPago] = useState('Crédito');
@@ -77,7 +77,7 @@ export default function NuevaFacturaPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const [maestros, setMaestros] = useState({
-        terceros: [],
+        // terceros: [], // YA NO CARGAMOS TODOS LOS TERCEROS AL INICIO
         tiposDocumento: [],
         centrosCosto: [],
         productos: [],
@@ -105,8 +105,8 @@ export default function NuevaFacturaPage() {
         const fetchMaestros = async () => {
             try {
                 setPageIsLoading(true);
-                const [tercerosRes, tiposDocRes, centrosCostoRes, bodegasRes, productosRes] = await Promise.all([
-                    getTerceros(),
+                // YA NO LLAMAMOS A getTerceros() AQUÍ PARA OPTIMIZAR
+                const [tiposDocRes, centrosCostoRes, bodegasRes, productosRes] = await Promise.all([
                     getTiposDocumento(),
                     getCentrosCosto(),
                     getBodegas(),
@@ -117,7 +117,7 @@ export default function NuevaFacturaPage() {
                 const centrosCostoFiltrados = centrosCostoRes.filter(c => c.permite_movimiento);
 
                 setMaestros({
-                    terceros: tercerosRes,
+                    // terceros: tercerosRes,
                     tiposDocumento: tiposDocRes.filter(td => td.afecta_inventario && td.funcion_especial === 'cartera_cliente'),
                     centrosCosto: centrosCostoFiltrados,
                     productos: productosRes.data
@@ -159,8 +159,12 @@ export default function NuevaFacturaPage() {
     }, [fecha]);
 
 
-    const handleBeneficiarioChange = useCallback(async (selectedId) => {
+    // --- CAMBIO: Handler para el AsyncSelect ---
+    const handleBeneficiarioChange = useCallback(async (selectedOption) => {
+        setBeneficiarioOption(selectedOption);
+        const selectedId = selectedOption ? selectedOption.value : '';
         setBeneficiarioId(selectedId);
+
         setClienteListaPrecioId(null);
         if (!selectedId) return;
 
@@ -173,6 +177,7 @@ export default function NuevaFacturaPage() {
             console.error("Error al obtener lista de precios:", error);
         }
     }, []);
+    // -------------------------------------------
 
 
     const handleAddProducts = useCallback(async (newItems) => {
@@ -246,18 +251,18 @@ export default function NuevaFacturaPage() {
         const bodegaExiste = bodegas.some(b => b.id === rem.bodega_id);
         if (!bodegaExiste && bodegas.length > 0) {
             toast.warning(`La bodega de la remisión (${rem.bodega_nombre}) no está disponible para su usuario.`);
-            // Aún así permitimos cargar, o bloqueamos? Mejor permitimos y que el backend o selector validen.
         }
 
         // 2. Cargar Datos Cabecera
+        // ACTUALIZACIÓN PARA ASYNC SELECT
         setBeneficiarioId(rem.tercero_id);
+        setBeneficiarioOption({ value: rem.tercero_id, label: rem.tercero_nombre }); // Construimos la opción visual
+
         setSelectedBodegaId(String(rem.bodega_id));
         setRemisionId(rem.id);
-        setCotizacionId(null); // Limpiar cotización si se carga remisión
+        setCotizacionId(null);
 
         // 3. Cargar Detalles
-        // Necesitamos mapear los detalles de la remisión a items de factura
-        // IMPORTANTE: Solo cargamos lo PENDIENTE
         const nuevosItems = rem.detalles
             .filter(d => d.cantidad_pendiente > 0)
             .filter(d => d.cantidad_pendiente > 0)
@@ -274,6 +279,11 @@ export default function NuevaFacturaPage() {
 
         setItems(nuevosItems);
         setIsRemisionModalOpen(false);
+        // Disparar carga de lista de precios si es necesario (el useEffect lo haría si dependiera de beneficiarioId, 
+        // pero handleBeneficiarioChange lo hace manual. Aquí deberíamos quizás llamar logicamente o confiar en que el usuario ya tiene precio)
+        // Por seguridad, llamamos al check de lista de precios simulando el cambio
+        handleBeneficiarioChange({ value: rem.tercero_id, label: rem.tercero_nombre });
+
         toast.success(`Remisión #${rem.numero} cargada.`);
     };
 
@@ -300,11 +310,13 @@ export default function NuevaFacturaPage() {
         }
 
         // 2. Cargar Datos
+        // ACTUALIZACIÓN PARA ASYNC SELECT
         setBeneficiarioId(cot.tercero_id);
+        setBeneficiarioOption({ value: cot.tercero_id, label: cot.tercero_nombre });
+
         setCotizacionId(cot.id);
-        setRemisionId(null); // Limpiar remisión
-        setCondicionPago('Crédito') // Default, user can change
-        // Fechas - Opcional: setFechaVencimiento(new Date(cot.fecha_vencimiento)) if desired
+        setRemisionId(null);
+        setCondicionPago('Crédito')
 
         // 3. Items
         const nuevosItems = cot.detalles.map(d => {
@@ -320,6 +332,9 @@ export default function NuevaFacturaPage() {
 
         setItems(nuevosItems);
         setIsCotizacionModalOpen(false);
+        // Validar lista de precios logicamente
+        handleBeneficiarioChange({ value: cot.tercero_id, label: cot.tercero_nombre });
+
         toast.success(`Cotización #${cot.numero} cargada.`);
     };
     // ------------------------------------
@@ -381,11 +396,11 @@ export default function NuevaFacturaPage() {
             const response = await facturacionService.createFactura(payload);
             toast.success(`¡Éxito! Factura #${response.numero} creada.`);
             setItems([]);
-            setBeneficiarioId('');
-            setCentroCostoId('');
-            setClienteListaPrecioId(null);
-            setFecha(new Date());
-            setFechaVencimiento(new Date());
+            // setBeneficiarioId(''); // MANTENER CLIENTE SELECCIONADO PARA FACTURACIÓN RÁPIDA
+            // setCentroCostoId(''); // MANTENER CENTRO DE COSTO SELECCIONADO (Request usuario)
+            // setClienteListaPrecioId(null); // MANTENER LISTA DE PRECIOS
+            // setFecha(new Date()); // MANTENER FECHA SELECCIONADA (Request usuario: desatraso de contabilidad)
+            // setFechaVencimiento(new Date()); // MANTENER FECHA VENCIMIENTO
 
         } catch (err) {
             console.error("Error al guardar factura:", err);
@@ -503,15 +518,14 @@ export default function NuevaFacturaPage() {
                             </div>
                         </div>
 
-                        {/* Cliente */}
+                        {/* Cliente - Async Search */}
                         <div className="lg:col-span-1">
                             <label htmlFor="beneficiario" className={labelClass}>Cliente <span className="text-red-500">*</span></label>
-                            <div className="relative">
-                                <select id="beneficiario" value={beneficiarioId} onChange={e => handleBeneficiarioChange(e.target.value)} className={selectClass} required >
-                                    <option value="">Seleccione...</option>
-                                    {maestros.terceros.map(t => <option key={t.id} value={t.id}>{`(${t.nit}) ${t.razon_social}`}</option>)}
-                                </select>
-                                <FaUserTag className="absolute right-8 top-3 text-gray-400 pointer-events-none" />
+                            <div className="relative z-50">
+                                <TerceroSelect
+                                    value={beneficiarioOption}
+                                    onChange={handleBeneficiarioChange}
+                                />
                             </div>
                             {clienteListaPrecioId && <p className="mt-1 text-xs text-green-600 font-bold flex items-center"><FaTag className="mr-1" /> Lista Precios ID: {clienteListaPrecioId}</p>}
                         </div>

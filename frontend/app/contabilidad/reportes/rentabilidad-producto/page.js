@@ -147,32 +147,8 @@ export default function RentabilidadProductoPage() {
         if (actionMeta.action === 'input-change') debouncedTerceroSearch(inputValue);
     };
 
-    useEffect(() => {
-        if (authLoading) return;
-        if (!user) {
-            router.push('/login');
-            return;
-        }
-        const fetchMaestros = async () => {
-            try {
-                const [gruposRes, listasRes] = await Promise.all([
-                    getGruposInventario(),
-                    getListasPrecio(),
-                ]);
-                setMaestros(prev => ({
-                    ...prev,
-                    grupos: gruposRes.map(g => ({ label: g.nombre, value: g.id })),
-                    listasPrecio: listasRes.map(lp => ({ label: lp.nombre, value: lp.id })),
-                }));
-            } catch (error) {
-                console.error("Error al cargar maestros:", error);
-            } finally {
-                setPageIsLoading(false);
-            }
-        };
-        fetchMaestros();
-    }, [user, authLoading, router]);
 
+    // --- LÓGICA DE BÚSQUEDA Y CARGA ---
     const fetchReportePorGrupo = useCallback(async (currentFiltros) => {
         const grupoIdsFiltrados = currentFiltros.grupo_ids.filter(g => g.value !== 'all').map(g => g.value);
         const filtrosParaApi = {
@@ -228,6 +204,35 @@ export default function RentabilidadProductoPage() {
             setIsSearching(false);
         }
     }, []);
+
+    useEffect(() => {
+        if (authLoading) return;
+        if (!user) {
+            router.push('/login');
+            return;
+        }
+        const fetchMaestros = async () => {
+            try {
+                const [gruposRes, listasRes] = await Promise.all([
+                    getGruposInventario(),
+                    getListasPrecio(),
+                ]);
+                setMaestros(prev => ({
+                    ...prev,
+                    grupos: gruposRes.map(g => ({ label: g.nombre, value: g.id })),
+                    listasPrecio: listasRes.map(lp => ({ label: lp.nombre, value: lp.id })),
+                }));
+            } catch (error) {
+                console.error("Error al cargar maestros:", error);
+            } finally {
+                setPageIsLoading(false);
+            }
+        };
+        fetchMaestros();
+    }, [user, authLoading, router]);
+
+
+
 
     const handleSearchClick = () => {
         setIsSearching(true);

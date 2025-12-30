@@ -75,18 +75,34 @@ export default function FileImportInterface({ selectedBankAccount, onBankAccount
       formData.append('file', file);
 
       // axios maneja el content-type multipart automáticamente cuando ve FormData
+      // PERO si apiService tiene default 'application/json', hay que anularlo
       const response = await apiService.post(
         `/conciliacion-bancaria/import-configs/${selectedConfig.id}/validate`,
-        formData
+        formData,
+        {
+          headers: {
+            'Content-Type': undefined
+          }
+        }
       );
 
       setValidationResult(response.data);
     } catch (error) {
       console.error('Error validando archivo:', error);
-      const errorDetail = error.response?.data?.detail || 'Error de conexión al validar archivo';
+      let errorDetail = error.response?.data?.detail || 'Error de conexión al validar archivo';
+
+      // [FIX] Handle Pydantic array of errors
+      if (Array.isArray(errorDetail)) {
+        errorDetail = errorDetail.map(e => typeof e === 'object' ? (e.msg || JSON.stringify(e)) : e);
+      } else if (typeof errorDetail === 'object') {
+        errorDetail = [JSON.stringify(errorDetail)];
+      } else {
+        errorDetail = [errorDetail];
+      }
+
       setValidationResult({
         is_valid: false,
-        errors: [errorDetail]
+        errors: errorDetail
       });
     } finally {
       setLoading(false);
@@ -105,7 +121,11 @@ export default function FileImportInterface({ selectedBankAccount, onBankAccount
       formData.append('config_id', selectedConfig.id);
       formData.append('bank_account_id', selectedBankAccount.id);
 
-      const response = await apiService.post('/conciliacion-bancaria/import', formData);
+      const response = await apiService.post('/conciliacion-bancaria/import', formData, {
+        headers: {
+          'Content-Type': undefined
+        }
+      });
 
       setImportResult(response.data);
 

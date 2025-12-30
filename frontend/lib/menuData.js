@@ -126,10 +126,10 @@ export const menuStructure = [
         links: [
             { name: 'Gestionar Terceros', href: '/admin/terceros', mnemonic: 'g', icon: FaHandshake, description: 'Directorio de clientes y proveedores.' },
             { name: 'Auxiliar Terceros', href: '/contabilidad/reportes/tercero-cuenta', mnemonic: 'a', icon: FaFileAlt, description: 'Movimientos por beneficiario.' },
-            { name: 'Cartera (CXC)', href: '/contabilidad/reportes/estado-cuenta-cliente', mnemonic: 'c', icon: FaLock, description: 'Cuentas por cobrar a clientes.' },
-            { name: 'Vencimientos Cartera', href: '/contabilidad/reportes/auxiliar-cartera', mnemonic: 'v', icon: FaClipboardList, description: 'Detalle de vencimientos cartera.' },
-            { name: 'Proveedores (CXP)', href: '/contabilidad/reportes/estado-cuenta-proveedor', mnemonic: 'p', icon: FaTruckMoving, description: 'Cuentas por pagar a proveedores.' },
-            { name: 'Vencimientos Prov.', href: '/contabilidad/reportes/auxiliar-proveedores', mnemonic: 'r', icon: FaReceipt, description: 'Detalle de pasivos con terceros.' },
+            { name: 'Estado de Cuenta (Clientes)', href: '/contabilidad/reportes/estado-cuenta-cliente', mnemonic: 'c', icon: FaLock, description: 'Cuentas por cobrar a clientes.' },
+            { name: 'Auxiliar de Cartera', href: '/contabilidad/reportes/auxiliar-cartera', mnemonic: 'v', icon: FaClipboardList, description: 'Detalle de vencimientos cartera.' },
+            { name: 'Estado de Cuenta (Proveedores)', href: '/contabilidad/reportes/estado-cuenta-proveedor', mnemonic: 'p', icon: FaTruckMoving, description: 'Cuentas por pagar a proveedores.' },
+            { name: 'Auxiliar de Proveedores', href: '/contabilidad/reportes/auxiliar-proveedores', mnemonic: 'r', icon: FaReceipt, description: 'Detalle de pasivos con terceros.' },
         ]
     },
     // 5. Impuestos (I)

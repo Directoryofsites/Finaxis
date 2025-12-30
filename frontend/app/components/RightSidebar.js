@@ -631,6 +631,23 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
             router.push(`/contabilidad/reportes/super-informe?${params.toString()}`);
             toast.success('IA: Buscando documentos...');
 
+        } else if (actionName === 'extraer_datos_documento' && data.parameters.plantilla) {
+            const p = data.parameters;
+            const params = new URLSearchParams();
+            params.set('ai_plantilla', p.plantilla);
+            if (p.tercero) params.set('ai_tercero', p.tercero);
+
+            // Extract value
+            const val = p.valor || p.monto || p.debito || p.credito || p.importe;
+            if (val) params.set('ai_valor', val);
+
+            // --- AUTO-SAVE TRIGGER (VOICE ONLY) ---
+            params.set('ai_autosave', 'true');
+
+            router.push(`/contabilidad/captura-rapida?${params.toString()}`);
+            toast.success('IA: Abriendo Captura Rápida...');
+
+
         } else if (actionName === 'generar_backup') {
             toast.loading('IA: Generando respaldo completo...', { id: 'backup-toast' });
             try {

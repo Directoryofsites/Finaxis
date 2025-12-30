@@ -206,12 +206,8 @@ export default function EstadoCuentaClientePage() {
             const signedToken = response.data.signed_url_token;
             const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/reports/estado-cuenta-cliente/imprimir?signed_token=${signedToken}`;
 
-            const link = document.createElement('a');
-            link.href = pdfUrl;
-            link.setAttribute('download', `Estado_Cuenta_${reportData.clienteInfo.razon_social}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // ABRIR EN NUEVA PESTAÑA (Request Usuario)
+            window.open(pdfUrl, '_blank');
 
         } catch (err) {
             setError(err.response?.data?.detail || "Error al exportar PDF.");

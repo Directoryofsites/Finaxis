@@ -3029,3 +3029,140 @@ async def test_adjustments_preview(
             "message": f"Error en endpoint de prueba: {str(e)}",
             "data": None
         }
+
+# ==================== REPORTES ====================
+
+@router.get("/reports/generate")
+async def generate_reconciliation_report_data(
+    bank_account_id: int,
+    report_type: str = "summary",
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Generar datos para el reporte de conciliación"""
+    try:
+        # Convertir fechas
+        date_from_obj = datetime.strptime(date_from, "%Y-%m-%d").date() if date_from else None
+        date_to_obj = datetime.strptime(date_to, "%Y-%m-%d").date() if date_to else None
+        
+        # Query base para movimientos bancarios
+        query = db.query(BankMovement).filter(
+            BankMovement.bank_account_id == bank_account_id,
+            BankMovement.empresa_id == current_user.empresa_id
+        )
+        
+        if date_from_obj:
+            query = query.filter(BankMovement.transaction_date >= date_from_obj)
+        if date_to_obj:
+            query = query.filter(BankMovement.transaction_date <= date_to_obj)
+            
+        movements = query.all()
+        
+        # Calcular estadísticas
+        total_movements = len(movements)
+        reconciled = [m for m in movements if m.status in ["MATCHED", "ADJUSTED"]]
+        pending = [m for m in movements if m.status == "PENDING"]
+        
+        total_amount = sum(float(m.amount) for m in movements)
+        reconciled_rate = (len(reconciled) / total_movements * 100) if total_movements > 0 else 0
+        
+        # Datos para gráficas
+        auto_reconciled = [m for m in reconciled if m.reconciliation_type == "AUTO"]
+        manual_reconciled = [m for m in reconciled if m.reconciliation_type == "MANUAL"]
+        
+        by_type = []
+        if len(reconciled) > 0:
+            by_type.append({
+                "type": "AUTO",
+                "count": len(auto_reconciled),
+                "amount": sum(float(m.amount) for m in auto_reconciled),
+                "percentage": round(len(auto_reconciled) / len(reconciled) * 100, 1)
+            })
+            by_type.append({
+                "type": "MANUAL",
+                "count": len(manual_reconciled),
+                "amount": sum(float(m.amount) for m in manual_reconciled),
+                "percentage": round(len(manual_reconciled) / len(reconciled) * 100, 1)
+            })
+
+        response_data = {
+            "summary": {
+                "total_movements": total_movements,
+                "reconciled_movements": len(reconciled),
+                "pending_movements": len(pending),
+                "reconciliation_rate": round(reconciled_rate, 1),
+                "total_amount": total_amount
+            },
+            "by_type": by_type,
+            "pending_movements": [
+                {
+                    "transaction_date": m.transaction_date.isoformat(),
+                    "description": m.description,
+                    "reference": m.reference,
+                    "amount": float(m.amount)
+                } for m in pending
+            ]
+        }
+        
+        if report_type == "detailed":
+            response_data["detailed_movements"] = [
+                {
+                    "transaction_date": m.transaction_date.isoformat(),
+                    "description": m.description,
+                    "reference": m.reference,
+                    "amount": float(m.amount),
+                    "status": m.status,
+                    "reconciliation_type": m.reconciliation_type
+                } for m in movements
+            ]
+            
+        return response_data
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generando datos del reporte: {str(e)}")
+
+
+@router.get("/reports/export")
+async def export_reconciliation_report(
+    bank_account_id: int,
+    report_type: str = "summary",
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    format: str = "pdf",
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Exportar reporte de conciliación (PDF/Excel)"""
+    try:
+        # Generar datos primero
+        data = await generate_reconciliation_report_data(
+            bank_account_id, report_type, date_from, date_to, current_user, db
+        )
+        
+        if format == "pdf":
+            from fastapi.responses import StreamingResponse
+            
+            pdf_buffer = generate_pdf_report(
+                db, 
+                bank_account_id, 
+                current_user.empresa_id, 
+                data,
+                report_type,
+                date_from,
+                date_to
+            )
+            
+            filename = f"conciliacion_{date_from}_{date_to}.pdf"
+            
+            return StreamingResponse(
+                pdf_buffer,
+                media_type="application/pdf",
+                headers={"Content-Disposition": f"attachment; filename={filename}"}
+            )
+        else:
+            raise HTTPException(status_code=400, detail="Formato no soportado (solo PDF por ahora)")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error exportando reporte: {str(e)}")

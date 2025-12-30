@@ -736,8 +736,15 @@ def get_rentabilidad_por_documento(
     
     # 1. Buscar el documento principal
     # FIX CLAVE: Buscar el tipo de documento por CÓDIGO (string) en lugar de ID (int)
-    numero_doc_str = str(filtros.numero_documento) 
+    numero_doc_str = str(filtros.numero_documento).strip()
     
+    # Intento de limpieza: Si el usuario envía "FV-41", extraemos "41"
+    if "-" in numero_doc_str:
+        possible_num = numero_doc_str.split("-")[-1].strip()
+        if possible_num.isdigit():
+            numero_doc_str = possible_num
+            print(f"--- SONDA: Número limpiado de formato compuesto: '{numero_doc_str}'")
+
     # Primero buscamos el Tipo de Documento por su código
     tipo_documento = db.query(models_tipo_doc.TipoDocumento).filter(
         models_tipo_doc.TipoDocumento.empresa_id == empresa_id,
@@ -753,33 +760,42 @@ def get_rentabilidad_por_documento(
     # --- SONDA 3: Tipo de Documento encontrado ---
     print(f"--- SONDA 3: ÉXITO - Tipo Doc ID encontrado: {tipo_documento.id}. Buscando Documento...")
 
-    # Luego buscamos el Documento por el ID encontrado
-    documento = db.query(models_doc.Documento).filter(
+    # Query base para el documento
+    doc_query = db.query(models_doc.Documento).filter(
         models_doc.Documento.empresa_id == empresa_id,
-        models_doc.Documento.tipo_documento_id == tipo_documento.id, # Usamos el ID encontrado
-        cast(models_doc.Documento.numero, SAString) == numero_doc_str, 
+        models_doc.Documento.tipo_documento_id == tipo_documento.id, 
         models_doc.Documento.anulado == False
-    ).options(
-        joinedload(models_doc.Documento.tipo_documento),
-        joinedload(models_doc.Documento.beneficiario)
-    ).first()
+    )
+
+    # Logica robusta para el número (Integer en DB)
+    if numero_doc_str.isdigit():
+        doc_query = doc_query.filter(models_doc.Documento.numero == int(numero_doc_str))
+    else:
+        # Fallback por si la columna fuera string en algún caso legacy o migración extraña, 
+        # aunque el modelo dice Integer.
+        doc_query = doc_query.filter(cast(models_doc.Documento.numero, SAString) == numero_doc_str)
+
+    # Ordenamos por ID descendente para tomar el ÚLTIMO creado en caso de duplicados
+    documento = doc_query.order_by(models_doc.Documento.id.desc()).first()
 
     if not documento:
         # --- SONDA 4: Fallo en Documento ---
         print(f"--- SONDA 4: FALLA - Documento con Tipo ID {tipo_documento.id} y Número '{numero_doc_str}' NO ENCONTRADO.")
-        ref = f"Código: {filtros.tipo_documento_codigo}, No: {filtros.numero_documento}"
+        ref = f"Código: {filtros.tipo_documento_codigo}, No: {filtros.numero_documento} (Buscado: {numero_doc_str})"
         raise HTTPException(status_code=404, detail=f"Documento '{ref}' no encontrado o anulado. Revise el número exacto.")
 
     # --- SONDA 5: Documento encontrado ---
     print(f"--- SONDA 5: ÉXITO - Documento ID encontrado: {documento.id}. Iniciando cálculo de Rentabilidad.")
     
     # 2. Construir la consulta de movimientos y rentabilidad
-    # Nos apoyamos en MovimientoInventario para el costo y en MovimientoContable (Ingreso) para la venta.
-
-    # 2.1 Alias de Documento Ref.
-    doc_ref_alias = func.concat(models_tipo_doc.TipoDocumento.codigo, '-', cast(models_doc.Documento.numero, SAString)).label("documento_ref")
     
-    # 2.2 Subconsulta de Venta (Ingresos, crédito)
+    # ESTRATEGIA ROBUSTA (HYBRID LEDGER):
+    # En lugar de depender de MovimientoInventario, usamos MovimientoContable como fuente de verdad financiera.
+    # 1. Obtenemos Venta Total por producto (del Haber/Crédito de Ingresos)
+    # 2. Obtenemos Costo Total por producto (del Debe/Débito de Costos)
+    # 3. Obtenemos Cantidad (de MovimientoInventario, si existe)
+
+    # 2.1 Subconsulta de Venta (Ingresos)
     sq_venta = (
         select(
             models_mov_con.MovimientoContable.producto_id,
@@ -788,7 +804,7 @@ def get_rentabilidad_por_documento(
         .filter(
             models_mov_con.MovimientoContable.documento_id == documento.id,
             models_mov_con.MovimientoContable.producto_id.isnot(None), 
-            # Asumimos que la cuenta de Ingreso está definida en el Grupo, como en get_rentabilidad_por_grupo
+            # Cuenta de Ingreso:
             models_mov_con.MovimientoContable.cuenta_id == models_grupo.GrupoInventario.cuenta_ingreso_id
         )
         .join(models_prod.Producto, models_mov_con.MovimientoContable.producto_id == models_prod.Producto.id)
@@ -796,35 +812,78 @@ def get_rentabilidad_por_documento(
         .group_by(models_mov_con.MovimientoContable.producto_id)
         .subquery()
     )
-
-    # 2.3 Consulta Principal: MovimientoInventario + Costo
-    query = (
-        db.query(
-            models_prod.MovimientoInventario.id.label("linea_documento_id"),
-            models_prod.Producto.codigo.label("producto_codigo"),
-            models_prod.Producto.nombre.label("producto_nombre"),
-            models_prod.MovimientoInventario.cantidad,
-            models_prod.MovimientoInventario.costo_unitario,
-            models_prod.MovimientoInventario.costo_total, 
-            func.coalesce(sq_venta.c.valor_venta_total, Decimal('0.0')).label("valor_venta_total")
+    
+    # 2.2 Subconsulta de Costo (Costo de Venta desde Contabilidad)
+    sq_costo_contable = (
+        select(
+            models_mov_con.MovimientoContable.producto_id,
+            func.sum(models_mov_con.MovimientoContable.debito).label("valor_costo_total")
         )
-        .join(models_prod.Producto, models_prod.MovimientoInventario.producto_id == models_prod.Producto.id)
-        .outerjoin(sq_venta, models_prod.Producto.id == sq_venta.c.producto_id)
+        .filter(
+            models_mov_con.MovimientoContable.documento_id == documento.id,
+            models_mov_con.MovimientoContable.producto_id.isnot(None),
+            # Cuenta de Costo:
+            models_mov_con.MovimientoContable.cuenta_id == models_grupo.GrupoInventario.cuenta_costo_venta_id
+        )
+        .join(models_prod.Producto, models_mov_con.MovimientoContable.producto_id == models_prod.Producto.id)
+        .join(models_grupo.GrupoInventario, models_prod.Producto.grupo_id == models_grupo.GrupoInventario.id)
+        .group_by(models_mov_con.MovimientoContable.producto_id)
+        .subquery()
+    )
+
+    # 2.3 Subconsulta de Cantidad (Desde Inventario - Opcional)
+    sq_inventario = (
+        select(
+            models_prod.MovimientoInventario.producto_id,
+            func.sum(models_prod.MovimientoInventario.cantidad).label("cantidad_total"),
+            # Costo unitario promedio ponderado o del último movimiento (simplificado: max)
+            func.max(models_prod.MovimientoInventario.costo_unitario).label("costo_unitario_ref")
+        )
         .filter(
             models_prod.MovimientoInventario.documento_id == documento.id,
             models_prod.MovimientoInventario.tipo_movimiento == 'SALIDA_VENTA'
         )
-        .order_by(models_prod.MovimientoInventario.id)
+        .group_by(models_prod.MovimientoInventario.producto_id)
+        .subquery()
     )
 
+
+    # 2.4 Consulta Principal: DRIVEN BY PRODUCTS IN ACCOUNTING
+    # Buscamos productos que tengan ventas O costos en este documento.
+    
+    # Distinct Product IDs in this document (Union of Sales and Costs)
+    # Para simplificar en SQLAlchemy y no hacer unions complejos, consultamos Producto
+    # y filtramos aquellos que tengan sq_venta O sq_costo
+    
+    query = (
+        db.query(
+            models_prod.Producto.id.label("producto_id"),
+            models_prod.Producto.codigo.label("producto_codigo"),
+            models_prod.Producto.nombre.label("producto_nombre"),
+            func.coalesce(sq_inventario.c.cantidad_total, Decimal('0.0')).label("cantidad"),
+            func.coalesce(sq_inventario.c.costo_unitario_ref, Decimal('0.0')).label("costo_unitario"),
+            func.coalesce(sq_costo_contable.c.valor_costo_total, Decimal('0.0')).label("costo_total"), 
+            func.coalesce(sq_venta.c.valor_venta_total, Decimal('0.0')).label("valor_venta_total")
+        )
+        .outerjoin(sq_venta, models_prod.Producto.id == sq_venta.c.producto_id)
+        .outerjoin(sq_costo_contable, models_prod.Producto.id == sq_costo_contable.c.producto_id)
+        .outerjoin(sq_inventario, models_prod.Producto.id == sq_inventario.c.producto_id)
+        .filter(
+            models_prod.Producto.empresa_id == empresa_id,
+            or_(sq_venta.c.valor_venta_total.isnot(None), sq_costo_contable.c.valor_costo_total.isnot(None))
+        )
+        .order_by(models_prod.Producto.nombre)
+    )
+
+
     # --- SONDA 6: Ejecutando Consulta ---
-    print(f"--- SONDA 6: Ejecutando consulta de líneas de Rentabilidad para Doc ID {documento.id}")
+    print(f"--- SONDA 6: Ejecutando consulta HÍBRIDA de Rentabilidad para Doc ID {documento.id}")
     
     resultados = query.all()
     if not resultados:
-        # --- SONDA 7: No hay líneas de venta ---
-        print(f"--- SONDA 7: FALLA - Documento ID {documento.id} no tiene movimientos de venta de productos en inventario.")
-        raise HTTPException(status_code=404, detail=f"Documento '{tipo_documento.codigo}-{documento.numero}' encontrado, pero no contiene movimientos de venta de productos en inventario.")
+        # --- SONDA 7: No hay líneas ---
+        print(f"--- SONDA 7: FALLA - Documento ID {documento.id} no tiene movimientos contables (Venta o Costo).")
+        raise HTTPException(status_code=404, detail=f"Documento '{documento.tipo_documento.codigo}-{documento.numero}' vacío (sin movimientos contables de producto).")
 
 
     # 3. Post-procesamiento y Totales
@@ -832,38 +891,44 @@ def get_rentabilidad_por_documento(
     total_venta = Decimal('0.0')
     total_costo = Decimal('0.0')
 
+    idx_linea = 1
     for row in resultados:
         cantidad = Decimal(str(row.cantidad or '0.0'))
-        costo_unitario = Decimal(str(row.costo_unitario or '0.0'))
+        # Nota: El costo unitario puede venir de inventario, o inferirse si cant > 0
+        costo_unitario_ref = Decimal(str(row.costo_unitario or '0.0'))
+        
         costo_total = Decimal(str(row.costo_total or '0.0'))
-        # Usamos el total de venta de la subconsulta (Movimiento Contable)
         venta_total = Decimal(str(row.valor_venta_total or '0.0'))
         
+        if cantidad > 0 and costo_unitario_ref == 0:
+            costo_unitario_ref = costo_total / cantidad if cantidad else Decimal('0.0')
+
         if venta_total == Decimal('0.0'):
-             utilidad = Decimal('0.0')
+             utilidad = -costo_total # Pérdida pura si hay costo sin venta
              venta_unitario = Decimal('0.0')
-             margen = Decimal('0.0')
+             margen = Decimal('0.0') # O indefinido
         else:
              utilidad = venta_total - costo_total
-             venta_unitario = venta_total / cantidad if cantidad != Decimal('0.0') else Decimal('0.0')
-             margen = (utilidad / venta_total) * Decimal('100.0') if venta_total != Decimal('0.0') else Decimal('0.0')
+             venta_unitario = venta_total / cantidad if cantidad != Decimal('0.0') else venta_total # Fallback si cantidad es 0
+             margen = (utilidad / venta_total) * Decimal('100.0')
         
         # Acumular totales
         total_venta += venta_total
         total_costo += costo_total
 
         detalle_final.append(schemas_reportes.ReporteRentabilidadDocumentoItem(
-            linea_documento_id=row.linea_documento_id,
+            linea_documento_id=idx_linea, # ID Ficticio secuencial ya que agrupamos
             producto_codigo=row.producto_codigo,
             producto_nombre=row.producto_nombre,
             cantidad=cantidad.quantize(Decimal('0.00')),
             valor_venta_unitario=venta_unitario.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP),
             valor_venta_total=venta_total.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP),
-            costo_unitario=costo_unitario.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP),
+            costo_unitario=costo_unitario_ref.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP),
             costo_total=costo_total.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP),
             utilidad_bruta_valor=utilidad.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP),
             utilidad_bruta_porcentaje=margen.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
         ))
+        idx_linea += 1
 
     # 4. Construir respuesta final
     total_utilidad = total_venta - total_costo
@@ -881,13 +946,40 @@ def get_rentabilidad_por_documento(
         documento_ref=f"{documento.tipo_documento.codigo}-{documento.numero}",
         fecha=documento.fecha,
         tercero_nombre=documento.beneficiario.razon_social if documento.beneficiario else "N/A",
-        # --- NUEVO CAMPO LLENADO ---
         tercero_nit=documento.beneficiario.nit if documento.beneficiario else "N/A",
-        # ---------------------------
         detalle=detalle_final,
         totales=totales_obj
     )
 
     # --- SONDA 8: ÉXITO FINAL ---
-    print(f"--- SONDA 8: ÉXITO - Rentabilidad Calculada. Lineas: {len(detalle_final)}. Utilidad Total: {total_utilidad} ---")
+    print(f"--- SONDA 8: ÉXITO - Rentabilidad Calculada (Híbrida). Lineas: {len(detalle_final)}. Utilidad Total: {total_utilidad} ---")
     return response
+
+
+# =================================================================================
+# === REGISTRY IMPLEMENTATION: RENTABILIDAD ===
+# =================================================================================
+
+@ReportRegistry.register
+class RentabilidadReportService(BaseReport):
+    key = "rentabilidad_producto"
+    description = "Reporte de Análisis de Rentabilidad por Producto o Grupo"
+    
+    # Define schema for filtering
+    filter_schema = schemas_rentabilidad.RentabilidadProductoFiltros
+
+    def get_data(self, db: Session, empresa_id: int, filtros: dict):
+        # Convert dictionary filters to Pydantic model
+        filtros_obj = self.filter_schema(**filtros)
+        return get_rentabilidad_por_grupo(db, empresa_id, filtros_obj)
+
+    def generate_pdf(self, db: Session, empresa_id: int, filtros: dict):
+        # Convert dictionary filters to Pydantic model
+        filtros_obj = self.filter_schema(**filtros)
+        
+        # Call the existing PDF generation function
+        # This function returns bytes (since it calls HTML(...).write_pdf())
+        pdf_bytes = generar_pdf_rentabilidad_producto(db, empresa_id, filtros_obj)
+        
+        filename = f"Rentabilidad_{filtros_obj.fecha_inicio}_a_{filtros_obj.fecha_fin}.pdf"
+        return pdf_bytes, filename

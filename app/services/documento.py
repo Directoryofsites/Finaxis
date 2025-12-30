@@ -410,6 +410,22 @@ def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id:
         # 3. Carga completa para eliminación
         db_documento = get_documento_by_id(db, documento_id=documento_id, empresa_id=empresa_id)
 
+        # LINK ADJUSTMENT REVERSAL (HOOK)
+        if db_documento.reconciliation_reference and db_documento.reconciliation_reference.startswith("BM-"):
+            try:
+                bm_id = int(db_documento.reconciliation_reference.split("-")[1])
+                from app.models.conciliacion_bancaria import BankMovement
+                
+                # Buscar y liberar el movimiento bancario
+                bank_move = db.query(BankMovement).filter(BankMovement.id == bm_id).first()
+                if bank_move:
+                    bank_move.status = "PENDING"
+                    # Nota: No hacemos commit aquí, se hará junto con la eliminación abajo
+                    
+            except Exception as e:
+                print(f"Error revirtiendo estado bancario: {e}")
+                # No bloqueamos la eliminación, pero logueamos el error
+        
         movimientos_a_eliminar = db_documento.movimientos[:]
 
         movimientos_para_log = [{

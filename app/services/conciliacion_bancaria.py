@@ -383,9 +383,11 @@ class ImportEngine:
                 date_col = config.field_mapping['date']
                 if date_col < len(row):
                     try:
-                        datetime.strptime(str(row[date_col]).strip(), config.date_format)
+                        # Normalize date format from JS (YYYY-MM-DD) to Python (%Y-%m-%d)
+                        py_date_format = config.date_format.replace('YYYY', '%Y').replace('MM', '%m').replace('DD', '%d')
+                        datetime.strptime(str(row[date_col]).strip(), py_date_format)
                     except ValueError:
-                        errors.append(f"Fila {row_num}: Formato de fecha inválido en columna {date_col + 1}")
+                        errors.append(f"Fila {row_num}: Formato de fecha inválido en columna {date_col + 1} (Esperado: {config.date_format}, Valor: {row[date_col]})")
             
             # Validar monto
             if 'amount' in config.field_mapping:
@@ -419,7 +421,9 @@ class ImportEngine:
                 
                 if field == 'date' and value:
                     try:
-                        data[field] = datetime.strptime(value, config.date_format).date().isoformat()
+                        # Normalize date format from JS (YYYY-MM-DD) to Python (%Y-%m-%d)
+                        py_date_format = config.date_format.replace('YYYY', '%Y').replace('MM', '%m').replace('DD', '%d')
+                        data[field] = datetime.strptime(value, py_date_format).date().isoformat()
                     except ValueError:
                         data[field] = value
                 elif field == 'amount' and value:
@@ -500,7 +504,9 @@ class ImportEngine:
                 date_col = config.field_mapping['date']
                 if date_col < len(row):
                     date_str = str(row[date_col]).strip()
-                    transaction_date = datetime.strptime(date_str, config.date_format).date()
+                    # Normalize date format from JS (YYYY-MM-DD) to Python (%Y-%m-%d)
+                    py_date_format = config.date_format.replace('YYYY', '%Y').replace('MM', '%m').replace('DD', '%d')
+                    transaction_date = datetime.strptime(date_str, py_date_format).date()
             
             # Monto
             if 'amount' in config.field_mapping:
@@ -523,7 +529,9 @@ class ImportEngine:
                     try:
                         val_date_str = str(row[val_date_col]).strip()
                         if val_date_str:
-                            value_date = datetime.strptime(val_date_str, config.date_format).date()
+                            # Normalize date format
+                            py_date_format = config.date_format.replace('YYYY', '%Y').replace('MM', '%m').replace('DD', '%d')
+                            value_date = datetime.strptime(val_date_str, py_date_format).date()
                     except ValueError:
                         pass
             
@@ -742,9 +750,10 @@ class ConfigurationManager:
             raise ValueError(f"Campos obligatorios faltantes en el mapeo: {missing_fields}")
             
         # [PARCHE ANTIGRAVITY] Resolver bank_id si falta
+        from ..models.tercero import Tercero
+        
         bank_id = config_data.get('bank_id')
         if not bank_id and 'bank_name' in config_data:
-            from ..models.tercero import Tercero
             # Intentar encontrar por nombre
             bank_name = config_data['bank_name']
             print(f"[CONFIG MANAGER] Buscando banco por nombre: {bank_name}")
@@ -1939,7 +1948,14 @@ class AdjustmentEngine:
             ).first()
             
             if not tipo_doc:
-                # Usar tipo de documento genérico si no existe específico para ajustes
+                # Intentar usar "CC" (Comprobante de Contabilidad) como fallback preferido
+                tipo_doc = self.db.query(TipoDocumento).filter(
+                    TipoDocumento.codigo == "CC",
+                    TipoDocumento.empresa_id == empresa_id
+                ).first()
+
+            if not tipo_doc:
+                # Usar cualquier tipo de documento disponible como último recurso
                 tipo_doc = self.db.query(TipoDocumento).filter(
                     TipoDocumento.empresa_id == empresa_id
                 ).first()
@@ -1952,15 +1968,14 @@ class AdjustmentEngine:
             
             # Crear documento
             documento = Documento(
-                numero=str(next_number),
+                numero=int(next_number),
                 fecha=adjustment_proposal["bank_movement"]["transaction_date"],
-                concepto=adjustment_proposal["document_concept"],
+                observaciones=adjustment_proposal["document_concept"],  # Corrected from concepto
                 tipo_documento_id=tipo_doc.id,
                 empresa_id=empresa_id,
-                usuario_id=user_id,
+                usuario_creador_id=user_id,
                 estado="ACTIVO",
-                total_debito=adjustment_proposal["total_amount"],
-                total_credito=adjustment_proposal["total_amount"]
+                reconciliation_reference=f"BM-{adjustment_proposal['bank_movement']['id']}"
             )
             
             self.db.add(documento)
@@ -1975,8 +1990,6 @@ class AdjustmentEngine:
                     debito=entry["debit"],
                     credito=entry["credit"],
                     concepto=entry["description"],
-                    referencia=adjustment_proposal["bank_movement"]["reference"],
-                    fecha=adjustment_proposal["bank_movement"]["transaction_date"],
                     reconciliation_status="RECONCILED"  # Ya está conciliado por definición
                 )
                 self.db.add(movimiento)
@@ -2015,7 +2028,7 @@ class AdjustmentEngine:
             Documento.empresa_id == empresa_id
         ).order_by(Documento.numero.desc()).first()
         
-        if last_doc and last_doc.numero.isdigit():
+        if last_doc:
             return int(last_doc.numero) + 1
         else:
             return 1
@@ -2126,6 +2139,8 @@ class AdjustmentEngine:
                 if adj["bank_movement_id"] in adjustment_ids
             ]
             
+            print(f"DEBUG_AJUSTES: Procesando {len(filtered_adjustments)} ajustes de {len(adjustment_ids)} solicitados")
+
             for adjustment in filtered_adjustments:
                 total_processed += 1
                 
@@ -2134,8 +2149,12 @@ class AdjustmentEngine:
                     if notes:
                         adjustment["document_concept"] += f" - {notes}"
                     
+                    print(f"DEBUG_AJUSTES: Generando documento para movimiento {adjustment['bank_movement_id']}")
+                    
                     # Generar documento contable
                     result = self.generate_adjustment_document(adjustment, user_id, empresa_id)
+                    
+                    print(f"DEBUG_AJUSTES: Documento generado exitosamente: {result}")
                     
                     results.append({
                         "bank_movement_id": adjustment["bank_movement_id"],
@@ -2149,6 +2168,9 @@ class AdjustmentEngine:
                     total_successful += 1
                     
                 except Exception as e:
+                    import traceback
+                    traceback.print_exc()
+                    print(f"DEBUG_AJUSTES: Error en ajuste {adjustment['bank_movement_id']}: {str(e)}")
                     results.append({
                         "bank_movement_id": adjustment["bank_movement_id"],
                         "success": False,
