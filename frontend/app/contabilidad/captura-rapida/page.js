@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import {
@@ -16,7 +16,6 @@ import {
   FaExclamationTriangle,
   FaMagic
 } from 'react-icons/fa';
-import { toast } from 'react-toastify';
 
 // Importaciones
 import { useAuth } from '../../context/AuthContext';
@@ -28,12 +27,8 @@ const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 trackin
 const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none";
 const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none bg-white";
 
-// Helper
-const formatCurrency = (val) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(val);
-
 export default function CapturaRapidaPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
 
   // --- ESTADOS DE DATOS MAESTROS ---
@@ -88,20 +83,30 @@ export default function CapturaRapidaPage() {
     }
 
     const plantilla = plantillas.find(p => p.id === parseInt(id));
-    if (plantilla && plantilla.detalles) {
-      // Cargar movimientos base de la plantilla
-      const nuevosMovimientos = plantilla.detalles.map(d => ({
-        cuenta_id: d.cuenta_id || (cuentas.find(c => c.codigo === d.cuenta_codigo)?.id),
-        centro_costo_id: d.centro_costo_id,
-        concepto: d.concepto,
-        debito: 0,  // Se calculan al meter el valor
-        credito: 0,
-        naturaleza: d.debito > 0 ? 'D' : 'C', // Detectar naturaleza base
-        base_calculo: d.debito || d.credito || 0 // Guardar proporción si existe
-      }));
-      setMovimientos(nuevosMovimientos);
-      setValorUnico(''); // Resetear valor para obligar recálculo
-      setTotales({ debito: 0, credito: 0 });
+    if (plantilla) {
+      // Aplicar maestros sugeridos si existen en la plantilla
+      if (plantilla.beneficiario_id_sugerido) {
+        setBeneficiarioId(String(plantilla.beneficiario_id_sugerido));
+      }
+      if (plantilla.centro_costo_id_sugerido) {
+        setCentroCostoId(String(plantilla.centro_costo_id_sugerido));
+      }
+
+      if (plantilla.detalles) {
+        // Cargar movimientos base de la plantilla
+        const nuevosMovimientos = plantilla.detalles.map(d => ({
+          cuenta_id: d.cuenta_id || (cuentas.find(c => c.codigo === d.cuenta_codigo)?.id),
+          centro_costo_id: d.centro_costo_id,
+          concepto: d.concepto,
+          debito: 0,  // Se calculan al meter el valor
+          credito: 0,
+          naturaleza: d.debito > 0 ? 'D' : 'C', // Detectar naturaleza base
+          base_calculo: d.debito || d.credito || 0 // Guardar proporción si existe
+        }));
+        setMovimientos(nuevosMovimientos);
+        setValorUnico(''); // Resetear valor para obligar recálculo
+        setTotales({ debito: 0, credito: 0 });
+      }
     }
   };
 
@@ -240,6 +245,17 @@ export default function CapturaRapidaPage() {
 
   // --- EFECTOS ---
 
+  // --- STATE FOR AUTO SAVE PERSISTENCE ---
+  const [shouldAutoSaveState, setShouldAutoSaveState] = useState(false);
+
+  // --- IA AUTO-FILL STAGE 1 & INIT ---
+  useEffect(() => {
+    // Capture auto-save intent immediately on mount or param change
+    if (searchParams.get('ai_autosave') === 'true') {
+      setShouldAutoSaveState(true);
+    }
+  }, [searchParams]);
+
   // --- IA AUTO-FILL STAGE 1: MATCHING (PLANTILLA & TERCERO) ---
   useEffect(() => {
     // Stage 1: Solo si hay parametros y maestros, pero NO hemos asignado plantilla aun
@@ -303,20 +319,13 @@ export default function CapturaRapidaPage() {
       // Limpiar URL para evitar loops
       const newUrl = window.location.pathname;
       window.history.replaceState({}, '', newUrl); // CLEAN URL HERE
-
-      // Auto Save Trigger?
-      // El usuario pidio "y darle confirmar". 
-      // Podemos dar un pequeño delay para que visualice y guardar.
-      // Pero handleValorUnicoChange es sync, asi que el estado 'totales' cambiara rapido.
     }
-  }, [movimientos, searchParams, valorUnico]); // Dependencia clave: movimientos
+  }, [movimientos, searchParams, valorUnico]);
 
   // --- IA AUTO-FILL STAGE 3: AUTO SAVE ---
   useEffect(() => {
-    // Si esta balanceado y acabamos de aplicar un valor por IA (podemos inferirlo si el usuario no ha tocado nada)
-    // Para ser seguros, solo auto-guardamos si el form esta 'ready' y pasaron unos segundos del ultimo cambio.
-
-    if (estaBalanceado && totales.debito > 0 && valorUnico) {
+    // Use saved state instead of transient url param
+    if (shouldAutoSaveState && estaBalanceado && totales.debito > 0 && valorUnico) {
       const timer = setTimeout(() => {
         const btn = document.getElementById('btn-guardar-captura');
         if (btn && !btn.disabled) {
@@ -326,9 +335,7 @@ export default function CapturaRapidaPage() {
       }, 2000); // 2 segundos para que el usuario vea el resultado antes de guardar
       return () => clearTimeout(timer);
     }
-  }, [estaBalanceado, totales, valorUnico]);
-
-
+  }, [estaBalanceado, totales, valorUnico, shouldAutoSaveState]);
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === 'Insert') {
@@ -650,7 +657,6 @@ export default function CapturaRapidaPage() {
           <div className="mt-8 flex justify-end">
             <button
               type="submit"
-              id="btn-guardar-captura"
               disabled={!estaBalanceado || isSubmittingDoc}
               className={`
                       px-10 py-4 rounded-xl shadow-lg font-bold text-white text-lg transition-all transform hover:-translate-y-1 flex items-center gap-3

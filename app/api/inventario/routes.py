@@ -271,7 +271,7 @@ def search_productos_by_body_route(
     )
 
 
-@router.get("/productos/{producto_id}/precio-venta", response_model=schemas.PrecioVentaCalculado, dependencies=[Depends(has_permission("inventario:ver_productos"))])
+@router.get("/productos/{producto_id}/precio-venta", response_model=schemas.PrecioVentaCalculado, dependencies=[Depends(get_current_user)])
 def get_precio_venta_route(producto_id: int, lista_precio_id: int = Query(..., alias="lista_precio"), db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     precio = service_inventario.calcular_precio_venta(db=db, producto_id=producto_id, lista_precio_id=lista_precio_id, empresa_id=current_user.empresa_id)
     return {"precio_calculado": precio}

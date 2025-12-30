@@ -64,13 +64,19 @@ const VistaPorFacturas = ({ reporte }) => {
                   <div className="ml-8 pl-4 border-l-2 border-gray-300 py-1">
                     <p className="text-xs font-bold text-gray-500 uppercase mb-1">Detalle de Abonos:</p>
                     <ul className="space-y-1">
-                      {factura.abonos_detalle.map((abono, index) => (
-                        <li key={index} className="text-xs text-gray-600 flex items-center gap-2">
-                          <FaMoneyBillWave className="text-green-500" />
-                          <span>Abonado por <strong>{abono.documento}</strong>:</span>
-                          <span className="font-mono font-bold">${parseFloat(abono.valor).toLocaleString('es-CO')}</span>
-                        </li>
-                      ))}
+                      {factura.abonos_detalle
+                        .sort((a, b) => {
+                          const numA = parseInt(a.documento.match(/\d+/) || [0])
+                          const numB = parseInt(b.documento.match(/\d+/) || [0])
+                          return numA - numB || a.documento.localeCompare(b.documento)
+                        })
+                        .map((abono, index) => (
+                          <li key={index} className="text-xs text-gray-600 flex items-center gap-2">
+                            <FaMoneyBillWave className="text-green-500" />
+                            <span>Abonado por <strong>{abono.documento}</strong>:</span>
+                            <span className="font-mono font-bold">${parseFloat(abono.valor).toLocaleString('es-CO')}</span>
+                          </li>
+                        ))}
                     </ul>
                   </div>
                 </td>
@@ -128,13 +134,19 @@ const VistaPorRecibos = ({ reporte }) => {
                   <div className="ml-8 pl-4 border-l-2 border-green-300 py-1">
                     <p className="text-xs font-bold text-green-700 uppercase mb-1">Cruces con Facturas:</p>
                     <ul className="space-y-1">
-                      {recibo.facturas_afectadas.map((factura, index) => (
-                        <li key={index} className="text-xs text-gray-600 flex items-center gap-2">
-                          <FaExchangeAlt className="text-indigo-400" />
-                          <span>Abona a <strong>{factura.documento}</strong>:</span>
-                          <span className="font-mono font-bold">${parseFloat(factura.valor).toLocaleString('es-CO')}</span>
-                        </li>
-                      ))}
+                      {recibo.facturas_afectadas
+                        .sort((a, b) => {
+                          const numA = parseInt(a.documento.match(/\d+/) || [0])
+                          const numB = parseInt(b.documento.match(/\d+/) || [0])
+                          return numA - numB || a.documento.localeCompare(b.documento)
+                        })
+                        .map((factura, index) => (
+                          <li key={index} className="text-xs text-gray-600 flex items-center gap-2">
+                            <FaExchangeAlt className="text-indigo-400" />
+                            <span>Abona a <strong>{factura.documento}</strong>:</span>
+                            <span className="font-mono font-bold">${parseFloat(factura.valor).toLocaleString('es-CO')}</span>
+                          </li>
+                        ))}
                     </ul>
                   </div>
                 </td>
@@ -281,12 +293,8 @@ export default function AuxiliarCarteraPage() {
       const signedToken = response.data.signed_url_token;
       const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/reports/auxiliar-cartera/imprimir?signed_token=${signedToken}`;
 
-      const link = document.createElement('a');
-      link.href = pdfUrl;
-      link.setAttribute('download', `Auxiliar_Cartera_${filtros.perspective}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // ABRIR EN NUEVA PESTAÑA (Request Usuario)
+      window.open(pdfUrl, '_blank');
 
     } catch (err) {
       setError(err.response?.data?.detail || "Error PDF.");

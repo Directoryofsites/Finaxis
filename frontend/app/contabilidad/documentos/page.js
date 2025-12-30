@@ -521,21 +521,43 @@ export default function NuevoDocumentoPage() {
       setMensaje(`¡Éxito! Documento ${response.data.numero} creado.`);
       setDocumentoRecienCreadoId(response.data.id);
 
-      setTipoDocumentoId('');
-      setBeneficiarioId('');
-      setCentroCostoId('');
-      setNumero('');
+      // --- CAMBIOS DE PERSISTENCIA (Request Usuario) ---
+      // setTipoDocumentoId(''); // MANTENER TIPO DE DOCUMENTO
+      // setBeneficiarioId(''); // MANTENER TERCERO
+      // setCentroCostoId(''); // MANTENER CENTRO DE COSTO
+
+      // Actualizar consecutivo (Número) automáticamente si se mantiene el tipo
+      if (tipoDocumentoId) {
+        try {
+          // Pequeño delay para asegurar que el backend haya procesado el anterior (aunque ya respondió ok)
+          const resNum = await apiService.get(`/tipos-documento/${tipoDocumentoId}/siguiente-numero`);
+          if (!resNum.data.es_manual) {
+            setNumero(String(resNum.data.siguiente_numero).padStart(7, '0'));
+          } else {
+            setNumero(''); // Si es manual, limpiar para que ingrese el nuevo
+          }
+        } catch (e) {
+          console.error("Error al actualizar consecutivo:", e);
+          setNumero('');
+        }
+      } else {
+        setNumero('');
+      }
+
       setMovimientos([
         { rowId: Date.now(), cuentaId: '', concepto: '', debito: '', credito: '', cuentaInput: '' },
         { rowId: Date.now() + 1, cuentaId: '', concepto: '', debito: '', credito: '', cuentaInput: '' },
       ]);
-      setFechaVencimiento(null);
+      // setFechaVencimiento(null); // MANTENER FECHA VENCIMIENTO SI APLICA
+
+      // Limpiar estados dependientes que deberían regenerarse
       setFacturasPendientes([]);
       setAplicaciones({});
       setValorAAbonar('');
-      setNumeroEditable(false);
-      setTipoDocSeleccionado(null);
-      setCuentasConfiguradas({ debitoId: null, creditoId: null });
+
+      // setNumeroEditable(false); // Mantener estado de editabilidad
+      // setTipoDocSeleccionado(null); // NO LIMPIAR SELECCIÓN
+      // setCuentasConfiguradas({ debitoId: null, creditoId: null }); // NO LIMPIAR CONFIG
 
     } catch (err) {
       const errorDetail = err.response?.data?.detail;

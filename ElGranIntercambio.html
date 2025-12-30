@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Gran Intercambio - 2 Corintios 5:21</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600&display=swap');
+
+        :root {
+            --bg-color: #f9f8f4;
+            --text-color: #2c3e50;
+            --accent-color: #8e1c1c;
+            /* Deep Red/Burgundy */
+            --gold-color: #b78628;
+            --highlight-bg: rgba(183, 134, 40, 0.1);
+            --font-heading: 'Cormorant Garamond', serif;
+            --font-body: 'Montserrat', sans-serif;
+            --container-width: 800px;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-body);
+            line-height: 1.8;
+            margin: 0;
+            padding: 0;
+            font-size: 18px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: var(--container-width);
+            margin: 0 auto;
+            padding: 4rem 2rem;
+            background: #fff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        /* Decoration */
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--accent-color), var(--gold-color), var(--accent-color));
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            font-family: var(--font-heading);
+            font-weight: 700;
+            color: var(--text-color);
+            margin-top: 2.5rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            text-align: center;
+            color: var(--accent-color);
+            margin-top: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 2px solid var(--gold-color);
+            padding-bottom: 1rem;
+        }
+
+        h2 {
+            font-size: 2.2rem;
+            text-align: center;
+            color: #1a1a1a;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.5rem;
+            margin-top: 3rem;
+            text-transform: uppercase;
+        }
+
+        h3 {
+            font-size: 1.6rem;
+            color: var(--accent-color);
+            margin-top: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        p {
+            margin-bottom: 1.5rem;
+            text-align: justify;
+        }
+
+        /* Custom Highlight Logic */
+        .highlight {
+            color: #1a1a1a;
+            /* Darker black for contrast */
+            font-weight: 600;
+            border-bottom: 2px solid var(--gold-color);
+            padding-bottom: 1px;
+            /* background-color: var(--highlight-bg); Optional: Add bg if strict highlight needed */
+        }
+
+        .highlight-block {
+            display: block;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            border-left: 4px solid var(--accent-color);
+            background-color: #fff9f9;
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+            font-style: italic;
+            color: var(--accent-color);
+            text-align: center;
+        }
+
+        .scripture-ref {
+            font-family: var(--font-heading);
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        li {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        li::before {
+            content: "•";
+            color: var(--gold-color);
+            font-size: 1.5rem;
+            position: absolute;
+            left: 0;
+            top: -5px;
+        }
+
+        .drop-cap {
+            float: left;
+            font-family: var(--font-heading);
+            font-size: 4.5rem;
+            line-height: 3.5rem;
+            padding-top: 4px;
+            padding-right: 8px;
+            padding-left: 3px;
+            color: var(--accent-color);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid #eee;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        /* Specific formatting for the user's specific text structure */
+        .subtitle {
+            text-align: center;
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            color: #555;
+            margin-top: -1rem;
+            margin-bottom: 3rem;
+            font-style: italic;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+
+            .container {
+                box-shadow: none;
+                margin: 0;
+                width: 100%;
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .container {
+                padding: 2rem 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>EL GRAN INTERCAMBIO</h1>
+        <div class="subtitle">Texto: 2 Corintios 5:21</div>
+
+        <h2>PREÁMBULO</h2>
+        <p><span class="drop-cap">E</span>n la Navidad el mundo recuerda el nacimiento del Hijo de Dios, Cristo Jesús.
+            En esta celebración meditamos en la encarnación: Dios el Hijo, la segunda persona de la Trinidad, asume una
+            naturaleza humana completa y perfecta sin dejar su naturaleza divina preexistente. ¿Con qué propósito? Con
+            el propósito de hacer por los pecadores lo que ellos no podían hacer por sí mismos.</p>
+
+        <p>Era necesario que viviera una vida perfectamente conforme a la ley de Dios, y era necesario que muriera en
+            sustitución de los culpables, cargando la sentencia que la justicia divina exige. Para que se efectuara la
+            reconciliación entre Dios y el hombre se requería tanto una obediencia perfecta como una muerte
+            sustitutoria, y ambas solo podían cumplirse en condición humana. Por eso la encarnación no es un detalle
+            secundario, sino una necesidad redentora, y sobre esta verdad estaremos reflexionando hoy.</p>
+
+        <h3>Génesis 3:21:</h3>
+        <p>Cuando Génesis declara que “Jehová Dios hizo al hombre y a su mujer túnicas de pieles, y los vistió”, no
+            describe un gesto meramente compasivo, sino una acción profundamente judicial y redentora.</p>
+        <p>Adán y Eva ya habían sido declarados culpables y ya habían intentado cubrir su vergüenza con recursos propios
+            que resultaron insuficientes.</p>
+
+        <div class="highlight-block">Entonces Dios mismo interviene: La provisión de túnicas de pieles implica que una
+            vida fue entregada para cubrir la desnudez del culpable.</div>
+
+        <p>Desde ese momento queda establecido un patrón inalterable: <span class="highlight">la culpa del hombre solo
+                puede ser cubierta por una justicia que viene de fuera de él, mediante la muerte de un sustituto
+                provisto por Dios</span>.</p>
+
+        <p>Lo que en Edén aparece como una sombra, en la cruz se manifiesta en plenitud: Cristo, el Bendito, hecho
+            maldición en el madero, para que los culpables sean cubiertos, aceptados y <span class="highlight">vestidos
+                con una justicia que no produjeron</span>, pero que ahora les pertenece delante de Dios.</p>
+
+        <h2>INTRODUCCIÓN</h2>
+        <p>“Al que no conoció pecado, por nosotros lo hizo pecado, para que nosotros fuésemos hechos justicia de Dios en
+            él” (2 Co 5:21). Estamos ante el corazón del mensaje cristiano, el fundamento del evangelio.</p>
+
+        <h3>EL TEXTO PLANTEA EL ACTO JUDICIAL MÁS TRASCENDENTAL DEL UNIVERSO:</h3>
+        <p>Apareciendo:</p>
+        <ul>
+            <li><span class="highlight">DIOS ACTUANDO COMO JUEZ JUSTO,</span></li>
+            <li><span class="highlight">CRISTO COMO REPRESENTANTE Y SUSTITUTO,</span></li>
+            <li><span class="highlight">EL PECADOR COMO BENEFICIARIO INMERECIDO DE UNA JUSTICIA AJENA.</span></li>
+        </ul>
+
+        <p>En este texto, el hombre es presentado como alguien absolutamente incapaz, espiritualmente quebrado, <span
+                class="highlight">cuya única esperanza descansa en la obediencia perfecta y en la muerte sustitutiva de
+                otro</span>.</p>
+
+        <p>El texto Conecta la encarnación, la vida sin pecado de Cristo, su muerte vicaria, la imputación del pecado,
+            la imputación de la justicia y la reconciliación del pecador con Dios.</p>
+        <div class="highlight-block">El texto muestra cómo Dios salva, y por qué solo podía hacerlo de esta manera.
+        </div>
+
+        <h3>MARCO CONTEXTUAL DE 2 CORINTIOS 5:21</h3>
+        <p>Pablo introduce este texto como la culminación de un argumento sobre la reconciliación.</p>
+        <p>En 2 Corintios 5:18–20, el apóstol declara que <span class="highlight">1. Dios estaba en Cristo reconciliando
+                consigo al mundo, 2. no tomándoles en cuenta a los hombres sus pecados</span>, y que a los apóstoles les
+            fue confiado el ministerio de la reconciliación.</p>
+
+        <p>Esta afirmación <span class="highlight">(no tomándoles en cuenta a los hombres sus pecados)</span> introduce
+            una verdad: <span class="highlight">el pecado ya no es imputado al creyente</span>. Sin embargo, esta “no
+            imputación” no es arbitraria ni caprichosa. No ocurre porque Dios ignore el pecado, lo minimice o relativice
+            su gravedad, sino porque <span class="highlight">el pecado ha sido tratado de manera real y definitiva en
+                otro (un substituto)</span>.</p>
+
+        <p>Aquí es necesario hacer una aclaración fundamental. <span class="highlight">Dios, por su propia naturaleza
+                santa y justa, no puede dejar el pecado sin tratar</span>. Como Juez, Él emite un veredicto verdadero
+            conforme a la realidad moral, y ese veredicto sobre el pecado es siempre de culpabilidad.</p>
+
+        <div class="highlight-block">Dios no puede negarse a sí mismo, ni suspender su justicia para mostrar
+            misericordia; su justicia exige sentencia, y su sentencia implica castigo.</div>
+
+        <p>La razón por la cual Dios puede no imputar el pecado al que se arrepiente y cree es que <span
+                class="highlight">ese pecado ya fue imputado a un sustituto</span>. La no imputación al pecador es
+            posible precisamente porque <span class="highlight">hubo imputación real y castigo efectivo sobre
+                Cristo</span>.</p>
+
+        <p>Pablo responde implícitamente a una pregunta inevitable: <span class="highlight">¿cómo puede un Dios justo no
+                tomar en cuenta los pecados del hombre? ¿Cómo puede absolver al culpable sin comprometer su
+                justicia?</span></p>
+
+        <div class="highlight-block">La respuesta es jurídica y redentora: porque el pecado fue imputado a Cristo, y la
+            justicia de Cristo fue imputada al pecador.</div>
+
+        <p><span class="highlight">Si Dios es justo y santo, ¿cómo puede simplemente no contar nuestros pecados? ¿No
+                sería esto una injusticia, un pasar por alto la maldad? (EJEMPLO DEL JUEZ CORRUPTO). La respuesta viene
+                en el versículo 21: Dios no pasó por alto nuestros pecados; los contó contra Cristo</span>.</p>
+
+        <p>Así, 2 Corintios 5:21 funciona como el eje teológico que sostiene todo el mensaje de reconciliación.</p>
+
+        <h2>I. EL PROBLEMA DEL HOMBRE ANTE DIOS</h2>
+        <p>El punto de partida es una afirmación ineludible: <span class="highlight">el hombre es culpable delante de
+                Dios</span>. El ser humano se encuentra bajo una <span class="highlight">declaración de culpabilidad
+                emitida por la justicia divina</span>.</p>
+
+        <p><span class="highlight">La ley de Dios</span> evalúa pensamientos, palabras y obras, y ante ese estándar
+            perfecto <span class="highlight">el hombre no comparece como inocente, sino como transgresor</span>. Esta
+            condición es universal y no admite excepciones: <span class="highlight">todos han fallado en conformarse
+                plenamente a la voluntad de Dios</span> y, por tanto, todos están bajo la misma acusación.</p>
+
+        <p><span class="highlight">El hombre se encuentra completamente indefenso ante la justicia de Dios</span>. No
+            tiene argumentos que lo absuelvan, ni méritos que lo respalden, ni obras capaces de compensar su culpa.
+            Delante de Dios no puede justificarse ni apelar; solo puede reconocer su necesidad de salvación.</p>
+
+        <p><span class="highlight">En ese estado, el hombre necesita una intervención externa que actúe en su
+                favor</span>.</p>
+
+        <p>Solo cuando el hombre reconoce que está bajo una acusación justa, sin recursos propios ni posibilidad de
+            apelación, queda preparado para <span class="highlight">comprender que la salvación no puede surgir desde
+                dentro de él, sino que debe venir desde fuera</span>.</p>
+
+        <p>En ese punto, <span class="highlight">la obra de Cristo se presenta como la única intervención suficiente y
+                eficaz para resolver su condición delante de Dios</span>.</p>
+
+        <h2>II. EL SUSTITUTO PERFECTO</h2>
+        <h3>“AL QUE NO CONOCIÓ PECADO”: LA IMPECABILIDAD ABSOLUTA DE CRISTO</h3>
+        <p>El origen de esta impecabilidad se encuentra en la <span class="highlight">manera misma de su
+                encarnación</span>.</p>
+
+        <div class="highlight-block">El Hijo eterno asumió naturaleza humana sin recibir la corrupción transmitida por
+            la simiente del varón. Fue concebido por la acción directa del Espíritu Santo en el vientre de María, de
+            modo que su humanidad, aunque nacida de mujer, no participó del principio federal adámico de culpa.</div>
+
+        <p>La impecabilidad de Cristo es una <span class="highlight">condición necesaria para la redención</span>. Un
+            salvador que necesitara redención no podría redimir. <span class="highlight">Un sustituto con culpa propia,
+                no podría cargar la culpa ajena</span>.</p>
+
+        <p><strong>Otros textos:</strong></p>
+        <ul>
+            <li>1 Pedro 2:22 - "El cual no hizo pecado, ni se halló engaño en su boca"</li>
+            <li>Juan 8:46 - Jesús mismo pregunta: "¿Quién de vosotros me redarguye de pecado?"</li>
+        </ul>
+
+        <p>Cuando Pablo afirma que Cristo “no conoció pecado”, está estableciendo el <span class="highlight">fundamento
+                legal</span> de todo lo que sigue.</p>
+        <p>Esta impecabilidad absoluta de Cristo no es un detalle secundario, sino que está directamente ligada a la
+            naturaleza misma del Redentor que el pecado exige.</p>
+        <p>Para salvar al hombre era necesario un <span class="highlight">Redentor que fuera verdaderamente humano y
+                verdaderamente divino</span>.</p>
+
+        <p>Humano, porque debía <span class="highlight">vivir una vida perfecta bajo la ley</span> en la misma condición
+            en la que el hombre había fallado, representando a la humanidad como una nueva cabeza, y porque <span
+                class="highlight">solo un ser humano puede morir y derramar sangre</span>, ya que sin derramamiento de
+            sangre no hay perdón de pecados.</p>
+
+        <p>Pero también debía ser divino, porque <span class="highlight">el rescate exigido por la justicia de Dios
+                tiene un valor infinito</span>, y solo Dios puede ofrecer una obra de valor infinito.</p>
+
+        <div class="highlight-block">Dios, en su naturaleza divina, no puede morir, pues es espíritu; por eso el Hijo
+            eterno se encarnó: para vivir la vida perfecta que el hombre debía vivir y para morir la muerte que el
+            pecador merecía.</div>
+
+        <p>En una sola persona se unen ambas necesidades: alguien capaz de obedecer perfectamente y capaz de morir
+            eficazmente, para redimir de manera real y definitiva a los culpables.</p>
+
+        <h2>III. EL INTERCAMBIO EN LA CRUZ: LA IMPUTACIÓN DEL PECADO Y LA SUSTITUCIÓN VICARIA</h2>
+        <h3>“POR NOSOTROS LO HIZO PECADO”</h3>
+
+        <p>Si la primera expresión del texto establece el <span class="highlight">requisito absoluto</span> del Redentor
+            —su impecabilidad—, esta segunda cláusula introduce el <span class="highlight">acto judicial central</span>
+            de la redención: “lo hizo pecado”.</p>
+        <p>Este enunciado nos introduce en el terreno de la <span class="highlight">justicia penal divina</span>, donde
+            Dios actúa no solo como Padre amoroso, sino como <span class="highlight">Juez santo</span>.</p>
+        <div class="highlight-block">Cristo fue constituido judicialmente como portador del pecado ajeno.</div>
+
+        <h3>1. No fue hecho pecador, sino hecho pecado</h3>
+        <p>Cristo no se convirtió en pecador, ni en su naturaleza, ni en su carácter, ni en su voluntad. No hubo en Él
+            corrupción moral. Su santidad permaneció intacta incluso en el momento de mayor sufrimiento. La Escritura es
+            enfática en este punto: Él fue el Cordero sin mancha y sin contaminación.</p>
+        <p>Decir que fue “hecho pecado” no implica una transformación ontológica interna, sino una <span
+                class="highlight">designación legal representativa</span>.</p>
+
+        <div class="highlight-block">Cristo es presentado como el sacrificio definitivo, aquel sobre quien recae todo
+            aquello que el pecado merece: CULPA, CONDENACIÓN, JUICIO E IRA.</div>
+
+        <p><span class="highlight">Él no se volvió moralmente impuro, pero fue contado como portador del pecado</span>.
+            No cometió injusticia, pero fue tratado como el injusto.</p>
+        <p>En la cruz se revela la profundidad del intercambio redentor: <span class="highlight">el Bendito de los
+                benditos fue hecho maldición</span>, porque la Escritura declara que “todo el que es colgado en un
+            madero es maldito”.</p>
+        <p>Cristo murió como portador de la maldición que correspondía al pecador. <span class="highlight">Al ser
+                colgado en el madero, tomó sobre sí la sentencia que la ley pronuncia contra el transgresor, agotando en
+                su propia persona la maldición justa que pesaba sobre nosotros</span>.</p>
+
+        <h3>2. El acto soberano del Padre: “Dios lo hizo pecado”</h3>
+        <p>El sujeto principal de la acción es Dios mismo. No es el pecado quien toma a Cristo, ni los hombres quienes
+            lo convierten en ofrenda. Es Dios quien actúa deliberadamente. <span class="highlight">El Padre es quien
+                imputa, quien carga, quien constituye a su Hijo como sustituto. “Jehová cargó en él el pecado de todos
+                nosotros”</span></p>
+        <p>Este punto es fundamental para comprender que la cruz no es un accidente trágico ni un error judicial humano,
+            sino el cumplimiento del decreto eterno. <span class="highlight">El Padre no abandona su justicia en la
+                cruz; la ejecuta. No suspende su santidad; la manifiesta en su forma más intensa</span>.</p>
+        <div class="highlight-block">LA CRUZ REVELA EL CARÁCTER DE DIOS<br>TODO LO QUE LA JUSTICIA DIVINA EXIGÍA CONTRA
+            EL PECADO FUE DESCARGADO SOBRE CRISTO. NADA FUE OMITIDO. NADA FUE SUAVIZADO. NADA FUE NEGOCIADO.</div>
+
+        <h3>3. “Por nosotros”: la sustitución definida y representativa</h3>
+        <p>Cristo no muere como un mártir inspirador, sino como un <span class="highlight">sustituto legal</span>. El
+            “nosotros” del texto se refiere a aquellos que están incluidos en la obra reconciliadora descrita en el
+            contexto inmediato. <span class="highlight">Este “por nosotros” implica representación Y
+                transferencia.</span></p>
+        <p>Cristo ocupa el lugar de otros, recibe lo que a otros correspondía y produce un efecto definitivo Y ETERNO
+            para ellos.</p>
+        <p>Aquí se hace evidente el principio federal: <span class="highlight">así como el pecado de uno fue contado a
+                muchos en el primer representante, ahora el pecado de muchos es contado a uno en el segundo</span>.
+            Cristo se coloca voluntariamente bajo la carga de una culpa que no es suya, para que otros sean liberados de
+            una condenación que sí merecían.</p>
+
+        <h3>4. La carga total del pecado: extensión y profundidad</h3>
+        <p>El pecado fue cargado sobre Él, esto incluye la totalidad del pecado de su pueblo en todas sus dimensiones:
+            <span class="highlight">pecados de pensamiento, de palabra y de obra; pecados visibles e invisibles; pecados
+                conscientes e inconscientes; pecados pasados, presentes y futuros</span>.</p>
+        <p>Desde el primero que fue salvado hasta el último que será llamado, toda la culpa fue reunida y colocada sobre
+            un solo Sustituto.</p>
+        <p>Isaías lo expresa con una contundencia ineludible: “Jehová cargó en él el pecado de todos nosotros”. Es una
+            imputación real. El peso que Cristo lleva es judicial.</p>
+        <p>Él enfrenta la ira divina no como un tercero distante, sino como Aquel que ha sido constituido responsable en
+            lugar de otros. <span class="highlight">Dios constituyó a Cristo como el portador legal de nuestro
+                pecado</span>.</p>
+
+        <h3>5. La necesidad moral de la cruz: la justicia no puede ser ignorada</h3>
+        <p>Aquí se desmonta toda concepción ligera del perdón. <span class="highlight">Dios no puede simplemente
+                declarar inocente al culpable sin satisfacer su justicia, porque hacerlo sería negarse a sí
+                mismo</span>. El pecado no es un simple error que se corrige con indulgencia; es una rebelión moral
+            contra la santidad divina que exige respuesta.</p>
+        <p><span class="highlight">La cruz es, por tanto, moralmente necesaria</span>. No porque Dios esté sujeto a una
+            ley externa, sino porque su propio carácter exige coherencia.</p>
+        <p>Si Dios es justo, el pecado debe ser juzgado. Si Dios es santo, la culpa debe ser castigada. Si Dios es
+            veraz, su advertencia de muerte no puede quedar sin cumplimiento.</p>
+        <div class="highlight-block">En Cristo, la justicia no es suspendida, sino satisfecha. La ira no es eliminada,
+            sino descargada. El castigo no es anulado, sino ejecutado en un sustituto perfecto.</div>
+
+        <h2>IV. EL RESULTADO PARA EL CREYENTE</h2>
+        <h3>“PARA QUE NOSOTROS FUÉSEMOS HECHOS JUSTICIA DE DIOS EN ÉL”: LA IMPUTACIÓN DE LA JUSTICIA Y LA OBEDIENCIA
+            PERFECTA DE CRISTO.</h3>
+        <p>No basta con que el pecador deje de ser culpable; debe ser declarado justo. No basta con que la cuenta quede
+            en cero; debe ser acreditada con justicia perfecta. <span class="highlight">El evangelio no resta
+                simplemente la culpa; suma justicia</span>.</p>
+
+        <h3>1. “Para que”: el propósito eterno</h3>
+        <p>Dios no hizo a Cristo pecado solo para quitar el pecado, sino con el objetivo definido de <span
+                class="highlight">producir justicia en favor de otros</span>.</p>
+        <div class="highlight-block">La MUERTE y la VIDA de Cristo no son dos realidades separadas, sino dos dimensiones
+            inseparables de un mismo propósito redentor.</div>
+        <p>Desde la eternidad, el plan no fue simplemente rescatar al hombre del castigo, sino <span
+                class="highlight">conformarlo a una nueva posición legal delante de Dios</span>.</p>
+
+        <h3>2. “Fuésemos hechos”: una acción pasiva y recibida</h3>
+        <p>El sujeto no produce esta justicia por sí mismo. <span class="highlight">El hombre no se hace justo; es hecho
+                justo.</span> No hay aquí espacio para el mérito humano.</p>
+        <p><span class="highlight">Esta justicia no surge del interior del creyente, sino que le es conferida desde
+                fuera.</span></p>
+        <p><span class="highlight">ACLARACIÓN: Es un acto declarativo, no transformativo en su esencia inmediata</span>.
+            No describe lo que el creyente llega a ser moralmente en su conducta diaria, sino <span class="highlight">LO
+                QUE ES CONTADO COMO DELANTE DEL TRIBUNAL DIVINO</span>.</p>
+        <p>Aquí se establece una diferencia fundamental entre <span class="highlight">justificación y
+                santificación</span>. La una tiene que ver con <span class="highlight">estatus legal; la otra con
+                transformación progresiva</span>.</p>
+
+        <h3>3. “Justicia de Dios”</h3>
+        <p>La justicia que se imputa no es una justicia humana elevada, ni una obediencia parcial aceptada por
+            condescendencia. <span class="highlight">Es llamada explícitamente “justicia de Dios”. Esto señala su
+                origen, su calidad y su valor</span>.</p>
+        <p>Su origen no está en el hombre, sino en Dios mismo. <span class="highlight">Es una justicia que corresponde
+                plenamente a las demandas de la ley divina, porque es producida por Aquel que cumplió la ley en su
+                totalidad</span>.</p>
+        <p>Cada mandato obedecido, cada tentación resistida, cada pensamiento puro, cada acto de amor perfecto forma
+            parte de esa justicia que ahora es acreditada al creyente.</p>
+
+        <h3>4. La obediencia activa de Cristo: vida perfecta acreditada</h3>
+        <p>Cristo vivió en obediencia absoluta. Vino a morir; pero también a vivir conforme a la ley.</p>
+        <p>La ley no exige solo la ausencia de pecado; exige obediencia positiva, constante y perfecta. <span
+                class="highlight">El hombre no solo falla por lo que hace mal, sino por lo que deja de hacer bien. Por
+                eso, aun si la culpa fuera removida, el hombre seguiría careciendo de la justicia que la ley
+                demanda.</span></p>
+        <p><span class="highlight">Cristo, como representante federal, vivió esa vida que el hombre debía vivir y no
+                vivió</span>. Esa obediencia activa es imputada al creyente. Cristo actuó en lugar de otros, y su
+            obediencia cuenta como si ellos la hubieran vivido.</p>
+        <div class="highlight-block">LA MUERTE SIN LA VIDA PERFECTA NO PRODUCIRÍA JUSTICIA;<br>LA VIDA PERFECTA SIN LA
+            MUERTE NO QUITARÍA LA CULPA.<br>SOLO LA UNIÓN DE AMBAS PRODUCE UNA JUSTIFICACIÓN COMPLETA: PECADO PERDONADO
+            Y JUSTICIA IMPUTADA.</div>
+
+        <h3>5. “En él”: la unión con Cristo como esfera de justicia</h3>
+        <p>La justicia es una realidad <span class="highlight">en Cristo. El creyente es aceptado porque está unido al
+                Hijo</span>.</p>
+        <p><span class="highlight">Todo lo que Cristo es y ha hecho cuenta para aquellos que están en Él</span>.</p>
+        <p>Esta unión es el fundamento de toda seguridad: mientras Cristo permanezca justo —y lo es eternamente—,
+            aquellos que están en Él permanecen justos delante de Dios.</p>
+
+        <h2>V. LA RESPUESTA NECESARIA</h2>
+        <p>Si Cristo fue hecho pecado y nosotros hechos justicia <span class="highlight">en Él</span>, entonces <span
+                class="highlight">la base de nuestra aceptación no reside en lo que hacemos, sino en lo que Él
+                hizo</span>. Cualquier intento de añadir méritos humanos, vacía el texto de su significado. Si algo
+            nuestro contribuye a la justicia que nos justifica, entonces ya no es plenamente “justicia de Dios”.</p>
+        <p><span class="highlight">Esto no significa que las obras no importen en la vida del creyente. Importan, pero
+                no como la base de su aceptación delante de Dios, sino como el resultado de ella. Las obras no nos
+                justifican; nacen de la justificación</span>.</p>
+        <p><span class="highlight">Dios no salva a costa de su justicia, ni ejecuta justicia a costa de su amor</span>.
+            En Cristo, Dios es simultáneamente justo y justificador. El pecado no es ignorado, sino juzgado. El pecador
+            no es destruido, sino salvado. La justicia no es relajada, sino satisfecha.</p>
+        <p><span class="highlight">Esto otorga al creyente una seguridad profunda. La salvación no depende de un cambio
+                de humor divino ni de una suspensión temporal de la justicia, sino de un acto definitivo que honra
+                plenamente el carácter de Dios</span>.</p>
+
+        <div class="highlight-block">El creyente lucha, cae, se arrepiente y crece, pero su estatus delante de Dios no
+            fluctúa con su desempeño. La razón es sencilla: su justicia no está en él. Mientras Cristo permanezca justo
+            —y lo es eternamente—, aquellos que están en Él permanecen justificados.</div>
+
+        <h2>VI. APLICACIONES PASTORALES: LO QUE ESTE TEXTO PRODUCE EN LA VIDA DEL CREYENTE</h2>
+        <h3>1. Humildad profunda y constante</h3>
+        <p>Comprender que uno es justo únicamente por una justicia ajena elimina toda jactancia. El creyente no puede
+            mirar a otros desde una superioridad moral, porque su posición delante de Dios no proviene de su conducta,
+            sino de la obediencia de otro.</p>
+        <h3>2. Seguridad sólida en medio de la lucha</h3>
+        <p>Este texto ofrece descanso a la conciencia atribulada. El creyente lucha con el pecado, pero no lucha para
+            ser aceptado. Lucha desde la aceptación. Su paz no depende de su rendimiento espiritual diario, sino del
+            hecho irreversible de haber sido hecho justicia de Dios en Cristo.</p>
+
+        <div class="footer">
+            &copy; El Gran Intercambio - Estudio Bíblico
+        </div>
+    </div>
+
+</body>
+
+</html>

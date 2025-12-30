@@ -64,13 +64,19 @@ const VistaPorFacturasCompra = ({ reporte }) => {
                   <div className="ml-8 pl-4 border-l-2 border-gray-300 py-1">
                     <p className="text-xs font-bold text-gray-500 uppercase mb-1">Detalle de Pagos:</p>
                     <ul className="space-y-1">
-                      {factura.abonos_detalle.map((abono, index) => (
-                        <li key={index} className="text-xs text-gray-600 flex items-center gap-2">
-                          <FaMoneyBillWave className="text-green-500" />
-                          <span>Pagado con <strong>{abono.documento}</strong>:</span>
-                          <span className="font-mono font-bold">${parseFloat(abono.valor).toLocaleString('es-CO')}</span>
-                        </li>
-                      ))}
+                      {factura.abonos_detalle
+                        .sort((a, b) => {
+                          const numA = parseInt(a.documento.match(/\d+/) || [0])
+                          const numB = parseInt(b.documento.match(/\d+/) || [0])
+                          return numA - numB || a.documento.localeCompare(b.documento)
+                        })
+                        .map((abono, index) => (
+                          <li key={index} className="text-xs text-gray-600 flex items-center gap-2">
+                            <FaMoneyBillWave className="text-green-500" />
+                            <span>Pagado con <strong>{abono.documento}</strong>:</span>
+                            <span className="font-mono font-bold">${parseFloat(abono.valor).toLocaleString('es-CO')}</span>
+                          </li>
+                        ))}
                     </ul>
                   </div>
                 </td>
@@ -128,13 +134,19 @@ const VistaPorComprobantes = ({ reporte }) => {
                   <div className="ml-8 pl-4 border-l-2 border-green-300 py-1">
                     <p className="text-xs font-bold text-green-700 uppercase mb-1">Paga Facturas:</p>
                     <ul className="space-y-1">
-                      {recibo.facturas_afectadas.map((factura, index) => (
-                        <li key={index} className="text-xs text-gray-600 flex items-center gap-2">
-                          <FaExchangeAlt className="text-indigo-400" />
-                          <span>Abona a <strong>{factura.documento}</strong>:</span>
-                          <span className="font-mono font-bold">${parseFloat(factura.valor).toLocaleString('es-CO')}</span>
-                        </li>
-                      ))}
+                      {recibo.facturas_afectadas
+                        .sort((a, b) => {
+                          const numA = parseInt(a.documento.match(/\d+/) || [0])
+                          const numB = parseInt(b.documento.match(/\d+/) || [0])
+                          return numA - numB || a.documento.localeCompare(b.documento)
+                        })
+                        .map((factura, index) => (
+                          <li key={index} className="text-xs text-gray-600 flex items-center gap-2">
+                            <FaExchangeAlt className="text-indigo-400" />
+                            <span>Abona a <strong>{factura.documento}</strong>:</span>
+                            <span className="font-mono font-bold">${parseFloat(factura.valor).toLocaleString('es-CO')}</span>
+                          </li>
+                        ))}
                     </ul>
                   </div>
                 </td>

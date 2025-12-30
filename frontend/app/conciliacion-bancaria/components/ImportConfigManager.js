@@ -112,7 +112,44 @@ export default function ImportConfigManager() {
     setSelectedConfig(config);
     setIsEditing(true);
     setIsCreating(false);
-    setFormData(config);
+
+    // [PARCHE] Normalizar field_mapping (API) -> field_mappings (Frontend)
+    const normalizedData = { ...config };
+    if (normalizedData.field_mapping && !normalizedData.field_mappings) {
+      normalizedData.field_mappings = { ...normalizedData.field_mapping };
+    }
+    // Asegurar que exista
+    if (!normalizedData.field_mappings) {
+      normalizedData.field_mappings = {
+        date: '', description: '', amount: '', reference: '', balance: ''
+      };
+    }
+
+    // [PARCHE] Normalizar header_rows (API) -> skip_rows (Frontend)
+    if (normalizedData.header_rows !== undefined) {
+      normalizedData.skip_rows = normalizedData.header_rows;
+      normalizedData.has_header = normalizedData.header_rows > 0;
+    }
+
+    // [PARCHE] Normalizar formato de archivo (TXT -> txt) para que coincida con el select
+    if (normalizedData.file_format) {
+      normalizedData.file_format = normalizedData.file_format.toLowerCase();
+    }
+
+    // [PARCHE] Convertir índices numéricos a Letras (0->A, 1->B) para mejor UX
+    if (normalizedData.field_mappings) {
+      const mapping = { ...normalizedData.field_mappings };
+      Object.keys(mapping).forEach(key => {
+        const val = mapping[key];
+        if (typeof val === 'number') {
+          // Convertir 0 -> A, 1 -> B, etc.
+          mapping[key] = String.fromCharCode(65 + val);
+        }
+      });
+      normalizedData.field_mappings = mapping;
+    }
+
+    setFormData(normalizedData);
   };
 
   const handleSave = async () => {
@@ -120,20 +157,30 @@ export default function ImportConfigManager() {
     console.log(`💾 [SAVE] FormData a guardar:`, formData);
 
     // Validaciones básicas
-    if (!formData.name.trim()) {
+    if (!formData.name?.trim()) {
       console.log(`❌ [SAVE] Error: Nombre vacío`);
       alert('El nombre de la configuración es obligatorio');
       return;
     }
 
-    if (!formData.bank_name.trim()) {
-      console.log(`❌ [SAVE] Error: Nombre del banco vacío`);
-      alert('El nombre del banco es obligatorio');
-      return;
+    if (!formData.bank_name?.trim()) {
+      // Si estamos editando y ya tiene un bank_id válido, permitimos continuar
+      // aunque el nombre visual no esté cargado (para evitar bloqueo).
+      // Si es creación, sí exigimos el nombre.
+      if (isCreating) {
+        console.log(`❌ [SAVE] Error: Nombre del banco vacío`);
+        alert('El nombre del banco es obligatorio');
+        return;
+      }
+      // Si es edición, logueamos warning pero seguimos
+      console.warn(`⚠️ [SAVE] Nombre de banco vacío en edición. Se asume bank_id existente: ${formData.bank_id}`);
     }
 
-    // [PARCHE] Validar campos del mapeo obligatorios
-    if (!formData.field_mappings.date || !formData.field_mappings.amount || !formData.field_mappings.description) {
+    // [PARCHE] Validar campos del mapeo obligatorios (Safe Check)
+    const mappings = formData.field_mappings || {};
+    const hasValue = (val) => val !== undefined && val !== null && val !== '';
+
+    if (!hasValue(mappings.date) || !hasValue(mappings.amount) || !hasValue(mappings.description)) {
       alert('Por favor, indica la columna para Fecha, Monto y Descripción (Ej: A, B, C). Son obligatorios.');
       return;
     }
@@ -384,7 +431,7 @@ export default function ImportConfigManager() {
         <div>
           <Label className="text-base font-semibold">Mapeo de Campos</Label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-            {Object.entries(formData.field_mappings).map(([field, value]) => (
+            {Object.entries(formData.field_mappings || {}).map(([field, value]) => (
               <div key={field}>
                 <Label htmlFor={`mapping_${field}`}>
                   {field === 'date' ? 'Fecha' :
@@ -434,13 +481,28 @@ export default function ImportConfigManager() {
             </select>
           </div>
           <div>
-            <Label htmlFor="skip_rows">Filas a omitir</Label>
+            <Label htmlFor="skip_rows">Filas a omitir (Encabezados)</Label>
+            <div className="flex items-center gap-2 mt-2">
+              <input
+                type="checkbox"
+                id="has_header"
+                checked={formData.skip_rows > 0}
+                onChange={(e) => {
+                  const hasHeader = e.target.checked;
+                  handleInputChange('skip_rows', hasHeader ? 1 : 0);
+                }}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <Label htmlFor="has_header" className="font-normal text-gray-700">Tiene encabezados?</Label>
+            </div>
             <Input
               id="skip_rows"
               type="number"
               value={formData.skip_rows}
               onChange={(e) => handleInputChange('skip_rows', parseInt(e.target.value) || 0)}
               min="0"
+              className="mt-2"
+              placeholder="0"
             />
           </div>
         </div>

@@ -439,7 +439,7 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
         }
 
         // --- INTERCEPTOR: MOVIMIENTOS INVENTARIO ---
-        const isInventarioIntent = (queryLower.includes('inventario') || queryLower.includes('kardex') || queryLower.includes('stock') || queryLower.includes('existencias')) && !queryLower.includes('contabilidad') && !queryLower.includes('cuenta');
+        const isInventarioIntent = queryLower.includes('inventario') || queryLower.includes('kardex') || queryLower.includes('stock') || queryLower.includes('existencias');
 
         if (isInventarioIntent && (actionName === 'generar_reporte_movimientos' || actionName === 'consultar_documento')) {
             const p = data.parameters;
@@ -508,10 +508,6 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
 
             if (docFilter) params.set('search_term_doc', docFilter);
 
-            // Auto Dispatch (Email/PDF)
-            if (p.email) params.set('ai_email', p.email);
-            if (p.accion) params.set('ai_accion', p.accion);
-
             params.set('trigger', 'ai_search');
             params.set('requestId', Date.now().toString()); // FORCE EFFECT RE-EXECUTION
 
@@ -519,35 +515,6 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
             toast.success('IA: Abriendo Movimientos de Inventario...');
             return;
         }
-
-        // --- INTERCEPTOR: RENTABILIDAD (NUEVO) ---
-        if (actionName === 'generar_reporte_rentabilidad') {
-            const p = data.parameters;
-            const params = new URLSearchParams();
-
-            if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
-            if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
-
-            // Grupos logic
-            if (p.grupos) {
-                if (['all', 'todos', 'todo'].includes(p.grupos.toLowerCase())) {
-                    params.set('ai_grupo', 'all');
-                } else {
-                    params.set('ai_grupo', p.grupos);
-                }
-            }
-
-            // Auto Dispatch
-            if (p.email) params.set('ai_email', p.email);
-            if (p.accion) params.set('ai_accion', p.accion);
-
-            params.set('trigger', 'ai_search');
-
-            router.push(`/contabilidad/reportes/rentabilidad-producto?${params.toString()}`);
-            toast.success('IA: Abriendo Reporte de Rentabilidad...');
-            return;
-        }
-
 
         if (actionName === 'navegar_a_pagina') {
             const modulo = data.parameters.modulo.toLowerCase();
@@ -674,8 +641,12 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
             const val = p.valor || p.monto || p.debito || p.credito || p.importe;
             if (val) params.set('ai_valor', val);
 
+            // --- AUTO-SAVE TRIGGER (VOICE ONLY) ---
+            params.set('ai_autosave', 'true');
+
             router.push(`/contabilidad/captura-rapida?${params.toString()}`);
             toast.success('IA: Abriendo Captura Rápida...');
+
 
         } else if (actionName === 'generar_backup') {
             toast.loading('IA: Generando respaldo completo...', { id: 'backup-toast' });
@@ -880,7 +851,7 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                             <div className="flex-grow"></div>
                             {aiResponse && <div className={`mb-4 p-3 rounded-lg text-sm ${aiResponse.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-indigo-50 text-indigo-800'}`}><strong>Respuesta:</strong><p>{aiResponse.text}</p></div>}
 
-                            <form onSubmit={(e) => handleAiSubmit(e)} className="bg-white p-2 rounded-2xl shadow-sm border border-gray-200 mt-12 relative">
+                            <form onSubmit={(e) => handleAiSubmit(e)} className="bg-white p-2 rounded-2xl shadow-sm border border-gray-200 mt-4 relative">
                                 <div className="flex gap-2 items-end">
                                     <textarea
                                         autoFocus
@@ -897,10 +868,10 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                                         className="flex-1 text-sm bg-transparent border-none focus:ring-0 p-2 resize-none custom-scrollbar"
                                         disabled={isThinking}
                                     />
-                                    <div className="absolute -top-11 right-0 flex gap-1 bg-white/50 backdrop-blur-sm p-1 rounded-full">
-                                        <button type="button" onClick={() => { setShowHistory(true); fetchSavedSearches(); }} className="text-gray-400 hover:text-indigo-600 p-2 rounded-full hover:bg-white transition-all shadow-sm" title="Historial y Biblioteca"><FaHistory /></button>
-                                        <button type="button" onClick={toggleVoice.bind(null, 'ai')} className={`p-2 rounded-full transition-all shadow-sm ${listeningMode === 'ai' ? 'bg-red-500 text-white animate-pulse' : 'bg-white text-gray-500 hover:bg-gray-100'}`}>{listeningMode === 'ai' ? <FaStop /> : <FaMicrophone />}</button>
-                                        <button type="submit" disabled={isThinking} className="bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700 transition-all disabled:opacity-50 shadow-md"><FaPaperPlane /></button>
+                                    <div className="absolute top-2 right-2 flex gap-1">
+                                        <button type="button" onClick={() => { setShowHistory(true); fetchSavedSearches(); }} className="text-gray-400 hover:text-indigo-600 p-1" title="Historial y Biblioteca"><FaHistory /></button>
+                                        <button type="button" onClick={toggleVoice.bind(null, 'ai')} className={`p-2 rounded-full transition-all ${listeningMode === 'ai' ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>{listeningMode === 'ai' ? <FaStop /> : <FaMicrophone />}</button>
+                                        <button type="submit" disabled={isThinking} className="bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700 transition-all disabled:opacity-50"><FaPaperPlane /></button>
                                     </div>
                                 </div>
                             </form>

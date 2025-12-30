@@ -102,34 +102,36 @@ def crear_factura_compra(db: Session, compra: schemas_compras.CompraCreate, user
     )
 
     try:
-        with db.begin_nested():
-            nuevo_documento = service_documento.create_documento(
-                db=db, documento=documento_payload, user_id=user_id, commit=False
-            )
+        # Eliminamos el begin_nested() que causaba conflictos con el commit manual
+        # y simplificamos el manejo de transacciones.
+        
+        nuevo_documento = service_documento.create_documento(
+            db=db, documento=documento_payload, user_id=user_id, commit=False
+        )
 
-            # --- INICIO DE LA CIRUGÍA FINAL ---
-            if tipo_doc.afecta_inventario:
-                # 1. Validación de Seguridad: Verificamos que la bodega exista y pertenezca a la empresa.
-                bodega_db = db.query(models_bodega.Bodega).filter(
-                    models_bodega.Bodega.id == compra.bodega_id,
-                    models_bodega.Bodega.empresa_id == empresa_id
-                ).first()
-                if not bodega_db:
-                    raise HTTPException(status_code=400, detail=f"La bodega con ID {compra.bodega_id} no es válida o no pertenece a su empresa.")
+        # --- INICIO DE LA CIRUGÍA FINAL ---
+        if tipo_doc.afecta_inventario:
+            # 1. Validación de Seguridad: Verificamos que la bodega exista y pertenezca a la empresa.
+            bodega_db = db.query(models_bodega.Bodega).filter(
+                models_bodega.Bodega.id == compra.bodega_id,
+                models_bodega.Bodega.empresa_id == empresa_id
+            ).first()
+            if not bodega_db:
+                raise HTTPException(status_code=400, detail=f"La bodega con ID {compra.bodega_id} no es válida o no pertenece a su empresa.")
 
-                for item in compra.items:
-                    # 2. Uso del Valor Dinámico: Reemplazamos el '1' por el ID verificado.
-                    service_inventario.registrar_movimiento_inventario(
-                        db=db,
-                        producto_id=item.producto_id,
-                        bodega_id=compra.bodega_id, # <--- ¡CAMBIO CRÍTICO!
-                        tipo_movimiento='ENTRADA_COMPRA',
-                        cantidad=item.cantidad,
-                        costo_unitario=item.costo_unitario,
-                        documento_id=nuevo_documento.id,
-                        fecha=compra.fecha
-                    )
-            # --- FIN DE LA CIRUGÍA FINAL ---
+            for item in compra.items:
+                # 2. Uso del Valor Dinámico: Reemplazamos el '1' por el ID verificado.
+                service_inventario.registrar_movimiento_inventario(
+                    db=db,
+                    producto_id=item.producto_id,
+                    bodega_id=compra.bodega_id,
+                    tipo_movimiento='ENTRADA_COMPRA',
+                    cantidad=item.cantidad,
+                    costo_unitario=item.costo_unitario,
+                    documento_id=nuevo_documento.id,
+                    fecha=compra.fecha
+                )
+        # --- FIN DE LA CIRUGÍA FINAL ---
 
         db.commit()
         db.refresh(nuevo_documento)
@@ -137,4 +139,6 @@ def crear_factura_compra(db: Session, compra: schemas_compras.CompraCreate, user
     except Exception as e:
         db.rollback()
         if isinstance(e, HTTPException): raise e
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error interno del servidor al crear la factura de compra: {e}")
