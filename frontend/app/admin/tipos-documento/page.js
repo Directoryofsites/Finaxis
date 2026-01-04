@@ -9,7 +9,7 @@ import { apiService } from '../../../lib/apiService';
 
 
 // --- Iconos Estándar v2.0 ---
-import { FaFileInvoice, FaPlus, FaEdit, FaTrashAlt, FaPencilRuler, FaCheckCircle, FaExclamationCircle, FaBook } from 'react-icons/fa';
+import { FaFileInvoice, FaPlus, FaEdit, FaTrashAlt, FaPencilRuler, FaCheckCircle, FaExclamationCircle, FaBook, FaEraser } from 'react-icons/fa';
 
 export default function TiposDocumentoPage() {
     const { user, loading: authLoading } = useAuth();
@@ -49,6 +49,26 @@ export default function TiposDocumentoPage() {
             setTiposDoc(prevTipos => prevTipos.filter(tipo => tipo.id !== id));
         } catch (err) {
             setError(err.response?.data?.detail || 'Error al eliminar el tipo de documento.');
+        }
+    };
+
+    const handlePurge = async (id, nombre) => {
+        if (!window.confirm(`⚠️ ADVERTENCIA DE LIMPIEZA ⚠️\n\nEstá a punto de PURGAR el tipo de documento: ${nombre}.\n\nEsto eliminará PERMANENTEMENTE los documentos ANULADOS y ELIMINADOS asociados a este tipo.\n\nÚselo solo para limpiar tipos de documento creados por error (basura).\n\n¿CONFIRMA LA DESTRUCCIÓN DE DATOS?`)) return;
+
+        setError(null);
+        setIsLoading(true);
+        try {
+            // New endpoint for Hard Delete
+            const response = await apiService.delete(`/utilidades/purgar-tipo-documento/${id}`);
+            alert(response.data.msg);
+            setTiposDoc(prevTipos => prevTipos.filter(tipo => tipo.id !== id));
+        } catch (err) {
+            console.error(err);
+            const msg = err.response?.data?.detail || 'Error al purgar el tipo de documento.';
+            alert(`❌ ERROR: ${msg}`);
+            setError(msg);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -192,17 +212,18 @@ export default function TiposDocumentoPage() {
                                             <div className="flex justify-center items-center gap-2">
                                                 <Link
                                                     href={`/admin/tipos-documento/editar/${tipo.id}`}
-                                                    className="btn btn-sm btn-square btn-ghost text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                                                    title="Editar"
+                                                    className="btn btn-sm btn-square btn-ghost text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors tooltip"
+                                                    data-tip="Editar"
                                                 >
                                                     <FaEdit />
                                                 </Link>
+                                                {/* Botón Purgar (Limpieza de Basura) */}
                                                 <button
-                                                    onClick={() => handleDelete(tipo.id)}
-                                                    className="btn btn-sm btn-square btn-ghost text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                                    title="Eliminar"
+                                                    onClick={() => handlePurge(tipo.id, tipo.nombre)}
+                                                    className="btn btn-sm btn-square btn-ghost text-gray-400 hover:text-red-700 hover:bg-red-50 transition-colors tooltip tooltip-error"
+                                                    data-tip="Purgar (Limpieza Profunda)"
                                                 >
-                                                    <FaTrashAlt />
+                                                    <FaEraser />
                                                 </button>
                                             </div>
                                         </td>
@@ -226,7 +247,7 @@ export default function TiposDocumentoPage() {
                         Total Registros: {tiposDoc.length}
                     </div>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }

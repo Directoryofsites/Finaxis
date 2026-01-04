@@ -392,7 +392,7 @@ export default function SuperInformePage() {
               </div>
               <div>
                 <div className="flex items-center gap-4">
-                  <h1 className="text-3xl font-bold text-gray-800">Super Informe</h1>
+                  <h1 className="text-3xl font-bold text-gray-800">Auditoría Contable Avanzada</h1>
                 </div>
                 <p className="text-gray-500 text-sm">Consultas avanzadas de movimientos y maestros.</p>
               </div>
@@ -454,7 +454,7 @@ export default function SuperInformePage() {
                       value={filtros.tipoDocIds}
                       onChange={(val) => handleMultiSelectChange('tipoDocIds', val)}
                     />
-                    <div><label className={labelClass}>Número Doc.</label><input type="text" name="numero" placeholder="Ej: 101" value={filtros.numero} onChange={handleFiltroChange} className={inputClass} /></div>
+                    <div><label className={labelClass}>Número Doc.</label><input type="text" name="numero" placeholder="Ej: 101, 102, 105" value={filtros.numero} onChange={handleFiltroChange} className={inputClass} /></div>
                     <div><label className={labelClass}>Concepto (Palabra Clave)</label><input type="text" name="conceptoKeyword" placeholder="Ej: Venta..." value={filtros.conceptoKeyword} onChange={handleFiltroChange} className={inputClass} /></div>
                   </div>
 

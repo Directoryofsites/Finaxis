@@ -323,9 +323,9 @@ export default function TopNavigationBar() {
         <>
             {(!isVisible && isZenMode) && (
                 <div
-                    className="fixed top-0 left-0 right-0 h-4 z-[9900] bg-transparent hover:bg-transparent cursor-pointer"
-                    onMouseEnter={() => setIsVisible(true)}
-                    title="Mostrar Menú"
+                    className="fixed top-0 left-0 right-0 h-6 z-[9900] bg-transparent hover:bg-blue-500/10 cursor-pointer transition-colors"
+                    onClick={() => setIsVisible(true)}
+                    title="Clic para mostrar Menú"
                 />
             )}
 
@@ -333,8 +333,7 @@ export default function TopNavigationBar() {
                 className={`fixed top-0 left-0 right-0 z-[99999] bg-[#f5f5f5] text-gray-800 shadow-xl h-9 flex items-center justify-between px-2 select-none transition-transform duration-200 ease-out border-b border-gray-300
                     ${isVisible ? 'translate-y-0' : '-translate-y-full'}
                 `}
-                onMouseLeave={handleMouseLeave}
-                onMouseEnter={handleDropdownEnter}
+            // REMOVED HOVER HANDLERS
             >
                 <nav className="flex items-center space-x-1 h-full overflow-visible pl-1 relative">
                     <button
@@ -357,7 +356,7 @@ export default function TopNavigationBar() {
                                         ${isOpen ? 'bg-white border-b-0 border-gray-300 rounded-b-none shadow-none font-bold' : 'text-gray-700 hover:bg-gray-200'}
                                     `}
                                     onClick={(e) => handleModuleClick(e, module)}
-                                    onMouseEnter={() => handleMouseEnter(module.id)}
+                                // Removed onMouseEnter
                                 >
                                     {renderMnemonic(module.name, mnemonicKey)}
                                 </button>
@@ -396,10 +395,10 @@ export default function TopNavigationBar() {
 
                     <button
                         onClick={() => setIsVisible(false)}
-                        className="p-1 px-2 text-gray-400 hover:text-red-500 hover:bg-gray-200 ml-1 rounded"
+                        className="p-1 px-3 bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 ml-2 rounded font-bold text-xs flex items-center"
                         title="Ocultar Barra"
                     >
-                        <FaTimes size={12} />
+                        <FaTimes size={12} className="mr-1" /> Ocultar
                     </button>
                 </div>
             </header>

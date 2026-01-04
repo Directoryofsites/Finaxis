@@ -104,7 +104,14 @@ const getSmartIconForRoute = (route) => {
     return ICON_POOL[Math.abs(hash) % ICON_POOL.length];
 };
 
+const PATH_NAME_OVERRIDES = {
+    '/contabilidad/reportes/super-informe': 'Auditoría Contable Avanzada',
+    '/contabilidad/reportes/libro-diario-resumen': 'Libro Diario Oficial',
+    '/contabilidad/reportes/libro-diario': 'Libro Diario Detallado',
+};
+
 const formatPathName = (path) => {
+    if (PATH_NAME_OVERRIDES[path]) return PATH_NAME_OVERRIDES[path];
     if (path === '/') return 'Inicio';
     const parts = path.split('/').filter(Boolean);
     const lastPart = parts[parts.length - 1];
@@ -174,9 +181,9 @@ export default function SidebarFavorites() {
             {/* Trigger Zone para ZenMode */}
             {(isZenMode && !isOpen) && (
                 <div
-                    className="fixed left-0 top-0 bottom-0 w-4 z-[49] bg-transparent hover:bg-transparent cursor-pointer"
-                    onMouseEnter={() => setIsOpen(true)}
-                    title="Mostrar Historial"
+                    className="fixed left-0 top-0 bottom-0 w-4 z-[49] bg-transparent hover:bg-blue-500/10 cursor-pointer transition-colors"
+                    onClick={() => setIsOpen(true)}
+                    title="Clic para mostrar Historial"
                 />
             )}
 
@@ -184,8 +191,7 @@ export default function SidebarFavorites() {
                 className={`fixed left-0 top-1/2 -translate-y-1/2 h-auto max-h-[85vh] bg-white rounded-r-2xl border-y border-r border-gray-200 z-50 flex flex-col transition-all duration-300 ease-in-out overflow-hidden group 
                     ${containerClasses}
                 `}
-                onMouseEnter={() => setIsOpen(true)}
-                onMouseLeave={() => setIsOpen(false)}
+                // REMOVED HOVER HANDLERS
                 style={{ minHeight: '100px' }}
             >
                 {/* Banda decorativa (Modo Historia = Verde/Azul) */}
@@ -198,9 +204,18 @@ export default function SidebarFavorites() {
                     {/* Título o Icono de Sección */}
                     <div className={`mb-4 flex items-center ${isOpen ? 'w-full justify-between' : 'justify-center'}`}>
                         {isOpen ? (
-                            <span className="text-gray-500 text-xs font-bold uppercase tracking-widest ml-2">
-                                Historial Reciente
-                            </span>
+                            <>
+                                <span className="text-gray-500 text-xs font-bold uppercase tracking-widest ml-2">
+                                    Historial Reciente
+                                </span>
+                                <button
+                                    onClick={() => setIsOpen(false)}
+                                    className="p-1 text-gray-400 hover:text-red-500 rounded-full hover:bg-gray-100 transition-colors"
+                                    title="Cerrar Barra Lateral"
+                                >
+                                    <FaTimes />
+                                </button>
+                            </>
                         ) : (
                             // Texto vertical cuando está cerrado (si cabe) o icono
                             <div className="text-gray-400 text-[10px] font-bold uppercase tracking-widest rotate-[-90deg] h-4 w-4 flex items-center justify-center whitespace-nowrap opacity-50">
@@ -240,7 +255,7 @@ export default function SidebarFavorites() {
                                     {/* Texto Solo Visible si Open */}
                                     {isOpen && (
                                         <span className="font-medium truncate max-w-[160px]">
-                                            {item.label}
+                                            {PATH_NAME_OVERRIDES[item.path] || item.label}
                                         </span>
                                     )}
                                 </Link>

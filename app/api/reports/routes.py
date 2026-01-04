@@ -2,6 +2,7 @@ from typing import List, Dict, Any, Optional
 from app.services import super_informe as super_informe_service
 from app.schemas import documento as schemas_doc
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from datetime import date
 
@@ -16,7 +17,8 @@ from app.schemas import usuario as usuario_schema
 from app.services import documento as documento_service
 from app.services import reports as reports_service 
 from app.services import cartera as services_cartera
-from app.services import libros_oficiales as libros_oficiales_service # <-- NUEVA IMPORTACIÓN
+from app.services import libros_oficiales as libros_oficiales_service
+from app.services import analisis_financiero as analisis_financiero_service # <-- NUEVA IMPORTACIÓN # <-- NUEVA IMPORTACIÓN
 
 # Se añade el servicio de períodos para la lógica de cierre
 from app.services import periodo as periodo_service
@@ -233,7 +235,8 @@ def get_balance_de_prueba_cc_pdf(
 def get_journal_report(
     fecha_inicio: date = Query(..., description="Fecha de inicio del reporte (YYYY-MM-DD)"),
     fecha_fin: date = Query(..., description="Fecha de fin del reporte (YYYY-MM-DD)"),
-    tipo_documento_id: Optional[int] = Query(None, description="ID del tipo de documento para filtrar"),
+    tipos_documento_ids: Optional[List[int]] = Query(None, description="Lista de IDs de tipos de documento"),
+    cuenta_filtro: Optional[str] = Query(None, description="Filtro por código o nombre de cuenta"),
     db: Session = Depends(get_db),
     current_user: usuario_schema.User = Depends(get_current_user)
 ):
@@ -241,13 +244,13 @@ def get_journal_report(
     Genera los datos para el reporte del Libro Diario (para la tabla en frontend).
     """
     # MODIFICACIÓN: Ahora llama a nuestro nuevo servicio centralizado
-
     report_data = libros_oficiales_service.get_data_for_libro_diario(
         db=db,
         empresa_id=current_user.empresa_id,
         fecha_inicio=fecha_inicio,
         fecha_fin=fecha_fin,
-        tipo_documento_id=tipo_documento_id
+        tipos_documento_ids=tipos_documento_ids,
+        cuenta_filtro=cuenta_filtro
     )
     return report_data
 
@@ -255,7 +258,8 @@ def get_journal_report(
 def get_signed_journal_report_url(
     fecha_inicio: date = Query(..., description="Fecha de inicio del reporte (YYYY-MM-DD)"),
     fecha_fin: date = Query(..., description="Fecha de fin del reporte (YYYY-MM-DD)"),
-    tipo_documento_id: Optional[int] = Query(None, description="ID del tipo de documento para filtrar"),
+    tipos_documento_ids: Optional[List[int]] = Query(None, description="Lista de IDs de tipos de documento"),
+    cuenta_filtro: Optional[str] = Query(None, description="Filtro por código o nombre de cuenta"),
     modo: Optional[str] = Query(None, description="Modo de generación: 'oficial' para cerrar el período"),
     db: Session = Depends(get_db),
     current_user: usuario_schema.User = Depends(get_current_user)
@@ -288,7 +292,8 @@ def get_signed_journal_report_url(
         fecha_inicio=fecha_inicio.isoformat(),
         fecha_fin=fecha_fin.isoformat(),
         empresa_id=current_user.empresa_id,
-        tipo_documento_id=tipo_documento_id
+        tipos_documento_ids=tipos_documento_ids,
+        cuenta_filtro=cuenta_filtro
     )
     return {"signed_url_token": signed_token}
 
@@ -314,7 +319,8 @@ def get_journal_report_pdf(
     fecha_inicio = date.fromisoformat(verified_params["fecha_inicio"])
     fecha_fin = date.fromisoformat(verified_params["fecha_fin"])
     empresa_id = verified_params["empresa_id"]
-    tipo_documento_id = verified_params["tipo_documento_id"]
+    tipos_documento_ids = verified_params.get("tipos_documento_ids") # Use .get() as it might be missing in old tokens (though not relevant here) or None values
+    cuenta_filtro = verified_params.get("cuenta_filtro")
 
     # MODIFICACIÓN: Ahora llama a nuestro nuevo servicio centralizado
     pdf_content = libros_oficiales_service.generate_libro_diario_pdf(
@@ -322,11 +328,105 @@ def get_journal_report_pdf(
         empresa_id=empresa_id,
         fecha_inicio=fecha_inicio,
         fecha_fin=fecha_fin,
-        tipo_documento_id=tipo_documento_id
+        tipos_documento_ids=tipos_documento_ids,
+        cuenta_filtro=cuenta_filtro
     )
     from fastapi.responses import Response
     return Response(content=pdf_content, media_type="application/pdf")
 # --- FIN: RUTAS DEL LIBRO DIARIO RECONECTADAS ---
+
+# --- INICIO: RUTAS DEL LIBRO DIARIO RESUMEN ---
+@router.get("/journal-summary", response_model=List[Dict[str, Any]])
+def get_journal_summary_report(
+    fecha_inicio: date = Query(..., description="Fecha de inicio (YYYY-MM-DD)"),
+    fecha_fin: date = Query(..., description="Fecha de fin (YYYY-MM-DD)"),
+    tipos_documento_ids: Optional[str] = Query(None, description="IDs de tipos de documento separados por coma (ej: 1,2,3)"),
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    """
+    Genera los datos para el Libro Diario Resumido (Agrupado por Tipo de Doc).
+    """
+    parsed_ids = [int(x) for x in tipos_documento_ids.split(',')] if tipos_documento_ids else None
+    
+    return libros_oficiales_service.get_data_for_libro_diario_resumen(
+        db=db,
+        empresa_id=current_user.empresa_id,
+        fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin,
+        tipos_documento_ids=parsed_ids
+    )
+
+@router.get("/journal-summary/get-signed-url", response_model=Dict[str, str])
+def get_signed_journal_summary_url(
+    fecha_inicio: date = Query(..., description="Fecha de inicio (YYYY-MM-DD)"),
+    fecha_fin: date = Query(..., description="Fecha de fin (YYYY-MM-DD)"),
+    tipos_documento_ids: Optional[str] = Query(None, description="IDs de tipos de documento separados por coma"),
+    modo: Optional[str] = Query(None, description="Modo: 'oficial' para cierre"),
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    """
+    Genera URL firmada para descarga de PDF del Libro Diario Resumido (Oficial).
+    """
+    if modo == 'oficial':
+        # Validar que sea un mes completo o al menos dentro del mismo mes para cierre
+        if fecha_inicio.month != fecha_fin.month or fecha_inicio.year != fecha_fin.year:
+             raise HTTPException(status_code=400, detail="El Libro Oficial debe generarse para un mes específico para realizar el cierre.")
+        
+        periodo_service.cerrar_periodo(db, current_user.empresa_id, fecha_inicio.year, fecha_inicio.month, user_id=current_user.id)
+
+    pdf_endpoint = "/api/reports/journal-summary/imprimir"
+    
+    # Preparamos los parámetros para el token
+    params_token = {
+        "fecha_inicio": fecha_inicio.isoformat(),
+        "fecha_fin": fecha_fin.isoformat(),
+        "empresa_id": current_user.empresa_id,
+        "tipos_documento_ids": tipos_documento_ids # Guardamos string original '1,2,3' o None
+    }
+    
+    signed_token = reports_service.generate_signed_report_url(
+        endpoint=pdf_endpoint,
+        expiration_seconds=60,
+        **params_token
+    )
+    return {"signed_url_token": signed_token}
+
+@router.get("/journal-summary/imprimir")
+def get_journal_summary_pdf(
+    signed_token: str = Query(..., description="Token de URL firmada"),
+    db: Session = Depends(get_db)
+):
+    """
+    Sirve el PDF del Libro Diario Resumido.
+    """
+    pdf_endpoint = "/api/reports/journal-summary/imprimir"
+    verified_params = reports_service.verify_signed_report_url(signed_token, pdf_endpoint)
+    
+    if not verified_params:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="URL inválida o expirada.")
+
+    fecha_inicio = date.fromisoformat(verified_params["fecha_inicio"])
+    fecha_fin = date.fromisoformat(verified_params["fecha_fin"])
+    empresa_id = verified_params["empresa_id"]
+    tipos_str = verified_params.get("tipos_documento_ids")
+    parsed_ids = [int(x) for x in tipos_str.split(',')] if tipos_str else None
+
+    pdf_content = libros_oficiales_service.generate_libro_diario_resumen_pdf(
+        db=db,
+        empresa_id=empresa_id,
+        fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin,
+        tipos_documento_ids=parsed_ids
+    )
+    
+    from fastapi.responses import Response
+    headers = {
+        "Content-Disposition": f"inline; filename=Libro_Diario_Resumen_{fecha_inicio}_{fecha_fin}.pdf"
+    }
+    return Response(content=pdf_content, media_type="application/pdf", headers=headers)
+# --- FIN: RUTAS DEL LIBRO DIARIO RESUMEN ---
 
 # --- INICIO: NUEVAS RUTAS PARA LIBRO MAYOR Y BALANCES ---
 @router.get("/mayor-y-balances", response_model=Dict[str, Any])
@@ -1421,4 +1521,173 @@ def recalcular_saldos_tercero(
         )
 
 # --- FIN: NUEVO ENDPOINT ---
+
+
+# -------------------------------------------------------------------------------------
+# REPORTE: ANÁLISIS DE CUENTA POR DOCUMENTO
+# -------------------------------------------------------------------------------------
+
+@router.get("/account-analysis-doc", response_model=Dict[str, Any])
+def get_analisis_cuenta_doc_report(
+    fecha_inicio: date = Query(..., description="Fecha de inicio (YYYY-MM-DD)"),
+    fecha_fin: date = Query(..., description="Fecha de fin (YYYY-MM-DD)"),
+    cuenta_filtro: Optional[str] = Query(None, description="Filtrar por código o nombre de cuenta"),
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    """
+    Retorna los datos (JSON) para el reporte de Análisis de Cuenta por Documento.
+    """
+    return libros_oficiales_service.get_data_for_analisis_cuenta_por_documento(
+        db, current_user.empresa_id, fecha_inicio, fecha_fin, cuenta_filtro
+    )
+
+
+@router.get("/account-analysis-doc/get-signed-url", response_model=Dict[str, str])
+def get_signed_analisis_cuenta_doc_url(
+    fecha_inicio: date = Query(..., description="Fecha de inicio (YYYY-MM-DD)"),
+    fecha_fin: date = Query(..., description="Fecha de fin (YYYY-MM-DD)"),
+    cuenta_filtro: Optional[str] = Query(None, description="Filtro de cuenta"),
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    """
+    Genera URL firmada para descarga de PDF del Análisis de Cuenta por Documento.
+    """
+    pdf_endpoint = "/api/reports/account-analysis-doc/imprimir"
+    
+    # Preparamos los parámetros para el token
+    params_token = {
+        "fecha_inicio": fecha_inicio.isoformat(),
+        "fecha_fin": fecha_fin.isoformat(),
+        "empresa_id": current_user.empresa_id,
+        "cuenta_filtro": cuenta_filtro
+    }
+    
+    signed_token = reports_service.generate_signed_report_url(
+        endpoint=pdf_endpoint,
+        expiration_seconds=60,
+        **params_token
+    )
+    return {"signed_url_token": signed_token}
+
+
+@router.get("/account-analysis-doc/imprimir")
+def get_analisis_cuenta_doc_pdf(
+    token: str = Query(..., description="Token firmado generado por get-signed-url"),
+    db: Session = Depends(get_db)
+):
+    """
+    Genera y descarga el PDF del Análisis de Cuenta por Documento (Validando Token).
+    """
+    payload = reports_service.verify_signed_report_url(
+        token, 
+        expected_endpoint="/api/reports/account-analysis-doc/imprimir"
+    )
+    
+    if not payload:
+        raise HTTPException(status_code=403, detail="Token inválido o expirado.")
+
+    # Extraer parámetros del payload
+    empresa_id = payload.get("empresa_id")
+    fecha_inicio_str = payload.get("fecha_inicio")
+    fecha_fin_str = payload.get("fecha_fin")
+    cuenta_filtro = payload.get("cuenta_filtro")
+
+    # Convertir strings a date
+    try:
+        fecha_inicio = date.fromisoformat(fecha_inicio_str)
+        fecha_fin = date.fromisoformat(fecha_fin_str)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Formato de fecha inválido en token.")
+
+    pdf_bytes = libros_oficiales_service.generate_analisis_cuenta_por_documento_pdf(
+        db, empresa_id, fecha_inicio, fecha_fin, cuenta_filtro
+    )
+    
+    filename = f"Analisis_Cuenta_Doc_{fecha_inicio_str}_{fecha_fin_str}.pdf"
+    
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename={filename}"}
+    )
+
+
+# --- ESTADO DE FUENTES Y USOS (CAPITAL DE TRABAJO) ---
+
+@router.get("/working-capital-analysis", response_model=Dict[str, Any])
+def get_wc_analysis_report(
+    fecha_inicio: date = Query(..., description="Fecha de inicio"),
+    fecha_fin: date = Query(..., description="Fecha de fin"),
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    """
+    Retorna datos del Estado de Fuentes y Usos (Capital de Trabajo).
+    """
+    return analisis_financiero_service.get_fuentes_usos_capital_trabajo(
+        db, current_user.empresa_id, fecha_inicio, fecha_fin
+    )
+
+@router.get("/working-capital-analysis/get-signed-url", response_model=Dict[str, str])
+def get_signed_wc_analysis_url(
+    fecha_inicio: date = Query(..., description="Fecha de inicio"),
+    fecha_fin: date = Query(..., description="Fecha de fin"),
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    """
+    Genera URL firmada para PDF de Fuentes y Usos.
+    """
+    pdf_endpoint = "/api/reports/working-capital-analysis/imprimir"
+    
+    params_token = {
+        "fecha_inicio": fecha_inicio.isoformat(),
+        "fecha_fin": fecha_fin.isoformat(),
+        "empresa_id": current_user.empresa_id
+    }
+    
+    signed_token = reports_service.generate_signed_report_url(
+        endpoint=pdf_endpoint,
+        expiration_seconds=60,
+        **params_token
+    )
+    return {"signed_url_token": signed_token}
+
+@router.get("/working-capital-analysis/imprimir")
+def get_wc_analysis_pdf(
+    token: str = Query(..., description="Token firmado"),
+    db: Session = Depends(get_db)
+):
+    """
+    Genera PDF de Fuentes y Usos (Validando Token).
+    """
+    payload = reports_service.verify_signed_report_url(
+        token, 
+        expected_endpoint="/api/reports/working-capital-analysis/imprimir"
+    )
+    
+    if not payload:
+        raise HTTPException(status_code=403, detail="Token inválido o expirado.")
+        
+    empresa_id = payload.get("empresa_id")
+    # Fechas
+    try:
+        fecha_inicio = date.fromisoformat(payload.get("fecha_inicio"))
+        fecha_fin = date.fromisoformat(payload.get("fecha_fin"))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Formato de fecha inválido.")
+        
+    pdf_bytes = analisis_financiero_service.generate_fuentes_usos_pdf(
+        db, empresa_id, fecha_inicio, fecha_fin
+    )
+    
+    filename = f"Fuentes_Usos_{fecha_inicio}_{fecha_fin}.pdf"
+    
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename={filename}"}
+    )
 

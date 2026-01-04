@@ -9,6 +9,8 @@ import { apiService } from '../../../../lib/apiService';
 import ExportacionForm from '../../../components/Migracion/ExportacionForm';
 import RestauracionForm from '../../../components/Migracion/RestauracionForm';
 import TransformacionForm from '../../../components/Migracion/TransformacionForm';
+import LegacyImportForm from '../../../components/Migracion/LegacyImportForm';
+import UniversalImportForm from '../../../components/Migracion/UniversalImportForm';
 
 export default function MigracionDatosPage() {
   const { user, authLoading } = useAuth();
@@ -160,10 +162,7 @@ export default function MigracionDatosPage() {
           )}
         </div>
 
-        {/* CONTENEDOR DE HERRAMIENTAS 
-            Se mantienen los componentes originales, separándolos visualmente 
-            para que no se amontonen.
-        */}
+        {/* CONTENEDOR DE HERRAMIENTAS */}
         <div className="space-y-8">
 
           {/* Sección 1: Exportación */}
@@ -193,6 +192,30 @@ export default function MigracionDatosPage() {
           <section className="animate-fadeIn" style={{ animationDelay: '0.3s' }}>
             <TransformacionForm
               tiposDocumento={maestros.tiposDocumento}
+            />
+          </section>
+
+          {/* Sección 4: Importación Legacy (TXT - DOS) */}
+          <section className="animate-fadeIn" style={{ animationDelay: '0.4s' }}>
+            <LegacyImportForm
+              maestros={maestros}
+              empresaActual={empresaActual}
+              isProcessing={isProcessing}
+              setIsProcessing={setIsProcessing}
+              setMessage={setMessage}
+              setError={setError}
+            />
+          </section>
+
+          {/* Sección 5: Importación Universal (Excel - Nuevo Estándar) */}
+          <section className="animate-fadeIn" style={{ animationDelay: '0.5s' }}>
+            <UniversalImportForm
+              maestros={maestros}
+              empresaActual={empresaActual}
+              isProcessing={isProcessing}
+              setIsProcessing={setIsProcessing}
+              setMessage={setMessage}
+              setError={setError}
             />
           </section>
 

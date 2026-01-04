@@ -251,7 +251,10 @@ export default function AuxiliarCarteraPage() {
       reportData.facturas.forEach(f => {
         dataParaCSV.push({
           'Fecha': new Date(f.fecha).toLocaleDateString('es-CO'),
-          'Documento': f.documento,
+          'Tipo Doc': f.tipo_documento || 'Venta',
+          'Número': f.numero_documento || f.numero,
+          'Nit/CC': f.beneficiario_nit || '',
+          'Documento Completo': f.documento,
           'Valor Original': f.valor_original.toFixed(2),
           'Total Abonos': f.total_abonos.toFixed(2),
           'Saldo Factura': f.saldo_factura.toFixed(2)
@@ -261,13 +264,16 @@ export default function AuxiliarCarteraPage() {
       reportData.recibos.forEach(r => {
         dataParaCSV.push({
           'Fecha': new Date(r.fecha).toLocaleDateString('es-CO'),
-          'Documento': r.documento,
+          'Tipo Doc': r.tipo_documento || 'Recibo',
+          'Número': r.numero_documento || r.numero,
+          'Nit/CC': r.beneficiario_nit || '',
+          'Documento Completo': r.documento,
           'Valor Recibo': r.valor_total.toFixed(2)
         });
       });
     }
 
-    const csv = window.Papa.unparse(dataParaCSV);
+    const csv = window.Papa.unparse(dataParaCSV, { delimiter: ';' });
     const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);

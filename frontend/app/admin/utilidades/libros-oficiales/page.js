@@ -41,24 +41,32 @@ const LibrosOficialesPage = () => {
             let endpointSuffix = '';
             const params = new URLSearchParams();
 
+            // Helper para formato YYYY-MM-DD local
+            const formatDate = (d) => {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
             const fecha_inicio = new Date(ano, mes - 1, 1);
             const fecha_fin = new Date(ano, mes, 0);
             const fecha_corte = fecha_fin;
 
             switch (tipoLibro) {
                 case 'diario':
-                    endpointSuffix = '/reports/journal';
-                    params.append('fecha_inicio', fecha_inicio.toISOString().split('T')[0]);
-                    params.append('fecha_fin', fecha_fin.toISOString().split('T')[0]);
+                    endpointSuffix = '/reports/journal-summary';
+                    params.append('fecha_inicio', formatDate(fecha_inicio));
+                    params.append('fecha_fin', formatDate(fecha_fin));
                     break;
                 case 'mayor':
                     endpointSuffix = '/reports/mayor-y-balances';
-                    params.append('fecha_inicio', fecha_inicio.toISOString().split('T')[0]);
-                    params.append('fecha_fin', fecha_fin.toISOString().split('T')[0]);
+                    params.append('fecha_inicio', formatDate(fecha_inicio));
+                    params.append('fecha_fin', formatDate(fecha_fin));
                     break;
                 case 'inventarios':
                     endpointSuffix = '/reports/inventarios-y-balances';
-                    params.append('fecha_corte', fecha_corte.toISOString().split('T')[0]);
+                    params.append('fecha_corte', formatDate(fecha_corte));
                     break;
                 default:
                     throw new Error('Tipo de libro no válido');
@@ -83,12 +91,8 @@ const LibrosOficialesPage = () => {
 
             const downloadUrl = `${cleanBaseUrl}${cleanEndpoint}/imprimir?signed_token=${signedToken}`;
 
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.setAttribute('download', `Libro_${tipoLibro}_${ano}_${mes}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // Abrir en nueva ventana para evitar que rompa la SPA
+            window.open(downloadUrl, '_blank');
 
             if (modo === 'oficial') {
                 setSuccessMsg(`El período ${mes}/${ano} ha sido CERRADO exitosamente y el reporte oficial se está descargando.`);

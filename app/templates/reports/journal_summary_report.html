@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Libro Diario Oficial</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 2cm;
+
+            @bottom-center {
+                content: "Página " counter(page) " de " counter(pages);
+                font-size: 10px;
+            }
+        }
+
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 10px;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .header h2 {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            table-layout: fixed;
+        }
+
+        .table th,
+        .table td {
+            border: 1px solid #ccc;
+            padding: 5px;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+
+        .table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .group-header td {
+            background-color: #e0e0e0;
+            font-weight: bold;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .total-row td {
+            background-color: #f9f9f9;
+            font-weight: bold;
+            border-top: 2px solid #333;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .grand-total {
+            margin-top: 30px;
+            page-break-inside: avoid;
+        }
+
+        .grand-total table {
+            border: 2px solid #333;
+        }
+
+        .grand-total td {
+            font-size: 12px;
+            font-weight: bold;
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>{{ empresa_nombre }}</h1>
+        <h2>NIT: {{ empresa_nit }}</h2>
+        <p><strong>LIBRO DIARIO OFICIAL</strong></p>
+        <p>Desde: {{ fecha_inicio }} Hasta: {{ fecha_fin }}</p>
+    </div>
+
+    {% for grupo in report_data %}
+    <div style="page-break-inside: avoid;">
+        <table class="table">
+            <thead>
+                <tr class="group-header">
+                    <td colspan="4">COMPROBANTE: {{ grupo.tipo_documento }}</td>
+                </tr>
+                <tr>
+                    <th style="width: 15%">Código</th>
+                    <th style="width: 45%">Cuenta</th>
+                    <th style="width: 20%">Débitos</th>
+                    <th style="width: 20%">Créditos</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cta in grupo.cuentas %}
+                <tr>
+                    <td>{{ cta.cuenta_codigo }}</td>
+                    <td>{{ cta.cuenta_nombre }}</td>
+                    <td class="text-right">{{ "${:,.2f}".format(cta.debito) }}</td>
+                    <td class="text-right">{{ "${:,.2f}".format(cta.credito) }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td colspan="2" class="text-right">Total {{ grupo.tipo_documento }}</td>
+                    <td class="text-right">{{ "${:,.2f}".format(grupo.total_debito_grupo) }}</td>
+                    <td class="text-right">{{ "${:,.2f}".format(grupo.total_credito_grupo) }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+
+    <div class="grand-total">
+        <table class="table">
+            <tr>
+                <td style="width: 60%; text-align: right;">GRAN TOTAL:</td>
+                <td style="width: 20%; text-align: right;">{{ "${:,.2f}".format(gran_total_debito) }}</td>
+                <td style="width: 20%; text-align: right;">{{ "${:,.2f}".format(gran_total_credito) }}</td>
+            </tr>
+        </table>
+    </div>
+
+</body>
+
+</html>

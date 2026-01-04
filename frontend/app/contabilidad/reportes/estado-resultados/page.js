@@ -203,7 +203,8 @@ export default function EstadoResultadosPage() {
             const signedToken = signedUrlRes.data.signed_url_token;
             const finalPdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/reports/income-statement/imprimir?signed_token=${signedToken}`;
 
-            window.location.href = finalPdfUrl;
+            // window.location.href = finalPdfUrl;
+            window.open(finalPdfUrl, '_blank');
 
         } catch (err) {
             setError(err.response?.data?.detail || 'Error al obtener la URL firmada para el PDF.');

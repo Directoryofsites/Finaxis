@@ -8,11 +8,12 @@ import { FaBook } from 'react-icons/fa';
 
 export default function GestionPeriodosPage() {
   const { user } = useAuth();
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [fechaInicioOp, setFechaInicioOp] = useState(null);
   const [periodos, setPeriodos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [operacionEnCurso, setOperacionEnCurso] = useState(null);
-  const [fechaInicioOp, setFechaInicioOp] = useState(null);
 
   const fetchData = useCallback(async () => {
     // Guardián: No hacer nada hasta que el usuario y su empresaId estén listos.
@@ -28,17 +29,19 @@ export default function GestionPeriodosPage() {
       // Se obtienen los datos de forma secuencial para evitar condiciones de carrera.
       // 1. Obtener primero los datos de la empresa.
       const empresaResponse = await apiService.get(`/empresas/${user.empresaId}`);
-      const fechaInicio = new Date(empresaResponse.data.fecha_inicio_operaciones + 'T00:00:00');
+      // Asumimos formato YYYY-MM-DD
+      const fechaParts = empresaResponse.data.fecha_inicio_operaciones.split('-');
+      const fechaInicio = new Date(fechaParts[0], fechaParts[1] - 1, fechaParts[2]);
       setFechaInicioOp(fechaInicio);
 
       // 2. Luego, obtener los períodos cerrados.
       const periodosData = await getPeriodosCerrados();
 
-      const anoActual = new Date().getFullYear();
+      // 3. Generar la vista basada en el AÑO SELECCIONADO
       const mesesDelAno = Array.from({ length: 12 }, (_, i) => {
         const mes = i + 1;
-        const cerrado = periodosData.some(p => p.ano === anoActual && p.mes === mes);
-        return { ano: anoActual, mes, estado: cerrado ? 'Cerrado' : 'Abierto' };
+        const cerrado = periodosData.some(p => p.ano === selectedYear && p.mes === mes);
+        return { ano: selectedYear, mes, estado: cerrado ? 'Cerrado' : 'Abierto' };
       });
       setPeriodos(mesesDelAno);
 
@@ -48,11 +51,23 @@ export default function GestionPeriodosPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, selectedYear]); // Dependencia clave: selectedYear
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Generar lista de años disponibles (Desde inicio de operación hasta año actual + 1)
+  const availableYears = [];
+  if (fechaInicioOp) {
+    const startYear = fechaInicioOp.getFullYear();
+    const endYear = new Date().getFullYear() + 1;
+    for (let y = startYear; y <= endYear; y++) {
+      availableYears.push(y);
+    }
+  } else {
+    availableYears.push(new Date().getFullYear());
+  }
 
   const handleCerrarPeriodo = async (ano, mes) => {
     if (!window.confirm(`¿Está seguro de que desea cerrar el período ${mes}/${ano}?`)) return;
@@ -90,14 +105,21 @@ export default function GestionPeriodosPage() {
     const fechaPeriodoActual = new Date(periodo.ano, periodo.mes - 1, 1);
     const fechaInicioNormalizada = new Date(fechaInicioOp.getFullYear(), fechaInicioOp.getMonth(), 1);
 
+    // No permitir cerrar periodos anteriores al inicio de operaciones
     if (fechaPeriodoActual < fechaInicioNormalizada) {
       return false;
     }
 
     const esPrimerMesOperativo = periodo.ano === fechaInicioOp.getFullYear() && periodo.mes === fechaInicioOp.getMonth() + 1;
 
-    // El primer mes del año solo es cerrable si es el primer mes de operaciones o si no hay períodos anteriores.
-    if (index === 0) return esPrimerMesOperativo;
+    // Si es el primer mes del año, necesitamos ver el diciembre ANTERIOR
+    if (index === 0) {
+      // Excepción: Si es el primer mes de operaciones absoluta, se puede cerrar
+      if (esPrimerMesOperativo) return true;
+      // TO-DO: Idealmente consultaríamos el estado de Diciembre del año anterior.
+      // Por ahora, para simplificar lógica visual en frontend y dado que el backend valida:
+      return true;
+    }
 
     if (esPrimerMesOperativo) return true;
 
@@ -114,27 +136,38 @@ export default function GestionPeriodosPage() {
     return periodos[index + 1].estado === 'Abierto';
   };
 
-  if (isLoading) {
-    return <div className="text-center py-10">Cargando períodos...</div>;
-  }
-
+  // RENDER MODIFICADO
   return (
     <div className="container mx-auto p-4">
-      <div className="flex items-center gap-4 mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Gestión de Períodos Contables</h1>
-        <button
-          onClick={() => window.open('/manual/capitulo_7_cierre.html', '_blank')}
-          className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2 flex items-center px-2"
-          title="Ver Manual de Usuario"
-        >
-          <FaBook className="text-lg" /> <span className="font-bold hidden md:inline">Manual</span>
-        </button>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-bold text-gray-800">Gestión de Períodos</h1>
+          <button
+            onClick={() => window.open('/manual/capitulo_7_cierre.html', '_blank')}
+            className="btn btn-ghost text-indigo-600 hover:bg-indigo-50 gap-2 flex items-center px-2"
+            title="Ver Manual de Usuario"
+          >
+            <FaBook className="text-lg" /> <span className="font-bold hidden md:inline">Manual</span>
+          </button>
+        </div>
+
+        {/* SELECTOR DE AÑO */}
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-gray-600">Año:</span>
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+            className="select select-bordered select-sm w-32"
+          >
+            {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
       </div>
 
       {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">{error}</div>}
 
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4">Año {new Date().getFullYear()}</h2>
+        <h2 className="text-xl font-semibold mb-4 text-indigo-700 border-b pb-2">Periodos del {selectedYear}</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full bg-white">
             <thead className="bg-gray-800 text-white">

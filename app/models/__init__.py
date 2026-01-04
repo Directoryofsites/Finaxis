@@ -65,3 +65,6 @@ from .conciliacion_bancaria import (
     ImportConfig, ImportSession, BankMovement, Reconciliation, 
     ReconciliationMovement, AccountingConfig, ReconciliationAudit
 )
+
+# --- IMPORTACIÓN UNIVERSAL (Nuevo Módulo) ---
+from .import_template import ImportTemplate

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import {
@@ -29,6 +29,7 @@ const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-s
 
 export default function CapturaRapidaPage() {
   const router = useRouter();
+  const searchParams = useSearchParams(); // Hook initializes searchParams
   const { user, loading: authLoading } = useAuth();
 
   // --- ESTADOS DE DATOS MAESTROS ---

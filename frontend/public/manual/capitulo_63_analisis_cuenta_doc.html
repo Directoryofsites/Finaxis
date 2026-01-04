@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual - Análisis de Cuenta por Documento</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: #2980b9;
+            margin-top: 30px;
+        }
+
+        .feature {
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .tip {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        code {
+            background: #eee;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        img {
+            max-width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Análisis de Cuenta por Documento</h1>
+    <p>Este reporte avanzado permite visualizar la composición del saldo de una cuenta contable según el "Tipo de
+        Documento" fuente (Ej: Facturas, Recibos de Caja, Notas Contables). Es ideal para auditoría y revisión
+        gerencial.</p>
+
+    <div class="feature">
+        <strong>Objetivo:</strong> Entender el origen de los cargos y abonos sin perderse en el detalle individual de
+        cada transacción. Responde a preguntas como: "¿Cuánto de lo que entró a Caja fue por Recibos y cuánto por
+        Notas?"
+    </div>
+
+    <h2>Cómo generar el reporte</h2>
+    <ol>
+        <li>Ingrese al módulo <strong>Contabilidad > Reportes > Análisis de Cuenta por Documento</strong>.</li>
+        <li>Seleccione el rango de fechas a consultar.</li>
+        <li>(Opcional) En "Filtrar Cuenta", escriba el código o nombre de una cuenta específica (Ej: "1105") para ver
+            solo esa cuenta. Si lo deja vacío, se generará para todas las cuentas auxiliares.</li>
+        <li>Haga clic en <strong>Generar Reporte</strong>.</li>
+    </ol>
+
+    <h2>Interpretación de Resultados</h2>
+    <p>El reporte muestra una lista de cuentas. Para cada cuenta verá:</p>
+    <ul>
+        <li><strong>Saldo Inicial:</strong> Valor antes de la fecha de inicio.</li>
+        <li><strong>Tabla de Movimientos:</strong> Agrupados por Tipo de Documento.
+            <ul>
+                <li><em>Tipo:</em> Código y Nombre (Factura Venta, Egreso, etc).</li>
+                <li><em>Débitos/Créditos:</em> Suma total de movimientos de ese tipo en el periodo.</li>
+            </ul>
+        </li>
+        <li><strong>Nuevo Saldo:</strong> Saldo final sumando el inicial + movimientos del periodo.</li>
+    </ul>
+
+    <h2>Exportación</h2>
+    <p>Puede exportar la información usando los botones de la parte superior:</p>
+    <ul>
+        <li><strong>PDF:</strong> Genera un documento oficial imprimible con los detalles visuales.</li>
+        <li><strong>CSV:</strong> Descarga un archivo plano compatible con Excel para análisis de datos.</li>
+    </ul>
+
+    <div class="tip">
+        <strong>Tip de Auditoría:</strong> Use este reporte para verificar anomalías. Por ejemplo, si ve movimientos de
+        "Nota Crédito" en una cuenta de "Efectivo" por un valor inusualmente alto, puede investigar a fondo usando el
+        <em>Auxiliar Contable</em>.
+    </div>
+</body>
+
+</html>

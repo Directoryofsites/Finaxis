@@ -292,5 +292,37 @@ const val = p.valor || p.monto || p.debito || p.credito || p.importe;
     2. "IA: Beneficiario asignado..."
     3. "IA: Valor asignado..."
     4. "IA: Todo listo. Guardando automáticamente... 💾"
-*   Esto convierte una caja negra en una experiencia mágica y transparente.
+## 12. CASO DE ESTUDIO: REFINAMIENTO DE IMPORTACIÓN LEGACY (DOS)
+
+**Fecha:** Enero 2026
+**Contexto:** Migración de datos desde archivos planos TXT generados por sistemas contables antiguos (DOS).
+
+### A. Desafío: Drift de Ancho Fijo y Separadores Variables
+*   **Problema:** Los archivos TXT "visuales" suelen tener espacios variables de separación entre columnas (ej. 2 espacios) que no están definidos en el layout estricto. La lectura puramente posicional (offsets fijos) falla y corre los campos.
+*   **Solución: Algoritmo "Anchor and Slice"**
+    *   No usar offsets absolutos acumulativos ciegos.
+    *   Definir el ancho de la columna de datos (ej. 10 chars).
+    *   Leer el dato -> Limpiar espacios (`strip()`).
+    *   Avanzar el cursor: `Ancho Dato + Ancho Separador Estimado` (o saltar espacios hasta encontrar carácter).
+    *   *Lección:* En reportes visuales, la columna "vacía" pesa. Sumar siempre el separador explícito si se detecta visualmente (ej. +2 chars).
+
+### B. Desafío: Falta de Jerarquía en Datos Planos
+*   **Problema:** Los archivos planos solo traen la cuenta imputable (Auxiliar: 110505), omitiendo los niveles superiores (1105, 11, 1).
+*   **Consecuencia:** Los reportes jerárquicos ("Balance de Prueba") fallan o muestran datos huérfanos sin agrupación.
+*   **Solución: Auto-Creación de Jerarquía (Upward Recursion)**
+    1.  Al leer `110505`, descomponer en ancestros: `1105`, `11`, `1`.
+    2.  Verificar existencia de cada ancestro en DB.
+    3.  Si no existe, crear con nombre genérico ("CUENTA GENERADA 1105") y vincular `cuenta_padre_id`.
+    4.  **Cálculo de Nivel PUC:** Asignar nivel basado en longitud estándar colombiana (1->1, 2->2, 4->3, 6->4, 8->5). No usar `len(code)` directo.
+
+### C. Desafío: Estados y Tipos Confusos
+*   **Problema:** Importar documentos como "APROBADO" los hace invisibles para reportes que filtran por "ACTIVO". Nombres genéricos ("Tipo Importado RC") confunden al usuario.
+*   **Solución:**
+    *   **Mapeo Semántico:** Diccionario `RC -> RECIBO DE CAJA`.
+    *   **Estado Estándar:** Forzar `estado="ACTIVO"` en la creación.
+    *   **Auto-Corrección:** Si se detecta un nombre genérico existente, actualizarlo automáticamente al nombre real en la siguiente importación.
+
+### D. UX: Reducción de Fricción
+*   **Lección:** Si un campo es opcional (ej. "Tercero por Defecto"), ocultarlo es mejor que dejarlo vacío. El usuario confía en que la data del archivo es suficiente. Validar agresivamente en backend (fallback) en lugar de exigir al usuario.
+
 

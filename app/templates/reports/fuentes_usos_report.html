@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Estado de Fuentes y Usos</title>
+    <style>
+        @page {
+            size: letter landscape;
+            margin: 1cm;
+        }
+
+        body {
+            font-family: 'Helvetica', sans-serif;
+            font-size: 10px;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #004085;
+            padding-bottom: 10px;
+        }
+
+        .header h1 {
+            margin: 0;
+            color: #004085;
+            font-size: 18px;
+            text-transform: uppercase;
+        }
+
+        .header p {
+            margin: 2px 0;
+            font-size: 12px;
+        }
+
+        .section-title {
+            background-color: #f8f9fa;
+            padding: 5px;
+            font-weight: bold;
+            border-left: 4px solid #004085;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #dee2e6;
+            padding: 6px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #004085;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .font-bold {
+            font-weight: bold;
+        }
+
+        .bg-gray {
+            background-color: #f1f1f1;
+        }
+
+        .text-success {
+            color: #28a745;
+        }
+
+        /* Fuentes */
+        .text-danger {
+            color: #dc3545;
+        }
+
+        /* Usos */
+
+        .summary-box {
+            display: inline-block;
+            width: 48%;
+            vertical-align: top;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        .kt-summary {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <p>NIT: {{ empresa.nit }}</p>
+        <p><strong>ESTADO DE FUENTES Y USOS (CAPITAL DE TRABAJO)</strong></p>
+        <p>Periodo: {{ fecha_inicio }} al {{ fecha_fin }}</p>
+    </div>
+
+    <!-- Resumen Ejecutivo -->
+    <div class="kt-summary">
+        <table style="width: 100%; border: none;">
+            <tr style="background: none;">
+                <td style="border: none; width: 50%;">
+                    <h3>Capital de Trabajo Neto (K.T.)</h3>
+                    <p>Activo Corriente Inicial: <strong>{{ "${:,.0f}".format(resumen_kt.activo_cte_ini) }}</strong></p>
+                    <p>Pasivo Corriente Inicial: <strong>{{ "${:,.0f}".format(resumen_kt.pasivo_cte_ini) }}</strong></p>
+                    <hr>
+                    <p>K.T. Inicial: <strong>{{ "${:,.0f}".format(resumen_kt.kt_ini) }}</strong></p>
+                </td>
+                <td style="border: none; width: 50%;">
+                    <h3>Variación en el Periodo</h3>
+                    <p>Activo Corriente Final: <strong>{{ "${:,.0f}".format(resumen_kt.activo_cte_fin) }}</strong></p>
+                    <p>Pasivo Corriente Final: <strong>{{ "${:,.0f}".format(resumen_kt.pasivo_cte_fin) }}</strong></p>
+                    <hr>
+                    <p>K.T. Final: <strong>{{ "${:,.0f}".format(resumen_kt.kt_fin) }}</strong></p>
+                    <h4 class="{{ 'text-success' if resumen_kt.variacion_kt > 0 else 'text-danger' }}">
+                        Variación K.T.: {{ "${:,.0f}".format(resumen_kt.variacion_kt) }}
+                    </h4>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section-title">Detalle de Variaciones por Cuenta</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 10%;">Código</th>
+                <th style="width: 30%;">Cuenta</th>
+                <th style="width: 15%;">Saldo Inicial</th>
+                <th style="width: 15%;">Saldo Final</th>
+                <th style="width: 15%; background-color: #28a745;">FUENTES (Origen)</th>
+                <th style="width: 15%; background-color: #dc3545;">USOS (Aplicación)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for fila in filas %}
+            <tr>
+                <td class="text-center">{{ fila.cuenta_codigo }}</td>
+                <td>{{ fila.cuenta_nombre }}</td>
+                <td class="text-right">{{ "${:,.0f}".format(fila.saldo_inicial) }}</td>
+                <td class="text-right">{{ "${:,.0f}".format(fila.saldo_final) }}</td>
+                <td class="text-right font-bold text-success">
+                    {% if fila.fuente > 0 %}{{ "${:,.0f}".format(fila.fuente) }}{% endif %}
+                </td>
+                <td class="text-right font-bold text-danger">
+                    {% if fila.uso > 0 %}{{ "${:,.0f}".format(fila.uso) }}{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="bg-gray">
+                <td colspan="4" class="text-right font-bold">TOTALES:</td>
+                <td class="text-right font-bold text-success">{{ "${:,.0f}".format(totales.total_fuentes) }}</td>
+                <td class="text-right font-bold text-danger">{{ "${:,.0f}".format(totales.total_usos) }}</td>
+            </tr>
+            <tr>
+                <td colspan="4" class="text-right font-bold">Diferencia (Fuentes - Usos):</td>
+                <td colspan="2" class="text-center font-bold">
+                    {{ "${:,.0f}".format(totales.diferencia) }}
+                    <br>
+                    <span style="font-size: 9px; font-weight: normal;">(Debe ser igual a la Variación K.T.)</span>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div style="font-size: 9px; color: #666; margin-top: 20px;">
+        <p><strong>Nota Interpretativa:</strong><br>
+            - <strong>FUENTES:</strong> Dinero generado por disminución de Activos (ej. cobro de cartera) o aumento de
+            Pasivos (ej. financiación proveedores).<br>
+            - <strong>USOS:</strong> Dinero utilizado para aumentar Activos (ej. compra inventario) o disminuir Pasivos
+            (ej. pago deudas).</p>
+    </div>
+</body>
+
+</html>

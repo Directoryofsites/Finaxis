@@ -69,6 +69,7 @@ from ..models.empresa import Empresa as models_empresa
 # Seguridad
 from ..core.security import create_signed_token, validate_signed_token, create_pdf_jwt
 from ..core.config import settings
+from ..core.reporting_registry import ReportRegistry, BaseReport
 
 # Modelos
 from ..models import documento as models_doc

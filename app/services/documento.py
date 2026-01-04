@@ -633,11 +633,27 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
         raise HTTPException(status_code=404, detail="Documento no encontrado.")
 
     # 2. Plantilla
+    print(f"--- DEBUG PDF: Buscando plantilla para Documento {documento_id} --")
+    print(f"   -> Empresa ID: {empresa_id}")
+    print(f"   -> Tipo Documento ID: {db_doc.tipo_documento_id}")
+
     plantilla = db.query(models_formato).filter(
         models_formato.empresa_id == empresa_id, 
         models_formato.tipo_documento_id == db_doc.tipo_documento_id
     ).first()
-    html_content = plantilla.contenido_html if plantilla else "<html><body>Sin Formato</body></html>"
+    
+    if plantilla:
+        print(f"   -> PLANTILLA ENCONTRADA: ID {plantilla.id} - {plantilla.nombre}")
+        html_content = plantilla.contenido_html
+    else:
+        print("   -> PLANTILLA NO ENCONTRADA. Usando fallback 'Sin Formato'.")
+        # Check if ANY template exists for this company just in case
+        any_template = db.query(models_formato).filter(models_formato.empresa_id == empresa_id).all()
+        print(f"   -> Debug Extra: La empresa tiene {len(any_template)} plantillas registradas total.")
+        for t in any_template:
+            print(f"      - ID: {t.id} | TipoDoc: {t.tipo_documento_id} | Nombre: {t.nombre}")
+            
+        html_content = "<html><body>Sin Formato</body></html>"
     
     # 3. Empresa
     empresa = db.query(models_empresa).filter(models_empresa.id == empresa_id).first()
@@ -680,19 +696,19 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
     if modo_operacion == 'VENTA':
         # RUTA A: VENTA
         query_comercial = db.query(
-            models_producto.Producto.codigo.label("codigo"),
-            models_producto.Producto.nombre.label("nombre"),
-            models_producto.MovimientoInventario.cantidad.label("cantidad_real"),
+            models_producto.codigo.label("codigo"),
+            models_producto.nombre.label("nombre"),
+            models_mov_inv.cantidad.label("cantidad_real"),
             models_mov.credito.label("valor_total")
-        ).join(models_doc, models_producto.MovimientoInventario.documento_id == models_doc.id)\
-         .join(models_producto.Producto, models_producto.MovimientoInventario.producto_id == models_producto.Producto.id)\
-         .join(models_grupo, models_producto.Producto.grupo_id == models_grupo.id)\
+        ).join(models_doc, models_mov_inv.documento_id == models_doc.id)\
+         .join(models_producto, models_mov_inv.producto_id == models_producto.id)\
+         .join(models_grupo, models_producto.grupo_id == models_grupo.id)\
          .join(models_mov, and_(
              models_mov.documento_id == models_doc.id,
              models_mov.cuenta_id == models_grupo.cuenta_ingreso_id, 
-             models_mov.producto_id == models_producto.Producto.id
+             models_mov.producto_id == models_producto.id
          ))\
-         .filter(models_doc.id == documento_id, models_producto.MovimientoInventario.tipo_movimiento == 'SALIDA_VENTA').all()
+         .filter(models_doc.id == documento_id, models_mov_inv.tipo_movimiento == 'SALIDA_VENTA').all()
 
         if query_comercial:
             for item in query_comercial:
@@ -721,16 +737,16 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
         # RUTA B: COMPRA (DIRECTO A INVENTARIO - CORRECCIÓN)
         # No cruzamos con contabilidad para evitar fallos. Leemos directo del Kardex.
         query_kardex = db.query(
-            models_producto.Producto.codigo.label("codigo"),
-            models_producto.Producto.nombre.label("nombre"),
-            models_producto.MovimientoInventario.cantidad.label("cantidad"),
-            models_producto.MovimientoInventario.costo_unitario.label("costo_u"),
-            models_producto.MovimientoInventario.costo_total.label("costo_t")
-        ).join(models_producto.Producto, models_producto.MovimientoInventario.producto_id == models_producto.Producto.id)\
+            models_producto.codigo.label("codigo"),
+            models_producto.nombre.label("nombre"),
+            models_mov_inv.cantidad.label("cantidad"),
+            models_mov_inv.costo_unitario.label("costo_u"),
+            models_mov_inv.costo_total.label("costo_t")
+        ).join(models_producto, models_mov_inv.producto_id == models_producto.id)\
          .filter(
-             models_producto.MovimientoInventario.documento_id == documento_id,
+             models_mov_inv.documento_id == documento_id,
              # Aceptamos cualquier entrada (Compra, Ajuste, Inicial) para ser flexibles
-             models_producto.MovimientoInventario.tipo_movimiento.like('ENTRADA%')
+             models_mov_inv.tipo_movimiento.like('ENTRADA%')
          ).all()
 
         if query_kardex:
@@ -877,14 +893,27 @@ def generate_account_ledger_report(
         models_doc.anulado.is_(False)
     )
     saldo_anterior_result = saldo_anterior_query.first()
-    saldo_anterior = (saldo_anterior_result.total_debito or 0) - \
+    # --- MEJORA: LÓGICA DE NATURALEZA DE CUENTA ---
+    # Determinamos si la cuenta es de naturaleza CRÉDITO para invertir el signo visualmente.
+    # 1 (Activo), 5 (Gastos), 6 (Costos), 8 (Debe) -> Naturaleza DÉBITO (+).
+    # 2 (Pasivo), 3 (Patrimonio), 4 (Ingresos), 7 (Costos Prod), 9 (Haber) -> Naturaleza CRÉDITO (-).
+    first_digit = cuenta_info.codigo[0]
+    is_credit_nature = first_digit in ['2', '3', '4', '7', '9']
+    nature_factor = -1 if is_credit_nature else 1
+
+    # Calculamos el saldo neto matemático (Débito - Crédito)
+    saldo_anterior_neto = (saldo_anterior_result.total_debito or 0) - \
                      (saldo_anterior_result.total_credito or 0)
+    
+    # Aplicamos el factor para el saldo inicial visual
+    saldo_anterior = saldo_anterior_neto * nature_factor
 
     movimientos_query = db.query(
         models_doc.fecha,
         models_tipo.nombre.label("tipo_documento"),
         models_doc.numero.label("numero_documento"),
         models_tercero.razon_social.label("beneficiario"),
+        models_tercero.nit.label("beneficiario_nit"),
         models_mov.concepto,
         models_mov.debito,
         models_mov.credito,
@@ -903,21 +932,39 @@ def generate_account_ledger_report(
 
     movimientos_data = movimientos_query.order_by(models_doc.fecha, models_doc.numero, models_doc.id, models_mov.id).all()
 
-    current_running_balance = float(saldo_anterior)
+    current_running_balance_display = float(saldo_anterior)
     formatted_movimientos = []
+    
+    total_debito_periodo = 0.0
+    total_credito_periodo = 0.0
+
     for mov in movimientos_data:
-        current_running_balance += float(mov.debito) - float(mov.credito)
+        debito = float(mov.debito)
+        credito = float(mov.credito)
+        
+        total_debito_periodo += debito
+        total_credito_periodo += credito
+
+        # Movimiento Neto = Débito - Crédito
+        # Si es naturaleza Crédito (-1):
+        #   Un Crédito (aumento de deuda) es neto negativo. Al multiplicar por -1 se vuelve positivo (suma al saldo).
+        #   Un Débito (pago de deuda) es neto positivo. Al multiplicar por -1 se vuelve negativo (resta al saldo).
+        net_impact = (debito - credito) * nature_factor
+        
+        current_running_balance_display += net_impact
+        
         formatted_movimientos.append({
             "fecha": mov.fecha, 
             "tipo_documento": mov.tipo_documento,
             "numero_documento": mov.numero_documento,
             "beneficiario": mov.beneficiario,
+            "beneficiario_nit": mov.beneficiario_nit or "N/A",
             "concepto": mov.concepto,
-            "debito": float(mov.debito),
-            "credito": float(mov.credito),
+            "debito": debito,
+            "credito": credito,
             "centro_costo_codigo": mov.centro_costo_codigo,
             "centro_costo_nombre": mov.centro_costo_nombre,
-            "saldo_parcial": current_running_balance
+            "saldo_parcial": current_running_balance_display
         })
 
     return {
@@ -927,6 +974,8 @@ def generate_account_ledger_report(
             "nombre": cuenta_info.nombre
         },
         "saldoAnterior": float(saldo_anterior),
+        "totalDebitoPeriodo": total_debito_periodo, # Nuevo
+        "totalCreditoPeriodo": total_credito_periodo, # Nuevo
         "movimientos": formatted_movimientos
     }
 
@@ -946,6 +995,10 @@ def generate_account_ledger_report_pdf(
     cuenta_info = report_data['cuenta_info']
     saldo_anterior = report_data['saldoAnterior']
     movimientos = report_data['movimientos']
+    
+    # Extraemos los totales
+    total_debito_periodo = report_data.get('totalDebitoPeriodo', 0)
+    total_credito_periodo = report_data.get('totalCreditoPeriodo', 0)
 
     has_cost_centers = db.query(models_centro_costo).filter(models_centro_costo.empresa_id == empresa_id).count() > 0
 
@@ -960,6 +1013,8 @@ def generate_account_ledger_report_pdf(
         "fecha_inicio": formatted_fecha_inicio,
         "fecha_fin": formatted_fecha_fin,
         "saldo_anterior": saldo_anterior,
+        "total_debito_periodo": total_debito_periodo, # Al contexto
+        "total_credito_periodo": total_credito_periodo, # Al contexto
         "movimientos": movimientos,
         "has_cost_centers": has_cost_centers
     }
@@ -1019,10 +1074,13 @@ def generate_tercero_account_ledger_report(
         models_doc.id.label("documento_id"),
         models_mov.id.label("movimiento_id"),
         models_centro_costo.codigo.label("centro_costo_codigo"),
-        models_centro_costo.nombre.label("centro_costo_nombre")
+        models_centro_costo.nombre.label("centro_costo_nombre"),
+        models_tercero.nit.label("tercero_nit"),
+        models_tercero.razon_social.label("tercero_razon_social")
     ).join(models_mov, models_doc.id == models_mov.documento_id) \
     .join(models_tipo, models_doc.tipo_documento_id == models_tipo.id) \
     .join(models_plan, models_mov.cuenta_id == models_plan.id) \
+    .join(models_tercero, models_doc.beneficiario_id == models_tercero.id) \
     .outerjoin(models_centro_costo, models_doc.centro_costo_id == models_centro_costo.id) \
     .filter(
         models_doc.empresa_id == empresa_id,
@@ -1085,7 +1143,8 @@ def generate_tercero_account_ledger_report(
             "saldo_parcial": new_saldo_for_this_account,
             "cuenta_id": cuenta_id_for_balance,
             "documento_id": mov_dict.get('documento_id'),
-            "movimiento_id": mov_dict.get('movimiento_id')
+            "movimiento_id": mov_dict.get('movimiento_id'),
+            "beneficiario_nit": mov_dict.get('tercero_nit') or "N/A"
         }
         final_formatted_movimientos.append(formatted_mov)
 
@@ -1936,8 +1995,12 @@ def generate_auxiliar_por_facturas(
     facturas_base = db.query(
         models_doc.id,
         models_doc.fecha,
-        models_doc.numero
-    ).filter(
+        models_doc.numero,
+        models_tipo.nombre.label("tipo_nombre"),
+        models_tercero.nit.label("tercero_nit")
+    ).join(models_tipo, models_doc.tipo_documento_id == models_tipo.id)\
+     .join(models_tercero, models_doc.beneficiario_id == models_tercero.id)\
+     .filter(
         models_doc.id.in_(factura_ids_query)
     ).order_by(models_doc.fecha.asc(), models_doc.id.asc()).all()
 
@@ -1994,6 +2057,9 @@ def generate_auxiliar_por_facturas(
             "id": factura.id,
             "fecha": factura.fecha,
             "documento": f"Factura de Venta-{factura.numero}",
+            "tipo_documento": factura.tipo_nombre,
+            "numero_documento": factura.numero,
+            "beneficiario_nit": factura.tercero_nit,
             "valor_original": valor_original,
             "total_abonos": total_abonos,
             "saldo_factura": valor_original - total_abonos,
@@ -2025,8 +2091,11 @@ def generate_auxiliar_por_recibos(
     recibos_potenciales = db.query(
         models_doc.id,
         models_doc.fecha,
-        models_doc.numero
+        models_doc.numero,
+        models_tipo.nombre.label("tipo_nombre"),
+        models_tercero.nit.label("tercero_nit")
     ).join(models_tipo, models_doc.tipo_documento_id == models_tipo.id)\
+     .join(models_tercero, models_doc.beneficiario_id == models_tercero.id)\
      .filter(
         models_doc.empresa_id == empresa_id,
         models_doc.beneficiario_id == tercero_id,
@@ -2077,6 +2146,9 @@ def generate_auxiliar_por_recibos(
             "id": recibo.id,
             "fecha": recibo.fecha,
             "documento": f"Recibo de Caja-{recibo.numero}",
+            "tipo_documento": recibo.tipo_nombre,
+            "numero_documento": recibo.numero,
+            "beneficiario_nit": recibo.tercero_nit,
             "valor_total": float(valor_map.get(recibo.id, 0)),
             "facturas_afectadas": facturas_map.get(recibo.id, [])
         })

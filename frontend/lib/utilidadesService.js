@@ -16,7 +16,7 @@ export const getMaestrosParaMigracion = () => {
     apiService.get('/plan-cuentas/list-flat?permite_movimiento=true'),
     apiService.get('/centros-costo?permite_movimiento=true'),
     // Esta es una ruta especial que no depende de la empresa del usuario
-    apiService.get('/empresas') 
+    apiService.get('/empresas')
   ]);
 };
 
@@ -38,3 +38,12 @@ export const ejecutarRestauracion = (payload) => {
 
 // --- Servicios para el Módulo de Transformación ---
 // (Por ahora no requiere llamadas a la API, la lógica es local)
+
+// --- Servicios para Importación Legacy ---
+export const importarLegacy = (formData) => {
+  return apiService.post('/utilidades/importar-legacy', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};

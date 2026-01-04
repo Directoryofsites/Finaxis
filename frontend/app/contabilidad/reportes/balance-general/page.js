@@ -154,7 +154,8 @@ export default function BalanceGeneralPage() {
             const pdfDownloadUrl = `${baseUrl}/api/reports/balance-sheet/imprimir?signed_token=${signedToken}`;
 
             // Técnica de descarga directa (Link Fantasma) para evitar bloqueo de popups
-            window.location.href = pdfDownloadUrl;
+            // window.location.href = pdfDownloadUrl; // ANTES: Misma ventana
+            window.open(pdfDownloadUrl, '_blank'); // AHORA: Nueva pestaña
 
         } catch (err) {
             setError(err.response?.data?.detail || "Error al generar el PDF del reporte.");

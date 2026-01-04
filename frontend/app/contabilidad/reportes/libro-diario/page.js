@@ -38,7 +38,8 @@ export default function LibroDiarioPage() {
     const [filtros, setFiltros] = useState({
         inicio: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
         fin: new Date().toISOString().split('T')[0],
-        tipoDocId: ''
+        selectedTipos: [],
+        cuenta: ''
     });
 
     // Cargar filtros
@@ -55,6 +56,27 @@ export default function LibroDiarioPage() {
             fetchTiposDocumento();
         }
     }, [user, authLoading]);
+
+    // Handle Multi-Select Change
+    const handleTipoDocChange = (e) => {
+        const options = e.target.options;
+        const selectedValues = [];
+        for (let i = 0; i < options.length; i++) {
+            if (options[i].selected) {
+                selectedValues.push(parseInt(options[i].value));
+            }
+        }
+        setFiltros(prev => ({ ...prev, selectedTipos: selectedValues }));
+    };
+
+    // Handle Select All
+    const handleSelectAll = () => {
+        if (filtros.selectedTipos.length === tiposDocumento.length) {
+            setFiltros(prev => ({ ...prev, selectedTipos: [] })); // Deselect All
+        } else {
+            setFiltros(prev => ({ ...prev, selectedTipos: tiposDocumento.map(t => t.id) })); // Select All
+        }
+    };
 
     const handleGenerateReport = async () => {
         if (!filtros.inicio || !filtros.fin) {
@@ -73,12 +95,37 @@ export default function LibroDiarioPage() {
             fecha_inicio: filtros.inicio,
             fecha_fin: filtros.fin,
         };
-        if (filtros.tipoDocId) {
-            params.tipo_documento_id = filtros.tipoDocId;
+
+        if (filtros.selectedTipos.length > 0) {
+            params.tipos_documento_ids = filtros.selectedTipos; // axios serializes arrays correctly usually, but check
+        }
+        if (filtros.cuenta) {
+            params.cuenta_filtro = filtros.cuenta;
         }
 
         try {
-            const res = await apiService.get('/reports/journal', { params: params });
+            // Manual serialization for array if needed, but standard axio is fine. 
+            // However, to match `routes.py` `Query` list, we might need multiple keys. 
+            // apiService (axios) by default uses `key[]` format. FastAPI wants repeated keys `key=1&key=2`.
+            // We use `paramsSerializer` or manual string. 
+            // Let's manually construct query string or rely on `qs`. 
+            // Simplest is to pass a custom serializer if `apiService` doesn't handle it.
+            // But let's assume `apiService` handles it or we used the comma separated approach before?
+            // Wait, previous approach in Resumen used `.join(',')`. `routes.py` there ACCEPTED it? 
+            // Ah, I didn't verify if `routes.py` for Resumen used List param or string param.
+            // Let's check Resumen `routes.py`... no, I am implementing NEW logic here.
+            // In step 705, I defined `tipos_documento_ids: Optional[List[int]]`.
+            // FastAPI expects `tipos_documento_ids=1&tipos_documento_ids=2`.
+            // Axios sends `tipos_documento_ids[]=1`. FastAPI creates issues with `[]`.
+            // Safe bet: Use `URLSearchParams`.
+
+            const queryParams = new URLSearchParams();
+            queryParams.append('fecha_inicio', filtros.inicio);
+            queryParams.append('fecha_fin', filtros.fin);
+            filtros.selectedTipos.forEach(id => queryParams.append('tipos_documento_ids', id));
+            if (filtros.cuenta) queryParams.append('cuenta_filtro', filtros.cuenta);
+
+            const res = await apiService.get('/reports/journal', { params: queryParams });
 
             setReportData(res.data);
             const newTotals = res.data.reduce((acc, mov) => {
@@ -94,17 +141,53 @@ export default function LibroDiarioPage() {
         }
     };
 
+    // Agrupar datos por Fecha -> Documento
+    const groupedData = useMemo(() => {
+        if (!reportData) return [];
+
+        const groups = {}; // { fecha: { docKey: { info: {}, rows: [], totals: {deb, cred} } } }
+
+        reportData.forEach(row => {
+            const fechaVal = row.fecha; // Assumed ISO string or similar from backend
+            const docKey = `${row.tipo_documento}-${row.numero_documento}`;
+
+            if (!groups[fechaVal]) groups[fechaVal] = {};
+            if (!groups[fechaVal][docKey]) {
+                groups[fechaVal][docKey] = {
+                    tipo: row.tipo_documento,
+                    numero: row.numero_documento,
+                    beneficiario: row.beneficiario_nombre,
+                    rows: [],
+                    totals: { debito: 0, credito: 0 }
+                };
+            }
+
+            groups[fechaVal][docKey].rows.push(row);
+            groups[fechaVal][docKey].totals.debito += parseFloat(row.debito || 0);
+            groups[fechaVal][docKey].totals.credito += parseFloat(row.credito || 0);
+        });
+
+        // Convert dict to sorted array
+        return Object.keys(groups).sort().map(fecha => ({
+            fecha,
+            documents: Object.values(groups[fecha])
+        }));
+    }, [reportData]);
+
     const handleExportCSV = () => {
+        // ... (rest of function)
         if (!reportData) return alert("Primero debe generar un reporte.");
         if (typeof window.Papa === 'undefined') {
-            console.warn("PapaParse no está cargado.");
             return alert("La librería CSV no está lista. Por favor, recargue la página.");
         }
 
         const dataToExport = reportData.map(row => ({
             'Fecha': new Date(row.fecha).toLocaleDateString('es-CO', { timeZone: 'UTC' }),
-            'Documento': `${getInitials(row.tipo_documento)} #${row.numero_documento}`,
+            'Tipo Doc': row.tipo_documento_codigo || '', // Código (ej: RC)
+            'Nombre Documento': row.tipo_documento,      // Nombre (ej: Recibo de Caja)
+            'Número': row.numero_documento,
             'Beneficiario': row.beneficiario_nombre,
+            'Nit/CC': row.beneficiario_nit || '',
             'Código Cuenta': row.cuenta_codigo,
             'Nombre Cuenta': row.cuenta_nombre,
             'Concepto': row.concepto,
@@ -112,7 +195,7 @@ export default function LibroDiarioPage() {
             'Crédito': parseFloat(row.credito).toFixed(2)
         }));
 
-        const csv = window.Papa.unparse(dataToExport);
+        const csv = window.Papa.unparse(dataToExport, { delimiter: ';' });
         const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
@@ -127,24 +210,17 @@ export default function LibroDiarioPage() {
             setError("Primero debe generar un reporte.");
             return;
         }
-        if (!user || !user.empresaId) {
-            setError("No se pudo identificar el ID de la empresa del usuario.");
-            return;
-        }
-
         setIsLoading(true);
         setError(null);
 
         try {
-            const paramsForSignedUrl = {
-                fecha_inicio: filtros.inicio,
-                fecha_fin: filtros.fin,
-            };
-            if (filtros.tipoDocId) {
-                paramsForSignedUrl.tipo_documento_id = filtros.tipoDocId;
-            }
+            const params = new URLSearchParams();
+            params.append('fecha_inicio', filtros.inicio);
+            params.append('fecha_fin', filtros.fin);
+            filtros.selectedTipos.forEach(id => params.append('tipos_documento_ids', id));
+            if (filtros.cuenta) params.append('cuenta_filtro', filtros.cuenta);
 
-            const signedUrlRes = await apiService.get('/reports/journal/get-signed-url', { params: paramsForSignedUrl });
+            const signedUrlRes = await apiService.get('/reports/journal/get-signed-url', { params });
             const signedToken = signedUrlRes.data.signed_url_token;
             const finalPdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/reports/journal/imprimir?signed_token=${signedToken}`;
 
@@ -184,7 +260,7 @@ export default function LibroDiarioPage() {
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-4">
-                                        <h1 className="text-3xl font-bold text-gray-800">Libro Diario</h1>
+                                        <h1 className="text-3xl font-bold text-gray-800">Libro Diario Detallado</h1>
                                         <button
                                             onClick={() => window.open('/manual/capitulo_27_libro_diario.html', '_blank')}
                                             className="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded-md flex items-center gap-2 transition-colors"
@@ -206,61 +282,83 @@ export default function LibroDiarioPage() {
                             <h2 className="text-lg font-bold text-gray-700">Criterios de Búsqueda</h2>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
                             {/* Tipo Documento */}
-                            <div className="md:col-span-2 lg:col-span-1">
-                                <label className={labelClass}>Tipo de Documento</label>
+                            <div className="md:col-span-2">
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className={labelClass}>Tipos de Documento (Ctrl+Click)</label>
+                                    <button
+                                        onClick={handleSelectAll}
+                                        className="text-xs text-indigo-600 hover:text-indigo-800 font-bold underline"
+                                    >
+                                        {filtros.selectedTipos.length === tiposDocumento.length ? 'Deseleccionar Todos' : 'Seleccionar Todos'}
+                                    </button>
+                                </div>
                                 <select
-                                    value={filtros.tipoDocId}
-                                    onChange={(e) => setFiltros(prev => ({ ...prev, tipoDocId: e.target.value }))}
-                                    className={selectClass}
+                                    multiple
+                                    className={`${selectClass} h-24`} // Altura fija para ver varios
+                                    value={filtros.selectedTipos}
+                                    onChange={handleTipoDocChange}
                                 >
-                                    <option value="">Todos</option>
-                                    {tiposDocumento.map(tipo => (<option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>))}
+                                    {tiposDocumento.map(t => (
+                                        <option key={t.id} value={t.id}>{t.nombre}</option>
+                                    ))}
                                 </select>
                             </div>
 
-                            {/* Fecha Inicio */}
-                            <div>
-                                <label className={labelClass}>Fecha Inicio</label>
-                                <div className="relative">
-                                    <input
-                                        type="date"
-                                        value={filtros.inicio}
-                                        onChange={(e) => setFiltros(prev => ({ ...prev, inicio: e.target.value }))}
-                                        className={inputClass}
-                                    />
-                                    <FaCalendarAlt className="absolute right-3 top-3 text-gray-400 pointer-events-none" />
+                            {/* Fechas */}
+                            <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className={labelClass}>Fecha Inicio</label>
+                                    <div className="relative">
+                                        <input
+                                            type="date"
+                                            value={filtros.inicio}
+                                            onChange={(e) => setFiltros(prev => ({ ...prev, inicio: e.target.value }))}
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Fecha Fin</label>
+                                    <div className="relative">
+                                        <input
+                                            type="date"
+                                            value={filtros.fin}
+                                            onChange={(e) => setFiltros(prev => ({ ...prev, fin: e.target.value }))}
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                </div>
+                                {/* Account Filter */}
+                                <div className="col-span-2 mt-2">
+                                    <label className={labelClass}>Filtrar por Cuenta (Código o Nombre)</label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            placeholder="Ej: 1105 o Caja General"
+                                            value={filtros.cuenta}
+                                            onChange={(e) => setFiltros(prev => ({ ...prev, cuenta: e.target.value }))}
+                                            className={inputClass}
+                                        />
+                                        <FaSearch className="absolute right-3 top-3 text-gray-400 pointer-events-none" />
+                                    </div>
                                 </div>
                             </div>
+                        </div>
 
-                            {/* Fecha Fin */}
-                            <div>
-                                <label className={labelClass}>Fecha Fin</label>
-                                <div className="relative">
-                                    <input
-                                        type="date"
-                                        value={filtros.fin}
-                                        onChange={(e) => setFiltros(prev => ({ ...prev, fin: e.target.value }))}
-                                        className={inputClass}
-                                    />
-                                    <FaCalendarAlt className="absolute right-3 top-3 text-gray-400 pointer-events-none" />
-                                </div>
-                            </div>
-
-                            {/* Botón Generar */}
-                            <div>
-                                <button
-                                    onClick={handleGenerateReport}
-                                    disabled={isLoading}
-                                    className={`
-                                w-full px-6 py-2 rounded-lg shadow-md font-bold text-white transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2
-                                ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}
-                            `}
-                                >
-                                    {isLoading ? <span className="loading loading-spinner loading-sm"></span> : <><FaSearch /> Generar Reporte</>}
-                                </button>
-                            </div>
+                        {/* Botón Generar (Full width below) */}
+                        <div className="mt-6 flex justify-end">
+                            <button
+                                onClick={handleGenerateReport}
+                                disabled={isLoading}
+                                className={`
+                                    px-8 py-3 rounded-lg shadow-md font-bold text-white transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2
+                                    ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}
+                                `}
+                            >
+                                {isLoading ? <span className="loading loading-spinner loading-sm"></span> : <><FaSearch /> Generar Reporte Detallado</>}
+                            </button>
                         </div>
                     </div>
 
@@ -307,7 +405,6 @@ export default function LibroDiarioPage() {
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-slate-100">
                                         <tr>
-                                            <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Fecha</th>
                                             <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Documento</th>
                                             <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Beneficiario</th>
                                             <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Cuenta</th>
@@ -318,46 +415,77 @@ export default function LibroDiarioPage() {
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-100">
                                         {reportData.length === 0 ? (
-                                            <tr><td colSpan="7" className="text-center py-8 text-gray-400 italic">No hay movimientos en este rango.</td></tr>
+                                            <tr><td colSpan="6" className="text-center py-8 text-gray-400 italic">No hay movimientos en este rango.</td></tr>
                                         ) : (
-                                            reportData.map((row, index) => (
-                                                <tr key={index} className="hover:bg-indigo-50/30 transition-colors">
-                                                    <td className="px-4 py-3 text-sm font-mono text-gray-600 whitespace-nowrap">
-                                                        {new Date(row.fecha).toLocaleDateString('es-CO', { timeZone: 'UTC' })}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-sm font-medium text-gray-800">
-                                                        <span className="text-xs text-gray-500 mr-1">{getInitials(row.tipo_documento)}</span>
-                                                        <span className="font-mono">#{row.numero_documento}</span>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-sm text-gray-700 truncate max-w-xs" title={row.beneficiario_nombre}>
-                                                        {row.beneficiario_nombre}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-sm text-gray-600">
-                                                        <span className="font-mono font-bold text-indigo-700">{row.cuenta_codigo}</span>
-                                                        <span className="block text-xs">{row.cuenta_nombre}</span>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-sm text-gray-600 italic truncate max-w-xs" title={row.concepto}>
-                                                        {row.concepto}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-sm text-right font-mono text-gray-700">
-                                                        {parseFloat(row.debito) > 0 ? parseFloat(row.debito).toLocaleString('es-CO', { minimumFractionDigits: 2 }) : '-'}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-sm text-right font-mono text-gray-700">
-                                                        {parseFloat(row.credito) > 0 ? parseFloat(row.credito).toLocaleString('es-CO', { minimumFractionDigits: 2 }) : '-'}
-                                                    </td>
-                                                </tr>
+                                            groupedData.map((group) => (
+                                                <React.Fragment key={group.fecha}>
+                                                    {/* Date Header */}
+                                                    <tr className="bg-indigo-50/50">
+                                                        <td colSpan="6" className="px-4 py-2 font-bold text-indigo-800 border-t border-b border-indigo-100">
+                                                            <FaCalendarAlt className="inline mr-2 mb-1" />
+                                                            {new Date(group.fecha).toLocaleDateString('es-CO', { timeZone: 'UTC', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                                        </td>
+                                                    </tr>
+
+                                                    {group.documents.map((doc, docIdx) => (
+                                                        <React.Fragment key={`${group.fecha}-${docIdx}`}>
+                                                            {doc.rows.map((row, rIdx) => (
+                                                                <tr key={rIdx} className="hover:bg-gray-50">
+                                                                    <td className="px-4 py-2 text-sm font-medium text-gray-800 whitespace-nowrap align-top">
+                                                                        {rIdx === 0 && ( /* Only show doc info on first row of doc? Optional. I'll show on all or simplify. Let's show on all for clarity or stick to PDF style. PDF shows on all. */
+                                                                            <>
+                                                                                <span className="text-xs text-gray-500 mr-1">{getInitials(doc.tipo)}</span>
+                                                                                <span className="font-mono">#{doc.numero}</span>
+                                                                            </>
+                                                                        )}
+                                                                        {rIdx > 0 && <span className="opacity-0">"</span>}
+                                                                    </td>
+                                                                    <td className="px-4 py-2 text-sm text-gray-700 truncate max-w-xs align-top" title={doc.beneficiario}>
+                                                                        {rIdx === 0 ? doc.beneficiario : ''}
+                                                                    </td>
+                                                                    <td className="px-4 py-2 text-sm text-gray-600 align-top">
+                                                                        <span className="font-mono font-bold text-indigo-700">{row.cuenta_codigo}</span>
+                                                                        <br />
+                                                                        <span className="text-xs">{row.cuenta_nombre}</span>
+                                                                    </td>
+                                                                    <td className="px-4 py-2 text-sm text-gray-600 italic truncate max-w-xs align-top" title={row.concepto}>
+                                                                        {row.concepto}
+                                                                    </td>
+                                                                    <td className="px-4 py-2 text-sm text-right font-mono text-gray-700 align-top">
+                                                                        {parseFloat(row.debito) > 0 ? parseFloat(row.debito).toLocaleString('es-CO', { minimumFractionDigits: 2 }) : '-'}
+                                                                    </td>
+                                                                    <td className="px-4 py-2 text-sm text-right font-mono text-gray-700 align-top">
+                                                                        {parseFloat(row.credito) > 0 ? parseFloat(row.credito).toLocaleString('es-CO', { minimumFractionDigits: 2 }) : '-'}
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                            {/* Subtotal Row */}
+                                                            <tr className="bg-gray-50 border-b border-gray-200">
+                                                                <td colSpan="4" className="px-4 py-2 text-right text-xs font-bold text-gray-500 uppercase italic">
+                                                                    Total {doc.tipo} #{doc.numero}:
+                                                                </td>
+                                                                <td className="px-4 py-2 text-right text-sm font-bold font-mono text-gray-800">
+                                                                    ${doc.totals.debito.toLocaleString('es-CO', { minimumFractionDigits: 2 })}
+                                                                </td>
+                                                                <td className="px-4 py-2 text-right text-sm font-bold font-mono text-gray-800">
+                                                                    ${doc.totals.credito.toLocaleString('es-CO', { minimumFractionDigits: 2 })}
+                                                                </td>
+                                                            </tr>
+                                                        </React.Fragment>
+                                                    ))}
+                                                </React.Fragment>
                                             ))
                                         )}
                                     </tbody>
                                     {/* Footer Totales */}
                                     {reportData.length > 0 && (
-                                        <tfoot className="bg-slate-50 border-t-2 border-slate-200">
+                                        <tfoot className="bg-slate-100 border-t-2 border-slate-300">
                                             <tr>
-                                                <td colSpan="5" className="px-4 py-4 text-right text-sm font-bold text-gray-600 uppercase">Totales Generales:</td>
-                                                <td className="px-4 py-4 text-right text-sm font-bold font-mono text-green-600">
+                                                <td colSpan="4" className="px-4 py-4 text-right text-sm font-bold text-gray-700 uppercase">Totales Generales:</td>
+                                                <td className="px-4 py-4 text-right text-sm font-bold font-mono text-green-700 border-t-2 border-green-600">
                                                     ${totals.debito.toLocaleString('es-CO', { minimumFractionDigits: 2 })}
                                                 </td>
-                                                <td className="px-4 py-4 text-right text-sm font-bold font-mono text-green-600">
+                                                <td className="px-4 py-4 text-right text-sm font-bold font-mono text-green-700 border-t-2 border-green-600">
                                                     ${totals.credito.toLocaleString('es-CO', { minimumFractionDigits: 2 })}
                                                 </td>
                                             </tr>

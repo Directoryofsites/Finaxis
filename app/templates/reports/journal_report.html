@@ -1,84 +1,130 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
-    <title>Libro Diario</title>
+    <title>Libro Diario Detallado</title>
     <style>
         @page {
             size: letter;
             margin: 1.5cm;
+
             @bottom-center {
                 content: "Página " counter(page) " de " counter(pages);
                 font-size: 10px;
             }
         }
+
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
             font-size: 10px;
             color: #333;
         }
+
         .header {
             text-align: center;
             margin-bottom: 20px;
             border-bottom: 1px solid #333;
             padding-bottom: 10px;
         }
-        .header h1, .header h2, .header p {
+
+        .header h1,
+        .header h2,
+        .header p {
             margin: 0;
             padding: 2px 0;
         }
+
         .header h1 {
             font-size: 16px;
         }
+
         .header h2 {
             font-size: 14px;
         }
+
         .header p {
             font-size: 12px;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 15px;
+            table-layout: fixed;
+            /* CRITICAL FOR PERFORMANCE */
         }
-        th, td {
+
+        th,
+        td {
             border: 1px solid #ccc;
-            padding: 6px;
+            padding: 4px;
+            /* Reduced padding for density */
             text-align: left;
             vertical-align: top;
+            word-wrap: break-word;
+            /* Ensure content wraps */
+            overflow-wrap: break-word;
         }
+
         th {
             background-color: #f2f2f2;
             font-weight: bold;
+            font-size: 9px;
         }
+
+        td {
+            font-size: 9px;
+        }
+
         .date-header {
             background-color: #e0e0e0;
             font-weight: bold;
             text-align: center;
         }
+
         .text-right {
             text-align: right;
         }
+
         .totals-row td {
             font-weight: bold;
-            background-color: #f2f2f2;
-            border-top: 2px solid #333;
+            background-color: #333;
+            color: #fff;
+            border-top: 2px solid #000;
         }
-        .document-group {
-            border-left: 3px solid #f2f2f2;
+
+        .doc-subtotal-row td {
+            background-color: #f9f9f9;
+            font-weight: bold;
+            font-style: italic;
+            border-top: 1px solid #aaa;
         }
     </style>
 </head>
+
 <body>
 
     <div class="header">
         <h1>{{ empresa_nombre }}</h1>
         <h2>NIT: {{ empresa_nit }}</h2>
-        <p><strong>Libro Diario</strong></p>
+        <p><strong>Libro Diario Detallado</strong></p>
         <p>Desde el {{ fecha_inicio }} hasta el {{ fecha_fin }}</p>
     </div>
 
     <table>
+        <colgroup>
+            <col style="width: 12%"> <!-- Documento -->
+            <col style="width: 20%"> <!-- Beneficiario -->
+            <col style="width: 20%"> <!-- Cuenta -->
+            <col style="width: 28%"> <!-- Concepto -->
+            {% if has_cost_centers %}
+            <col style="width: 20%"> <!-- Reduced Concepto if CC exists? -->
+            <col style="width: 8%"> <!-- CC -->
+            {% endif %}
+            <col style="width: 10%"> <!-- Debito -->
+            <col style="width: 10%"> <!-- Credito -->
+        </colgroup>
         <thead>
             <tr>
                 <th>Documento</th>
@@ -94,37 +140,50 @@
         </thead>
 
         <tbody>
-            {% for fecha, movimientos in report_data_agrupado.items() %}
-                <tr>
-                    <td colspan="{{ 7 if has_cost_centers else 6 }}" class="date-header">
-                        Fecha: {{ fecha }}
-                    </td>
-                </tr>
-                {% for mov in movimientos %}
-                <tr>
-                    <td>{{ mov.tipo_documento }}-{{ mov.numero_documento }}</td>
-                    <td>{{ mov.beneficiario_nombre or '' }}</td>
-                    <td>{{ mov.cuenta_codigo }} - {{ mov.cuenta_nombre }}</td>
-                    <td>{{ mov.concepto }}</td>
-                    {% if has_cost_centers %}
-                    <td>{{ mov.centro_costo_codigo or '' }}</td>
-                    {% endif %}
-                    {# --- MODIFICACIÓN: Usando el filtro 'currency' --- #}
-                    <td class="text-right">{{ mov.debito | currency }}</td>
-                    <td class="text-right">{{ mov.credito | currency }}</td>
-                </tr>
-                {% endfor %}
+            {% for date_group in report_data_structured %}
+            <tr>
+                <td colspan="{{ 7 if has_cost_centers else 6 }}" class="date-header">
+                    Fecha: {{ date_group.fecha }}
+                </td>
+            </tr>
+
+            {% for doc in date_group.documents %}
+            {# --- Filas del Documento --- #}
+            {% for mov in doc.rows %}
+            <tr>
+                <td>{{ doc.tipo_documento }}-{{ doc.numero_documento }}</td>
+                <td>{{ doc.beneficiario_nombre or '' }}</td>
+                <td>{{ mov.cuenta_codigo }} - {{ mov.cuenta_nombre }}</td>
+                <td>{{ mov.concepto }}</td>
+                {% if has_cost_centers %}
+                <td>{{ mov.centro_costo_codigo or '' }}</td>
+                {% endif %}
+                <td class="text-right">{{ mov.debito | currency }}</td>
+                <td class="text-right">{{ mov.credito | currency }}</td>
+            </tr>
+            {% endfor %}
+
+            {# --- Subtotal del Documento --- #}
+            <tr class="doc-subtotal-row">
+                <td colspan="{{ 5 if has_cost_centers else 4 }}" class="text-right">
+                    Subtotal {{ doc.tipo_documento }} #{{ doc.numero_documento }}:
+                </td>
+                <td class="text-right">{{ doc.total_debito | currency }}</td>
+                <td class="text-right">{{ doc.total_credito | currency }}</td>
+            </tr>
+            {% endfor %}
+
             {% else %}
-                <tr>
-                    <td colspan="{{ 7 if has_cost_centers else 6 }}" style="text-align:center;">No hay movimientos para el período seleccionado.</td>
-                </tr>
+            <tr>
+                <td colspan="{{ 7 if has_cost_centers else 6 }}" style="text-align:center;">No hay movimientos para el
+                    período seleccionado.</td>
+            </tr>
             {% endfor %}
         </tbody>
 
         <tfoot>
             <tr class="totals-row">
-                <td colspan="{{ 5 if has_cost_centers else 4 }}" class="text-right"><strong>TOTALES</strong></td>
-                 {# --- MODIFICACIÓN: Usando el filtro 'currency' --- #}
+                <td colspan="{{ 5 if has_cost_centers else 4 }}" class="text-right"><strong>TOTAL GENERAL</strong></td>
                 <td class="text-right"><strong>{{ total_debito | currency }}</strong></td>
                 <td class="text-right"><strong>{{ total_credito | currency }}</strong></td>
             </tr>
@@ -132,4 +191,5 @@
     </table>
 
 </body>
+
 </html>

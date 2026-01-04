@@ -262,6 +262,9 @@ app.include_router(tipos_documento_router.router, prefix="/api/tipos-documento",
 app.include_router(centros_costo_router.router, prefix="/api/centros-costo", tags=["Centros de Costo"])
 app.include_router(plantillas_router.router, prefix="/api/plantillas", tags=["Plantillas"])
 
+from app.api.import_templates import routes as import_templates_router
+app.include_router(import_templates_router.router, prefix="/api/import-templates", tags=["Plantillas de Importación"])
+
 
 app.include_router(conceptos_favoritos_router.router, prefix="/api", tags=["Conceptos Favoritos"]) # <--- AÑADIR ESTA LÍNEA
 
@@ -273,6 +276,8 @@ app.include_router(utilidades_router.router, prefix="/api/utilidades", tags=["Ut
 app.include_router(periodos_router.router, prefix="/api/periodos", tags=["Períodos"])
 app.include_router(formatos_impresion_router.router, prefix="/api/formatos-impresion", tags=["Plantillas de Impresión"])
 app.include_router(configuracion_routes.router, prefix="/api/config", tags=["Configuración"]) # <--- NUEVO
+from app.api.reportes import flujo_efectivo_route as flujo_efectivo_router
+app.include_router(flujo_efectivo_router.router, prefix="/api/analisis", tags=["Analisis Financiero"])
 app.include_router(reports_router.router, prefix="/api/reports", tags=["Reportes"])
 app.include_router(cartera_router.router, prefix="/api/cartera", tags=["Cartera"])
 app.include_router(proveedores_router.router, prefix="/api/proveedores", tags=["Proveedores"])

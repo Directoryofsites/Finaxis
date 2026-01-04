@@ -126,11 +126,28 @@ def generate_super_informe(db: Session, filtros: schemas_doc.DocumentoGestionFil
 
                 if filtros.numero:
                     try:
+                        # Logic for multi-value filtering (comma separated)
+                        raw_nums = str(filtros.numero).replace(' ', '').split(',')
+                        
                         if filtros.estadoDocumento == 'eliminados':
-                            query = query.filter(table_doc.numero == str(filtros.numero))
+                            # For 'eliminados', numero is treated as string in this logic (though model might store it as int/str)
+                            # Looking at model def, models_doc_elim.numero is usually String or Integer? 
+                            # Previous code cast it to str(). Let's stick to str for 'eliminados' if that was expected.
+                            # But wait, original code: query.filter(table_doc.numero == str(filtros.numero))
+                            if len(raw_nums) > 1:
+                                query = query.filter(table_doc.numero.in_(raw_nums))
+                            else:
+                                query = query.filter(table_doc.numero == raw_nums[0])
                         else:
-                            numero_doc = int(filtros.numero)
-                            query = query.filter(table_doc.numero == numero_doc)
+                            # For active/anulados (models_doc.numero is likely Integer)
+                            parsed_nums = [int(n) for n in raw_nums if n.isdigit()]
+                            
+                            if parsed_nums:
+                                if len(parsed_nums) > 1:
+                                    query = query.filter(table_doc.numero.in_(parsed_nums))
+                                else:
+                                    query = query.filter(table_doc.numero == parsed_nums[0])
+                            
                     except (ValueError, TypeError):
                         pass
 

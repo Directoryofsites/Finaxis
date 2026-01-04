@@ -129,17 +129,33 @@ export default function DetalleDocumentoPage() {
   };
 
   const handleCuentaBlur = (index, value) => {
-    if (!value) return;
+    if (!value) {
+      // User cleared the field
+      const newMovimientos = [...movimientos];
+      newMovimientos[index]['cuentaId'] = null;
+      newMovimientos[index]['cuentaInput'] = '';
+      setMovimientos(newMovimientos);
+      return;
+    }
 
     const cuentaEncontrada = cuentas.find(c =>
       c.codigo === value ||
-      (c.nombre && c.nombre.toLowerCase() === value.toLowerCase())
+      (c.nombre && c.nombre.toLowerCase() === value.toLowerCase()) ||
+      `${c.codigo} - ${c.nombre}` === value // Allow matching full string if user didn't change it but triggered blur
     );
 
     if (cuentaEncontrada) {
       const newMovimientos = [...movimientos];
       newMovimientos[index]['cuentaId'] = cuentaEncontrada.id;
       newMovimientos[index]['cuentaInput'] = `${cuentaEncontrada.codigo} - ${cuentaEncontrada.nombre}`;
+      setMovimientos(newMovimientos);
+    } else {
+      // Optional: Reset if invalid? Or leave as is to let user correct it? 
+      // For now, let's reset to avoid saving bad data, or just alert?
+      // Let's just clear ID if it doesn't match known account to force valid selection
+      const newMovimientos = [...movimientos];
+      newMovimientos[index]['cuentaId'] = null;
+      // Keep input text so user can fix it, but ID is null
       setMovimientos(newMovimientos);
     }
   };
@@ -284,7 +300,7 @@ export default function DetalleDocumentoPage() {
                       placeholder="Digita código o nombre..."
                       value={mov.cuentaInput}
                       onChange={e => handleMovimientoChange(index, 'cuentaInput', e.target.value)}
-                      onBlur={e => (mov.cuentaId === '' || mov.cuentaId === null) && handleCuentaBlur(index, e.target.value)}
+                      onBlur={e => handleCuentaBlur(index, e.target.value)}
                       className="w-full border-gray-300 rounded-md"
                       disabled={isReadOnly}
                     />

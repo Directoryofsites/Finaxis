@@ -24,7 +24,7 @@ const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm
 const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none bg-white pl-10";
 
 export default function AuxiliarPorCuentaPage() {
-    const { user, loading: authLoading } = useAuth();
+    const { user, authLoading } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams(); // Hook para leer URL
 
@@ -247,12 +247,13 @@ export default function AuxiliarPorCuentaPage() {
         }
 
         const dataToExport = [
-            ['Fecha', 'Documento', 'Numero', 'Beneficiario', 'Concepto', 'Debito', 'Credito', 'Saldo Parcial'],
-            ['', '', '', '', 'SALDO ANTERIOR', '', '', reportData.saldoAnterior.toFixed(2)],
+            ['Fecha', 'Tipo Doc', 'Número', 'Nit/CC', 'Beneficiario', 'Concepto', 'Debito', 'Credito', 'Saldo Parcial'],
+            ['', '', '', '', '', 'SALDO ANTERIOR', '', '', reportData.saldoAnterior.toFixed(2)],
             ...reportData.movimientos.map(mov => [
                 new Date(mov.fecha).toLocaleDateString('es-CO', { timeZone: 'UTC' }),
                 mov.tipo_documento,
                 mov.numero_documento,
+                mov.beneficiario_nit || '',
                 mov.beneficiario || '',
                 mov.concepto.replace(/,/g, ''),
                 parseFloat(mov.debito).toFixed(2),
@@ -261,7 +262,7 @@ export default function AuxiliarPorCuentaPage() {
             ])
         ];
 
-        const csv = window.Papa.unparse(dataToExport);
+        const csv = window.Papa.unparse(dataToExport, { delimiter: ';' });
         const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -508,10 +509,19 @@ export default function AuxiliarPorCuentaPage() {
                                     </tbody>
 
                                     {/* Saldo Final */}
+                                    {/* Saldo Final y Totales */}
                                     <tfoot className="bg-slate-800 text-white border-t-4 border-indigo-500">
                                         <tr>
-                                            <td colSpan="6" className="px-4 py-4 text-right text-sm font-bold uppercase tracking-wider">Saldo Final a la Fecha:</td>
-                                            <td className="px-4 py-4 text-right text-lg font-mono font-bold text-white bg-slate-700">
+                                            <td colSpan="4" className="px-4 py-4 text-right text-sm font-bold uppercase tracking-wider">
+                                                TOTALES PERIODO Y SALDO FINAL:
+                                            </td>
+                                            <td className="px-4 py-4 text-right text-sm font-mono font-bold text-green-300">
+                                                {formatCurrency(reportData.movimientos.reduce((acc, m) => acc + parseFloat(m.debito || 0), 0))}
+                                            </td>
+                                            <td className="px-4 py-4 text-right text-sm font-mono font-bold text-red-300">
+                                                {formatCurrency(reportData.movimientos.reduce((acc, m) => acc + parseFloat(m.credito || 0), 0))}
+                                            </td>
+                                            <td className="px-4 py-4 text-right text-lg font-mono font-bold text-white bg-slate-700 border-l border-slate-600">
                                                 {(reportData.movimientos.length > 0
                                                     ? formatCurrency(reportData.movimientos[reportData.movimientos.length - 1].saldo_parcial)
                                                     : formatCurrency(reportData.saldoAnterior)

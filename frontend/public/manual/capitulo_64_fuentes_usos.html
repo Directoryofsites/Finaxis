@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Fuentes y Usos</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #2c3e50;
+        }
+
+        .box {
+            background: #f9f9f9;
+            border-left: 5px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .concept {
+            font-weight: bold;
+            color: #2980b9;
+        }
+
+        .use {
+            color: #c0392b;
+            font-weight: bold;
+        }
+
+        .source {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Estado de Fuentes y Usos (Capital de Trabajo)</h1>
+
+    <p>Este reporte es una herramienta gerencial para analizar <strong>de dónde provienen los fondos</strong> de la
+        empresa y <strong>en qué se utilizaron</strong> durante un periodo determinado, enfocándose específicamente en
+        el Capital de Trabajo (Activos y Pasivos Corrientes).</p>
+
+    <div class="box">
+        <h3>¿Qué es Capital de Trabajo?</h3>
+        <p>Es el dinero y recursos que la empresa utiliza para operar día a día (Caja, Inventarios, Cuentas por Cobrar)
+            menos lo que debe pagar a corto plazo (Proveedores, Impuestos).</p>
+    </div>
+
+    <h2>Conceptos Clave</h2>
+
+    <h3><span class="source">FUENTES (Origen de los recursos)</span></h3>
+    <p>Son movimientos que <strong>generan o liberan dinero</strong> para la empresa:</p>
+    <ul>
+        <li><strong>Disminución de Activos:</strong> Si vendes inventario o cobras una cuenta por cobrar, entra dinero.
+        </li>
+        <li><strong>Aumento de Pasivos:</strong> Si consigues crédito con un proveedor o un banco, tienes más recursos
+            disponibles (dinero financiado).</li>
+    </ul>
+
+    <h3><span class="use">USOS (Aplicación de los recursos)</span></h3>
+    <p>Son movimientos que <strong>consumen recursos</strong>:</p>
+    <ul>
+        <li><strong>Aumento de Activos:</strong> Si compras más inventario o das crédito a clientes, el dinero queda
+            "atrapado" ahí.</li>
+        <li><strong>Disminución de Pasivos:</strong> Si pagas una deuda, sale dinero de la empresa.</li>
+    </ul>
+
+    <h2>Interpretación del Reporte</h2>
+
+    <p>El reporte muestra una tabla con cada cuenta y su variación:</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Situación</th>
+                <th>Ejemplo</th>
+                <th>Clasificación</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Activo Aumenta</td>
+                <td>Compré más inventario</td>
+                <td class="use">USO (Gaste plata)</td>
+            </tr>
+            <tr>
+                <td>Activo Disminuye</td>
+                <td>Cobré cartera a clientes</td>
+                <td class="source">FUENTE (Recuperé plata)</td>
+            </tr>
+            <tr>
+                <td>Pasivo Aumenta</td>
+                <td>Me endeudé más con proveedores</td>
+                <td class="source">FUENTE (Me financié)</td>
+            </tr>
+            <tr>
+                <td>Pasivo Disminuye</td>
+                <td>Pagué mis deudas</td>
+                <td class="use">USO (Salió plata)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="box">
+        <strong>Análisis Gerencial:</strong><br>
+        Si sus <strong>USOS</strong> son mayores que sus <strong>FUENTES</strong> operativas, significa que la empresa
+        está consumiendo caja y necesita financiación externa o está creciendo en capital de trabajo (ej. llenándose de
+        inventario).
+    </div>
+
+</body>
+
+</html>

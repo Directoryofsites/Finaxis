@@ -183,8 +183,8 @@ export default function BalancePruebaPage() {
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const pdfUrl = `${baseUrl}/api/reports/balance-de-prueba/imprimir?signed_token=${token}`;
 
-      // Descarga segura (Direct Navigation)
-      window.location.href = pdfUrl;
+      // Descarga segura (Nueva Pestaña)
+      window.open(pdfUrl, '_blank');
 
     } catch (err) {
       setError(err.response?.data?.detail || 'Error al generar el PDF.');
@@ -390,8 +390,28 @@ export default function BalancePruebaPage() {
                 <tbody className="bg-white divide-y divide-gray-100">
                   {reportData.filas.map(fila => (
                     <tr key={fila.codigo} className={`hover:bg-indigo-50/20 transition-colors ${getNivelClass(fila.nivel)}`}>
-                      <td className="px-4 py-2 font-mono text-sm whitespace-nowrap">{fila.codigo}</td>
-                      <td className={`px-4 py-2 text-sm ${getPaddingClass(fila.nivel)}`}>{fila.nombre}</td>
+                      <td className="px-4 py-2 font-mono text-sm whitespace-nowrap">
+                        <a
+                          href={`/contabilidad/reportes/auxiliar-cuenta?cuenta=${fila.codigo}&fecha_inicio=${filtros.fecha_inicio}&fecha_fin=${filtros.fecha_fin}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1"
+                          title="Ver Auxiliar detallado en nueva pestaña"
+                        >
+                          {fila.codigo} <FaBook className="text-xs opacity-50" />
+                        </a>
+                      </td>
+                      <td className={`px-4 py-2 text-sm ${getPaddingClass(fila.nivel)}`}>
+                        <a
+                          href={`/contabilidad/reportes/auxiliar-cuenta?cuenta=${fila.codigo}&fecha_inicio=${filtros.fecha_inicio}&fecha_fin=${filtros.fecha_fin}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-indigo-700 hover:underline cursor-pointer block"
+                          title="Ver Auxiliar detallado"
+                        >
+                          {fila.nombre}
+                        </a>
+                      </td>
                       <td className="px-4 py-2 text-right font-mono text-sm bg-slate-50/50">{formatCurrency(fila.saldo_inicial)}</td>
                       <td className="px-4 py-2 text-right font-mono text-sm">{formatCurrency(fila.debito)}</td>
                       <td className="px-4 py-2 text-right font-mono text-sm">{formatCurrency(fila.credito)}</td>

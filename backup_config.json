@@ -1,0 +1,6 @@
+{
+    "enabled": true,
+    "hora_ejecucion": "11:00",
+    "ruta_local": "C:/Backups_Finaxis",
+    "dias_retencion": 30
+}

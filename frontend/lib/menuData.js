@@ -18,6 +18,8 @@ const ANALISIS_FINANCIERO_MODULE = {
         { name: 'Ratios', href: '/analisis/ratios', mnemonic: 'r', icon: FaPercentage },
         { name: 'Vertical', href: '/analisis/vertical', mnemonic: 'v', icon: FaArrowUp },
         { name: 'Horizontal', href: '/analisis/horizontal', mnemonic: 'h', icon: FaExchangeAlt },
+        { name: 'Fuentes y Usos', href: '/analisis/fuentes-usos', mnemonic: 'f', icon: FaChartBar },
+        { name: 'Flujos de Efectivo', href: '/analisis/flujos-efectivo', mnemonic: 'e', icon: FaChartLine },
     ]
 };
 
@@ -92,13 +94,15 @@ export const menuStructure = [
             { name: 'Crear Documento', href: '/contabilidad/documentos', mnemonic: 'd', icon: FaFileAlt, description: 'Registro de asientos manuales y notas.' },
             { name: 'Captura Rápida', href: '/contabilidad/captura-rapida', mnemonic: 'r', icon: FaPlus, description: 'Ingreso ágil de facturas y gastos.' },
             { name: 'Explorador Doc.', href: '/contabilidad/explorador', mnemonic: 'e', icon: FaBook, description: 'Búsqueda avanzada de movimientos.' },
-            { name: 'Libro Diario', href: '/contabilidad/reportes/libro-diario', mnemonic: 'l', icon: FaBook, description: 'Movimientos cronológicos por día.' },
+            { name: 'Libro Diario Detallado', href: '/contabilidad/reportes/libro-diario', mnemonic: 'l', icon: FaBook, description: 'Movimientos cronológicos por día.' },
+            { name: 'Libro Diario Resumen', href: '/contabilidad/reportes/libro-diario-resumen', mnemonic: 'u', icon: FaBook, description: 'Resumen por tipo de documento.' },
+            { name: 'Análisis de Cuenta por Documento', href: '/contabilidad/reportes/analisis-cuenta-documento', mnemonic: 'y', icon: FaBook, description: 'Desglose por fuente.' },
             { name: 'Balance General', href: '/contabilidad/reportes/balance-general', mnemonic: 'b', icon: FaBalanceScale, description: 'Estado de situación financiera (ESF).' },
-            { name: 'Resultados (PIG)', href: '/contabilidad/reportes/estado-resultados', mnemonic: 'p', icon: FaChartBar, description: 'Pérdidas y Ganancias (PYG).' },
+            { name: 'Resultados (PYG)', href: '/contabilidad/reportes/estado-resultados', mnemonic: 'p', icon: FaChartBar, description: 'Pérdidas y Ganancias (PYG).' },
             { name: 'Balance Prueba', href: '/contabilidad/reportes/balance-de-prueba', mnemonic: 'a', icon: FaCheckCircle, description: 'Resumen de saldos débito y crédito.' },
             { name: 'Auxiliar Contable', href: '/contabilidad/reportes/auxiliar-cuenta', mnemonic: 'x', icon: FaFileAlt, description: 'Detalle de movimientos por cuenta.' },
             { name: 'Libros Oficiales', href: '/admin/utilidades/libros-oficiales', mnemonic: 'o', icon: FaUniversity, description: 'Generación de libros reglamentarios.' },
-            { name: 'Super Informe', href: '/contabilidad/reportes/super-informe', mnemonic: 's', icon: FaClipboardList, description: 'Cruce de información y auditoría.' },
+            { name: 'Auditoría Contable Avanzada', href: '/contabilidad/reportes/super-informe', mnemonic: '1', icon: FaClipboardList, description: 'Cruce de información y auditoría.' },
         ]
     },
     // 2. Análisis Financiero -> Análisis (L - "A" is taken by Activos)

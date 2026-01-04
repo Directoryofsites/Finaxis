@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -224,3 +224,157 @@ def get_papelera_items(db: Session = Depends(get_db), current_user: models_usuar
 @router.post("/auditoria-consecutivos", response_model=List[diagnostico_schemas.ConsecutivoInfo])
 def get_auditoria_consecutivos(request: diagnostico_schemas.AuditoriaConsecutivosRequest, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
     return diagnostico_service.get_auditoria_consecutivos(db=db, user=current_user, request=request)
+
+# --- LEGACY IMPORT ENDPOINT ---
+from fastapi import UploadFile, File, Form
+from app.services import legacy_import_service
+from datetime import datetime
+
+@router.post("/importar-legacy")
+async def importar_legacy(
+    empresa_id: int = Form(...),
+    periodo_fecha: str = Form(...), # YYYY-MM-DD
+    default_tercero_id: Optional[int] = Form(None),
+    file_coma: UploadFile = File(None),
+    file_coni: UploadFile = File(None),
+    file_cotr: UploadFile = File(None),
+    file_txt: UploadFile = File(None), # Nuevo soporte TXT
+    db: Session = Depends(get_db),
+    current_user: models_usuario.Usuario = Depends(has_permission("utilidades:migracion"))
+):
+    try:
+        content_coma = await file_coma.read() if file_coma else None
+        content_coni = await file_coni.read() if file_coni else None
+        content_cotr = await file_cotr.read() if file_cotr else None
+        content_txt = await file_txt.read() if file_txt else None
+        
+        p_date = datetime.strptime(periodo_fecha, "%Y-%m-%d").date()
+        
+        return legacy_import_service.import_legacy_data(
+            db=db,
+            empresa_id=empresa_id,
+            period_date=p_date,
+            default_tercero_id=default_tercero_id,
+            file_coma=content_coma,
+            file_coni=content_coni,
+            file_cotr=content_cotr,
+            file_txt=content_txt
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en importación legacy: {str(e)}")
+
+# --- UNIVERSAL EXCEL IMPORT ENDPOINT ---
+from app.services.universal_import_service import UniversalImportService
+
+@router.post("/importar-universal")
+async def importar_universal(
+    empresa_id: int = Form(...),
+    default_tercero_id: Optional[int] = Form(None),
+    template_id: Optional[int] = Form(None), # Nuevo soporte de plantillas
+    file_excel: UploadFile = File(...), 
+    db: Session = Depends(get_db),
+    current_user: models_usuario.Usuario = Depends(has_permission("utilidades:migracion"))
+):
+    """
+    Importa Movimientos Contables desde el 'Formato Universal ContaPY' (Excel).
+    Soporta plantillas personalizadas si se envía template_id.
+    """
+    try:
+        content = await file_excel.read()
+        
+        return UniversalImportService.process_import(
+            db=db,
+            empresa_id=empresa_id,
+            file_content=content,
+            default_tercero_id=default_tercero_id,
+            template_id=template_id
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en importación universal: {str(e)}")
+
+@router.delete("/limpiar-legacy")
+def limpiar_legacy(db: Session = Depends(get_db)):
+    from sqlalchemy import text
+    try:
+        # Delete Documents
+        docs = db.execute(text("SELECT id FROM documentos WHERE tipo_documento_id IN (SELECT id FROM tipos_documento WHERE codigo IN ('CD-L', 'CD-LEGACY'))")).fetchall()
+        ids = [str(r[0]) for r in docs]
+        
+        if ids:
+            ids_str = ",".join(ids)
+            db.execute(text(f"DELETE FROM movimientos_contables WHERE documento_id IN ({ids_str})"))
+            db.execute(text(f"DELETE FROM documentos WHERE id IN ({ids_str})"))
+            
+        # Delete Garbage Accounts
+        db.execute(text("DELETE FROM plan_cuentas WHERE nombre LIKE '%ÿ%'"))
+        
+        # Delete Garbage Third Parties
+        db.execute(text("DELETE FROM terceros WHERE razon_social LIKE '%ÿ%'"))
+        
+        db.commit()
+        return {"message": "Limpieza completada con exito"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/purgar-tipo-documento/{tipo_id}")
+def purgar_tipo_documento(
+    tipo_id: int, 
+    db: Session = Depends(get_db), 
+    current_user: models_usuario.Usuario = Depends(get_current_user)
+):
+    """
+    ELIMINACIÓN FUERTE de un Tipo de Documento y toda su basura asociada (Documentos Eliminados/Anulados).
+    Solo se permite si NO hay documentos ACTIVOS usando este tipo.
+    """
+    from app.models import Documento, DocumentoEliminado, TipoDocumento, MovimientoEliminado
+    from sqlalchemy import text
+    
+    # 1. Verificar existencia
+    tipo = db.query(TipoDocumento).filter_by(id=tipo_id).first()
+    if not tipo:
+        raise HTTPException(status_code=404, detail="Tipo de documento no encontrado.")
+        
+    # 2. Verificar Documentos ACTIVOS (Bloqueante)
+    active_docs = db.query(Documento).filter(
+        Documento.tipo_documento_id == tipo_id,
+        Documento.estado != 'ANULADO' # Si está anulado, asumimos que es "basura" erradicable según solicitud
+    ).count()
+    
+    if active_docs > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"No se puede purgar: Existen {active_docs} documentos ACTIVOS de este tipo. Debes anularlos o eliminarlos primero."
+        )
+        
+    try:
+        # 3. Eliminar Documentos "Papelera" (Hard Delete)
+        # Buscar IDs de DocEliminados
+        deleted_docs_query = db.query(DocumentoEliminado.id).filter_by(tipo_documento_id=tipo_id)
+        deleted_ids = [d[0] for d in deleted_docs_query.all()]
+        
+        if deleted_ids:
+            # Delete MovimientosEliminados
+            db.query(MovimientoEliminado).filter(MovimientoEliminado.documento_eliminado_id.in_(deleted_ids)).delete(synchronize_session=False)
+            # Delete DocumentosEliminados
+            db.query(DocumentoEliminado).filter(DocumentoEliminado.id.in_(deleted_ids)).delete(synchronize_session=False)
+            
+        # 4. Eliminar Documentos ANULADOS (Hard Delete) - "Basura" en tabla principal
+        # Anulados siguen en tabla Documento, pero si el usuario quiere purgar el TIPO, deben irse.
+        anulados_query = db.query(Documento).filter_by(tipo_documento_id=tipo_id)
+        anulados_ids = [d.id for d in anulados_query.all()]
+        
+        if anulados_ids:
+             # Delete Movimietos (Cascade should handle, but manual to be safe if no cascade)
+             db.execute(text(f"DELETE FROM movimientos_contables WHERE documento_id IN ({','.join(map(str, anulados_ids))})"))
+             db.query(Documento).filter(Documento.id.in_(anulados_ids)).delete(synchronize_session=False)
+             
+        # 5. Eliminar el Tipo Documento
+        db.delete(tipo)
+        
+        db.commit()
+        return {"msg": f"Tipo '{tipo.nombre}' y todos sus rastros han sido purgados exitosamente."}
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al purgar: {str(e)}")

@@ -30,8 +30,13 @@ export default function ConteoRegistrosPage() {
         fetchData(selectedMonth, selectedYear);
     }, [selectedMonth, selectedYear]);
 
-    // Generar lista de años (Actual y anterior)
-    const years = [today.getFullYear(), today.getFullYear() - 1];
+    // Generar lista de años (Dinámico desde 2020 hasta actual + futuro)
+    const currentYear = today.getFullYear();
+    const startYear = 2020; // Año base seguro para legacy
+    const years = [];
+    for (let y = currentYear + 1; y >= startYear; y--) {
+        years.push(y);
+    }
     const months = [
         { id: 1, name: 'Ene' }, { id: 2, name: 'Feb' }, { id: 3, name: 'Mar' },
         { id: 4, name: 'Abr' }, { id: 5, name: 'May' }, { id: 6, name: 'Jun' },

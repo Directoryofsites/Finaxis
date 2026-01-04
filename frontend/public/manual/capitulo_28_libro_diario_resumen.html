@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Libro Diario Resumen | Sistema Finaxis</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f9f9f9;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+        }
+
+        p {
+            margin-bottom: 15px;
+        }
+
+        .highlight {
+            background-color: #e8f6f3;
+            padding: 15px;
+            border-left: 5px solid #1abc9c;
+            margin: 20px 0;
+        }
+
+        ul {
+            margin-bottom: 20px;
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .btn {
+            display: inline-block;
+            background: #3498db;
+            color: #fff;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            background: #2980b9;
+        }
+
+        code {
+            background-color: #f1f1f1;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Manual de Usuario: Libro Diario Resumido</h1>
+
+        <p>Bienvenido al módulo del <strong>Libro Diario Resumido</strong>. Este reporte es una herramienta fundamental
+            para la revisión contable y la auditoría rápida de movimientos.</p>
+
+        <div class="highlight">
+            <strong>¿Para qué sirve?</strong>
+            <p>A diferencia del Libro Diario tradicional que muestra cada transacción individual, este reporte
+                <strong>agrupa</strong> los movimientos por Tipo de Documento (ej: Facturas, Recibos, Nómina). Esto le
+                permite verificar en segundos los totales operados por módulo sin perderse en miles de registros.</p>
+        </div>
+
+        <h2>Características Principales</h2>
+        <ul>
+            <li><strong>Agrupación Automática:</strong> Los asientos contables se ordenan por su origen (Tipo de
+                Documento).</li>
+            <li><strong>Control Integridad Contable:</strong> El sistema totaliza los Débitos y Créditos de cada grupo.
+                Si un documento está descuadrado, lo notará inmediatamente porque las sumas no coincidirán.</li>
+            <li><strong>Filtros Flexibles:</strong> Puede seleccionar un periodo de tiempo y filtrar por tipos de
+                documentos específicos.</li>
+        </ul>
+
+        <h2>Cómo generar el reporte</h2>
+        <ol>
+            <li>Ingrese al menú <strong>Contabilidad > Reportes > Libro Diario Resumen</strong>.</li>
+            <li><strong>Seleccione el Rango de Fechas:</strong> Por defecto muestra el año en curso.</li>
+            <li><strong>Filtre por Tipo de Documento:</strong>
+                <ul>
+                    <li>Si no selecciona nada, el sistema mostrará <strong>TODOS</strong>.</li>
+                    <li>Puede seleccionar "Seleccionar Todos" para marcar todo rápidamente.</li>
+                    <li>Use <code>Ctrl + Click</code> para seleccionar varios documentos específicos (ej: solo "Facturas
+                        de Venta" y "Recibos de Caja").</li>
+                </ul>
+            </li>
+            <li>Haga clic en el botón <strong>Generar Resumen</strong>.</li>
+        </ol>
+
+        <h2>Interpretación de Resultados</h2>
+        <p>El reporte le mostrará una tabla dividida por secciones:</p>
+        <ul>
+            <li><strong>Encabezado de Sección:</strong> Nombre del Tipo de Documento (ej: "RECIBO DE CAJA").</li>
+            <li><strong>Cuerpo:</strong> Lista de cuentas afectadas, mostrando el Código y Nombre de la cuenta.</li>
+            <li><strong>Totales:</strong> Suma de Débitos y Créditos para ese tipo de documento.</li>
+        </ul>
+
+        <h2>Exportación</h2>
+        <p>Utilice los botones en la parte superior derecha de los resultados:</p>
+        <ul>
+            <li><strong>PDF:</strong> Genera un archivo listo para impresión en una nueva pestaña (Ideal para archivo
+                físico).</li>
+            <li><strong>CSV:</strong> Descarga un archivo plano compatible con Excel para análisis de datos avanzado.
+            </li>
+        </ul>
+
+        <a href="javascript:window.close();" class="btn">Cerrar Manual</a>
+    </div>
+
+</body>
+
+</html>

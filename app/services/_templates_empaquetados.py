@@ -3,6 +3,180 @@
 # No editar este archivo manualmente. Ejecutar precompile_templates.py para actualizar.
 
 TEMPLATES_EMPAQUETADOS = {
+    'reports/cash_flow_report.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Estado de Flujos de Efectivo</title>
+    <style>
+        @page { size: letter portrait; margin: 1.5cm; }
+        body { font-family: Arial, sans-serif; font-size: 10px; color: #333; }
+        h1, h2 { text-align: center; margin: 2px; }
+        h1 { font-size: 14px; font-weight: bold; text-transform: uppercase; }
+        h2 { font-size: 12px; font-weight: normal; color: #555; }
+        
+        .header-section { margin-bottom: 20px; text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        
+        .section-title { 
+            background-color: #f0f0f0; 
+            padding: 5px; 
+            font-weight: bold; 
+            font-size: 11px; 
+            border: 1px solid #ddd; 
+            margin-top: 15px;
+            color: #000;
+        }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        th, td { border: 1px solid #eee; padding: 4px; text-align: left; }
+        th { background-color: #f9f9f9; font-weight: bold; text-align: center; }
+        
+        .amount { text-align: right; font-family: 'Courier New', monospace; }
+        .total-row { font-weight: bold; background-color: #eef; }
+        .subtotal-row td { border-top: 1px solid #999; font-weight: bold; }
+        
+        .summary-box { 
+            margin-top: 30px; 
+            border: 1px solid #333; 
+            padding: 10px; 
+            background-color: #fcfcfc;
+            page-break-inside: avoid;
+        }
+        .summary-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 11px; }
+        .summary-row.final { font-weight: bold; font-size: 12px; border-top: 1px solid #ccc; margin-top: 5px; padding-top: 5px; }
+        
+        .positive { color: #006400; }
+        .negative { color: #8b0000; }
+        .warning-box { border: 1px solid red; background-color: #ffe6e6; color: #cc0000; padding: 5px; margin-top: 10px; font-weight: bold; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="header-section">
+        <h1>{{ empresa_nombre }}</h1>
+        <h2>NIT: {{ empresa_nit }}</h2>
+        <h2>ESTADO DE FLUJOS DE EFECTIVO</h2>
+        <p style="font-size: 10px; margin-top: 5px;">Periodo: Del {{ fecha_inicio }} Al {{ fecha_fin }}</p>
+    </div>
+
+    <!-- SALDO INICIAL -->
+    <div style="margin-bottom: 15px;">
+        <strong>Saldo de Efectivo al Inicio del Período:</strong> 
+        <span class="amount" style="float: right; font-weight: bold;">{{ "{:,.2f}".format(data.saldo_inicial) }}</span>
+    </div>
+
+    <!-- ACTIVIDADES DE OPERACIÓN -->
+    <div class="section-title">ACTIVIDADES DE OPERACIÓN</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 70%">Concepto Financiero</th>
+                <th style="width: 30%">Valor</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data.flujos_operacion.detalles %}
+            <tr>
+                <td>{{ item.concepto }}</td>
+                <td class="amount {{ 'negative' if item.valor < 0 else 'positive' }}">
+                    {{ "{:,.2f}".format(item.valor) }}
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="2" style="text-align: center; color: #999;">Sin movimientos</td></tr>
+            {% endfor %}
+            <tr class="subtotal-row">
+                <td style="text-align: right;">Flujo Neto de Actividades de Operación</td>
+                <td class="amount">{{ "{:,.2f}".format(data.flujos_operacion.total) }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ACTIVIDADES DE INVERSIÓN -->
+    <div class="section-title">ACTIVIDADES DE INVERSIÓN</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 70%">Concepto Financiero</th>
+                <th style="width: 30%">Valor</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data.flujos_inversion.detalles %}
+            <tr>
+                <td>{{ item.concepto }}</td>
+                <td class="amount {{ 'negative' if item.valor < 0 else 'positive' }}">
+                    {{ "{:,.2f}".format(item.valor) }}
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="2" style="text-align: center; color: #999;">Sin movimientos</td></tr>
+            {% endfor %}
+            <tr class="subtotal-row">
+                <td style="text-align: right;">Flujo Neto de Actividades de Inversión</td>
+                <td class="amount">{{ "{:,.2f}".format(data.flujos_inversion.total) }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ACTIVIDADES DE FINANCIACIÓN -->
+    <div class="section-title">ACTIVIDADES DE FINANCIACIÓN</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 70%">Concepto Financiero</th>
+                <th style="width: 30%">Valor</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data.flujos_financiacion.detalles %}
+            <tr>
+                <td>{{ item.concepto }}</td>
+                <td class="amount {{ 'negative' if item.valor < 0 else 'positive' }}">
+                    {{ "{:,.2f}".format(item.valor) }}
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="2" style="text-align: center; color: #999;">Sin movimientos</td></tr>
+            {% endfor %}
+            <tr class="subtotal-row">
+                <td style="text-align: right;">Flujo Neto de Actividades de Financiación</td>
+                <td class="amount">{{ "{:,.2f}".format(data.flujos_financiacion.total) }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- RESUMEN FINAL -->
+    <div class="summary-box">
+        <div class="summary-row">
+            <span>Saldo de Efectivo al Inicio del Período:</span>
+            <span class="amount">{{ "{:,.2f}".format(data.saldo_inicial) }}</span>
+        </div>
+        <div class="summary-row">
+            <span>(+) Flujos Netos Totales (Operación + Inversión + Financiación):</span>
+            <span class="amount">{{ "{:,.2f}".format(data.flujos_netos_totales) }}</span>
+        </div>
+        <div class="summary-row final">
+            <span>(=) SALDO DE EFECTIVO AL FINAL DEL PERÍODO (CALCULADO):</span>
+            <span class="amount">{{ "{:,.2f}".format(data.saldo_final_calculado) }}</span>
+        </div>
+        
+        {% if not data.validacion.es_valido %}
+        <div class="warning-box">
+            ADVERTENCIA: EXISTE UNA DESVIACIÓN EN EL EFECTIVO<br>
+            Saldo Real en Libros: {{ "{:,.2f}".format(data.saldo_final_real) }} <br>
+            Diferencia no explicada: {{ "{:,.2f}".format(data.validacion.diferencia) }}
+        </div>
+        {% endif %}
+    </div>
+    
+    <div style="text-align: center; font-size: 9px; color: #888; margin-top: 20px;">
+        Generado automáticamente por Finaxis AI - {{ fecha_generacion }}
+    </div>
+</body>
+</html>
+''',
+
     'reports/account_ledger_report.html': r'''
 <!DOCTYPE html>
 <html lang="es">
@@ -70,13 +244,167 @@ TEMPLATES_EMPAQUETADOS = {
             </tr>
             {% endfor %}
             <tr class="total-row">
-                <td colspan="{{ 5 if has_cost_centers else 4 }}"><strong>SALDO FINAL</strong></td>
+                <td colspan="{{ 5 if has_cost_centers else 4 }}"><strong>TOTALES Y SALDO FINAL</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(total_debito_periodo) }}</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(total_credito_periodo) }}</strong></td>
                 {% set saldo_final = movimientos[-1].saldo_parcial if movimientos else saldo_anterior %}
-                <td colspan="3" class="text-right"><strong>{{ "{:,.2f}".format(saldo_final) }}</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(saldo_final) }}</strong></td>
             </tr>
         </tbody>
     </table>
 </body>
+</html>
+''',
+
+    'reports/analisis_cuenta_doc_report.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <title>Análisis de Cuenta por Documento</title>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: letter;
+            margin: 1.5cm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10px;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 16px;
+            margin: 0;
+        }
+
+        h2 {
+            font-size: 12px;
+            font-weight: normal;
+            margin: 2px 0;
+        }
+
+        .account-block {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+
+        .account-header {
+            background-color: #f0f0f0;
+            padding: 5px;
+            font-weight: bold;
+            border: 1px solid #ccc;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 4px;
+            text-align: right;
+        }
+
+        th {
+            background-color: #fafafa;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .text-left {
+            text-align: left;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .account-footer {
+            background-color: #f9f9f9;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-top: none;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .grand-total {
+            margin-top: 30px;
+            border-top: 2px solid #333;
+            padding-top: 10px;
+            font-size: 11px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>{{ empresa_nombre }}</h1>
+        <h2>NIT: {{ empresa_nit }}</h2>
+        <h2>ANÁLISIS DE CUENTA POR DOCUMENTO</h2>
+        <p>Periodo: {{ fecha_inicio }} - {{ fecha_fin }}</p>
+    </div>
+
+    {% for cuenta in reporte.cuentas %}
+    <div class="account-block">
+        <div class="account-header">
+            <span>{{ cuenta.cuenta_codigo }} - {{ cuenta.cuenta_nombre }}</span>
+            <span>Saldo Inicial: ${{ "{:,.0f}".format(cuenta.saldo_inicial) }}</span>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th class="text-left" style="width: 15%">Cód. Tipo</th>
+                    <th class="text-left" style="width: 45%">Tipo de Documento</th>
+                    <th style="width: 20%">Débitos</th>
+                    <th style="width: 20%">Créditos</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mov in cuenta.movimientos_por_tipo %}
+                <tr>
+                    <td class="text-left">{{ mov.tipo_codigo }}</td>
+                    <td class="text-left">{{ mov.tipo_nombre }}</td>
+                    <td>${{ "{:,.0f}".format(mov.debito) }}</td>
+                    <td>${{ "{:,.0f}".format(mov.credito) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="account-footer">
+            <span>Totales Cuenta:</span>
+            <span>Nuevo Saldo: ${{ "{:,.0f}".format(cuenta.nuevo_saldo) }}</span>
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="grand-total">
+        <table>
+            <tr>
+                <td class="text-left"><strong>TOTALES GENERALES</strong></td>
+                <td><strong>Débitos: ${{ "{:,.0f}".format(reporte.totales_generales.debito) }}</strong></td>
+                <td><strong>Créditos: ${{ "{:,.0f}".format(reporte.totales_generales.credito) }}</strong></td>
+            </tr>
+        </table>
+    </div>
+</body>
+
 </html>
 ''',
 
@@ -1141,12 +1469,15 @@ TEMPLATES_EMPAQUETADOS = {
                 {% for p in productos %}
                 <tr>
                     <td class="font-mono">{{ p.codigo }}</td>
-                    <td>{{ p.nombre }} {% if p.es_servicio %} <span style="color: blue;">(Servicio)</span> {% endif %}</td>
+                    <td>
+                        {{ p.nombre }} 
+                        {% if p.es_servicio %} <span style="color: blue;">(Servicio)</span> {% endif %}
+                    </td>
                     <td>{{ p.grupo_nombre }}</td>
-                    {# Usamos format_miles si está registrado, sino, forzamos 2 decimales #}
-                    <td class="text-right font-mono">{{ p.costo_promedio | format_miles | default(p.costo_promedio | default(0) | round(2)) }}</td>
-                    <td class="text-right font-mono">{{ p.precio_base_manual | format_miles | default(p.precio_base_manual | default(0) | round(2)) }}</td>
-                    <td class="text-right font-mono">{{ p.stock_actual | round(2) }}</td>
+                    
+                    <td class="text-right font-mono">{{ p.costo_calculado | format_miles }}</td>
+                    <td class="text-right font-mono">{{ p.precio_base_manual | format_miles }}</td>
+                    <td class="text-right font-mono" style="font-weight: bold;">{{ p.stock_calculado | format_miles }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -1441,6 +1772,209 @@ TEMPLATES_EMPAQUETADOS = {
     </table>
 
 </body>
+</html>
+''',
+
+    'reports/fuentes_usos_report.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Estado de Fuentes y Usos</title>
+    <style>
+        @page {
+            size: letter landscape;
+            margin: 1cm;
+        }
+
+        body {
+            font-family: 'Helvetica', sans-serif;
+            font-size: 10px;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #004085;
+            padding-bottom: 10px;
+        }
+
+        .header h1 {
+            margin: 0;
+            color: #004085;
+            font-size: 18px;
+            text-transform: uppercase;
+        }
+
+        .header p {
+            margin: 2px 0;
+            font-size: 12px;
+        }
+
+        .section-title {
+            background-color: #f8f9fa;
+            padding: 5px;
+            font-weight: bold;
+            border-left: 4px solid #004085;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #dee2e6;
+            padding: 6px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #004085;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .font-bold {
+            font-weight: bold;
+        }
+
+        .bg-gray {
+            background-color: #f1f1f1;
+        }
+
+        .text-success {
+            color: #28a745;
+        }
+
+        /* Fuentes */
+        .text-danger {
+            color: #dc3545;
+        }
+
+        /* Usos */
+
+        .summary-box {
+            display: inline-block;
+            width: 48%;
+            vertical-align: top;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        .kt-summary {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <p>NIT: {{ empresa.nit }}</p>
+        <p><strong>ESTADO DE FUENTES Y USOS (CAPITAL DE TRABAJO)</strong></p>
+        <p>Periodo: {{ fecha_inicio }} al {{ fecha_fin }}</p>
+    </div>
+
+    <!-- Resumen Ejecutivo -->
+    <div class="kt-summary">
+        <table style="width: 100%; border: none;">
+            <tr style="background: none;">
+                <td style="border: none; width: 50%;">
+                    <h3>Capital de Trabajo Neto (K.T.)</h3>
+                    <p>Activo Corriente Inicial: <strong>{{ "${:,.0f}".format(resumen_kt.activo_cte_ini) }}</strong></p>
+                    <p>Pasivo Corriente Inicial: <strong>{{ "${:,.0f}".format(resumen_kt.pasivo_cte_ini) }}</strong></p>
+                    <hr>
+                    <p>K.T. Inicial: <strong>{{ "${:,.0f}".format(resumen_kt.kt_ini) }}</strong></p>
+                </td>
+                <td style="border: none; width: 50%;">
+                    <h3>Variación en el Periodo</h3>
+                    <p>Activo Corriente Final: <strong>{{ "${:,.0f}".format(resumen_kt.activo_cte_fin) }}</strong></p>
+                    <p>Pasivo Corriente Final: <strong>{{ "${:,.0f}".format(resumen_kt.pasivo_cte_fin) }}</strong></p>
+                    <hr>
+                    <p>K.T. Final: <strong>{{ "${:,.0f}".format(resumen_kt.kt_fin) }}</strong></p>
+                    <h4 class="{{ 'text-success' if resumen_kt.variacion_kt > 0 else 'text-danger' }}">
+                        Variación K.T.: {{ "${:,.0f}".format(resumen_kt.variacion_kt) }}
+                    </h4>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section-title">Detalle de Variaciones por Cuenta</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 10%;">Código</th>
+                <th style="width: 30%;">Cuenta</th>
+                <th style="width: 15%;">Saldo Inicial</th>
+                <th style="width: 15%;">Saldo Final</th>
+                <th style="width: 15%; background-color: #28a745;">FUENTES (Origen)</th>
+                <th style="width: 15%; background-color: #dc3545;">USOS (Aplicación)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for fila in filas %}
+            <tr>
+                <td class="text-center">{{ fila.cuenta_codigo }}</td>
+                <td>{{ fila.cuenta_nombre }}</td>
+                <td class="text-right">{{ "${:,.2f}".format(fila.saldo_inicial) }}</td>
+                <td class="text-right">{{ "${:,.2f}".format(fila.saldo_final) }}</td>
+                <td class="text-right font-bold text-success">
+                    {% if fila.fuente > 0 %}{{ "${:,.2f}".format(fila.fuente) }}{% endif %}
+                </td>
+                <td class="text-right font-bold text-danger">
+                    {% if fila.uso > 0 %}{{ "${:,.2f}".format(fila.uso) }}{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="bg-gray">
+                <td colspan="4" class="text-right font-bold">TOTALES:</td>
+                <td class="text-right font-bold text-success">{{ "${:,.2f}".format(totales.total_fuentes) }}</td>
+                <td class="text-right font-bold text-danger">{{ "${:,.2f}".format(totales.total_usos) }}</td>
+            </tr>
+            <tr>
+                <td colspan="4" class="text-right font-bold">Diferencia (Fuentes - Usos):</td>
+                <td colspan="2" class="text-center font-bold">
+                    {{ "${:,.2f}".format(totales.diferencia) }}
+                    <br>
+                    <span style="font-size: 9px; font-weight: normal;">(Debe ser igual a la Variación K.T.)</span>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div style="font-size: 9px; color: #666; margin-top: 20px;">
+        <p><strong>Nota Interpretativa:</strong><br>
+            - <strong>FUENTES:</strong> Dinero generado por disminución de Activos (ej. cobro de cartera) o aumento de
+            Pasivos (ej. financiación proveedores).<br>
+            - <strong>USOS:</strong> Dinero utilizado para aumentar Activos (ej. compra inventario) o disminuir Pasivos
+            (ej. pago deudas).</p>
+    </div>
+</body>
+
 </html>
 ''',
 
@@ -1760,88 +2294,239 @@ TEMPLATES_EMPAQUETADOS = {
 </html>
 ''',
 
-    'reports/journal_report.html': r'''
+    'reports/mayor_y_balances_report.html': r'''
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Libro Diario</title>
+    <title>Libro Mayor y Balances</title>
+    <style>
+        @page { size: letter; margin: 1cm; }
+        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10px; color: #333; }
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .header h1 { font-size: 16px; margin: 0; }
+        .header h2 { font-size: 14px; margin: 2px 0; font-weight: normal; }
+        .header p { margin: 2px 0; font-size: 12px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 20px; }
+        th, td { border: 1px solid #ccc; padding: 5px; text-align: left; }
+        th { background-color: #f0f0f0; font-weight: bold; text-align: center; font-size: 9px; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .font-mono { font-family: monospace; }
+        
+        /* Hierarchy Styles */
+        .level-1 td { background-color: #e0e0e0; font-weight: bold; font-size: 11px; }
+        .level-2 td { background-color: #f9f9f9; font-weight: bold; padding-left: 15px; }
+        .level-4 td { padding-left: 30px; }
+        
+        .summary-section { margin-top: 30px; break-inside: avoid; }
+        .summary-header { font-size: 12px; font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid #333; display: inline-block; }
+        
+        tfoot td { font-weight: bold; background-color: #e0e0e0; border-top: 2px solid #333; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa_nombre }}</h1>
+        <h2>NIT: {{ empresa_nit }}</h2>
+        <p><strong>LIBRO MAYOR Y BALANCES</strong></p>
+        <p>Periodo: Del {{ fecha_inicio }} al {{ fecha_fin }}</p>
+    </div>
+
+    <!-- TABLA PRINCIPAL (JERÁRQUICA) -->
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 10%;">CÓDIGO</th>
+                <th style="width: 32%;">CUENTA</th>
+                <th style="width: 14%;">SALDO ANTERIOR</th>
+                <th style="width: 14%;">DÉBITOS</th>
+                <th style="width: 14%;">CRÉDITOS</th>
+                <th style="width: 16%;">NUEVO SALDO</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cuenta in reporte.cuentas %}
+            <tr class="level-{{ cuenta.nivel }}">
+                <td class="text-center font-mono">{{ cuenta.codigo }}</td>
+                <td>{{ cuenta.nombre }}</td>
+                <td class="text-right">{{ "${:,.2f}".format(cuenta.saldo_inicial) }}</td>
+                <td class="text-right">{{ "${:,.2f}".format(cuenta.total_debito) }}</td>
+                <td class="text-right">{{ "${:,.2f}".format(cuenta.total_credito) }}</td>
+                <td class="text-right">{{ "${:,.2f}".format(cuenta.nuevo_saldo) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="2" class="text-right">TOTALES GENERALES</td>
+                <td class="text-right"></td>
+                <td class="text-right">{{ "${:,.2f}".format(reporte.totales_generales.debito) }}</td>
+                <td class="text-right">{{ "${:,.2f}".format(reporte.totales_generales.credito) }}</td>
+                <td class="text-right"></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <!-- TABLA RESUMEN POR CLASE -->
+    <div class="summary-section">
+        <div class="summary-header">RESUMEN POR CLASE DE CUENTA</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 30%;">CLASE</th>
+                    <th style="width: 17%;">SALDO INICIAL</th>
+                    <th style="width: 17%;">DÉBITOS</th>
+                    <th style="width: 17%;">CRÉDITOS</th>
+                    <th style="width: 19%;">NUEVO SALDO</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for clase in reporte.resumen_por_clase %}
+                <tr>
+                    <td><strong>{{ clase.codigo }} - {{ clase.nombre }}</strong></td>
+                    <td class="text-right">{{ "${:,.2f}".format(clase.saldo_inicial) }}</td>
+                    <td class="text-right">{{ "${:,.2f}".format(clase.total_debito) }}</td>
+                    <td class="text-right">{{ "${:,.2f}".format(clase.total_credito) }}</td>
+                    <td class="text-right">{{ "${:,.2f}".format(clase.nuevo_saldo) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
+''',
+
+    'reports/journal_report.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Libro Diario Detallado</title>
     <style>
         @page {
             size: letter;
             margin: 1.5cm;
+
             @bottom-center {
                 content: "Página " counter(page) " de " counter(pages);
                 font-size: 10px;
             }
         }
+
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
             font-size: 10px;
             color: #333;
         }
+
         .header {
             text-align: center;
             margin-bottom: 20px;
             border-bottom: 1px solid #333;
             padding-bottom: 10px;
         }
-        .header h1, .header h2, .header p {
+
+        .header h1,
+        .header h2,
+        .header p {
             margin: 0;
             padding: 2px 0;
         }
+
         .header h1 {
             font-size: 16px;
         }
+
         .header h2 {
             font-size: 14px;
         }
+
         .header p {
             font-size: 12px;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 15px;
+            table-layout: fixed;
+            /* CRITICAL FOR PERFORMANCE */
         }
-        th, td {
+
+        th,
+        td {
             border: 1px solid #ccc;
-            padding: 6px;
+            padding: 4px;
+            /* Reduced padding for density */
             text-align: left;
             vertical-align: top;
+            word-wrap: break-word;
+            /* Ensure content wraps */
+            overflow-wrap: break-word;
         }
+
         th {
             background-color: #f2f2f2;
             font-weight: bold;
+            font-size: 9px;
         }
+
+        td {
+            font-size: 9px;
+        }
+
         .date-header {
             background-color: #e0e0e0;
             font-weight: bold;
             text-align: center;
         }
+
         .text-right {
             text-align: right;
         }
+
         .totals-row td {
             font-weight: bold;
-            background-color: #f2f2f2;
-            border-top: 2px solid #333;
+            background-color: #333;
+            color: #fff;
+            border-top: 2px solid #000;
         }
-        .document-group {
-            border-left: 3px solid #f2f2f2;
+
+        .doc-subtotal-row td {
+            background-color: #f9f9f9;
+            font-weight: bold;
+            font-style: italic;
+            border-top: 1px solid #aaa;
         }
     </style>
 </head>
+
 <body>
 
     <div class="header">
         <h1>{{ empresa_nombre }}</h1>
         <h2>NIT: {{ empresa_nit }}</h2>
-        <p><strong>Libro Diario</strong></p>
+        <p><strong>Libro Diario Detallado</strong></p>
         <p>Desde el {{ fecha_inicio }} hasta el {{ fecha_fin }}</p>
     </div>
 
     <table>
+        <colgroup>
+            <col style="width: 12%"> <!-- Documento -->
+            <col style="width: 20%"> <!-- Beneficiario -->
+            <col style="width: 20%"> <!-- Cuenta -->
+            <col style="width: 28%"> <!-- Concepto -->
+            {% if has_cost_centers %}
+            <col style="width: 20%"> <!-- Reduced Concepto if CC exists? -->
+            <col style="width: 8%"> <!-- CC -->
+            {% endif %}
+            <col style="width: 10%"> <!-- Debito -->
+            <col style="width: 10%"> <!-- Credito -->
+        </colgroup>
         <thead>
             <tr>
                 <th>Documento</th>
@@ -1857,37 +2542,50 @@ TEMPLATES_EMPAQUETADOS = {
         </thead>
 
         <tbody>
-            {% for fecha, movimientos in report_data_agrupado.items() %}
-                <tr>
-                    <td colspan="{{ 7 if has_cost_centers else 6 }}" class="date-header">
-                        Fecha: {{ fecha }}
-                    </td>
-                </tr>
-                {% for mov in movimientos %}
-                <tr>
-                    <td>{{ mov.tipo_documento }}-{{ mov.numero_documento }}</td>
-                    <td>{{ mov.beneficiario_nombre or '' }}</td>
-                    <td>{{ mov.cuenta_codigo }} - {{ mov.cuenta_nombre }}</td>
-                    <td>{{ mov.concepto }}</td>
-                    {% if has_cost_centers %}
-                    <td>{{ mov.centro_costo_codigo or '' }}</td>
-                    {% endif %}
-                    {# --- MODIFICACIÓN: Usando el filtro 'currency' --- #}
-                    <td class="text-right">{{ mov.debito | currency }}</td>
-                    <td class="text-right">{{ mov.credito | currency }}</td>
-                </tr>
-                {% endfor %}
+            {% for date_group in report_data_structured %}
+            <tr>
+                <td colspan="{{ 7 if has_cost_centers else 6 }}" class="date-header">
+                    Fecha: {{ date_group.fecha }}
+                </td>
+            </tr>
+
+            {% for doc in date_group.documents %}
+            {# --- Filas del Documento --- #}
+            {% for mov in doc.rows %}
+            <tr>
+                <td>{{ doc.tipo_documento }}-{{ doc.numero_documento }}</td>
+                <td>{{ doc.beneficiario_nombre or '' }}</td>
+                <td>{{ mov.cuenta_codigo }} - {{ mov.cuenta_nombre }}</td>
+                <td>{{ mov.concepto }}</td>
+                {% if has_cost_centers %}
+                <td>{{ mov.centro_costo_codigo or '' }}</td>
+                {% endif %}
+                <td class="text-right">{{ mov.debito | currency }}</td>
+                <td class="text-right">{{ mov.credito | currency }}</td>
+            </tr>
+            {% endfor %}
+
+            {# --- Subtotal del Documento --- #}
+            <tr class="doc-subtotal-row">
+                <td colspan="{{ 5 if has_cost_centers else 4 }}" class="text-right">
+                    Subtotal {{ doc.tipo_documento }} #{{ doc.numero_documento }}:
+                </td>
+                <td class="text-right">{{ doc.total_debito | currency }}</td>
+                <td class="text-right">{{ doc.total_credito | currency }}</td>
+            </tr>
+            {% endfor %}
+
             {% else %}
-                <tr>
-                    <td colspan="{{ 7 if has_cost_centers else 6 }}" style="text-align:center;">No hay movimientos para el período seleccionado.</td>
-                </tr>
+            <tr>
+                <td colspan="{{ 7 if has_cost_centers else 6 }}" style="text-align:center;">No hay movimientos para el
+                    período seleccionado.</td>
+            </tr>
             {% endfor %}
         </tbody>
 
         <tfoot>
             <tr class="totals-row">
-                <td colspan="{{ 5 if has_cost_centers else 4 }}" class="text-right"><strong>TOTALES</strong></td>
-                 {# --- MODIFICACIÓN: Usando el filtro 'currency' --- #}
+                <td colspan="{{ 5 if has_cost_centers else 4 }}" class="text-right"><strong>TOTAL GENERAL</strong></td>
                 <td class="text-right"><strong>{{ total_debito | currency }}</strong></td>
                 <td class="text-right"><strong>{{ total_credito | currency }}</strong></td>
             </tr>
@@ -1895,6 +2593,164 @@ TEMPLATES_EMPAQUETADOS = {
     </table>
 
 </body>
+
+</html>
+''',
+
+    'reports/journal_summary_report.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Libro Diario Oficial</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 2cm;
+
+            @bottom-center {
+                content: "Página " counter(page) " de " counter(pages);
+                font-size: 10px;
+            }
+        }
+
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 10px;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .header h2 {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            table-layout: fixed;
+        }
+
+        .table th,
+        .table td {
+            border: 1px solid #ccc;
+            padding: 5px;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+
+        .table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .group-header td {
+            background-color: #e0e0e0;
+            font-weight: bold;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .total-row td {
+            background-color: #f9f9f9;
+            font-weight: bold;
+            border-top: 2px solid #333;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .grand-total {
+            margin-top: 30px;
+            page-break-inside: avoid;
+        }
+
+        .grand-total table {
+            border: 2px solid #333;
+        }
+
+        .grand-total td {
+            font-size: 12px;
+            font-weight: bold;
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>{{ empresa_nombre }}</h1>
+        <h2>NIT: {{ empresa_nit }}</h2>
+        <p><strong>LIBRO DIARIO OFICIAL</strong></p>
+        <p>Desde: {{ fecha_inicio }} Hasta: {{ fecha_fin }}</p>
+    </div>
+
+    {% for grupo in report_data %}
+    <div style="page-break-inside: avoid;">
+        <table class="table">
+            <thead>
+                <tr class="group-header">
+                    <td colspan="4">COMPROBANTE: {{ grupo.tipo_documento }}</td>
+                </tr>
+                <tr>
+                    <th style="width: 15%">Código</th>
+                    <th style="width: 45%">Cuenta</th>
+                    <th style="width: 20%">Débitos</th>
+                    <th style="width: 20%">Créditos</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cta in grupo.cuentas %}
+                <tr>
+                    <td>{{ cta.cuenta_codigo }}</td>
+                    <td>{{ cta.cuenta_nombre }}</td>
+                    <td class="text-right">{{ "${:,.2f}".format(cta.debito) }}</td>
+                    <td class="text-right">{{ "${:,.2f}".format(cta.credito) }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td colspan="2" class="text-right">Total {{ grupo.tipo_documento }}</td>
+                    <td class="text-right">{{ "${:,.2f}".format(grupo.total_debito_grupo) }}</td>
+                    <td class="text-right">{{ "${:,.2f}".format(grupo.total_credito_grupo) }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+
+    <div class="grand-total">
+        <table class="table">
+            <tr>
+                <td style="width: 60%; text-align: right;">GRAN TOTAL:</td>
+                <td style="width: 20%; text-align: right;">{{ "${:,.2f}".format(gran_total_debito) }}</td>
+                <td style="width: 20%; text-align: right;">{{ "${:,.2f}".format(gran_total_credito) }}</td>
+            </tr>
+        </table>
+    </div>
+
+</body>
+
 </html>
 ''',
 
@@ -2050,6 +2906,7 @@ TEMPLATES_EMPAQUETADOS = {
     'reports/mayor_y_balances_report.html': r'''
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <title>Libro Mayor y Balances</title>
@@ -2057,30 +2914,38 @@ TEMPLATES_EMPAQUETADOS = {
         @page {
             size: letter;
             margin: 1.5cm;
+
             @bottom-center {
                 content: "Página " counter(page) " de " counter(pages);
                 font-size: 10px;
             }
         }
+
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
             font-size: 9px;
             color: #333;
         }
+
         .header {
             text-align: center;
             margin-bottom: 20px;
             border-bottom: 1px solid #333;
             padding-bottom: 10px;
         }
-        .header h1, .header h2, .header p {
+
+        .header h1,
+        .header h2,
+        .header p {
             margin: 0;
             padding: 2px 0;
         }
+
         .account-block {
             margin-bottom: 25px;
-            page-break-inside: avoid;
+            /* page-break-inside: avoid; REMOVED to allow splitting large tables */
         }
+
         .account-header {
             background-color: #e0e0e0;
             padding: 5px;
@@ -2088,23 +2953,29 @@ TEMPLATES_EMPAQUETADOS = {
             font-size: 11px;
             border: 1px solid #ccc;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 5px;
         }
-        th, td {
+
+        th,
+        td {
             border: 1px solid #ccc;
             padding: 5px;
             text-align: left;
         }
+
         th {
             background-color: #f2f2f2;
             font-weight: bold;
         }
+
         .text-right {
             text-align: right;
         }
+
         .summary-row td {
             font-weight: bold;
             background-color: #f2f2f2;
@@ -2112,6 +2983,7 @@ TEMPLATES_EMPAQUETADOS = {
         }
     </style>
 </head>
+
 <body>
 
     <div class="header">
@@ -2121,56 +2993,46 @@ TEMPLATES_EMPAQUETADOS = {
         <p>Desde el {{ fecha_inicio }} hasta el {{ fecha_fin }}</p>
     </div>
 
-    {% for cuenta in reporte.cuentas %}
-    <div class="account-block">
-        <div class="account-header">
-            CUENTA: {{ cuenta.cuenta_codigo }} - {{ cuenta.cuenta_nombre }}
-        </div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Fecha</th>
-                    <th>Documento</th>
-                    <th>Beneficiario</th>
-                    <th>Concepto</th>
-                    <th class="text-right">Débito</th>
-                    <th class="text-right">Crédito</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td colspan="4"><strong>Saldo Inicial</strong></td>
-                    <td colspan="2" class="text-right"><strong>{{ "${:,.2f}".format(cuenta.saldo_inicial) }}</strong></td>
-                </tr>
-                {% for mov in cuenta.movimientos %}
-                <tr>
-                    <td>{{ mov.fecha.strftime('%Y-%m-%d') }}</td>
-                    <td>{{ mov.documento }}</td>
-                    <td>{{ mov.beneficiario or '' }}</td>
-                    <td>{{ mov.concepto }}</td>
-                    <td class="text-right">{{ "${:,.2f}".format(mov.debito) }}</td>
-                    <td class="text-right">{{ "${:,.2f}".format(mov.credito) }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-            <tfoot>
-                <tr class="summary-row">
-                    <td colspan="4" class="text-right"><strong>Totales del Período</strong></td>
-                    <td class="text-right"><strong>{{ "${:,.2f}".format(cuenta.total_debito) }}</strong></td>
-                    <td class="text-right"><strong>{{ "${:,.2f}".format(cuenta.total_credito) }}</strong></td>
-                </tr>
-                <tr class="summary-row">
-                    <td colspan="4" class="text-right"><strong>Nuevo Saldo</strong></td>
-                    <td colspan="2" class="text-right"><strong>{{ "${:,.2f}".format(cuenta.nuevo_saldo) }}</strong></td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
-    {% else %}
-        <p style="text-align:center;">No se encontraron cuentas con movimiento para el período seleccionado.</p>
-    {% endfor %}
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">Código</th>
+                <th style="width: 35%;">Cuenta</th>
+                <th class="text-right" style="width: 12.5%;">Saldo Anterior</th>
+                <th class="text-right" style="width: 12.5%;">Débitos</th>
+                <th class="text-right" style="width: 12.5%;">Créditos</th>
+                <th class="text-right" style="width: 12.5%;">Nuevo Saldo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cuenta in reporte.cuentas %}
+            <tr>
+                <td>{{ cuenta.cuenta_codigo }}</td>
+                <td>{{ cuenta.cuenta_nombre }}</td>
+                <td class="text-right">{{ "${:,.2f}".format(cuenta.saldo_inicial) }}</td>
+                <td class="text-right">{{ "${:,.2f}".format(cuenta.total_debito) }}</td>
+                <td class="text-right">{{ "${:,.2f}".format(cuenta.total_credito) }}</td>
+                <td class="text-right">{{ "${:,.2f}".format(cuenta.nuevo_saldo) }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align: center;">No se encontraron movimientos ni saldos para el período
+                    seleccionado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="summary-row">
+                <td colspan="3" class="text-right"><strong>Totales Generales:</strong></td>
+                <td class="text-right"><strong>{{ "${:,.2f}".format(reporte.totales_generales.debito) }}</strong></td>
+                <td class="text-right"><strong>{{ "${:,.2f}".format(reporte.totales_generales.credito) }}</strong></td>
+                <td class="text-right"></td>
+            </tr>
+        </tfoot>
+    </table>
 
 </body>
+
 </html>
 ''',
 
@@ -2181,24 +3043,18 @@ TEMPLATES_EMPAQUETADOS = {
     <meta charset="UTF-8">
     <title>Reporte Analítico de Movimientos</title>
     <style>
-        body { font-family: 'Helvetica', sans-serif; font-size: 10px; color: #333; margin: 0; }
-        @page { size: letter portrait; margin: 1.5cm; }
-        
-        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        body { font-family: sans-serif; font-size: 10px; }
+        .header { text-align: center; margin-bottom: 20px; }
         .header h1 { margin: 0; font-size: 16px; }
-        .header h2 { margin: 5px 0; font-size: 12px; font-weight: normal; }
-        
-        .filters { margin-bottom: 15px; background-color: #f9f9f9; padding: 10px; border-radius: 5px; }
-        .filters p { margin: 2px 0; font-size: 9px; }
-        
+        .header h2 { margin: 0; font-size: 12px; font-weight: normal; }
+        .filters { margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+        .filters p { margin: 2px 0; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ccc; padding: 4px; text-align: left; }
-        th { background-color: #f2f2f2; font-weight: bold; text-align: center; font-size: 9px; }
-        
+        th, td { border: 1px solid #ddd; padding: 4px; text-align: left; }
+        th { background-color: #f2f2f2; font-weight: bold; }
         .text-right { text-align: right; }
-        .font-mono { font-family: 'Courier New', monospace; }
+        .number { font-family: monospace; } /* Para alinear números */
         .total-row { font-weight: bold; background-color: #e8e8e8; }
-        
         .positive { color: green; }
         .negative { color: red; }
     </style>
@@ -2206,240 +3062,163 @@ TEMPLATES_EMPAQUETADOS = {
 <body>
     <div class="header">
         <h1>{{ empresa_nombre }}</h1>
-        <h2>Reporte Analítico de Movimientos</h2>
-        <p>Período: {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
+        <h2>Reporte Analítico de Movimiento y Saldos</h2>
+        <p>Periodo: {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
     </div>
 
     <div class="filters">
-        <p><strong>Bodega:</strong> {{ bodega_nombre | default('Todas', true) }}</p>
-        <p><strong>Vista:</strong> {{ 'VALORIZADA ($)' if filtros.vista_por_valor else 'CANTIDADES' }}</p>
+        <p><strong>Filtros Aplicados:</strong></p>
+        <p>Bodega: {{ bodega_nombre | default('Todas', true) }}</p>
+        <p>Grupo: {{ grupo_nombre | default('Todos', true) }}</p>
+        <p>Artículo: {{ producto_nombre | default('Todos', true) }}</p>
+        <p>Vista por: {{ 'Valor' if filtros.vista_por_valor else 'Cantidad' }}</p>
     </div>
 
     <table>
         <thead>
             <tr>
-                <th style="width: 35%;">Producto</th>
-                <th class="text-right" style="width: 15%;">Saldo Inicial</th>
-                <th class="text-right" style="width: 15%;">Entradas</th>
-                <th class="text-right" style="width: 15%;">Salidas</th>
-                <th class="text-right" style="width: 20%;">Saldo Final</th>
+                <th>Producto</th>
+                <th class="text-right">Saldo Inicial {{ '(Valor)' if filtros.vista_por_valor else '(Cant)' }}</th>
+                <th class="text-right">Entradas {{ '(Valor)' if filtros.vista_por_valor else '(Cant)' }}</th>
+                <th class="text-right">Salidas {{ '(Valor)' if filtros.vista_por_valor else '(Cant)' }}</th>
+                <th class="text-right">Saldo Final {{ '(Valor)' if filtros.vista_por_valor else '(Cant)' }}</th>
             </tr>
         </thead>
         <tbody>
-            {# Definimos el sufijo del campo según la vista seleccionada #}
-            {% set suffix = '_valor' if filtros.vista_por_valor else '_cantidad' %}
-            
-            {% if data['items'] %}
-                {% for item in data['items'] %}
+            {% if data.items %}
+                {% for item in data.items %}
                 <tr>
-                    <td>
-                        <span class="font-mono" style="font-size: 9px; color: #666;">{{ item.producto_codigo }}</span><br>
-                        {{ item.producto_nombre }}
-                    </td>
-                    
-                    {# Accedemos dinámicamente al campo correcto (ej: saldo_inicial_cantidad o saldo_inicial_valor) #}
-                    <td class="text-right font-mono">
-                        {{ item['saldo_inicial' ~ suffix] | format_value(filtros.vista_por_valor) }}
-                    </td>
-                    <td class="text-right font-mono positive">
-                        {{ item['total_entradas' ~ suffix] | format_value(filtros.vista_por_valor) }}
-                    </td>
-                    <td class="text-right font-mono negative">
-                        {{ item['total_salidas' ~ suffix] | format_value(filtros.vista_por_valor) }}
-                    </td>
-                    <td class="text-right font-mono font-bold">
-                        {{ item['saldo_final' ~ suffix] | format_value(filtros.vista_por_valor) }}
-                    </td>
+                    <td>({{ item.producto_codigo }}) {{ item.producto_nombre }}</td>
+                    <td class="text-right number">{{ item.saldo_inicial | format_value(filtros.vista_por_valor) }}</td>
+                    <td class="text-right number positive">{{ item.total_entradas | format_value(filtros.vista_por_valor) }}</td>
+                    <td class="text-right number negative">{{ item.total_salidas | format_value(filtros.vista_por_valor) }}</td>
+                    <td class="text-right number">{{ item.saldo_final | format_value(filtros.vista_por_valor) }}</td>
                 </tr>
                 {% endfor %}
             {% else %}
                 <tr>
-                    <td colspan="5" style="text-align: center; padding: 20px;">No se encontraron movimientos.</td>
+                    <td colspan="5" style="text-align: center; font-style: italic;">No se encontraron resultados para los filtros seleccionados.</td>
                 </tr>
             {% endif %}
         </tbody>
-        
-        {% if data['items'] %}
+        {% if data.items %}
         <tfoot class="total-row">
             <tr>
-                <td class="text-right">TOTALES GENERALES</td>
-                <td class="text-right font-mono">
-                    {{ data['totales']['saldo_inicial' ~ suffix] | format_value(filtros.vista_por_valor) }}
-                </td>
-                <td class="text-right font-mono">
-                    {{ data['totales']['total_entradas' ~ suffix] | format_value(filtros.vista_por_valor) }}
-                </td>
-                <td class="text-right font-mono">
-                    {{ data['totales']['total_salidas' ~ suffix] | format_value(filtros.vista_por_valor) }}
-                </td>
-                <td class="text-right font-mono">
-                    {{ data['totales']['saldo_final' ~ suffix] | format_value(filtros.vista_por_valor) }}
-                </td>
+                <td>TOTALES GENERALES ({{ 'Valor' if filtros.vista_por_valor else 'Cantidad' }})</td>
+                <td class="text-right number">{{ data.totales.saldo_inicial | format_value(filtros.vista_por_valor) }}</td>
+                <td class="text-right number positive">{{ data.totales.total_entradas | format_value(filtros.vista_por_valor) }}</td>
+                <td class="text-right number negative">{{ data.totales.total_salidas | format_value(filtros.vista_por_valor) }}</td>
+                <td class="text-right number">{{ data.totales.saldo_final | format_value(filtros.vista_por_valor) }}</td>
             </tr>
         </tfoot>
         {% endif %}
     </table>
+
+    {# Filtro personalizado de Jinja2 para formatear números/moneda #}
+    {% macro format_value(num, is_currency) %}
+        {% if is_currency %}
+            {{ "$ {:,.0f}".format(num | float) }}
+        {% else %}
+            {{ "{:,.2f}".format(num | float) }}
+        {% endif %}
+    {% endmacro %}
 </body>
 </html>
 ''',
 
-
-    
-    
     'reports/rentabilidad_documento_report.html': r'''
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>Análisis de Rentabilidad de Factura</title>
-
-
+    <title>Rentabilidad por Documento</title>
     <style>
-        /* Usamos px para un control más preciso y compacto, igual al modelo */
-        body { font-family: 'Helvetica', sans-serif; font-size: 11px; margin: 0; padding: 20px; }
-        .container { width: 100%; margin: 0 auto; }
-        
-        /* Encabezado Central */
-        .header { text-align: center; margin-bottom: 30px; }
-        .header h1 { margin: 0; font-size: 12px; font-weight: normal; } /* NIT arriba */
-        .header h2 { margin: 5px 0 0 0; font-size: 14px; font-weight: bold; } /* Nombre Empresa */
-        .report-title { margin-top: 10px; font-size: 16px; font-weight: bold; }
-
-        /* Tabla de Información */
-        .info-table { width: 100%; margin-bottom: 15px; border-collapse: collapse; font-size: 11px; }
-        .info-table td { padding: 3px 5px; vertical-align: top; }
-        .label { font-weight: bold; width: 130px; }
-
-        /* Tabla Principal de Datos */
-        .main-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; }
-        .main-table th { 
-            background-color: #f8f8f8; /* Un gris más claro, como el modelo */
-            font-weight: bold; 
-            text-align: center; /* Encabezados centrados */
-            border: 1px solid #ccc; 
-            padding: 5px 4px;
-            text-transform: capitalize;
-        }
-        .main-table td { 
-            border: 1px solid #ccc; 
-            padding: 4px; 
-            vertical-align: middle;
-        }
-
-        /* Alineaciones y Formatos */
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
-        .currency { font-family: 'Courier New', monospace; white-space: nowrap; } /* Evita que se parta la cifra */
-        
-        /* Sección de Totales (Flotante a la derecha) */
-        .totals-container { width: 100%; overflow: hidden; margin-top: 15px; }
-        .totals-table { float: right; width: auto; min-width: 35%; border-collapse: collapse; font-size: 11px; }
-        .totals-table td { padding: 4px 5px; }
-        .totals-table .label { font-weight: bold; text-align: left; }
-        .totals-table .value { text-align: right; font-family: 'Courier New', monospace; white-space: nowrap; }
-        
-        /* Líneas de totales */
-        .border-top { border-top: 1px solid #000; }
-        .border-bottom { border-bottom: 1px solid #000; }
-        
-        .negative { color: #dc3545; }
+        body { font-family: Arial, sans-serif; font-size: 10pt; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { font-size: 16pt; margin-bottom: 5px; }
+        .header p { font-size: 10pt; margin: 0; }
+        .info-box { border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 5px; background-color: #f9f9f9; }
+        .info-box p { margin: 3px 0; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #eee; font-weight: bold; }
+        .right { text-align: right; }
+        .mono { font-family: 'Courier New', monospace; }
+        .footer { margin-top: 30px; border-top: 1px solid #ccc; padding-top: 10px; font-size: 9pt; }
+        .totals-row td { font-weight: bold; background-color: #e0e0e0; }
+        .negative { color: red; }
     </style>
-
-
 </head>
 <body>
-    <div class="container">
-        
-        <div class="header">
-            <h1>NIT: {{ empresa.nit }}</h1>
-            <h2>{{ empresa.razon_social }}</h2>
-            <div class="report-title">Análisis de Rentabilidad de Factura</div>
-        </div>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <p>NIT: {{ empresa.nit }}</p>
+        <p>Reporte Generado: {{ now()|date("d/m/Y H:i") }}</p>
+    </div>
 
-        <table class="info-table">
+    <div class="header-section">
+        <h1>Análisis de Rentabilidad por Documento</h1>
+    </div>
+
+    <div class="info-box">
+        <p><strong>Documento Auditado:</strong> {{ data.documento_ref }}</p>
+        <p><strong>Tercero:</strong> {{ data.tercero_nombre }}</p>
+        <p><strong>Fecha de Documento:</strong> {{ data.fecha|date("d/m/Y") }}</p>
+        <p><strong>Filtro Usado:</strong> Código {{ filtros.tipo_documento_codigo|default('N/A') }} y Número {{ filtros.numero_documento|default('N/A') }}</p>
+    </div>
+
+    <table>
+        <thead>
             <tr>
-                <td class="label">Documento:</td>
-                <td>
-                    {% if data.documento_ref.startswith('FV') %}
-                        Factura de Venta N° {{ data.documento_ref.split('-')[1] }}
-                    {% else %}
-                        {{ data.documento_ref }}
-                    {% endif %}
-                </td>
-                <td class="label" style="padding-left: 40px;">Cliente:</td>
-                <td>{{ data.tercero_nombre }}</td>
+                <th style="width: 15%;">CÓDIGO</th>
+                <th style="width: 25%;">ARTÍCULO</th>
+                <th class="right" style="width: 8%;">CANT.</th>
+                <th class="right" style="width: 10%;">VTA. UNIT.</th>
+                <th class="right" style="width: 10%;">COSTO UNIT.</th>
+                <th class="right" style="width: 10%;">VTA. TOTAL</th>
+                <th class="right" style="width: 10%;">COSTO TOTAL</th>
+                <th class="right" style="width: 10%;">UTILIDAD BRUTA</th>
+                <th class="right" style="width: 7%;">MARGEN %</th>
             </tr>
+        </thead>
+        <tbody>
+            {% for item in data.detalle %}
+            <tr class="{% if item.utilidad_bruta_valor|default(0) < 0 %}negative{% endif %}">
+                <td class="mono">{{ item.producto_codigo }}</td>
+                <td>{{ item.producto_nombre }}</td>
+                <td class="right mono">{{ item.cantidad|format_decimal(2) }}</td>
+                <td class="right mono">{{ item.valor_venta_unitario|format_currency }}</td>
+                <td class="right mono">{{ item.costo_unitario|format_currency }}</td>
+                <td class="right mono">{{ item.valor_venta_total|format_currency }}</td>
+                <td class="right mono">{{ item.costo_total|format_currency }}</td>
+                <td class="right mono">{{ item.utilidad_bruta_valor|format_currency }}</td>
+                <td class="right mono">{{ item.utilidad_bruta_porcentaje|format_decimal(2) }}%</td>
+            </tr>
+            {% endfor %}
+            {% if not data.detalle %}
             <tr>
-                <td class="label">Fecha Emisión:</td>
-                <td>{{ data.fecha|date("%Y-%m-%d") }}</td>
-                
-                <td class="label" style="padding-left: 40px;">NIT Cliente:</td>
-                <td>{{ data.tercero_nit if data.tercero_nit else 'N/A' }}</td>
+                <td colspan="9" style="text-align: center;">No se encontraron movimientos de inventario de venta para este documento.</td>
             </tr>
-        </table>
+            {% endif %}
+        </tbody>
+        <tfoot>
+            <tr class="totals-row">
+                <td colspan="5" class="right">TOTALES ACUMULADOS:</td>
+                <td class="right mono">{{ data.totales.total_venta|default(0)|format_currency }}</td>
+                <td class="right mono">{{ data.totales.total_costo|default(0)|format_currency }}</td>
+                <td class="right mono">{{ data.totales.total_utilidad_bruta_valor|default(0)|format_currency }}</td>
+                <td class="right mono">{{ data.totales.total_utilidad_bruta_porcentaje|default(0)|format_decimal(2) }}%</td>
+            </tr>
+        </tfoot>
+    </table>
 
-        <table class="main-table">
-            <thead>
-                <tr>
-                    <th style="width: 25%;">Producto</th>
-                    <th class="text-center" style="width: 8%;">Cant.</th>
-                    <th class="text-right" style="width: 12%;">V/r Unitario</th>
-                    <th class="text-right" style="width: 12%;">Total Venta</th>
-                    <th class="text-right" style="width: 12%;">Costo Unit.</th>
-                    <th class="text-right" style="width: 12%;">Costo Total</th>
-                    <th class="text-right" style="width: 12%;">Util. Bruta</th>
-                    <th class="text-right" style="width: 7%;">% Margen</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in data.detalle %}
-                <tr>
-                    <td>{{ item.producto_nombre }}</td>
-                    <td class="text-center">{{ item.cantidad|format_decimal(2) }}</td>
-                    
-                    <td class="text-right currency">{{ item.valor_venta_unitario|format_currency(0) }}</td>
-                    <td class="text-right currency">{{ item.valor_venta_total|format_currency(0) }}</td>
-                    <td class="text-right currency">{{ item.costo_unitario|format_currency(0) }}</td>
-                    <td class="text-right currency">{{ item.costo_total|format_currency(0) }}</td>
-                    
-                    <td class="text-right currency {% if item.utilidad_bruta_valor < 0 %}negative{% endif %}">
-                        {{ item.utilidad_bruta_valor|format_currency(0) }}
-                    </td>
-                    <td class="text-right {% if item.utilidad_bruta_porcentaje < 0 %}negative{% endif %}">
-                        {{ item.utilidad_bruta_porcentaje|format_decimal(2) }}%
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-        <div class="totals-container">
-            <table class="totals-table">
-                <tr>
-                    <td class="label">Total Venta:</td>
-                    <td class="value">{{ data.totales.total_venta|format_currency(0) }}</td>
-                </tr>
-                <tr>
-                    <td class="label">Total Costo:</td>
-                    <td class="value border-bottom">{{ data.totales.total_costo|format_currency(0) }}</td>
-                </tr>
-                <tr>
-                    <td class="label border-top" style="padding-top: 10px;">Utilidad Bruta:</td>
-                    <td class="value border-top" style="padding-top: 10px;">{{ data.totales.total_utilidad_bruta_valor|format_currency(0) }}</td>
-                </tr>
-                <tr>
-                    <td class="label">Margen de la Factura:</td>
-                    <td class="value">{{ data.totales.total_utilidad_bruta_porcentaje|format_decimal(2) }}%</td>
-                </tr>
-            </table>
-        </div>
-
+    <div class="footer">
+        <p>Fin del reporte de Rentabilidad por Documento.</p>
+        <p>Sistema Contable Finaxis.</p>
     </div>
 </body>
 </html>
 ''',
-
-
 
     'reports/rentabilidad_factura_report.html': r'''
 <!DOCTYPE html>
@@ -3234,55 +4013,85 @@ TEMPLATES_EMPAQUETADOS = {
     'reports/super_informe_report.html': r'''
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-    <title>Super Informe</title>
+    <title>Auditoría Contable Avanzada</title>
     <meta charset="UTF-8">
     <style>
-        @page { 
-            size: letter landscape; 
-            margin: 1.5cm; 
+        @page {
+            size: letter landscape;
+            margin: 1.5cm;
         }
-        body { 
-            font-family: Arial, sans-serif; 
+
+        body {
+            font-family: Arial, sans-serif;
             font-size: 8px;
             color: #333;
         }
+
         .header {
             text-align: center;
             border-bottom: 1px solid #ccc;
             padding-bottom: 10px;
             margin-bottom: 15px;
         }
-        h1, h2 { 
+
+        h1,
+        h2 {
             margin: 0;
         }
-        h1 { font-size: 14px; }
-        h2 { font-size: 12px; font-weight: normal; }
+
+        h1 {
+            font-size: 14px;
+        }
+
+        h2 {
+            font-size: 12px;
+            font-weight: normal;
+        }
+
         .report-info {
             margin-bottom: 15px;
             font-size: 9px;
         }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
         }
-        th, td { 
-            border: 1px solid #ddd; 
-            padding: 4px; 
-            text-align: left; 
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 4px;
+            text-align: left;
             word-wrap: break-word;
         }
-        th { 
-            background-color: #f2f2f2; 
+
+        th {
+            background-color: #f2f2f2;
             text-align: center;
             font-weight: bold;
         }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
 
         /* Estilos para filas basados en el estado pre-procesado */
-        .ANULADO { background-color: #fffbe6; }
-        .ELIMINADO { background-color: #ffebee; } /* Se eliminó el tachado */
+        .ANULADO {
+            background-color: #fffbe6;
+        }
+
+        .ELIMINADO {
+            background-color: #ffebee;
+        }
+
+        /* Se eliminó el tachado */
 
         tfoot td {
             font-weight: bold;
@@ -3290,6 +4099,7 @@ TEMPLATES_EMPAQUETADOS = {
         }
     </style>
 </head>
+
 <body>
     <div class="header">
         <h1>{{ empresa.razon_social or 'Nombre de Empresa no Disponible' }}</h1>
@@ -3306,42 +4116,44 @@ TEMPLATES_EMPAQUETADOS = {
         <thead>
             <tr>
                 {% for header in headers %}
-                    <th>{{ header }}</th>
+                <th>{{ header }}</th>
                 {% endfor %}
             </tr>
         </thead>
         <tbody>
             {% for row_data in processed_rows %}
-                <tr class="{{ row_data.estado }}">
+            <tr class="{{ row_data.estado }}">
 
-                    {% for cell in row_data.cells %}
-                    
-                        <td>{{ cell|default('', true) }}</td>
-                    {% endfor %}
-                </tr>
+                {% for cell in row_data.cells %}
+
+                <td>{{ cell|default('', true) }}</td>
+                {% endfor %}
+            </tr>
             {% else %}
-                <tr>
-                    <td colspan="{{ headers|length }}">No se encontraron resultados que coincidan con los criterios de búsqueda.</td>
-                </tr>
+            <tr>
+                <td colspan="{{ headers|length }}">No se encontraron resultados que coincidan con los criterios de
+                    búsqueda.</td>
+            </tr>
             {% endfor %}
         </tbody>
 
-       {% if show_totals %}
-<tfoot>
-    <tr>
-        <td colspan="{{ headers|length - 2 }}" class="text-right"><strong>TOTALES:</strong></td>
-        <td class="text-right"><strong>{{ totales.debito }}</strong></td>
-        <td class="text-right"><strong>{{ totales.credito }}</strong></td>
-    </tr>
-    <tr>
-        <td colspan="{{ headers|length - 2 }}" class="text-right"><strong>DIFERENCIA:</strong></td>
-        <td colspan="2" class="text-center"><strong>{{ totales.diferencia }}</strong></td>
-    </tr>
-</tfoot>
-{% endif %}
+        {% if show_totals %}
+        <tfoot>
+            <tr>
+                <td colspan="{{ headers|length - 2 }}" class="text-right"><strong>TOTALES:</strong></td>
+                <td class="text-right"><strong>{{ totales.debito }}</strong></td>
+                <td class="text-right"><strong>{{ totales.credito }}</strong></td>
+            </tr>
+            <tr>
+                <td colspan="{{ headers|length - 2 }}" class="text-right"><strong>DIFERENCIA:</strong></td>
+                <td colspan="2" class="text-center"><strong>{{ totales.diferencia }}</strong></td>
+            </tr>
+        </tfoot>
+        {% endif %}
 
     </table>
 </body>
+
 </html>
 ''',
 
@@ -3563,78 +4375,4 @@ TEMPLATES_EMPAQUETADOS = {
 </html>
 ''',
 
-    'reports/detalle_facturacion_report.html': r'''
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Detalle de Facturación PH</title>
-    <style>
-        @page { size: letter portrait; margin: 1.5cm; }
-        body { font-family: Arial, sans-serif; font-size: 10px; }
-        h1, h2, h3 { text-align: center; color: #333; margin: 0; }
-        h1 { font-size: 1.4em; margin-bottom: 5px; }
-        h2 { font-size: 1.1em; font-weight: normal; margin-bottom: 10px; }
-        .company-info { text-align: center; margin-bottom: 20px; }
-        .report-info { margin-bottom: 15px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
-        th { background-color: #4CAF50; color: white; text-align: center; font-weight: bold; }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        tr:nth-child(even) { background-color: #f2f2f2; }
-        .estado-activo { color: green; font-weight: bold; }
-        .estado-anulado { color: red; font-weight: bold; }
-    </style>
-</head>
-<body>
-    <div class="company-info">
-        <h1>{{ empresa.razon_social }}</h1>
-        <h2>NIT: {{ empresa.nit }}</h2>
-    </div>
-    
-    <div class="report-info">
-        <h3>Detalle de Facturación - Propiedad Horizontal</h3>
-        <p style="text-align: center; margin-top: 5px;"><strong>Periodo:</strong> {{ periodo }}</p>
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th style="width: 10%;">Factura</th>
-                <th style="width: 15%;">Fecha</th>
-                <th style="width: 30%;">Tercero / Propietario</th>
-                <th style="width: 15%;">Unidad</th>
-                <th style="width: 15%;">Total</th>
-                <th style="width: 15%;">Estado</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in items %}
-            <tr>
-                <td class="text-center">{{ item.consecutivo }}</td>
-                <td class="text-center">{{ item.fecha }}</td>
-                <td>{{ item.tercero_nombre }}</td>
-                <td class="text-center">{{ item.unidad }}</td>
-                <td class="text-right">{{ "{:,.0f}".format(item.total).replace(",", ".") }}</td>
-                <td class="text-center">
-                    <span class="{{ 'estado-activo' if item.estado == 'ACTIVO' else 'estado-anulado' }}">
-                        {{ item.estado }}
-                    </span>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-        <tfoot>
-            <tr>
-                <td colspan="4" class="text-right"><strong>TOTAL FACTURADO:</strong></td>
-                <td class="text-right"><strong>{{ "{:,.0f}".format(total_general).replace(",", ".") }}</strong></td>
-                <td></td>
-            </tr>
-        </tfoot>
-    </table>
-</body>
-</html>
-''',
 }
-
-
