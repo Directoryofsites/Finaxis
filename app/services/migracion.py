@@ -879,6 +879,11 @@ def analizar_backup(db: Session, analysis_request: schemas_migracion.AnalysisReq
 def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisRequest, user_id: int):
     backup_data_wrapper = request.backupData
     target_empresa_id = request.targetEmpresaId
+
+    # 0. Validar Existencia de Empresa Destino
+    empresa_exists = db.query(Empresa).filter(Empresa.id == target_empresa_id).first()
+    if not empresa_exists:
+        raise HTTPException(status_code=404, detail=f"La empresa destino con ID {target_empresa_id} no existe. Por favor recargue la página o seleccione una empresa válida.")
     
     # 1. Validar Firma (Nuevamente, por seguridad)
     data = backup_data_wrapper.get("data")
@@ -938,11 +943,12 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
             #     if field in emp_data: setattr(empresa, field, emp_data[field])
             # db.add(empresa)
 
-        # 2. RESTAURAR CUPOS
-        if "cupos_adicionales" in backup_data.get("configuracion", {}):
-            db.query(CupoAdicional).filter(CupoAdicional.empresa_id == target_empresa_id).delete()
-            for c in backup_data["configuracion"]["cupos_adicionales"]:
-                db.add(CupoAdicional(empresa_id=target_empresa_id, anio=c["anio"], mes=c["mes"], cantidad_adicional=c["cantidad"]))
+        # 2. RESTAURAR CUPOS (BLOQUEADO POR SEGURIDAD)
+        # No se deben transferir cupos adicionales entre empresas. Cada empresa mantiene sus propios cupos comprados.
+        # if "cupos_adicionales" in backup_data.get("configuracion", {}):
+        #     db.query(CupoAdicional).filter(CupoAdicional.empresa_id == target_empresa_id).delete()
+        #     for c in backup_data["configuracion"]["cupos_adicionales"]:
+        #         db.add(CupoAdicional(empresa_id=target_empresa_id, anio=c["anio"], mes=c["mes"], cantidad_adicional=c["cantidad"]))
 
         # 3. MAESTROS
         maestros_src = backup_data.get("maestros", {})
@@ -1038,8 +1044,21 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
 
         # 5. FORMATOS Y PLANTILLAS
         if "formatos_impresion" in config_src:
+            # Eliminar formatos existentes (defaults) para evitar colisión de Nombres Únicos
+            db.query(FormatoImpresion).filter(FormatoImpresion.empresa_id == target_empresa_id).delete()
+            db.flush()
+
             map_tipos_final = _get_id_translation_map(db, TipoDocumento, 'codigo', maestros_src, target_empresa_id)
             id_maps_fmt = {"tipo_documento_id": map_tipos_final}
+            
+            # Modificar nombres para garantizar unicidad global (la tabla tiene unique en nombre)
+            for fmt in config_src["formatos_impresion"]:
+                if "nombre" in fmt:
+                    # Append suffix only if not present (though restoring usually brings clean names)
+                    suffix = f" - {target_empresa_id}"
+                    if not str(fmt["nombre"]).endswith(suffix):
+                        fmt["nombre"] = f"{fmt['nombre']}{suffix}"
+
             _upsert_manual_seguro(db, FormatoImpresion, 'formatos_impresion', 'nombre', config_src, target_empresa_id, user_id, id_maps=id_maps_fmt)
 
         if "plantillas" in config_src:
@@ -1070,14 +1089,36 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
                     ph_conf = PHConfiguracion(empresa_id=target_empresa_id)
                     db.add(ph_conf)
                 # Actualizar campos simples
+                # Generar mapas de traducción de ID (Old ID -> New ID)
+                map_tipos_code = _get_id_translation_map(db, TipoDocumento, 'codigo', maestros_src, target_empresa_id)
+                map_tipos_id = {}
+                for item in maestros_src.get('tipos_documento', []):
+                    if str(item.get('codigo')) in map_tipos_code:
+                        map_tipos_id[str(item['id'])] = map_tipos_code[str(item['codigo'])]
+
+                map_cuentas_id = {}
+                for item in maestros_src.get('plan_cuentas', []):
+                     if str(item.get('codigo')) in map_cuentas:
+                         map_cuentas_id[str(item['id'])] = map_cuentas[str(item['codigo'])]
+
+                # Actualizar campos con mapeo
                 for k, v in conf_data.items():
-                    if hasattr(ph_conf, k) and k not in ['id', 'empresa_id']:
-                        setattr(ph_conf, k, v)
+                    if not hasattr(ph_conf, k) or k in ['id', 'empresa_id']: continue
+                    
+                    val_to_set = v
+                    
+                    # Mapear Foreign Keys
+                    if k in ['tipo_documento_factura_id', 'tipo_documento_recibo_id'] and v is not None:
+                         val_to_set = map_tipos_id.get(str(v))
+                    elif k in ['cuenta_cartera_id', 'cuenta_caja_id', 'cuenta_ingreso_intereses_id'] and v is not None:
+                         val_to_set = map_cuentas_id.get(str(v))
+                    
+                    setattr(ph_conf, k, val_to_set)
             
             # Conceptos
             _upsert_manual_seguro(db, PHConcepto, 'conceptos', 'nombre', ph_data, target_empresa_id, user_id, 
-                                id_maps={"cuenta_cartera_id": map_cuentas, "cuenta_caja_id": map_cuentas, 
-                                        "tipo_documento_id": _get_id_translation_map(db, TipoDocumento, 'codigo', maestros_src, target_empresa_id)})
+                                id_maps={"cuenta_cxc_id": map_cuentas, "cuenta_caja_id": map_cuentas,
+                                         "cuenta_ingreso_id": map_cuentas, "cuenta_interes_id": map_cuentas})
             
             # Torres y Unidades
             if "torres" in ph_data:
@@ -1105,7 +1146,7 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
         activos_data = backup_data.get("activos_fijos", {})
         if activos_data:
              _upsert_manual_seguro(db, ActivoCategoria, 'categorias', 'nombre', activos_data, target_empresa_id, user_id, 
-                                   id_maps={'cuenta_activo_id': map_cuentas, 'cuenta_depreciacion_id': map_cuentas, 'cuenta_gasto_id': map_cuentas})
+                                   id_maps={'cuenta_activo_id': map_cuentas, 'cuenta_depreciacion_acumulada_id': map_cuentas, 'cuenta_gasto_depreciacion_id': map_cuentas})
              db.flush()
              map_cats = _get_id_translation_map(db, ActivoCategoria, 'nombre', activos_data, target_empresa_id)
              
@@ -1408,6 +1449,8 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
         conciliacion_data = backup_data.get("conciliacion_bancaria", {})
         if conciliacion_data:
             # 1. Restaurar Configuraciones de Importación
+            map_import_configs = {} # Mapa OldID -> NewID
+            
             if "configuraciones_importacion" in conciliacion_data:
                 for config_data in conciliacion_data["configuraciones_importacion"]:
                     bank_id = map_terceros.get(config_data.get("bank_nit"))
@@ -1449,7 +1492,13 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
                     config.is_active = config_data.get("is_active", True)
                     config.created_by = creator_id
                     config.updated_by = updater_id
-
+                    
+                    db.flush() # Importante: Generar ID
+                    
+                    # Guardar mapeo si tiene ID origen (para ImportSession)
+                    if "id" in config_data:
+                        map_import_configs[str(config_data["id"])] = config.id
+                        
             # 2. Restaurar Configuraciones Contables
             if "configuraciones_contables" in conciliacion_data:
                 for acc_config_data in conciliacion_data["configuraciones_contables"]:
@@ -1505,6 +1554,11 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
                         user_session = db.query(Usuario).filter(Usuario.email == session_data["user_email"]).first()
                         if user_session:
                             user_session_id = user_session.id
+                    
+                    # Mapear import_config_id usando el mapa generado
+                    import_config_id = None
+                    if session_data.get("import_config_id"):
+                         import_config_id = map_import_configs.get(str(session_data["import_config_id"]))
 
                     # Verificar si la sesión ya existe
                     existing_session = db.query(ImportSession).filter(
@@ -1518,7 +1572,7 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
                             bank_account_id=bank_account_id,
                             file_name=session_data.get("file_name", ""),
                             file_hash=session_data.get("file_hash", ""),
-                            import_config_id=session_data.get("import_config_id"),
+                            import_config_id=import_config_id,
                             total_movements=session_data.get("total_movements", 0),
                             successful_imports=session_data.get("successful_imports", 0),
                             errors=session_data.get("errors"),

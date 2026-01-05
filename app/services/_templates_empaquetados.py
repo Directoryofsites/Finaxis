@@ -4058,6 +4058,7 @@ TEMPLATES_EMPAQUETADOS = {
         table {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed; /* OPTIMIZACION DE VELOCIDAD */
         }
 
         th,
@@ -4113,6 +4114,23 @@ TEMPLATES_EMPAQUETADOS = {
     </div>
 
     <table>
+        <!-- OPTIMIZACION: Definir anchos fijos ayuda al motor de renderizado -->
+        <colgroup>
+            <col style="width: 7%">  <!-- Fecha -->
+            <col style="width: 7%">  <!-- Documento -->
+            <col style="width: 5%">  <!-- Num -->
+            <col style="width: 10%"> <!-- Beneficiario -->
+            <col style="width: 10%"> <!-- Cuenta -->
+            <col style="width: 7%">  <!-- Producto -->
+            <col style="width: 5%">  <!-- Cant. -->
+            <col style="width: 7%">  <!-- C. Costo -->
+            <col style="width: 14%"> <!-- Concepto -->
+            <col style="width: 5%">  <!-- Débito -->
+            <col style="width: 5%">  <!-- Crédito -->
+            <col style="width: 7%">  <!-- Usuario Creador -->
+            <col style="width: 7%">  <!-- Justificación -->
+            <col style="width: 4%">  <!-- Usuario Op. -->
+        </colgroup>
         <thead>
             <tr>
                 {% for header in headers %}

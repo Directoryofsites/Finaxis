@@ -47,6 +47,10 @@ def generate_super_informe(db: Session, filtros: schemas_doc.DocumentoGestionFil
         tipo_entidad = filtros.tipoEntidad
         query = None
 
+        # Alias para tercero de movimiento
+        from sqlalchemy.orm import aliased
+        TerceroMov = aliased(models_tercero)
+
         if tipo_entidad == 'movimientos':
             if filtros.estadoDocumento in ['activos', 'anulados']:
                 query = db.query(
@@ -55,7 +59,8 @@ def generate_super_informe(db: Session, filtros: schemas_doc.DocumentoGestionFil
                     models_doc.fecha,
                     models_tipo.nombre.label("tipo_documento"),
                     models_doc.numero,
-                    models_tercero.razon_social.label("beneficiario"),
+                    models_tercero.razon_social.label("beneficiario_doc"), # Renamed for clarity, fallback
+                    TerceroMov.razon_social.label("beneficiario"), # Priority: Movimiento Tercero
                     models_plan.codigo.label("cuenta_codigo"),
                     models_plan.nombre.label("cuenta_nombre"),
                     models_centro_costo.nombre.label("centro_costo"),
@@ -76,6 +81,7 @@ def generate_super_informe(db: Session, filtros: schemas_doc.DocumentoGestionFil
                 .join(models_plan, models_mov.cuenta_id == models_plan.id)\
                 .join(models_tipo, models_doc.tipo_documento_id == models_tipo.id)\
                 .outerjoin(models_tercero, models_doc.beneficiario_id == models_tercero.id)\
+                .outerjoin(TerceroMov, models_mov.tercero_id == TerceroMov.id)\
                 .outerjoin(models_centro_costo, models_mov.centro_costo_id == models_centro_costo.id)\
                 .outerjoin(models_producto, models_mov.producto_id == models_producto.id)\
                 .outerjoin(models_log, and_(
@@ -90,13 +96,14 @@ def generate_super_informe(db: Session, filtros: schemas_doc.DocumentoGestionFil
                     query = query.filter(models_doc.anulado == True, models_doc.estado == 'ANULADO')
 
             elif filtros.estadoDocumento == 'eliminados':
-                query = db.query(
+                 # (Mantener lógica original para eliminados, ya que no tienen tercero_id aun)
+                 query = db.query(
                     models_mov_elim.id.label('movimiento_id'),
                     models_doc_elim.id.label('documento_id'),
                     models_doc_elim.fecha,
                     models_tipo.nombre.label("tipo_documento"),
                     models_doc_elim.numero,
-                    models_tercero.razon_social.label("beneficiario"),
+                    models_tercero.razon_social.label("beneficiario"), # Solo Header
                     models_plan.codigo.label("cuenta_codigo"),
                     models_plan.nombre.label("cuenta_nombre"),
                     models_centro_costo.nombre.label("centro_costo"),
@@ -201,6 +208,10 @@ def generate_super_informe(db: Session, filtros: schemas_doc.DocumentoGestionFil
                 for r in resultados_orm:
                     fila = r._asdict()
 
+                    # Fallback de Beneficiario (Movimiento > Documento)
+                    if not fila.get('beneficiario') and fila.get('beneficiario_doc'):
+                         fila['beneficiario'] = fila['beneficiario_doc']
+
                     creador_data = user_map.get(r.usuario_creador_id)
                     if creador_data:
                         fila['usuario_creador'] = creador_data['nombre'] if creador_data['nombre'] else creador_data['email']
@@ -257,7 +268,7 @@ def generate_super_informe_pdf(db: Session, filtros: schemas_doc.DocumentoGestio
             processed_rows.append({
                 'cells': [
                     item.get('fecha').strftime('%d/%m/%Y') if item.get('fecha') else 'N/A',
-                    item.get('tipo_documento') or 'N/A',
+                    (item.get('tipo_documento') or '').strip() or f"Doc {item.get('documento_id') or 'N/A'}",
                     item.get('numero') or 'N/A',
                     item.get('beneficiario') or 'N/A',
                     f"{item.get('cuenta_codigo', '')} - {item.get('cuenta_nombre', '')}",
@@ -290,10 +301,17 @@ def generate_super_informe_pdf(db: Session, filtros: schemas_doc.DocumentoGestio
         "show_totals": filtros.tipoEntidad == 'movimientos'
     }
 
-    # --- INICIO: CÓDIGO REFACTORIZADO ---
+    # --- MOTOR RUST DESACTIVADO A PETICIÓN DEL USUARIO ---
+    # (El usuario prefirió la estética original aunque fuera más lento)
+    # try:
+    #     import rust_reports
+    #     # ... (Lógica Rust comentada para futura referencia o eliminación) ...
+    # except ImportError:
+    #     pass
+    
+    # FALLBACK: WeasyPrint (Lento pero seguro y con el diseño original exacto)
     try:
-        # La clave 'reports/super_informe_report.html' debe coincidir con la ruta relativa
-        # que generó nuestro script 'precompile_templates.py'.
+        print("[PDF] Usando motor original WeasyPrint (Python native)")
         template_string = TEMPLATES_EMPAQUETADOS['reports/super_informe_report.html']
         template = GLOBAL_JINJA_ENV.from_string(template_string)
         html_string = template.render(context)

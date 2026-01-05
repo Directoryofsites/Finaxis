@@ -222,7 +222,12 @@ class UniversalImportService:
                     tipo_name = clean_str(get_val('nombre_tipo_doc')) # Nuevo campo NOMBRE
                     numero_val = clean_str(get_val('numero'))
                     
-                    # Fallback robusto si no hay codigo pero sí nombre (o viceversa implícitamente handled by ImportUtils)
+                    # Fallback robusto
+                    # FIX: Si no hay codigo pero sí nombre, usamos el nombre como codigo temporal
+                    # Esto asegura que el agrupamiento (Key) separe los documentos por nombre.
+                    if not tipo_code and tipo_name:
+                        tipo_code = tipo_name
+                    
                     if not tipo_code and not tipo_name:
                          tipo_code = "GEN"
 
@@ -379,35 +384,70 @@ class UniversalImportService:
         tercero_cache = {} # nit -> id
         tipo_doc_cache = {} # code -> id
         
+        # caches
+        acc_cache = {} # code -> id
+        tercero_cache = {} # nit -> id
+        tipo_doc_cache = {} # code -> id
+        
+        # --- PHASE 1: PRE-SCAN & RESOLVE DOCUMENT TYPES ---
+        # Objetivo: Resolver todos los Nombres de Documento a Códigos de DB *antes* de agrupar.
+        unique_type_names = set()
         for e in entries:
-             key = (e['tipo_doc'], e['numero'], e['fecha'])
-             if key not in grouped_docs: grouped_docs[key] = []
-             grouped_docs[key].append(e)
-             
-        # 2. Procesar Documentos
+            if e.get('nombre_tipo_doc'):
+                unique_type_names.add(e['nombre_tipo_doc'])
+                
+        name_to_code_map = {} # "Recibo de Caja" -> "RC"
+        
+        for t_name in unique_type_names:
+            # Asegurar existencia (crea si falta)
+            td_id = ImportUtils.ensure_tipo_documento_exists(db, empresa_id, nombre=t_name)
+            if td_id:
+                td_obj = db.query(TipoDocumento).filter_by(id=td_id).first()
+                if td_obj:
+                    name_to_code_map[t_name] = td_obj.codigo
+                    tipo_doc_cache[td_obj.codigo] = td_id # Pre-calentar cache
+
+        # --- PHASE 2: GROUPING ---
+        # Agrupar usando el CÓDIGO REAL de la base de datos
+        grouped_docs = {}
+        
+        for e in entries:
+            t_name = e.get('nombre_tipo_doc')
+            t_code = e.get('tipo_doc')
+            
+            # Si tenemos un mapeo por nombre, es la autoridad.
+            # Esto separa "Recibo #1" de "Comprobante #1" aunque venían sin código.
+            resolved_code = t_code
+            if t_name and t_name in name_to_code_map:
+                resolved_code = name_to_code_map[t_name]
+            
+            # Ajuste en el entry para el procesamiento posterior
+            e['tipo_doc'] = resolved_code 
+            
+            key = (resolved_code, e['numero'], e['fecha'])
+            if key not in grouped_docs: grouped_docs[key] = []
+            grouped_docs[key].append(e)
+              
+        # 3. Procesar Documentos
         for (tipo_code, num_str, doc_date), lines in grouped_docs.items():
             try:
                 # Z. Verificar Cupo Disponible
                 doc_cost = len(lines)
                 if remaining_quota < doc_cost:
                     results["errors"].append(f"Doc {tipo_code}-{num_str} saltado: Supera el límite de registros disponible ({remaining_quota}).")
-                    continue # O break si queremos detener todo
+                    continue 
+
+                # A. Obtener Tipo Doc (Ya resuelto en Fase 1)
+                tipo_name_sugerido = lines[0].get('nombre_tipo_doc') # Always define this
+                tipo_id = tipo_doc_cache.get(tipo_code)
                 
-                # A. Validar/Crear Tipo Doc
-                # Usamos el nombre del tipo documento de la primera línea (si existe)
-                # para intentar buscar por nombre o crear con nombre correcto.
-                tipo_name_sugerido = lines[0].get('nombre_tipo_doc')
-                
-                if tipo_code not in tipo_doc_cache:
-                    td_id = ImportUtils.ensure_tipo_documento_exists(
-                        db, empresa_id, 
-                        codigo=tipo_code, 
-                        nombre=tipo_name_sugerido
-                    )
-                    tipo_doc_cache[tipo_code] = td_id
-                
-                tipo_id = tipo_doc_cache[tipo_code]
-                
+                # Fallback de seguridad (por si acaso llegó un código huerfano no escaneado)
+                if not tipo_id:
+                     tipo_id = ImportUtils.ensure_tipo_documento_exists(
+                        db, empresa_id, codigo=tipo_code, nombre=tipo_name_sugerido
+                     )
+                     if tipo_id: tipo_doc_cache[tipo_code] = tipo_id
+
                 if not tipo_id:
                      results["errors"].append(f"Doc {tipo_code}-{num_str} saltado: No se pudo determinar Tipo Documento.")
                      continue
@@ -498,13 +538,23 @@ class UniversalImportService:
                     acc_id = acc_cache[c_code]
                     if not acc_id: continue
 
-                    if not acc_id: continue
+                    # 2. Tercero (NIT) de la línea (o del encabezado)
+                    row_nit = line.get('nit') or header_nit
+                    row_tercero_name = line.get('nombre_tercero') or header_name
+                    
+                    # Resolver ID del tercero para el movimiento
+                    mov_tercero_id = beneficiario_id # Default header
+                    if row_nit and row_nit != header_nit:
+                         if row_nit not in tercero_cache:
+                              tid, _ = ImportUtils.ensure_tercero_exists(db, empresa_id, row_nit, row_tercero_name)
+                              tercero_cache[row_nit] = tid
+                         mov_tercero_id = tercero_cache[row_nit]
 
                     # 3. Crear Movimiento
                     mov = MovimientoContable(
                         documento_id=new_doc.id,
                         cuenta_id=acc_id,
-                        # tercero_id NO EXISTE en el modelo MovimientoContable actual
+                        tercero_id=mov_tercero_id, # ASIGNANDO EL TERCERO AL MOVIMIENTO
                         concepto=line['detalle'],
                         debito=line['debito'],
                         credito=line['credito'],

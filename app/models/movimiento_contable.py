@@ -11,6 +11,7 @@ class MovimientoContable(Base):
     documento_id = Column(Integer, ForeignKey("documentos.id"), nullable=False)
     cuenta_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=False)
     centro_costo_id = Column(Integer, ForeignKey("centros_costo.id"), nullable=True)
+    tercero_id = Column(Integer, ForeignKey("terceros.id"), nullable=True) # Campo faltante crítico
 
     # --- INICIO: NUEVAS COLUMNAS AÑADIDAS ---
     producto_id = Column(Integer, ForeignKey("productos.id"), nullable=True)
@@ -29,6 +30,7 @@ class MovimientoContable(Base):
     cuenta = relationship("PlanCuenta")
     documento = relationship("Documento", back_populates="movimientos")
     centro_costo = relationship("CentroCosto", back_populates="movimientos")
+    tercero = relationship("Tercero") # Relación para acceder al NIT desde el movimiento
     
     # --- INICIO: NUEVA RELACIÓN AÑADIDA ---
 

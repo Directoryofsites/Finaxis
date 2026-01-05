@@ -189,23 +189,48 @@ class ImportUtils:
 
         # Caso A: Solo tengo Nombre -> Generar Código
         if not final_code and final_name:
-            # Generar código: Ej: "Recibo de Caja" -> "RC", "Comprobante" -> "CO"
-            words = final_name.split()
-            if len(words) >= 2:
-                final_code = (words[0][0] + words[1][0]).upper()
-            else:
-                final_code = final_name[:2].upper()
+            # Estrategia de generación de códigos
+            # 1. Acrónimo (Primera letra de cada palabra) - Ideal para "Comprobante de Diario" -> "CDD"
+            words = final_name.upper().split()
+            acronym = "".join([w[0] for w in words if w.isalnum()])[:5]
             
-            # Verificar colisión de código generado
-            collision = db.query(TipoDocumento).filter_by(empresa_id=empresa_id, codigo=final_code).first()
-            if collision:
-                final_code = final_name[:3].upper() # Intentar con 3 letras
-        
-        # Caso B: Solo tengo Código -> Usar como Nombre
-        if not final_name and final_code:
-             final_name = f"DOCUMENTO {final_code}"
+            # 2. Dos letras (Primera de cada palabra o primeras 2)
+            if len(words) >= 2:
+                two_let = (words[0][0] + words[1][0]).upper()
+            else:
+                two_let = final_name[:2].upper()
+            
+            # 3. Tres letras
+            three_let = final_name[:3].upper()
 
-        # Truncar código final a 5 chars (limite DB típico)
+            candidates = [acronym, two_let, three_let]
+            # Eliminar duplicados y vacíos
+            candidates = list(dict.fromkeys([c for c in candidates if c]))
+
+            unique_code = None
+            
+            for cand in candidates:
+                exists = db.query(TipoDocumento).filter_by(empresa_id=empresa_id, codigo=cand).first()
+                if not exists:
+                    unique_code = cand
+                    break
+            
+            # Si todas las estrategias naturales fallan, usar sufijo numérico sobre el acrónimo o primeras 3 letras
+            if not unique_code:
+                base = (acronym if acronym else final_name[:3].upper())[:3]
+                counter = 1
+                while True:
+                    candidate = f"{base}{counter}"
+                    exists = db.query(TipoDocumento).filter_by(empresa_id=empresa_id, codigo=candidate).first()
+                    if not exists:
+                        unique_code = candidate
+                        break
+                    counter += 1
+                    if counter > 99: break # Safety break
+            
+            final_code = unique_code or "GEN"
+
+        # Truncar código final a 5 chars
         final_code = final_code[:5] if final_code else "GEN"
 
         try:

@@ -189,11 +189,11 @@ from app.services import scheduler_backup
 
 @router.get("/backup-auto-config", response_model=migracion_schemas.AutoBackupConfig)
 def get_backup_config(current_user: models_usuario.Usuario = Depends(has_permission("utilidades:migracion"))):
-    return scheduler_backup.load_config()
+    return scheduler_backup.load_config(empresa_id=current_user.empresa_id)
 
 @router.post("/backup-auto-config")
 def update_backup_config(config: migracion_schemas.AutoBackupConfig, current_user: models_usuario.Usuario = Depends(has_permission("utilidades:migracion"))):
-    scheduler_backup.save_config(config.dict())
+    scheduler_backup.save_config(config.dict(), empresa_id=current_user.empresa_id)
     return {"msg": "Configuración de copia automática actualizada correctamente."}
 
 @router.post("/analizar-backup", response_model=migracion_schemas.AnalysisReport)
