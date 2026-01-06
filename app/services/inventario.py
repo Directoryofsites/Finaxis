@@ -149,6 +149,140 @@ def get_stock_historico(db: Session, producto_id: int, bodega_id: Optional[int],
     return float(saldo_result or Decimal('0.0'))
 
 
+def recalcular_saldos_producto(db: Session, producto_id: int):
+    """
+    Reconstruye TOTALMENTE el Stock y Costo Promedio del producto basándose
+    en todos los movimientos existentes en la base de datos.
+    Crucial para mantener integridad tras eliminación de documentos.
+    """
+    print(f"\n[RECALCULO INVENTARIO] Iniciando para Producto ID {producto_id}")
+    
+    # 1. Obtener Producto 
+    producto = db.query(models_producto.Producto).get(producto_id)
+    if not producto: return
+
+    # 1.5. PASO CRÍTICO: Resetear TODO el stock existente a 0.0
+    # Esto elimina "saldos fantasma" de bodegas que ya no tienen movimientos asociados.
+    db.query(models_producto.StockBodega).filter(
+        models_producto.StockBodega.producto_id == producto_id
+    ).update({"stock_actual": 0.0, "stock_comprometido": 0.0}, synchronize_session=False)
+
+    # 2. Resetear valores en memoria (Saldos iniciales)
+    # Si tiene historial, lo reconstruiremos. Si no, debería quedar en 0 (o manual).
+    # OJO: Si se maneja saldo inicial manual en otra tabla, habría que sumarlo. 
+    # Por ahora asumimos que 'ENTRADA_INICIAL' es un movimiento más.
+    
+    nuevo_costo_promedio = 0.0
+    stocks_por_bodega = {} # Mapa: bodega_id -> cantidad
+    
+    # 3. Obtener TODOS los movimientos ordenados cronológicamente
+    # El orden es VITAL para el promedio ponderado.
+    movimientos = db.query(models_producto.MovimientoInventario).filter(
+        models_producto.MovimientoInventario.producto_id == producto_id
+    ).order_by(
+        models_producto.MovimientoInventario.fecha.asc(),
+        models_producto.MovimientoInventario.id.asc()
+    ).all()
+
+    stock_total_global = 0.0
+    
+    # 4. Re-procesar paso a paso
+    for mov in movimientos:
+        bodega_id = mov.bodega_id
+        cantidad = float(mov.cantidad)
+        costo_mov = float(mov.costo_unitario or 0.0)
+        
+        # Inicializar bodega si no existe en mapa
+        if bodega_id not in stocks_por_bodega: stocks_por_bodega[bodega_id] = 0.0
+        
+        if mov.tipo_movimiento.startswith('ENTRADA'):
+            # Lógica de Promedio Ponderado
+            # Valor Anterior Total = Stock Total * Costo Promedio Actual
+            valor_anterior = stock_total_global * nuevo_costo_promedio
+            valor_entrada = cantidad * costo_mov
+            
+            # Nuevo Stock
+            stocks_por_bodega[bodega_id] += cantidad
+            stock_total_global += cantidad
+            
+            # Nuevo Promedio
+            if stock_total_global > 0:
+                nuevo_costo_promedio = (valor_anterior + valor_entrada) / stock_total_global
+            else:
+                nuevo_costo_promedio = costo_mov
+                
+        elif mov.tipo_movimiento.startswith('SALIDA'):
+            # En salida, el costo promedio NO CAMBIA, solo baja el stock
+            stocks_por_bodega[bodega_id] -= cantidad
+            stock_total_global -= cantidad
+            
+    # 5. Aplicar cambios a la Base de Datos
+    
+    # A. Actualizar Producto
+    # Evitamos errores de redondeo infinitesimal
+    if abs(stock_total_global) < 0.00001: stock_total_global = 0.0
+    
+    producto.costo_promedio = nuevo_costo_promedio
+    # OJO: Producto no tiene campo stock_total persistente fiable, lo calculamos sumando bodegas.
+    # Pero actualizamos el costo que es lo crítico.
+    
+    db.add(producto)
+    
+    # B. Actualizar Stocks por Bodega (Sobreescribimos lo que haya en StockBodega)
+    for b_id, nuevo_stock in stocks_por_bodega.items():
+        if abs(nuevo_stock) < 0.00001: nuevo_stock = 0.0
+        
+        stock_db = db.query(models_producto.StockBodega).filter_by(
+            producto_id=producto_id, bodega_id=b_id
+        ).first()
+        
+        if stock_db:
+            stock_db.stock_actual = nuevo_stock
+            db.add(stock_db)
+        else:
+            # Si no existía un registro de stock pero hubo movimiento (raro pero posible)
+            new_stock = models_producto.StockBodega(
+                producto_id=producto_id, bodega_id=b_id, stock_actual=nuevo_stock
+            )
+            db.add(new_stock)
+            
+    # C. Limpieza de StockBodega huerfanos (opcional, si queremos borrar los q quedaron en 0)
+    # Por ahora mejor no borrar para no perder historial de qué bodegas se usaron.
+    
+    db.flush() # Confirmar cambios en esta transacción
+    print(f"[RECALCULO FINALIZADO] ID {producto_id} -> Stock Global: {stock_total_global}, Costo Prom: {nuevo_costo_promedio}")
+
+    print(f"[RECALCULO FINALIZADO] ID {producto_id} -> Stock Global: {stock_total_global}, Costo Prom: {nuevo_costo_promedio}")
+
+
+def recalcular_todo_inventario(db: Session, empresa_id: int):
+    """
+    Ejecuta el recálculo de saldos y costos para TODOS los productos de la empresa.
+    Útil para corregir inconsistencias masivas o tras migraciones/eliminaciones.
+    """
+    print(f"\n[RECALCULO MASIVO] Iniciando para Empresa ID {empresa_id}")
+    productos = db.query(models_producto.Producto).filter(models_producto.Producto.empresa_id == empresa_id).all()
+    count = 0
+    total = len(productos)
+    
+    for prod in productos:
+        # Ignoramos servicios pues no manejan stock
+        if not prod.es_servicio:
+            recalcular_saldos_producto(db, prod.id)
+            count += 1
+            
+            
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"[RECALCULO MASIVO ERROR] Fallo al hacer commit final: {e}")
+        raise e
+
+    print(f"[RECALCULO MASIVO] Finalizado. Procesados {count}/{total} productos.")
+    return {"message": f"Recálculo completado. Productos procesados: {count}", "total": count}
+
+
 # --- FUNCIÓN CLAVE: CREAR TRASLADO ENTRE BODEGAS (FIXED) ---
 def crear_traslado_entre_bodegas(db: Session, traslado: schemas_traslado.TrasladoInventarioCreate, empresa_id: int, user_id: int) -> models_doc.Documento:
     """

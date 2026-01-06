@@ -9,7 +9,7 @@ import { FaChevronDown, FaTimes, FaSearch, FaCheck } from 'react-icons/fa';
  * @param {String} placeholder - Texto a mostrar cuando no hay nada seleccionado
  * @param {String} label - Label del campo (opcional)
  */
-export default function MultiSelect({ options = [], value = [], onChange, placeholder = "Seleccionar...", label }) {
+export default function MultiSelect({ options = [], value = [], onChange, placeholder = "Seleccionar...", label, getDependentValues }) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const dropdownRef = useRef(null);
@@ -33,10 +33,21 @@ export default function MultiSelect({ options = [], value = [], onChange, placeh
     const handleToggleOption = (optionValue) => {
         const isSelected = value.includes(optionValue);
         let newValue;
+        
+        // Lógica de Dependencias (Jerarquía)
+        let dependentValues = [];
+        if (getDependentValues) {
+            dependentValues = getDependentValues(optionValue, options);
+        }
+
         if (isSelected) {
-            newValue = value.filter(v => v !== optionValue);
+            // Deseleccionar: Remover el valor Y sus dependientes
+            newValue = value.filter(v => v !== optionValue && !dependentValues.includes(v));
         } else {
-            newValue = [...value, optionValue];
+            // Seleccionar: Agregar el valor Y sus dependientes (evitando duplicados)
+            const toAdd = [optionValue, ...dependentValues];
+            const uniqueToAdd = toAdd.filter(v => !value.includes(v));
+            newValue = [...value, ...uniqueToAdd];
         }
         onChange(newValue);
     };

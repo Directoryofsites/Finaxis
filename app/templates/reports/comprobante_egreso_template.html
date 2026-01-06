@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Comprobante de Egreso</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 2cm;
+        }
+
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 10pt;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 10px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 18pt;
+            text-transform: uppercase;
+            color: #000;
+        }
+
+        .header h2 {
+            margin: 5px 0 0;
+            font-size: 12pt;
+            font-weight: normal;
+        }
+
+        .header p {
+            margin: 2px 0;
+            font-size: 10pt;
+            color: #666;
+        }
+
+        .doc-title {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+
+        .doc-title h3 {
+            margin: 0;
+            font-size: 14pt;
+            color: #444;
+            text-transform: uppercase;
+            background-color: #f9f9f9;
+            display: inline-block;
+            padding: 5px 15px;
+            border: 1px solid #ddd;
+        }
+
+        .info-grid {
+            display: table;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .info-row {
+            display: table-row;
+        }
+
+        .info-cell {
+            display: table-cell;
+            padding: 4px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .label {
+            font-weight: bold;
+            color: #555;
+            width: 120px;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        .items-table th {
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 8px;
+            font-weight: bold;
+            text-align: left;
+            font-size: 9pt;
+        }
+
+        .items-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            font-size: 9pt;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .totals-section {
+            width: 40%;
+            margin-left: auto;
+            margin-bottom: 30px;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .total-row.final {
+            font-weight: bold;
+            font-size: 11pt;
+            border-bottom: 2px solid #000;
+            border-top: 1px solid #000;
+            margin-top: 5px;
+            padding-top: 5px;
+        }
+
+        .footer {
+            margin-top: 50px;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+            font-size: 8pt;
+            color: #888;
+            text-align: center;
+        }
+
+        .signatures {
+            margin-top: 60px;
+            display: table;
+            width: 100%;
+        }
+
+        .sig-box {
+            display: table-cell;
+            width: 33%;
+            text-align: center;
+            vertical-align: bottom;
+            height: 60px;
+        }
+
+        .sig-line {
+            border-top: 1px solid #000;
+            margin: 0 20px;
+            padding-top: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <h2>NIT: {{ empresa.nit }}</h2>
+        <p>{{ empresa.direccion }} - {{ empresa.telefono }}</p>
+    </div>
+
+    <div class="doc-title">
+        <h3>{{ documento.tipo_nombre }} N° {{ documento.consecutivo }}</h3>
+    </div>
+
+    <div class="info-grid">
+        <div class="info-row">
+            <div class="info-cell label">Fecha:</div>
+            <div class="info-cell">{{ documento.fecha_emision }}</div>
+            <div class="info-cell label">Ciudad:</div>
+            <div class="info-cell">Bogotá D.C.</div> <!-- Placeholder city -->
+        </div>
+        <div class="info-row">
+            <div class="info-cell label">Pagado a:</div>
+            <div class="info-cell"><strong>{{ tercero.razon_social }}</strong></div>
+            <div class="info-cell label">NIT/CC:</div>
+            <div class="info-cell">{{ tercero.nit }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-cell label">Concepto:</div>
+            <div class="info-cell" colspan="3">{{ documento.observaciones }}</div>
+        </div>
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th style="width: 15%;">Código</th>
+                <th style="width: 45%;">Descripción</th>
+                <th style="width: 20%;" class="text-right">Débito</th>
+                <th style="width: 20%;" class="text-right">Crédito</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.producto_codigo }}</td>
+                <td>{{ item.producto_nombre }}</td>
+                <td class="text-right">{{ item.debito_fmt }}</td>
+                <td class="text-right">{{ item.credito_fmt }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="totals-section">
+        <div class="total-row final">
+            <span>TOTAL PAGADO</span>
+            <span>{{ totales.total }}</span>
+        </div>
+        <div style="font-size: 9pt; font-style: italic; margin-top: 5px; text-align: right;">
+            Son: {{ totales.valor_letras }}
+        </div>
+    </div>
+
+    <div class="signatures">
+        <div class="sig-box">
+            <div class="sig-line">Elaboró</div>
+        </div>
+        <div class="sig-box">
+            <div class="sig-line">Aprobó</div>
+        </div>
+        <div class="sig-box">
+            <div class="sig-line">Recibí Conforme</div>
+            <div style="font-size: 8pt;">C.C.</div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Generado automáticamente por Finaxis Cloud
+    </div>
+</body>
+
+</html>

@@ -1,19 +1,19 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  FaSave, 
-  FaTimes, 
-  FaBarcode, 
-  FaTag, 
-  FaLayerGroup, 
-  FaPercent, 
-  FaWarehouse, 
-  FaMoneyBillWave,
-  FaCubes,
-  FaSortAmountUp,
-  FaSortAmountDown,
-  FaInfoCircle
+import {
+    FaSave,
+    FaTimes,
+    FaBarcode,
+    FaTag,
+    FaLayerGroup,
+    FaPercent,
+    FaWarehouse,
+    FaMoneyBillWave,
+    FaCubes,
+    FaSortAmountUp,
+    FaSortAmountDown,
+    FaInfoCircle
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { apiService } from '../../../lib/apiService';
@@ -38,12 +38,12 @@ export default function InventarioFormModal({ isOpen, onClose, onSaveSuccess, on
     const [impuestos, setImpuestos] = useState([]);
     const [bodegas, setBodegas] = useState([]);
     const [definicionesGrupo, setDefinicionesGrupo] = useState([]);
-    
+
     const [activeTab, setActiveTab] = useState('basico'); // Estado para Tabs
     const [isLoadingMaestros, setIsLoadingMaestros] = useState(false);
     const [isLoadingDefs, setIsLoadingDefs] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    
+
     const modalContentRef = useRef(null);
     const isInitialLoadRef = useRef(true);
 
@@ -109,27 +109,42 @@ export default function InventarioFormModal({ isOpen, onClose, onSaveSuccess, on
                 if (dataToEdit.grupo_id) {
                     fetchDefiniciones(dataToEdit.grupo_id);
                 } else {
-                     setDefinicionesGrupo([]);
+                    setDefinicionesGrupo([]);
                 }
             } else {
                 setFormData(estadoInicial);
                 setDefinicionesGrupo([]);
             }
-            setTimeout(() => { modalContentRef.current?.scrollTo(0, 0); isInitialLoadRef.current = false;}, 100);
+            setTimeout(() => { modalContentRef.current?.scrollTo(0, 0); isInitialLoadRef.current = false; }, 100);
         }
     }, [isOpen, productoAEditar, fetchMaestros, fetchDefiniciones]);
 
     useEffect(() => {
         if (isOpen && !isInitialLoadRef.current && formData.grupo_id !== undefined) {
-             fetchDefiniciones(formData.grupo_id);
-             if (String(formData.grupo_id) !== String(productoAEditar?.grupo_id)) {
-                 setFormData(prev => ({...prev, valores_caracteristicas: []}));
-             }
+            fetchDefiniciones(formData.grupo_id);
+
+            // --- LÓGICA DE ASIGNACIÓN AUTOMÁTICA DE IMPUESTO ---
+            // Buscar el grupo seleccionado para ver si tiene impuesto predeterminado
+            const selectedGroup = grupos.find(g => String(g.id) === String(formData.grupo_id));
+            if (selectedGroup && selectedGroup.impuesto_predeterminado_id) {
+                // Solo actualizamos si encontramos un default válido
+                setFormData(prev => ({
+                    ...prev,
+                    impuesto_iva_id: selectedGroup.impuesto_predeterminado_id
+                }));
+                // Opcional: Mostrar toast informativo
+                // toast.info("Impuesto asignado automáticamente según grupo.");
+            }
+            // ----------------------------------------------------
+
+            if (String(formData.grupo_id) !== String(productoAEditar?.grupo_id)) {
+                setFormData(prev => ({ ...prev, valores_caracteristicas: [] }));
+            }
         } else if (isOpen && !isInitialLoadRef.current && !formData.grupo_id) {
             setDefinicionesGrupo([]);
-            setFormData(prev => ({...prev, valores_caracteristicas: []}));
+            setFormData(prev => ({ ...prev, valores_caracteristicas: [] }));
         }
-    }, [formData.grupo_id, fetchDefiniciones, isOpen, productoAEditar?.grupo_id]);
+    }, [formData.grupo_id, fetchDefiniciones, isOpen, productoAEditar?.grupo_id, grupos]); // Agregué 'grupos' a deps
 
 
     // --- MANEJADORES ---
@@ -172,17 +187,17 @@ export default function InventarioFormModal({ isOpen, onClose, onSaveSuccess, on
             payload.stock_minimo = parseFloat(payload.stock_minimo) || 0.0;
             payload.stock_maximo = parseFloat(payload.stock_maximo) || 0.0;
             payload.valores_caracteristicas = (Array.isArray(payload.valores_caracteristicas)
-                 ? payload.valores_caracteristicas.filter(vc => vc.valor && String(vc.valor).trim() !== '')
-                 : [])
-                 .map(vc => ({
-                     definicion_id: parseInt(vc.definicion_id),
-                     valor: String(vc.valor).trim()
-                 }));
+                ? payload.valores_caracteristicas.filter(vc => vc.valor && String(vc.valor).trim() !== '')
+                : [])
+                .map(vc => ({
+                    definicion_id: parseInt(vc.definicion_id),
+                    valor: String(vc.valor).trim()
+                }));
 
             let savedProducto;
             if (productoAEditar) {
                 const updatePayload = { ...payload };
-                 delete updatePayload.costo_inicial; delete updatePayload.stock_inicial; delete updatePayload.bodega_id_inicial;
+                delete updatePayload.costo_inicial; delete updatePayload.stock_inicial; delete updatePayload.bodega_id_inicial;
                 const response = await apiService.put(`/inventario/productos/${productoAEditar.id}`, updatePayload);
                 savedProducto = response.data;
             } else {
@@ -191,10 +206,10 @@ export default function InventarioFormModal({ isOpen, onClose, onSaveSuccess, on
             }
             onSaveSuccess(savedProducto);
         } catch (err) {
-             const errorMsg = err.response?.data?.detail || 'Error al guardar el producto.';
-             console.error("Error saving producto:", err.response || err);
-             toast.error(`Error: ${errorMsg}`);
-             if (onSaveError) onSaveError(err);
+            const errorMsg = err.response?.data?.detail || 'Error al guardar el producto.';
+            console.error("Error saving producto:", err.response || err);
+            toast.error(`Error: ${errorMsg}`);
+            if (onSaveError) onSaveError(err);
         } finally {
             setIsSubmitting(false);
         }
@@ -205,11 +220,11 @@ export default function InventarioFormModal({ isOpen, onClose, onSaveSuccess, on
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 animate-fadeIn p-4">
             <div ref={modalContentRef} className="bg-white rounded-xl shadow-2xl w-full max-w-2xl border border-gray-100 flex flex-col max-h-[90vh]">
-                
+
                 {/* HEADER */}
                 <div className="flex justify-between items-center p-6 border-b border-gray-100">
                     <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                        {productoAEditar ? <FaTag className="text-indigo-500"/> : <FaCubes className="text-indigo-500"/>}
+                        {productoAEditar ? <FaTag className="text-indigo-500" /> : <FaCubes className="text-indigo-500" />}
                         {productoAEditar ? 'Editar Producto' : 'Crear Nuevo Producto'}
                     </h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors text-xl hover:rotate-90 transform duration-200">
@@ -218,31 +233,31 @@ export default function InventarioFormModal({ isOpen, onClose, onSaveSuccess, on
                 </div>
 
                 {isLoadingMaestros ? (
-                     <div className="p-12 text-center flex flex-col items-center justify-center">
-                        <span className="loading loading-spinner loading-lg text-indigo-500 mb-4"></span> 
+                    <div className="p-12 text-center flex flex-col items-center justify-center">
+                        <span className="loading loading-spinner loading-lg text-indigo-500 mb-4"></span>
                         <p className="text-gray-500 font-medium">Cargando datos maestros...</p>
-                     </div>
+                    </div>
                 ) : (
                     <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-                        
+
                         {/* TABS */}
                         <div className="flex border-b border-gray-200 px-6 pt-4 gap-6">
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 onClick={() => setActiveTab('basico')}
                                 className={`pb-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'basico' ? 'text-indigo-600 border-indigo-600' : 'text-gray-500 border-transparent hover:text-indigo-400'}`}
                             >
                                 Datos Básicos
                             </button>
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 onClick={() => setActiveTab('inventario')}
                                 className={`pb-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'inventario' ? 'text-indigo-600 border-indigo-600' : 'text-gray-500 border-transparent hover:text-indigo-400'}`}
                             >
                                 Inventario & Costos
                             </button>
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 onClick={() => setActiveTab('caracteristicas')}
                                 className={`pb-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'caracteristicas' ? 'text-indigo-600 border-indigo-600' : 'text-gray-500 border-transparent hover:text-indigo-400'}`}
                             >
@@ -252,7 +267,7 @@ export default function InventarioFormModal({ isOpen, onClose, onSaveSuccess, on
 
                         {/* CONTENIDO SCROLLABLE */}
                         <div className="p-6 overflow-y-auto flex-1 bg-gray-50">
-                            
+
                             {/* TAB 1: BÁSICO */}
                             {activeTab === 'basico' && (
                                 <div className="space-y-6 animate-fadeIn">
@@ -289,7 +304,7 @@ export default function InventarioFormModal({ isOpen, onClose, onSaveSuccess, on
                                             <div className="relative">
                                                 <select name="impuesto_iva_id" value={formData.impuesto_iva_id || ''} onChange={handleChange} className={selectClass}>
                                                     <option value="">(Exento / Sin Impuesto)</option>
-                                                    {impuestos.map(t => <option key={t.id} value={t.id}>{t.nombre} ({(t.tasa*100).toFixed(0)}%)</option>)}
+                                                    {impuestos.map(t => <option key={t.id} value={t.id}>{t.nombre} ({(t.tasa * 100).toFixed(0)}%)</option>)}
                                                 </select>
                                                 <FaPercent className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
                                             </div>
@@ -431,7 +446,7 @@ export default function InventarioFormModal({ isOpen, onClose, onSaveSuccess, on
                                 Cancelar
                             </button>
                             <button type="submit" disabled={isSubmitting || isLoadingMaestros || isLoadingDefs} className="px-8 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-md font-bold flex items-center gap-2 transition-transform transform hover:-translate-y-0.5 disabled:bg-gray-400">
-                                {isSubmitting ? <><span className="loading loading-spinner loading-xs"></span> Guardando...</> : <><FaSave/> Guardar</>}
+                                {isSubmitting ? <><span className="loading loading-spinner loading-xs"></span> Guardando...</> : <><FaSave /> Guardar</>}
                             </button>
                         </div>
                     </form>

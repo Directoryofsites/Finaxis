@@ -29,6 +29,7 @@ class GrupoInventarioBase(BaseModel):
     cuenta_ajuste_faltante_id: Optional[int] = None
     cuenta_ajuste_sobrante_id: Optional[int] = None
     cuenta_costo_produccion_id: Optional[int] = None # Nuevo campo Clase 7
+    impuesto_predeterminado_id: Optional[int] = None # Nuevo campo Impuesto
 
 class GrupoInventarioCreate(GrupoInventarioBase):
     pass
@@ -40,7 +41,8 @@ class GrupoInventarioUpdate(GrupoInventarioBase):
     cuenta_costo_venta_id: Optional[int] = None
     cuenta_ajuste_faltante_id: Optional[int] = None
     cuenta_ajuste_sobrante_id: Optional[int] = None
-    cuenta_costo_produccion_id: Optional[int] = None # Nuevo campo Clase 7
+    cuenta_costo_produccion_id: Optional[int] = None
+    impuesto_predeterminado_id: Optional[int] = None
 
 class GrupoInventarioSimple(BaseModel):
     id: int

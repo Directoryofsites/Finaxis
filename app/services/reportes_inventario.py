@@ -1254,53 +1254,85 @@ def generar_pdf_movimiento_analitico(
     empresa = db.query(models_empresa.Empresa).filter(models_empresa.Empresa.id == empresa_id).first()
     empresa_nombre = getattr(empresa, 'razon_social', f"EMPRESA ID {empresa_id}")
 
+    # FIX: Garantizar fechas válidas para evitar crash en get_reporte_analitico_movimientos
+    # El filtro SuperInforme permite fechas nulas, pero el analítico las requiere.
+    if not filtros.fecha_inicio:
+        filtros.fecha_inicio = date(date.today().year, 1, 1)
+    if not filtros.fecha_fin:
+        filtros.fecha_fin = date.today()
+
     # 2. Obtener los Datos del Reporte
     # Reutilizamos la lógica existente que calcula saldos y movimientos
-    # Forzamos 'traerTodo' implícitamente al no paginar aquí, o asumimos que el filtro trae la configuración correcta.
-    # Nota: get_reporte_analitico_movimientos devuelve un dict puro gracias al fix anterior.
-    data_dict = get_reporte_analitico_movimientos(db, empresa_id, filtros)
-    
+    try:
+        # Nota: get_reporte_analitico_movimientos devuelve un DICT (dumped response)
+        result_dict = get_reporte_analitico_movimientos(db, empresa_id, filtros)
+        data_dict = result_dict
+    except Exception as e_data:
+        print(f"Error OBTENIENDO datos en generar_pdf_movimiento_analitico: {e_data}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error interno obteniendo datos: {str(e_data)}")
+        
     # 3. Serialización Segura (Decimales y Fechas a String/Float)
     data_serializada = convert_decimals_and_dates(data_dict)
 
     # 4. Determinar nombre de la bodega para el título (Estética)
-    bodega_nombre = "Todas"
+    bodega_nombre = "Todas/Consolidado"
     if filtros.bodega_ids and len(filtros.bodega_ids) == 1:
         bodega = db.query(models_bodega.Bodega).filter(models_bodega.Bodega.id == filtros.bodega_ids[0]).first()
         if bodega: 
             bodega_nombre = bodega.nombre
     elif filtros.bodega_ids and len(filtros.bodega_ids) > 1:
-        bodega_nombre = "Múltiples seleccionadas"
+        bodega_nombre = "Múltiples Seleccionadas"
 
     # 5. Preparar Contexto para la Plantilla HTML (Jinja2)
     context = {
         "empresa_nombre": empresa_nombre,
-        "filtros": filtros.model_dump(), # Pasamos los filtros para mostrar fechas en el encabezado
+        "titulo_reporte": "MOVIMIENTO ANALÍTICO DE INVENTARIO", 
+        "filtros": filtros.model_dump(), 
         "data": data_serializada,
-        "bodega_nombre": bodega_nombre
+        "bodega_nombre": bodega_nombre,
+        "fecha_generacion": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     }
 
     # 6. Renderizar HTML y Convertir a PDF
     try:
-        template_name = 'reports/movimiento_analitico_report.html'
+        template_name = 'movimiento_analitico_report.html'
         
-        # Verificación de seguridad por si la plantilla no se cargó
-        if template_name not in TEMPLATES_EMPAQUETADOS:
-             raise HTTPException(status_code=500, detail=f"La plantilla {template_name} no está registrada en _templates_empaquetados.py")
-
-        template_string = TEMPLATES_EMPAQUETADOS[template_name]
-        template = env.from_string(template_string)
+        try:
+            # FIX: Leemos el archivo MANUALMENTE para evitar el caché de Jinja2 (ya que auto_reload suele estar off)
+            full_path = os.path.join(TEMPLATES_DIR, template_name)
+            with open(full_path, 'r', encoding='utf-8') as f:
+                template_content = f.read()
+            template = env.from_string(template_content)
+        except Exception as e_load:
+            # Fallback a empaquetados si no existe el archivo
+            print(f"⚠️ Plantilla {template_name} no encontrada en disco. Buscando en empaquetados.")
+            key_empaquetado = f"reports/{template_name}"
+            
+            if key_empaquetado in TEMPLATES_EMPAQUETADOS:
+                template = env.from_string(TEMPLATES_EMPAQUETADOS[key_empaquetado])
+            else:
+                # Fallback final a super informe genérico
+                print(f"⚠️ Plantilla {key_empaquetado} no en empaquetados. Usando fallback general.")
+                template_name_fallback = 'reports/super_informe_inventarios_report.html'
+                if template_name_fallback in TEMPLATES_EMPAQUETADOS:
+                     context['data']['vista_reporte'] = 'ESTADO_GENERAL'
+                     template = env.from_string(TEMPLATES_EMPAQUETADOS[template_name_fallback])
+                else:
+                     raise HTTPException(status_code=500, detail="No se encontró ninguna plantilla válida.")
         
         html_out = template.render(context)
         pdf_bytes = generar_pdf_desde_html(html_out)
         
         # Nombre del archivo de descarga
-        filename = f"Movimiento_Analitico_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+        filename = f"Analitico_Inventario_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
         return pdf_bytes, filename
         
     except Exception as e:
         print(f"Error al renderizar PDF Analítico: {e}")
         traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error generando PDF: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generando PDF: {str(e)}")
 
 # ==============================================================================
 # === REGISTRY INTEGRATION ===

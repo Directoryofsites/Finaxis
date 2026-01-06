@@ -12,7 +12,7 @@ import { apiService } from '../../../../lib/apiService';
 
 import {
     FaTrashAlt, FaPencilAlt, FaTags, FaPercentage,
-    FaWarehouse, FaLayerGroup, FaHandHoldingUsd, FaListOl, FaPlus, FaBook
+    FaWarehouse, FaLayerGroup, FaHandHoldingUsd, FaListOl, FaPlus, FaBook, FaRecycle, FaFileInvoiceDollar
 } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -231,6 +231,65 @@ const ReglasPrecioModal = ({ grupo, listasPrecio, onClose }) => {
 };
 
 
+// --- 2.5. Modal Impuesto Predeterminado (NUEVO REQUERIMIENTO) ---
+const ImpuestoGrupoModal = ({ grupo, impuestos, onClose, onUpdate }) => {
+    const [selectedImpuesto, setSelectedImpuesto] = useState(grupo.impuesto_predeterminado_id || '');
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleSave = async (e) => {
+        e.preventDefault();
+        setSubmitting(true);
+        try {
+            // Enviamos payload solo con el campo de impuesto
+            const payload = { impuesto_predeterminado_id: selectedImpuesto ? parseInt(selectedImpuesto) : null };
+            await apiService.put(`/inventario/grupos/${grupo.id}`, payload);
+
+            toast.success("Impuesto predeterminado actualizado");
+            if (onUpdate) onUpdate(grupo.id, { ...grupo, ...payload }); // Actualizar estado local
+            onClose();
+        } catch (err) {
+            toast.error("Error al asignar impuesto.");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm animate-fadeIn">
+                <h2 className="text-lg font-bold text-gray-800 mb-4">Impuesto: {grupo.nombre}</h2>
+                <p className="text-xs text-gray-500 mb-4">
+                    Seleccione la tarifa de impuesto que se asignará <strong>automáticamente</strong> a los nuevos productos de este grupo.
+                </p>
+
+                <form onSubmit={handleSave}>
+                    <div className="mb-4">
+                        <label className="text-xs font-bold text-gray-500 uppercase">Tarifa Predeterminada</label>
+                        <select
+                            value={selectedImpuesto}
+                            onChange={e => setSelectedImpuesto(e.target.value)}
+                            className="select select-bordered w-full mt-1 bg-white"
+                        >
+                            <option value="">(Ninguno / Exento Manual)</option>
+                            {impuestos.map(t => (
+                                <option key={t.id} value={t.id}>{t.nombre} ({(t.tasa * 100).toFixed(0)}%)</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="flex justify-end gap-2 mt-6">
+                        <button type="button" onClick={onClose} className="btn btn-ghost btn-sm">Cancelar</button>
+                        <button type="submit" disabled={submitting} className="btn btn-primary btn-sm">
+                            {submitting ? 'Guardando...' : 'Asignar Impuesto'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+
 // --- 3. Modal Edición General (Bodegas, Grupos, Impuestos) ---
 const EditModal = ({ item, onSave, onClose, titulo, cuentas }) => {
     const [formData, setFormData] = useState({});
@@ -413,6 +472,7 @@ export default function ParametrosInventarioPage() {
     // Estados Modales Secundarios
     const [grupoCaracteristicas, setGrupoCaracteristicas] = useState(null);
     const [grupoReglas, setGrupoReglas] = useState(null);
+    const [grupoImpuesto, setGrupoImpuesto] = useState(null); // Corrigiendo reference error
 
     // Lógica de Carga
     const fetchData = useCallback(async () => {
@@ -458,6 +518,7 @@ export default function ParametrosInventarioPage() {
     // --- HANDLERS DE APERTURA MODALES SECUNDARIOS (FIX) ---
     const handleOpenCaracteristicas = (grupo) => setGrupoCaracteristicas(grupo);
     const handleOpenReglasPrecio = (grupo) => setGrupoReglas(grupo);
+    const handleOpenImpuesto = (grupo) => setGrupoImpuesto(grupo); // FIX: Handler faltante
 
     // --- HANDLERS CRUD ---
     const handleInputChange = (category, field, value) => {
@@ -569,6 +630,7 @@ export default function ParametrosInventarioPage() {
                                             {/* BOTONES REPARADOS CON ONCLICK */}
                                             <button onClick={() => handleOpenCaracteristicas(g)} className="btn btn-ghost btn-xs text-gray-500 tooltip" data-tip="Características"><FaTags /></button>
                                             <button onClick={() => handleOpenReglasPrecio(g)} className="btn btn-ghost btn-xs text-gray-500 tooltip" data-tip="Reglas Precio"><FaPercentage /></button>
+                                            <button onClick={() => handleOpenImpuesto(g)} className="btn btn-ghost btn-xs text-blue-600 tooltip" data-tip="Impuesto Predet."><FaFileInvoiceDollar /></button>
                                             <div className="divider divider-horizontal m-0"></div>
                                             <button onClick={() => { setItemAEditar(g); setModalTitle('Grupos de Inventario'); }} className="btn btn-ghost btn-sm text-indigo-600"><FaPencilAlt /></button>
                                             <button onClick={() => handleDelete(g.id, 'grupos', '/inventario/grupos')} className="btn btn-ghost btn-sm text-red-600"><FaTrashAlt /></button>
@@ -635,6 +697,40 @@ export default function ParametrosInventarioPage() {
                         </div>
                     </div>
                 );
+
+            case 'recalculo':
+                return (
+                    <div className="animate-fadeIn max-w-2xl mx-auto text-center py-10">
+                        <div className="mb-6 flex justify-center text-indigo-100">
+                            <FaRecycle className="text-9xl text-indigo-100" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-4">Recálculo Masivo de Saldos y Costos</h2>
+                        <p className="text-gray-600 mb-8 max-w-lg mx-auto leading-relaxed">
+                            Esta utilidad regenera completamente el <strong>Stock Actual</strong> y el <strong>Costo Promedio</strong> de todos los productos, procesando todo el historial de movimientos cronológicamente desde cero.
+                            <br /><br />
+                            <span className="text-orange-600 text-sm font-semibold bg-orange-50 px-3 py-1 rounded-full">
+                                Útil para corregir inconsistencias tras eliminar facturas antiguas.
+                            </span>
+                        </p>
+
+                        <button
+                            onClick={async () => {
+                                if (!confirm("ADVERTENCIA: ¿Está seguro? Este proceso puede tardar unos segundos y reescribirá los saldos actuales.")) return;
+                                const toastId = toast.loading("Recalculando inventario, por favor espere...");
+                                try {
+                                    const res = await apiService.post('/inventario/recalcular-saldos');
+                                    toast.update(toastId, { render: `¡Éxito! ${res.data.message}`, type: "success", isLoading: false, autoClose: 5000 });
+                                } catch (err) {
+                                    toast.update(toastId, { render: "Error al recalcular.", type: "error", isLoading: false, autoClose: 5000 });
+                                }
+                            }}
+                            className="btn btn-primary btn-lg shadow-xl transform hover:scale-105 transition-transform"
+                        >
+                            <FaRecycle className="mr-2 animate-spin-slow" /> Ejecutar Recálculo Ahora
+                        </button>
+                    </div>
+                );
+
             default: return null;
         }
     };
@@ -671,6 +767,9 @@ export default function ParametrosInventarioPage() {
                         <TabButton active={activeTab === 'grupos'} onClick={() => setActiveTab('grupos')} icon={FaLayerGroup} label="Grupos" />
                         <TabButton active={activeTab === 'impuestos'} onClick={() => setActiveTab('impuestos')} icon={FaHandHoldingUsd} label="Impuestos" />
                         <TabButton active={activeTab === 'listas'} onClick={() => setActiveTab('listas')} icon={FaListOl} label="Listas de Precio" />
+                        <div className="border-t border-gray-100 my-2 pt-2">
+                            <TabButton active={activeTab === 'recalculo'} onClick={() => setActiveTab('recalculo')} icon={FaRecycle} label="Recálculo" />
+                        </div>
                     </div>
                 </div>
 
@@ -686,6 +785,19 @@ export default function ParametrosInventarioPage() {
             {/* RENDERIZADO DE MODALES SECUNDARIOS (ANTES FALTABAN) */}
             {grupoCaracteristicas && <CaracteristicasModal grupo={grupoCaracteristicas} onClose={() => setGrupoCaracteristicas(null)} />}
             {grupoReglas && <ReglasPrecioModal grupo={grupoReglas} listasPrecio={maestros.listasPrecio} onClose={() => setGrupoReglas(null)} />}
+            {grupoImpuesto && (
+                <ImpuestoGrupoModal
+                    grupo={grupoImpuesto}
+                    impuestos={maestros.impuestos}
+                    onClose={() => setGrupoImpuesto(null)}
+                    onUpdate={(gid, newdata) => {
+                        setMaestros(prev => ({
+                            ...prev,
+                            grupos: prev.grupos.map(g => g.id === gid ? newdata : g)
+                        }));
+                    }}
+                />
+            )}
         </div>
     );
 }

@@ -22,8 +22,51 @@ export const getMaestrosParaMigracion = () => {
 
 // --- Servicios para el Módulo de Exportación ---
 
-export const exportarDatos = (payload) => {
-  return apiService.post('/utilidades/exportar-datos', payload);
+export const exportarDatos = async (payload) => {
+  try {
+    const response = await apiService.post('/utilidades/exportar-datos', payload, {
+      responseType: 'blob' // Importante: Indicar que esperamos un archivo binario
+    });
+
+    // Crear URL de descarga
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+
+    // Intentar obtener nombre del archivo del header
+    let filename = `backup_sistema_${new Date().toISOString().slice(0, 10)}.json`;
+    const contentDisposition = response.headers['content-disposition'];
+    if (contentDisposition) {
+      // Regex mejorado: capturar el contenido entre comillas O hasta el final si no hay comillas
+      // Evita capturar la comilla de cierre.
+      const fileNameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+      if (fileNameMatch && fileNameMatch.length === 2)
+        filename = fileNameMatch[1];
+    }
+
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+
+    // Limpieza
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+    return response;
+  } catch (error) {
+    // Si el blob es un JSON de error, intentamos leerlo
+    if (error.response && error.response.data instanceof Blob) {
+      const errorText = await error.response.data.text();
+      try {
+        const errorJson = JSON.parse(errorText);
+        error.response.data = errorJson; // Reemplazamos blob por json para que el catch superior lo lea
+        throw error;
+      } catch (e) {
+        throw error;
+      }
+    }
+    throw error;
+  }
 };
 
 // --- Servicios para el Módulo de Restauración ---

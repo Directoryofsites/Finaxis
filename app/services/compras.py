@@ -33,7 +33,7 @@ def crear_factura_compra(db: Session, compra: schemas_compras.CompraCreate, user
     movimientos_contables = []
     total_compra = 0
     
-    debitos_inventario_por_cuenta: Dict[int, float] = {}
+    debitos_inventario_por_cuenta = {} # DEPRECATED: Se usa movimiento detallado
     impuestos_descontables_por_cuenta: Dict[int, float] = {}
 
     if not compra.items:
@@ -69,13 +69,20 @@ def crear_factura_compra(db: Session, compra: schemas_compras.CompraCreate, user
         total_compra += subtotal_item + valor_iva
         
         cuenta_inventario_id = producto_db.grupo_inventario.cuenta_inventario_id
-        debitos_inventario_por_cuenta[cuenta_inventario_id] = debitos_inventario_por_cuenta.get(cuenta_inventario_id, 0) + subtotal_item
+        
+        # CAMBIO: Crear movimiento detallado POR PRODUCTO inmediatamente
+        movimientos_contables.append(schemas_doc.MovimientoContableCreate(
+            cuenta_id=cuenta_inventario_id,
+            producto_id=item.producto_id,     # VITAL: Enlace para el filtro
+            cantidad=item.cantidad,           # VITAL: Cantidad para kárdex/auditoría
+            concepto=f"Compra: {producto_db.nombre}",
+            debito=subtotal_item, 
+            credito=0
+        ))
 
     if total_compra > 0:
-        for cuenta_id, total_cuenta in debitos_inventario_por_cuenta.items():
-            movimientos_contables.append(schemas_doc.MovimientoContableCreate(
-                cuenta_id=cuenta_id, concepto="Compra de mercancía", debito=total_cuenta, credito=0
-            ))
+        # Nota: Los débitos de inventario ya se agregaron en el bucle anterior.
+        # Solo agregamos los impuestos acumulados y el pasivo total.
         
         for cuenta_id, total_cuenta in impuestos_descontables_por_cuenta.items():
             movimientos_contables.append(schemas_doc.MovimientoContableCreate(

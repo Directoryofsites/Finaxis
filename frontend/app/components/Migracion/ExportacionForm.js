@@ -52,9 +52,11 @@ export default function ExportacionForm({
         // --- NUEVOS MÓDULOS AGREGADOS ---
         cotizaciones: false,
         produccion: false,
-        conciliacion_bancaria: false
+        conciliacion_bancaria: false,
+        nomina: false
       },
-      transacciones: false,
+      transacciones_contabilidad: false,
+      transacciones_inventario: false,
       configuraciones: {
         plantillas_documentos: false,
         libreria_conceptos: false
@@ -74,23 +76,27 @@ export default function ExportacionForm({
 
   const [filtros, setFiltros] = useState(initialState);
 
-  // --- ESTADO PARA COPIA AUTOMÁTICA ---
+  // ... [AUTO CONFIG STATE AND EFFECT REMAIN UNCHANGED] ...
   const [showAutoModal, setShowAutoModal] = useState(false);
   const [autoConfig, setAutoConfig] = useState({
     enabled: false,
-    hora_ejecucion: "03:00",
-    ruta_local: "C:/Backups_Finaxis",
+    hora_ejecucion: '02:00',
+    ruta_local: 'C:/Backups_Finaxis',
     dias_retencion: 30
   });
 
-  // Cargar config al abrir modal
   useEffect(() => {
-    if (showAutoModal) {
-      apiService.get('/utilidades/backup-auto-config')
-        .then(res => setAutoConfig(res.data))
-        .catch(err => console.error(err));
-    }
-  }, [showAutoModal]);
+    // Cargar config actual al montar
+    const loadConfig = async () => {
+      try {
+        const res = await apiService.get('/utilidades/backup-auto-config');
+        if (res.data) setAutoConfig(res.data);
+      } catch (e) {
+        console.error("Error loading auto backup config", e);
+      }
+    };
+    loadConfig();
+  }, []);
 
   const saveAutoConfig = async () => {
     try {
@@ -111,8 +117,9 @@ export default function ExportacionForm({
     const { name, checked, dataset } = e.target;
     const { category } = dataset;
 
-    if (category === 'transacciones') {
-      setFiltros(p => ({ ...p, paquetes: { ...p.paquetes, transacciones: checked } }));
+    if (category === 'root') {
+      // Manejar campos directos de paquetes (transacciones_contabilidad, etc)
+      setFiltros(p => ({ ...p, paquetes: { ...p.paquetes, [name]: checked } }));
     } else {
       setFiltros(prev => ({
         ...prev,
@@ -128,109 +135,141 @@ export default function ExportacionForm({
   };
 
   const handleExportar = async () => {
-    setMessage('Iniciando proceso de exportación... Esto puede tardar unos segundos.');
-    setError(null);
     setIsProcessing(true);
-
+    setMessage('');
+    setError('');
     try {
-      const payload = { ...filtros };
+      // 1. Limpieza de datos (Convertir '' a null para evitar error 422 en backend)
+      const cleanFiltros = { ...filtros };
+      ['tipoDocId', 'terceroId', 'cuentaId', 'centroCostoId', 'valorMonto'].forEach(field => {
+        if (cleanFiltros[field] === '') cleanFiltros[field] = null;
+        else if (cleanFiltros[field]) cleanFiltros[field] = Number(cleanFiltros[field]);
+      });
+      ['fechaInicio', 'fechaFin', 'numero', 'conceptoKeyword', 'valorOperador'].forEach(field => {
+        if (cleanFiltros[field] === '') cleanFiltros[field] = null;
+      });
 
-      for (const key in payload) {
-        if (payload[key] === '') {
-          payload[key] = null;
+      // 2. Estructurar payload
+      const payload = {
+        ...cleanFiltros,
+        paquetes: {
+          ...cleanFiltros.paquetes,
+          transacciones: cleanFiltros.paquetes.transacciones_contabilidad || cleanFiltros.paquetes.transacciones_inventario
         }
-      }
-      if (payload.valorMonto) {
-        payload.valorMonto = parseFloat(payload.valorMonto);
-      }
+      };
 
-      const { data: backupData } = await exportarDatosService(payload);
-
-      const jsonString = JSON.stringify(backupData, null, 2);
-      const blob = new Blob([jsonString], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      const fechaHoy = new Date().toISOString().split('T')[0];
-      link.download = `backup_contable_${empresaActual?.razon_social || 'export'}_${fechaHoy}.json`;
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      setMessage('¡Exportación completada! El archivo JSON se está descargando.');
-
+      await exportarDatosService(payload);
+      setMessage('Backup generado exitosamente. La descarga iniciará en breve.');
     } catch (err) {
-      let errorMsg = 'Ocurrió un error inesperado.';
+      console.error("Error Export:", err);
+      let errorMsg = err.message;
+
+      // Mejorar mensaje de error de validación (422)
       if (err.response?.data?.detail) {
-        const detail = err.response.data.detail;
-        if (Array.isArray(detail)) {
-          errorMsg = detail.map(e => `${e.loc.length > 1 ? e.loc[1] : e.loc[0]}: ${e.msg}`).join('; ');
+        if (Array.isArray(err.response.data.detail)) {
+          errorMsg = err.response.data.detail.map(e => `${e.loc.join('.')}: ${e.msg}`).join(' | ');
         } else {
-          errorMsg = String(detail);
+          errorMsg = err.response.data.detail;
         }
-      } else if (err.message) {
-        errorMsg = err.message;
       }
-      setError(`Error en la exportación: ${errorMsg}`);
-      setMessage('');
+
+      setError('Error generando el backup: ' + errorMsg);
     } finally {
       setIsProcessing(false);
     }
   };
 
   return (
-    <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 mb-8 animate-fadeIn relative">
+    <div className="space-y-8 animate-fadeIn">
+      {/* HEADER EXPORTACIÓN */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
+        <div className="relative z-10">
+          <h2 className="text-3xl font-bold flex items-center gap-3 mb-2">
+            <FaFileExport className="text-blue-200" /> Asistente de Exportación
+          </h2>
+          <p className="text-blue-100 max-w-2xl text-lg">
+            Seleccione los módulos y datos que desea incluir en su copia de seguridad.
+            Puede generar copias parciales o completas según su necesidad.
+          </p>
 
-      <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-blue-100 rounded-full text-blue-600">
-            <FaFileExport className="text-xl" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-800">Exportar Datos</h2>
-            <p className="text-gray-500 text-sm">Crear copia de seguridad o paquete de migración.</p>
-          </div>
+          <button
+            onClick={() => setShowAutoModal(true)}
+            className="mt-6 bg-white/10 hover:bg-white/20 text-white border border-white/30 px-4 py-2 rounded-lg backdrop-blur-sm transition-all flex items-center gap-2 text-sm font-bold"
+          >
+            <FaClock /> Configurar Copias Automáticas
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowAutoModal(true)}
-          className="flex items-center gap-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-lg font-bold text-sm transition-colors border border-indigo-200"
-        >
-          <FaClock /> Programar Copia Automática
-        </button>
+        <div className="absolute right-0 top-0 h-full w-1/3 bg-white/5 skew-x-12 transform translate-x-12"></div>
       </div>
 
-      <div className="mb-8">
-        <label htmlFor="sourceEmpresaName" className={labelClass}>
-          Empresa Origen
-        </label>
-        <div className="relative">
-          <input
-            type="text"
-            id="sourceEmpresaName"
-            value={empresaActual?.razon_social || 'Cargando...'}
-            readOnly
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 font-medium shadow-inner pl-10"
-          />
-          <FaBuilding className="absolute left-3 top-3.5 text-gray-400" />
-        </div>
-      </div>
+      {/* ERROR / MESSAGE */}
+      {/* Estos son manejados por el componente padre, pero si quisiéramos mostrarlos aquí... */}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-        {/* COLUMNA 1: SELECCIÓN DE PAQUETES */}
-        <div className="lg:col-span-1 space-y-6">
+        {/* COLUMNA 1: SELETOR DE PAQUETES */}
+        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 space-y-6 h-fit">
+          {/* LOGICA DE SELECCION MASIVA */}
+          <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <FaCheckSquare className="text-blue-600" />
+              <h3 className="font-bold text-gray-700">Paquetes de Datos</h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const allSelected =
+                  Object.values(filtros.paquetes.maestros).every(v => v) &&
+                  Object.values(filtros.paquetes.modulos_especializados).every(v => v) &&
+                  Object.values(filtros.paquetes.configuraciones).every(v => v) &&
+                  filtros.paquetes.transacciones_contabilidad &&
+                  filtros.paquetes.transacciones_inventario;
+
+                const newState = !allSelected;
+
+                setFiltros(prev => {
+                  const newMaestros = {};
+                  Object.keys(prev.paquetes.maestros).forEach(k => newMaestros[k] = newState);
+
+                  const newModulos = {};
+                  Object.keys(prev.paquetes.modulos_especializados).forEach(k => newModulos[k] = newState);
+
+                  const newConfig = {};
+                  Object.keys(prev.paquetes.configuraciones).forEach(k => newConfig[k] = newState);
+
+                  return {
+                    ...prev,
+                    paquetes: {
+                      ...prev.paquetes,
+                      maestros: newMaestros,
+                      modulos_especializados: newModulos,
+                      configuraciones: newConfig,
+                      transacciones_contabilidad: newState,
+                      transacciones_inventario: newState
+                    }
+                  };
+                });
+              }}
+              className="text-xs font-bold text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200 transition-colors"
+            >
+              {
+                (Object.values(filtros.paquetes.maestros).every(v => v) &&
+                  Object.values(filtros.paquetes.modulos_especializados).every(v => v) &&
+                  filtros.paquetes.transacciones_contabilidad &&
+                  filtros.paquetes.transacciones_inventario)
+                  ? 'Desmarcar Todos' : 'Marcar Todos'
+              }
+            </button>
+          </div>
 
           {/* Maestros */}
-          <div className="bg-gray-50 p-5 rounded-xl border border-gray-200">
-            <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
-              <FaDatabase className="text-indigo-500" /> Datos Maestros
+          <div className="bg-blue-50 p-5 rounded-xl border border-blue-100">
+            <h3 className="font-bold text-blue-800 mb-3 flex items-center gap-2">
+              <FaDatabase className="text-blue-600" /> Maestros Generales
             </h3>
-            <div className="space-y-2 pl-1">
+            <div className="grid grid-cols-2 gap-y-2 gap-x-4">
               {Object.keys(filtros.paquetes.maestros).map(key => (
-                <label key={key} className="flex items-center cursor-pointer hover:text-indigo-600 transition-colors">
+                <label key={key} className="flex items-center cursor-pointer hover:text-blue-800 transition-colors">
                   <input type="checkbox" name={key} data-category="maestros" checked={filtros.paquetes.maestros[key]} onChange={handlePaqueteChange} className={checkboxClass} />
                   <span className="text-sm capitalize">{key.replace(/_/g, ' ')}</span>
                 </label>
@@ -251,18 +290,19 @@ export default function ExportacionForm({
                   favoritos: "Favoritos - Menús y accesos rápidos de usuarios",
                   cotizaciones: "Cotizaciones - Cotizaciones maestras y sus detalles",
                   produccion: "Producción - Recetas, órdenes, recursos e insumos",
-                  conciliacion_bancaria: "Conciliación Bancaria - Configuraciones, sesiones y movimientos"
+                  conciliacion_bancaria: "Conciliación Bancaria - Configuraciones, sesiones y movimientos",
+                  nomina: "Nómina - Configuración, empleados, tipos y documentos"
                 };
-                
+
                 return (
                   <label key={key} className="flex items-start cursor-pointer hover:text-indigo-800 transition-colors">
-                    <input 
-                      type="checkbox" 
-                      name={key} 
-                      data-category="modulos_especializados" 
-                      checked={filtros.paquetes.modulos_especializados[key]} 
-                      onChange={handlePaqueteChange} 
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded cursor-pointer mr-2 mt-0.5" 
+                    <input
+                      type="checkbox"
+                      name={key}
+                      data-category="modulos_especializados"
+                      checked={filtros.paquetes.modulos_especializados[key]}
+                      onChange={handlePaqueteChange}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded cursor-pointer mr-2 mt-0.5"
                     />
                     <div>
                       <span className="text-sm font-bold capitalize">{key.replace(/_/g, ' ')}</span>
@@ -289,29 +329,52 @@ export default function ExportacionForm({
             </div>
           </div>
 
-          {/* Transacciones (Switch Principal) */}
-          <div className={`p-5 rounded-xl border transition-all duration-300 ${filtros.paquetes.transacciones ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                name="transacciones"
-                data-category="transacciones"
-                checked={filtros.paquetes.transacciones}
-                onChange={handlePaqueteChange}
-                className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded mr-3"
-              />
-              <span className={`font-bold text-md ${filtros.paquetes.transacciones ? 'text-green-700' : 'text-gray-600'}`}>
-                Incluir Movimientos Contables
-              </span>
-            </label>
-            <p className="text-xs text-gray-500 mt-2 ml-8">
-              Marcar para exportar facturas, recibos y asientos contables.
-            </p>
+          {/* Transacciones (Switches Separados) */}
+          <div className="space-y-4">
+            {/* 1. Contabilidad */}
+            <div className={`p-4 rounded-xl border transition-all duration-300 ${filtros.paquetes.transacciones_contabilidad ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="transacciones_contabilidad"
+                  data-category="root"
+                  checked={filtros.paquetes.transacciones_contabilidad}
+                  onChange={handlePaqueteChange}
+                  className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded mr-3"
+                />
+                <span className={`font-bold text-md ${filtros.paquetes.transacciones_contabilidad ? 'text-green-700' : 'text-gray-600'}`}>
+                  Movimientos Contables (Asientos)
+                </span>
+              </label>
+              <p className="text-xs text-gray-500 mt-1 ml-8">
+                Exporta asientos de diario, facturas y recibos contables. Necesario para Balances.
+              </p>
+            </div>
+
+            {/* 2. Inventario */}
+            <div className={`p-4 rounded-xl border transition-all duration-300 ${filtros.paquetes.transacciones_inventario ? 'bg-teal-50 border-teal-200' : 'bg-gray-50 border-gray-200'}`}>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="transacciones_inventario"
+                  data-category="root"
+                  checked={filtros.paquetes.transacciones_inventario}
+                  onChange={handlePaqueteChange}
+                  className="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300 rounded mr-3"
+                />
+                <span className={`font-bold text-md ${filtros.paquetes.transacciones_inventario ? 'text-teal-700' : 'text-gray-600'}`}>
+                  Movimientos de Inventario (Kardex)
+                </span>
+              </label>
+              <p className="text-xs text-gray-500 mt-1 ml-8">
+                Exporta entradas, salidas y costos de inventario. Necesario para Valuación de Stock.
+              </p>
+            </div>
           </div>
         </div>
 
         {/* COLUMNA 2 y 3: FILTROS AVANZADOS (Condicional) */}
-        <div className={`lg:col-span-2 p-6 rounded-xl border border-gray-200 transition-all duration-300 ${!filtros.paquetes.transacciones ? 'bg-gray-50 opacity-60 pointer-events-none grayscale' : 'bg-white shadow-sm'}`}>
+        <div className={`lg:col-span-2 p-6 rounded-xl border border-gray-200 transition-all duration-300 ${!(filtros.paquetes.transacciones_contabilidad || filtros.paquetes.transacciones_inventario) ? 'bg-gray-50 opacity-60 pointer-events-none grayscale' : 'bg-white shadow-sm'}`}>
           <div className="flex items-center gap-2 mb-6 pb-2 border-b border-gray-100">
             <FaFilter className="text-gray-400" />
             <h3 className="font-bold text-gray-700">Filtros de Transacciones</h3>
@@ -322,7 +385,8 @@ export default function ExportacionForm({
             <div className="space-y-4">
               <div>
                 <label className={labelClass}>Tipo de Documento</label>
-                <select name="tipoDocId" value={filtros.tipoDocId} onChange={handleFiltroChange} className={inputClass} disabled={!filtros.paquetes.transacciones}>
+                <select name="tipoDocId" value={filtros.tipoDocId} onChange={handleFiltroChange} className={inputClass} disabled={!(filtros.paquetes.transacciones_contabilidad || filtros.paquetes.transacciones_inventario)}>
+
                   <option value="">Todos</option>
                   {maestros.tiposDocumento.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
                 </select>

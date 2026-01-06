@@ -479,8 +479,30 @@ def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id:
             )
             db.add(mov_eliminado)
 
+        # A. PREPARAR RECÁLCULO (Capturar IDs antes de borrar)
+        # Esto es vital porque una vez borrados los movimientos, perdemos el rastro de qué productos cambiaron.
+        productos_afectados_ids = [
+            r.producto_id for r in db.query(models_mov_inv.producto_id)
+            .filter(models_mov_inv.documento_id == documento_id)
+            .distinct().all()
+        ]
+
+        # A. Eliminar Movimientos de Inventario (Si existen)
+        db.query(models_mov_inv).filter(models_mov_inv.documento_id == documento_id).delete(synchronize_session=False)
+
+        # C. Eliminar Movimientos Contables
         db.query(models_mov).filter(models_mov.documento_id == documento_id).delete(synchronize_session=False)
+        
+        # D. Finalmente, Eliminar el Documento
         db.delete(db_documento)
+
+        # E. RECALCULAR SALDOS (Integridad de Inventario)
+        # Importamos aquí para evitar Circular Import (documento <-> inventario)
+        if productos_afectados_ids:
+            from app.services.inventario import recalcular_saldos_producto
+            print(f"[ELIMINACION MASIVA] Recalculando inventario para {len(productos_afectados_ids)} productos afectados...")
+            for pid in productos_afectados_ids:
+                recalcular_saldos_producto(db, pid)
         
         # Commit final se maneja usualmente en el router o aquí si no hay transacción externa
         # db.commit() # Descomentar si la ruta no hace commit
@@ -646,14 +668,28 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
         print(f"   -> PLANTILLA ENCONTRADA: ID {plantilla.id} - {plantilla.nombre}")
         html_content = plantilla.contenido_html
     else:
-        print("   -> PLANTILLA NO ENCONTRADA. Usando fallback 'Sin Formato'.")
-        # Check if ANY template exists for this company just in case
-        any_template = db.query(models_formato).filter(models_formato.empresa_id == empresa_id).all()
-        print(f"   -> Debug Extra: La empresa tiene {len(any_template)} plantillas registradas total.")
-        for t in any_template:
-            print(f"      - ID: {t.id} | TipoDoc: {t.tipo_documento_id} | Nombre: {t.nombre}")
-            
-        html_content = "<html><body>Sin Formato</body></html>"
+        print("   -> PLANTILLA BD NO ENCONTRADA. Buscando en paquete local...")
+        
+        # Intentamos buscar por código de tipo de documento
+        # Ej: "CE" -> "reports/ce_template.html" (convención)
+        # O también "reports/comprobante_egreso_template.html" (nombre largo)
+        
+        tipo_codigo = db_doc.tipo_documento.codigo.lower() if db_doc.tipo_documento else "unknown"
+        # Mapeo manual de códigos comunes a plantillas conocidas
+        mapa_plantillas = {
+            'ce': 'reports/comprobante_egreso_template.html',
+            'rc': 'reports/auxiliar_por_recibos_report.html', # Fallback temporal si no hay específico
+            'fv': 'reports/rentabilidad_factura_report.html' # Fallback temporal
+        }
+        
+        plantilla_key = mapa_plantillas.get(tipo_codigo)
+        
+        if plantilla_key and plantilla_key in TEMPLATES_EMPAQUETADOS:
+             print(f"   -> PLANTILLA LOCAL ENCONTRADA: {plantilla_key}")
+             html_content = TEMPLATES_EMPAQUETADOS[plantilla_key]
+        else:
+            print("   -> NO SE ENCONTRO NINGUNA PLANTILLA. Usando fallback básico.")
+            html_content = "<html><body><h1>Sin Formato de Impresión</h1><p>No se ha configurado una plantilla para este tipo de documento.</p></body></html>"
     
     # 3. Empresa
     empresa = db.query(models_empresa).filter(models_empresa.id == empresa_id).first()
@@ -672,7 +708,7 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
     func_especial = db_doc.tipo_documento.funcion_especial
     
     funcs_venta = ['FACTURA_VENTA', 'cartera_cliente']
-    funcs_compra = ['FACTURA_COMPRA', 'cxp_proveedor', 'compras', 'pago_proveedor'] # Agregado pago por si acaso
+    funcs_compra = ['FACTURA_COMPRA', 'cxp_proveedor', 'compras'] # Removed 'pago_proveedor' to allow CE to use GENERAL mode
     
     try:
         if hasattr(FuncionEspecial, 'CARTERA_CLIENTE'): funcs_venta.append(FuncionEspecial.CARTERA_CLIENTE)
@@ -824,19 +860,19 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
     beneficiario = db_doc.beneficiario
     context = {
         "empresa": {
-            "razon_social": getattr(empresa, 'razon_social', 'Empresa'),
-            "nit": getattr(empresa, 'nit', ''),
-            "direccion": getattr(empresa, 'direccion', ""),
-            "telefono": getattr(empresa, 'telefono', ""),
-            "email": getattr(empresa, 'email', ""),
-            "logo_url": getattr(empresa, 'logo_url', "")
+            "razon_social": getattr(empresa, 'razon_social', 'Empresa') or "Empresa",
+            "nit": getattr(empresa, 'nit', '') or "",
+            "direccion": getattr(empresa, 'direccion', "") or "",
+            "telefono": getattr(empresa, 'telefono', "") or "",
+            "email": getattr(empresa, 'email', "") or "",
+            "logo_url": getattr(empresa, 'logo_url', "") or ""
         },
         "documento": {
             "tipo_nombre": db_doc.tipo_documento.nombre.upper() if db_doc.tipo_documento else "DOCUMENTO",
             "consecutivo": db_doc.numero,
             "fecha_emision": db_doc.fecha.strftime('%d/%m/%Y'),
             "fecha_vencimiento": db_doc.fecha_vencimiento.strftime('%d/%m/%Y') if getattr(db_doc, 'fecha_vencimiento', None) else "",
-            "observaciones": getattr(db_doc, 'observaciones', "")
+            "observaciones": getattr(db_doc, 'observaciones', "") or ""
         },
         "tercero": {
             "razon_social": getattr(beneficiario, 'razon_social', "Varios") if beneficiario else "Varios",
@@ -2934,12 +2970,13 @@ def generar_url_firmada_rentabilidad(db: Session, documento_id: int, empresa_id:
 def generate_balance_sheet_report(
     db: Session, 
     empresa_id: int, 
-    fecha_corte: date
+    fecha_corte: date,
+    nivel: str = 'auxiliar'
 ) -> Dict[str, Any]:
     """
     Calcula los saldos de las cuentas de balance (Activo, Pasivo, Patrimonio)
     y la utilidad del ejercicio a una fecha de corte para el reporte en pantalla.
-    Esta es la función que faltaba y que la ruta estaba intentando llamar.
+    Soporta niveles: 'auxiliar' (detalle), 'mayor' (4 dígitos), 'clasificado' (Corriente/No Corriente).
     """
     saldos_query = db.query(
         models_plan.codigo,
@@ -2961,51 +2998,165 @@ def generate_balance_sheet_report(
         )
      ).group_by(models_plan.codigo, models_plan.nombre).all()
 
-    activos, pasivos, patrimonio = [], [], []
+    # Estructuras base
+    raw_activos = []
+    raw_pasivos = []
+    raw_patrimonio = []
+    
     total_ingresos, total_costos, total_gastos = 0.0, 0.0, 0.0
 
+    # 1. Clasificación inicial y cálculo de utilidad
     for cuenta in saldos_query:
         saldo = float(cuenta.saldo or 0.0)
-        if cuenta.codigo.startswith('1'):
-            activos.append({'codigo': cuenta.codigo, 'nombre': cuenta.nombre, 'saldo': saldo})
-        elif cuenta.codigo.startswith('2'):
-            pasivos.append({'codigo': cuenta.codigo, 'nombre': cuenta.nombre, 'saldo': -saldo}) # Pasivo es naturaleza crédito
-        elif cuenta.codigo.startswith('3'):
-            patrimonio.append({'codigo': cuenta.codigo, 'nombre': cuenta.nombre, 'saldo': -saldo}) # Patrimonio es naturaleza crédito
-        elif cuenta.codigo.startswith('4'):
-            total_ingresos += -saldo # Ingreso es naturaleza crédito
+        
+        # Ingresos, Costos, Gastos (Solo para utilidad)
+        if cuenta.codigo.startswith('4'):
+            total_ingresos += -saldo
+            continue
         elif cuenta.codigo.startswith('5'):
             total_gastos += saldo
+            continue
         elif cuenta.codigo.startswith('6'):
             total_costos += saldo
-            
+            continue
+
+        # Balance
+        item = {'codigo': cuenta.codigo, 'nombre': cuenta.nombre, 'saldo': saldo}
+        if cuenta.codigo.startswith('1'):
+            raw_activos.append(item)
+        elif cuenta.codigo.startswith('2'):
+            item['saldo'] = -saldo # Pasivo naturaleza crédito
+            raw_pasivos.append(item)
+        elif cuenta.codigo.startswith('3'):
+            item['saldo'] = -saldo # Patrimonio naturaleza crédito
+            raw_patrimonio.append(item)
+
     utilidad_ejercicio = total_ingresos - total_costos - total_gastos
 
-    total_activos = sum(c['saldo'] for c in activos)
-    total_pasivos = sum(c['saldo'] for c in pasivos)
-    total_patrimonio = sum(c['saldo'] for c in patrimonio) + utilidad_ejercicio
+    # 2. Procesamiento según Nivel
+    final_activos = []
+    final_pasivos = []
+    final_patrimonio = []
+    
+    # Estructura Especial para Clasificado
+    clasificado_activo = None
+    clasificado_pasivo = None
+
+    if nivel == 'mayor':
+        # Agrupar por 4 dígitos
+        def agrupar_mayor(lista_items):
+            agrupados = {}
+            for it in lista_items:
+                cod_mayor = it['codigo'][:4]
+                if cod_mayor not in agrupados:
+                    # Buscamos nombre cuenta mayor (idealmente query aparte, aqui improvisamos o dejamos nombre de la primera subcuenta si no hay exacto)
+                    # Mejor: Usamos el nombre de la cuenta mayor si existe en la lista, si no, "Cuenta Mayor X"
+                    # En query original traemos TODO. Si la cuenta mayor tiene movimientos propios (raro), sale.
+                    # Si no, necesitamos buscar el nombre. Por eficiencia, usaremos el nombre de la primera cuenta hija o genérico si no se encuentra.
+                    # TODO: Optimización buscar nombres de padres.
+                    agrupados[cod_mayor] = {'codigo': cod_mayor, 'nombre': it['nombre'], 'saldo': 0.0}
+                
+                agrupados[cod_mayor]['saldo'] += it['saldo']
+            
+            # Ajuste de nombres (Intento de mejora visual)
+            # Retornamos lista ordenada
+            return sorted(list(agrupados.values()), key=lambda x: x['codigo'])
+
+        final_activos = agrupar_mayor(raw_activos)
+        final_pasivos = agrupar_mayor(raw_pasivos)
+        final_patrimonio = agrupar_mayor(raw_patrimonio)
+
+    elif nivel == 'clasificado':
+        # Agrupar en Corriente / No Corriente
+        # Reglas:
+        # Activo Corriente: 11, 12, 13, 14
+        # Activo No Corriente: 15, 16, 17, 18, 19
+        # Pasivo Corriente: 21, 22, 23, 24, 25, 26, 27, 29
+        # Pasivo No Corriente: 28 
+        
+        # Nota: Usaremos items base (auxiliar) agrupados visualmente, O items Nivel Mayor en las secciones.
+        # Generalmente Clasificado implica resumen (Mayor). Usaremos Mayor dentro de las secciones.
+        
+        def agrupar_clasificado(lista_items, grupos_corriente):
+            corriente = []
+            no_corriente = []
+            
+            # Primero agrupamos a nivel Mayor (4 digitos) para limpiar detalle excesivo
+            items_mayor = {}
+            for it in lista_items:
+                cod_mayor = it['codigo'][:4]
+                if cod_mayor not in items_mayor:
+                    items_mayor[cod_mayor] = {'codigo': cod_mayor, 'nombre': it['nombre'], 'saldo': 0.0}
+                items_mayor[cod_mayor]['saldo'] += it['saldo']
+            
+            items_procesados = sorted(list(items_mayor.values()), key=lambda x: x['codigo'])
+
+            for it in items_procesados:
+                grupo_2 = it['codigo'][:2]
+                if grupo_2 in grupos_corriente:
+                    corriente.append(it)
+                else:
+                    no_corriente.append(it)
+            
+            return {
+                "corriente": corriente,
+                "total_corriente": sum(x['saldo'] for x in corriente),
+                "no_corriente": no_corriente,
+                "total_no_corriente": sum(x['saldo'] for x in no_corriente)
+            }
+
+        clasificado_activo = agrupar_clasificado(raw_activos, ['11','12','13','14'])
+        clasificado_pasivo = agrupar_clasificado(raw_pasivos, ['21','22','23','24','25','26','27','29']) # 28 estimada LP
+        
+        # Patrimonio no se suele dividir en Corriente/No Corriente, va directo
+        # Usamos Mayor para consistencia
+        items_mayor_pat = {}
+        for it in raw_patrimonio:
+            cod_mayor = it['codigo'][:4]
+            if cod_mayor not in items_mayor_pat:
+                items_mayor_pat[cod_mayor] = {'codigo': cod_mayor, 'nombre': it['nombre'], 'saldo': 0.0}
+            items_mayor_pat[cod_mayor]['saldo'] += it['saldo']
+        final_patrimonio = sorted(list(items_mayor_pat.values()), key=lambda x: x['codigo'])
+        
+        # Para compatibilidad con frontend básico, poblamos final_activos flat concatenado
+        final_activos = clasificado_activo['corriente'] + clasificado_activo['no_corriente']
+        final_pasivos = clasificado_pasivo['corriente'] + clasificado_pasivo['no_corriente']
+
+    else:
+        # Nivel Auxiliar (Detalle completo)
+        final_activos = sorted(raw_activos, key=lambda x: x['codigo'])
+        final_pasivos = sorted(raw_pasivos, key=lambda x: x['codigo'])
+        final_patrimonio = sorted(raw_patrimonio, key=lambda x: x['codigo'])
+
+    total_activos = sum(c['saldo'] for c in final_activos)
+    total_pasivos = sum(c['saldo'] for c in final_pasivos)
+    total_patrimonio = sum(c['saldo'] for c in final_patrimonio) + utilidad_ejercicio
     
     return {
-        "activos": sorted(activos, key=lambda x: x['codigo']),
-        "pasivos": sorted(pasivos, key=lambda x: x['codigo']),
-        "patrimonio": sorted(patrimonio, key=lambda x: x['codigo']),
+        "activos": final_activos,
+        "pasivos": final_pasivos,
+        "patrimonio": final_patrimonio,
+        "clasificado_activo": clasificado_activo, # Solo presente si nivel='clasificado'
+        "clasificado_pasivo": clasificado_pasivo, # Solo presente si nivel='clasificado'
         "total_activos": total_activos,
         "total_pasivos": total_pasivos,
         "total_patrimonio": total_patrimonio,
         "utilidad_ejercicio": utilidad_ejercicio,
         "total_pasivo_patrimonio": total_pasivos + total_patrimonio,
+        "nivel": nivel
     }
 
 def generate_balance_sheet_report_pdf(
     db: Session, 
     empresa_id: int, 
-    fecha_corte: date
+    fecha_corte: date,
+    nivel: str = 'auxiliar'
 ):
     """
     Genera el archivo PDF para el reporte de Balance General.
     """
     # 1. Reutilizamos la función que acabamos de crear para obtener los datos.
-    report_data = generate_balance_sheet_report(db, empresa_id, fecha_corte)
+    report_data = generate_balance_sheet_report(db, empresa_id, fecha_corte, nivel)
     
     # 2. Obtenemos la información de la empresa.
     empresa_info = db.query(models_empresa).filter(models_empresa.id == empresa_id).first()
@@ -3016,12 +3167,303 @@ def generate_balance_sheet_report_pdf(
     context = {
         "empresa": empresa_info,
         "fecha_corte": fecha_corte,
-        "reporte": report_data
+        "reporte": report_data,
+        "nivel": nivel
     }
     
     # 4. Renderizamos el PDF.
     try:
-        template_string = TEMPLATES_EMPAQUETADOS['reports/balance_general_report.html']
+        # Usamos una plantilla simple por defecto si falla el pack
+        template_string = TEMPLATES_EMPAQUETADOS.get('reports/balance_general_report.html', """
+            <html><body><h1>Error: Plantilla no encontrada</h1></body></html>
+        """)
+        
+        # SI ES CLASIFICADO, INYECTAMOS UN CSS/HTML DIFERENTE O MANIPULAMOS EL CONTEXTO
+        # Para simplificar y dado que no puedo editar el pack fácilmente,
+        # si es clasificado, el reporte usa las listas planas (que ya poblé arriba)
+        # por lo que saldrá con formato "Mayor". 
+        # Si quisiera separadores "Corriente / No Corriente", necesitaría editar el HTML.
+        # VOY A DEFINIR UNA PLANTILLA "SMART" AQUÍ MISMO PARA EL CASO CLASIFICADO SI SE REQUIERE,
+        # PERO POR AHORA USAREMOS LA ESTANDÁR CON LOS DATOS PLANOS DE MAYOR.
+        # (El usuario pidió que se adapte, asi que lo mejor es que si es clasificado salga con secciones).
+        
+        # -------------------------------------------------------------------------
+        # PLANTILLA PROFESIONAL DE ALTO NIVEL (AUDIT STYLE)
+        # -------------------------------------------------------------------------
+        # Esta plantilla reemplaza la anterior para garantizar un look contable serio.
+        # Soporta tanto la vista 'Clasificada' como 'Estándar' (Auxiliar/Mayor).
+        
+        template_string = """
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Balance General</title>
+    <style>
+        @page { size: letter; margin: 2cm 1.5cm; }
+        body { 
+            font-family: 'Times New Roman', Times, serif; 
+            font-size: 10pt; 
+            color: #000;
+            line-height: 1.3;
+        }
+        
+        /* HEADER */
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 { 
+            font-size: 16pt; 
+            font-weight: bold; 
+            margin: 0; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+        }
+        .header p.nit { font-size: 10pt; margin: 2px 0 15px 0; }
+        .header h2 { 
+            font-size: 14pt; 
+            font-weight: bold; 
+            margin: 5px 0; 
+            border-top: 1px solid #000; 
+            border-bottom: 1px solid #000; 
+            display: inline-block; 
+            padding: 3px 20px;
+            text-transform: uppercase;
+        }
+        .header p.meta { font-style: italic; font-size: 9pt; margin-top: 10px; }
+        .currency-note { font-size: 8pt; text-align: center; margin-top: -5px; margin-bottom: 20px; }
+
+        /* TABLAS Y CIFRAS */
+        .section-title { 
+            font-weight: bold; 
+            font-size: 11pt; 
+            text-transform: uppercase; 
+            margin-top: 20px; 
+            margin-bottom: 10px; 
+            border-bottom: 2px solid #000;
+            width: 100%;
+            display: block;
+        }
+        
+        .subsection-title {
+            font-weight: bold;
+            font-size: 10pt;
+            text-transform: uppercase;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            padding-left: 10px;
+            text-decoration: underline;
+        }
+
+        .row { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 2px 0; 
+            margin-bottom: 2px;
+        }
+        .row:hover { background-color: #f9f9f9; } /* Solo visible si se exporta html */
+        
+        .col-name { flex-grow: 1; padding-left: 15px; }
+        .col-code { width: 60px; font-weight: bold; color: #333; }
+        .col-val { width: 120px; text-align: right; font-family: 'Courier New', Courier, monospace; }
+
+        .total-row { 
+            display: flex; 
+            justify-content: space-between; 
+            font-weight: bold; 
+            margin-top: 5px; 
+            padding-top: 5px; 
+            border-top: 1px solid #000;
+        }
+        .total-row.main {
+            border-top: 2px solid #000;
+            font-size: 11pt;
+            margin-top: 15px;
+            background-color: #f0f0f0;
+            border-bottom: 1px solid #000;
+            padding: 5px 0;
+        }
+
+        /* UTILIDADES */
+        .text-right { text-align: right; }
+        .bold { font-weight: bold; }
+        .italic { font-style: italic; }
+        .indent { padding-left: 30px; }
+        
+        /* FIRMAS */
+        .signatures { 
+            display: flex; 
+            justify-content: space-around; 
+            margin-top: 80px; 
+            page-break-inside: avoid; 
+        }
+        .sig-block { 
+            width: 40%; 
+            border-top: 1px solid #000; 
+            text-align: center; 
+            padding-top: 10px; 
+        }
+        .sig-name { font-weight: bold; font-size: 10pt; }
+        .sig-title { font-size: 9pt; color: #555; }
+
+        /* ECUACIÓN */
+        .equation-box {
+            margin-top: 40px;
+            border: 2px solid #000;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 11pt;
+            background-color: #f9f9f9;
+            width: 60%;
+            margin-left: auto;
+            margin-right: auto;
+            page-break-inside: avoid;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <p class="nit">NIT: {{ empresa.nit }}</p>
+        
+        <h2>Estado de Situación Financiera</h2>
+        
+        <p class="meta">Corte al: {{ fecha_corte }}</p>
+        <p class="currency-note">(Cifras expresadas en Pesos Colombianos)</p>
+    </div>
+
+    {% macro render_row(item) %}
+    <div class="row">
+        <div class="col-code">{{ item.codigo }}</div>
+        <div class="col-name">{{ item.nombre }}</div>
+        <div class="col-val">{{ "{:,.0f}".format(item.saldo) }}</div>
+    </div>
+    {% endmacro %}
+
+    <!-- ========================================== -->
+    <!--                 ACTIVOS                    -->
+    <!-- ========================================== -->
+    <div class="section-title">Activos</div>
+    
+    {% if nivel == 'clasificado' %}
+        
+        <div class="subsection-title">Activo Corriente</div>
+        {% for item in reporte.clasificado_activo.corriente %}
+            {{ render_row(item) }}
+        {% endfor %}
+        <div class="total-row indent">
+            <span>Total Activo Corriente</span>
+            <span>{{ "{:,.0f}".format(reporte.clasificado_activo.total_corriente) }}</span>
+        </div>
+
+        <div class="subsection-title">Activo No Corriente</div>
+        {% for item in reporte.clasificado_activo.no_corriente %}
+            {{ render_row(item) }}
+        {% endfor %}
+        <div class="total-row indent">
+            <span>Total Activo No Corriente</span>
+            <span>{{ "{:,.0f}".format(reporte.clasificado_activo.total_no_corriente) }}</span>
+        </div>
+
+    {% else %}
+        <!-- STANDARD VIEW (Auxiliar/Mayor) -->
+        {% for item in reporte.activos %}
+            {{ render_row(item) }}
+        {% endfor %}
+    {% endif %}
+
+    <div class="total-row main">
+        <span style="padding-left: 10px;">TOTAL ACTIVOS</span>
+        <span style="padding-right: 1px;">{{ "{:,.0f}".format(reporte.total_activos) }}</span>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!--                 PASIVOS                    -->
+    <!-- ========================================== -->
+    <div class="section-title">Pasivos</div>
+
+    {% if nivel == 'clasificado' %}
+        
+        <div class="subsection-title">Pasivo Corriente</div>
+        {% for item in reporte.clasificado_pasivo.corriente %}
+            {{ render_row(item) }}
+        {% endfor %}
+        <div class="total-row indent">
+            <span>Total Pasivo Corriente</span>
+            <span>{{ "{:,.0f}".format(reporte.clasificado_pasivo.total_corriente) }}</span>
+        </div>
+
+        <div class="subsection-title">Pasivo No Corriente</div>
+        {% for item in reporte.clasificado_pasivo.no_corriente %}
+            {{ render_row(item) }}
+        {% endfor %}
+        <div class="total-row indent">
+            <span>Total Pasivo No Corriente</span>
+            <span>{{ "{:,.0f}".format(reporte.clasificado_pasivo.total_no_corriente) }}</span>
+        </div>
+
+    {% else %}
+        {% for item in reporte.pasivos %}
+            {{ render_row(item) }}
+        {% endfor %}
+    {% endif %}
+
+    <div class="total-row main">
+        <span style="padding-left: 10px;">TOTAL PASIVOS</span>
+        <span style="padding-right: 1px;">{{ "{:,.0f}".format(reporte.total_pasivos) }}</span>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!--                 PATRIMONIO                 -->
+    <!-- ========================================== -->
+    <div class="section-title">Patrimonio</div>
+
+    {% for item in reporte.patrimonio %}
+        {{ render_row(item) }}
+    {% endfor %}
+
+    <!-- Utilidad (Insertada manual) -->
+    <div class="row">
+        <div class="col-code">3605</div>
+        <div class="col-name bold">UTILIDAD DEL EJERCICIO</div>
+        <div class="col-val bold">{{ "{:,.0f}".format(reporte.utilidad_ejercicio) }}</div>
+    </div>
+
+    <div class="total-row main">
+        <span style="padding-left: 10px;">TOTAL PATRIMONIO</span>
+        <span style="padding-right: 1px;">{{ "{:,.0f}".format(reporte.total_patrimonio) }}</span>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!--                 RESUMEN                    -->
+    <!-- ========================================== -->
+    <div class="equation-box">
+        TOTAL PASIVO + PATRIMONIO: {{ "{:,.0f}".format(reporte.total_pasivo_patrimonio) }}
+    </div>
+
+    
+    <!-- ========================================== -->
+    <!--                  FIRMAS                    -->
+    <!-- ========================================== -->
+    <div class="signatures">
+        <div class="sig-block">
+            <div class="sig-name">REPRESENTANTE LEGAL</div>
+            <div class="sig-title">C.C.</div>
+        </div>
+        <div class="sig-block">
+            <div class="sig-name">CONTADOR PÚBLICO</div>
+            <div class="sig-title">T.P.</div>
+        </div>
+    </div>
+
+</body>
+</html>
+        """
+        
+
+
         template = GLOBAL_JINJA_ENV.from_string(template_string)
         rendered_html = template.render(context)
         return HTML(string=rendered_html).write_pdf()

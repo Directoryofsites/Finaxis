@@ -31,19 +31,31 @@ export default function BalanceGeneralPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [fechaCorte, setFechaCorte] = useState(new Date().toISOString().split('T')[0]);
+    const [presentationMode, setPresentationMode] = useState('auxiliar'); // 'auxiliar', 'mayor', 'clasificado'
     const [isPageReady, setPageReady] = useState(false);
 
     // Automation State
     const [autoPdfTrigger, setAutoPdfTrigger] = useState(false);
     const [wppNumber, setWppNumber] = useState(null);
     const [emailAddress, setEmailAddress] = useState(null);
+    const [empresaInfo, setEmpresaInfo] = useState(null);
     const lastProcessedParams = React.useRef('');
 
-    // Efecto de Autenticación
+    // Efecto de Autenticación y Carga de Empresa
     useEffect(() => {
         if (!authLoading) {
             if (user && user.empresaId) {
-                setPageReady(true);
+                // Fetch de información completa de la empresa
+                apiService.get(`/empresas/${user.empresaId}`)
+                    .then(response => {
+                        setEmpresaInfo(response.data);
+                        setPageReady(true);
+                    })
+                    .catch(err => {
+                        console.error("Error al cargar datos de empresa:", err);
+                        // Fallback para permitir ver la página aunque falle el nombre
+                        setPageReady(true);
+                    });
             } else {
                 router.push('/login');
             }
@@ -90,7 +102,7 @@ export default function BalanceGeneralPage() {
         setReporte(null);
         try {
             const data = await apiService.get('/reports/balance-sheet', {
-                params: { fecha_corte: fechaCorte }
+                params: { fecha_corte: fechaCorte, nivel: presentationMode }
             });
             setReporte(data.data);
         } catch (err) {
@@ -145,7 +157,7 @@ export default function BalanceGeneralPage() {
         setError('');
         try {
             const signedUrlResponse = await apiService.get('/reports/balance-sheet/get-signed-url', {
-                params: { fecha_corte: fechaCorte }
+                params: { fecha_corte: fechaCorte, nivel: presentationMode }
             });
 
             const signedToken = signedUrlResponse.data.signed_url_token;
@@ -248,6 +260,20 @@ export default function BalanceGeneralPage() {
                             </div>
                         </div>
 
+                        <div className="md:col-span-1">
+                            <label htmlFor="presentationMode" className={labelClass}>Presentación</label>
+                            <select
+                                id="presentationMode"
+                                value={presentationMode}
+                                onChange={(e) => setPresentationMode(e.target.value)}
+                                className={inputClass}
+                            >
+                                <option value="auxiliar">Detallado (Auxiliar)</option>
+                                <option value="mayor">Resumen (Cuenta Mayor)</option>
+                                <option value="clasificado">Clasificado (Corriente / No Corriente)</option>
+                            </select>
+                        </div>
+
                         <div className="md:col-span-2 flex flex-col md:flex-row justify-end gap-3">
                             <button
                                 id="btn-generar-balance"
@@ -284,111 +310,247 @@ export default function BalanceGeneralPage() {
                     )}
                 </div>
 
-                {/* CARD 2: REPORTE (RESULTADOS) */}
+                {/* CARD 2: REPORTE (RESULTADOS) - ESTILO PROFESIONAL "AUDITADO" */}
                 {reporte && (
-                    <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden animate-slideDown">
-                        {/* Cabecera del Reporte */}
-                        <div className="bg-slate-50 p-6 border-b border-gray-200 text-center">
-                            <h2 className="text-2xl font-bold text-gray-800">{user?.nombre_empresa || 'Empresa'}</h2>
-                            <p className="text-sm text-gray-500 font-medium uppercase tracking-wider mt-1">Estado de Situación Financiera</p>
-                            <p className="text-indigo-600 font-bold mt-2 text-lg">
-                                <FaCalendarAlt className="inline mr-2 mb-1" /> Corte a: {new Date(fechaCorte).toLocaleDateString('es-CO', { timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric' })}
+                    <div className="bg-white rounded-none shadow-2xl border-t-8 border-indigo-900 animate-slideDown max-w-4xl mx-auto print:shadow-none print:border-none">
+
+                        {/* CABECERA FORMAL CONTABLE */}
+                        <div className="p-12 pb-6 text-center border-b border-gray-800 mx-12 mb-8">
+                            <h2 className="text-3xl font-serif font-bold text-gray-900 tracking-wide uppercase mb-2">
+                                {empresaInfo?.razon_social?.toUpperCase() || user?.nombre_empresa?.toUpperCase() || 'EMPRESA DEMO S.A.S.'}
+                            </h2>
+                            <p className="text-sm font-serif text-gray-600 mb-6">NIT: {empresaInfo?.nit || user?.nit || '800.000.000-1'}</p>
+
+                            <h3 className="text-xl font-bold text-gray-800 uppercase tracking-widest mb-1 border-y-2 border-gray-800 py-1 inline-block px-8">
+                                ESTADO DE SITUACIÓN FINANCIERA
+                            </h3>
+
+                            <p className="text-gray-600 font-serif italic mt-4">
+                                Corte al {new Date(fechaCorte).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}
                             </p>
+                            <p className="text-xs text-gray-400 mt-1">(Cifras expresadas en Pesos Colombianos)</p>
                         </div>
 
                         <div className="p-6 space-y-8">
 
-                            {/* SECCIÓN: ACTIVOS */}
-                            <section>
-                                <div className="flex items-center gap-2 mb-4 pb-2 border-b-2 border-emerald-100">
-                                    <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><FaMoneyBillWave /></div>
-                                    <h3 className="text-xl font-bold text-gray-700">Activos</h3>
-                                </div>
-                                <div className="pl-2 md:pl-4 space-y-1">
-                                    {reporte.activos.length === 0 ? <p className="text-gray-400 italic text-sm">Sin registros.</p> :
-                                        reporte.activos.map((item, index) => (
-                                            <AccountRow key={`act-${index}`} codigo={item.codigo} nombre={item.nombre} saldo={item.saldo} colorClass="text-emerald-700" />
-                                        ))
-                                    }
-                                </div>
-                                <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200 bg-emerald-50/50 p-3 rounded-lg">
-                                    <span className="font-bold text-gray-700 uppercase text-sm">Total Activos</span>
-                                    <span className="font-mono text-lg font-bold text-emerald-700">{formatCurrency(reporte.total_activos)}</span>
-                                </div>
-                            </section>
+                            {/* LOGICA DE RENDERIZADO SEGÚN NIVEL */}
+                            {reporte.nivel === 'clasificado' ? (
+                                <>
+                                    {/* ------------ VISTA CLASIFICADA ------------ */}
 
-                            {/* SECCIÓN: PASIVOS */}
-                            <section>
-                                <div className="flex items-center gap-2 mb-4 pb-2 border-b-2 border-rose-100">
-                                    <div className="p-2 bg-rose-100 text-rose-600 rounded-lg"><FaBuilding /></div>
-                                    <h3 className="text-xl font-bold text-gray-700">Pasivos</h3>
-                                </div>
-                                <div className="pl-2 md:pl-4 space-y-1">
-                                    {reporte.pasivos.length === 0 ? <p className="text-gray-400 italic text-sm">Sin registros.</p> :
-                                        reporte.pasivos.map((item, index) => (
-                                            <AccountRow key={`pas-${index}`} codigo={item.codigo} nombre={item.nombre} saldo={item.saldo} colorClass="text-rose-700" />
-                                        ))
-                                    }
-                                </div>
-                                <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200 bg-rose-50/50 p-3 rounded-lg">
-                                    <span className="font-bold text-gray-700 uppercase text-sm">Total Pasivos</span>
-                                    <span className="font-mono text-lg font-bold text-rose-700">{formatCurrency(reporte.total_pasivos)}</span>
-                                </div>
-                            </section>
+                                    {/* ACTIVOS */}
+                                    <section>
+                                        <div className="uppercase font-bold text-lg text-gray-900 border-b-2 border-gray-900 mb-4 pb-1">Activos</div>
 
-                            {/* SECCIÓN: PATRIMONIO */}
-                            <section>
-                                <div className="flex items-center gap-2 mb-4 pb-2 border-b-2 border-blue-100">
-                                    <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><FaLandmark /></div>
-                                    <h3 className="text-xl font-bold text-gray-700">Patrimonio</h3>
-                                </div>
-                                <div className="pl-2 md:pl-4 space-y-1">
+                                        {/* Activo Corriente */}
+                                        <div className="mb-6 pl-4">
+                                            <h4 className="font-bold text-gray-800 mb-2 uppercase text-sm border-b border-gray-300 inline-block">Activo Corriente</h4>
+                                            <div className="space-y-1 mt-2">
+                                                {reporte.clasificado_activo?.corriente.map((item, index) => (
+                                                    <div key={`act-curr-${index}`} className="flex justify-between items-end hover:bg-gray-50 transition-colors py-1 border-b border-dotted border-gray-200">
+                                                        <div className="flex gap-2 text-sm text-gray-700">
+                                                            <span className="font-mono text-gray-500 text-xs w-12 text-right">{item.codigo}</span>
+                                                            <span>{item.nombre}</span>
+                                                        </div>
+                                                        <span className="font-mono text-sm text-gray-800">{formatCurrency(item.saldo)}</span>
+                                                    </div>
+                                                ))}
+                                                <div className="flex justify-between items-center pt-2 mt-2 font-bold text-gray-900">
+                                                    <span className="pl-14 text-sm uppercase">Total Activo Corriente</span>
+                                                    <span className="font-mono border-t border-gray-800 w-32 text-right">{formatCurrency(reporte.clasificado_activo?.total_corriente)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Activo No Corriente */}
+                                        <div className="mb-6 pl-4">
+                                            <h4 className="font-bold text-gray-800 mb-2 uppercase text-sm border-b border-gray-300 inline-block">Activo No Corriente</h4>
+                                            <div className="space-y-1 mt-2">
+                                                {reporte.clasificado_activo?.no_corriente.map((item, index) => (
+                                                    <div key={`act-nocurr-${index}`} className="flex justify-between items-end hover:bg-gray-50 transition-colors py-1 border-b border-dotted border-gray-200">
+                                                        <div className="flex gap-2 text-sm text-gray-700">
+                                                            <span className="font-mono text-gray-500 text-xs w-12 text-right">{item.codigo}</span>
+                                                            <span>{item.nombre}</span>
+                                                        </div>
+                                                        <span className="font-mono text-sm text-gray-800">{formatCurrency(item.saldo)}</span>
+                                                    </div>
+                                                ))}
+                                                <div className="flex justify-between items-center pt-2 mt-2 font-bold text-gray-900">
+                                                    <span className="pl-14 text-sm uppercase">Total Activo No Corriente</span>
+                                                    <span className="font-mono border-t border-gray-800 w-32 text-right">{formatCurrency(reporte.clasificado_activo?.total_no_corriente)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* GRAN TOTAL ACTIVOS */}
+                                        <div className="flex justify-end mt-4">
+                                            <div className="flex justify-between items-center w-full md:w-1/2 bg-gray-100 p-2 border border-gray-300">
+                                                <span className="font-bold text-gray-900 uppercase">Total Activos</span>
+                                                <span className="font-mono font-bold text-lg text-gray-900">{formatCurrency(reporte.total_activos)}</span>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    {/* PASIVOS */}
+                                    <section>
+                                        <div className="uppercase font-bold text-lg text-gray-900 border-b-2 border-gray-900 mb-4 pb-1">Pasivos</div>
+
+                                        {/* Pasivo Corriente */}
+                                        <div className="mb-6 pl-4">
+                                            <h4 className="font-bold text-gray-800 mb-2 uppercase text-sm border-b border-gray-300 inline-block">Pasivo Corriente</h4>
+                                            <div className="space-y-1 mt-2">
+                                                {reporte.clasificado_pasivo?.corriente.map((item, index) => (
+                                                    <div key={`pas-curr-${index}`} className="flex justify-between items-end hover:bg-gray-50 transition-colors py-1 border-b border-dotted border-gray-200">
+                                                        <div className="flex gap-2 text-sm text-gray-700">
+                                                            <span className="font-mono text-gray-500 text-xs w-12 text-right">{item.codigo}</span>
+                                                            <span>{item.nombre}</span>
+                                                        </div>
+                                                        <span className="font-mono text-sm text-gray-800">{formatCurrency(item.saldo)}</span>
+                                                    </div>
+                                                ))}
+                                                <div className="flex justify-between items-center pt-2 mt-2 font-bold text-gray-900">
+                                                    <span className="pl-14 text-sm uppercase">Total Pasivo Corriente</span>
+                                                    <span className="font-mono border-t border-gray-800 w-32 text-right">{formatCurrency(reporte.clasificado_pasivo?.total_corriente)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Pasivo No Corriente */}
+                                        <div className="mb-6 pl-4">
+                                            <h4 className="font-bold text-gray-800 mb-2 uppercase text-sm border-b border-gray-300 inline-block">Pasivo No Corriente</h4>
+                                            <div className="space-y-1 mt-2">
+                                                {reporte.clasificado_pasivo?.no_corriente.map((item, index) => (
+                                                    <div key={`pas-nocurr-${index}`} className="flex justify-between items-end hover:bg-gray-50 transition-colors py-1 border-b border-dotted border-gray-200">
+                                                        <div className="flex gap-2 text-sm text-gray-700">
+                                                            <span className="font-mono text-gray-500 text-xs w-12 text-right">{item.codigo}</span>
+                                                            <span>{item.nombre}</span>
+                                                        </div>
+                                                        <span className="font-mono text-sm text-gray-800">{formatCurrency(item.saldo)}</span>
+                                                    </div>
+                                                ))}
+                                                <div className="flex justify-between items-center pt-2 mt-2 font-bold text-gray-900">
+                                                    <span className="pl-14 text-sm uppercase">Total Pasivo No Corriente</span>
+                                                    <span className="font-mono border-t border-gray-800 w-32 text-right">{formatCurrency(reporte.clasificado_pasivo?.total_no_corriente)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* GRAN TOTAL PASIVOS */}
+                                        <div className="flex justify-end mt-4">
+                                            <div className="flex justify-between items-center w-full md:w-1/2 bg-gray-100 p-2 border border-gray-300">
+                                                <span className="font-bold text-gray-900 uppercase">Total Pasivos</span>
+                                                <span className="font-mono font-bold text-lg text-gray-900">{formatCurrency(reporte.total_pasivos)}</span>
+                                            </div>
+                                        </div>
+                                    </section>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="space-y-8">
+                                        {/* ------------ VISTA ESTANDAR (Auxiliar / Mayor) ------------ */}
+
+                                        <section>
+                                            <div className="uppercase font-bold text-lg text-gray-900 border-b-2 border-gray-900 mb-4 pb-1">Activos</div>
+                                            <div className="space-y-1 pl-4">
+                                                {reporte.activos.length === 0 ? <p className="text-gray-400 italic text-sm">Sin registros.</p> :
+                                                    reporte.activos.map((item, index) => (
+                                                        <div key={`act-${index}`} className="flex justify-between items-end hover:bg-gray-50 transition-colors py-1 border-b border-dotted border-gray-200">
+                                                            <div className="flex gap-2 text-sm text-gray-700">
+                                                                <span className="font-mono text-gray-500 text-xs w-12 text-right">{item.codigo}</span>
+                                                                <span>{item.nombre}</span>
+                                                            </div>
+                                                            <span className="font-mono text-sm text-gray-800">{formatCurrency(item.saldo)}</span>
+                                                        </div>
+                                                    ))
+                                                }
+                                            </div>
+                                            <div className="flex justify-end mt-4">
+                                                <div className="flex justify-between items-center w-full md:w-1/2 bg-gray-100 p-2 border border-gray-300">
+                                                    <span className="font-bold text-gray-900 uppercase">Total Activos</span>
+                                                    <span className="font-mono font-bold text-lg text-gray-900">{formatCurrency(reporte.total_activos)}</span>
+                                                </div>
+                                            </div>
+                                        </section>
+
+                                        <section>
+                                            <div className="uppercase font-bold text-lg text-gray-900 border-b-2 border-gray-900 mb-4 pb-1">Pasivos</div>
+                                            <div className="space-y-1 pl-4">
+                                                {reporte.pasivos.length === 0 ? <p className="text-gray-400 italic text-sm">Sin registros.</p> :
+                                                    reporte.pasivos.map((item, index) => (
+                                                        <div key={`pas-${index}`} className="flex justify-between items-end hover:bg-gray-50 transition-colors py-1 border-b border-dotted border-gray-200">
+                                                            <div className="flex gap-2 text-sm text-gray-700">
+                                                                <span className="font-mono text-gray-500 text-xs w-12 text-right">{item.codigo}</span>
+                                                                <span>{item.nombre}</span>
+                                                            </div>
+                                                            <span className="font-mono text-sm text-gray-800">{formatCurrency(item.saldo)}</span>
+                                                        </div>
+                                                    ))
+                                                }
+                                            </div>
+                                            <div className="flex justify-end mt-4">
+                                                <div className="flex justify-between items-center w-full md:w-1/2 bg-gray-100 p-2 border border-gray-300">
+                                                    <span className="font-bold text-gray-900 uppercase">Total Pasivos</span>
+                                                    <span className="font-mono font-bold text-lg text-gray-900">{formatCurrency(reporte.total_pasivos)}</span>
+                                                </div>
+                                            </div>
+                                        </section>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* SECCIÓN: PATRIMONIO (Común) */}
+                            <section className="mt-8">
+                                <div className="uppercase font-bold text-lg text-gray-900 border-b-2 border-gray-900 mb-4 pb-1">Patrimonio</div>
+                                <div className="space-y-1 pl-4">
                                     {reporte.patrimonio.map((item, index) => (
-                                        <AccountRow key={`pat-${index}`} codigo={item.codigo} nombre={item.nombre} saldo={item.saldo} colorClass="text-blue-700" />
+                                        <div key={`pat-${index}`} className="flex justify-between items-end hover:bg-gray-50 transition-colors py-1 border-b border-dotted border-gray-200">
+                                            <div className="flex gap-2 text-sm text-gray-700">
+                                                <span className="font-mono text-gray-500 text-xs w-12 text-right">{item.codigo}</span>
+                                                <span>{item.nombre}</span>
+                                            </div>
+                                            <span className="font-mono text-sm text-gray-800">{formatCurrency(item.saldo)}</span>
+                                        </div>
                                     ))}
 
-                                    {/* Utilidad del Ejercicio (Calculada dinámicamente) */}
-                                    <div className="flex justify-between items-center py-2 px-2 bg-blue-50 rounded border border-blue-100 mt-2">
-                                        <div className="flex gap-3 items-center">
-                                            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-white text-blue-600 border border-blue-100">3605</span>
-                                            <span className="text-sm text-blue-900 font-bold">Utilidad (Pérdida) del Ejercicio</span>
+                                    {/* Utilidad del Ejercicio */}
+                                    <div className="flex justify-between items-end bg-blue-50 py-2 border-b border-blue-100">
+                                        <div className="flex gap-2 text-sm font-bold text-blue-900 pl-14">
+                                            <span className="font-mono text-xs w-12 text-right">3605</span>
+                                            <span>UTILIDAD (PÉRDIDA) DEL EJERCICIO</span>
                                         </div>
-                                        <span className={`font-mono text-sm font-bold ${reporte.utilidad_ejercicio >= 0 ? 'text-blue-700' : 'text-red-600'}`}>
+                                        <span className={`font-mono text-sm font-bold pr-1 ${reporte.utilidad_ejercicio >= 0 ? 'text-blue-900' : 'text-red-600'}`}>
                                             {formatCurrency(reporte.utilidad_ejercicio)}
                                         </span>
                                     </div>
                                 </div>
-                                <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200 bg-blue-50/50 p-3 rounded-lg">
-                                    <span className="font-bold text-gray-700 uppercase text-sm">Total Patrimonio</span>
-                                    <span className="font-mono text-lg font-bold text-blue-700">{formatCurrency(reporte.total_patrimonio)}</span>
+
+                                <div className="flex justify-end mt-4">
+                                    <div className="flex justify-between items-center w-full md:w-1/2 bg-gray-100 p-2 border border-gray-300">
+                                        <span className="font-bold text-gray-900 uppercase">Total Patrimonio</span>
+                                        <span className="font-mono font-bold text-lg text-gray-900">{formatCurrency(reporte.total_patrimonio)}</span>
+                                    </div>
                                 </div>
                             </section>
 
-                            {/* ECUACIÓN CONTABLE */}
-                            <div className="mt-8 pt-6 border-t-4 border-gray-200">
-                                <div className="flex flex-col md:flex-row justify-between items-center bg-slate-800 text-white p-6 rounded-xl shadow-lg">
-                                    <div className="flex items-center gap-3 mb-4 md:mb-0">
-                                        <FaChartPie className="text-3xl text-yellow-400" />
-                                        <div>
-                                            <p className="text-sm text-slate-300 uppercase tracking-wider font-bold">Ecuación Patrimonial</p>
-                                            <p className="text-xs text-slate-400">Total Pasivo + Total Patrimonio</p>
-                                        </div>
+                            {/* ECUACIÓN CONTABLE FIN DE REPORTE */}
+                            <div className="mt-12 pt-4 border-t-4 border-gray-900">
+                                <div className="flex justify-between items-center text-xl font-bold text-gray-900 px-4">
+                                    <span>TOTAL PASIVO + PATRIMONIO</span>
+                                    <span className="font-mono border-b-4 border-double border-gray-900 pb-1">{formatCurrency(reporte.total_pasivo_patrimonio)}</span>
+                                </div>
+                                <p className="text-center text-xs text-gray-400 mt-8 mb-8">*** Fin del Informe ***</p>
+
+                                {/* Firmas */}
+                                <div className="flex justify-around mt-16 text-center">
+                                    <div className="w-1/3 border-t border-gray-400 pt-2">
+                                        <p className="font-bold text-sm">REPRESENTANTE LEGAL</p>
+                                        <p className="text-xs text-gray-500 mt-1">C.C.</p>
                                     </div>
-                                    <div className="text-3xl font-mono font-bold text-yellow-400">
-                                        {formatCurrency(reporte.total_pasivo_patrimonio)}
+                                    <div className="w-1/3 border-t border-gray-400 pt-2">
+                                        <p className="font-bold text-sm">CONTADOR PÚBLICO</p>
+                                        <p className="text-xs text-gray-500 mt-1">T.P.</p>
                                     </div>
                                 </div>
-
-                                {/* Verificación Visual de Cuadre */}
-                                {Math.abs(reporte.total_activos - reporte.total_pasivo_patrimonio) < 1 ? (
-                                    <p className="text-center text-green-600 font-bold mt-3 flex justify-center items-center gap-2">
-                                        <FaBalanceScale /> El balance está cuadrado correctamente.
-                                    </p>
-                                ) : (
-                                    <p className="text-center text-red-500 font-bold mt-3 flex justify-center items-center gap-2 animate-pulse">
-                                        <FaExclamationTriangle /> El balance presenta descuadres. Revise la contabilidad.
-                                    </p>
-                                )}
                             </div>
 
                         </div>

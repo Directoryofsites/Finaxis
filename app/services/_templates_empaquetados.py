@@ -3,180 +3,6 @@
 # No editar este archivo manualmente. Ejecutar precompile_templates.py para actualizar.
 
 TEMPLATES_EMPAQUETADOS = {
-    'reports/cash_flow_report.html': r'''
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Estado de Flujos de Efectivo</title>
-    <style>
-        @page { size: letter portrait; margin: 1.5cm; }
-        body { font-family: Arial, sans-serif; font-size: 10px; color: #333; }
-        h1, h2 { text-align: center; margin: 2px; }
-        h1 { font-size: 14px; font-weight: bold; text-transform: uppercase; }
-        h2 { font-size: 12px; font-weight: normal; color: #555; }
-        
-        .header-section { margin-bottom: 20px; text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; }
-        
-        .section-title { 
-            background-color: #f0f0f0; 
-            padding: 5px; 
-            font-weight: bold; 
-            font-size: 11px; 
-            border: 1px solid #ddd; 
-            margin-top: 15px;
-            color: #000;
-        }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-        th, td { border: 1px solid #eee; padding: 4px; text-align: left; }
-        th { background-color: #f9f9f9; font-weight: bold; text-align: center; }
-        
-        .amount { text-align: right; font-family: 'Courier New', monospace; }
-        .total-row { font-weight: bold; background-color: #eef; }
-        .subtotal-row td { border-top: 1px solid #999; font-weight: bold; }
-        
-        .summary-box { 
-            margin-top: 30px; 
-            border: 1px solid #333; 
-            padding: 10px; 
-            background-color: #fcfcfc;
-            page-break-inside: avoid;
-        }
-        .summary-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 11px; }
-        .summary-row.final { font-weight: bold; font-size: 12px; border-top: 1px solid #ccc; margin-top: 5px; padding-top: 5px; }
-        
-        .positive { color: #006400; }
-        .negative { color: #8b0000; }
-        .warning-box { border: 1px solid red; background-color: #ffe6e6; color: #cc0000; padding: 5px; margin-top: 10px; font-weight: bold; text-align: center; }
-    </style>
-</head>
-<body>
-    <div class="header-section">
-        <h1>{{ empresa_nombre }}</h1>
-        <h2>NIT: {{ empresa_nit }}</h2>
-        <h2>ESTADO DE FLUJOS DE EFECTIVO</h2>
-        <p style="font-size: 10px; margin-top: 5px;">Periodo: Del {{ fecha_inicio }} Al {{ fecha_fin }}</p>
-    </div>
-
-    <!-- SALDO INICIAL -->
-    <div style="margin-bottom: 15px;">
-        <strong>Saldo de Efectivo al Inicio del Período:</strong> 
-        <span class="amount" style="float: right; font-weight: bold;">{{ "{:,.2f}".format(data.saldo_inicial) }}</span>
-    </div>
-
-    <!-- ACTIVIDADES DE OPERACIÓN -->
-    <div class="section-title">ACTIVIDADES DE OPERACIÓN</div>
-    <table>
-        <thead>
-            <tr>
-                <th style="width: 70%">Concepto Financiero</th>
-                <th style="width: 30%">Valor</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in data.flujos_operacion.detalles %}
-            <tr>
-                <td>{{ item.concepto }}</td>
-                <td class="amount {{ 'negative' if item.valor < 0 else 'positive' }}">
-                    {{ "{:,.2f}".format(item.valor) }}
-                </td>
-            </tr>
-            {% else %}
-            <tr><td colspan="2" style="text-align: center; color: #999;">Sin movimientos</td></tr>
-            {% endfor %}
-            <tr class="subtotal-row">
-                <td style="text-align: right;">Flujo Neto de Actividades de Operación</td>
-                <td class="amount">{{ "{:,.2f}".format(data.flujos_operacion.total) }}</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <!-- ACTIVIDADES DE INVERSIÓN -->
-    <div class="section-title">ACTIVIDADES DE INVERSIÓN</div>
-    <table>
-        <thead>
-            <tr>
-                <th style="width: 70%">Concepto Financiero</th>
-                <th style="width: 30%">Valor</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in data.flujos_inversion.detalles %}
-            <tr>
-                <td>{{ item.concepto }}</td>
-                <td class="amount {{ 'negative' if item.valor < 0 else 'positive' }}">
-                    {{ "{:,.2f}".format(item.valor) }}
-                </td>
-            </tr>
-            {% else %}
-            <tr><td colspan="2" style="text-align: center; color: #999;">Sin movimientos</td></tr>
-            {% endfor %}
-            <tr class="subtotal-row">
-                <td style="text-align: right;">Flujo Neto de Actividades de Inversión</td>
-                <td class="amount">{{ "{:,.2f}".format(data.flujos_inversion.total) }}</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <!-- ACTIVIDADES DE FINANCIACIÓN -->
-    <div class="section-title">ACTIVIDADES DE FINANCIACIÓN</div>
-    <table>
-        <thead>
-            <tr>
-                <th style="width: 70%">Concepto Financiero</th>
-                <th style="width: 30%">Valor</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in data.flujos_financiacion.detalles %}
-            <tr>
-                <td>{{ item.concepto }}</td>
-                <td class="amount {{ 'negative' if item.valor < 0 else 'positive' }}">
-                    {{ "{:,.2f}".format(item.valor) }}
-                </td>
-            </tr>
-            {% else %}
-            <tr><td colspan="2" style="text-align: center; color: #999;">Sin movimientos</td></tr>
-            {% endfor %}
-            <tr class="subtotal-row">
-                <td style="text-align: right;">Flujo Neto de Actividades de Financiación</td>
-                <td class="amount">{{ "{:,.2f}".format(data.flujos_financiacion.total) }}</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <!-- RESUMEN FINAL -->
-    <div class="summary-box">
-        <div class="summary-row">
-            <span>Saldo de Efectivo al Inicio del Período:</span>
-            <span class="amount">{{ "{:,.2f}".format(data.saldo_inicial) }}</span>
-        </div>
-        <div class="summary-row">
-            <span>(+) Flujos Netos Totales (Operación + Inversión + Financiación):</span>
-            <span class="amount">{{ "{:,.2f}".format(data.flujos_netos_totales) }}</span>
-        </div>
-        <div class="summary-row final">
-            <span>(=) SALDO DE EFECTIVO AL FINAL DEL PERÍODO (CALCULADO):</span>
-            <span class="amount">{{ "{:,.2f}".format(data.saldo_final_calculado) }}</span>
-        </div>
-        
-        {% if not data.validacion.es_valido %}
-        <div class="warning-box">
-            ADVERTENCIA: EXISTE UNA DESVIACIÓN EN EL EFECTIVO<br>
-            Saldo Real en Libros: {{ "{:,.2f}".format(data.saldo_final_real) }} <br>
-            Diferencia no explicada: {{ "{:,.2f}".format(data.validacion.diferencia) }}
-        </div>
-        {% endif %}
-    </div>
-    
-    <div style="text-align: center; font-size: 9px; color: #888; margin-top: 20px;">
-        Generado automáticamente por Finaxis AI - {{ fecha_generacion }}
-    </div>
-</body>
-</html>
-''',
-
     'reports/account_ledger_report.html': r'''
 <!DOCTYPE html>
 <html lang="es">
@@ -244,11 +70,9 @@ TEMPLATES_EMPAQUETADOS = {
             </tr>
             {% endfor %}
             <tr class="total-row">
-                <td colspan="{{ 5 if has_cost_centers else 4 }}"><strong>TOTALES Y SALDO FINAL</strong></td>
-                <td class="text-right"><strong>{{ "{:,.2f}".format(total_debito_periodo) }}</strong></td>
-                <td class="text-right"><strong>{{ "{:,.2f}".format(total_credito_periodo) }}</strong></td>
+                <td colspan="{{ 5 if has_cost_centers else 4 }}"><strong>SALDO FINAL</strong></td>
                 {% set saldo_final = movimientos[-1].saldo_parcial if movimientos else saldo_anterior %}
-                <td class="text-right"><strong>{{ "{:,.2f}".format(saldo_final) }}</strong></td>
+                <td colspan="3" class="text-right"><strong>{{ "{:,.2f}".format(saldo_final) }}</strong></td>
             </tr>
         </tbody>
     </table>
@@ -1938,13 +1762,13 @@ TEMPLATES_EMPAQUETADOS = {
             <tr>
                 <td class="text-center">{{ fila.cuenta_codigo }}</td>
                 <td>{{ fila.cuenta_nombre }}</td>
-                <td class="text-right">{{ "${:,.2f}".format(fila.saldo_inicial) }}</td>
-                <td class="text-right">{{ "${:,.2f}".format(fila.saldo_final) }}</td>
+                <td class="text-right">{{ "${:,.0f}".format(fila.saldo_inicial) }}</td>
+                <td class="text-right">{{ "${:,.0f}".format(fila.saldo_final) }}</td>
                 <td class="text-right font-bold text-success">
-                    {% if fila.fuente > 0 %}{{ "${:,.2f}".format(fila.fuente) }}{% endif %}
+                    {% if fila.fuente > 0 %}{{ "${:,.0f}".format(fila.fuente) }}{% endif %}
                 </td>
                 <td class="text-right font-bold text-danger">
-                    {% if fila.uso > 0 %}{{ "${:,.2f}".format(fila.uso) }}{% endif %}
+                    {% if fila.uso > 0 %}{{ "${:,.0f}".format(fila.uso) }}{% endif %}
                 </td>
             </tr>
             {% endfor %}
@@ -1952,13 +1776,13 @@ TEMPLATES_EMPAQUETADOS = {
         <tfoot>
             <tr class="bg-gray">
                 <td colspan="4" class="text-right font-bold">TOTALES:</td>
-                <td class="text-right font-bold text-success">{{ "${:,.2f}".format(totales.total_fuentes) }}</td>
-                <td class="text-right font-bold text-danger">{{ "${:,.2f}".format(totales.total_usos) }}</td>
+                <td class="text-right font-bold text-success">{{ "${:,.0f}".format(totales.total_fuentes) }}</td>
+                <td class="text-right font-bold text-danger">{{ "${:,.0f}".format(totales.total_usos) }}</td>
             </tr>
             <tr>
                 <td colspan="4" class="text-right font-bold">Diferencia (Fuentes - Usos):</td>
                 <td colspan="2" class="text-center font-bold">
-                    {{ "${:,.2f}".format(totales.diferencia) }}
+                    {{ "${:,.0f}".format(totales.diferencia) }}
                     <br>
                     <span style="font-size: 9px; font-weight: normal;">(Debe ser igual a la Variación K.T.)</span>
                 </td>
@@ -2290,111 +2114,6 @@ TEMPLATES_EMPAQUETADOS = {
         </tr>
     </table>
 
-</body>
-</html>
-''',
-
-    'reports/mayor_y_balances_report.html': r'''
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Libro Mayor y Balances</title>
-    <style>
-        @page { size: letter; margin: 1cm; }
-        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10px; color: #333; }
-        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
-        .header h1 { font-size: 16px; margin: 0; }
-        .header h2 { font-size: 14px; margin: 2px 0; font-weight: normal; }
-        .header p { margin: 2px 0; font-size: 12px; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 20px; }
-        th, td { border: 1px solid #ccc; padding: 5px; text-align: left; }
-        th { background-color: #f0f0f0; font-weight: bold; text-align: center; font-size: 9px; }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        .font-mono { font-family: monospace; }
-        
-        /* Hierarchy Styles */
-        .level-1 td { background-color: #e0e0e0; font-weight: bold; font-size: 11px; }
-        .level-2 td { background-color: #f9f9f9; font-weight: bold; padding-left: 15px; }
-        .level-4 td { padding-left: 30px; }
-        
-        .summary-section { margin-top: 30px; break-inside: avoid; }
-        .summary-header { font-size: 12px; font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid #333; display: inline-block; }
-        
-        tfoot td { font-weight: bold; background-color: #e0e0e0; border-top: 2px solid #333; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>{{ empresa_nombre }}</h1>
-        <h2>NIT: {{ empresa_nit }}</h2>
-        <p><strong>LIBRO MAYOR Y BALANCES</strong></p>
-        <p>Periodo: Del {{ fecha_inicio }} al {{ fecha_fin }}</p>
-    </div>
-
-    <!-- TABLA PRINCIPAL (JERÁRQUICA) -->
-    <table>
-        <thead>
-            <tr>
-                <th style="width: 10%;">CÓDIGO</th>
-                <th style="width: 32%;">CUENTA</th>
-                <th style="width: 14%;">SALDO ANTERIOR</th>
-                <th style="width: 14%;">DÉBITOS</th>
-                <th style="width: 14%;">CRÉDITOS</th>
-                <th style="width: 16%;">NUEVO SALDO</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for cuenta in reporte.cuentas %}
-            <tr class="level-{{ cuenta.nivel }}">
-                <td class="text-center font-mono">{{ cuenta.codigo }}</td>
-                <td>{{ cuenta.nombre }}</td>
-                <td class="text-right">{{ "${:,.2f}".format(cuenta.saldo_inicial) }}</td>
-                <td class="text-right">{{ "${:,.2f}".format(cuenta.total_debito) }}</td>
-                <td class="text-right">{{ "${:,.2f}".format(cuenta.total_credito) }}</td>
-                <td class="text-right">{{ "${:,.2f}".format(cuenta.nuevo_saldo) }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-        <tfoot>
-            <tr>
-                <td colspan="2" class="text-right">TOTALES GENERALES</td>
-                <td class="text-right"></td>
-                <td class="text-right">{{ "${:,.2f}".format(reporte.totales_generales.debito) }}</td>
-                <td class="text-right">{{ "${:,.2f}".format(reporte.totales_generales.credito) }}</td>
-                <td class="text-right"></td>
-            </tr>
-        </tfoot>
-    </table>
-
-    <!-- TABLA RESUMEN POR CLASE -->
-    <div class="summary-section">
-        <div class="summary-header">RESUMEN POR CLASE DE CUENTA</div>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 30%;">CLASE</th>
-                    <th style="width: 17%;">SALDO INICIAL</th>
-                    <th style="width: 17%;">DÉBITOS</th>
-                    <th style="width: 17%;">CRÉDITOS</th>
-                    <th style="width: 19%;">NUEVO SALDO</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for clase in reporte.resumen_por_clase %}
-                <tr>
-                    <td><strong>{{ clase.codigo }} - {{ clase.nombre }}</strong></td>
-                    <td class="text-right">{{ "${:,.2f}".format(clase.saldo_inicial) }}</td>
-                    <td class="text-right">{{ "${:,.2f}".format(clase.total_debito) }}</td>
-                    <td class="text-right">{{ "${:,.2f}".format(clase.total_credito) }}</td>
-                    <td class="text-right">{{ "${:,.2f}".format(clase.nuevo_saldo) }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
 </body>
 </html>
 ''',
@@ -4058,7 +3777,6 @@ TEMPLATES_EMPAQUETADOS = {
         table {
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed; /* OPTIMIZACION DE VELOCIDAD */
         }
 
         th,
@@ -4114,23 +3832,13 @@ TEMPLATES_EMPAQUETADOS = {
     </div>
 
     <table>
-        <!-- OPTIMIZACION: Definir anchos fijos ayuda al motor de renderizado -->
+        {% if column_widths %}
         <colgroup>
-            <col style="width: 7%">  <!-- Fecha -->
-            <col style="width: 7%">  <!-- Documento -->
-            <col style="width: 5%">  <!-- Num -->
-            <col style="width: 10%"> <!-- Beneficiario -->
-            <col style="width: 10%"> <!-- Cuenta -->
-            <col style="width: 7%">  <!-- Producto -->
-            <col style="width: 5%">  <!-- Cant. -->
-            <col style="width: 7%">  <!-- C. Costo -->
-            <col style="width: 14%"> <!-- Concepto -->
-            <col style="width: 5%">  <!-- Débito -->
-            <col style="width: 5%">  <!-- Crédito -->
-            <col style="width: 7%">  <!-- Usuario Creador -->
-            <col style="width: 7%">  <!-- Justificación -->
-            <col style="width: 4%">  <!-- Usuario Op. -->
+            {% for width in column_widths %}
+            <col style="width: {{ width }}">
+            {% endfor %}
         </colgroup>
+        {% endif %}
         <thead>
             <tr>
                 {% for header in headers %}
@@ -4389,6 +4097,126 @@ TEMPLATES_EMPAQUETADOS = {
     
     <h2>Total Artículos en Alerta: {{ data | length }}</h2>
 
+</body>
+</html>
+''',
+    
+    'reports/comprobante_egreso_template.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Comprobante de Egreso</title>
+    <style>
+        @page { size: letter; margin: 2cm; }
+        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10pt; color: #333; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #ccc; padding-bottom: 10px; }
+        .header h1 { margin: 0; font-size: 18pt; text-transform: uppercase; color: #000; }
+        .header h2 { margin: 5px 0 0; font-size: 12pt; font-weight: normal; }
+        .header p { margin: 2px 0; font-size: 10pt; color: #666; }
+        
+        .doc-title { text-align: right; margin-bottom: 20px; }
+        .doc-title h3 { margin: 0; font-size: 14pt; color: #444; text-transform: uppercase; background-color: #f9f9f9; display: inline-block; padding: 5px 15px; border: 1px solid #ddd; }
+        
+        .info-grid { display: table; width: 100%; margin-bottom: 20px; }
+        .info-row { display: table-row; }
+        .info-cell { display: table-cell; padding: 4px; border-bottom: 1px solid #eee; }
+        .label { font-weight: bold; color: #555; width: 120px; }
+        
+        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        .items-table th { background-color: #f0f0f0; border: 1px solid #ccc; padding: 8px; font-weight: bold; text-align: left; font-size: 9pt; }
+        .items-table td { border: 1px solid #ddd; padding: 8px; font-size: 9pt; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        
+        .totals-section { width: 40%; margin-left: auto; margin-bottom: 30px; }
+        .total-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; }
+        .total-row.final { font-weight: bold; font-size: 11pt; border-bottom: 2px solid #000; border-top: 1px solid #000; margin-top: 5px; padding-top: 5px; }
+        
+        .footer { margin-top: 50px; border-top: 1px solid #ccc; padding-top: 10px; font-size: 8pt; color: #888; text-align: center; }
+        
+        .signatures { margin-top: 60px; display: table; width: 100%; }
+        .sig-box { display: table-cell; width: 33%; text-align: center; vertical-align: bottom; height: 60px; }
+        .sig-line { border-top: 1px solid #000; margin: 0 20px; padding-top: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <h2>NIT: {{ empresa.nit }}</h2>
+        <p>{{ empresa.direccion }} - {{ empresa.telefono }}</p>
+    </div>
+
+    <div class="doc-title">
+        <h3>{{ documento.tipo_nombre }} N° {{ documento.consecutivo }}</h3>
+    </div>
+
+    <div class="info-grid">
+        <div class="info-row">
+            <div class="info-cell label">Fecha:</div>
+            <div class="info-cell">{{ documento.fecha_emision }}</div>
+            <div class="info-cell label">Ciudad:</div>
+            <div class="info-cell">Bogotá D.C.</div>
+        </div>
+        <div class="info-row">
+            <div class="info-cell label">Pagado a:</div>
+            <div class="info-cell"><strong>{{ tercero.razon_social }}</strong></div>
+            <div class="info-cell label">NIT/CC:</div>
+            <div class="info-cell">{{ tercero.nit }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-cell label">Concepto:</div>
+            <div class="info-cell" colspan="3">{{ documento.observaciones }}</div>
+        </div>
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th style="width: 15%;">Código</th>
+                <th style="width: 45%;">Descripción</th>
+                <th style="width: 20%;" class="text-right">Débito</th>
+                <th style="width: 20%;" class="text-right">Crédito</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.producto_codigo }}</td>
+                <td>{{ item.producto_nombre }}</td>
+                <td class="text-right">{{ item.debito_fmt }}</td>
+                <td class="text-right">{{ item.credito_fmt }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="totals-section">
+        <div class="total-row final">
+            <span>TOTAL PAGADO</span>
+            <span>{{ totales.total }}</span>
+        </div>
+        <div style="font-size: 9pt; font-style: italic; margin-top: 5px; text-align: right;">
+            Son: {{ totales.valor_letras }}
+        </div>
+    </div>
+
+    <div class="signatures">
+        <div class="sig-box">
+            <div class="sig-line">Elaboró</div>
+        </div>
+        <div class="sig-box">
+            <div class="sig-line">Aprobó</div>
+        </div>
+        <div class="sig-box">
+            <div class="sig-line">Recibí Conforme</div>
+            <div style="font-size: 8pt;">C.C.</div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Generado automáticamente por Finaxis Cloud
+    </div>
 </body>
 </html>
 ''',

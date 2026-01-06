@@ -28,12 +28,20 @@ class ExportPaquetesModulosEspecializados(BaseModel):
     cotizaciones: bool = False # Cotizaciones y sus detalles
     produccion: bool = False # Recetas, órdenes de producción, recursos e insumos
     conciliacion_bancaria: bool = False # Configuraciones, sesiones, movimientos y conciliaciones bancarias
+    nomina: bool = False # Configuración, empleados, tipos y documentos de nómina
 
 class ExportPaquetes(BaseModel):
     """ Define qué paquetes de datos se incluirán en la exportación. """
     maestros: ExportPaquetesMaestros
     modulos_especializados: ExportPaquetesModulosEspecializados = ExportPaquetesModulosEspecializados()
-    transacciones: bool = False
+    
+    # --- TRANSACCIONES DESACOPLADAS ---
+    transacciones_contabilidad: bool = False # Asientos contables (MovimientoContable)
+    transacciones_inventario: bool = False   # Kardex (MovimientoInventario)
+    
+    # Deprecated (mantenido por compatibilidad si es necesario, pero idealmente no usado)
+    transacciones: bool = False 
+    
     configuraciones: ExportPaquetesConfiguraciones
 
 # --- Esquema de Configuración de Copias Automáticas ---

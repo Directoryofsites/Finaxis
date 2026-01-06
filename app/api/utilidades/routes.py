@@ -176,7 +176,38 @@ def resetear_password(payload: usuario_schema.PasswordResetPayload, db: Session 
 
 @router.post("/exportar-datos")
 def exportar_datos(export_request: migracion_schemas.ExportRequest, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(has_permission("utilidades:migracion"))): # <-- CAMBIO AQUÍ
-    return migracion_service.exportar_datos(db=db, export_request=export_request, empresa_id=current_user.empresa_id)
+    # 1. Obtener Data
+    data = migracion_service.exportar_datos(db=db, export_request=export_request, empresa_id=current_user.empresa_id)
+    
+    # 2. Obtener Nombre Empresa
+    from app.models.empresa import Empresa
+    from fastapi.responses import JSONResponse, Response
+    from datetime import datetime
+    import re
+
+    empresa = db.query(Empresa).filter(Empresa.id == current_user.empresa_id).first()
+    nombre_empresa = empresa.razon_social if empresa else "Empresa"
+    
+    # 3. Sanitizar nombre de archivo
+    # Reemplazar caracteres ilegales y espacios. Asegurar que no haya saltos de línea.
+    safe_name = nombre_empresa.strip()
+    safe_name = re.sub(r'[\r\n\t]', '', safe_name) # Eliminar control chars
+    safe_name = re.sub(r'[\\/*?:"<>|]', "", safe_name) # Eliminar prohibidos OS
+    nombre_clean = safe_name.replace(" ", "_")
+    
+    # 4. Construir Filename
+    fecha_str = datetime.now().strftime("%Y-%m-%d")
+    filename = f"backup_contable_{nombre_clean}_{fecha_str}.json"
+    
+    # 5. Retornar como Stream Binario (Fuerza descarga correcta)
+    import json
+    json_content = json.dumps(data)
+    
+    return Response(
+        content=json_content,
+        media_type="application/octet-stream", # Forza al navegador a guardar como archivo
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
 
 @router.post("/backup-rapido")
 def backup_rapido(current_user: models_usuario.Usuario = Depends(has_permission("utilidades:migracion")), db: Session = Depends(get_db)):

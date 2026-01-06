@@ -277,6 +277,15 @@ def get_precio_venta_route(producto_id: int, lista_precio_id: int = Query(..., a
     return {"precio_calculado": precio}
 
 
+@router.post("/recalcular-saldos", dependencies=[Depends(get_current_user)])
+def recalcular_saldos_masivo_route(db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
+    """
+    Endpoint administrativo para forzar la regeneración de stock y costos de todos los productos
+    de la empresa basados en el historial de movimientos.
+    """
+    return service_inventario.recalcular_todo_inventario(db=db, empresa_id=current_user.empresa_id)
+
+
 # ==============================================================================
 # === ZONA DE REPORTES PDF (CON INSTRUMENTACIÓN DEBUG) ===
 # ==============================================================================

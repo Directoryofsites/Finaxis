@@ -309,7 +309,9 @@ export default function SuperInformePage() {
           total_paginas: data.total_paginas,
           pagina_actual: data.pagina_actual
         });
-        const headersToShow = Object.keys(data.resultados[0]).filter(key => !['estado', 'anulado', 'documento_id', 'movimiento_id', 'usuario_creador_id', 'usuario_operacion_id'].includes(key));
+        const headersToShow = Object.keys(data.resultados[0]).filter(key =>
+          !['estado', 'anulado', 'documento_id', 'movimiento_id', 'usuario_creador_id', 'usuario_operacion_id', 'producto_codigo', 'producto_nombre', 'cantidad_movimiento'].includes(key)
+        );
         setDynamicHeaders(headersToShow);
       } else {
         setResultados([]);
@@ -473,6 +475,17 @@ export default function SuperInformePage() {
                       options={maestros.cuentas.map(c => ({ value: c.id, label: `${c.codigo} - ${c.nombre}` }))}
                       value={filtros.cuentaIds}
                       onChange={(val) => handleMultiSelectChange('cuentaIds', val)}
+                      getDependentValues={(parentId) => {
+                        const parentAccount = maestros.cuentas.find(c => c.id === parentId);
+                        if (!parentAccount) return [];
+
+                        const parentCode = parentAccount.codigo;
+                        // Encontrar todas las cuentas que EMPIEZAN con el código del padre
+                        // (ej: si padre es '14', hijos son '1435', '1405', etc.)
+                        return maestros.cuentas
+                          .filter(c => c.codigo.startsWith(parentCode) && c.id !== parentId)
+                          .map(c => c.id);
+                      }}
                     />
                     <MultiSelect
                       label="Centros de Costo"

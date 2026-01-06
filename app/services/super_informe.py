@@ -258,10 +258,31 @@ def generate_super_informe_pdf(db: Session, filtros: schemas_doc.DocumentoGestio
     headers, processed_rows, totales = [], [], {"debito": 0.0, "credito": 0.0}
 
     def _format_currency(value):
+        # User requested NO decimals ("quítale los decimales")
         return f"${float(value or 0):,.0f}"
 
     if filtros.tipoEntidad == 'movimientos':
-        headers = ["Fecha", "Documento", "Num", "Beneficiario", "Cuenta", "Producto", "Cant.", "C. Costo", "Concepto", "Débito", "Crédito", "Usuario Creador", "Justificación", "Usuario Op."]
+        # Removed "Producto", "Cant." as requested.
+        # Adjusted Column Widths:
+        # Original ~14 columns. Now 12.
+        # Gained space from Prod/Cant allocated to Concept (high priority) and Debit/Credit.
+        headers = ["Fecha", "Documento", "Num", "Beneficiario", "Cuenta", "C. Costo", "Concepto", "Débito", "Crédito", "Usuario Creador", "Justificación", "Usuario Op."]
+        
+        column_widths = [
+            "6%",  # Fecha
+            "6%",  # Documento
+            "4%",  # Num
+            "10%", # Beneficiario
+            "10%", # Cuenta
+            "7%",  # C. Costo
+            "23%", # Concepto (Significantly increased)
+            "9%",  # Débito (Increased)
+            "9%",  # Crédito (Increased)
+            "6%",  # Usuario Creador
+            "5%",  # Justificación
+            "5%"   # Usuario Op.
+        ]
+
         for item in resultados:
             totales["debito"] += float(item.get('debito') or 0)
             totales["credito"] += float(item.get('credito') or 0)
@@ -272,8 +293,8 @@ def generate_super_informe_pdf(db: Session, filtros: schemas_doc.DocumentoGestio
                     item.get('numero') or 'N/A',
                     item.get('beneficiario') or 'N/A',
                     f"{item.get('cuenta_codigo', '')} - {item.get('cuenta_nombre', '')}",
-                    item.get('producto_nombre', 'N/A') if item.get('producto_nombre') else '',
-                    f"{item.get('cantidad_movimiento', 0):,.2f}" if item.get('cantidad_movimiento') else '',
+                    # REMOVED: Producto
+                    # REMOVED: Cantidad
                     item.get('centro_costo') or 'N/A',
                     item.get('concepto') or '',
                     _format_currency(item.get('debito')),
@@ -292,11 +313,12 @@ def generate_super_informe_pdf(db: Session, filtros: schemas_doc.DocumentoGestio
         "report_title": report_title,
         "fecha_generacion": date.today().strftime('%d/%m/%Y'),
         "headers": headers,
+        "column_widths": column_widths, # INJECTED WIDTHS
         "processed_rows": processed_rows,
         "totales": {
-            "debito": f"${totales['debito']:,.0f}",
-            "credito": f"${totales['credito']:,.0f}",
-            "diferencia": f"${(totales['debito'] - totales['credito']):,.0f}"
+            "debito": f"${totales['debito']:,.0f}", # No decimals
+            "credito": f"${totales['credito']:,.0f}", # No decimals
+            "diferencia": f"${(totales['debito'] - totales['credito']):,.0f}" # No decimals
         },
         "show_totals": filtros.tipoEntidad == 'movimientos'
     }

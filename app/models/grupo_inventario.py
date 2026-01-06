@@ -20,8 +20,8 @@ class GrupoInventario(Base):
     # --- PRODIUCCION: Cuenta clase 7 (71/72/73) ---
     cuenta_costo_produccion_id = Column(Integer, ForeignKey('plan_cuentas.id'), nullable=True)
     
-    # --- CAMBIO: Se elimina impuesto_predeterminado_id ---
-    # impuesto_predeterminado_id = Column(Integer, ForeignKey('tasas_impuesto.id'), nullable=True)
+    # --- CAMBIO: Habilitamos impuesto_predeterminado_id ---
+    impuesto_predeterminado_id = Column(Integer, ForeignKey('tasas_impuesto.id'), nullable=True)
 
     # Relaciones con PlanCuenta
     cuenta_inventario = relationship("PlanCuenta", foreign_keys=[cuenta_inventario_id])
@@ -33,8 +33,8 @@ class GrupoInventario(Base):
     # Relación con cuenta de producción
     cuenta_costo_produccion = relationship("PlanCuenta", foreign_keys=[cuenta_costo_produccion_id])
 
-    # --- CAMBIO: Se elimina relación impuesto ---
-    # impuesto_predeterminado = relationship("TasaImpuesto", foreign_keys=[impuesto_predeterminado_id])
+    # --- CAMBIO: Habilitamos relación impuesto ---
+    impuesto_predeterminado = relationship("TasaImpuesto", foreign_keys=[impuesto_predeterminado_id])
 
     # Relación inversa con Producto (sin cambios)
     productos = relationship('Producto', back_populates='grupo_inventario')

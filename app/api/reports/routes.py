@@ -957,6 +957,7 @@ def get_auxiliar_cc_cuenta_report_pdf(
 @router.get("/balance-sheet", response_model=Dict[str, Any])
 def get_balance_sheet_report(
     fecha_corte: date = Query(..., description="Fecha de corte del reporte (YYYY-MM-DD)"),
+    nivel: str = Query("auxiliar", description="Nivel de presentación: 'auxiliar', 'mayor', 'clasificado'"),
     db: Session = Depends(get_db),
     current_user: usuario_schema.User = Depends(get_current_user)
 ):
@@ -967,13 +968,15 @@ def get_balance_sheet_report(
     report_data = documento_service.generate_balance_sheet_report(
         db=db,
         empresa_id=current_user.empresa_id,
-        fecha_corte=fecha_corte
+        fecha_corte=fecha_corte,
+        nivel=nivel
     )
     return report_data
 
-@router.get("/balance-sheet/get-signed-url", response_model=Dict[str, str])
+@router.get("/balance-sheet/get-signed-url", response_model=Dict[str, Any])
 def get_signed_balance_sheet_report_url(
     fecha_corte: date = Query(..., description="Fecha de corte del reporte (YYYY-MM-DD)"),
+    nivel: str = Query("auxiliar", description="Nivel de presentación: 'auxiliar', 'mayor', 'clasificado'"),
     current_user: usuario_schema.User = Depends(get_current_user)
 ):
     """
@@ -983,9 +986,10 @@ def get_signed_balance_sheet_report_url(
     
     signed_token = reports_service.generate_signed_report_url(
         endpoint=pdf_endpoint,
-        expiration_seconds=15,
+        expiration_seconds=60,
         fecha_corte=fecha_corte.isoformat(),
-        empresa_id=current_user.empresa_id
+        empresa_id=current_user.empresa_id,
+        nivel=nivel
     )
     return {"signed_url_token": signed_token}
 
@@ -1010,12 +1014,14 @@ def get_balance_sheet_report_pdf(
 
     fecha_corte = date.fromisoformat(verified_params["fecha_corte"])
     empresa_id = verified_params["empresa_id"]
+    nivel = verified_params.get("nivel", "auxiliar")
 
     # Esta función la crearemos en el siguiente lote en services/documento.py
     pdf_content = documento_service.generate_balance_sheet_report_pdf(
         db=db,
         empresa_id=empresa_id,
-        fecha_corte=fecha_corte
+        fecha_corte=fecha_corte,
+        nivel=nivel
     )
     from fastapi.responses import Response
     return Response(content=pdf_content, media_type="application/pdf")
