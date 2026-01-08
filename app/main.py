@@ -359,6 +359,10 @@ app.include_router(conciliacion_bancaria_router.router, prefix="/api", tags=["Co
 
 # Los permisos de conciliación bancaria ahora se crean automáticamente en el seeder
 
+# --- MODULO CONSUMO DE REGISTROS ---
+from app.api.api_v1.endpoints import consumo as consumo_router
+app.include_router(consumo_router.router, prefix="/api/consumo", tags=["Consumo y Auditoria"])
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8002)

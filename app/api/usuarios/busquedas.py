@@ -29,14 +29,35 @@ class BusquedaResponse(BaseModel):
 
 # --- ENDPOINTS ---
 
+from fastapi.security import OAuth2PasswordBearer
+from app.core import security
+
+# Fix para evitar bloqueos si el token falla (auto_error=False)
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/api/auth/token", auto_error=False)
+
+async def get_user_silent(
+    token: Optional[str] = Depends(oauth2_scheme_optional),
+    db: Session = Depends(get_db)
+) -> Optional[Usuario]:
+    if not token:
+        return None
+    try:
+        # Reutilizamos la lógica de security pero manejando el error
+        return await security.get_current_user(token, db)
+    except HTTPException:
+        return None
+
 @router.get("/", response_model=List[BusquedaResponse])
-def obtener_busquedas_guardadas(
+async def obtener_busquedas_guardadas(
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user)
+    current_user: Optional[Usuario] = Depends(get_user_silent)
 ):
     """
-    Obtiene todas las búsquedas guardadas del usuario actual.
+    Obtiene todas las búsquedas guardadas. Retorna lista vacía si no hay usuario válido.
     """
+    if not current_user:
+        return []
+        
     return db.query(UsuarioBusqueda).filter(UsuarioBusqueda.usuario_id == current_user.id).order_by(UsuarioBusqueda.fecha_creacion.desc()).all()
 
 @router.post("/", response_model=BusquedaResponse)

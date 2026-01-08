@@ -25,6 +25,8 @@ class ConteoResult(BaseModel):
     nombre_empresa: str
     total_registros: int
     limite_registros: Optional[int] = None
+    bolsa_excedente_total: int = 0
+    recargas_disponibles: int = 0
 # --- FIN: SCHEMA ACTUALIZADO ---
 
 class TiposDocumentoRequest(BaseModel):

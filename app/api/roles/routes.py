@@ -1,11 +1,11 @@
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.services import rol as service
 from app.schemas import permiso as schemas
 from app.models import usuario as models_usuario
-from app.core.security import get_current_user, has_permission
+from app.core.security import get_current_user, has_permission, get_user_permissions
 
 router = APIRouter(prefix="/roles", tags=["Roles y Permisos"])
 
@@ -21,18 +21,40 @@ def read_permisos(
 # --- ROLES ---
 @router.get("/", response_model=List[schemas.Rol])
 def read_roles(
+    empresa_id: Optional[int] = Query(None),
     db: Session = Depends(get_db),
-    current_user: models_usuario.Usuario = Depends(has_permission("empresa:usuarios_roles"))
+    current_user: models_usuario.Usuario = Depends(get_current_user)
 ):
-    """Lista roles globales y roles de la empresa actual."""
-    empresa_id = current_user.empresa_id
-    if not empresa_id:
-        # Si es usuario de soporte o sin empresa, retornamos vacío o solo globales?
-        # Por ahora asumimos uso dentro de empresa.
-        # Retornamos solo globales (empresa_id=None) por seguridad default
-        return service.get_roles_by_empresa(db, None)
+    """
+    Lista roles.
+    - Si es usuario normal: devuelve roles de SU empresa.
+    - Si es usuario soporte (y pasa empresa_id): devuelve roles de ESA empresa.
+    """
+    
+    # 1. Verificar si es usuario soporte
+    is_soporte = any(role.nombre == 'soporte' for role in current_user.roles)
+
+    # 2. Verificar permisos estándar si NO es soporte o si NO está actuando como soporte
+    if not is_soporte:
+        # Check manual de permiso (ya que quitamos el Depends en la firma)
+        user_permissions = get_user_permissions(current_user)
+        if "empresa:usuarios_roles" not in user_permissions:
+             raise HTTPException(status_code=403, detail="Acceso denegado: se requiere el permiso 'empresa:usuarios_roles'")
         
-    return service.get_roles_by_empresa(db, empresa_id)
+        # Usuario normal: SIEMPRE restringido a su propia empresa
+        target_empresa_id = current_user.empresa_id
+    else:
+        # Es soporte:
+        # Si envía empresa_id, usamos ese.
+        # Si no envía, comportamiento default (null o su propia empresa si tuviera)
+        target_empresa_id = empresa_id if empresa_id else current_user.empresa_id
+
+    if not target_empresa_id and not is_soporte:
+         # Caso raro: usuario sin empresa y sin permiso soporte
+         return service.get_roles_by_empresa(db, None)
+
+    return service.get_roles_by_empresa(db, target_empresa_id)
+
 
 @router.post("/", response_model=schemas.Rol)
 def create_rol(

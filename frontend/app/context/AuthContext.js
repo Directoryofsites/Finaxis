@@ -31,20 +31,34 @@ export const AuthProvider = ({ children }) => {
       }
 
       // 1. Establecer estado inicial básico desde el token (para evitar flicker blanco)
+      console.log("--- SONDA AUTH CONTEXT ---");
+      console.log("Token RAW decoded:", decodedUser);
+
       const initialUserData = {
         id: decodedUser.sub,
         email: decodedUser.sub,
         empresaId: decodedUser.empresa_id,
         // Rol básico mientras carga (opcional)
       };
+
+      console.log("Initial User Data mapped:", initialUserData);
+
       setAuthToken(token);
       setUser(initialUserData);
 
       // 2. Fetch del perfil completo (Roles y Permisos) desde backend
       try {
         const response = await apiService.get('/usuarios/me');
-        console.log("Perfil cargado:", response.data);
-        setUser(response.data); // Sobre-escribe con datos completos incluyendo 'roles' -> 'permisos'
+        console.log("Perfil backend Loaded:", response.data);
+
+        // Mapeo explícito para asegurar que empresaId existe en camelCase si el backend manda snake_case
+        const fullProfile = {
+          ...response.data,
+          empresaId: response.data.empresa_id || response.data.empresaId
+        };
+        console.log("Perfil Final SetUser:", fullProfile);
+
+        setUser(fullProfile);
       } catch (fetchError) {
         console.error("Error cargando perfil completo:", fetchError);
         // Si falla el fetch de perfil, podríamos dejar al user básico O desloguear si es crítico.

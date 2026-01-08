@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Finaxis - Módulo de Nómina</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 40px 0;
+            text-align: center;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .section {
+            background: white;
+            margin-bottom: 30px;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .section h2 {
+            color: #28a745;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #20c997;
+        }
+        
+        .section h3 {
+            color: #155724;
+            font-size: 1.4em;
+            margin: 25px 0 15px 0;
+            padding-left: 15px;
+            border-left: 4px solid #20c997;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .feature-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .feature-card h4 {
+            color: #155724;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .feature-list li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        
+        .feature-list li:before {
+            content: "💰";
+            position: absolute;
+            left: 0;
+            font-size: 0.9em;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            border: 1px solid #20c997;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .highlight-box h4 {
+            color: #155724;
+            margin-bottom: 10px;
+        }
+        
+        .warning-box {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .warning-box h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .data-table th {
+            background: #28a745;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .data-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .toc {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .toc h3 {
+            color: #28a745;
+            margin-bottom: 15px;
+            border: none;
+            padding: 0;
+        }
+        
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .toc li {
+            padding: 5px 0;
+        }
+        
+        .toc a {
+            color: #28a745;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .toc a:hover {
+            color: #155724;
+            text-decoration: underline;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #28a745;
+            color: white;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .badge.new {
+            background: #17a2b8;
+        }
+        
+        .badge.important {
+            background: #dc3545;
+        }
+        
+        .badge.advanced {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .salary-card {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .salary-card h4 {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .salary-card .amount {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .salary-card .description {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .calculation-box {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .calculation-box h4 {
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+        
+        .formula {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .section {
+                padding: 20px;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Sistema Finaxis</h1>
+            <p>Documentación del Módulo de Nómina</p>
+        </div>
+
+        <div class="toc">
+            <h3>Índice de Contenidos</h3>
+            <ul>
+                <li><a href="#introduccion">1. Introducción al Módulo</a></li>
+                <li><a href="#tipos-nomina">2. Tipos de Nómina</a></li>
+                <li><a href="#empleados">3. Gestión de Empleados</a></li>
+                <li><a href="#configuracion">4. Configuración Contable</a></li>
+                <li><a href="#liquidacion">5. Liquidación de Nómina</a></li>
+                <li><a href="#calculos">6. Motor de Cálculos</a></li>
+                <li><a href="#reportes">7. Reportes y Desprendibles</a></li>
+                <li><a href="#integracion">8. Integración Contable</a></li>
+            </ul>
+        </div>
+
+        <section id="introduccion" class="section">
+            <h2>1. Introducción al Módulo de Nómina</h2>
+            
+            <p>El módulo de nómina de Finaxis es una solución integral para la gestión de recursos humanos y liquidación de salarios, diseñado específicamente para cumplir con la normativa laboral colombiana. Automatiza todos los procesos desde la gestión de empleados hasta la generación de reportes oficiales.</p>
+            
+            <div class="highlight-box">
+                <h4>Funcionalidades Principales del Módulo</h4>
+                <p>El módulo de nómina incluye 8 componentes especializados que cubren todo el ciclo de gestión de nómina:</p>
+                <ul class="feature-list">
+                    <li>Gestión de tipos de nómina organizacional</li>
+                    <li>Administración completa de empleados</li>
+                    <li>Configuración contable automática</li>
+                    <li>Motor de liquidación con normativa colombiana</li>
+                    <li>Cálculos automáticos de devengados y deducciones</li>
+                    <li>Generación de desprendibles de pago</li>
+                    <li>Reportes ejecutivos y operativos</li>
+                    <li>Integración automática con contabilidad</li>
+                </ul>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Cumplimiento Legal <span class="badge important">Crítico</span></h4>
+                    <p>Cálculos automáticos según normativa laboral colombiana 2025, incluyendo SMMLV, aportes y deducciones.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Integración Contable <span class="badge new">Automatizada</span></h4>
+                    <p>Generación automática de asientos contables con cada liquidación de nómina.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Multi-tipo <span class="badge advanced">Avanzado</span></h4>
+                    <p>Soporte para múltiples tipos de nómina (administrativa, operativa, gerencial) con configuraciones independientes.</p>
+                </div>
+            </div>
+
+            <div class="salary-card">
+                <h4>Parámetros Legales 2025</h4>
+                <div class="amount">$1,423,500</div>
+                <div class="description">Salario Mínimo Mensual Legal Vigente (SMMLV)</div>
+                <div style="margin-top: 10px;">
+                    <strong>Auxilio de Transporte:</strong> $200,000 | <strong>UVT:</strong> $49,799
+                </div>
+            </div>
+        </section>
+
+        <section id="tipos-nomina" class="section">
+            <h2>2. 🏢 Tipos de Nómina</h2>
+            
+            <p>Sistema de clasificación organizacional que permite segmentar empleados por áreas, departamentos o características específicas, facilitando la gestión diferenciada y reportes especializados.</p>
+
+            <h3>Características de los Tipos</h3>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Campo</th>
+                        <th>Descripción</th>
+                        <th>Obligatorio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Nombre</strong></td>
+                        <td>Identificación del tipo de nómina</td>
+                        <td>Sí</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Descripción</strong></td>
+                        <td>Detalle adicional del tipo</td>
+                        <td>No</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Período de Pago</strong></td>
+                        <td>Frecuencia de liquidación (Mensual/Quincenal)</td>
+                        <td>Sí</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Ejemplos de Tipos de Nómina</h3>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Nómina Administrativa</h4>
+                    <ul class="feature-list">
+                        <li>Personal de oficina y administración</li>
+                        <li>Pago mensual</li>
+                        <li>Horarios fijos</li>
+                        <li>Beneficios corporativos</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>Nómina Operativa</h4>
+                    <ul class="feature-list">
+                        <li>Personal de producción y operaciones</li>
+                        <li>Pago quincenal</li>
+                        <li>Horas extras frecuentes</li>
+                        <li>Riesgos laborales ARL</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Nómina Gerencial</h4>
+                    <ul class="feature-list">
+                        <li>Alta gerencia y directivos</li>
+                        <li>Pago mensual</li>
+                        <li>Comisiones variables</li>
+                        <li>Beneficios especiales</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>Nómina por Proyectos</h4>
+                    <ul class="feature-list">
+                        <li>Personal temporal</li>
+                        <li>Contratos específicos</li>
+                        <li>Duración determinada</li>
+                        <li>Liquidación al finalizar</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Funcionalidades</h3>
+            
+            <ul class="feature-list">
+                <li><strong>Crear tipos:</strong> Definición de nuevas categorías organizacionales</li>
+                <li><strong>Configurar períodos:</strong> Establecer frecuencia de pago por tipo</li>
+                <li><strong>Asignar empleados:</strong> Clasificación automática del personal</li>
+                <li><strong>Reportes segmentados:</strong> Análisis por tipo de nómina</li>
+            </ul>
+        </section>
+
+        <section id="empleados" class="section">
+            <h2>3. 👥 Gestión de Empleados</h2>
+            
+            <p>Administración completa del personal de la empresa, incluyendo información personal, contractual y salarial, con integración automática al módulo de terceros para manejo unificado de la información.</p>
+
+            <h3>Información del Empleado</h3>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Datos Personales</h4>
+                    <ul class="feature-list">
+                        <li>Tipo y número de documento</li>
+                        <li>Nombres y apellidos completos</li>
+                        <li>Email y teléfono de contacto</li>
+                        <li>Dirección de residencia</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>Información Contractual</h4>
+                    <ul class="feature-list">
+                        <li>Fecha de ingreso y retiro</li>
+                        <li>Tipo de contrato laboral</li>
+                        <li>Cargo y funciones</li>
+                        <li>Estado del empleado</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Tipos de Contrato</h3>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Tipo de Contrato</th>
+                        <th>Descripción</th>
+                        <th>Características</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Indefinido</strong></td>
+                        <td>Contrato sin fecha de terminación</td>
+                        <td>Estabilidad laboral, prestaciones completas</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Término Fijo</strong></td>
+                        <td>Contrato con duración específica</td>
+                        <td>Fecha de vencimiento, renovable</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Obra o Labor</strong></td>
+                        <td>Contrato para proyecto específico</td>
+                        <td>Termina al completar la obra</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Aprendizaje</strong></td>
+                        <td>Contrato de formación</td>
+                        <td>Apoyo de sostenimiento, no salario</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Prestación de Servicios</strong></td>
+                        <td>Servicios profesionales independientes</td>
+                        <td>Sin subordinación, facturación</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Información Salarial</h3>
+            
+            <div class="calculation-box">
+                <h4>Configuración Salarial</h4>
+                <ul class="feature-list">
+                    <li><strong>Salario Base:</strong> Valor mensual básico del empleado</li>
+                    <li><strong>Auxilio de Transporte:</strong> Aplicable si salario ≤ 2 SMMLV</li>
+                    <li><strong>Nivel de Riesgo ARL:</strong> Clasificación de 1 a 5 según actividad</li>
+                    <li><strong>Información Bancaria:</strong> Banco y número de cuenta para pagos</li>
+                </ul>
+            </div>
+
+            <h3>Estados del Empleado</h3>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Activo</h4>
+                    <p>Empleado en funciones normales, participa en liquidaciones de nómina regulares.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Inactivo</h4>
+                    <p>Empleado retirado o suspendido, no participa en liquidaciones actuales.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Licencia</h4>
+                    <p>Empleado en licencia temporal, puede tener liquidaciones especiales.</p>
+                </div>
+            </div>
+
+            <div class="highlight-box">
+                <h4>Integración con Terceros</h4>
+                <p>Al crear un empleado, el sistema automáticamente crea o actualiza el registro en el módulo de terceros, marcándolo como empleado y asegurando la consistencia de datos en todo el sistema.</p>
+            </div>
+        </section>
+
+        <section id="configuracion" class="section">
+            <h2>4. ⚙️ Configuración Contable</h2>
+            
+            <p>Sistema de configuración que define las cuentas contables utilizadas para la contabilización automática de la nómina, permitiendo configuraciones globales o específicas por tipo de nómina.</p>
+
+            <h3>Cuentas de Devengados (Gastos)</h3>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Concepto</th>
+                        <th>Cuenta PUC Sugerida</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Sueldos</strong></td>
+                        <td>510506</td>
+                        <td>Salarios básicos del personal</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Auxilio de Transporte</strong></td>
+                        <td>510527</td>
+                        <td>Subsidio de transporte legal</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Horas Extras</strong></td>
+                        <td>510555</td>
+                        <td>Recargos por trabajo adicional</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Comisiones</strong></td>
+                        <td>510518</td>
+                        <td>Comisiones por ventas o gestión</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Otros Devengados</strong></td>
+                        <td>510xxx</td>
+                        <td>Bonificaciones y otros conceptos</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Cuentas de Deducciones (Pasivos)</h3>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Concepto</th>
+                        <th>Cuenta PUC Sugerida</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Salarios por Pagar</strong></td>
+                        <td>250501</td>
+                        <td>Neto a pagar al empleado</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Aportes Salud</strong></td>
+                        <td>237005</td>
+                        <td>4% empleado + 8.5% empleador</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Aportes Pensión</strong></td>
+                        <td>238030</td>
+                        <td>4% empleado + 12% empleador</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Fondo Solidaridad</strong></td>
+                        <td>238030</td>
+                        <td>1% para salarios > 4 SMMLV</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Retención en la Fuente</strong></td>
+                        <td>236505</td>
+                        <td>Retención según tabla DIAN</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Configuración por Tipo de Nómina</h3>
+            
+            <div class="highlight-box">
+                <h4>Flexibilidad de Configuración</h4>
+                <p>El sistema permite configuraciones específicas por tipo de nómina o una configuración global. La prioridad es: Configuración Específica > Configuración Global.</p>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Configuración Global</h4>
+                    <ul class="feature-list">
+                        <li>Aplica a todos los tipos de nómina</li>
+                        <li>Configuración base del sistema</li>
+                        <li>Fácil mantenimiento</li>
+                        <li>Ideal para empresas pequeñas</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>Configuración Específica</h4>
+                    <ul class="feature-list">
+                        <li>Por tipo de nómina individual</li>
+                        <li>Cuentas diferenciadas por área</li>
+                        <li>Mayor control contable</li>
+                        <li>Ideal para empresas grandes</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="liquidacion" class="section">
+            <h2>5. 💼 Liquidación de Nómina</h2>
+            
+            <p>Proceso central del módulo que permite liquidar empleados individualmente o en lotes, con cálculos automáticos según la normativa laboral colombiana y generación inmediata de asientos contables.</p>
+
+            <h3>Proceso de Liquidación</h3>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>1. Selección de Empleado</h4>
+                    <ul class="feature-list">
+                        <li>Filtro por tipo de nómina</li>
+                        <li>Lista de empleados activos</li>
+                        <li>Información salarial visible</li>
+                        <li>Estado contractual actual</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>2. Parámetros de Liquidación</h4>
+                    <ul class="feature-list">
+                        <li>Período (año y mes)</li>
+                        <li>Días trabajados</li>
+                        <li>Horas extras y recargos</li>
+                        <li>Comisiones y bonificaciones</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>3. Vista Previa</h4>
+                    <ul class="feature-list">
+                        <li>Cálculo automático en tiempo real</li>
+                        <li>Desglose de devengados</li>
+                        <li>Detalle de deducciones</li>
+                        <li>Neto a pagar final</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>4. Confirmación y Guardado</h4>
+                    <ul class="feature-list">
+                        <li>Validación de datos</li>
+                        <li>Generación de asiento contable</li>
+                        <li>Creación de desprendible</li>
+                        <li>Actualización de historial</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Parámetros de Entrada</h3>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Parámetro</th>
+                        <th>Descripción</th>
+                        <th>Valor por Defecto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Días Trabajados</strong></td>
+                        <td>Días laborados en el período</td>
+                        <td>30 (mes completo)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Horas Extras</strong></td>
+                        <td>Valor total de horas extras y recargos</td>
+                        <td>$0</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Comisiones</strong></td>
+                        <td>Comisiones por ventas o gestión</td>
+                        <td>$0</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Otros Devengados</strong></td>
+                        <td>Bonificaciones y conceptos adicionales</td>
+                        <td>$0</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Otras Deducciones</strong></td>
+                        <td>Descuentos adicionales (préstamos, etc.)</td>
+                        <td>$0</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="warning-box">
+                <h4>Control de Duplicados</h4>
+                <p>El sistema previene liquidaciones duplicadas para el mismo empleado en el mismo período. Para reliquidar, debe eliminarse primero la liquidación anterior.</p>
+            </div>
+        </section>
+
+        <section id="calculos" class="section">
+            <h2>6. 🧮 Motor de Cálculos</h2>
+            
+            <p>Motor automatizado que realiza todos los cálculos de nómina según la normativa laboral colombiana vigente, incluyendo devengados, deducciones y aportes parafiscales.</p>
+
+            <h3>Cálculo de Devengados</h3>
+            
+            <div class="calculation-box">
+                <h4>1. Salario Básico Proporcional</h4>
+                <div class="formula">
+                    Sueldo Devengado = (Salario Base / 30) × Días Trabajados
+                </div>
+                <p>El salario se calcula proporcionalmente según los días efectivamente trabajados.</p>
+            </div>
+
+            <div class="calculation-box">
+                <h4>2. Auxilio de Transporte</h4>
+                <div class="formula">
+                    Auxilio = (AUX_TRANSPORTE_2025 / 30) × Días Trabajados
+                </div>
+                <p><strong>Condiciones:</strong> Solo si salario ≤ 2 SMMLV y empleado tiene derecho configurado.</p>
+                <p><strong>Valor 2025:</strong> $200,000 mensuales</p>
+            </div>
+
+            <h3>Cálculo de Deducciones</h3>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Base de Seguridad Social</h4>
+                    <div class="formula">
+                        Base SS = Sueldo + Horas Extras + Comisiones
+                    </div>
+                    <p>El auxilio de transporte NO hace parte de la base para aportes de salud y pensión.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Aportes del Empleado</h4>
+                    <ul class="feature-list">
+                        <li><strong>Salud:</strong> 4% de la base SS</li>
+                        <li><strong>Pensión:</strong> 4% de la base SS</li>
+                        <li><strong>FSP:</strong> 1% si base > 4 SMMLV</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Parámetros Legales 2025</h3>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Concepto</th>
+                        <th>Valor 2025</th>
+                        <th>Aplicación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>SMMLV</strong></td>
+                        <td>$1,423,500</td>
+                        <td>Salario mínimo legal</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Auxilio de Transporte</strong></td>
+                        <td>$200,000</td>
+                        <td>Para salarios ≤ 2 SMMLV</td>
+                    </tr>
+                    <tr>
+                        <td><strong>UVT</strong></td>
+                        <td>$49,799</td>
+                        <td>Unidad de Valor Tributario</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Salud Empleado</strong></td>
+                        <td>4%</td>
+                        <td>Sobre base salarial</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Pensión Empleado</strong></td>
+                        <td>4%</td>
+                        <td>Sobre base salarial</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Fondo Solidaridad</strong></td>
+                        <td>1%</td>
+                        <td>Para salarios > 4 SMMLV</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Ejemplo de Cálculo</h3>
+            
+            <div class="salary-card">
+                <h4>Empleado: Juan Pérez - Salario: $2,500,000</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+                    <div>
+                        <strong>DEVENGADOS:</strong><br>
+                        • Sueldo básico: $2,500,000<br>
+                        • Auxilio transporte: $0 (>2 SMMLV)<br>
+                        • Horas extras: $150,000<br>
+                        • <strong>Total devengado: $2,650,000</strong>
+                    </div>
+                    <div>
+                        <strong>DEDUCCIONES:</strong><br>
+                        • Salud (4%): $106,000<br>
+                        • Pensión (4%): $106,000<br>
+                        • FSP: $0 (<4 SMMLV)<br>
+                        • <strong>Total deducciones: $212,000</strong>
+                    </div>
+                </div>
+                <div class="amount" style="margin-top: 15px;">Neto a Pagar: $2,438,000</div>
+            </div>
+        </section>
+
+        <section id="reportes" class="section">
+            <h2>7. 📊 Reportes y Desprendibles</h2>
+            
+            <p>Sistema completo de reportes que incluye desprendibles individuales, resúmenes de nómina y listados de empleados, todos disponibles en formato PDF para impresión y archivo.</p>
+
+            <h3>Tipos de Reportes</h3>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Desprendible Individual</h4>
+                    <ul class="feature-list">
+                        <li>Información completa del empleado</li>
+                        <li>Desglose de devengados y deducciones</li>
+                        <li>Período de liquidación</li>
+                        <li>Neto a pagar destacado</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>Resumen de Nómina</h4>
+                    <ul class="feature-list">
+                        <li>Consolidado por período</li>
+                        <li>Totales por concepto</li>
+                        <li>Filtro por tipo de nómina</li>
+                        <li>Análisis comparativo</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Lista de Empleados</h4>
+                    <ul class="feature-list">
+                        <li>Información contractual</li>
+                        <li>Datos salariales</li>
+                        <li>Estado actual</li>
+                        <li>Filtros por tipo de nómina</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>Historial de Liquidaciones</h4>
+                    <ul class="feature-list">
+                        <li>Registro histórico completo</li>
+                        <li>Filtros por empleado y período</li>
+                        <li>Enlaces a documentos contables</li>
+                        <li>Estado de cada liquidación</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Características de los Reportes</h3>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Característica</th>
+                        <th>Descripción</th>
+                        <th>Beneficio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Formato PDF</strong></td>
+                        <td>Generación automática en PDF</td>
+                        <td>Fácil impresión y archivo</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Descarga Directa</strong></td>
+                        <td>Descarga inmediata desde el navegador</td>
+                        <td>Acceso rápido a documentos</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Nombres Automáticos</strong></td>
+                        <td>Nombres de archivo descriptivos</td>
+                        <td>Organización automática</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Filtros Avanzados</strong></td>
+                        <td>Múltiples criterios de filtrado</td>
+                        <td>Reportes específicos</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Historial y Trazabilidad</h3>
+            
+            <div class="highlight-box">
+                <h4>Control de Liquidaciones</h4>
+                <p>El sistema mantiene un historial completo de todas las liquidaciones realizadas, incluyendo enlaces directos a los documentos contables generados automáticamente.</p>
+            </div>
+
+            <ul class="feature-list">
+                <li><strong>Trazabilidad completa:</strong> Cada liquidación se vincula con su asiento contable</li>
+                <li><strong>Eliminación controlada:</strong> Al eliminar una liquidación se anula automáticamente el asiento</li>
+                <li><strong>Auditoría integrada:</strong> Registro de todas las operaciones realizadas</li>
+                <li><strong>Consulta histórica:</strong> Acceso a liquidaciones de períodos anteriores</li>
+            </ul>
+        </section>
+
+        <section id="integracion" class="section">
+            <h2>8. 🔗 Integración Contable</h2>
+            
+            <p>Sistema de integración automática que genera asientos contables por cada liquidación de nómina, asegurando la consistencia entre la gestión de recursos humanos y la contabilidad de la empresa.</p>
+
+            <h3>Proceso de Contabilización</h3>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>1. Configuración de Cuentas</h4>
+                    <ul class="feature-list">
+                        <li>Mapeo de conceptos a cuentas PUC</li>
+                        <li>Configuración por tipo de nómina</li>
+                        <li>Validación de plan de cuentas</li>
+                        <li>Cuentas por defecto del sistema</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>2. Generación Automática</h4>
+                    <ul class="feature-list">
+                        <li>Asiento por cada liquidación</li>
+                        <li>Numeración consecutiva automática</li>
+                        <li>Fecha de la liquidación</li>
+                        <li>Referencia al empleado</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Estructura del Asiento Contable</h3>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Concepto</th>
+                        <th>Cuenta</th>
+                        <th>Débito</th>
+                        <th>Crédito</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Sueldo Básico</td>
+                        <td>510506 - Sueldos</td>
+                        <td>$2,500,000</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>Horas Extras</td>
+                        <td>510555 - Horas Extras</td>
+                        <td>$150,000</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>Aporte Salud</td>
+                        <td>237005 - Aportes Salud</td>
+                        <td>-</td>
+                        <td>$106,000</td>
+                    </tr>
+                    <tr>
+                        <td>Aporte Pensión</td>
+                        <td>238030 - Aportes Pensión</td>
+                        <td>-</td>
+                        <td>$106,000</td>
+                    </tr>
+                    <tr>
+                        <td>Salarios por Pagar</td>
+                        <td>250501 - Salarios por Pagar</td>
+                        <td>-</td>
+                        <td>$2,438,000</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Características de la Integración</h3>
+            
+            <div class="highlight-box">
+                <h4>Consistencia Automática</h4>
+                <p>Cada liquidación genera automáticamente su asiento contable correspondiente, manteniendo la integridad entre los módulos de nómina y contabilidad sin intervención manual.</p>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Ventajas de la Integración</h4>
+                    <ul class="feature-list">
+                        <li>Eliminación de errores manuales</li>
+                        <li>Consistencia de datos garantizada</li>
+                        <li>Ahorro de tiempo operativo</li>
+                        <li>Trazabilidad completa</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>Control de Calidad</h4>
+                    <ul class="feature-list">
+                        <li>Validación de partida doble</li>
+                        <li>Verificación de cuentas activas</li>
+                        <li>Control de períodos cerrados</li>
+                        <li>Auditoría automática</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Reversión y Control</h3>
+            
+            <div class="warning-box">
+                <h4>Eliminación Segura</h4>
+                <p>Al eliminar una liquidación de nómina, el sistema automáticamente anula el asiento contable correspondiente, enviándolo a la papelera para mantener la trazabilidad y evitar inconsistencias.</p>
+            </div>
+
+            <ul class="feature-list">
+                <li><strong>Vínculo directo:</strong> Cada liquidación se vincula con su documento contable</li>
+                <li><strong>Reversión automática:</strong> Eliminación segura con anulación contable</li>
+                <li><strong>Auditoría completa:</strong> Registro de todas las operaciones</li>
+                <li><strong>Integridad referencial:</strong> Consistencia entre módulos garantizada</li>
+            </ul>
+        </section>
+
+        <div class="section" style="text-align: center; background: linear-gradient(135deg, #28a745, #20c997); color: white;">
+            <h2>Sistema Finaxis - Módulo de Nómina</h2>
+            <p>Documentación técnica para usuarios finales y clientes</p>
+            <p><strong>Versión:</strong> 2024.1 | <strong>Fecha:</strong> Enero 2025</p>
+            <p><em>Esta documentación describe las 8 funcionalidades principales del módulo de nómina desarrollado en el sistema Finaxis.</em></p>
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.3);">
+                <h3>Funcionalidades Documentadas</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 20px; text-align: left;">
+                    <div>
+                        <strong>Gestión Organizacional:</strong>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>Tipos de Nómina</li>
+                            <li>Gestión de Empleados</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong>Configuración y Cálculos:</strong>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>Configuración Contable</li>
+                            <li>Motor de Cálculos</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong>Operación y Reportes:</strong>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>Liquidación de Nómina</li>
+                            <li>Reportes y Desprendibles</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong>Integración:</strong>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>Integración Contable</li>
+                            <li>Trazabilidad Completa</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

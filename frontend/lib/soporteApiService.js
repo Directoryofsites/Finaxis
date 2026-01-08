@@ -117,8 +117,9 @@ export const updateSoporteUserPassword = (userId, passwordData) => {
   return soporteApiService.put(`/usuarios/soporte/${userId}/password`, passwordData);
 };
 
-export const getRoles = () => {
-  return soporteApiService.get('/roles');
+export const getRoles = (empresaId = null) => {
+  const params = empresaId ? { empresa_id: empresaId } : {};
+  return soporteApiService.get('/roles', { params });
 };
 
 // --- FUNCIÓN CORREGIDA (Usaba 'soporteApi' en vez de 'soporteApiService') ---
@@ -138,3 +139,19 @@ export const getConsumoEmpresa = (empresaId, mes, anio) => {
   });
 };
 
+
+export const getPaquetesRecarga = () => {
+  return soporteApiService.get('/utilidades/paquetes-recarga');
+};
+
+export const createPaqueteRecarga = (data) => {
+  return soporteApiService.post('/utilidades/paquetes-recarga', data);
+};
+
+export const updatePaqueteRecarga = (id, data) => {
+  return soporteApiService.put(`/utilidades/paquetes-recarga/${id}`, data);
+};
+
+export const deletePaqueteRecarga = (id) => {
+  return soporteApiService.delete(`/utilidades/paquetes-recarga/${id}`);
+};

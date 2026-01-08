@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.services import usuario as services_usuario
 from app.schemas import usuario as schemas_usuario
-from app.core.security import get_current_user, has_permission
+from app.core.security import get_current_user, has_permission, get_user_permissions
 from app.models import usuario as models_usuario
 
 router = APIRouter()
@@ -69,23 +69,33 @@ def update_user_details(
     usuario_id: int,
     user_update: schemas_usuario.UserUpdate,
     db: Session = Depends(get_db),
-    current_user: models_usuario.Usuario = Depends(has_permission("empresa:usuarios_roles"))
+    current_user: models_usuario.Usuario = Depends(get_current_user)
 ):
     """
     Actualiza usuario.
     Permitido si:
-    1. Soy Soporte.
-    2. Soy Admin de empresa Y el usuario destino es de MI empresa.
+    1. Soy Soporte (role 'soporte').
+    2. Soy Admin de empresa (permiso 'empresa:usuarios_roles') Y el usuario destino es de MI empresa.
     """
+    # 1. Verificar si es usuario soporte
+    is_soporte = any(role.nombre == 'soporte' for role in current_user.roles)
+
+    # 2. Verificar permisos estándar si NO es soporte
+    if not is_soporte:
+        user_permissions = get_user_permissions(current_user)
+        if "empresa:usuarios_roles" not in user_permissions:
+             raise HTTPException(status_code=403, detail="Acceso denegado: se requiere el permiso 'empresa:usuarios_roles'")
+
     user_to_update = services_usuario.get_user_by_id(db, usuario_id=usuario_id)
     if not user_to_update:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
     
-    is_soporte = current_user.empresa_id is None
+    # Validacion de scope
     is_same_company = user_to_update.empresa_id == current_user.empresa_id
     
+    # Si NO es soporte y NO es de la misma empresa -> PROHIBIDO
     if not is_soporte and not is_same_company:
-         raise HTTPException(status_code=403, detail="No tiene permiso para editar este usuario.")
+         raise HTTPException(status_code=403, detail="No tiene permiso para editar este usuario (pertenece a otra empresa).")
 
     return services_usuario.update_user(db=db, user=user_to_update, user_update=user_update)
 
@@ -93,17 +103,25 @@ def update_user_details(
 def delete_single_user(
     usuario_id: int,
     db: Session = Depends(get_db),
-    current_user: models_usuario.Usuario = Depends(has_permission("empresa:usuarios_roles"))
+    current_user: models_usuario.Usuario = Depends(get_current_user)
 ):
     """
     Elimina usuario.
     Mismas reglas: Soporte o Misma Empresa.
     """
+    # 1. Verificar si es usuario soporte
+    is_soporte = any(role.nombre == 'soporte' for role in current_user.roles)
+
+    # 2. Verificar permisos estándar si NO es soporte
+    if not is_soporte:
+        user_permissions = get_user_permissions(current_user)
+        if "empresa:usuarios_roles" not in user_permissions:
+             raise HTTPException(status_code=403, detail="Acceso denegado: se requiere el permiso 'empresa:usuarios_roles'")
+
     user_to_delete = services_usuario.get_user_by_id(db, usuario_id=usuario_id)
     if not user_to_delete:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
         
-    is_soporte = current_user.empresa_id is None
     is_same_company = user_to_delete.empresa_id == current_user.empresa_id
     
     if not is_soporte and not is_same_company:

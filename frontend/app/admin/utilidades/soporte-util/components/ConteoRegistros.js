@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { getConteoRegistros, updateLimiteRegistros, setCupoAdicional, getConsumoEmpresa } from '../../../../../lib/soporteApiService';
 import { FaCalendarAlt, FaSave, FaSync, FaChartBar, FaBook } from 'react-icons/fa';
+import GestionPaquetes from './GestionPaquetes';
 
 export default function ConteoRegistros() {
     const [conteoData, setConteoData] = useState([]);
@@ -9,6 +10,7 @@ export default function ConteoRegistros() {
 
     // Modal
     const [modalOpen, setModalOpen] = useState(false);
+    const [gestionPaquetesOpen, setGestionPaquetesOpen] = useState(false);
     const [selectedEmpresa, setSelectedEmpresa] = useState(null);
 
     // Datos Modal
@@ -86,7 +88,7 @@ export default function ConteoRegistros() {
             <div className="flex justify-between items-center mb-6 border-b pb-4">
                 <div>
                     <h2 className="text-xl font-bold text-gray-800">Control de Límites por Empresa</h2>
-                    <p className="text-sm text-gray-500">Gestión de planes mensuales y excepciones temporales.</p>
+                    <p className="text-sm text-gray-500">Gestión de planes mensuales, bolsas y excepciones.</p>
                 </div>
                 <div className="flex gap-2">
                     <button
@@ -97,8 +99,15 @@ export default function ConteoRegistros() {
                         <FaBook /> Manual
                     </button>
                     <button onClick={fetchData} className="btn btn-sm btn-ghost"><FaSync /> Actualizar Lista</button>
+                    <button onClick={() => setGestionPaquetesOpen(true)} className="btn btn-sm btn-outline btn-primary gap-2">
+                        <FaChartBar /> Configurar Precios
+                    </button>
                 </div>
             </div>
+
+
+            {/* INCORPORAMOS GESTIÓN DE PAQUETES COMO MODAL */}
+            <GestionPaquetes isOpen={gestionPaquetesOpen} onClose={() => setGestionPaquetesOpen(false)} />
 
             <div className="overflow-x-auto">
                 <table className="table table-sm w-full">
@@ -107,6 +116,8 @@ export default function ConteoRegistros() {
                             <th>Empresa</th>
                             <th className="text-center">Consumo (Mes Actual)</th>
                             <th className="text-center">Plan Base (Defecto)</th>
+                            <th className="text-center">Bolsa Disp.</th>
+                            <th className="text-center">Recargas Disp.</th>
                             <th className="text-center">Acciones</th>
                         </tr>
                     </thead>
@@ -127,6 +138,8 @@ export default function ConteoRegistros() {
                                             }}
                                         />
                                     </td>
+                                    <td className="text-center font-mono text-gray-600">{row.bolsa_excedente_total > 0 ? <span className="text-green-600 font-bold">+{row.bolsa_excedente_total}</span> : 0}</td>
+                                    <td className="text-center font-mono text-gray-600">{row.recargas_disponibles > 0 ? <span className="text-indigo-600 font-bold">+{row.recargas_disponibles}</span> : 0}</td>
                                     <td className="text-center">
                                         <button onClick={() => handleOpenGestion(row)} className="btn btn-sm btn-outline btn-indigo gap-2">
                                             <FaCalendarAlt /> Gestionar Meses

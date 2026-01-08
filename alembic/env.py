@@ -58,8 +58,9 @@ from app.models import (
     ActivoFijo,
     ActivoNovedad
 )
-from app.models.usuario_busqueda import UsuarioBusqueda # <--- IMPORTAR NUEVO MODELO
+from app.models.usuario_busqueda import UsuarioBusqueda 
 from app.models.nomina import Empleado, Nomina, DetalleNomina, ConfiguracionNomina
+from app.models.consumo_registros import ControlPlanMensual, BolsaExcedente, RecargaAdicional, HistorialConsumo
 # --- FIN DE LA CIRUGÍA ARQUITECTÓNICA ---
 
 

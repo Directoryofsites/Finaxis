@@ -37,7 +37,7 @@ def read_tipos_documento(
     skip: int = 0, 
     limit: int = 100, 
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(has_permission("contabilidad:configuracion_tipos_doc"))
+    current_user: models_usuario = Depends(get_current_user)
 ):
     """
     [FIX] Obtiene la lista COMPLETA de tipos de documento.
@@ -52,8 +52,7 @@ def read_tipos_documento(
 def read_tipo_documento(
     tipo_documento_id: int, 
     db: Session = Depends(get_db),
-    # --- TIPO DE DATO CORREGIDO ---
-    current_user: models_usuario = Depends(has_permission("contabilidad:configuracion_tipos_doc"))
+    current_user: models_usuario = Depends(get_current_user)
 ):
     db_tipo_doc = service.get_tipo_documento(db, tipo_documento_id=tipo_documento_id)
     if not db_tipo_doc:

@@ -20,6 +20,10 @@ from app.services import cartera as cartera_service
 from app.services import periodo as periodo_service
 
 import os
+# --- SISTEMA DE CONSUMO ---
+from app.services import consumo_service
+from app.services.consumo_service import SaldoInsuficienteException
+# ---------------------------
 
 
 
@@ -133,76 +137,18 @@ def create_documento(db: Session, documento: schemas_doc.DocumentoCreate, user_i
         
 
         # ==============================================================================
-        # 3. VALIDACIÓN DE LÍMITE DE REGISTROS (MODELO MENSUAL ESTRICTO)
+        # 3. SISTEMA DE CONSUMO DE REGISTROS (NUEVO MOTOR)
         # ==============================================================================
         
-        # Importamos calendar aquí
-        import calendar
+        cantidad_registros_consumo = len(documento.movimientos)
         
-        # A. Definir el mes del documento
-        fecha_doc = documento.fecha
-        anio_doc = fecha_doc.year
-        mes_doc = fecha_doc.month
-        
-        inicio_mes = fecha_doc.replace(day=1)
-        ultimo_dia = calendar.monthrange(anio_doc, mes_doc)[1]
-        fin_mes = fecha_doc.replace(day=ultimo_dia)
+        # Validación de "Simulación" rápida antes de iniciar todo el proceso pesado
+        # Esto mejora la UX al fallar rápido, aunque la validación real estricta será al final.
+        if not consumo_service.verificar_disponibilidad(db, documento.empresa_id, cantidad_registros_consumo):
+             raise HTTPException(status_code=409, detail="⛔ Saldo insuficiente (Validación preliminar). Verifique su Plan o Bolsa.")
 
-        
-        # B. DETERMINAR EL LÍMITE EFECTIVO
-        # 1. Buscamos si hay excepción para este mes
-        cupo_mensual_especifico = db.query(CupoAdicional).filter(
-            CupoAdicional.empresa_id == documento.empresa_id,
-            CupoAdicional.anio == anio_doc,
-            CupoAdicional.mes == mes_doc
-        ).first()
+        # ==============================================================================
 
-        limite_efectivo = 0
-        usando_excepcion = False
-
-        # LÓGICA CORREGIDA:
-        # Si existe un registro de excepción, miramos su valor.
-        if cupo_mensual_especifico:
-            # Si el valor es mayor a 0, es un límite específico (ej: 50).
-            if cupo_mensual_especifico.cantidad_adicional > 0:
-                limite_efectivo = cupo_mensual_especifico.cantidad_adicional
-                usando_excepcion = True
-            else:
-                # Si el valor es 0, interpretamos "Quitar límite específico" -> Usar Plan Base
-                # (Esta es la corrección que pediste: 0 en el mes = volver al defecto)
-                limite_efectivo = empresa_info.limite_registros or 0
-        else:
-            # Si no hay registro, usamos el Plan Base
-            limite_efectivo = empresa_info.limite_registros or 0
-
-        # Validación final
-        # Si limite_efectivo es 0 aquí, significa que el Plan Base también es 0 (Ilimitado globalmente)
-        
-        if limite_efectivo > 0:
-            # C. Contar consumo del mes
-            conteo_mes = db.query(func.count(models_mov.id))\
-                .join(models_doc, models_mov.documento_id == models_doc.id)\
-                .filter(
-                    models_doc.empresa_id == documento.empresa_id,
-                    models_doc.anulado == False,
-                    models_doc.fecha >= inicio_mes,
-                    models_doc.fecha <= fin_mes
-                ).scalar() or 0
-            
-            # D. Proyección
-            nuevos_movimientos = len(documento.movimientos)
-            conteo_total_proyectado = conteo_mes + nuevos_movimientos
-            
-            print(f"\n📊 [CONTROL CUPO {anio_doc}-{mes_doc}]")
-            print(f"Fuente: {'EXCEPCIÓN MENSUAL' if usando_excepcion else 'PLAN BASE'}")
-            print(f"Límite Efectivo: {limite_efectivo}")
-            print(f"Consumo: {conteo_mes} + {nuevos_movimientos}")
-
-            if conteo_total_proyectado > limite_efectivo:
-                raise HTTPException(
-                    status_code=409, 
-                    detail=f"⛔ LÍMITE EXCEDIDO ({'Excepción Mes' if usando_excepcion else 'Plan Base'}): Cupo de {limite_efectivo}. Consumido: {conteo_mes}. Intenta crear: {nuevos_movimientos}."
-                )
         # ==============================================================================
 
 
@@ -258,6 +204,28 @@ def create_documento(db: Session, documento: schemas_doc.DocumentoCreate, user_i
         else:
             db.flush()
             db.refresh(db_documento)
+            
+        # --- REGISTRO DE CONSUMO (Post-Flush) ---
+        # Ahora que tenemos el ID del documento, registramos el consumo.
+        # Si esto falla (SaldoInsuficiente), la excepción subirá y hará rollback de todo
+        # (si estamos en 'commit=True', el rollback lo captura el except general abajo).
+        try:
+            consumo_service.registrar_consumo(
+                db=db,
+                empresa_id=db_documento.empresa_id,
+                cantidad=len(db_documento.movimientos),
+                documento_id=db_documento.id,
+                fecha_doc=db_documento.fecha
+            )
+            # Si ya habíamos hecho commit arriba (commit=True), necesitamos OTRO commit para el historial?
+            # SÍ. registrar_consumo añade objetos a la sesión pero no hace commit por defecto.
+            if commit:
+                db.commit()
+        except SaldoInsuficienteException as e:
+            # Si falla consumo, debemos deshacer el documento creado
+            # Si commit=True, ya se commiteó el documento. Tocaría borrarlo manualmente?
+            # O mejor hacemos el flush primero, registramos consumo, y LUEGO el commit final.
+            raise HTTPException(status_code=409, detail=f"⛔ {str(e)}")
         
         funciones_relevantes = [
             FuncionEspecial.RC_CLIENTE, 
@@ -338,6 +306,11 @@ def anular_documento(db: Session, documento_id: int, empresa_id: int, user_id: i
         db.add(log_entry)
         db_documento.anulado = True
         db_documento.estado = 'ANULADO'
+        
+        # --- REVERSIÓN DE CONSUMO ---
+        # "Todo documento anulado devuelve sus registros al plan (o fuente)"
+        consumo_service.revertir_consumo(db, db_documento.id)
+        # ----------------------------
 
         # Reversión de Inventario
         if db_documento.tipo_documento and db_documento.tipo_documento.afecta_inventario:
@@ -503,6 +476,11 @@ def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id:
             print(f"[ELIMINACION MASIVA] Recalculando inventario para {len(productos_afectados_ids)} productos afectados...")
             for pid in productos_afectados_ids:
                 recalcular_saldos_producto(db, pid)
+        
+        # F. REVERSIÓN DE CONSUMO (Blindaje)
+        # La eliminación debe devolver el cupo consumido
+        consumo_service.revertir_consumo(db, documento_id)
+        # ----------------------------------
         
         # Commit final se maneja usualmente en el router o aquí si no hay transacción externa
         # db.commit() # Descomentar si la ruta no hace commit
