@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Finaxis - Módulo de Activos Fijos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #8b5a3c, #d4a574);
+            color: white;
+            padding: 40px 0;
+            text-align: center;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .section {
+            background: white;
+            margin-bottom: 30px;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .section h2 {
+            color: #8b5a3c;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #d4a574;
+        }
+        
+        .section h3 {
+            color: #6d4c41;
+            font-size: 1.4em;
+            margin: 25px 0 15px 0;
+            padding-left: 15px;
+            border-left: 4px solid #d4a574;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .feature-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #8b5a3c;
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .feature-card h4 {
+            color: #6d4c41;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .feature-list li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        
+        .feature-list li:before {
+            content: "🏭";
+            position: absolute;
+            left: 0;
+            font-size: 0.9em;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(135deg, #f3e5ab, #e8d5b7);
+            border: 1px solid #d4a574;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .highlight-box h4 {
+            color: #6d4c41;
+            margin-bottom: 10px;
+        }
+        
+        .warning-box {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .warning-box h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .data-table th {
+            background: #8b5a3c;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .data-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .toc {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .toc h3 {
+            color: #8b5a3c;
+            margin-bottom: 15px;
+            border: none;
+            padding: 0;
+        }
+        
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .toc li {
+            padding: 5px 0;
+        }
+        
+        .toc a {
+            color: #8b5a3c;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .toc a:hover {
+            color: #6d4c41;
+            text-decoration: underline;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #8b5a3c;
+            color: white;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .badge.new {
+            background: #17a2b8;
+        }
+        
+        .badge.important {
+            background: #dc3545;
+        }
+        
+        .badge.advanced {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .asset-card {
+            background: linear-gradient(135deg, #8b5a3c, #d4a574);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .asset-card h4 {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .asset-card .value {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .asset-card .description {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .calculation-box {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .calculation-box h4 {
+            color: #8b5a3c;
+            margin-bottom: 15px;
+        }
+        
+        .formula {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+        
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+        
+        .status-maintenance {
+            background: #fff3cd;
+            color: #856404;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+        
+        .status-retired {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .section {
+                padding: 20px;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Sistema Finaxis</h1>
+            <p>Documentación del Módulo de Activos Fijos</p>
+        </div>
+
+        <div class="toc">
+            <h3>Índice de Contenidos</h3>
+            <ul>
+                <li><a href="#introduccion">1. Introducción al Módulo</a></li>
+                <li><a href="#categorias">2. Categorías de Activos</a></li>
+                <li><a href="#gestion-activos">3. Gestión de Activos</a></li>
+                <li><a href="#depreciacion">4. Motor de Depreciación</a></li>
+                <li><a href="#novedades">5. Control de Novedades</a></li>
+                <li><a href="#reportes">6. Reportes y Documentos</a></li>
+                <li><a href="#integracion">7. Integración Contable</a></li>
+                <li><a href="#auditoria">8. Auditoría y Control</a></li>
+            </ul>
+        </div>
+
+        <section id="introduccion" class="section">
+            <h2>1. Introducción al Módulo de Activos Fijos</h2>
+            
+            <p>El módulo de activos fijos de Finaxis es una solución integral para la gestión, control y depreciación de los bienes de capital de la empresa. Automatiza todos los procesos desde el registro inicial hasta la generación de reportes oficiales y cálculos de depreciación según normativas NIIF y fiscales.</p>
+            
+            <div class="highlight-box">
+                <h4>Funcionalidades Principales del Módulo</h4>
+                <p>El módulo de activos fijos incluye 8 componentes especializados que cubren todo el ciclo de vida de los activos:</p>
+                <ul class="feature-list">
+                    <li>Gestión de categorías con configuración contable</li>
+                    <li>Registro y administración completa de activos</li>
+                    <li>Motor de depreciación automática multi-método</li>
+                    <li>Control de novedades y trazabilidad completa</li>
+                    <li>Reportes especializados en PDF</li>
+                    <li>Integración automática con contabilidad</li>
+                    <li>Auditoría y control de cambios</li>
+                    <li>Cumplimiento normativo NIIF y fiscal</li>
+                </ul>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Cumplimiento Normativo <span class="badge important">Crítico</span></h4>
+                    <p>Cálculos de depreciación según NIIF y normativa fiscal colombiana con múltiples métodos.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Integración Contable <span class="badge new">Automatizada</span></h4>
+                    <p>Generación automática de asientos contables por depreciación y movimientos de activos.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Control Total <span class="badge advanced">Avanzado</span></h4>
+                    <p>Trazabilidad completa desde adquisición hasta baja definitiva con historial de novedades.</p>
+                </div>
+            </div>
+
+            <div class="asset-card">
+                <h4>Estados de Activos Disponibles</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+                    <div>
+                        <span class="status-active">ACTIVO</span><br>
+                        <small>En uso normal</small>
+                    </div>
+                    <div>
+                        <span class="status-maintenance">MANTENIMIENTO</span><br>
+                        <small>Fuera de servicio temporal</small>
+                    </div>
+                    <div>
+                        <span class="status-retired">BAJA DEFINITIVA</span><br>
+                        <small>Retirado permanentemente</small>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="categorias" class="section">
+            <h2>2. 🏷️ Categorías de Activos</h2>
+            
+            <p>Sistema de clasificación que permite agrupar activos con características similares, definiendo parámetros de depreciación, vida útil y configuración contable específica para cada tipo de bien.</p>
+
+            <h3>Configuración de Categorías</h3>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Campo</th>
+                        <th>Descripción</th>
+                        <th>Obligatorio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Nombre</strong></td>
+                        <td>Identificación de la categoría</td>
+                        <td>Sí</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Vida Útil NIIF</strong></td>
+                        <td>Duración en meses según normas internacionales</td>
+                        <td>Sí</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Vida Útil Fiscal</strong></td>
+                        <td>Duración en meses según estatuto tributario</td>
+                        <td>Sí</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Método de Depreciación</strong></td>
+                        <td>Algoritmo de cálculo de depreciación</td>
+                        <td>Sí</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Métodos de Depreciación</h3>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Línea Recta</h4>
+                    <ul class="feature-list">
+                        <li>Cuota constante mensual</li>
+                        <li>Más común y simple</li>
+                        <li>Ideal para la mayoría de activos</li>
+                        <li>Fácil de calcular y auditar</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>Reducción de Saldos</h4>
+                    <ul class="feature-list">
+                        <li>Depreciación acelerada</li>
+                        <li>Mayor depreciación inicial</li>
+                        <li>Para activos tecnológicos</li>
+                        <li>Doble saldo decreciente</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Unidades de Producción</h4>
+                    <ul class="feature-list">
+                        <li>Basado en uso real</li>
+                        <li>Para maquinaria industrial</li>
+                        <li>Requiere control de unidades</li>
+                        <li>Más preciso para equipos</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>No Depreciar</h4>
+                    <ul class="feature-list">
+                        <li>Para terrenos y obras de arte</li>
+                        <li>Activos que no se desgastan</li>
+                        <li>Bienes que aumentan de valor</li>
+                        <li>Excluidos del cálculo</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Configuración Contable</h3>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Cuenta</th>
+                        <th>Código PUC</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Cuenta de Activo</strong></td>
+                        <td>15xxxx</td>
+                        <td>Valor del bien en el balance</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Gasto Depreciación</strong></td>
+                        <td>51xxxx</td>
+                        <td>Gasto mensual por depreciación</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Depreciación Acumulada</strong></td>
+                        <td>1592xx</td>
+                        <td>Desgaste acumulado del activo</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Ejemplos de Categorías</h3>
+            
+            <div class="calculation-box">
+                <h4>Maquinaria y Equipo Industrial</h4>
+                <ul class="feature-list">
+                    <li><strong>Vida útil NIIF:</strong> 120 meses (10 años)</li>
+                    <li><strong>Vida útil fiscal:</strong> 120 meses</li>
+                    <li><strong>Método:</strong> Línea recta</li>
+                    <li><strong>Cuenta activo:</strong> 1524 - Maquinaria y Equipo</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="gestion-activos" class="section">
+            <h2>3. 🏭 Gestión de Activos</h2>
+            
+            <p>Administración completa del inventario de activos fijos, incluyendo información técnica, ubicación, responsables y valores de adquisición con control de unicidad y trazabilidad.</p>
+
+            <h3>Información del Activo</h3>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Identificación</h4>
+                    <ul class="feature-list">
+                        <li>Código/placa único</li>
+                        <li>Nombre descriptivo</li>
+                        <li>Serial y modelo</li>
+                        <li>Marca del fabricante</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>Ubicación y Control</h4>
+                    <ul class="feature-list">
+                        <li>Ubicación física actual</li>
+                        <li>Responsable asignado</li>
+                        <li>Centro de costo</li>
+                        <li>Estado operativo</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Información de Adquisición</h3>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Campo</th>
+                        <th>Descripción</th>
+                        <th>Uso</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Fecha de Compra</strong></td>
+                        <td>Fecha de adquisición del bien</td>
+                        <td>Registro histórico</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Fecha Inicio Uso</strong></td>
+                        <td>Inicio de depreciación</td>
+                        <td>Cálculo de depreciación</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Proveedor</strong></td>
+                        <td>Tercero que vendió el activo</td>
+                        <td>Trazabilidad</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Número de Factura</strong></td>
+                        <td>Documento de compra</td>
+                        <td>Soporte contable</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Costo de Adquisición</strong></td>
+                        <td>Valor total pagado</td>
+                        <td>Base de depreciación</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Valor Residual</strong></td>
+                        <td>Valor estimado al final</td>
+                        <td>Cálculo de depreciación</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Estados del Activo</h3>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Activo</h4>
+                    <p>En uso normal, genera depreciación mensual y está disponible para operaciones.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>En Mantenimiento</h4>
+                    <p>Temporalmente fuera de servicio, puede continuar depreciándose según política.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Baja Pendiente</h4>
+                    <p>Marcado para retiro pero aún en inventario, no genera más depreciación.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Baja Definitiva</h4>
+                    <p>Retirado permanentemente (vendido, robado, chatarra), fuera del inventario.</p>
+                </div>
+            </div>
+
+            <h3>Funcionalidades de Gestión</h3>
+            
+            <ul class="feature-list">
+                <li><strong>Búsqueda avanzada:</strong> Por código, nombre, serial o responsable</li>
+                <li><strong>Filtros múltiples:</strong> Por categoría, estado, ubicación</li>
+                <li><strong>Validación de unicidad:</strong> Códigos únicos por empresa</li>
+                <li><strong>Actualización masiva:</strong> Cambios en lotes de activos</li>
+                <li><strong>Historial completo:</strong> Registro de todos los cambios</li>
+            </ul>
+
+            <div class="highlight-box">
+                <h4>Registro Automático de Novedades</h4>
+                <p>Al crear un activo, el sistema automáticamente registra una novedad de "ALTA" con la fecha de compra y valor de adquisición, iniciando la trazabilidad completa del bien.</p>
+            </div>
+        </section>
+
+        <section id="depreciacion" class="section">
+            <h2>4. ⚙️ Motor de Depreciación</h2>
+            
+            <p>Sistema automatizado que calcula y registra la depreciación mensual de todos los activos según su método configurado, generando automáticamente los asientos contables correspondientes.</p>
+
+            <h3>Proceso de Depreciación</h3>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>1. Selección de Período</h4>
+                    <ul class="feature-list">
+                        <li>Año y mes a depreciar</li>
+                        <li>Tipo de documento contable</li>
+                        <li>Validación de períodos</li>
+                        <li>Control de duplicados</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>2. Identificación de Activos</h4>
+                    <ul class="feature-list">
+                        <li>Solo activos en estado ACTIVO</li>
+                        <li>Con método diferente a NO_DEPRECIAR</li>
+                        <li>Fecha de inicio ≤ período</li>
+                        <li>Configuración contable completa</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Cálculos de Depreciación</h3>
+            
+            <div class="calculation-box">
+                <h4>Método Línea Recta</h4>
+                <div class="formula">
+                    Cuota Mensual = (Costo Adquisición - Valor Residual) / Vida Útil Meses
+                </div>
+                <p>Distribución uniforme del costo a lo largo de la vida útil del activo.</p>
+            </div>
+
+            <div class="calculation-box">
+                <h4>Método Reducción de Saldos</h4>
+                <div class="formula">
+                    Tasa Anual = 2 / (Vida Útil Años)<br>
+                    Cuota Mensual = Valor Neto × (Tasa Anual / 12)
+                </div>
+                <p>Depreciación acelerada que aplica mayor desgaste en los primeros años.</p>
+            </div>
+
+            <h3>Validaciones del Sistema</h3>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Validación</th>
+                        <th>Descripción</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Configuración Contable</strong></td>
+                        <td>Cuentas de gasto y acumulada definidas</td>
+                        <td>Bloquea proceso si falta</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Activos Depreciables</strong></td>
+                        <td>Al menos un activo apto para depreciar</td>
+                        <td>Informa si no hay activos</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Saldo Pendiente</strong></td>
+                        <td>Valor por depreciar > 0</td>
+                        <td>Omite activos totalmente depreciados</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Límite de Depreciación</strong></td>
+                        <td>No exceder base depreciable</td>
+                        <td>Ajusta cuota al saldo pendiente</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Resultado del Proceso</h3>
+            
+            <div class="asset-card">
+                <h4>Ejemplo de Depreciación Mensual</h4>
+                <div class="value">$2,450,000</div>
+                <div class="description">Total depreciado en 15 activos para Enero 2025</div>
+                <div style="margin-top: 10px;">
+                    <strong>Documento generado:</strong> DEP-001 | <strong>Movimientos:</strong> 8 cuentas afectadas
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <h4>Control de Integridad</h4>
+                <p>El sistema valida que todos los activos tengan configuración contable completa antes de ejecutar la depreciación. Si algún activo no tiene cuentas configuradas, el proceso se detiene y reporta los activos problemáticos.</p>
+            </div>
+        </section>
+
+        <section id="novedades" class="section">
+            <h2>5. 📋 Control de Novedades</h2>
+            
+            <p>Sistema de trazabilidad que registra automáticamente todos los eventos importantes en la vida de cada activo, desde su alta inicial hasta su baja definitiva, manteniendo un historial completo y auditable.</p>
+
+            <h3>Tipos de Novedades</h3>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Alta</h4>
+                    <ul class="feature-list">
+                        <li>Registro inicial del activo</li>
+                        <li>Fecha de compra</li>
+                        <li>Valor de adquisición</li>
+                        <li>Automática al crear activo</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>Depreciación</h4>
+                    <ul class="feature-list">
+                        <li>Registro mensual automático</li>
+                        <li>Valor de la cuota</li>
+                        <li>Método utilizado</li>
+                        <li>Vínculo al documento contable</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Adición</h4>
+                    <ul class="feature-list">
+                        <li>Mejoras capitalizables</li>
+                        <li>Aumento del valor</li>
+                        <li>Extensión de vida útil</li>
+                        <li>Registro manual</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>Traslado</h4>
+                    <ul class="feature-list">
+                        <li>Cambio de ubicación</li>
+                        <li>Cambio de responsable</li>
+                        <li>Cambio de centro de costo</li>
+                        <li>Historial de movimientos</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Deterioro</h4>
+                    <ul class="feature-list">
+                        <li>Pérdida extraordinaria de valor</li>
+                        <li>Daños o obsolescencia</li>
+                        <li>Ajuste contable</li>
+                        <li>Impacto en depreciación</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>Baja</h4>
+                    <ul class="feature-list">
+                        <li>Retiro definitivo</li>
+                        <li>Venta o chatarra</li>
+                        <li>Cálculo de utilidad/pérdida</li>
+                        <li>Cierre del activo</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Información de las Novedades</h3>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Campo</th>
+                        <th>Descripción</th>
+                        <th>Uso</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Fecha</strong></td>
+                        <td>Cuándo ocurrió el evento</td>
+                        <td>Cronología</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Tipo</strong></td>
+                        <td>Clasificación del evento</td>
+                        <td>Categorización</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Valor</strong></td>
+                        <td>Impacto monetario</td>
+                        <td>Cálculos</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Observación</strong></td>
+                        <td>Descripción detallada</td>
+                        <td>Contexto</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Detalles JSON</strong></td>
+                        <td>Información adicional flexible</td>
+                        <td>Datos específicos</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Usuario</strong></td>
+                        <td>Quién registró la novedad</td>
+                        <td>Auditoría</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Documento Contable</strong></td>
+                        <td>Asiento generado (si aplica)</td>
+                        <td>Trazabilidad</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Beneficios del Control</h3>
+            
+            <ul class="feature-list">
+                <li><strong>Auditoría completa:</strong> Historial detallado de cada activo</li>
+                <li><strong>Cumplimiento normativo:</strong> Documentación requerida por ley</li>
+                <li><strong>Control de cambios:</strong> Quién, cuándo y por qué</li>
+                <li><strong>Análisis de tendencias:</strong> Patrones de uso y mantenimiento</li>
+                <li><strong>Soporte legal:</strong> Evidencia para seguros y litigios</li>
+            </ul>
+        </section>
+
+        <section id="reportes" class="section">
+            <h2>6. 📊 Reportes y Documentos</h2>
+            
+            <p>Sistema completo de reportes especializados en formato PDF que incluye maestros de activos, reportes de depreciación y hojas de vida individuales para análisis y cumplimiento normativo.</p>
+
+            <h3>Tipos de Reportes</h3>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Reporte Maestro</h4>
+                    <ul class="feature-list">
+                        <li>Inventario completo de activos</li>
+                        <li>Información técnica y financiera</li>
+                        <li>Filtro por categoría</li>
+                        <li>Estado actual de cada bien</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>Reporte de Depreciación</h4>
+                    <ul class="feature-list">
+                        <li>Depreciación mensual detallada</li>
+                        <li>Por activo y por categoría</li>
+                        <li>Valores acumulados</li>
+                        <li>Saldos pendientes</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Hoja de Vida</h4>
+                    <ul class="feature-list">
+                        <li>Historia completa del activo</li>
+                        <li>Todas las novedades registradas</li>
+                        <li>Información técnica detallada</li>
+                        <li>Cálculos de depreciación</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>Reportes Contables</h4>
+                    <ul class="feature-list">
+                        <li>Documentos de depreciación</li>
+                        <li>Movimientos contables</li>
+                        <li>Análisis de impacto</li>
+                        <li>Trazabilidad completa</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Características de los Reportes</h3>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Característica</th>
+                        <th>Descripción</th>
+                        <th>Beneficio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Formato PDF</strong></td>
+                        <td>Generación automática profesional</td>
+                        <td>Fácil distribución y archivo</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Descarga Directa</strong></td>
+                        <td>Acceso inmediato desde navegador</td>
+                        <td>Agilidad operativa</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Nombres Descriptivos</strong></td>
+                        <td>Archivos con nombres informativos</td>
+                        <td>Organización automática</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Filtros Avanzados</strong></td>
+                        <td>Reportes específicos por criterios</td>
+                        <td>Información relevante</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Contenido del Reporte Maestro</h3>
+            
+            <div class="calculation-box">
+                <h4>Información Incluida</h4>
+                <ul class="feature-list">
+                    <li><strong>Identificación:</strong> Código, nombre, serial, marca</li>
+                    <li><strong>Clasificación:</strong> Categoría, estado, ubicación</li>
+                    <li><strong>Valores:</strong> Costo, depreciación acumulada, valor neto</li>
+                    <li><strong>Responsabilidad:</strong> Responsable, centro de costo</li>
+                    <li><strong>Fechas:</strong> Compra, inicio uso, última depreciación</li>
+                </ul>
+            </div>
+
+            <h3>Usos de los Reportes</h3>
+            
+            <ul class="feature-list">
+                <li><strong>Auditorías externas:</strong> Documentación oficial para auditores</li>
+                <li><strong>Seguros:</strong> Inventario valorizado para pólizas</li>
+                <li><strong>Análisis gerencial:</strong> Evaluación de inversiones</li>
+                <li><strong>Control interno:</strong> Verificación física de activos</li>
+                <li><strong>Cumplimiento fiscal:</strong> Reportes para DIAN</li>
+            </ul>
+        </section>
+
+        <section id="integracion" class="section">
+            <h2>7. 🔗 Integración Contable</h2>
+            
+            <p>Sistema de integración automática que genera asientos contables por cada proceso de depreciación y movimiento de activos, asegurando la consistencia entre la gestión de activos fijos y la contabilidad general.</p>
+
+            <h3>Proceso de Contabilización</h3>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>1. Configuración Previa</h4>
+                    <ul class="feature-list">
+                        <li>Cuentas PUC por categoría</li>
+                        <li>Validación de plan de cuentas</li>
+                        <li>Tipo de documento configurado</li>
+                        <li>Consecutivos automáticos</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>2. Generación Automática</h4>
+                    <ul class="feature-list">
+                        <li>Documento por cada depreciación</li>
+                        <li>Consolidación por categoría</li>
+                        <li>Numeración consecutiva</li>
+                        <li>Fecha del último día del mes</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Estructura del Asiento de Depreciación</h3>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Concepto</th>
+                        <th>Cuenta</th>
+                        <th>Débito</th>
+                        <th>Crédito</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Gasto Depreciación Maquinaria</td>
+                        <td>5160 - Depreciación Maquinaria</td>
+                        <td>$1,200,000</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>Gasto Depreciación Equipos</td>
+                        <td>5165 - Depreciación Equipos</td>
+                        <td>$800,000</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>Depreciación Acum. Maquinaria</td>
+                        <td>1592 - Dep. Acum. Maquinaria</td>
+                        <td>-</td>
+                        <td>$1,200,000</td>
+                    </tr>
+                    <tr>
+                        <td>Depreciación Acum. Equipos</td>
+                        <td>1593 - Dep. Acum. Equipos</td>
+                        <td>-</td>
+                        <td>$800,000</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Características de la Integración</h3>
+            
+            <div class="highlight-box">
+                <h4>Consolidación Inteligente</h4>
+                <p>El sistema agrupa automáticamente los movimientos por cuenta contable, evitando generar un movimiento por cada activo y creando asientos consolidados más limpios y eficientes.</p>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Ventajas del Sistema</h4>
+                    <ul class="feature-list">
+                        <li>Eliminación de errores manuales</li>
+                        <li>Consistencia automática</li>
+                        <li>Ahorro de tiempo operativo</li>
+                        <li>Trazabilidad completa</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>Controles de Calidad</h4>
+                    <ul class="feature-list">
+                        <li>Validación de partida doble</li>
+                        <li>Verificación de cuentas activas</li>
+                        <li>Control de períodos</li>
+                        <li>Auditoría automática</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Vínculo con Novedades</h3>
+            
+            <div class="calculation-box">
+                <h4>Trazabilidad Completa</h4>
+                <p>Cada novedad de depreciación se vincula directamente con el documento contable generado, permitiendo:</p>
+                <ul class="feature-list">
+                    <li>Consulta directa desde el activo al asiento</li>
+                    <li>Reversión automática si se elimina la depreciación</li>
+                    <li>Auditoría completa de movimientos</li>
+                    <li>Verificación de integridad referencial</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="auditoria" class="section">
+            <h2>8. 🔍 Auditoría y Control</h2>
+            
+            <p>Sistema integral de auditoría que proporciona herramientas para el control, verificación y limpieza de datos de activos fijos, incluyendo funciones especiales para pruebas y mantenimiento del sistema.</p>
+
+            <h3>Herramientas de Auditoría</h3>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Consulta de Documentos</h4>
+                    <ul class="feature-list">
+                        <li>Todos los documentos de depreciación</li>
+                        <li>Información completa de movimientos</li>
+                        <li>Estado y validez de asientos</li>
+                        <li>Totales y consolidados</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>Verificación de Integridad</h4>
+                    <ul class="feature-list">
+                        <li>Consistencia de saldos</li>
+                        <li>Validación de vínculos</li>
+                        <li>Detección de inconsistencias</li>
+                        <li>Reportes de errores</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Funciones de Mantenimiento</h3>
+            
+            <div class="warning-box">
+                <h4>⚠️ Funciones de Prueba</h4>
+                <p>El sistema incluye funciones especiales para ambiente de desarrollo y pruebas que permiten limpiar datos masivamente. Estas funciones están claramente marcadas y solo deben usarse en ambientes controlados.</p>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Función</th>
+                        <th>Descripción</th>
+                        <th>Uso</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Limpiar Depreciaciones</strong></td>
+                        <td>Elimina todas las depreciaciones de prueba</td>
+                        <td>Desarrollo/Testing</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Eliminar Documentos</strong></td>
+                        <td>Eliminación masiva de documentos</td>
+                        <td>Desarrollo/Testing</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Resetear Acumulados</strong></td>
+                        <td>Pone en cero la depreciación acumulada</td>
+                        <td>Desarrollo/Testing</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Consultar Estado</strong></td>
+                        <td>Información completa del sistema</td>
+                        <td>Auditoría/Producción</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Proceso de Limpieza de Pruebas</h3>
+            
+            <div class="calculation-box">
+                <h4>Secuencia de Limpieza</h4>
+                <ol style="padding-left: 20px;">
+                    <li>Identificar documentos de depreciación</li>
+                    <li>Eliminar movimientos contables asociados</li>
+                    <li>Eliminar documentos contables</li>
+                    <li>Eliminar novedades de depreciación</li>
+                    <li>Resetear depreciación acumulada de activos</li>
+                    <li>Confirmar integridad del sistema</li>
+                </ol>
+            </div>
+
+            <h3>Controles de Seguridad</h3>
+            
+            <ul class="feature-list">
+                <li><strong>Validación de empresa:</strong> Solo datos de la empresa actual</li>
+                <li><strong>Registro de usuario:</strong> Quién ejecuta cada operación</li>
+                <li><strong>Transacciones atómicas:</strong> Todo o nada en operaciones críticas</li>
+                <li><strong>Rollback automático:</strong> Reversión en caso de error</li>
+                <li><strong>Log detallado:</strong> Registro completo de operaciones</li>
+            </ul>
+
+            <h3>Reportes de Auditoría</h3>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Estado del Sistema</h4>
+                    <ul class="feature-list">
+                        <li>Total de activos por estado</li>
+                        <li>Documentos generados</li>
+                        <li>Valor total depreciado</li>
+                        <li>Inconsistencias detectadas</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>Actividad Reciente</h4>
+                    <ul class="feature-list">
+                        <li>Últimas depreciaciones</li>
+                        <li>Activos creados/modificados</li>
+                        <li>Documentos generados</li>
+                        <li>Operaciones de limpieza</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <div class="section" style="text-align: center; background: linear-gradient(135deg, #8b5a3c, #d4a574); color: white;">
+            <h2>Sistema Finaxis - Módulo de Activos Fijos</h2>
+            <p>Documentación técnica para usuarios finales y clientes</p>
+            <p><strong>Versión:</strong> 2024.1 | <strong>Fecha:</strong> Enero 2025</p>
+            <p><em>Esta documentación describe las 8 funcionalidades principales del módulo de activos fijos desarrollado en el sistema Finaxis.</em></p>
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.3);">
+                <h3>Funcionalidades Documentadas</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 20px; text-align: left;">
+                    <div>
+                        <strong>Configuración y Gestión:</strong>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>Categorías de Activos</li>
+                            <li>Gestión de Activos</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong>Procesamiento Automático:</strong>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>Motor de Depreciación</li>
+                            <li>Control de Novedades</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong>Reportes y Análisis:</strong>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>Reportes y Documentos</li>
+                            <li>Auditoría y Control</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong>Integración:</strong>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>Integración Contable</li>
+                            <li>Trazabilidad Completa</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

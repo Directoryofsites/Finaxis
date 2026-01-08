@@ -66,5 +66,8 @@ from .conciliacion_bancaria import (
     ReconciliationMovement, AccountingConfig, ReconciliationAudit
 )
 
+# --- SISTEMA DE CONSUMO DE REGISTROS (Nuevo Módulo) ---
+from .consumo_registros import ControlPlanMensual, BolsaExcedente, RecargaAdicional, HistorialConsumo
+
 # --- IMPORTACIÓN UNIVERSAL (Nuevo Módulo) ---
 from .import_template import ImportTemplate

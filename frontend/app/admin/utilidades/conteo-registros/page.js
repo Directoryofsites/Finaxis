@@ -1,12 +1,16 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { apiService } from '@/lib/apiService';
-import { FaExclamationTriangle, FaCheckCircle, FaCalendarAlt, FaDatabase } from 'react-icons/fa';
+import { FaExclamationTriangle, FaCheckCircle, FaCalendarAlt, FaDatabase, FaBolt } from 'react-icons/fa';
+import ModalComprarPaquete from '@/components/consumo/ModalComprarPaquete';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function ConteoRegistrosPage() {
     const today = new Date();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [showRecargaModal, setShowRecargaModal] = useState(false);
 
     // Estados para el filtro
     const [selectedMonth, setSelectedMonth] = useState(today.getMonth() + 1); // JS es 0-11, Backend es 1-12
@@ -29,6 +33,10 @@ export default function ConteoRegistrosPage() {
     useEffect(() => {
         fetchData(selectedMonth, selectedYear);
     }, [selectedMonth, selectedYear]);
+
+    const handleRecargaSuccess = () => {
+        fetchData(selectedMonth, selectedYear);
+    };
 
     // Generar lista de años (Dinámico desde 2020 hasta actual + futuro)
     const currentYear = today.getFullYear();
@@ -68,6 +76,7 @@ export default function ConteoRegistrosPage() {
             <h1 className="text-2xl font-light text-slate-800 mb-6 flex items-center">
                 <FaDatabase className="mr-3 text-cyan-600" /> Control de Conteo de Registros
             </h1>
+            <ToastContainer />
 
             <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8 relative overflow-visible">
 
@@ -101,6 +110,16 @@ export default function ConteoRegistrosPage() {
                         <span className="font-semibold">{loading ? "Actualizando..." : "Estado del Periodo"}</span>
                         {loading ? <span className="loading loading-spinner loading-sm"></span> : <Icono className="text-2xl" />}
                     </div>
+                </div>
+
+                {/* Botón de Recarga Visible */}
+                <div className="flex justify-end mb-4">
+                    <button
+                        onClick={() => setShowRecargaModal(true)}
+                        className="btn btn-sm bg-gray-100 hover:bg-gray-200 text-gray-700 border-none rounded-full shadow-sm gap-2 px-4 transition-all"
+                    >
+                        <FaBolt className="text-amber-500" /> Recargar Cupo Adicional
+                    </button>
                 </div>
 
                 {/* Datos Grandes */}
@@ -143,6 +162,12 @@ export default function ConteoRegistrosPage() {
                     </p>
                 </div>
             </div>
-        </div>
+
+            <ModalComprarPaquete
+                isOpen={showRecargaModal}
+                onClose={() => setShowRecargaModal(false)}
+                onSuccess={handleRecargaSuccess}
+            />
+        </div >
     );
 }

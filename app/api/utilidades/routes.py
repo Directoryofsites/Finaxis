@@ -8,11 +8,13 @@ from app.services import (
     recodificacion as recodificacion_service,
     migracion as migracion_service,
     diagnostico as diagnostico_service,
-    auditoria as auditoria_service
+    auditoria as auditoria_service,
+    consumo_service
 )
 from app.schemas import (
     usuario as usuario_schema,
     documento as schemas_doc,
+    consumo as consumo_schemas,
     diagnostico as diagnostico_schemas,
     recodificacion as recodificacion_schemas,
     migracion as migracion_schemas,
@@ -100,7 +102,7 @@ def contar_registros(
 def get_tipos_documento_soporte(
     request: diagnostico_schemas.TiposDocumentoRequest,
     db: Session = Depends(get_db),
-    current_user: models_usuario.Usuario = Depends(has_permission("utilidades:usar_herramientas"))
+    current_user: models_usuario.Usuario = Depends(has_permission("empresa:gestionar"))
 ):
     return diagnostico_service.get_tipos_documento_por_empresa(db=db, empresa_id=request.empresaId)
 
@@ -131,7 +133,7 @@ def erradicar_documento(
 @router.get("/soporte/maestros", response_model=diagnostico_schemas.MaestrosSoporteResponse)
 def get_maestros_soporte(
     db: Session = Depends(get_db),
-    current_user: models_usuario.Usuario = Depends(has_permission("utilidades:usar_herramientas"))
+    current_user: models_usuario.Usuario = Depends(has_permission("empresa:gestionar"))
 ):
     return diagnostico_service.get_maestros_para_soporte(db=db)
 
@@ -142,6 +144,46 @@ def analizar_erradicacion_endpoint(
     current_user: models_usuario.Usuario = Depends(has_permission("utilidades:usar_herramientas"))
 ):
     return diagnostico_service.analizar_erradicacion(db=db, request=request)
+
+# ===============================================================
+# GESTIÓN DE PAQUETES DE RECARGA (ADMIN)
+# ===============================================================
+@router.get("/paquetes-recarga", response_model=List[consumo_schemas.PaqueteRecargaRead])
+def get_paquetes_recarga(
+    db: Session = Depends(get_db),
+    current_user: models_usuario.Usuario = Depends(has_permission("utilidades:usar_herramientas"))
+):
+    return consumo_service.get_all_paquetes(db)
+
+@router.post("/paquetes-recarga", response_model=consumo_schemas.PaqueteRecargaRead)
+def create_paquete_recarga(
+    paquete: consumo_schemas.PaqueteRecargaCreate,
+    db: Session = Depends(get_db),
+    current_user: models_usuario.Usuario = Depends(has_permission("utilidades:usar_herramientas"))
+):
+    return consumo_service.create_paquete(db, **paquete.dict())
+
+@router.put("/paquetes-recarga/{paquete_id}", response_model=consumo_schemas.PaqueteRecargaRead)
+def update_paquete_recarga(
+    paquete_id: int,
+    paquete: consumo_schemas.PaqueteRecargaUpdate,
+    db: Session = Depends(get_db),
+    current_user: models_usuario.Usuario = Depends(has_permission("utilidades:usar_herramientas"))
+):
+    updated = consumo_service.update_paquete(db, paquete_id, **paquete.dict())
+    if not updated:
+        raise HTTPException(status_code=404, detail="Paquete no encontrado")
+    return updated
+
+@router.delete("/paquetes-recarga/{paquete_id}")
+def delete_paquete_recarga(
+    paquete_id: int,
+    db: Session = Depends(get_db),
+    current_user: models_usuario.Usuario = Depends(has_permission("utilidades:usar_herramientas"))
+):
+    if not consumo_service.delete_paquete(db, paquete_id):
+        raise HTTPException(status_code=404, detail="Paquete no encontrado")
+    return {"msg": "Paquete eliminado exitosamente"}
 
 @router.get("/auditoria/consecutivos/{empresa_id}/{tipo_documento_id}", response_model=schemas_doc.AuditoriaConsecutivosResponse)
 def get_auditoria_consecutivos_soporte(
@@ -155,7 +197,7 @@ def get_auditoria_consecutivos_soporte(
 def get_tipos_documento_por_empresa_soporte(
     request: diagnostico_schemas.TiposDocumentoRequest,
     db: Session = Depends(get_db),
-    current_user: models_usuario.Usuario = Depends(has_permission("utilidades:usar_herramientas"))
+    current_user: models_usuario.Usuario = Depends(has_permission("empresa:gestionar"))
 ):
     return diagnostico_service.get_tipos_documento_por_empresa(db=db, empresa_id=request.empresaId)
 

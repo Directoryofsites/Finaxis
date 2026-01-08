@@ -34,26 +34,39 @@ def seed_database():
                 "soporte:acceder_panel",
                 "empresa:gestionar",
                 "utilidades:usar_herramientas",
-                "inventario:ver_super_informe" # <-- NUEVO PERMISO AÑADIDO
+                "utilidades:scripts",
+                "utilidades:conteo_registros",
+                "utilidades:auditoria_consecutivos",
+                "inventario:ver_super_informe" 
             ],
             "administrador": [
-                "utilidades:migracion",
+                "empresa:gestionar", # Restaurado para acceso
+                "utilidades:migracion", # Restaurado para Maestros
+                "inventario:ver_super_informe", # Restaurado para Super Informe
                 "inventario:ver_reportes",
                 "reportes:rentabilidad_producto",
                 "ventas:ver_reporte_gestion",
                 "reportes:ver_facturacion_detallado",
                 "papelera:usar",
                 "plantilla:crear",
-                "inventario:eliminar_producto", # Añadido en misión anterior
-                "inventario:ver_super_informe", # <-- NUEVO PERMISO AÑADIDO
-                # Permisos de Conciliación Bancaria
+                "inventario:eliminar_producto",
                 "conciliacion_bancaria:ver",
                 "conciliacion_bancaria:configurar",
                 "conciliacion_bancaria:importar",
                 "conciliacion_bancaria:conciliar",
                 "conciliacion_bancaria:ajustar",
                 "conciliacion_bancaria:reportes",
-                "conciliacion_bancaria:auditoria"
+                "conciliacion_bancaria:auditoria",
+                # --- PERMISOS CRÍTICOS RESTAURADOS DE EMERGENCIA ---
+                "contabilidad:crear_documento",
+                "contabilidad:editar_documento",
+                "contabilidad:anular_documento",
+                "contabilidad:explorador",
+                "contabilidad:configuracion_tipos_doc",
+                "contabilidad:gestionar_puc",
+                "tesoreria:crear_comprobante",
+                "cartera:ver_informes",
+                "reportes:ver_officiales"
             ],
             "operador_bancario": [
                 # Rol especializado para conciliación bancaria
@@ -65,26 +78,6 @@ def seed_database():
                 "conciliacion_bancaria:reportes",
                 "inventario:ver_reportes"
             ],
-            "Administrador": [
-                # Rol Administrador con mayúscula (usado por el sistema)
-                "utilidades:migracion",
-                "inventario:ver_reportes",
-                "reportes:rentabilidad_producto",
-                "ventas:ver_reporte_gestion",
-                "reportes:ver_facturacion_detallado",
-                "papelera:usar",
-                "plantilla:crear",
-                "inventario:eliminar_producto",
-                "inventario:ver_super_informe",
-                # Permisos de Conciliación Bancaria
-                "conciliacion_bancaria:ver",
-                "conciliacion_bancaria:configurar",
-                "conciliacion_bancaria:importar",
-                "conciliacion_bancaria:conciliar",
-                "conciliacion_bancaria:ajustar",
-                "conciliacion_bancaria:reportes",
-                "conciliacion_bancaria:auditoria"
-            ]
             # Añadir aquí permisos para 'contador' o 'invitado' si es necesario
         }
         # --- FIN DE LA MODIFICACIÓN ---
@@ -101,7 +94,7 @@ def seed_database():
         db.flush()
 
         print("--> Asegurando la existencia de todos los roles...")
-        roles_a_crear = ["soporte", "administrador", "Administrador", "contador", "invitado", "operador_bancario"]
+        roles_a_crear = ["soporte", "administrador", "contador", "invitado", "operador_bancario"]
         for nombre_rol in roles_a_crear:
             if not db.query(models_permiso.Rol).filter(models_permiso.Rol.nombre == nombre_rol).first():
                 db.add(models_permiso.Rol(nombre=nombre_rol, descripcion=f"Rol para {nombre_rol}"))

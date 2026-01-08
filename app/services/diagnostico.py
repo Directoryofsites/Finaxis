@@ -63,10 +63,12 @@ from ..schemas import diagnostico as diagnostico_schemas # CRÍTICO
 
 # ========== Funciones de Movimiento (CRÍTICAS) - Movidas al inicio ==========
 
+from ..models import consumo_registros as models_consumo
+
 def contar_registros_por_empresa(db: Session) -> List[diagnostico_schemas.ConteoResult]:
     """
     Cuenta el total de registros contables (movimientos) NO anulados para cada empresa 
-    y lo compara con su límite.
+    y lo compara con su límite. También obtiene saldos de bolsas y recargas.
     """
     try:
         # 1. Subconsulta para contar MOVIMIENTOS CONTABLES por empresa
@@ -92,14 +94,44 @@ def contar_registros_por_empresa(db: Session) -> List[diagnostico_schemas.Conteo
             models_empresa.Empresa.id == conteo_registros_por_empresa.c.empresa_id
         ).order_by(models_empresa.Empresa.razon_social).all()
 
-        # 3. Formateo al Schema de respuesta
+        # 3. Consultas Agregadas para Bolsas y Recargas (Eficiente)
+        # Sumar Bolsas Vigentes
+        bolsas_sub = (
+            db.query(
+                models_consumo.BolsaExcedente.empresa_id, 
+                func.sum(models_consumo.BolsaExcedente.cantidad_disponible)
+            )
+            .filter(models_consumo.BolsaExcedente.estado == 'VIGENTE')
+            .group_by(models_consumo.BolsaExcedente.empresa_id)
+            .all()
+        )
+        bolsas_dict = {reg[0]: (reg[1] or 0) for reg in bolsas_sub}
+
+        # Sumar Recargas Vigentes
+        recargas_sub = (
+            db.query(
+                models_consumo.RecargaAdicional.empresa_id, 
+                func.sum(models_consumo.RecargaAdicional.cantidad_disponible)
+            )
+            .filter(models_consumo.RecargaAdicional.estado == 'VIGENTE')
+            .group_by(models_consumo.RecargaAdicional.empresa_id)
+            .all()
+        )
+        recargas_dict = {reg[0]: (reg[1] or 0) for reg in recargas_sub}
+
+        # 4. Formateo al Schema de respuesta
         lista_conteo = []
         for id, razon_social, limite, total_registros in resultados:
+            total_bolsa = bolsas_dict.get(id, 0)
+            total_recarga = recargas_dict.get(id, 0)
+            
             lista_conteo.append(diagnostico_schemas.ConteoResult(
                 empresa_id=id,
                 nombre_empresa=razon_social,
-                total_registros=total_registros or 0, # Si es NULL (outer join), es 0
-                limite_registros=limite
+                total_registros=total_registros or 0,
+                limite_registros=limite, # Pydantic accepts None now
+                bolsa_excedente_total=total_bolsa,
+                recargas_disponibles=total_recarga
             ))
 
         return lista_conteo

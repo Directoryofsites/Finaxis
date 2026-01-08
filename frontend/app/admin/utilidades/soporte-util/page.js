@@ -112,7 +112,7 @@ function PanelGestionUsuarios({ empresa, onDataChange }) {
         const fetchRoles = async () => {
             setIsLoadingRoles(true);
             try {
-                const response = await getRoles();
+                const response = await getRoles(empresa.id);
                 setRoles(response.data);
                 if (response.data.length > 0) {
                     setNewUser(prev => ({ ...prev, rolId: response.data[0].id }));
@@ -486,7 +486,8 @@ export default function SoporteUtilPage() {
 
     const [activeTab, setActiveTab] = useState('gestionSoporte');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedEmpresa, setSelectedEmpresa] = useState(null);
+    // CHANGE: Store ID instead of object to avoid stale state
+    const [selectedEmpresaId, setSelectedEmpresaId] = useState(null);
 
     const fetchDashboardData = useCallback(async () => {
         setIsDataLoading(true);
@@ -552,17 +553,22 @@ export default function SoporteUtilPage() {
     };
 
     const openModal = (empresa) => {
-        setSelectedEmpresa(empresa);
+        setSelectedEmpresaId(empresa.id);
         setIsModalOpen(true);
     };
     const closeModal = () => {
         setIsModalOpen(false);
-        setSelectedEmpresa(null);
+        setSelectedEmpresaId(null);
     };
 
     const handleDataUpdatedInModal = () => {
         fetchDashboardData();
     };
+
+    // DERIVED STATE: Get the fresh company object from the main list
+    const activeEmpresa = selectedEmpresaId
+        ? dashboardData.empresas.find(e => e.id === selectedEmpresaId)
+        : null;
 
     if (isLoading) return <p className="text-center mt-10">Cargando...</p>;
 
@@ -626,9 +632,9 @@ export default function SoporteUtilPage() {
                     </>
                 )}
             </div>
-            {isModalOpen && selectedEmpresa && (
+            {isModalOpen && activeEmpresa && (
                 <ModalGestionarEmpresa
-                    empresa={selectedEmpresa}
+                    empresa={activeEmpresa}
                     onClose={closeModal}
                     onDataChange={handleDataUpdatedInModal}
                 />

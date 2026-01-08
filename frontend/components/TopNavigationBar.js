@@ -426,6 +426,9 @@ export default function TopNavigationBar() {
                                 if (!userPermissions.includes(link.permission)) return null;
                             }
 
+                            // RESTRICTION: onlySoporte (Hardcoded for security as requested)
+                            if (link.onlySoporte && user?.email !== 'soporte@soporte.com') return null;
+
                             return (
                                 <Link
                                     key={link.href}
@@ -449,6 +452,9 @@ export default function TopNavigationBar() {
                         {menuStructure.find(m => m.id === isMenuOpen)?.subgroups?.map(sub => {
                             // Filter links based on permissions
                             const visibleLinks = sub.links.filter(link => {
+                                // RESTRICTION: onlySoporte
+                                if (link.onlySoporte && user?.email !== 'soporte@soporte.com') return false;
+
                                 if (!link.permission) return true;
                                 const userPermissions = user?.roles?.flatMap(r => r.permisos?.map(p => p.nombre)) || [];
                                 return userPermissions.includes(link.permission);

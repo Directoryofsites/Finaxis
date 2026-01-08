@@ -15,6 +15,18 @@ import UniversalImportForm from '../../../components/Migracion/UniversalImportFo
 export default function MigracionDatosPage() {
   const { user, authLoading } = useAuth();
 
+  // --- SONDA DE DEPURACIÓN (Solicitada por Usuario) ---
+  useEffect(() => {
+    if (!authLoading) {
+      console.log("--- SONDA MIGRACION PAGE ---");
+      console.log("User Object:", user);
+      console.log("User Class:", user?.constructor?.name);
+      console.log("EmpresaID (Direct):", user?.empresaId);
+      console.log("EmpresaID (Snake):", user?.empresa_id);
+      console.log("----------------------------");
+    }
+  }, [user, authLoading]);
+
   const [maestros, setMaestros] = useState({
     tiposDocumento: [],
     terceros: [],
@@ -30,7 +42,13 @@ export default function MigracionDatosPage() {
   const [message, setMessage] = useState('');
 
   const fetchMaestros = useCallback(async () => {
-    if (!user?.empresaId) return;
+    if (!user?.empresaId) {
+      // CORRECCIÓN: Si no hay empresaId, dejar de cargar y mostrar error
+      setIsLoading(false);
+      setError("No se ha detectado una empresa activa en su sesión. Por favor recargue la página o contacte a soporte.");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {

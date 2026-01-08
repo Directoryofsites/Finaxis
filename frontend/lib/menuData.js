@@ -100,6 +100,7 @@ export const menuStructure = [
             { name: 'Crear Documento', href: '/contabilidad/documentos', mnemonic: 'd', icon: FaFileAlt, description: 'Registro de asientos manuales y notas.', permission: 'contabilidad:crear_documento' },
             { name: 'Captura Rápida', href: '/contabilidad/captura-rapida', mnemonic: 'r', icon: FaPlus, description: 'Ingreso ágil de facturas y gastos.', permission: 'contabilidad:captura_rapida' },
             { name: 'Explorador Doc.', href: '/contabilidad/explorador', mnemonic: 'e', icon: FaBook, description: 'Búsqueda avanzada de movimientos.', permission: 'contabilidad:explorador' },
+            { name: 'Mi Plan y Consumo', href: '/contabilidad/consumo', mnemonic: 'k', icon: FaChartPie, description: 'Estado de cupos y recargas.', permission: 'contabilidad:acceso' },
             { name: 'Libro Diario Detallado', href: '/contabilidad/reportes/libro-diario', mnemonic: 'l', icon: FaBook, description: 'Movimientos cronológicos por día.', permission: 'contabilidad:libro_diario' },
             { name: 'Libro Diario Resumen', href: '/contabilidad/reportes/libro-diario-resumen', mnemonic: 'u', icon: FaBook, description: 'Resumen por tipo de documento.', permission: 'contabilidad:libro_diario' },
             { name: 'Análisis de Cuenta por Documento', href: '/contabilidad/reportes/analisis-cuenta-documento', mnemonic: 'y', icon: FaBook, description: 'Desglose por fuente.', permission: 'contabilidad:analisis_cuenta' },
@@ -253,7 +254,7 @@ export const menuStructure = [
                 icon: FaWrench,
                 description: 'Mantenimiento.',
                 links: [
-                    { name: 'Scripts/Util', href: '/admin/utilidades/soporte-util', mnemonic: 's', icon: FaTools, permission: 'utilidades:scripts' },
+                    { name: 'Scripts/Util', href: '/admin/utilidades/soporte-util', mnemonic: 's', icon: FaTools, permission: 'utilidades:scripts', onlySoporte: true },
                     { name: 'Edición Masiva', href: '/admin/utilidades/eliminacion-masiva', mnemonic: 'm', icon: FaFileAlt, permission: 'utilidades:edicion_masiva' },
                     { name: 'Recodificación', href: '/admin/utilidades/recodificacion-masiva', mnemonic: 'd', icon: FaRedoAlt, permission: 'utilidades:recodificacion' },
                     { name: 'Papelera', href: '/admin/utilidades/papelera', mnemonic: 'x', icon: FaTimes, permission: 'papelera:usar' },
