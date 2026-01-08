@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { apiService } from '@/lib/apiService';
-import { FaChartPie, FaLeaf, FaBolt, FaHistory, FaExclamationTriangle } from 'react-icons/fa';
+import { FaChartPie, FaLeaf, FaBolt, FaHistory, FaCalendarAlt } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -12,11 +12,15 @@ import ModalComprarPaquete from '@/components/consumo/ModalComprarPaquete';
 export default function DashboardConsumoPage() {
     const { user, authLoading } = useAuth();
 
+    // Configuración de fecha por defecto
+    const today = new Date();
+    const [selectedMonth, setSelectedMonth] = useState(today.getMonth() + 1); // 1-12
+    const [selectedYear, setSelectedYear] = useState(today.getFullYear());
+
     const [resumen, setResumen] = useState(null);
     const [historial, setHistorial] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Estados para Compra de Recarga
     // Estados para Compra de Recarga
     const [showRecargaModal, setShowRecargaModal] = useState(false);
 
@@ -24,13 +28,14 @@ export default function DashboardConsumoPage() {
         if (user && (user.empresaId || user.empresa_id)) {
             fetchData();
         }
-    }, [user]);
+    }, [user, selectedMonth, selectedYear]); // Trigger reload when date changes
 
     const fetchData = async () => {
         try {
             setLoading(true);
             const [dataResumen, dataHistorial] = await Promise.all([
-                apiService.get('/consumo/resumen'),
+                // Pasamos los parámetros de fecha seleccionados
+                apiService.get(`/consumo/resumen?mes=${selectedMonth}&anio=${selectedYear}`),
                 apiService.get('/consumo/historial?limit=50')
             ]);
 
@@ -46,15 +51,37 @@ export default function DashboardConsumoPage() {
 
     // --- LÓGICA DE COMPRA ---
 
-    // Función auxiliar para formatear moneda
-    const fmtMoney = (val) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
+    // Función auxiliar para formatear moneda/fecha
+    const getMonthName = (monthIndex) => { // 1-based index
+        const date = new Date();
+        date.setMonth(monthIndex - 1);
+        return date.toLocaleString('es-CO', { month: 'long' });
+    };
 
-    if (authLoading || loading) {
+    // Generar opciones de años (desde 2020 hasta año actual + 2)
+    const years = [];
+    const currentYear = new Date().getFullYear();
+    for (let y = 2020; y <= currentYear + 2; y++) {
+        years.push(y);
+    }
+    const months = Array.from({ length: 12 }, (_, i) => i + 1);
+
+    if (authLoading) { // Solo mostrar loading full screen en carga inicial de auth
+        return (
+            <div className="h-screen flex items-center justify-center bg-gray-50">
+                <span className="loading loading-spinner text-indigo-600 loading-lg"></span>
+            </div>
+        );
+    }
+
+    // Si está cargando datos pero tenemos auth, mostramos esqueleto o spinner overlay
+    // Por simplicidad, spinner centrado si loading es true inicial, o overlay si es update
+    if (loading && !resumen) {
         return (
             <div className="h-screen flex items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center gap-4">
                     <span className="loading loading-spinner text-indigo-600 loading-lg"></span>
-                    <p className="text-gray-500 font-medium animate-pulse">Cargando métricas de consumo...</p>
+                    <p className="text-gray-500 font-medium animate-pulse">Cargando métricas de {getMonthName(selectedMonth)}...</p>
                 </div>
             </div>
         );
@@ -76,19 +103,46 @@ export default function DashboardConsumoPage() {
             <ToastContainer />
             <div className="max-w-7xl mx-auto space-y-8">
 
-                {/* 1. HEADER */}
-                <div className="flex items-center gap-4 border-b border-gray-200 pb-6">
-                    <div className="p-4 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-200">
-                        <FaChartPie className="text-3xl" />
+                {/* 1. HEADER & DATE SELECTOR */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-200 pb-6">
+                    <div className="flex items-center gap-4">
+                        <div className="p-4 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-200">
+                            <FaChartPie className="text-3xl" />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl font-extrabold text-gray-800 tracking-tight">Mi Plan y Consumo</h1>
+                            <p className="text-gray-500 text-sm mt-1">Gestión de cupos, bolsas y recargas adicionales.</p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-3xl font-extrabold text-gray-800 tracking-tight">Mi Plan y Consumo</h1>
-                        <p className="text-gray-500 text-sm mt-1">Gestión de cupos, bolsas y recargas adicionales.</p>
+
+                    {/* SELECTOR DE FECHA */}
+                    <div className="flex items-center gap-2 bg-white p-2 rounded-lg shadow-sm border border-gray-200">
+                        <FaCalendarAlt className="text-gray-400 ml-2" />
+
+                        <select
+                            value={selectedMonth}
+                            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                            className="select select-sm select-ghost w-auto focus:outline-none focus:ring-0 text-gray-700 font-bold capitalize"
+                        >
+                            {months.map(m => (
+                                <option key={m} value={m}>{getMonthName(m)}</option>
+                            ))}
+                        </select>
+
+                        <select
+                            value={selectedYear}
+                            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                            className="select select-sm select-ghost w-auto focus:outline-none focus:ring-0 text-gray-700 font-bold"
+                        >
+                            {years.map(y => (
+                                <option key={y} value={y}>{y}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
 
                 {/* 2. KPI CARDS */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 transition-opacity duration-300 ${loading ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
 
                     {/* CARD PLAN MENSUAL */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
@@ -99,32 +153,46 @@ export default function DashboardConsumoPage() {
                         <div className="flex justify-between items-start mb-4">
                             <div>
                                 <h3 className="text-gray-500 font-bold text-xs uppercase tracking-wider">Plan Mensual</h3>
-                                <p className="text-sm text-gray-400 capitalize">{new Date().toLocaleString('es-CO', { month: 'long', year: 'numeric' })}</p>
+                                <p className="text-sm text-gray-400 capitalize font-bold">
+                                    {getMonthName(selectedMonth)} {selectedYear}
+                                </p>
                             </div>
                             <span className={`badge ${plan?.estado === 'ABIERTO' ? 'badge-success badge-outline' : 'badge-ghost'}`}>
-                                {plan?.estado || 'N/A'}
+                                {plan?.estado || 'No Iniciado'}
                             </span>
                         </div>
 
                         <div className="mb-4">
-                            <div className="flex items-end gap-2">
-                                <span className="text-4xl font-black text-gray-800">{plan?.cantidad_disponible || 0}</span>
-                                <span className="text-gray-400 font-medium mb-1">/ {plan?.limite_asignado || '∞'}</span>
-                            </div>
-                            <p className="text-xs text-gray-500">Registros disponibles</p>
+                            {plan ? (
+                                <>
+                                    <div className="flex items-end gap-2">
+                                        <span className="text-4xl font-black text-gray-800">{plan.cantidad_disponible}</span>
+                                        <span className="text-gray-400 font-medium mb-1">/ {plan.limite_asignado}</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500">Registros disponibles</p>
+                                </>
+                            ) : (
+                                <div className="py-2">
+                                    <p className="text-gray-400 italic text-sm">Sin plan activo para este periodo.</p>
+                                </div>
+                            )}
                         </div>
 
-                        <div className="w-full bg-gray-100 rounded-full h-3 mb-2">
-                            <div
-                                className={`h-3 rounded-full transition-all duration-1000 ${colorBarra === 'progress-primary' ? 'bg-indigo-600' : colorBarra === 'progress-warning' ? 'bg-amber-500' : 'bg-red-500'}`}
-                                style={{ width: `${porcentajePlan}%` }}
-                            ></div>
-                        </div>
-                        <div className="flex justify-between text-xs font-bold text-gray-400">
-                            <span>0%</span>
-                            <span>{porcentajePlan}% Consumido</span>
-                            <span>100%</span>
-                        </div>
+                        {plan && (
+                            <>
+                                <div className="w-full bg-gray-100 rounded-full h-3 mb-2">
+                                    <div
+                                        className={`h-3 rounded-full transition-all duration-1000 ${colorBarra === 'progress-primary' ? 'bg-indigo-600' : colorBarra === 'progress-warning' ? 'bg-amber-500' : 'bg-red-500'}`}
+                                        style={{ width: `${porcentajePlan}%` }}
+                                    ></div>
+                                </div>
+                                <div className="flex justify-between text-xs font-bold text-gray-400">
+                                    <span>0%</span>
+                                    <span>{porcentajePlan}% Consumido</span>
+                                    <span>100%</span>
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     {/* CARD BOLSA (ACUMULADO) */}
@@ -144,7 +212,7 @@ export default function DashboardConsumoPage() {
                             </span>
                             <span className="text-gray-400 text-sm mb-1.5 font-medium">disp.</span>
                         </div>
-                        <p className="text-xs text-gray-500 mb-4">Acumulado de meses anteriores no consumidos.</p>
+                        <p className="text-xs text-gray-500 mb-4">Acumulado disponible en este periodo.</p>
 
                         <div className="divider my-0"></div>
                         <div className="pt-3">
@@ -169,7 +237,7 @@ export default function DashboardConsumoPage() {
                             </span>
                             <span className="text-gray-400 text-sm mb-1.5 font-medium">disp.</span>
                         </div>
-                        <p className="text-xs text-gray-500 mb-4">Compras extra para cubrir picos de demanda.</p>
+                        <p className="text-xs text-gray-500 mb-4">Compras extra disponibles.</p>
 
                         <button
                             onClick={() => setShowRecargaModal(true)}
@@ -181,13 +249,13 @@ export default function DashboardConsumoPage() {
                 </div>
 
                 {/* 3. DETALLES (GRID 2) */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className={`grid grid-cols-1 lg:grid-cols-2 gap-8 ${loading ? 'opacity-50' : 'opacity-100'}`}>
 
                     {/* TABLA BOLSAS */}
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                         <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                             <h3 className="font-bold text-gray-700 flex items-center gap-2">
-                                <FaLeaf className="text-emerald-500" /> Detalle de Bolsas
+                                <FaLeaf className="text-emerald-500" /> Detalle de Bolsas Vigentes
                             </h3>
                         </div>
                         <div className="overflow-x-auto max-h-64">
@@ -202,7 +270,7 @@ export default function DashboardConsumoPage() {
                                 </thead>
                                 <tbody>
                                     {resumen.bolsas_vigentes.length === 0 ? (
-                                        <tr><td colSpan="4" className="text-center py-8 text-gray-400 italic">No tienes bolsas activas.</td></tr>
+                                        <tr><td colSpan="4" className="text-center py-8 text-gray-400 italic">No había bolsas vigentes en este periodo.</td></tr>
                                     ) : (
                                         resumen.bolsas_vigentes.map(b => (
                                             <tr key={b.id} className="hover:bg-gray-50">
@@ -222,7 +290,7 @@ export default function DashboardConsumoPage() {
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                         <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                             <h3 className="font-bold text-gray-700 flex items-center gap-2">
-                                <FaBolt className="text-amber-500" /> Detalle de Recargas
+                                <FaBolt className="text-amber-500" /> Detalle de Recargas Vigentes
                             </h3>
                         </div>
                         <div className="overflow-x-auto max-h-64">
@@ -236,7 +304,7 @@ export default function DashboardConsumoPage() {
                                 </thead>
                                 <tbody>
                                     {resumen.recargas_vigentes.length === 0 ? (
-                                        <tr><td colSpan="3" className="text-center py-8 text-gray-400 italic">No tienes recargas activas este mes.</td></tr>
+                                        <tr><td colSpan="3" className="text-center py-8 text-gray-400 italic">No había recargas vigentes.</td></tr>
                                     ) : (
                                         resumen.recargas_vigentes.map(r => (
                                             <tr key={r.id} className="hover:bg-gray-50">
@@ -252,13 +320,13 @@ export default function DashboardConsumoPage() {
                     </div>
                 </div>
 
-                {/* 4. HISTORIAL DE CONSUMO */}
+                {/* 4. HISTORIAL DE CONSUMO (Global o Filtrado? Actualmente global ultimos 50) */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-fadeIn">
                     <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center">
                         <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
                             <FaHistory className="text-gray-400" /> Audit Log de Consumo
                         </h3>
-                        <span className="text-xs text-gray-400">Últimos 50 movimientos</span>
+                        <span className="text-xs text-gray-400">Últimos 50 movimientos globales</span>
                     </div>
 
                     <div className="overflow-x-auto">

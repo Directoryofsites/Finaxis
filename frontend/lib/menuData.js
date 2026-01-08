@@ -100,7 +100,6 @@ export const menuStructure = [
             { name: 'Crear Documento', href: '/contabilidad/documentos', mnemonic: 'd', icon: FaFileAlt, description: 'Registro de asientos manuales y notas.', permission: 'contabilidad:crear_documento' },
             { name: 'Captura Rápida', href: '/contabilidad/captura-rapida', mnemonic: 'r', icon: FaPlus, description: 'Ingreso ágil de facturas y gastos.', permission: 'contabilidad:captura_rapida' },
             { name: 'Explorador Doc.', href: '/contabilidad/explorador', mnemonic: 'e', icon: FaBook, description: 'Búsqueda avanzada de movimientos.', permission: 'contabilidad:explorador' },
-            { name: 'Mi Plan y Consumo', href: '/contabilidad/consumo', mnemonic: 'k', icon: FaChartPie, description: 'Estado de cupos y recargas.', permission: 'contabilidad:acceso' },
             { name: 'Libro Diario Detallado', href: '/contabilidad/reportes/libro-diario', mnemonic: 'l', icon: FaBook, description: 'Movimientos cronológicos por día.', permission: 'contabilidad:libro_diario' },
             { name: 'Libro Diario Resumen', href: '/contabilidad/reportes/libro-diario-resumen', mnemonic: 'u', icon: FaBook, description: 'Resumen por tipo de documento.', permission: 'contabilidad:libro_diario' },
             { name: 'Análisis de Cuenta por Documento', href: '/contabilidad/reportes/analisis-cuenta-documento', mnemonic: 'y', icon: FaBook, description: 'Desglose por fuente.', permission: 'contabilidad:analisis_cuenta' },
@@ -247,6 +246,7 @@ export const menuStructure = [
                     { name: 'Cierre Periodos', href: '/admin/utilidades/periodos-contables', mnemonic: 'r', icon: FaCalendarAlt, permission: 'utilidades:cierre_periodos' },
                     { name: 'Auditoría de Consecutivos', href: '/admin/utilidades/auditoria-consecutivos', mnemonic: 'a', icon: FaCheckCircle, permission: 'utilidades:auditoria_consecutivos' },
                     { name: 'Conteo Registros', href: '/admin/utilidades/conteo-registros', mnemonic: 'c', icon: FaDatabase, permission: 'utilidades:conteo_registros' },
+                    { name: 'Mi Plan y Consumo', href: '/contabilidad/consumo', mnemonic: 'k', icon: FaChartPie, description: 'Estado de cupos y recargas.', permission: 'contabilidad:acceso' },
                 ]
             },
             {
