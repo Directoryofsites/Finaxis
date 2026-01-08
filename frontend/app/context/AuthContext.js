@@ -5,7 +5,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import * as jwtDecodeLib from 'jwt-decode';
 const jwtDecode = jwtDecodeLib.jwtDecode || jwtDecodeLib.default || jwtDecodeLib;
 
-import apiService, { setAuthToken } from '../../lib/apiService';
+import { apiService, setAuthToken } from '../../lib/apiService';
 
 const AuthContext = createContext(null);
 const TOKEN_KEY = 'authToken';
@@ -23,29 +23,37 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const initializeAuth = useCallback((token) => {
+  const initializeAuth = useCallback(async (token) => {
     try {
       const decodedUser = jwtDecode(token);
       if (decodedUser.exp * 1000 < Date.now()) {
         throw new Error('Token expirado');
       }
 
-      const userData = {
+      // 1. Establecer estado inicial básico desde el token (para evitar flicker blanco)
+      const initialUserData = {
         id: decodedUser.sub,
         email: decodedUser.sub,
-        rol: decodedUser.rol,
-        empresaId: decodedUser.empresa_id
+        empresaId: decodedUser.empresa_id,
+        // Rol básico mientras carga (opcional)
       };
-
-      setUser(userData);
       setAuthToken(token);
+      setUser(initialUserData);
+
+      // 2. Fetch del perfil completo (Roles y Permisos) desde backend
+      try {
+        const response = await apiService.get('/usuarios/me');
+        console.log("Perfil cargado:", response.data);
+        setUser(response.data); // Sobre-escribe con datos completos incluyendo 'roles' -> 'permisos'
+      } catch (fetchError) {
+        console.error("Error cargando perfil completo:", fetchError);
+        // Si falla el fetch de perfil, podríamos dejar al user básico O desloguear si es crítico.
+        // Por ahora dejamos el básico pero alertamos en consola.
+      }
+
       return true;
     } catch (error) {
       console.error("Fallo de autenticación (initializeAuth):", error.message);
-      // No eliminamos el token automáticamente para evitar que errores transitorios
-      // (como en nuevas pestañas o condiciones de carrera) cierren la sesión globalmente.
-      // Si el token es realmente inválido, el usuario verá la pantalla de login de todas formas
-      // porque user será null.
       setUser(null);
       setAuthToken(null);
       return false;

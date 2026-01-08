@@ -25,6 +25,7 @@ class RentabilidadProductoItem(BaseModel):
     total_costo: float = Field(default=0.0)
     total_utilidad: float = Field(default=0.0)
     margen_rentabilidad_porcentaje: float = Field(default=0.0)
+    total_cantidad: float = Field(default=0.0)
     
     # --- CAMPO RENOMBRADO: TRAZABILIDAD COMPLETA ---
     trazabilidad_documentos: List[TopDocumentoTrazabilidad] = Field(default_factory=list)

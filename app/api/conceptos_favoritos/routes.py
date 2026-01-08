@@ -10,7 +10,7 @@ from app.services import concepto_favorito as service
 from app.schemas import concepto_favorito as schemas_fav
 
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, has_permission
 from app.models import Usuario as models_usuario
 
 router = APIRouter(
@@ -29,7 +29,7 @@ def create_concepto_favorito_endpoint(
     # FIX: El input usa el Schema base corregido (ConceptoFavoritoBase)
     concepto_input: schemas_fav.ConceptoFavoritoBase,
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:configuracion_conceptos"))
 ):
     # Creamos el objeto ConceptoFavoritoCreate que el servicio espera
     concepto_a_crear = schemas_fav.ConceptoFavoritoCreate(
@@ -52,7 +52,7 @@ def create_concepto_favorito_endpoint(
 )
 def read_conceptos_favoritos(
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:configuracion_conceptos"))
 ):
     # FIX: Llamada al servicio corregido (get_conceptos_by_empresa)
     return service.get_conceptos_by_empresa(db=db, empresa_id=current_user.empresa_id)
@@ -69,7 +69,7 @@ def update_concepto_favorito_endpoint(
     # FIX: La actualización usa el esquema de actualización corregido (ConceptoFavoritoUpdate)
     concepto_update: schemas_fav.ConceptoFavoritoUpdate,
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:configuracion_conceptos"))
 ):
     # FIX: Llamada al servicio corregido (update_concepto_favorito)
     db_concepto = service.update_concepto_favorito(
@@ -89,7 +89,7 @@ def update_concepto_favorito_endpoint(
 def delete_conceptos_favoritos_endpoint(
     conceptos_a_borrar: schemas_fav.ConceptosDelete,
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:configuracion_conceptos"))
 ):
     # FIX: Llamada al servicio corregido (delete_conceptos_favoritos)
     count = service.delete_conceptos_favoritos(

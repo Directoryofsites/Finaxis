@@ -6,10 +6,10 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.services import empresa as service
 from app.services import dashboard as dashboard_service  # Importación consolidada aquí
-from app.schemas import empresa as schemas
+from app.schemas import empresa as schemas, usuario as schemas_usuario
 from app.models import Usuario as models_usuario
 # Importamos ambos tipos de dependencias de seguridad
-from app.core.security import get_current_soporte_user, get_current_user 
+from app.core.security import get_current_soporte_user, get_current_user, has_permission 
 
 router = APIRouter()
 
@@ -55,7 +55,7 @@ def create_empresa(
 def read_empresa(
     empresa_id: int, 
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("empresa:gestionar_empresas"))
 ):
     verificar_permiso_empresa(current_user, empresa_id)
     
@@ -69,7 +69,7 @@ def update_empresa(
     empresa_id: int, 
     empresa: schemas.EmpresaUpdate, 
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("empresa:gestionar_empresas"))
 ):
     verificar_permiso_empresa(current_user, empresa_id)
     
@@ -109,6 +109,23 @@ def read_usuarios_empresa(
         raise HTTPException(status_code=404, detail="Empresa no encontrada")
         
     return empresa.usuarios
+
+@router.post("/{empresa_id}/usuarios", response_model=schemas_usuario.User)
+def create_usuario_empresa(
+    empresa_id: int,
+    user_data: schemas_usuario.UserCreateInCompany,
+    db: Session = Depends(get_db),
+    current_user: models_usuario = Depends(get_current_user)
+):
+    """
+    Crea un nuevo usuario asociado directamente a esta empresa.
+    """
+    verificar_permiso_empresa(current_user, empresa_id)
+    
+    # Importamos el servicio aquí o arriba, pero como no lo teníamos arriba:
+    from app.services import usuario as usuario_service
+    
+    return usuario_service.create_user_in_company(db=db, user_data=user_data, empresa_id=empresa_id)
 
 @router.delete("/{empresa_id}")
 def delete_empresa(

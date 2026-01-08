@@ -3,6 +3,184 @@
 # No editar este archivo manualmente. Ejecutar precompile_templates.py para actualizar.
 
 TEMPLATES_EMPAQUETADOS = {
+    'reports/ventas_cliente_report.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Análisis Integral de Ventas por Cliente</title>
+    <style>
+        @page { size: letter landscape; margin: 1cm; }
+        body { font-family: Arial, sans-serif; font-size: 11px; color: #333; }
+        
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .header h1 { margin: 0 0 5px 0; font-size: 18px; color: #2c3e50; }
+        .header h2 { margin: 0; font-size: 14px; font-weight: normal; color: #7f8c8d; }
+        .header p { margin: 5px 0 0 0; font-size: 12px; }
+
+        /* KPI Box similar a pantalla */
+        .kpi-container {
+            display: table; width: 100%; margin-bottom: 20px; border-collapse: separate; border-spacing: 10px;
+        }
+        .kpi-box {
+            display: table-cell; width: 25%; background-color: #f8f9fa; 
+            padding: 10px; border: 1px solid #e9ecef; text-align: center; vertical-align: middle;
+        }
+        .kpi-label { font-size: 10px; color: #7f8c8d; text-transform: uppercase; margin-bottom: 5px; font-weight: bold; }
+        .kpi-value { font-size: 16px; font-weight: bold; color: #2c3e50; }
+
+        /* Tabla Principal */
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        th, td { padding: 8px 6px; border-bottom: 1px solid #eee; }
+        
+        th { 
+            background-color: #f1f1f1; color: #555; font-weight: bold; text-transform: uppercase; font-size: 10px;
+            border-bottom: 2px solid #ddd;
+        }
+        
+        /* Alineaciones */
+        .text-left { text-align: left; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+
+        /* Colores */
+        .positive { color: #27ae60; font-weight: bold; }
+        .negative { color: #c0392b; font-weight: bold; }
+        
+        tr:nth-child(even) { background-color: #f9f9f9; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <h2>NIT: {{ empresa.nit }}</h2>
+        <p><strong>ANÁLISIS INTEGRAL DE VENTAS POR CLIENTE</strong></p>
+        <p>Periodo: {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
+    </div>
+
+    <!-- RESUMEN EJECUTIVO KPI (Igual a Pantalla) -->
+    <div class="kpi-container">
+        <div class="kpi-box">
+            <div class="kpi-label">Ventas Totales</div>
+            <div class="kpi-value">${{ data.gran_total_venta|format_decimal(0) }}</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-label">Costo Total</div>
+            <div class="kpi-value">${{ data.gran_total_costo|format_decimal(0) }}</div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-label">Utilidad Global</div>
+            <div class="kpi-value {{ 'negative' if data.gran_total_utilidad < 0 else 'positive' }}">
+                ${{ data.gran_total_utilidad|format_decimal(0) }}
+            </div>
+        </div>
+        <div class="kpi-box">
+            <div class="kpi-label">Margen Global</div>
+            <div class="kpi-value {{ 'negative' if data.margen_global_porcentaje < 0 else 'positive' }}">
+                {{ "%.2f"|format(data.margen_global_porcentaje) }}%
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLA DE RESULTADOS POR CLIENTE -->
+    <h3 style="margin-bottom: 5px; font-size: 12px; color: #555;">Resultados por Cliente ({{ data.items|length }})</h3>
+    <table>
+        <thead>
+            <tr>
+                <th class="text-left">Cliente</th>
+                <th class="text-right">Venta</th>
+                <th class="text-right">Costo</th>
+                <th class="text-right">Utilidad</th>
+                <th class="text-right">Margen %</th>
+                <th class="text-center">Docs</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cliente in data.items %}
+            <tr>
+                <td class="text-left">
+                    <div style="font-weight: bold; font-size: 11px;">{{ cliente.tercero_nombre }}</div>
+                    <div style="font-size: 9px; color: #7f8c8d;">{{ cliente.tercero_identificacion }}</div>
+                </td>
+                <td class="text-right">${{ cliente.total_venta|format_decimal(0) }}</td>
+                <td class="text-right">${{ cliente.total_costo|format_decimal(0) }}</td>
+                <td class="text-right {{ 'negative' if cliente.total_utilidad < 0 else 'positive' }}">
+                    ${{ cliente.total_utilidad|format_decimal(0) }}
+                </td>
+                <td class="text-right {{ 'negative' if cliente.margen_porcentaje < 0 else 'positive' }}">
+                    {{ "%.2f"|format(cliente.margen_porcentaje) }}%
+                </td>
+                <td class="text-center">
+                    <span style="background-color: #eee; padding: 2px 6px; border-radius: 4px; font-size: 9px;">
+                        {{ cliente.conteo_documentos }}
+                    </span>
+                </td>
+            </tr>
+            
+            <!-- DETALLE EXPANDIDO (WYSIWYG) -->
+            {% if filtros.clientes_expandidos and cliente.tercero_id in filtros.clientes_expandidos %}
+            <tr>
+                <td colspan="6" style="background-color: #fcfcfc; padding: 10px;">
+                    <!-- Productos -->
+                    <div style="margin-bottom: 15px;">
+                        <h4 style="margin: 0 0 5px 0; font-size: 10px; color: #555; border-bottom: 1px solid #ddd; padding-bottom: 3px;">TOP PRODUCTOS COMPRADOS</h4>
+                        <table style="margin-top: 0;">
+                            <tr>
+                                <th class="text-left" style="background-color: #fff; font-size: 9px;">Producto</th>
+                                <th class="text-center" style="background-color: #fff; font-size: 9px;">Cant.</th>
+                                <th class="text-center" style="background-color: #fff; font-size: 9px;">Venta</th>
+                                <th class="text-center" style="background-color: #fff; font-size: 9px;">Utilidad</th>
+                            </tr>
+                            {% for prod in cliente.detalle_productos %}
+                            <tr>
+                                <td class="text-left" style="font-size: 9px;">
+                                    {{ prod.producto_nombre }} <span style="color: #999;">({{ prod.producto_codigo }})</span>
+                                </td>
+                                <td class="text-center" style="font-size: 9px;">{{ prod.cantidad|format_decimal(0) }}</td>
+                                <td class="text-center" style="font-size: 9px;">${{ prod.total_venta|format_decimal(0) }}</td>
+                                <td class="text-center {{ 'negative' if prod.utilidad < 0 else 'positive' }}" style="font-size: 9px;">
+                                    ${{ prod.utilidad|format_decimal(0) }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+
+                    <!-- Facturas -->
+                    <div>
+                        <h4 style="margin: 0 0 5px 0; font-size: 10px; color: #555; border-bottom: 1px solid #ddd; padding-bottom: 3px;">HISTORIAL DE FACTURAS</h4>
+                        <table style="margin-top: 0;">
+                            <tr>
+                                <th class="text-left" style="background-color: #fff; font-size: 9px;">Ref</th>
+                                <th class="text-center" style="background-color: #fff; font-size: 9px;">Fecha</th>
+                                <th class="text-center" style="background-color: #fff; font-size: 9px;">Venta</th>
+                                <th class="text-center" style="background-color: #fff; font-size: 9px;">Utilidad</th>
+                            </tr>
+                            {% for doc in cliente.detalle_documentos %}
+                            <tr>
+                                <td class="text-left" style="font-size: 9px; color: #0066cc;">{{ doc.documento_ref }}</td>
+                                <td class="text-center" style="font-size: 9px;">{{ doc.fecha }}</td>
+                                <td class="text-center" style="font-size: 9px;">${{ doc.total_venta|format_decimal(0) }}</td>
+                                <td class="text-center {{ 'negative' if doc.utilidad < 0 else 'positive' }}" style="font-size: 9px;">
+                                    ${{ doc.utilidad|format_decimal(0) }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #aaa; border-top: 1px solid #eee; padding-top: 10px;">
+        Generado automáticamente por el Sistema Contable
+    </div>
+</body>
+</html>
+    ''',
     'reports/account_ledger_report.html': r'''
 <!DOCTYPE html>
 <html lang="es">
@@ -2852,6 +3030,10 @@ TEMPLATES_EMPAQUETADOS = {
     <meta charset="UTF-8">
     <title>Rentabilidad por Documento</title>
     <style>
+        @page {
+            size: letter landscape;
+            margin: 1cm;
+        }
         body { font-family: Arial, sans-serif; font-size: 10pt; }
         .header { text-align: center; margin-bottom: 20px; }
         .header h1 { font-size: 16pt; margin-bottom: 5px; }
@@ -2872,7 +3054,7 @@ TEMPLATES_EMPAQUETADOS = {
     <div class="header">
         <h1>{{ empresa.razon_social }}</h1>
         <p>NIT: {{ empresa.nit }}</p>
-        <p>Reporte Generado: {{ now()|date("d/m/Y H:i") }}</p>
+        <p>Reporte Generado: {{ now()|date("%d/%m/%Y %H:%M") }}</p>
     </div>
 
     <div class="header-section">
@@ -2882,7 +3064,7 @@ TEMPLATES_EMPAQUETADOS = {
     <div class="info-box">
         <p><strong>Documento Auditado:</strong> {{ data.documento_ref }}</p>
         <p><strong>Tercero:</strong> {{ data.tercero_nombre }}</p>
-        <p><strong>Fecha de Documento:</strong> {{ data.fecha|date("d/m/Y") }}</p>
+        <p><strong>Fecha de Documento:</strong> {{ data.fecha|date("%d/%m/%Y") }}</p>
         <p><strong>Filtro Usado:</strong> Código {{ filtros.tipo_documento_codigo|default('N/A') }} y Número {{ filtros.numero_documento|default('N/A') }}</p>
     </div>
 

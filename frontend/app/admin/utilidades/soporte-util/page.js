@@ -14,7 +14,8 @@ import {
     createSoporteUser,
     updateSoporteUserPassword,
     getRoles,
-    deleteUser
+    deleteUser,
+    updateUser
 } from '@/lib/soporteApiService';
 
 import ConteoRegistros from './components/ConteoRegistros';
@@ -104,6 +105,8 @@ function PanelGestionUsuarios({ empresa, onDataChange }) {
     const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
     const [isProcessing, setIsProcessing] = useState(false);
     const [processingDeleteId, setProcessingDeleteId] = useState(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editUserId, setEditUserId] = useState(null);
 
     useEffect(() => {
         const fetchRoles = async () => {
@@ -136,23 +139,53 @@ function PanelGestionUsuarios({ empresa, onDataChange }) {
         }
         setIsProcessing(true);
         setMensaje({ texto: '', tipo: '' });
+
         const payload = {
             email: newUser.email,
-            password: newUser.password,
+            password: newUser.password, // Puede estar vacío en edit mode
             nombre_completo: newUser.nombre_completo,
             roles_ids: [parseInt(newUser.rolId, 10)]
         };
+
         try {
-            await createUserForCompany(empresa.id, payload);
-            setMensaje({ texto: 'Usuario creado con éxito. Actualizando...', tipo: 'success' });
+            if (isEditing) {
+                // Lógica de Actualización
+                // Solo enviamos password si el usuario escribió algo
+                if (!payload.password) delete payload.password;
+
+                await updateUser(editUserId, payload);
+                setMensaje({ texto: 'Usuario actualizado con éxito. Actualizando...', tipo: 'success' });
+            } else {
+                // Lógica de Creación
+                await createUserForCompany(empresa.id, payload);
+                setMensaje({ texto: 'Usuario creado con éxito. Actualizando...', tipo: 'success' });
+            }
             onDataChange();
-            setNewUser({ email: '', password: '', nombre_completo: '', rolId: roles.length > 0 ? roles[0].id : '' });
+            resetForm();
         } catch (error) {
-            const errorMsg = error.response?.data?.detail || 'Error al crear el usuario.';
+            const errorMsg = error.response?.data?.detail || (isEditing ? 'Error al actualizar usuario.' : 'Error al crear usuario.');
             setMensaje({ texto: errorMsg, tipo: 'error' });
         } finally {
             setIsProcessing(false);
         }
+    };
+
+    const resetForm = () => {
+        setNewUser({ email: '', password: '', nombre_completo: '', rolId: roles.length > 0 ? roles[0].id : '' });
+        setIsEditing(false);
+        setEditUserId(null);
+    };
+
+    const handleEditUser = (user) => {
+        setNewUser({
+            email: user.email,
+            password: '', // No mostramos la contraseña
+            nombre_completo: user.nombre_completo || '',
+            rolId: user.roles && user.roles.length > 0 ? user.roles[0].id : (roles.length > 0 ? roles[0].id : '')
+        });
+        setIsEditing(true);
+        setEditUserId(user.id);
+        setMensaje({ texto: 'Modo Edición Activado', tipo: 'info' });
     };
 
     const handleDeleteUser = async (userId, userEmail) => {
@@ -183,6 +216,12 @@ function PanelGestionUsuarios({ empresa, onDataChange }) {
                                 {user.email} ({user.roles?.map(r => r.nombre).join(', ') || 'Sin rol'})
                             </span>
                             <button
+                                onClick={() => handleEditUser(user)}
+                                disabled={isProcessing}
+                                className="text-xs text-indigo-600 hover:text-indigo-800 disabled:text-gray-400 mr-3">
+                                Editar
+                            </button>
+                            <button
                                 onClick={() => handleDeleteUser(user.id, user.email)}
                                 disabled={processingDeleteId === user.id}
                                 className="text-xs text-red-600 hover:text-red-800 disabled:text-gray-400">
@@ -193,15 +232,24 @@ function PanelGestionUsuarios({ empresa, onDataChange }) {
                 </ul>
             </div>
             <form onSubmit={handleCreateUser} className="space-y-4 border-t pt-4">
-                <h4 className="text-md font-semibold text-gray-800">Crear Nuevo Usuario</h4>
+                <div className="flex justify-between items-center">
+                    <h4 className="text-md font-semibold text-gray-800">
+                        {isEditing ? 'Editar Usuario' : 'Crear Nuevo Usuario'}
+                    </h4>
+                    {isEditing && (
+                        <button type="button" onClick={resetForm} className="text-xs text-gray-500 hover:text-gray-700 underline">
+                            Cancelar Edición
+                        </button>
+                    )}
+                </div>
                 <input type="email" name="email" value={newUser.email} onChange={handleNewUserChange} placeholder="Email" required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
-                <input type="password" name="password" value={newUser.password} onChange={handleNewUserChange} placeholder="Contraseña (mín 6 caracteres)" required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
+                <input type="password" name="password" value={newUser.password} onChange={handleNewUserChange} placeholder={isEditing ? "Dejar en blanco para mantener contraseña" : "Contraseña (mín 6 caracteres)"} required={!isEditing} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
                 <input type="text" name="nombre_completo" value={newUser.nombre_completo} onChange={handleNewUserChange} placeholder="Nombre Completo (Opcional)" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
                 <select name="rolId" value={newUser.rolId} onChange={handleNewUserChange} disabled={isLoadingRoles} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
                     {isLoadingRoles ? <option>Cargando roles...</option> : roles.map(rol => <option key={rol.id} value={rol.id}>{rol.nombre}</option>)}
                 </select>
-                <button type="submit" disabled={isProcessing || isLoadingRoles} className="w-full px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:bg-gray-400">
-                    {isProcessing ? 'Creando...' : 'Crear Usuario'}
+                <button type="submit" disabled={isProcessing || isLoadingRoles} className={`w-full px-4 py-2 text-sm font-medium text-white rounded-md hover:opacity-90 disabled:bg-gray-400 ${isEditing ? 'bg-indigo-600' : 'bg-green-600'}`}>
+                    {isProcessing ? 'Procesando...' : (isEditing ? 'Actualizar Usuario' : 'Crear Usuario')}
                 </button>
             </form>
         </div>

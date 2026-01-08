@@ -83,8 +83,23 @@ export default function NuevaFacturaPage() {
         productos: [],
     });
 
-    const totalFactura = useMemo(() => {
-        return items.reduce((acc, item) => acc + (item.cantidad * item.precio_unitario), 0);
+    const { subtotalGeneral, ivaGeneral, totalGeneral } = useMemo(() => {
+        const result = items.reduce((acc, item) => {
+            const cantidad = parseFloat(item.cantidad) || 0;
+            const precio = parseFloat(item.precio_unitario) || 0;
+            const subtotalItem = cantidad * precio;
+            const ivaItem = subtotalItem * (item.porcentaje_iva || 0);
+
+            acc.subtotal += subtotalItem;
+            acc.iva += ivaItem;
+            return acc;
+        }, { subtotal: 0, iva: 0 });
+
+        return {
+            subtotalGeneral: result.subtotal,
+            ivaGeneral: result.iva,
+            totalGeneral: result.subtotal + result.iva
+        };
     }, [items]);
 
     const tipoDocSeleccionado = useMemo(() =>
@@ -273,7 +288,8 @@ export default function NuevaFacturaPage() {
                     codigo: producto ? producto.codigo : d.producto_id,
                     nombre: producto ? producto.nombre : `Producto ID ${d.producto_id} (Desde Remisión)`,
                     cantidad: d.cantidad_pendiente,
-                    precio_unitario: d.precio_unitario
+                    precio_unitario: d.precio_unitario,
+                    porcentaje_iva: producto ? (producto.porcentaje_iva || 0) : 0
                 };
             });
 
@@ -326,7 +342,8 @@ export default function NuevaFacturaPage() {
                 codigo: producto ? producto.codigo : d.producto_id,
                 nombre: producto ? producto.nombre : `Producto ID ${d.producto_id}`,
                 cantidad: d.cantidad,
-                precio_unitario: d.precio_unitario
+                precio_unitario: d.precio_unitario,
+                porcentaje_iva: producto ? (producto.porcentaje_iva || 0) : 0
             };
         });
 
@@ -627,9 +644,24 @@ export default function NuevaFacturaPage() {
                             {items.length > 0 && (
                                 <tfoot className="bg-slate-50 border-t-2 border-slate-200">
                                     <tr>
-                                        <td colSpan="4" className="px-4 py-3 text-right text-sm font-bold text-gray-600 uppercase">Total Factura:</td>
-                                        <td className="px-4 py-3 text-right text-lg font-bold font-mono text-blue-600">
-                                            ${totalFactura.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+
+                                        <td colSpan="4" className="px-4 py-2 text-right text-sm font-bold text-gray-500 uppercase">Subtotal:</td>
+                                        <td className="px-4 py-2 text-right text-base font-medium text-gray-700">
+                                            ${subtotalGeneral.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td colSpan="4" className="px-4 py-2 text-right text-sm font-bold text-gray-500 uppercase">IVA:</td>
+                                        <td className="px-4 py-2 text-right text-base font-medium text-gray-700">
+                                            ${ivaGeneral.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                    <tr className="bg-blue-50">
+                                        <td colSpan="4" className="px-4 py-3 text-right text-sm font-bold text-gray-800 uppercase border-t border-blue-200">Total Factura:</td>
+                                        <td className="px-4 py-3 text-right text-xl font-bold font-mono text-blue-700 border-t border-blue-200">
+                                            ${totalGeneral.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                         </td>
                                         <td></td>
                                     </tr>

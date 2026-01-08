@@ -6,7 +6,7 @@ from app.services import tipo_documento as service
 from app.schemas import tipo_documento as schemas
 from app.core.database import get_db
 # --- IMPORTACIONES CORREGIDAS ---
-from app.core.security import get_current_user
+from app.core.security import get_current_user, has_permission
 from app.models import Usuario as models_usuario
 
 router = APIRouter()
@@ -16,7 +16,7 @@ def create_tipo_documento(
     tipo_documento: schemas.TipoDocumentoCreate, 
     db: Session = Depends(get_db),
     # --- TIPO DE DATO CORREGIDO ---
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:configuracion_tipos_doc"))
 ):
     # Forzamos el uso del empresa_id del token.
     tipo_documento.empresa_id = current_user.empresa_id
@@ -37,7 +37,7 @@ def read_tipos_documento(
     skip: int = 0, 
     limit: int = 100, 
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:configuracion_tipos_doc"))
 ):
     """
     [FIX] Obtiene la lista COMPLETA de tipos de documento.
@@ -53,7 +53,7 @@ def read_tipo_documento(
     tipo_documento_id: int, 
     db: Session = Depends(get_db),
     # --- TIPO DE DATO CORREGIDO ---
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:configuracion_tipos_doc"))
 ):
     db_tipo_doc = service.get_tipo_documento(db, tipo_documento_id=tipo_documento_id)
     if not db_tipo_doc:
@@ -68,7 +68,7 @@ def get_siguiente_numero(
     tipo_documento_id: int, 
     db: Session = Depends(get_db),
     # --- TIPO DE DATO CORREGIDO ---
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:configuracion_tipos_doc"))
 ):
     # Verificación de autorización previa
     db_tipo_doc_check = service.get_tipo_documento(db, tipo_documento_id=tipo_documento_id)
@@ -86,7 +86,7 @@ def update_tipo_documento(
     tipo_documento_update: schemas.TipoDocumentoUpdate, 
     db: Session = Depends(get_db),
     # --- TIPO DE DATO CORREGIDO ---
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:configuracion_tipos_doc"))
 ):
     # Verificación de autorización previa
     db_tipo_doc_check = service.get_tipo_documento(db, tipo_documento_id=tipo_documento_id)
@@ -108,7 +108,7 @@ def delete_tipo_documento(
     tipo_documento_id: int, 
     db: Session = Depends(get_db),
     # --- TIPO DE DATO CORREGIDO ---
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:configuracion_tipos_doc"))
 ):
     # Usamos el empresa_id del usuario autenticado para la validación en el servicio.
     result = service.delete_tipo_documento(db, tipo_documento_id=tipo_documento_id, empresa_id=current_user.empresa_id)

@@ -77,28 +77,32 @@ export const deleteUser = (userId) => {
   return soporteApiService.delete(`/usuarios/${userId}`);
 };
 
+export const updateUser = (userId, userData) => {
+  return soporteApiService.put(`/usuarios/${userId}`, userData);
+};
+
 export const getMaestrosSoporte = () => {
   return soporteApiService.get('/utilidades/soporte/maestros');
 };
 
 export const inspeccionarEntidades = (payload) => {
-    return soporteApiService.post('/utilidades/inspeccionar-entidades', payload);
+  return soporteApiService.post('/utilidades/inspeccionar-entidades', payload);
 };
 
 export const erradicarEntidadesMaestras = (payload) => {
-    return soporteApiService.post('/utilidades/erradicar-entidades-maestras', payload);
+  return soporteApiService.post('/utilidades/erradicar-entidades-maestras', payload);
 };
 
 export const iniciarReseteoPassword = (payload) => {
-    return soporteApiService.post('/utilidades/iniciar-reseteo-password', payload);
+  return soporteApiService.post('/utilidades/iniciar-reseteo-password', payload);
 };
 
 export const analizarErradicacion = (payload) => {
-    return soporteApiService.post('/utilidades/analizar-erradicacion', payload);
+  return soporteApiService.post('/utilidades/analizar-erradicacion', payload);
 };
 
 export const getConteoRegistros = () => {
-    return soporteApiService.get('/utilidades/conteo-registros');
+  return soporteApiService.get('/utilidades/conteo-registros');
 };
 
 export const getSoporteUsers = () => {
@@ -119,18 +123,18 @@ export const getRoles = () => {
 
 // --- FUNCIÓN CORREGIDA (Usaba 'soporteApi' en vez de 'soporteApiService') ---
 export const setCupoAdicional = (empresaId, anio, mes, cantidad) => {
-    return soporteApiService.post(`/empresas/${empresaId}/adicionales`, {
-        anio: parseInt(anio),
-        mes: parseInt(mes),
-        cantidad_adicional: parseInt(cantidad)
-    });
+  return soporteApiService.post(`/empresas/${empresaId}/adicionales`, {
+    anio: parseInt(anio),
+    mes: parseInt(mes),
+    cantidad_adicional: parseInt(cantidad)
+  });
 };
 
 // EN frontend/lib/soporteApiService.js
 
 export const getConsumoEmpresa = (empresaId, mes, anio) => {
-    return soporteApiService.get(`/empresas/${empresaId}/consumo`, {
-        params: { mes, anio }
-    });
+  return soporteApiService.get(`/empresas/${empresaId}/consumo`, {
+    params: { mes, anio }
+  });
 };
 

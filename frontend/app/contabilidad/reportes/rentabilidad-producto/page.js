@@ -560,7 +560,7 @@ export default function RentabilidadProductoPage() {
                                                 <tr className={`hover:bg-gray-50 transition-colors ${isLoss ? 'bg-red-50/30' : ''}`}>
                                                     <td className="py-3 px-6 font-mono text-xs text-gray-500">{item.producto_codigo}</td>
                                                     <td className="py-3 px-6 font-medium text-gray-800">{item.producto_nombre}</td>
-                                                    <td className="py-3 px-6 text-right font-mono text-gray-600">{fmtMoneda(item.cantidad)}</td>
+                                                    <td className="py-3 px-6 text-right font-mono text-gray-600">{fmtMoneda(modoReporte === 'producto' ? item.total_cantidad : item.cantidad)}</td>
                                                     <td className="py-3 px-6 text-right font-mono text-gray-600">${fmtMoneda(modoReporte === 'producto' ? item.total_venta : item.valor_venta_total)}</td>
                                                     <td className="py-3 px-6 text-right font-mono text-gray-600">${fmtMoneda(modoReporte === 'producto' ? item.total_costo : item.costo_total)}</td>
 

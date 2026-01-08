@@ -32,22 +32,35 @@ export default function Sidebar({
 
             {/* Contenedor de Items del Menú (Nivel 1: El Árbol Principal) */}
             <div className="flex-1 overflow-y-auto pt-4 space-y-1">
-                {menuStructure.map((module) => (
-                    <button
-                        key={module.id}
-                        type="button"
-                        onClick={(e) => {
-                            e.preventDefault();
-                            onMenuClick(module.id);
-                        }}
-                        className={`flex items-center p-3 transition duration-150 rounded-lg mx-2 text-sm font-semibold w-[90%]
+                {menuStructure.map((module) => {
+                    // Verificar permisos
+                    if (module.permission) {
+                        const userPermissions = user?.roles?.flatMap(r => r.permisos?.map(p => p.nombre)) || [];
+                        if (!userPermissions.includes(module.permission)) {
+                            // Si no tiene el permiso del módulo, verificar si tiene AL MENOS UN permiso de los sub-items (fallback inteligente)
+                            // Esto es opcional, pero ayuda si el permiso padre no está asignado explícitamente pero sí uno hijo.
+                            // Para simplificar: Estricto. Si requiere permiso de módulo y no lo tiene, chao.
+                            return null;
+                        }
+                    }
+
+                    return (
+                        <button
+                            key={module.id}
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                onMenuClick(module.id);
+                            }}
+                            className={`flex items-center p-3 transition duration-150 rounded-lg mx-2 text-sm font-semibold w-[90%]
                             ${activeModuleId === module.id ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}
-                        title={module.name}
-                    >
-                        <module.icon className="w-5 h-5 mr-3" />
-                        <span>{module.name}</span>
-                    </button>
-                ))}
+                            title={module.name}
+                        >
+                            <module.icon className="w-5 h-5 mr-3" />
+                            <span>{module.name}</span>
+                        </button>
+                    );
+                })}
             </div>
 
             {/* Pie de página del Sidebar (Cerrar Sesión) */}

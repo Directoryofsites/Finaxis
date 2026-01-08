@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{{documento.tipo_nombre}}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #1f2937;
+            font-size: 9px;
+            margin: 0;
+            padding: 12px;
+            line-height: 1.3;
+            background: #ffffff;
+        }
+
+        /* ENCABEZADO EMPRESARIAL */
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .company-section {
+            width: 58%;
+        }
+
+        .company-logo {
+            max-height: 42px;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .company-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: #111827;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            letter-spacing: 0.3px;
+        }
+
+        .company-details {
+            color: #6b7280;
+            font-size: 8px;
+            line-height: 1.4;
+        }
+
+        .document-section {
+            width: 38%;
+            text-align: right;
+        }
+
+        .doc-type {
+            font-size: 16px;
+            font-weight: 800;
+            color: #1d4ed8;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            letter-spacing: -0.2px;
+        }
+
+        .doc-number {
+            font-size: 14px;
+            color: #dc2626;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .doc-dates {
+            font-size: 8px;
+            color: #6b7280;
+            line-height: 1.4;
+        }
+
+        .date-label {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        /* INFORMACIÓN CLIENTE */
+        .client-section {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 16px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .client-header {
+            font-size: 7px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .client-name {
+            font-size: 11px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 3px;
+        }
+
+        .client-info {
+            color: #64748b;
+            font-size: 8px;
+            line-height: 1.4;
+        }
+
+        /* TABLA PRODUCTOS */
+        .products-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            font-size: 8px;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .products-table th {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: #ffffff;
+            padding: 8px 6px;
+            font-size: 7px;
+            text-transform: uppercase;
+            font-weight: 600;
+            text-align: left;
+            letter-spacing: 0.5px;
+        }
+
+        .products-table th.text-center { text-align: center; }
+        .products-table th.text-right { text-align: right; }
+
+        .products-table td {
+            padding: 6px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+
+        .products-table tbody tr:nth-child(even) {
+            background-color: #fafbfc;
+        }
+
+        .products-table tbody tr:hover {
+            background-color: #f0f9ff;
+        }
+
+        .item-code {
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+            font-size: 7px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .item-description {
+            font-size: 8px;
+            color: #1e293b;
+            font-weight: 500;
+        }
+
+        .item-quantity {
+            text-align: center;
+            font-weight: 700;
+            color: #1d4ed8;
+            font-size: 8px;
+        }
+
+        .item-price, .item-amount {
+            text-align: right;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+            font-size: 8px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        /* SECCIÓN TOTALES PROFESIONAL */
+        .totals-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .notes-area {
+            width: 52%;
+        }
+
+        .amount-words {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            color: #991b1b;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 7px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            border-left: 4px solid #dc2626;
+            letter-spacing: 0.3px;
+        }
+
+        .observations {
+            background: #fffbeb;
+            border: 1px solid #f59e0b;
+            border-left: 4px solid #d97706;
+            padding: 8px;
+            border-radius: 4px;
+            color: #92400e;
+            font-size: 7px;
+            line-height: 1.4;
+        }
+
+        .totals-panel {
+            width: 45%;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .total-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 12px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 8px;
+        }
+
+        .total-line:last-child {
+            border-bottom: none;
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 10px;
+        }
+
+        .total-line.subtotal-line {
+            background: #f8fafc;
+            font-weight: 600;
+        }
+
+        .total-line.tax-line {
+            background: #fef7ff;
+            color: #7c2d12;
+        }
+
+        .total-line.base-line {
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .total-label {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .total-line:last-child .total-label {
+            color: #ffffff;
+        }
+
+        .total-line.tax-line .total-label,
+        .total-line.base-line .total-label {
+            font-weight: 700;
+        }
+
+        .total-value {
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+            font-weight: 700;
+            text-align: right;
+            min-width: 85px;
+        }
+
+        /* PIE DE PÁGINA EMPRESARIAL */
+        .footer-area {
+            margin-top: 28px;
+            padding-top: 16px;
+            border-top: 2px solid #f1f5f9;
+        }
+
+        .legal-notice {
+            background: #f8fafc;
+            padding: 8px 10px;
+            border-radius: 4px;
+            color: #64748b;
+            font-size: 7px;
+            line-height: 1.4;
+            margin-bottom: 12px;
+            text-align: justify;
+        }
+
+        .signature-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 16px;
+        }
+
+        .signature-field {
+            text-align: center;
+            padding-top: 28px;
+        }
+
+        .signature-line {
+            border-top: 1.5px solid #64748b;
+            padding-top: 4px;
+            font-size: 7px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .footer-brand {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 7px;
+            font-style: italic;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- ENCABEZADO EMPRESARIAL -->
+    <div class="header-container">
+        <div class="company-section">
+            {% if empresa.logo_url %}
+            <img src="{{empresa.logo_url}}" class="company-logo" alt="Logo Empresa">
+            {% endif %}
+            <div class="company-name">{{empresa.razon_social}}</div>
+            <div class="company-details">
+                NIT: {{empresa.nit}} • {{empresa.direccion}}<br>
+                Tel: {{empresa.telefono}}{% if empresa.email %} • {{empresa.email}}{% endif %}
+            </div>
+        </div>
+        
+        <div class="document-section">
+            <div class="doc-type">{{documento.tipo_nombre}}</div>
+            <div class="doc-number">N° {{documento.consecutivo}}</div>
+            <div class="doc-dates">
+                <span class="date-label">Fecha:</span> {{documento.fecha_emision}}<br>
+                {% if documento.fecha_vencimiento %}<span class="date-label">Vence:</span> {{documento.fecha_vencimiento}}<br>{% endif %}
+                {% if documento.vendedor %}<span class="date-label">Vendedor:</span> {{documento.vendedor}}{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- INFORMACIÓN DEL CLIENTE -->
+    <div class="client-section">
+        <div class="client-header">Cliente / Proveedor</div>
+        <div class="client-name">{{tercero.razon_social}}</div>
+        <div class="client-info">
+            NIT/CC: {{tercero.nit}}{% if tercero.direccion %} • {{tercero.direccion}}{% endif %}{% if tercero.telefono %} • Tel: {{tercero.telefono}}{% endif %}
+        </div>
+    </div>
+
+    <!-- TABLA DE PRODUCTOS -->
+    <table class="products-table">
+        <thead>
+            <tr>
+                <th width="10%">Código</th>
+                <th width="40%">Descripción del Producto/Servicio</th>
+                <th width="8%" class="text-center">Cant.</th>
+                <th width="12%" class="text-right">Precio Unit.</th>
+                <th width="10%" class="text-right">Descuento</th>
+                <th width="20%" class="text-right">Valor Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="item-code">{{item.producto_codigo}}</td>
+                <td class="item-description">{{item.producto_nombre}}</td>
+                <td class="item-quantity">{{item.cantidad}}</td>
+                <td class="item-price">{{item.precio_unitario}}</td>
+                <td class="item-price">{{item.descuento|default('0.00')}}</td>
+                <td class="item-amount">{{item.subtotal}}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- TOTALES Y DISCRIMINACIÓN FISCAL -->
+    <div class="totals-container">
+        <div class="notes-area">
+            {% if totales.valor_letras %}
+            <div class="amount-words">
+                SON: {{totales.valor_letras}}
+            </div>
+            {% endif %}
+
+            {% if documento.observaciones %}
+            <div class="observations">
+                <strong>Observaciones:</strong><br>
+                {{documento.observaciones}}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="totals-panel">
+            <!-- SUBTOTAL -->
+            <div class="total-line subtotal-line">
+                <span class="total-label">Subtotal:</span>
+                <span class="total-value">{{totales.subtotal}}</span>
+            </div>
+            
+            <!-- DESCUENTOS -->
+            {% if totales.descuentos and totales.descuentos != '0.00' %}
+            <div class="total-line">
+                <span class="total-label">Descuentos:</span>
+                <span class="total-value">-{{totales.descuentos}}</span>
+            </div>
+            {% endif %}
+            
+            <!-- DISCRIMINACIÓN DE BASES GRAVABLES -->
+            {% if totales.base_exenta and totales.base_exenta != '0.00' %}
+            <div class="total-line base-line">
+                <span class="total-label">Base Exenta (0%):</span>
+                <span class="total-value">{{totales.base_exenta}}</span>
+            </div>
+            {% endif %}
+            
+            {% if totales.base_gravable_5 and totales.base_gravable_5 != '0.00' %}
+            <div class="total-line base-line">
+                <span class="total-label">Base Gravable (5%):</span>
+                <span class="total-value">{{totales.base_gravable_5}}</span>
+            </div>
+            {% endif %}
+            
+            {% if totales.base_gravable_19 and totales.base_gravable_19 != '0.00' %}
+            <div class="total-line base-line">
+                <span class="total-label">Base Gravable (19%):</span>
+                <span class="total-value">{{totales.base_gravable_19}}</span>
+            </div>
+            {% endif %}
+            
+            <!-- DISCRIMINACIÓN DE IMPUESTOS -->
+            {% if totales.iva_5 and totales.iva_5 != '0.00' %}
+            <div class="total-line tax-line">
+                <span class="total-label">IVA (5%):</span>
+                <span class="total-value">{{totales.iva_5}}</span>
+            </div>
+            {% endif %}
+            
+            {% if totales.iva_19 and totales.iva_19 != '0.00' %}
+            <div class="total-line tax-line">
+                <span class="total-label">IVA (19%):</span>
+                <span class="total-value">{{totales.iva_19}}</span>
+            </div>
+            {% endif %}
+            
+            <!-- RETENCIONES -->
+            {% if totales.retencion and totales.retencion != '0.00' %}
+            <div class="total-line">
+                <span class="total-label">Retención:</span>
+                <span class="total-value">-{{totales.retencion}}</span>
+            </div>
+            {% endif %}
+            
+            <!-- TOTAL FINAL -->
+            <div class="total-line">
+                <span class="total-label">TOTAL A PAGAR:</span>
+                <span class="total-value">{{totales.total}}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- PIE DE PÁGINA EMPRESARIAL -->
+    <div class="footer-area">
+        <div class="legal-notice">
+            Esta factura se asimila en todos sus efectos a una letra de cambio de conformidad con el artículo 774 del Código de Comercio. 
+            Los pagos realizados después del vencimiento causarán intereses de mora según las tasas legales vigentes.
+        </div>
+
+        <div class="signature-grid">
+            <div class="signature-field">
+                <div class="signature-line">Elaboró</div>
+            </div>
+            <div class="signature-field">
+                <div class="signature-line">Revisó</div>
+            </div>
+            <div class="signature-field">
+                <div class="signature-line">Aprobó</div>
+            </div>
+            <div class="signature-field">
+                <div class="signature-line">Recibí Conforme</div>
+            </div>
+        </div>
+
+        <div class="footer-brand">
+            Gracias por su confianza • Powered by ContaPY Enterprise
+        </div>
+    </div>
+</body>
+</html>

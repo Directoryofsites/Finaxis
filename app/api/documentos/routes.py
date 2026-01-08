@@ -52,7 +52,7 @@ def transformar_a_detalle_vendido(movimientos: List[models_mov.MovimientoContabl
 def create_documento(
     documento: schemas.DocumentoCreate,
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:crear_documento"))
 ):
     documento.empresa_id = current_user.empresa_id
     try:
@@ -70,7 +70,7 @@ def read_documentos(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:explorador"))
 ):
     filtros_dict = filtros.model_dump(exclude_none=True)
     return service.get_documentos(
@@ -86,7 +86,7 @@ def read_documentos(
 def buscar_para_gestion(
     filtros_payload: schemas.DocumentoGestionFiltros,
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:explorador"))
 ):
     try:
         resultados = service.buscar_documentos_para_gestion(
@@ -193,7 +193,7 @@ def update_documento_endpoint(
     documento_id: int,
     documento_update: schemas.DocumentoUpdate,
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:crear_documento"))
 ):
     try:
         db_documento = service.update_documento(
@@ -215,7 +215,7 @@ def anular_documento(
     documento_id: int,
     anulacion_data: schemas.DocumentoAnulacion,
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:crear_documento"))
 ):
     try:
         db_documento = service.anular_documento(
@@ -257,7 +257,7 @@ def eliminar_documento(
     documento_id: int,
     eliminacion_data: schemas.DocumentoAnulacion,
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:crear_documento"))
 ):
     try:
         resultado = service.eliminar_documento(

@@ -6,7 +6,7 @@ from app.core.database import get_db
 from app.services import plan_cuenta as services_plan
 from app.schemas import plan_cuenta as schemas_plan
 from app.models import Usuario as models_usuario
-from app.core.security import get_current_user
+from app.core.security import get_current_user, has_permission
 
 router = APIRouter()
 
@@ -14,7 +14,7 @@ router = APIRouter()
 def create_cuenta(
     cuenta_input: schemas_plan.PlanCuentaInput,
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:gestionar_puc"))
 ):
     """
     Crea una nueva cuenta. La lógica de validación, cálculo de nivel y
@@ -37,7 +37,7 @@ def update_cuenta(
     cuenta_id: int,
     cuenta_update: schemas_plan.PlanCuentaUpdate,
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:gestionar_puc"))
 ):
     """
     Actualiza una cuenta. La validación de la cuenta padre y otras reglas
@@ -58,7 +58,7 @@ def update_cuenta(
 def delete_cuenta(
     cuenta_id: int,
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:gestionar_puc"))
 ):
     """
     Elimina una cuenta. La verificación de dependencias (hijos, movimientos)
@@ -84,7 +84,7 @@ def delete_cuenta(
 def analizar_importacion(
     cuentas: List[schemas_plan.ImportarCuentaInput],
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:gestionar_puc"))
 ):
     return services_plan.analizar_importacion_puc(db, cuentas, current_user.empresa_id)
 
@@ -92,7 +92,7 @@ def analizar_importacion(
 def importar_lote(
     request: schemas_plan.ImportarLoteRequest,
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:gestionar_puc"))
 ):
     return services_plan.importar_cuentas_lote(db, request.cuentas, current_user.empresa_id, current_user.id)
 
@@ -114,7 +114,7 @@ def analizar_depuracion(
 def ejecutar_depuracion(
     request: schemas_plan.EjecucionDepuracionRequest,
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(has_permission("contabilidad:gestionar_puc"))
 ):
     return services_plan.ejecutar_depuracion_jerarquica(
         db=db, 

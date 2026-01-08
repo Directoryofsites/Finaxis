@@ -345,6 +345,12 @@ export default function TopNavigationBar() {
                     </button>
 
                     {menuStructure.map((module) => {
+                        // VERIFICACIÓN DE PERMISOS (MÓDULO)
+                        if (module.permission) {
+                            const userPermissions = user?.roles?.flatMap(r => r.permisos?.map(p => p.nombre)) || [];
+                            if (!userPermissions.includes(module.permission)) return null;
+                        }
+
                         const isOpen = isMenuOpen === module.id;
                         const mnemonicKey = module.mnemonic;
 
@@ -413,42 +419,61 @@ export default function TopNavigationBar() {
                     onMouseLeave={handleMouseLeave}
                 >
                     <div className="py-1 max-h-[80vh] overflow-y-auto">
-                        {menuStructure.find(m => m.id === isMenuOpen)?.links?.map((link, idx) => (
-                            <Link
-                                key={link.href}
-                                href={link.href}
-                                className={`block px-4 py-2 text-sm flex items-center transition-colors border-l-4
-                                    ${idx === focusedLinkIndex
-                                        ? 'bg-blue-100 text-blue-900 border-blue-600'
-                                        : 'text-gray-700 hover:bg-[#cce0ff] hover:text-black border-transparent'}
-                                `}
-                                onClick={closeAll}
-                            >
-                                <span className="w-5 mr-2 text-gray-500 flex justify-center">
-                                    {link.icon && <link.icon size={12} />}
-                                </span>
-                                {renderLinkContent(link, idx)}
-                                {idx === focusedLinkIndex && <FaArrowRight className="ml-auto text-blue-500 text-xs" />}
-                            </Link>
-                        ))}
+                        {menuStructure.find(m => m.id === isMenuOpen)?.links?.map((link, idx) => {
+                            // VERIFICACIÓN DE PERMISOS (LINK INDIVIDUAL)
+                            if (link.permission) {
+                                const userPermissions = user?.roles?.flatMap(r => r.permisos?.map(p => p.nombre)) || [];
+                                if (!userPermissions.includes(link.permission)) return null;
+                            }
 
-                        {menuStructure.find(m => m.id === isMenuOpen)?.subgroups?.map(sub => (
-                            <div key={sub.title} className="mt-1 border-t border-gray-200 pt-1 pb-1">
-                                <div className="px-4 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50">{sub.title}</div>
-                                {sub.links.map((link, subIdx) => {
-                                    return (
-                                        <Link
-                                            key={link.href}
-                                            href={link.href}
-                                            className="block px-4 py-2 text-sm hover:bg-[#cce0ff] hover:text-black text-gray-700 pl-8 transition-colors"
-                                            onClick={closeAll}
-                                        >
-                                            {renderLinkContent(link, subIdx)}
-                                        </Link>
-                                    )
-                                })}
-                            </div>
-                        ))}
+                            return (
+                                <Link
+                                    key={link.href}
+                                    href={link.href}
+                                    className={`block px-4 py-2 text-sm flex items-center transition-colors border-l-4
+                                    ${idx === focusedLinkIndex
+                                            ? 'bg-blue-100 text-blue-900 border-blue-600'
+                                            : 'text-gray-700 hover:bg-[#cce0ff] hover:text-black border-transparent'}
+                                `}
+                                    onClick={closeAll}
+                                >
+                                    <span className="w-5 mr-2 text-gray-500 flex justify-center">
+                                        {link.icon && <link.icon size={12} />}
+                                    </span>
+                                    {renderLinkContent(link, idx)}
+                                    {idx === focusedLinkIndex && <FaArrowRight className="ml-auto text-blue-500 text-xs" />}
+                                </Link>
+                            );
+                        })}
+
+                        {menuStructure.find(m => m.id === isMenuOpen)?.subgroups?.map(sub => {
+                            // Filter links based on permissions
+                            const visibleLinks = sub.links.filter(link => {
+                                if (!link.permission) return true;
+                                const userPermissions = user?.roles?.flatMap(r => r.permisos?.map(p => p.nombre)) || [];
+                                return userPermissions.includes(link.permission);
+                            });
+
+                            if (visibleLinks.length === 0) return null;
+
+                            return (
+                                <div key={sub.title} className="mt-1 border-t border-gray-200 pt-1 pb-1">
+                                    <div className="px-4 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50">{sub.title}</div>
+                                    {visibleLinks.map((link, subIdx) => {
+                                        return (
+                                            <Link
+                                                key={link.href}
+                                                href={link.href}
+                                                className="block px-4 py-2 text-sm hover:bg-[#cce0ff] hover:text-black text-gray-700 pl-8 transition-colors"
+                                                onClick={closeAll}
+                                            >
+                                                {renderLinkContent(link, subIdx)}
+                                            </Link>
+                                        )
+                                    })}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}

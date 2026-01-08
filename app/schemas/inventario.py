@@ -225,6 +225,7 @@ class ProductoAutocompleteItem(BaseModel):
     costo_promedio: float
     stock_actual: float # Stock total, no por bodega
     precio_base_manual: Optional[float] = None
+    porcentaje_iva: float = 0.0
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -232,6 +233,7 @@ class ProductoSimple(BaseModel):
     id: int
     codigo: str
     nombre: str
+    porcentaje_iva: float = 0.0
     model_config = ConfigDict(from_attributes=True)
 
 

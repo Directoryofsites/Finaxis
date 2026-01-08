@@ -25,6 +25,12 @@ class UserCreateInCompany(BaseModel):
     # CAMBIO: Ya no usamos 'rol' como texto. Pedimos una lista de IDs de roles.
     roles_ids: List[int] = Field(..., min_length=1)
 
+class UserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    password: Optional[str] = Field(None, min_length=6)
+    nombre_completo: Optional[str] = None
+    roles_ids: Optional[List[int]] = None
+
 class User(BaseModel):
     id: int
     email: str
