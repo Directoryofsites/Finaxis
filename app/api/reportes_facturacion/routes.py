@@ -23,6 +23,7 @@ from app.services import reportes_facturacion as service
 # Schemas
 from app.schemas import reportes_facturacion as schemas_reportes_fact
 from app.schemas import reporte_rentabilidad as schemas_rentabilidad
+from app.schemas import reporte_ventas_cliente as schemas_ventas_cliente
 
 router = APIRouter()
 
@@ -247,4 +248,49 @@ def imprimir_pdf_reporte_facturacion_legacy_route(
     db: Session = Depends(get_db)
 ):
     # Lógica de decodificación y generación de PDF aquí si se necesita el legacy flow
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Ruta legacy no implementada.")
+    # Lógica de decodificación y generación de PDF aquí si se necesita el legacy flow
+    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ruta legacy no implementada.")
+
+# =================================================================================
+# === 4. NUEVOS ENDPOINTS: ANÁLISIS INTEGRAL DE VENTAS POR CLIENTE ===
+# =================================================================================
+
+@router.post(
+    "/ventas-cliente",
+    response_model=schemas_ventas_cliente.ReporteVentasClienteResponse,
+    summary="Reporte integral de ventas agrupado por cliente con drill-down."
+)
+def generar_reporte_ventas_cliente(
+    filtros: schemas_ventas_cliente.ReporteVentasClienteFiltros,
+    db: Session = Depends(get_db),
+    current_user: models_usuario = Depends(has_permission("reportes:ver_facturacion_detallado")) 
+):
+    """
+    Obtiene el reporte integral de ventas por cliente, incluyendo productos y documentos.
+    Calcula la rentabilidad por cliente.
+    """
+    return service.get_analisis_ventas_por_cliente(
+        db=db,
+        empresa_id=current_user.empresa_id,
+        filtros=filtros
+    )
+
+@router.post(
+    "/ventas-cliente/pdf",
+    summary="Genera el PDF del Reporte Integral de Ventas por Cliente."
+)
+def generar_pdf_ventas_cliente(
+    filtros: schemas_ventas_cliente.ReporteVentasClienteFiltros,
+    db: Session = Depends(get_db),
+    current_user: models_usuario = Depends(has_permission("reportes:ver_facturacion_detallado"))
+):
+    try:
+        pdf_bytes = service.generar_pdf_ventas_cliente(db, current_user.empresa_id, filtros)
+        
+        headers = {'Content-Disposition': f'attachment; filename="ventas_clientes.pdf"'}
+        return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf", headers=headers)
+
+    except HTTPException as h: raise h
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))

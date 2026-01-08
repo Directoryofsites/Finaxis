@@ -67,8 +67,23 @@ export default function NuevaCompraPage() {
     });
 
     // Cálculo Memoizado
-    const totalCompra = useMemo(() => {
-        return items.reduce((acc, item) => acc + ((parseFloat(item.cantidad) || 0) * (parseFloat(item.costo_unitario) || 0)), 0);
+    const { subtotalGeneral, ivaGeneral, totalGeneral } = useMemo(() => {
+        const result = items.reduce((acc, item) => {
+            const cantidad = parseFloat(item.cantidad) || 0;
+            const costo = parseFloat(item.costo_unitario) || 0;
+            const subtotalItem = cantidad * costo;
+            const ivaItem = subtotalItem * (item.porcentaje_iva || 0);
+
+            acc.subtotal += subtotalItem;
+            acc.iva += ivaItem;
+            return acc;
+        }, { subtotal: 0, iva: 0 });
+
+        return {
+            subtotalGeneral: result.subtotal,
+            ivaGeneral: result.iva,
+            totalGeneral: result.subtotal + result.iva
+        };
     }, [items]);
 
     // Carga de Datos Maestros
@@ -144,7 +159,8 @@ export default function NuevaCompraPage() {
                         codigo: newItem.codigo,
                         nombre: newItem.nombre,
                         cantidad: newItem.cantidad,
-                        costo_unitario: newItem.costo_unitario
+                        costo_unitario: newItem.costo_unitario,
+                        porcentaje_iva: newItem.porcentaje_iva || 0
                     });
                 }
             });
@@ -408,10 +424,27 @@ export default function NuevaCompraPage() {
                             </tbody>
                             {items.length > 0 && (
                                 <tfoot className="bg-slate-50 border-t-2 border-slate-200">
+                                    {/* Subtotal */}
                                     <tr>
-                                        <td colSpan="4" className="px-4 py-3 text-right text-sm font-bold text-gray-600 uppercase">Total Compra:</td>
-                                        <td className="px-4 py-3 text-right text-lg font-bold font-mono text-green-600">
-                                            ${totalCompra.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                        <td colSpan="4" className="px-4 py-2 text-right text-sm font-bold text-gray-500 uppercase">Subtotal:</td>
+                                        <td className="px-4 py-2 text-right text-sm font-mono text-gray-700">
+                                            ${subtotalGeneral.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                    {/* IVA */}
+                                    <tr>
+                                        <td colSpan="4" className="px-4 py-2 text-right text-sm font-bold text-gray-500 uppercase">IVA:</td>
+                                        <td className="px-4 py-2 text-right text-sm font-mono text-gray-700">
+                                            ${ivaGeneral.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                    {/* Total Total */}
+                                    <tr className="bg-green-50 border-t border-green-100">
+                                        <td colSpan="4" className="px-4 py-3 text-right text-base font-bold text-gray-700 uppercase">TOTAL COMPRA:</td>
+                                        <td className="px-4 py-3 text-right text-xl font-bold font-mono text-blue-700">
+                                            ${totalGeneral.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                         </td>
                                         <td></td>
                                     </tr>

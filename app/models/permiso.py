@@ -17,8 +17,20 @@ rol_permisos = Table('rol_permisos', Base.metadata,
 class Rol(Base):
     __tablename__ = 'roles'
     id = Column(Integer, primary_key=True, index=True)
-    nombre = Column(String(100), unique=True, index=True, nullable=False)
+    nombre = Column(String(100), nullable=False) # unique=True removido, se maneja con constraint compuesto
     descripcion = Column(String(255))
+    empresa_id = Column(Integer, ForeignKey('empresas.id'), nullable=True)
+    
+    # Hacemos que el nombre sea único POR empresa.
+    # Si empresa_id es NULL (rol global), la BD permite múltiples NULLs en teoría en Standard SQL, 
+    # pero queremos solo 1 rol global con ese nombre.
+    # En la práctica, validaremos en lógica de negocio o usaremos índice parcial si el motor lo soporta.
+    # Para simplificar: UniqueConstraint(nombre, empresa_id)
+    __table_args__ = (
+        # UniqueConstraint('nombre', 'empresa_id', name='uq_rol_nombre_empresa'),
+        # Nota: Dejamos esto comentado por ahora para evitar conflictos inmediatos sin migración.
+        # La integridad se validará en código por el momento.
+    )
     
     # Relación con Permisos   
 

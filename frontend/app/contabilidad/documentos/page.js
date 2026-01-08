@@ -25,12 +25,13 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../../lib/apiService';
 import { FuncionEspecial } from '../../../lib/constants';
+import ModalCrearTercero from '../../../components/terceros/ModalCrearTercero';
 
 // Estilos reusables (Manual v2.0)
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
-const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none";
-const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none bg-white";
-const tableInputClass = "w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none";
+const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none text-gray-900";
+const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none bg-white text-gray-900";
+const tableInputClass = "w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-gray-900";
 
 export default function NuevoDocumentoPage() {
   const router = useRouter();
@@ -56,6 +57,7 @@ export default function NuevoDocumentoPage() {
   const [documentoRecienCreadoId, setDocumentoRecienCreadoId] = useState(null);
 
   // Estados para Cartera y Proveedores
+  // Estados para Cartera y Proveedores
   const [fechaVencimiento, setFechaVencimiento] = useState(null);
   const [tipoDocSeleccionado, setTipoDocSeleccionado] = useState(null);
   const [facturasPendientes, setFacturasPendientes] = useState([]);
@@ -63,6 +65,9 @@ export default function NuevoDocumentoPage() {
   const [isCarteraLoading, setIsCarteraLoading] = useState(false);
   const [valorAAbonar, setValorAAbonar] = useState('');
   const [cuentasConfiguradas, setCuentasConfiguradas] = useState({ debitoId: null, creditoId: null });
+
+  // --- NUEVO: ESTADO MODAL TERCERO ---
+  const [showTerceroModal, setShowTerceroModal] = useState(false);
 
   // Referencias para navegación por teclado
   const formRefs = useRef({});
@@ -435,6 +440,23 @@ export default function NuevoDocumentoPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // --- NUEVO: HANDLER TERCERO CREADO ---
+  const handleTerceroCreado = (nuevoTercero) => {
+    // 1. Agregarlo a la lista de maestros
+    setMaestros(prev => ({
+      ...prev,
+      terceros: [...prev.terceros, nuevoTercero].sort((a, b) => a.razon_social.localeCompare(b.razon_social))
+    }));
+    // 2. Seleccionarlo automáticamente
+    setBeneficiarioId(String(nuevoTercero.id));
+    // 3. Mostrar mensaje éxito
+    setMensaje(`Tercero "${nuevoTercero.razon_social}" creado y seleccionado.`);
+    // 4. Reset para limpiar cualquier data de facturas anterior (que no tendría sentido porque es nuevo)
+    setFacturasPendientes([]);
+    setAplicaciones({});
+    setValorAAbonar('');
   };
 
   const handleSubmit = async () => {
@@ -987,7 +1009,17 @@ export default function NuevoDocumentoPage() {
 
               {/* BENEFICIARIO */}
               <div>
-                <label htmlFor="beneficiario" className={labelClass}>Tercero / Beneficiario</label>
+                <label htmlFor="beneficiario" className={labelClass}>
+                  Tercero / Beneficiario
+                  <button
+                    type="button"
+                    onClick={() => setShowTerceroModal(true)}
+                    className="ml-2 text-indigo-600 hover:text-indigo-800 text-[10px] font-bold bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 transition-colors inline-flex items-center gap-1"
+                    title="Crear nuevo tercero rápidamente"
+                  >
+                    <FaPlus size={8} /> CREAR
+                  </button>
+                </label>
                 <div className="relative">
                   <select
                     id="beneficiario"
@@ -1328,6 +1360,13 @@ export default function NuevoDocumentoPage() {
           </div>
         </form >
       </div >
+
+      {/* MODAL CREAR TERCERO */}
+      <ModalCrearTercero
+        isOpen={showTerceroModal}
+        onClose={() => setShowTerceroModal(false)}
+        onSuccess={handleTerceroCreado}
+      />
     </div >
   );
 }

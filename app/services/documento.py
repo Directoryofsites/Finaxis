@@ -676,20 +676,38 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
         
         tipo_codigo = db_doc.tipo_documento.codigo.lower() if db_doc.tipo_documento else "unknown"
         # Mapeo manual de códigos comunes a plantillas conocidas
+        # Mapeo manual de códigos comunes a plantillas conocidas
         mapa_plantillas = {
             'ce': 'reports/comprobante_egreso_template.html',
-            'rc': 'reports/auxiliar_por_recibos_report.html', # Fallback temporal si no hay específico
-            'fv': 'reports/rentabilidad_factura_report.html' # Fallback temporal
+            'rc': 'reports/auxiliar_por_recibos_report.html',
+            # 'fv': 'reports/rentabilidad_factura_report.html' # <--- CAUSANTE DEL ERROR (Usaba 'doc' en vez de 'documento')
+            'fv': 'reports/invoice_template.html',  # FIXED: Nueva plantilla moderna
         }
         
         plantilla_key = mapa_plantillas.get(tipo_codigo)
         
-        if plantilla_key and plantilla_key in TEMPLATES_EMPAQUETADOS:
+        # FIX: Prioridad de carga para la nueva plantilla de factura
+        if tipo_codigo == 'fv' or (plantilla_key and 'invoice_template.html' in plantilla_key):
+             try:
+                 print(f"   -> USANDO PLANTILLA FACTURA MODERNA: app/templates/reports/invoice_template.html")
+                 with open('app/templates/reports/invoice_template.html', 'r', encoding='utf-8') as f:
+                     html_content = f.read()
+             except Exception as e:
+                 print(f"Error cargando plantilla factura: {e}")
+                 html_content = "Error loading invoice template"
+
+        elif plantilla_key and plantilla_key in TEMPLATES_EMPAQUETADOS:
              print(f"   -> PLANTILLA LOCAL ENCONTRADA: {plantilla_key}")
              html_content = TEMPLATES_EMPAQUETADOS[plantilla_key]
         else:
-            print("   -> NO SE ENCONTRO NINGUNA PLANTILLA. Usando fallback básico.")
-            html_content = "<html><body><h1>Sin Formato de Impresión</h1><p>No se ha configurado una plantilla para este tipo de documento.</p></body></html>"
+             print("   -> NO SE ENCONTRO NINGUNA PLANTILLA ESPECÍFICA. Usando plantila GENÉRICA de base.")
+             # Usamos la plantilla genérica nueva
+             try:
+                 with open('app/templates/reports/generic_document_template.html', 'r', encoding='utf-8') as f:
+                     html_content = f.read()
+             except Exception as e:
+                 print(f"Error cargando plantilla genérica: {e}")
+                 html_content = "<html><body><h1>Error de Plantilla</h1><p>No se encontró la plantilla genérica base.</p></body></html>"
     
     # 3. Empresa
     empresa = db.query(models_empresa).filter(models_empresa.id == empresa_id).first()
@@ -698,6 +716,13 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
     items_facturables = []
     subtotal_acumulado = 0
     impuestos_acumulados = 0
+    
+    # Acumuladores para bases gravables
+    base_exenta = 0
+    base_gravable_5 = 0
+    base_gravable_19 = 0
+    iva_5_total = 0
+    iva_19_total = 0
     
     # Acumuladores Contables
     suma_debito_total = 0
@@ -729,13 +754,21 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
 
     # --- PROCESAMIENTO ---
     
+    # Acumuladores para bases gravables
+    base_exenta = 0
+    base_gravable_5 = 0
+    base_gravable_19 = 0
+    iva_5_total = 0
+    iva_19_total = 0
+    
     if modo_operacion == 'VENTA':
-        # RUTA A: VENTA
+        # RUTA A: VENTA - Incluir información de impuestos
         query_comercial = db.query(
             models_producto.codigo.label("codigo"),
             models_producto.nombre.label("nombre"),
             models_mov_inv.cantidad.label("cantidad_real"),
-            models_mov.credito.label("valor_total")
+            models_mov.credito.label("valor_total"),
+            models_producto.impuesto_iva_id.label("impuesto_iva_id")
         ).join(models_doc, models_mov_inv.documento_id == models_doc.id)\
          .join(models_producto, models_mov_inv.producto_id == models_producto.id)\
          .join(models_grupo, models_producto.grupo_id == models_grupo.id)\
@@ -747,14 +780,49 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
          .filter(models_doc.id == documento_id, models_mov_inv.tipo_movimiento == 'SALIDA_VENTA').all()
 
         if query_comercial:
+            # Obtener tasas de impuesto para calcular bases
+            tasas_impuesto = {}
+            impuesto_ids = [item.impuesto_iva_id for item in query_comercial if item.impuesto_iva_id]
+            if impuesto_ids:
+                from app.models.impuesto import TasaImpuesto
+                tasas_db = db.query(TasaImpuesto).filter(TasaImpuesto.id.in_(impuesto_ids)).all()
+                tasas_impuesto = {tasa.id: tasa.tasa for tasa in tasas_db}
+            
             for item in query_comercial:
                 cant = float(item.cantidad_real)
                 val = float(item.valor_total)
                 unit = val / cant if cant > 0 else 0
+                
+                # Obtener tasa de IVA del producto
+                tasa_iva = 0
+                if item.impuesto_iva_id and item.impuesto_iva_id in tasas_impuesto:
+                    tasa_iva = tasas_impuesto[item.impuesto_iva_id]
+                
+                # Calcular base gravable (El valor en la cuenta de ingreso 4xxx ES la base)
+                base_gravable = val 
+                valor_iva = base_gravable * tasa_iva
+                
+                # Acumular por tipo de base
+                if tasa_iva == 0:
+                    base_exenta += base_gravable
+                elif abs(tasa_iva - 0.05) < 0.001:  # 5%
+                    base_gravable_5 += base_gravable
+                    iva_5_total += valor_iva
+                elif abs(tasa_iva - 0.19) < 0.001:  # 19%
+                    base_gravable_19 += base_gravable
+                    iva_19_total += valor_iva
+                
                 items_facturables.append({
-                    "producto_codigo": item.codigo, "producto_nombre": item.nombre,
-                    "cantidad": f"{cant:,.2f}", "precio_unitario": f"$ {unit:,.0f}", "subtotal": f"$ {val:,.0f}",
-                    "debito_fmt": "0", "credito_fmt": f"$ {val:,.0f}"
+                    "producto_codigo": item.codigo, 
+                    "producto_nombre": item.nombre,
+                    "cantidad": f"{cant:,.2f}", 
+                    "precio_unitario": f"{unit:,.0f}", 
+                    "subtotal": f"{val:,.0f}",
+                    "debito_fmt": "0", 
+                    "credito_fmt": f"{val:,.0f}",
+                    "tasa_iva": tasa_iva,
+                    "base_gravable": base_gravable,
+                    "valor_iva": valor_iva
                 })
                 subtotal_acumulado += val
         else:
@@ -777,7 +845,8 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
             models_producto.nombre.label("nombre"),
             models_mov_inv.cantidad.label("cantidad"),
             models_mov_inv.costo_unitario.label("costo_u"),
-            models_mov_inv.costo_total.label("costo_t")
+            models_mov_inv.costo_total.label("costo_t"),
+            models_producto.impuesto_iva_id.label("impuesto_iva_id") # AGREGADO PARA IMPUESTOS
         ).join(models_producto, models_mov_inv.producto_id == models_producto.id)\
          .filter(
              models_mov_inv.documento_id == documento_id,
@@ -786,18 +855,51 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
          ).all()
 
         if query_kardex:
+            # Obtener tasas de impuesto para calcular bases (Igual que en VENTA)
+            tasas_impuesto = {}
+            impuesto_ids = [item.impuesto_iva_id for item in query_kardex if item.impuesto_iva_id]
+            if impuesto_ids:
+                from app.models.impuesto import TasaImpuesto
+                tasas_db = db.query(TasaImpuesto).filter(TasaImpuesto.id.in_(impuesto_ids)).all()
+                tasas_impuesto = {tasa.id: tasa.tasa for tasa in tasas_db}
+
             for item in query_kardex:
                 cant = float(item.cantidad)
-                unit = float(item.costo_u) # El costo unitario real de compra
-                val = float(item.costo_t)  # El total de la línea
+                unit = float(item.costo_u) # El costo unitario real de compra (BASE)
+                val = float(item.costo_t)  # El total de la línea (BASE TOTAL)
                 
+                # Obtener tasa de IVA del producto
+                tasa_iva = 0
+                if item.impuesto_iva_id and item.impuesto_iva_id in tasas_impuesto:
+                    tasa_iva = tasas_impuesto[item.impuesto_iva_id]
+
+                # En compras, el costo registrado en el inventario suele ser la BASE (sin IVA)
+                # El IVA descontable se registra aparte en la cuenta 24.
+                # Aquí recalculamos el IVA teórico basado en el producto para mostrarlo.
+                base_gravable = val 
+                valor_iva = base_gravable * tasa_iva
+                
+                # Acumular por tipo de base
+                if tasa_iva == 0:
+                    base_exenta += base_gravable
+                elif abs(tasa_iva - 0.05) < 0.001:  # 5%
+                    base_gravable_5 += base_gravable
+                    iva_5_total += valor_iva
+                elif abs(tasa_iva - 0.19) < 0.001:  # 19%
+                    base_gravable_19 += base_gravable
+                    iva_19_total += valor_iva
+
                 items_facturables.append({
                     "producto_codigo": item.codigo, 
                     "producto_nombre": item.nombre,
                     "cantidad": f"{cant:,.2f}", # Cantidad Real
                     "precio_unitario": f"$ {unit:,.0f}", # Costo Unitario Real
                     "subtotal": f"$ {val:,.0f}",
-                    "debito_fmt": f"$ {val:,.0f}", "credito_fmt": "0"
+                    "debito_fmt": f"$ {val:,.0f}", 
+                    "credito_fmt": "0",
+                    "tasa_iva": tasa_iva,
+                    "base_gravable": base_gravable,
+                    "valor_iva": valor_iva
                 })
                 subtotal_acumulado += val
         else:
@@ -856,6 +958,9 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
     total_redondeado = round(total_general)
     valor_letras = numero_a_letras(total_redondeado)
 
+    # Calcular totales de IVA para el contexto
+    total_iva_calculado = iva_5_total + iva_19_total
+    
     # 5. Contexto
     beneficiario = db_doc.beneficiario
     context = {
@@ -882,11 +987,16 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
         },
         "items": items_facturables,
         "totales": {
-            "subtotal": f"$ {subtotal_acumulado:,.0f}",
-            "impuestos": f"$ {impuestos_acumulados:,.0f}",
-            "total": f"$ {total_redondeado:,.0f}",
-            "total_debito": f"$ {suma_debito_total:,.0f}",
-            "total_credito": f"$ {suma_credito_total:,.0f}",
+            "subtotal": f"{subtotal_acumulado:,.0f}",
+            "base_exenta": f"{base_exenta:,.0f}" if base_exenta > 0 else "0.00",
+            "base_gravable_5": f"{base_gravable_5:,.0f}" if base_gravable_5 > 0 else "0.00",
+            "base_gravable_19": f"{base_gravable_19:,.0f}" if base_gravable_19 > 0 else "0.00",
+            "iva_5": f"{iva_5_total:,.0f}" if iva_5_total > 0 else "0.00",
+            "iva_19": f"{iva_19_total:,.0f}" if iva_19_total > 0 else "0.00",
+            "impuestos": f"{total_iva_calculado:,.0f}" if modo_operacion == 'VENTA' else f"{impuestos_acumulados:,.0f}",
+            "total": f"{total_redondeado:,.0f}",
+            "total_debito": f"{suma_debito_total:,.0f}",
+            "total_credito": f"{suma_credito_total:,.0f}",
             "valor_letras": valor_letras
         }
     }
@@ -3004,6 +3114,24 @@ def generate_balance_sheet_report(
     raw_patrimonio = []
     
     total_ingresos, total_costos, total_gastos = 0.0, 0.0, 0.0
+    
+    # --- FIX: Pre-fetch de Nombres de Cuentas Mayores (4 dígitos) ---
+    # Para evitar que '2408' tome el nombre de '240810' (IVA 19%).
+    # Recolectamos todos los códigos que vamos a procesar.
+    codigos_procesados = [c.codigo for c in saldos_query]
+    posibles_mayores = set()
+    for cod in codigos_procesados:
+        if len(cod) >= 4:
+            posibles_mayores.add(cod[:4])
+            
+    mapa_nombres_mayores = {}
+    if posibles_mayores:
+        cuentas_mayor = db.query(models_plan.codigo, models_plan.nombre).filter(
+            models_plan.empresa_id == empresa_id,
+            models_plan.codigo.in_(list(posibles_mayores))
+        ).all()
+        mapa_nombres_mayores = {c.codigo: c.nombre for c in cuentas_mayor}
+    # ----------------------------------------------------------------
 
     # 1. Clasificación inicial y cálculo de utilidad
     for cuenta in saldos_query:
@@ -3049,12 +3177,9 @@ def generate_balance_sheet_report(
             for it in lista_items:
                 cod_mayor = it['codigo'][:4]
                 if cod_mayor not in agrupados:
-                    # Buscamos nombre cuenta mayor (idealmente query aparte, aqui improvisamos o dejamos nombre de la primera subcuenta si no hay exacto)
-                    # Mejor: Usamos el nombre de la cuenta mayor si existe en la lista, si no, "Cuenta Mayor X"
-                    # En query original traemos TODO. Si la cuenta mayor tiene movimientos propios (raro), sale.
-                    # Si no, necesitamos buscar el nombre. Por eficiencia, usaremos el nombre de la primera cuenta hija o genérico si no se encuentra.
-                    # TODO: Optimización buscar nombres de padres.
-                    agrupados[cod_mayor] = {'codigo': cod_mayor, 'nombre': it['nombre'], 'saldo': 0.0}
+                    # FIX: Usar nombre oficial del mapa si existe, sino fallback al nombre del item actual
+                    nombre_cuenta = mapa_nombres_mayores.get(cod_mayor, it['nombre'])
+                    agrupados[cod_mayor] = {'codigo': cod_mayor, 'nombre': nombre_cuenta, 'saldo': 0.0}
                 
                 agrupados[cod_mayor]['saldo'] += it['saldo']
             
@@ -3086,7 +3211,9 @@ def generate_balance_sheet_report(
             for it in lista_items:
                 cod_mayor = it['codigo'][:4]
                 if cod_mayor not in items_mayor:
-                    items_mayor[cod_mayor] = {'codigo': cod_mayor, 'nombre': it['nombre'], 'saldo': 0.0}
+                    # FIX: Usar nombre oficial del mapa
+                    nombre_cuenta = mapa_nombres_mayores.get(cod_mayor, it['nombre'])
+                    items_mayor[cod_mayor] = {'codigo': cod_mayor, 'nombre': nombre_cuenta, 'saldo': 0.0}
                 items_mayor[cod_mayor]['saldo'] += it['saldo']
             
             items_procesados = sorted(list(items_mayor.values()), key=lambda x: x['codigo'])
@@ -3114,7 +3241,9 @@ def generate_balance_sheet_report(
         for it in raw_patrimonio:
             cod_mayor = it['codigo'][:4]
             if cod_mayor not in items_mayor_pat:
-                items_mayor_pat[cod_mayor] = {'codigo': cod_mayor, 'nombre': it['nombre'], 'saldo': 0.0}
+                # FIX: Usar nombre oficial del mapa
+                nombre_cuenta = mapa_nombres_mayores.get(cod_mayor, it['nombre'])
+                items_mayor_pat[cod_mayor] = {'codigo': cod_mayor, 'nombre': nombre_cuenta, 'saldo': 0.0}
             items_mayor_pat[cod_mayor]['saldo'] += it['saldo']
         final_patrimonio = sorted(list(items_mayor_pat.values()), key=lambda x: x['codigo'])
         

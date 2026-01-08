@@ -28,7 +28,9 @@ def get_user_by_id(db: Session, usuario_id: int):
     return db.query(models_usuario.Usuario).filter(models_usuario.Usuario.id == usuario_id).first()
 
 def get_users_by_company(db: Session, empresa_id: int):
-    return db.query(models_usuario.Usuario).filter(models_usuario.Usuario.empresa_id == empresa_id).all()
+    return db.query(models_usuario.Usuario).options(
+        joinedload(models_usuario.Usuario.roles)
+    ).filter(models_usuario.Usuario.empresa_id == empresa_id).all()
 
 def create_user_in_company(db: Session, user_data: schemas_usuario.UserCreateInCompany, empresa_id: int):
     hashed_password = get_password_hash(user_data.password)
@@ -36,6 +38,12 @@ def create_user_in_company(db: Session, user_data: schemas_usuario.UserCreateInC
     roles = db.query(models_permiso.Rol).filter(models_permiso.Rol.id.in_(user_data.roles_ids)).all()
     if len(roles) != len(user_data.roles_ids):
         raise HTTPException(status_code=404, detail="Uno o más roles no fueron encontrados.")
+
+    # Validar que los roles pertenezcan a la empresa o sean globales
+    for rol in roles:
+        if rol.empresa_id is not None and rol.empresa_id != empresa_id:
+             raise HTTPException(status_code=403, detail=f"El rol '{rol.nombre}' no pertenece a esta empresa.")
+        # Opcional: Bloquear asignación de rol 'soporte' por usuarios normales si fuera necesario.
 
     db_user = models_usuario.Usuario(
         email=user_data.email,
@@ -54,6 +62,33 @@ def update_password(db: Session, user: models_usuario.Usuario, new_password: str
     hashed_password = get_password_hash(new_password)
     # --- CORRECCIÓN APLICADA AQUÍ ---
     user.password_hash = hashed_password
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+def update_user(db: Session, user: models_usuario.Usuario, user_update: schemas_usuario.UserUpdate):
+    if user_update.email is not None:
+        user.email = user_update.email
+    if user_update.nombre_completo is not None:
+        user.nombre_completo = user_update.nombre_completo
+    
+    if user_update.password:
+        user.password_hash = get_password_hash(user_update.password)
+
+    if user_update.roles_ids is not None:
+        roles = db.query(models_permiso.Rol).filter(models_permiso.Rol.id.in_(user_update.roles_ids)).all()
+        if len(roles) != len(user_update.roles_ids):
+            raise HTTPException(status_code=404, detail="Uno o más roles no fueron encontrados.")
+        
+        # Validar pertenencia de roles (si el usuario es de una empresa)
+        if user.empresa_id is not None:
+            for rol in roles:
+                if rol.empresa_id is not None and rol.empresa_id != user.empresa_id:
+                    raise HTTPException(status_code=403, detail=f"El rol '{rol.nombre}' no valido para este usuario/empresa.")
+
+        user.roles = roles
+
     db.add(user)
     db.commit()
     db.refresh(user)

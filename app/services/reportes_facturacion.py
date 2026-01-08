@@ -503,7 +503,8 @@ def get_rentabilidad_por_grupo(db: Session, empresa_id: int, filtros: schemas_re
     sq_costo = (
         select(
             models_prod.MovimientoInventario.producto_id,
-            func.sum(models_prod.MovimientoInventario.costo_total).label("total_costo")
+            func.sum(models_prod.MovimientoInventario.costo_total).label("total_costo"),
+            func.sum(models_prod.MovimientoInventario.cantidad).label("total_cantidad")
         )
         .join(doc_ids_subquery, models_prod.MovimientoInventario.documento_id == doc_ids_subquery.c.id) # Unir con IDs filtrados
         .filter(
@@ -521,7 +522,8 @@ def get_rentabilidad_por_grupo(db: Session, empresa_id: int, filtros: schemas_re
             models_prod.Producto.codigo.label("producto_codigo"),
             models_prod.Producto.nombre.label("producto_nombre"),
             func.coalesce(sq_venta.c.total_venta, Decimal('0.0')).label("total_venta"),
-            func.coalesce(sq_costo.c.total_costo, Decimal('0.0')).label("total_costo")
+            func.coalesce(sq_costo.c.total_costo, Decimal('0.0')).label("total_costo"),
+            func.coalesce(sq_costo.c.total_cantidad, Decimal('0.0')).label("total_cantidad")
         )
         .outerjoin(sq_venta, models_prod.Producto.id == sq_venta.c.producto_id)
         .outerjoin(sq_costo, models_prod.Producto.id == sq_costo.c.producto_id)
@@ -560,6 +562,8 @@ def get_rentabilidad_por_grupo(db: Session, empresa_id: int, filtros: schemas_re
         venta = Decimal(str(row.total_venta or '0.0')) 
         # FIX CRÍTICO: row.costo_total es el alias correcto del subquery sq_costo
         costo = Decimal(str(row.total_costo or '0.0')) 
+        cantidad = float(row.total_cantidad or 0.0)
+
         
         # Acumular TOTALES GENERALES (La suma de todos los ítems en el rango, sin importar filtros de margen)
         total_venta_general += venta
@@ -574,7 +578,8 @@ def get_rentabilidad_por_grupo(db: Session, empresa_id: int, filtros: schemas_re
             'venta': venta,
             'costo': costo,
             'utilidad': utilidad,
-            'margen': margen
+            'margen': margen,
+            'cantidad': cantidad
         }
         items_calculados.append(item_data)
         
@@ -586,6 +591,7 @@ def get_rentabilidad_por_grupo(db: Session, empresa_id: int, filtros: schemas_re
     
     for item_data in items_calculados:
         venta = item_data['venta']
+        cantidad = item_data['cantidad']
         utilidad = item_data['utilidad']
         margen = item_data['margen']
         row = item_data['row']
@@ -636,6 +642,7 @@ def get_rentabilidad_por_grupo(db: Session, empresa_id: int, filtros: schemas_re
             total_costo=float(costo),
             total_utilidad=float(utilidad),
             margen_rentabilidad_porcentaje=float(margen),
+            total_cantidad=cantidad,
             # [CRÍTICO]: Se usa el nuevo nombre de campo
             trazabilidad_documentos=trazabilidad_docs 
         ))
@@ -984,3 +991,304 @@ class RentabilidadReportService(BaseReport):
         
         filename = f"Rentabilidad_{filtros_obj.fecha_inicio}_a_{filtros_obj.fecha_fin}.pdf"
         return pdf_bytes, filename
+
+# =================================================================================
+# === NUEVO REPORTE: ANÁLISIS INTEGRAL DE VENTAS POR CLIENTE ===
+# =================================================================================
+
+from ..schemas import reporte_ventas_cliente as schemas_ventas_cliente
+
+def get_analisis_ventas_por_cliente(db: Session, empresa_id: int, filtros: schemas_ventas_cliente.ReporteVentasClienteFiltros) -> schemas_ventas_cliente.ReporteVentasClienteResponse:
+    """
+    Reporte Integral: Agrupa ventas por Cliente y permite drill-down a productos y documentos.
+    Calcula Venta, Costo y Utilidad (Rentabilidad).
+    """
+
+    # 1. Base Query de Documentos (Filtrado Global)
+    # -------------------------------------------------------------------------
+    doc_query = db.query(models_doc.Documento).filter(
+        models_doc.Documento.empresa_id == empresa_id,
+        models_doc.Documento.fecha.between(filtros.fecha_inicio, filtros.fecha_fin),
+        models_doc.Documento.anulado == False
+    )
+
+    # Filtros Opcionales
+    if filtros.tercero_ids:
+        doc_query = doc_query.filter(models_doc.Documento.beneficiario_id.in_(filtros.tercero_ids))
+    
+    if filtros.tipo_documento_ids:
+        doc_query = doc_query.filter(models_doc.Documento.tipo_documento_id.in_(filtros.tipo_documento_ids))
+
+    # Obtenemos los IDs de documentos validos (Query ORM directa)
+    doc_ids_subquery = doc_query.with_entities(models_doc.Documento.id)
+
+    # 2. Consultas de Agregación (Venta y Costo)
+    # -------------------------------------------------------------------------
+    
+    # A. Consulta de VENTAS (Movimientos Contables de Ingreso)
+    # Agrupamos por Documento y Producto para poder pivotar después
+    venta_query = (
+        db.query(
+            models_mov_con.MovimientoContable.documento_id,
+            models_mov_con.MovimientoContable.producto_id,
+            func.sum(models_mov_con.MovimientoContable.credito).label("venta")
+        )
+        .join(models_doc.Documento, models_mov_con.MovimientoContable.documento_id == models_doc.Documento.id) # Join redundante pero seguro
+        .join(models_prod.Producto, models_mov_con.MovimientoContable.producto_id == models_prod.Producto.id)
+        .join(models_grupo.GrupoInventario, models_prod.Producto.grupo_id == models_grupo.GrupoInventario.id)
+        .filter(
+            models_mov_con.MovimientoContable.documento_id.in_(doc_ids_subquery),
+            models_mov_con.MovimientoContable.cuenta_id == models_grupo.GrupoInventario.cuenta_ingreso_id
+        )
+    )
+
+    # Filtros de Producto/Grupo (Aplican a la linea, no necesariamente al doc completo)
+    if filtros.producto_ids:
+        venta_query = venta_query.filter(models_prod.Producto.id.in_(filtros.producto_ids))
+    if filtros.grupo_ids:
+        venta_query = venta_query.filter(models_prod.Producto.grupo_id.in_(filtros.grupo_ids))
+
+    venta_query = venta_query.group_by(
+        models_mov_con.MovimientoContable.documento_id,
+        models_mov_con.MovimientoContable.producto_id
+    )
+    
+    ventas_raw = venta_query.all()
+
+    # B. Consulta de COSTOS (Movimientos de Inventario)
+    costo_query = (
+        db.query(
+            models_prod.MovimientoInventario.documento_id,
+            models_prod.MovimientoInventario.producto_id,
+            func.sum(models_prod.MovimientoInventario.costo_total).label("costo"),
+            func.sum(models_prod.MovimientoInventario.cantidad).label("cantidad")
+        )
+        .filter(
+            models_prod.MovimientoInventario.documento_id.in_(doc_ids_subquery),
+            models_prod.MovimientoInventario.tipo_movimiento == 'SALIDA_VENTA'
+        )
+    )
+    
+    # Filtros de Producto/Grupo en Costo
+    if filtros.producto_ids:
+        costo_query = costo_query.filter(models_prod.MovimientoInventario.producto_id.in_(filtros.producto_ids))
+    
+    # Nota: Para grupo_id en costo necesitamos join con Producto
+    if filtros.grupo_ids:
+        costo_query = costo_query.join(models_prod.Producto, models_prod.MovimientoInventario.producto_id == models_prod.Producto.id)
+        costo_query = costo_query.filter(models_prod.Producto.grupo_id.in_(filtros.grupo_ids))
+
+    costo_query = costo_query.group_by(
+        models_prod.MovimientoInventario.documento_id,
+        models_prod.MovimientoInventario.producto_id
+    )
+
+    costos_raw = costo_query.all()
+
+
+    # 3. Procesamiento en Memoria (Pivot por Cliente -> Doc/Prod)
+    # -------------------------------------------------------------------------
+    # Necesitamos mapa de Documento -> Cliente / Ref / Fecha
+    docs_metadata = db.query(
+        models_doc.Documento.id,
+        models_doc.Documento.beneficiario_id,
+        models_doc.Documento.fecha,
+        models_tipo_doc.TipoDocumento.codigo,
+        models_doc.Documento.numero,
+        models_tercero.Tercero.razon_social,
+        models_tercero.Tercero.nit
+    ).join(models_tercero.Tercero, models_doc.Documento.beneficiario_id == models_tercero.Tercero.id)\
+     .join(models_tipo_doc.TipoDocumento, models_doc.Documento.tipo_documento_id == models_tipo_doc.TipoDocumento.id)\
+     .filter(models_doc.Documento.id.in_(doc_ids_subquery)).all()
+
+    doc_map = {
+        d.id: {
+            "cliente_id": d.beneficiario_id,
+            "cliente_nombre": d.razon_social,
+            "cliente_nit": d.nit,
+            "fecha": d.fecha,
+            "ref": f"{d.codigo}-{d.numero}"
+        } for d in docs_metadata
+    }
+    
+    # Mapa de productos para nombres
+    prod_ids = set()
+    for v in ventas_raw: prod_ids.add(v.producto_id)
+    for c in costos_raw: prod_ids.add(c.producto_id)
+    
+    productos_map = {}
+    if prod_ids:
+        prods = db.query(models_prod.Producto.id, models_prod.Producto.nombre, models_prod.Producto.codigo).filter(models_prod.Producto.id.in_(prod_ids)).all()
+        productos_map = {p.id: {"nombre": p.nombre, "codigo": p.codigo} for p in prods}
+
+
+    # Estructura de Agregación
+    # clientes_data[cliente_id] = { ... metricas, docs: {}, productos: {} }
+    clientes_data = {}
+
+    def get_cliente_bucket(doc_id):
+        if doc_id not in doc_map: return None # Doc filtrado o no encontrado
+        meta = doc_map[doc_id]
+        cli_id = meta["cliente_id"]
+        
+        if cli_id not in clientes_data:
+            clientes_data[cli_id] = {
+                "meta": meta,
+                "venta": Decimal(0), "costo": Decimal(0), "cantidad": Decimal(0),
+                "docs": {}, # doc_id -> { venta, costo }
+                "prods": {} # prod_id -> { venta, costo, cant }
+            }
+        return clientes_data[cli_id]
+
+    # A. Sumar Ventas
+    for rec in ventas_raw:
+        bucket = get_cliente_bucket(rec.documento_id)
+        if not bucket: continue
+        
+        val = Decimal(str(rec.venta or 0))
+        bucket["venta"] += val
+        
+        # Agrupación por Doc
+        if rec.documento_id not in bucket["docs"]: bucket["docs"][rec.documento_id] = {"venta": Decimal(0), "costo": Decimal(0)}
+        bucket["docs"][rec.documento_id]["venta"] += val
+        
+        # Agrupación por Prod
+        pid = rec.producto_id
+        if pid not in bucket["prods"]: bucket["prods"][pid] = {"venta": Decimal(0), "costo": Decimal(0), "cantidad": Decimal(0)}
+        bucket["prods"][pid]["venta"] += val
+
+    # B. Sumar Costos
+    for rec in costos_raw:
+        bucket = get_cliente_bucket(rec.documento_id)
+        if not bucket: continue
+        
+        val_costo = Decimal(str(rec.costo or 0))
+        val_cant = Decimal(str(rec.cantidad or 0))
+        
+        bucket["costo"] += val_costo
+        bucket["cantidad"] += val_cant
+        
+        # Agrupación por Doc
+        if rec.documento_id not in bucket["docs"]: bucket["docs"][rec.documento_id] = {"venta": Decimal(0), "costo": Decimal(0)}
+        bucket["docs"][rec.documento_id]["costo"] += val_costo
+
+        # Agrupación por Prod
+        pid = rec.producto_id
+        if pid not in bucket["prods"]: bucket["prods"][pid] = {"venta": Decimal(0), "costo": Decimal(0), "cantidad": Decimal(0)}
+        bucket["prods"][pid]["costo"] += val_costo
+        bucket["prods"][pid]["cantidad"] += val_cant
+
+
+    # 4. Construcción de Respuesta Final
+    # -------------------------------------------------------------------------
+    items_finales = []
+    gran_total_venta = Decimal(0)
+    gran_total_costo = Decimal(0)
+
+    for cli_id, data in clientes_data.items():
+        # --- Totales Cliente ---
+        c_venta = data["venta"]
+        c_costo = data["costo"]
+        c_utilidad = c_venta - c_costo
+        c_margen = (c_utilidad / c_venta * 100) if c_venta != 0 else Decimal(0)
+        
+        gran_total_venta += c_venta
+        gran_total_costo += c_costo
+
+        # --- Detalles Documentos ---
+        detalles_doc = []
+        for did, ddata in data["docs"].items():
+            d_meta = doc_map[did]
+            d_util = ddata["venta"] - ddata["costo"]
+            d_marg = (d_util / ddata["venta"] * 100) if ddata["venta"] != 0 else Decimal(0)
+            
+            detalles_doc.append(schemas_ventas_cliente.VentaClienteDetalleDocumento(
+                documento_id=did,
+                documento_ref=d_meta["ref"],
+                fecha=d_meta["fecha"],
+                total_venta=float(ddata["venta"]),
+                total_costo=float(ddata["costo"]),
+                utilidad=float(d_util),
+                margen=float(d_marg)
+            ))
+        # Ordenar docs por fecha descendente
+        detalles_doc.sort(key=lambda x: x.fecha, reverse=True)
+
+        # --- Detalles Productos ---
+        detalles_prod = []
+        for pid, pdata in data["prods"].items():
+            pmeta = productos_map.get(pid, {"nombre": "Desconocido", "codigo": "N/A"})
+            p_util = pdata["venta"] - pdata["costo"]
+            p_marg = (p_util / pdata["venta"] * 100) if pdata["venta"] != 0 else Decimal(0)
+
+            detalles_prod.append(schemas_ventas_cliente.VentaClienteDetalleProducto(
+                producto_id=pid,
+                producto_codigo=pmeta["codigo"],
+                producto_nombre=pmeta["nombre"],
+                cantidad=float(pdata["cantidad"]),
+                total_venta=float(pdata["venta"]),
+                total_costo=float(pdata["costo"]),
+                utilidad=float(p_util),
+                margen=float(p_marg)
+            ))
+        # Ordenar productos por venta descendente (Pareto)
+        detalles_prod.sort(key=lambda x: x.total_venta, reverse=True)
+
+        
+        items_finales.append(schemas_ventas_cliente.VentaClienteItem(
+            tercero_id=cli_id,
+            tercero_nombre=data["meta"]["cliente_nombre"],
+            tercero_identificacion=data["meta"]["cliente_nit"],
+            total_venta=float(c_venta),
+            total_costo=float(c_costo),
+            total_utilidad=float(c_utilidad),
+            margen_porcentaje=float(c_margen),
+            cantidad_items=float(data["cantidad"]),
+            conteo_documentos=len(detalles_doc),
+            detalle_productos=detalles_prod,
+            detalle_documentos=detalles_doc
+        ))
+
+    # Ordenar clientes por Venta Total (Top Clientes)
+    items_finales.sort(key=lambda x: x.total_venta, reverse=True)
+
+    gt_utilidad = gran_total_venta - gran_total_costo
+    gt_margen = (gt_utilidad / gran_total_venta * 100) if gran_total_venta != 0 else Decimal(0)
+
+    return schemas_ventas_cliente.ReporteVentasClienteResponse(
+        items=items_finales,
+        gran_total_venta=float(gran_total_venta),
+        gran_total_costo=float(gran_total_costo),
+        gran_total_utilidad=float(gt_utilidad),
+        margen_global_porcentaje=float(gt_margen)
+    )
+
+def generar_pdf_ventas_cliente(db: Session, empresa_id: int, filtros: schemas_ventas_cliente.ReporteVentasClienteFiltros):
+    """
+    Genera el PDF del Reporte Integral de Ventas por Cliente.
+    """
+    # 1. Obtener Datos
+    report_data = get_analisis_ventas_por_cliente(db, empresa_id, filtros)
+    
+    # 2. Obtener Empresa
+    empresa = db.query(models_empresa).filter(models_empresa.id == empresa_id).first()
+    if not empresa: raise HTTPException(status_code=404, detail="Empresa no encontrada")
+
+    # 3. Contexto Jinja
+    context = {
+        "empresa": empresa,
+        "filtros": filtros,
+        "data": report_data
+    }
+    
+    # 4. Renderizar
+    try:
+        template_string = TEMPLATES_EMPAQUETADOS['reports/ventas_cliente_report.html']
+        template = GLOBAL_JINJA_ENV.from_string(template_string)
+        html_content = template.render(context)
+        return HTML(string=html_content).write_pdf()
+    except KeyError:
+        raise HTTPException(status_code=500, detail="Plantilla de reporte no encontrada.")
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error generando PDF: {str(e)}")

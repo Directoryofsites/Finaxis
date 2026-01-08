@@ -913,7 +913,11 @@ def search_productos(
         models_producto.Producto.nombre,
         models_producto.Producto.es_servicio,
         models_producto.Producto.precio_base_manual,
-        models_producto.Producto.costo_promedio
+        models_producto.Producto.costo_promedio,
+        func.coalesce(models_impuesto.TasaImpuesto.tasa, 0.0).label("porcentaje_iva")
+    ).outerjoin(
+        models_impuesto.TasaImpuesto, 
+        models_producto.Producto.impuesto_iva_id == models_impuesto.TasaImpuesto.id
     ).filter(models_producto.Producto.empresa_id == empresa_id)
 
     # FIX CRÍTICO: Se debe asegurar que grupo_ids NO sea una lista vacía para evitar fallos de Query Param.
@@ -956,7 +960,8 @@ def search_productos(
             "es_servicio": p.es_servicio,
             "precio_base_manual": p.precio_base_manual,
             "costo_promedio": p.costo_promedio,
-            "stock_actual": float(p.stock_actual or 0.0)
+            "stock_actual": float(p.stock_actual or 0.0),
+            "porcentaje_iva": float(p.porcentaje_iva or 0.0) # AGREGADO
         } for p in resultados
     ]
     return productos_dict

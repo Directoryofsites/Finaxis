@@ -198,7 +198,7 @@ def get_auditoria_consecutivos(db: Session, empresa_id: int, tipo_documento_id: 
         # --- FIN: CORRECCIÓN DE FECHAS ---
         TerceroActivo.razon_social.label('beneficiario_nombre'),
         subquery_total_activo.c.total_documento,
-        UsuarioCreador.nombre_completo.label('usuario_operacion'),
+        func.coalesce(UsuarioCreador.nombre_completo, UsuarioCreador.email).label('usuario_operacion'),
         LogAnulacion.razon.label('razon_operacion')
     ).select_from(models_doc) \
     .join(subquery_total_activo, models_doc.id == subquery_total_activo.c.documento_id) \
@@ -226,7 +226,7 @@ def get_auditoria_consecutivos(db: Session, empresa_id: int, tipo_documento_id: 
         # --- FIN: CORRECIÓN DE FECHAS ---
         TerceroEliminado.razon_social.label('beneficiario_nombre'),
         literal_column("0").cast(Numeric).label('total_documento'),
-        UsuarioEliminador.nombre_completo.label('usuario_operacion'),
+        func.coalesce(UsuarioEliminador.nombre_completo, UsuarioEliminador.email).label('usuario_operacion'),
         models_log.razon.label('razon_operacion')
     ).select_from(models_doc_elim) \
     .outerjoin(UsuarioEliminador, models_doc_elim.usuario_eliminacion_id == UsuarioEliminador.id) \

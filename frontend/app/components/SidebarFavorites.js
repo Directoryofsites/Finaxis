@@ -191,8 +191,9 @@ export default function SidebarFavorites() {
                 className={`fixed left-0 top-1/2 -translate-y-1/2 h-auto max-h-[85vh] bg-white rounded-r-2xl border-y border-r border-gray-200 z-50 flex flex-col transition-all duration-300 ease-in-out overflow-hidden group 
                     ${containerClasses}
                 `}
-                // REMOVED HOVER HANDLERS
-                style={{ minHeight: '100px' }}
+                // FIX: Allow clicking the collapsed bar to open it (since hover handlers were removed)
+                onClick={() => !isOpen && setIsOpen(true)}
+                style={{ minHeight: '100px', cursor: !isOpen ? 'pointer' : 'default' }}
             >
                 {/* Banda decorativa (Modo Historia = Verde/Azul) */}
                 {(!isOpen && !isZenMode) && (
@@ -209,7 +210,10 @@ export default function SidebarFavorites() {
                                     Historial Reciente
                                 </span>
                                 <button
-                                    onClick={() => setIsOpen(false)}
+                                    onClick={(e) => {
+                                        e.stopPropagation(); // Evitar que el click en cerrar reabra el contenedor
+                                        setIsOpen(false);
+                                    }}
                                     className="p-1 text-gray-400 hover:text-red-500 rounded-full hover:bg-gray-100 transition-colors"
                                     title="Cerrar Barra Lateral"
                                 >
