@@ -58,6 +58,7 @@ NEW_PERMISSIONS = [
     "contabilidad:gestionar_puc", 
     
     # Control & Herramientas (Admin)
+    "administracion:acceso",
     "utilidades:migracion", # Backups
     "utilidades:cierre_periodos",
     "utilidades:auditoria_consecutivos",

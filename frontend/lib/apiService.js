@@ -44,4 +44,8 @@ export const getAuditoriaConsecutivos = (empresaId = null) => {
     return apiService.post('/utilidades/auditoria-consecutivos', payload);
 };
 
+export const getPrecioRegistroPublic = () => {
+    return apiService.get('/consumo/precio-unitario');
+};
+
 // La línea 'export default' se ha eliminado para mantener la consistencia.

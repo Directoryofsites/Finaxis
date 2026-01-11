@@ -4,15 +4,35 @@ import React, { useState } from 'react';
 import { FaBook } from 'react-icons/fa';
 // --- INICIO: CORRECCIÓN DE IMPORTACIÓN ---
 // Nos aseguramos de importar la función desde el servicio de SOPORTE.
-import { crearEmpresaConUsuarios } from '@/lib/soporteApiService';
+import { crearEmpresaConUsuarios, getRoles } from '@/lib/soporteApiService';
 // --- FIN: CORRECCIÓN DE IMPORTACIÓN ---
 
 export default function CrearEmpresaPanel() {
   const [empresaData, setEmpresaData] = useState({
     razon_social: '',
     nit: '',
+    nit: '',
     fecha_inicio_operaciones: '',
+    // Nuevo estado para el Modo Clon
+    modo_operacion: 'STANDARD',
+    rol_inicial_id: '', // Nuevo campo para selección manual de rol
   });
+
+  const [rolesDisponibles, setRolesDisponibles] = useState([]);
+
+  // Cargar roles al montar el componente
+  React.useEffect(() => {
+    const cargarRoles = async () => {
+      try {
+        // Obtenemos roles globales (que Soporte ha creado)
+        const response = await getRoles(null);
+        setRolesDisponibles(response.data);
+      } catch (error) {
+        console.error("Error al cargar roles:", error);
+      }
+    };
+    cargarRoles();
+  }, []);
 
   const [usuarios, setUsuarios] = useState([
     { email: '', password: '' }
@@ -65,7 +85,7 @@ export default function CrearEmpresaPanel() {
       const response = await crearEmpresaConUsuarios(payload);
 
       setSuccess(`¡Empresa "${response.data.razon_social}" y sus usuarios creados exitosamente!`);
-      setEmpresaData({ razon_social: '', nit: '', fecha_inicio_operaciones: '' });
+      setEmpresaData({ razon_social: '', nit: '', fecha_inicio_operaciones: '', modo_operacion: 'STANDARD' });
       setUsuarios([{ email: '', password: '' }]);
 
     } catch (err) {
@@ -106,27 +126,75 @@ export default function CrearEmpresaPanel() {
             </div>
           </div>
         </div>
+        {/* Nuevo Control para Modo Auditoría */}
+        <div className="flex items-center mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+          <div className="flex items-center h-5">
+            <input
+              id="modo_operacion"
+              name="modo_operacion"
+              type="checkbox"
+              checked={empresaData.modo_operacion === 'AUDITORIA_READONLY'}
+              onChange={(e) => setEmpresaData({ ...empresaData, modo_operacion: e.target.checked ? 'AUDITORIA_READONLY' : 'STANDARD' })}
+              className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded cursor-pointer"
+            />
+          </div>
+          <div className="ml-3 text-sm">
+            <label htmlFor="modo_operacion" className="font-medium text-gray-700 cursor-pointer select-none">
+              Activar Modo Auditoría / Clon (Restringido)
+            </label>
+            <p className="text-gray-500 text-xs mt-1">
+              Si se activa, esta empresa <strong>NO podrá crear nuevos documentos</strong>. Solo permitirá importar datos históricos para análisis y simulación. Ideal para NIIF o proyecciones.
+            </p>
+          </div>
+        </div>
+        {/* Fin Control */}
 
-        {usuarios.map((usuario, index) => (
-          <div key={index} className="p-4 border rounded-md relative space-y-4">
-            <h3 className="font-medium text-gray-700">Usuario Administrador #{index + 1}</h3>
-            {usuarios.length > 1 && (
-              <button type="button" onClick={() => removeUsuario(index)} className="absolute top-2 right-2 text-red-500 hover:text-red-700 font-bold text-lg">
-                &times;
-              </button>
-            )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-600">Email</label>
-                <input type="email" name="email" value={usuario.email} onChange={(e) => handleUsuarioChange(index, e)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600">Contraseña (mínimo 6 caracteres)</label>
-                <input type="password" name="password" value={usuario.password} onChange={(e) => handleUsuarioChange(index, e)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required />
+        {/* --- NUEVO: Selector de Rol Inicial --- */}
+        <div className="p-4 border border-blue-200 rounded-md bg-blue-50">
+          <h3 className="font-medium text-blue-800 mb-2">Asignación de Rol Inicial</h3>
+          <p className="text-sm text-blue-600 mb-2">
+            Selecciona el rol que tendrá el usuario administrador inicial.
+            Si seleccionas una opción, esta <strong>prevalecerá</strong> sobre cualquier configuración automática del "Modo Auditoría".
+          </p>
+          <label className="block text-sm font-medium text-gray-700">Rol del Usuario Admin</label>
+          <select
+            name="rol_inicial_id"
+            value={empresaData.rol_inicial_id}
+            onChange={handleEmpresaChange}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white"
+          >
+            <option value="">-- Automático (Según Modo Operación) --</option>
+            {rolesDisponibles.map(rol => (
+              <option key={rol.id} value={rol.id}>
+                {rol.nombre} {rol.descripcion ? `(${rol.descripcion})` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+        {/* --- Fin Selector --- */}
+
+        {
+          usuarios.map((usuario, index) => (
+            <div key={index} className="p-4 border rounded-md relative space-y-4">
+              <h3 className="font-medium text-gray-700">Usuario Administrador #{index + 1}</h3>
+              {usuarios.length > 1 && (
+                <button type="button" onClick={() => removeUsuario(index)} className="absolute top-2 right-2 text-red-500 hover:text-red-700 font-bold text-lg">
+                  &times;
+                </button>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600">Email</label>
+                  <input type="email" name="email" value={usuario.email} onChange={(e) => handleUsuarioChange(index, e)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600">Contraseña (mínimo 6 caracteres)</label>
+                  <input type="password" name="password" value={usuario.password} onChange={(e) => handleUsuarioChange(index, e)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required />
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        }
 
         <button type="button" onClick={addUsuario} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
           + Añadir otro usuario
@@ -139,7 +207,7 @@ export default function CrearEmpresaPanel() {
             {isProcessing ? 'Creando empresa...' : 'Crear Empresa y Usuarios'}
           </button>
         </div>
-      </form>
-    </div>
+      </form >
+    </div >
   );
 }

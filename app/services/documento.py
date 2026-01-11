@@ -135,6 +135,14 @@ def create_documento(db: Session, documento: schemas_doc.DocumentoCreate, user_i
         if not empresa_info:
             raise HTTPException(status_code=404, detail="La empresa especificada no existe.")
         
+        # --- BLINDAJE AUDITORIA/CLON ---
+        if empresa_info.modo_operacion == 'AUDITORIA_READONLY':
+             raise HTTPException(
+                status_code=403, 
+                detail="🚫 Operación restringida: Esta empresa está en modo AUDITORÍA/CLON y no permite asentar nuevos documentos directamente. Use la importación masiva."
+            )
+        # -------------------------------
+        
 
         # ==============================================================================
         # 3. SISTEMA DE CONSUMO DE REGISTROS (NUEVO MOTOR)
@@ -383,6 +391,20 @@ def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id:
         # 3. Carga completa para eliminación
         db_documento = get_documento_by_id(db, documento_id=documento_id, empresa_id=empresa_id)
 
+        # --- FIX: REVERSIÓN DE CONSUMO ANTICIPADA ---
+        # 1. Revertimos el consumo para devolver el cupo al usuario.
+        consumo_service.revertir_consumo(db, documento_id)
+        db.flush() # <--- IMPORTANTE: Persistir el log de reversión para que el update lo vea
+
+        # 2. Desvinculamos el historial (Original + Reversión) para romper la FK
+        #    y permitir la eliminación física del documento sin violar integridad.
+        from app.models.consumo_registros import HistorialConsumo
+        db.query(HistorialConsumo).filter(
+            HistorialConsumo.documento_id == documento_id
+        ).update({HistorialConsumo.documento_id: None}, synchronize_session=False)
+        db.flush()
+        # --------------------------------------------
+
         # LINK ADJUSTMENT REVERSAL (HOOK)
         if db_documento.reconciliation_reference and db_documento.reconciliation_reference.startswith("BM-"):
             try:
@@ -477,9 +499,8 @@ def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id:
             for pid in productos_afectados_ids:
                 recalcular_saldos_producto(db, pid)
         
-        # F. REVERSIÓN DE CONSUMO (Blindaje)
-        # La eliminación debe devolver el cupo consumido
-        consumo_service.revertir_consumo(db, documento_id)
+        # F. REVERSIÓN DE CONSUMO (Movido al inicio - Deprecado aquí)
+        # La reversión ya se ejecutó al principio para evitar FK constraints.
         # ----------------------------------
         
         # Commit final se maneja usualmente en el router o aquí si no hay transacción externa
@@ -1987,6 +2008,20 @@ def eliminar_documentos_masivamente(db: Session, payload: schemas_doc.DocumentoA
         raise HTTPException(status_code=500, detail=f"Error crítico durante la eliminación masiva. Ningún documento fue eliminado. Detalle: {str(e)}")
 
 def update_documento(db: Session, documento_id: int, documento_update: schemas_doc.DocumentoUpdate, empresa_id: int, user_id: int):
+    # 0. Validar Modo Auditoría (Restricción de Fechas)
+    empresa_info = db.query(models_empresa).filter(models_empresa.id == empresa_id).first()
+    if empresa_info and empresa_info.modo_operacion == 'AUDITORIA_READONLY':
+        # Si intenta cambiar la fecha, bloqueamos.
+        # Check: documento_update.fecha viene en el payload? Es diferente al actual?
+        # Primero necesitamos la fecha actual del documento para comparar.
+        current_doc_date = db.query(models_doc.fecha).filter(models_doc.id == documento_id).scalar()
+        
+        if documento_update.fecha and current_doc_date and documento_update.fecha != current_doc_date:
+             raise HTTPException(
+                status_code=403, 
+                detail="🚫 Operación restringida: En modo AUDITORÍA/CLON no se permite modificar la fecha de los documentos históricos."
+            )
+
     # 1. Buscamos el documento original (Lectura simple)
     db_documento_check = db.query(models_doc).filter(
         models_doc.id == documento_id, 

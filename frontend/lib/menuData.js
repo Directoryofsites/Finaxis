@@ -223,6 +223,7 @@ export const menuStructure = [
         name: 'Admin',
         mnemonic: 'd',
         icon: FaCog,
+        permission: 'administracion:acceso',
         subgroups: [
             {
                 title: 'Parametrización',
@@ -231,7 +232,7 @@ export const menuStructure = [
                 links: [
                     { name: 'PUC', href: '/admin/plan-de-cuentas', mnemonic: 'p', icon: FaBook, permission: 'contabilidad:gestionar_puc' },
                     { name: 'Tipos Doc.', href: '/admin/tipos-documento', mnemonic: 't', icon: FaClipboardList, permission: 'contabilidad:configuracion_tipos_doc' },
-                    { name: 'Plantillas', href: '/admin/plantillas', mnemonic: 'l', icon: FaFileAlt, permission: 'contabilidad:configuracion_plantillas' },
+                    { name: 'Plantillas', href: '/admin/plantillas', mnemonic: 'i', icon: FaFileAlt, permission: 'contabilidad:configuracion_plantillas' },
                     { name: 'Conceptos', href: '/admin/utilidades/gestionar-conceptos', mnemonic: 'c', icon: FaListUl, permission: 'contabilidad:configuracion_conceptos' },
                     { name: 'Empresas', href: '/admin/empresas', mnemonic: 'e', icon: FaUniversity, permission: 'empresa:gestionar_empresas' },
                     { name: 'Usuarios y Roles', href: '/admin/configuracion/usuarios-roles', mnemonic: 'u', icon: FaUsers, permission: 'empresa:usuarios_roles' },
@@ -245,8 +246,8 @@ export const menuStructure = [
                     { name: 'Backups', href: '/admin/utilidades/migracion-datos', mnemonic: 'b', icon: FaRedoAlt, permission: 'utilidades:migracion' },
                     { name: 'Cierre Periodos', href: '/admin/utilidades/periodos-contables', mnemonic: 'r', icon: FaCalendarAlt, permission: 'utilidades:cierre_periodos' },
                     { name: 'Auditoría de Consecutivos', href: '/admin/utilidades/auditoria-consecutivos', mnemonic: 'a', icon: FaCheckCircle, permission: 'utilidades:auditoria_consecutivos' },
-                    { name: 'Conteo Registros', href: '/admin/utilidades/conteo-registros', mnemonic: 'c', icon: FaDatabase, permission: 'utilidades:conteo_registros' },
-                    { name: 'Mi Plan y Consumo', href: '/contabilidad/consumo', mnemonic: 'k', icon: FaChartPie, description: 'Estado de cupos y recargas.', permission: 'contabilidad:acceso' },
+                    { name: 'Conteo Registros', href: '/admin/utilidades/conteo-registros', mnemonic: 'o', icon: FaDatabase, permission: 'utilidades:conteo_registros' },
+                    { name: 'Mi Plan y Consumo', href: '/contabilidad/consumo', mnemonic: 'n', icon: FaChartPie, description: 'Estado de cupos y recargas.', permission: 'contabilidad:acceso' },
                 ]
             },
             {
@@ -257,8 +258,8 @@ export const menuStructure = [
                     { name: 'Scripts/Util', href: '/admin/utilidades/soporte-util', mnemonic: 's', icon: FaTools, permission: 'utilidades:scripts', onlySoporte: true },
                     { name: 'Edición Masiva', href: '/admin/utilidades/eliminacion-masiva', mnemonic: 'm', icon: FaFileAlt, permission: 'utilidades:edicion_masiva' },
                     { name: 'Recodificación', href: '/admin/utilidades/recodificacion-masiva', mnemonic: 'd', icon: FaRedoAlt, permission: 'utilidades:recodificacion' },
-                    { name: 'Papelera', href: '/admin/utilidades/papelera', mnemonic: 'x', icon: FaTimes, permission: 'papelera:usar' },
-                    { name: 'Configuración Correo', href: '/admin/utilidades/configuracion-correo', mnemonic: 'e', icon: FaEnvelope, permission: 'utilidades:config_correo' },
+                    { name: 'Papelera', href: '/admin/utilidades/papelera', mnemonic: 'l', icon: FaTimes, permission: 'papelera:usar' },
+                    { name: 'Configuración Correo', href: '/admin/utilidades/configuracion-correo', mnemonic: 'g', icon: FaEnvelope, permission: 'utilidades:config_correo' },
                 ]
             },
         ]

@@ -753,6 +753,19 @@ export default function NuevoDocumentoPage() {
         });
       }
     }
+
+    // --- NUEVO: AUTO-COMPLETAR CON TAB SI ESTÁ VACÍO ---
+    if (e.key === 'Tab' && !e.shiftKey) {
+      const currentMov = movimientos[index];
+      // Si el concepto está vacío y hay una cuenta seleccionada
+      if ((!currentMov.concepto || currentMov.concepto.trim() === '') && currentMov.cuentaId) {
+        const cuenta = maestros.cuentas.find(c => c.id === parseInt(currentMov.cuentaId));
+        if (cuenta) {
+          handleMovimientoChange(index, 'concepto', cuenta.nombre);
+        }
+      }
+    }
+
     handleKeyDown(e, `mov-${index}-concepto`);
   };
 

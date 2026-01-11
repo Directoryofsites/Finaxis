@@ -134,6 +134,9 @@ async def get_current_user(
     db: Session = Depends(get_db)
 ) -> models_usuario.Usuario:
     # ... (Lógica de get_current_user con selectinload) ...
+    # DEBUG LOG
+    # print(f"DEBUG AUTH: Verification token: {token[:10]}...") 
+    
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="No se pudieron validar las credenciales",
@@ -141,11 +144,15 @@ async def get_current_user(
     )
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        # print(f"DEBUG AUTH: Payload: {payload}")
         user_email: str = payload.get("sub")
+        # print(f"DEBUG AUTH: Email found: {user_email}")
         if user_email is None:
+            print("DEBUG AUTH: No email in token")
             raise credentials_exception
         token_data = schemas_token.TokenData(email=user_email)
-    except JWTError:
+    except JWTError as e:
+        print(f"DEBUG AUTH: JWT Error: {e}")
         raise credentials_exception
 
     user = db.query(models_usuario.Usuario).options(
@@ -154,7 +161,10 @@ async def get_current_user(
     ).filter(models_usuario.Usuario.email == token_data.email).first()
 
     if user is None:
+        print(f"DEBUG AUTH: User {token_data.email} not found in DB")
         raise credentials_exception
+    
+    # print("DEBUG AUTH: User found and validated")
     return user
 
 oauth2_soporte_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/soporte/login")

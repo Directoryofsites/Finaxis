@@ -44,7 +44,9 @@ def create_empresa_con_usuarios(db: Session, empresa_data: empresa_schema.Empres
             direccion=empresa_data.direccion,
             telefono=empresa_data.telefono,
             email=empresa_data.email,
+
             logo_url=empresa_data.logo_url,
+            modo_operacion=empresa_data.modo_operacion, # <--- FALTABA ESTO
             # -----------------------------------
             created_at=datetime.utcnow()
         )
@@ -52,16 +54,37 @@ def create_empresa_con_usuarios(db: Session, empresa_data: empresa_schema.Empres
         db.flush()
 
         # Buscamos el rol con el nombre correcto en minúscula, tal como lo crea el seeder.
-        admin_role = db.query(permiso_model.Rol).filter(permiso_model.Rol.nombre == "administrador").first()
+        # Buscamos el rol adecuado según el modo de operación
+        if empresa_data.modo_operacion == 'AUDITORIA_READONLY':
+             rol_nombre = "clon_restringido"
+        else:
+             rol_nombre = "administrador"
 
-        if not admin_role:
+        # 3. Asignar Rol al Usuario
+        rol_asignar = None
+
+        # PRIORIDAD: Si se especifica ID de rol manualmente (nueva funcionalidad), usar ese.
+        if empresa_data.rol_inicial_id:
+            rol_asignar = db.query(permiso_model.Rol).filter(permiso_model.Rol.id == empresa_data.rol_inicial_id).first()
+            if not rol_asignar:
+                 db.rollback()
+                 raise HTTPException(status_code=400, detail=f"El Rol Inicial ID {empresa_data.rol_inicial_id} no existe.")
+
+        # FALLBACK: Si no se especifica, usar el nombre por defecto
+        if not rol_asignar:
+            admin_role = db.query(permiso_model.Rol).filter(permiso_model.Rol.nombre == rol_nombre).first()
+            # Renombramos variable para usarla abajo consistentemente
+            rol_asignar = admin_role
+
+        if not rol_asignar:
             db.rollback()
-            raise HTTPException(status_code=500, detail="CRÍTICO: El rol 'administrador' no está definido en la base de datos. Ejecute el seeder.")
+            raise HTTPException(status_code=500, detail=f"CRÍTICO: El rol '{rol_nombre}' no está definido en la base de datos.")
 
         for usuario_data in empresa_data.usuarios:
             from . import usuario as usuario_service
+            # Asignar rol seleccionado (o default)
             user_payload = usuario_schema.UserCreateInCompany(
-                email=usuario_data.email, password=usuario_data.password, roles_ids=[admin_role.id]
+                email=usuario_data.email, password=usuario_data.password, roles_ids=[rol_asignar.id]
             )
             usuario_service.create_user_in_company(db=db, user_data=user_payload, empresa_id=nueva_empresa.id)
         
@@ -168,7 +191,21 @@ def delete_empresa_y_usuarios(db: Session, empresa_id: int):
         db.query(tipo_documento_model.TipoDocumento).filter(tipo_documento_model.TipoDocumento.empresa_id == empresa_id).delete(synchronize_session=False)
         db.query(periodo_cerrado_model.PeriodoContableCerrado).filter(periodo_cerrado_model.PeriodoContableCerrado.empresa_id == empresa_id).delete(synchronize_session=False)
         db.query(log_operacion_model.LogOperacion).filter(log_operacion_model.LogOperacion.empresa_id == empresa_id).delete(synchronize_session=False)
+        
+        # --- FIX FK VIOLATION: Eliminar roles asignados a los usuarios primero ---
+        # 1. Obtenemos los IDs de usuarios de la empresa
+        usuarios_ids = db.query(usuario_model.Usuario.id).filter(usuario_model.Usuario.empresa_id == empresa_id).all()
+        usuarios_ids = [uid[0] for uid in usuarios_ids]
+        
+        if usuarios_ids:
+            # 2. Eliminamos manualmente de la tabla intermedia usuario_roles
+            # Importamos la tabla intermedia desde el modelo
+            from ..models.usuario import usuario_roles
+            db.execute(usuario_roles.delete().where(usuario_roles.c.usuario_id.in_(usuarios_ids)))
+        
+        # 3. Ahora sí podemos borrar los usuarios
         db.query(usuario_model.Usuario).filter(usuario_model.Usuario.empresa_id == empresa_id).delete(synchronize_session=False)
+        # ------------------------------------------------------------------------
         
         db.delete(db_empresa)
         db.commit()

@@ -26,6 +26,7 @@ import CrearEmpresaPanel from './components/CrearEmpresaPanel';
 import InspectorUniversal from './components/InspectorUniversal';
 import UltimasOperaciones from './components/UltimasOperaciones';
 import AuditoriaConsecutivosSoporte from './components/AuditoriaConsecutivosSoporte';
+import RolesManagementView from '../../../../components/admin/RolesManagementView';
 
 
 // ... (Aquí van todos los componentes hijos que ya tienes en tu archivo, 
@@ -496,6 +497,9 @@ export default function SoporteUtilPage() {
             setDashboardData(response.data);
         } catch (error) {
             console.error("Error cargando datos del dashboard", error);
+            if (error.response && error.response.status === 401) {
+                handleLogout();
+            }
         } finally {
             setIsDataLoading(false);
         }
@@ -604,6 +608,7 @@ export default function SoporteUtilPage() {
             </div>
             <div className="flex border-b mb-6 overflow-x-auto">
                 <button onClick={() => setActiveTab('gestionSoporte')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'gestionSoporte' ? 'border-b-2 border-pink-600 font-semibold text-pink-600' : 'text-gray-500'}`}>Gestión Soporte</button>
+                <button onClick={() => setActiveTab('gestionRoles')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'gestionRoles' ? 'border-b-2 border-orange-600 font-semibold text-orange-600' : 'text-gray-500'}`}>Gestión Roles</button>
                 <button onClick={() => setActiveTab('crearEmpresa')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'crearEmpresa' ? 'border-b-2 border-green-600 font-semibold text-green-600' : 'text-gray-500'}`}>Crear Empresa</button>
                 <button onClick={() => setActiveTab('gestionEmpresas')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'gestionEmpresas' ? 'border-b-2 border-yellow-600 font-semibold text-yellow-600' : 'text-gray-500'}`}>Gestión Empresas</button>
                 <button onClick={() => setActiveTab('auditoriaConsecutivos')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'auditoriaConsecutivos' ? 'border-b-2 border-cyan-600 font-semibold text-cyan-600' : 'text-gray-500'}`}>Auditoría Consecutivos</button>
@@ -620,6 +625,7 @@ export default function SoporteUtilPage() {
                 ) : (
                     <>
                         {activeTab === 'gestionSoporte' && <GestionSoportePanel soporteUsers={dashboardData.usuarios_soporte} onDataChange={fetchDashboardData} />}
+                        {activeTab === 'gestionRoles' && <RolesManagementView />}
                         {activeTab === 'crearEmpresa' && <CrearEmpresaPanel onEmpresaCreada={fetchDashboardData} />}
                         {activeTab === 'gestionEmpresas' && <GestionEmpresasPanel empresas={dashboardData.empresas} onDataChange={fetchDashboardData} onOpenModal={openModal} />}
                         {activeTab === 'auditoriaConsecutivos' && <AuditoriaConsecutivosSoporte todasLasEmpresas={dashboardData.empresas} />}

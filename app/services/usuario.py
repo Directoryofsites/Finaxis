@@ -21,11 +21,15 @@ from app.core.hashing import get_password_hash
 
 def get_user_by_email(db: Session, email: str):
     return db.query(models_usuario.Usuario).options(
-        joinedload(models_usuario.Usuario.roles)
+        joinedload(models_usuario.Usuario.roles),
+        joinedload(models_usuario.Usuario.empresa) # <--- CARGA EAGER DE EMPRESA
     ).filter(models_usuario.Usuario.email == email).first()
 
 def get_user_by_id(db: Session, usuario_id: int):
-    return db.query(models_usuario.Usuario).filter(models_usuario.Usuario.id == usuario_id).first()
+    return db.query(models_usuario.Usuario).options(
+        joinedload(models_usuario.Usuario.roles),
+        joinedload(models_usuario.Usuario.empresa)
+    ).filter(models_usuario.Usuario.id == usuario_id).first()
 
 def get_users_by_company(db: Session, empresa_id: int):
     return db.query(models_usuario.Usuario).options(

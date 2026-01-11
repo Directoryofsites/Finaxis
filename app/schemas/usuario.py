@@ -1,6 +1,6 @@
 # app/schemas/usuario.py
 from pydantic import BaseModel, Field, EmailStr
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 
 # --- NUEVOS SCHEMAS PARA ROLES Y PERMISOS ---
 class Permiso(BaseModel):
@@ -31,13 +31,25 @@ class UserUpdate(BaseModel):
     nombre_completo: Optional[str] = None
     roles_ids: Optional[List[int]] = None
 
-class User(BaseModel):
+class UserBasic(BaseModel):
     id: int
     email: str
     nombre_completo: Optional[str] = None
     empresa_id: Optional[int] = None
+    
     # CAMBIO: Devolvemos la lista completa de objetos de Rol asignados.
     roles: List[Rol] = []
+
+    class Config:
+        from_attributes = True
+
+class User(UserBasic):
+    
+    # --- INCLUIR DETALLES EMPRESA (Para Frontend Control) ---
+    if TYPE_CHECKING:
+        from .empresa import EmpresaBase
+    empresa: Optional['EmpresaBase'] = None
+    # --------------------------------------------------------
 
     class Config:
         from_attributes = True

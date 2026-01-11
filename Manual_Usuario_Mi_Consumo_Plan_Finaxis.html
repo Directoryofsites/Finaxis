@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Mi Consumo y Plan | Sistema Finaxis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            padding: 50px;
+            margin-bottom: 40px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 3.5em;
+            margin-bottom: 15px;
+            font-weight: 800;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header .subtitle {
+            color: #764ba2;
+            font-size: 1.5em;
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+
+        .header .description {
+            color: #666;
+            font-size: 1.2em;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .content-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .section-title {
+            color: #667eea;
+            font-size: 2.2em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .section-subtitle {
+            color: #764ba2;
+            font-size: 1.6em;
+            margin: 30px 0 15px 0;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 8px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin: 25px 0;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border-left: 5px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-card h4 {
+            color: #667eea;
+            font-size: 1.3em;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-card p {
+            color: #666;
+            font-size: 1.05em;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+
+        .feature-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+
+        .feature-list li::before {
+            content: "✓";
+            background: #667eea;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9em;
+            font-weight: bold;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 25px 0;
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3);
+        }
+
+        .highlight-box h4 {
+            font-size: 1.4em;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 25px 0;
+            box-shadow: 0 15px 35px rgba(255, 107, 107, 0.3);
+        }
+
+        .warning-box h4 {
+            font-size: 1.4em;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .step-by-step {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+        }
+
+        .step-by-step h4 {
+            color: #667eea;
+            font-size: 1.3em;
+            margin-bottom: 20px;
+        }
+
+        .step {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .step-content h5 {
+            color: #333;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+
+        .step-content p {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin: 25px 0;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        .info-table th,
+        .info-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .info-table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-weight: 600;
+        }
+
+        .info-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-abierto { background: #d4edda; color: #155724; }
+        .status-cerrado { background: #f8d7da; color: #721c24; }
+        .status-vigente { background: #d1ecf1; color: #0c5460; }
+        .status-agotado { background: #fff3cd; color: #856404; }
+
+        .formula-box {
+            background: #e3f2fd;
+            border: 2px solid #2196f3;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .formula-box h5 {
+            color: #1976d2;
+            margin-bottom: 10px;
+            font-family: inherit;
+        }
+
+        .formula {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            color: #1976d2;
+        }
+
+        .toc {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .toc h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .toc ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .toc li {
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .toc li:last-child {
+            border-bottom: none;
+        }
+
+        .toc a {
+            color: #666;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .toc a:hover {
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2.5em;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .content-section {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📊 Manual de Usuario</h1>
+            <div class="subtitle">Mi Consumo y Plan de Registros</div>
+            <div class="description">
+                Guía completa para entender y gestionar tu capacidad operativa, planes mensuales, 
+                bolsas acumuladas y recargas adicionales en el sistema Finaxis.
+            </div>
+        </div>
+
+        <!-- Tabla de Contenidos -->
+        <div class="toc">
+            <h3>📋 Tabla de Contenidos</h3>
+            <ul>
+                <li><a href="#introduccion">1. Introducción al Sistema de Consumo</a></li>
+                <li><a href="#conceptos">2. Conceptos Fundamentales</a></li>
+                <li><a href="#dashboard">3. Dashboard "Mi Consumo"</a></li>
+                <li><a href="#plan-mensual">4. Plan Mensual</a></li>
+                <li><a href="#bolsa-acumulada">5. Bolsa Acumulada</a></li>
+                <li><a href="#recargas-extra">6. Recargas Extra</a></li>
+                <li><a href="#como-funciona">7. Cómo Funciona el Sistema</a></li>
+                <li><a href="#casos-uso">8. Casos de Uso Prácticos</a></li>
+                <li><a href="#faq">9. Preguntas Frecuentes</a></li>
+            </ul>
+        </div>
+
+        <!-- Introducción -->
+        <div class="content-section" id="introduccion">
+            <h2 class="section-title">🎯 Introducción al Sistema de Consumo</h2>
+            
+            <p style="font-size: 1.1em; margin-bottom: 25px;">
+                El sistema de <strong>"Mi Consumo"</strong> en Finaxis es un módulo avanzado que controla y gestiona 
+                la capacidad operativa de tu empresa, limitando la cantidad de documentos contables que puedes crear 
+                mensualmente según tu plan contratado.
+            </p>
+
+            <div class="highlight-box">
+                <h4>💡 ¿Qué es un "Registro"?</h4>
+                <p>Un <strong>registro</strong> equivale a cada <strong>línea de movimiento contable</strong> que se genera 
+                al crear documentos como facturas, compras, pagos, etc. Por ejemplo, una factura con 3 productos 
+                genera aproximadamente 6-8 registros contables (ingresos, costos, IVA, etc.).</p>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4>🎯 Objetivo Principal</h4>
+                    <p>Controlar el uso de recursos del sistema y ofrecer planes escalables según las necesidades de cada empresa.</p>
+                </div>
+                <div class="info-card">
+                    <h4>📈 Beneficios</h4>
+                    <p>Gestión inteligente de capacidad, acumulación de excedentes y flexibilidad para comprar recargas adicionales.</p>
+                </div>
+                <div class="info-card">
+                    <h4>🔄 Flexibilidad</h4>
+                    <p>Sistema de bolsas acumuladas que permite aprovechar registros no utilizados de meses anteriores.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conceptos Fundamentales -->
+        <div class="content-section" id="conceptos">
+            <h2 class="section-title">📚 Conceptos Fundamentales</h2>
+
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4>📊 Plan Mensual</h4>
+                    <p>Cuota base de registros asignada mensualmente según tu plan contratado. Se renueva automáticamente cada mes.</p>
+                </div>
+                <div class="info-card">
+                    <h4>💰 Bolsa Acumulada</h4>
+                    <p>Registros no utilizados de meses anteriores que se acumulan para uso futuro. Tienen fecha de vencimiento.</p>
+                </div>
+                <div class="info-card">
+                    <h4>⚡ Recargas Extra</h4>
+                    <p>Paquetes adicionales de registros que puedes comprar cuando necesites más capacidad operativa.</p>
+                </div>
+                <div class="info-card">
+                    <h4>🔄 Consumo FIFO</h4>
+                    <p>El sistema consume primero el plan mensual, luego las bolsas más antiguas, y finalmente las recargas.</p>
+                </div>
+            </div>
+
+            <h3 class="section-subtitle">Estados del Sistema</h3>
+
+            <div class="table-container">
+                <table class="info-table">
+                    <thead>
+                        <tr>
+                            <th>Estado</th>
+                            <th>Descripción</th>
+                            <th>Acciones Disponibles</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="status-badge status-abierto">ABIERTO</span></td>
+                            <td>Plan mensual activo y disponible para consumo</td>
+                            <td>Crear documentos, consultar saldo</td>
+                        </tr>
+                        <tr>
+                            <td><span class="status-badge status-cerrado">CERRADO</span></td>
+                            <td>Plan mensual cerrado por administrador</td>
+                            <td>Solo consulta, no se pueden crear documentos</td>
+                        </tr>
+                        <tr>
+                            <td><span class="status-badge status-vigente">VIGENTE</span></td>
+                            <td>Bolsa o recarga disponible para uso</td>
+                            <td>Consumo automático según orden FIFO</td>
+                        </tr>
+                        <tr>
+                            <td><span class="status-badge status-agotado">AGOTADO</span></td>
+                            <td>Bolsa o recarga sin saldo disponible</td>
+                            <td>Solo consulta histórica</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Dashboard Mi Consumo -->
+        <div class="content-section" id="dashboard">
+            <h2 class="section-title">🖥️ Dashboard "Mi Consumo"</h2>
+
+            <p style="margin-bottom: 25px;">
+                El dashboard principal te muestra un resumen completo de tu capacidad operativa actual y te permite 
+                gestionar tu consumo de manera inteligente.
+            </p>
+
+            <h3 class="section-subtitle">Acceso al Dashboard</h3>
+            <div class="step-by-step">
+                <h4>📍 Cómo Acceder</h4>
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h5>Navegar al Menú Admin</h5>
+                        <p>En la barra de navegación superior, haz clic en "Admin"</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h5>Seleccionar "Mi Consumo"</h5>
+                        <p>En el menú desplegable de Admin, selecciona "Plan y Consumo"</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h5>Visualizar Dashboard</h5>
+                        <p>Se abrirá la pantalla principal con toda la información de tu consumo</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="section-subtitle">Elementos del Dashboard</h3>
+
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4>📊 Capacidad Operativa Total</h4>
+                    <p>Muestra el número total de registros disponibles HOY, sumando plan mensual + bolsas + recargas.</p>
+                </div>
+                <div class="info-card">
+                    <h4>📅 Selectores de Fecha</h4>
+                    <p>Permite consultar el consumo de meses y años anteriores para análisis histórico.</p>
+                </div>
+                <div class="info-card">
+                    <h4>🟢 Indicador de Estado</h4>
+                    <p>Punto verde que confirma que el sistema está habilitado para crear documentos.</p>
+                </div>
+            </div>
+
+            <div class="formula-box">
+                <h5>💡 Fórmula de Capacidad Total</h5>
+                <div class="formula">
+                    Capacidad Total = Plan Mensual + Bolsas Vigentes + Recargas Vigentes
+                </div>
+            </div>
+        </div>
+
+        <!-- Plan Mensual -->
+        <div class="content-section" id="plan-mensual">
+            <h2 class="section-title">📋 Plan Mensual</h2>
+
+            <p style="margin-bottom: 25px;">
+                El <strong>Plan Mensual</strong> es tu cuota base de registros que se asigna automáticamente cada mes 
+                según el plan contratado con Finaxis.
+            </p>
+
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4>🔄 Renovación Automática</h4>
+                    <p>Se renueva automáticamente el primer día de cada mes con la cantidad asignada según tu plan.</p>
+                </div>
+                <div class="info-card">
+                    <h4>📊 Barra de Progreso</h4>
+                    <p>Muestra visualmente cuánto has consumido del plan mensual (ej: 350/452 registros).</p>
+                </div>
+                <div class="info-card">
+                    <h4>💜 Indicador Visual</h4>
+                    <p>Icono circular morado que identifica los registros del plan mensual base.</p>
+                </div>
+            </div>
+
+            <h3 class="section-subtitle">Características del Plan Mensual</h3>
+
+            <ul class="feature-list">
+                <li><strong>Prioridad de Consumo:</strong> Se consume PRIMERO antes que bolsas o recargas</li>
+                <li><strong>Acumulación:</strong> Los registros no utilizados pasan a "Bolsa Acumulada" el siguiente mes</li>
+                <li><strong>Estado ABIERTO/CERRADO:</strong> Puede ser cerrado manualmente por soporte si es necesario</li>
+                <li><strong>Sincronización:</strong> Se sincroniza automáticamente con cambios en el plan contratado</li>
+                <li><strong>Límite Base + Adicionales:</strong> Incluye el plan base más cualquier cupo adicional asignado</li>
+            </ul>
+
+            <div class="warning-box">
+                <h4>⚠️ Importante</h4>
+                <p>Si tu plan mensual se agota, el sistema automáticamente comenzará a consumir de las bolsas acumuladas 
+                y recargas disponibles. Si no tienes saldo en ninguna fuente, no podrás crear nuevos documentos hasta 
+                el siguiente mes o hasta comprar recargas adicionales.</p>
+            </div>
+
+            <h3 class="section-subtitle">Cálculo del Plan Mensual</h3>
+
+            <div class="formula-box">
+                <h5>🧮 Fórmula de Cálculo</h5>
+                <div class="formula">
+                    Plan Mensual = Límite Base Empresa + Cupos Adicionales + Recargas del Mes
+                </div>
+                <p style="margin-top: 10px; font-size: 0.9em;">
+                    <strong>Límite Base:</strong> Definido en el contrato<br>
+                    <strong>Cupos Adicionales:</strong> Asignados por soporte para meses específicos<br>
+                    <strong>Recargas del Mes:</strong> Paquetes comprados para el mes actual
+                </p>
+            </div>
+        </div>
+
+        <!-- Bolsa Acumulada -->
+        <div class="content-section" id="bolsa-acumulada">
+            <h2 class="section-title">💰 Bolsa Acumulada</h2>
+
+            <p style="margin-bottom: 25px;">
+                La <strong>Bolsa Acumulada</strong> es un sistema inteligente que preserva los registros no utilizados 
+                de meses anteriores, permitiéndote aprovecharlos cuando necesites mayor capacidad operativa.
+            </p>
+
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4>🔄 Acumulación Automática</h4>
+                    <p>Al final de cada mes, los registros no utilizados del plan mensual se transfieren automáticamente a la bolsa.</p>
+                </div>
+                <div class="info-card">
+                    <h4>📅 Fecha de Vencimiento</h4>
+                    <p>Cada bolsa tiene una fecha de vencimiento (generalmente 12 meses) después de la cual se pierde.</p>
+                </div>
+                <div class="info-card">
+                    <h4>🟢 Indicador Verde</h4>
+                    <p>Icono circular verde que identifica los registros de la bolsa acumulada.</p>
+                </div>
+            </div>
+
+            <h3 class="section-subtitle">Funcionamiento de la Bolsa</h3>
+
+            <ul class="feature-list">
+                <li><strong>Consumo FIFO:</strong> Se consumen las bolsas más antiguas primero (First In, First Out)</li>
+                <li><strong>Múltiples Tramos:</strong> Puedes tener varios "tramos" de diferentes meses acumulados</li>
+                <li><strong>Vencimiento:</strong> Las bolsas vencen automáticamente después del tiempo establecido</li>
+                <li><strong>Estado Vigente:</strong> Solo las bolsas en estado "VIGENTE" están disponibles para consumo</li>
+                <li><strong>Transparencia:</strong> Puedes ver el origen de cada bolsa (mes/año de procedencia)</li>
+            </ul>
+
+            <div class="highlight-box">
+                <h4>💡 Ejemplo Práctico</h4>
+                <p>Si tu plan mensual es de 500 registros y solo usaste 300 en enero, los 200 restantes se transfieren 
+                a tu bolsa acumulada en febrero. Estos 200 registros estarán disponibles hasta enero del siguiente año.</p>
+            </div>
+
+            <h3 class="section-subtitle">Estados de la Bolsa</h3>
+
+            <div class="table-container">
+                <table class="info-table">
+                    <thead>
+                        <tr>
+                            <th>Estado</th>
+                            <th>Descripción</th>
+                            <th>Disponible para Consumo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="status-badge status-vigente">VIGENTE</span></td>
+                            <td>Bolsa activa con saldo disponible</td>
+                            <td>✅ Sí</td>
+                        </tr>
+                        <tr>
+                            <td><span class="status-badge status-agotado">AGOTADO</span></td>
+                            <td>Bolsa sin saldo, completamente consumida</td>
+                            <td>❌ No</td>
+                        </tr>
+                        <tr>
+                            <td><span class="status-badge status-cerrado">VENCIDO</span></td>
+                            <td>Bolsa que superó su fecha de vencimiento</td>
+                            <td>❌ No</td>
+                        </tr>
+                        <tr>
+                            <td><span class="status-badge status-cerrado">ANULADO</span></td>
+                            <td>Bolsa anulada manualmente por soporte</td>
+                            <td>❌ No</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recargas Extra -->
+        <div class="content-section" id="recargas-extra">
+            <h2 class="section-title">⚡ Recargas Extra</h2>
+
+            <p style="margin-bottom: 25px;">
+                Las <strong>Recargas Extra</strong> son paquetes adicionales de registros que puedes comprar cuando 
+                necesitas más capacidad operativa de la que ofrece tu plan mensual y bolsas acumuladas.
+            </p>
+
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4>🛒 Compra Bajo Demanda</h4>
+                    <p>Puedes comprar recargas cuando las necesites, sin comprometerte a planes más grandes permanentemente.</p>
+                </div>
+                <div class="info-card">
+                    <h4>💳 Facturación Pendiente</h4>
+                    <p>Las recargas se marcan como "pendientes de pago" hasta que se incluyan en tu facturación mensual.</p>
+                </div>
+                <div class="info-card">
+                    <h4>🟡 Indicador Amarillo</h4>
+                    <p>Icono de rayo amarillo que identifica los registros de recargas adicionales.</p>
+                </div>
+            </div>
+
+            <h3 class="section-subtitle">Tipos de Paquetes Disponibles</h3>
+
+            <div class="table-container">
+                <table class="info-table">
+                    <thead>
+                        <tr>
+                            <th>Paquete</th>
+                            <th>Cantidad de Registros</th>
+                            <th>Precio Aproximado</th>
+                            <th>Ideal Para</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Pack Básico</strong></td>
+                            <td>100 registros</td>
+                            <td>$15,000</td>
+                            <td>Necesidades puntuales pequeñas</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Pack Pro</strong></td>
+                            <td>500 registros</td>
+                            <td>$60,000</td>
+                            <td>Meses con mayor actividad</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Pack Enterprise</strong></td>
+                            <td>2,000 registros</td>
+                            <td>$200,000</td>
+                            <td>Empresas con alta operación</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Personalizado</strong></td>
+                            <td>Cantidad específica</td>
+                            <td>$150 por registro</td>
+                            <td>Necesidades exactas</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="section-subtitle">Proceso de Compra</h3>
+
+            <div class="step-by-step">
+                <h4>🛒 Cómo Comprar Recargas</h4>
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h5>Contactar Soporte</h5>
+                        <p>Comunícate con el equipo de soporte de Finaxis para solicitar una recarga</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h5>Seleccionar Paquete</h5>
+                        <p>Elige el paquete que mejor se adapte a tus necesidades o solicita una cantidad personalizada</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h5>Activación Inmediata</h5>
+                        <p>La recarga se activa inmediatamente y aparece en tu dashboard como "pendiente de pago"</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h5>Facturación Mensual</h5>
+                        <p>El costo se incluye en tu próxima factura mensual de Finaxis</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <h4>💰 Información de Facturación</h4>
+                <p>Las recargas aparecen como "$0" en "Total a Pagar (Pendiente)" hasta que se procese la facturación. 
+                Esto no significa que sean gratuitas, sino que están pendientes de incluir en la factura mensual.</p>
+            </div>
+        </div>
+
+        <!-- Cómo Funciona el Sistema -->
+        <div class="content-section" id="como-funciona">
+            <h2 class="section-title">⚙️ Cómo Funciona el Sistema</h2>
+
+            <h3 class="section-subtitle">Orden de Consumo (FIFO)</h3>
+
+            <p style="margin-bottom: 25px;">
+                El sistema utiliza una lógica <strong>FIFO (First In, First Out)</strong> para consumir los registros 
+                de manera inteligente y beneficiosa para el usuario.
+            </p>
+
+            <div class="step-by-step">
+                <h4>🔄 Secuencia de Consumo</h4>
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h5>Plan Mensual Actual</h5>
+                        <p>Se consume PRIMERO el plan mensual del mes actual si está en estado ABIERTO</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h5>Bolsas Acumuladas (Más Antiguas Primero)</h5>
+                        <p>Si el plan se agota, se consumen las bolsas ordenadas por fecha de vencimiento (las que vencen antes, se usan antes)</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h5>Recargas Adicionales (Más Antiguas Primero)</h5>
+                        <p>Finalmente, se consumen las recargas ordenadas por fecha de compra</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h5>Bloqueo por Saldo Insuficiente</h5>
+                        <p>Si no hay saldo en ninguna fuente, el sistema bloquea la creación de nuevos documentos</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="section-subtitle">Registro de Auditoría</h3>
+
+            <ul class="feature-list">
+                <li><strong>Historial Completo:</strong> Cada consumo se registra con fecha, cantidad y fuente utilizada</li>
+                <li><strong>Trazabilidad:</strong> Puedes ver exactamente qué documento consumió qué registros</li>
+                <li><strong>Reversión:</strong> Si se anula un documento, los registros se devuelven automáticamente</li>
+                <li><strong>Snapshots:</strong> Se guarda el saldo antes y después de cada operación</li>
+                <li><strong>Tipos de Operación:</strong> CONSUMO, REVERSION, CIERRE, EXPIRACION</li>
+            </ul>
+
+            <h3 class="section-subtitle">Validaciones del Sistema</h3>
+
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4>🔒 Bloqueo Concurrente</h4>
+                    <p>Utiliza bloqueos de base de datos para evitar condiciones de carrera cuando múltiples usuarios crean documentos simultáneamente.</p>
+                </div>
+                <div class="info-card">
+                    <h4>✅ Verificación Previa</h4>
+                    <p>Antes de crear un documento, verifica que hay saldo suficiente sumando todas las fuentes disponibles.</p>
+                </div>
+                <div class="info-card">
+                    <h4>🔄 Transacciones Atómicas</h4>
+                    <p>Si falla cualquier parte del proceso, toda la operación se revierte automáticamente.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Casos de Uso Prácticos -->
+        <div class="content-section" id="casos-uso">
+            <h2 class="section-title">💼 Casos de Uso Prácticos</h2>
+
+            <h3 class="section-subtitle">Escenario 1: Empresa con Operación Regular</h3>
+            <div class="highlight-box">
+                <h4>📊 Situación</h4>
+                <p><strong>Plan:</strong> 500 registros mensuales<br>
+                <strong>Uso promedio:</strong> 400 registros/mes<br>
+                <strong>Resultado:</strong> Acumula 100 registros mensuales en la bolsa</p>
+            </div>
+
+            <h3 class="section-subtitle">Escenario 2: Mes de Alta Actividad</h3>
+            <div class="highlight-box">
+                <h4>📈 Situación</h4>
+                <p><strong>Plan:</strong> 500 registros mensuales<br>
+                <strong>Bolsa acumulada:</strong> 800 registros<br>
+                <strong>Necesidad:</strong> 1,200 registros<br>
+                <strong>Solución:</strong> Usa plan (500) + bolsa (700) sin comprar recargas</p>
+            </div>
+
+            <h3 class="section-subtitle">Escenario 3: Crecimiento Súbito</h3>
+            <div class="highlight-box">
+                <h4>🚀 Situación</h4>
+                <p><strong>Plan:</strong> 500 registros mensuales<br>
+                <strong>Bolsa acumulada:</strong> 200 registros<br>
+                <strong>Necesidad:</strong> 1,500 registros<br>
+                <strong>Solución:</strong> Usa plan (500) + bolsa (200) + compra Pack Enterprise (2,000)</p>
+            </div>
+
+            <h3 class="section-subtitle">Escenario 4: Empresa Estacional</h3>
+            <div class="highlight-box">
+                <h4>🌊 Situación</h4>
+                <p><strong>Temporada baja:</strong> 200 registros/mes (acumula 300)<br>
+                <strong>Temporada alta:</strong> 1,000 registros/mes<br>
+                <strong>Estrategia:</strong> Aprovecha la bolsa acumulada en temporada alta</p>
+            </div>
+        </div>
+
+        <!-- FAQ -->
+        <div class="content-section" id="faq">
+            <h2 class="section-title">❓ Preguntas Frecuentes</h2>
+
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4>¿Qué pasa si se me agotan todos los registros?</h4>
+                    <p>El sistema bloqueará la creación de nuevos documentos hasta que compres recargas adicionales o esperes al siguiente mes.</p>
+                </div>
+                <div class="info-card">
+                    <h4>¿Puedo ver el historial de consumo?</h4>
+                    <p>Sí, el sistema mantiene un historial completo de todos los consumos, reversiones y operaciones realizadas.</p>
+                </div>
+                <div class="info-card">
+                    <h4>¿Las bolsas acumuladas vencen?</h4>
+                    <p>Sí, generalmente tienen una vigencia de 12 meses desde su creación. Después de eso se pierden automáticamente.</p>
+                </div>
+                <div class="info-card">
+                    <h4>¿Puedo cambiar mi plan mensual?</h4>
+                    <p>Sí, contacta al equipo de soporte para evaluar opciones de upgrade o downgrade de tu plan base.</p>
+                </div>
+                <div class="info-card">
+                    <h4>¿Qué pasa si anulo un documento?</h4>
+                    <p>Los registros consumidos se devuelven automáticamente a la fuente original (plan, bolsa o recarga).</p>
+                </div>
+                <div class="info-card">
+                    <h4>¿Puedo comprar recargas para meses futuros?</h4>
+                    <p>Sí, puedes especificar el mes y año para el cual quieres la recarga al momento de la compra.</p>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <h4>📞 ¿Necesitas Ayuda?</h4>
+                <p>Si tienes dudas adicionales o necesitas asistencia técnica, no dudes en contactar al equipo de soporte 
+                de Finaxis. Estamos aquí para ayudarte a optimizar tu uso del sistema.</p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="content-section">
+            <h2 class="section-title">📋 Resumen</h2>
+            <p style="font-size: 1.1em; text-align: center; margin-bottom: 25px;">
+                El sistema <strong>"Mi Consumo"</strong> de Finaxis te ofrece un control inteligente y flexible de tu 
+                capacidad operativa, permitiéndote gestionar eficientemente tus recursos y escalar según tus necesidades 
+                de negocio.
+            </p>
+            
+            <div class="highlight-box">
+                <h4>🎯 Puntos Clave para Recordar</h4>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="padding: 5px 0;">✅ El consumo sigue orden FIFO: Plan → Bolsas → Recargas</li>
+                    <li style="padding: 5px 0;">✅ Los registros no utilizados se acumulan automáticamente</li>
+                    <li style="padding: 5px 0;">✅ Puedes comprar recargas adicionales cuando las necesites</li>
+                    <li style="padding: 5px 0;">✅ El sistema mantiene auditoría completa de todas las operaciones</li>
+                    <li style="padding: 5px 0;">✅ Las bolsas tienen fecha de vencimiento (generalmente 12 meses)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

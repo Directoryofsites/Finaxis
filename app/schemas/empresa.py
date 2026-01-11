@@ -1,11 +1,13 @@
 # app/schemas/empresa.py
 from pydantic import BaseModel, EmailStr, Field, validator
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 from datetime import date
 
 # --- INICIO: IMPORTACIÓN CORREGIDA ---
 # Importamos el schema de User correcto para evitar duplicación y errores.
-from .usuario import User
+if TYPE_CHECKING:
+    from .usuario import User
+    from .usuario import UserBasic
 # --- FIN: IMPORTACIÓN CORREGIDA ---
 
 # --- ESQUEMA INTERNO PARA DATOS DE USUARIO EN LA CREACIÓN ---
@@ -23,7 +25,15 @@ class EmpresaConUsuariosCreate(BaseModel):
     direccion: Optional[str] = None
     telefono: Optional[str] = None
     email: Optional[str] = None
+    email: Optional[str] = None
     logo_url: Optional[str] = None
+    
+    # --- MODO DE OPERACIÓN (Control de Licencia/Auditoría) ---
+    modo_operacion: Optional[str] = 'STANDARD' # STANDARD, AUDITORIA_READONLY
+    
+    # --- ROL INICIAL MANUAL (Opcional, si no se envía se auto-detecta) ---
+    rol_inicial_id: Optional[int] = None
+    # ---------------------------------------------------------
 
     usuarios: List[UsuarioData]
 
@@ -70,7 +80,7 @@ class Empresa(EmpresaBase):
 # --- INICIO: NUEVO ESQUEMA PARA EL PANEL DE MANDO ---
 # Este es el esquema que representa una Empresa junto con su lista de Usuarios.
 class EmpresaConUsuarios(Empresa):
-    usuarios: List[User] = []
+    usuarios: List['UserBasic'] = []
 # --- FIN: NUEVO ESQUEMA ---
 
 # ... al final del archivo ...

@@ -37,7 +37,56 @@ def seed_database():
                 "utilidades:scripts",
                 "utilidades:conteo_registros",
                 "utilidades:auditoria_consecutivos",
-                "inventario:ver_super_informe" 
+                "inventario:ver_super_informe",
+                "empresa:usuarios_roles",
+                
+                # --- VISIBILIDAD DE MODULOS (Frontend Groups) ---
+                "contabilidad:acceso",
+                "analisis_financiero:acceso",
+                "ph:acceso",
+                "nomina:acceso",
+                "produccion:acceso",
+                "conciliacion_bancaria:acceso",
+                "facturacion:acceso",
+                "compras:acceso",
+                "activos:acceso",
+                "centros_costo:acceso",
+                "terceros:acceso",
+                "impuestos:acceso",
+                "inventario:acceso",
+                "tesoreria:acceso", 
+                "cartera:acceso",   
+                "administracion:acceso",
+
+                # --- OPERACIONES (Existing) ---
+                "contabilidad:crear_documento",
+                "contabilidad:editar_documento",
+                "contabilidad:anular_documento",
+                "contabilidad:explorador",
+                "contabilidad:configuracion_tipos_doc",
+                "contabilidad:gestionar_puc",
+                
+                "inventario:ver_reportes",
+                "inventario:eliminar_producto",
+                "plantilla:crear",
+                
+                "conciliacion_bancaria:ver",
+                "conciliacion_bancaria:configurar",
+                "conciliacion_bancaria:importar",
+                "conciliacion_bancaria:conciliar",
+                "conciliacion_bancaria:ajustar",
+                "conciliacion_bancaria:reportes",
+                "conciliacion_bancaria:auditoria",
+                
+                "reportes:rentabilidad_producto",
+                "ventas:ver_reporte_gestion",
+                "reportes:ver_facturacion_detallado",
+                "reportes:ver_officiales",
+                
+                "tesoreria:crear_comprobante",
+                "cartera:ver_informes",
+                "papelera:usar",
+                "utilidades:migracion"
             ],
             "administrador": [
                 "empresa:gestionar", # Restaurado para acceso
@@ -79,6 +128,30 @@ def seed_database():
                 "inventario:ver_reportes"
             ],
             # Añadir aquí permisos para 'contador' o 'invitado' si es necesario
+            "clon_restringido": [
+                 # Rol CLON RESTRINGIDO (Auditoría): Solo lectura, sin creación de documentos.
+                 # Bloqueado: contabilidad:crear_documento, facturacion:crear (si existiera), etc.
+                 "contabilidad:explorador",
+                 "contabilidad:configuracion_tipos_doc",
+                 "contabilidad:gestionar_puc",
+                 "contabilidad:editar_documento",
+                 
+                 "inventario:ver_super_informe",
+                 "inventario:ver_reportes",
+                 "reportes:rentabilidad_producto",
+                 "ventas:ver_reporte_gestion",
+                 "reportes:ver_facturacion_detallado",
+                 "reportes:ver_officiales",
+                 
+                 "cartera:ver_informes",
+                 
+                 "conciliacion_bancaria:ver",
+                 "conciliacion_bancaria:reportes",
+                 "conciliacion_bancaria:auditoria",
+                 
+                 # NOTA: Se excluyen explícitamente permisos de creación/edición/anulación
+                 # y acceso a herramientas de soporte.
+            ],
         }
         # --- FIN DE LA MODIFICACIÓN ---
         
@@ -94,7 +167,7 @@ def seed_database():
         db.flush()
 
         print("--> Asegurando la existencia de todos los roles...")
-        roles_a_crear = ["soporte", "administrador", "contador", "invitado", "operador_bancario"]
+        roles_a_crear = ["soporte", "administrador", "contador", "invitado", "operador_bancario", "clon_restringido"]
         for nombre_rol in roles_a_crear:
             if not db.query(models_permiso.Rol).filter(models_permiso.Rol.nombre == nombre_rol).first():
                 db.add(models_permiso.Rol(nombre=nombre_rol, descripcion=f"Rol para {nombre_rol}"))

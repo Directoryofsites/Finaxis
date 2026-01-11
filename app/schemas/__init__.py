@@ -33,3 +33,14 @@ from . import token
 from . import usuario
 from . import traslado_inventario
 from . import conciliacion_bancaria
+
+# --- RESOLUCIÓN DE REFERENCIAS CIRCULARES (PYDANTIC V2) ---
+# Es necesario reconstruir los modelos que tienen referencias cruzadas (Lazy Imports)
+# para que Pydantic pueda resolver los tipos correctamente en tiempo de ejecución.
+# Pasamos _types_namespace porque al usar TYPE_CHECKING, los tipos no están en el global del módulo.
+usuario.User.model_rebuild(_types_namespace={'EmpresaBase': empresa.EmpresaBase})
+# NOTA: EmpresaConUsuarios ahora usa 'UserBasic', no 'User'. 'UserBasic' no tiene referencia circular a 'Empresa'.
+# Sin embargo, si 'User' hereda de 'UserBasic', el string 'UserBasic' debe estar disponible.
+# Como ambos están en el mismo archivo 'usuario.py' y se importan, suele funcionar,
+# pero para estar seguros pasamos el namespace correcto.
+empresa.EmpresaConUsuarios.model_rebuild(_types_namespace={'UserBasic': usuario.UserBasic})

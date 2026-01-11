@@ -57,16 +57,19 @@ export default function GestionPeriodosPage() {
     fetchData();
   }, [fetchData]);
 
-  // Generar lista de años disponibles (Desde inicio de operación hasta año actual + 1)
+  // Generar lista de años disponibles (Mínimo desde 2019 o Inicio Operaciones)
   const availableYears = [];
+  const currentYear = new Date().getFullYear();
+  const endYear = currentYear + 1;
+
+  let startYear = 2019; // Piso histórico solicitado
   if (fechaInicioOp) {
-    const startYear = fechaInicioOp.getFullYear();
-    const endYear = new Date().getFullYear() + 1;
-    for (let y = startYear; y <= endYear; y++) {
-      availableYears.push(y);
-    }
-  } else {
-    availableYears.push(new Date().getFullYear());
+    const opYear = fechaInicioOp.getFullYear();
+    if (opYear < startYear) startYear = opYear;
+  }
+
+  for (let y = startYear; y <= endYear; y++) {
+    availableYears.push(y);
   }
 
   const handleCerrarPeriodo = async (ano, mes) => {

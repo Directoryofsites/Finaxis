@@ -87,6 +87,7 @@ def contar_registros_por_empresa(db: Session) -> List[diagnostico_schemas.Conteo
         resultados = db.query(
             models_empresa.Empresa.id,
             models_empresa.Empresa.razon_social,
+            models_empresa.Empresa.nit, # <--- AÑADIDO
             models_empresa.Empresa.limite_registros,
             conteo_registros_por_empresa.c.total_registros
         ).outerjoin(
@@ -121,13 +122,14 @@ def contar_registros_por_empresa(db: Session) -> List[diagnostico_schemas.Conteo
 
         # 4. Formateo al Schema de respuesta
         lista_conteo = []
-        for id, razon_social, limite, total_registros in resultados:
+        for id, razon_social, nit, limite, total_registros in resultados: # <--- Unpack update
             total_bolsa = bolsas_dict.get(id, 0)
             total_recarga = recargas_dict.get(id, 0)
             
             lista_conteo.append(diagnostico_schemas.ConteoResult(
                 empresa_id=id,
                 nombre_empresa=razon_social,
+                nit=nit, # <--- Pass NIT
                 total_registros=total_registros or 0,
                 limite_registros=limite, # Pydantic accepts None now
                 bolsa_excedente_total=total_bolsa,
