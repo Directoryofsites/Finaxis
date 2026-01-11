@@ -244,6 +244,29 @@ export default function NuevaCompraPage() {
         );
     }
 
+    // --- BLINDAJE AUDITORÍA/CLON ---
+    if (user?.empresa?.modo_operacion === 'AUDITORIA_READONLY') {
+        return (
+            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
+                <div className="bg-white p-8 rounded-xl shadow-lg border border-yellow-200 max-w-lg">
+                    <FaShoppingCart className="text-5xl text-yellow-500 mx-auto mb-4" />
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Restricción de Auditoría</h2>
+                    <p className="text-gray-600 mb-6">
+                        Esta empresa está en <strong>Modo Auditoría / Clon</strong>.
+                        El registro de <strong>Facturas de Compra</strong> está deshabilitado.
+                        No se permite afectar inventarios ni crear cuentas por pagar en este modo.
+                    </p>
+                    <button
+                        onClick={() => router.push('/dashboard')}
+                        className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold"
+                    >
+                        Volver al Dashboard
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 p-6 font-sans pb-20">
             <div className="max-w-7xl mx-auto">

@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Consumo - Plan y Consumo | Sistema Finaxis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .navbar {
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            padding: 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        }
+
+        .nav-container {
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            height: 60px;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-right: 30px;
+        }
+
+        .nav-brand .icon {
+            width: 24px;
+            height: 24px;
+            background: #ff6b35;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 0;
+            flex: 1;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 18px 16px;
+            text-decoration: none;
+            color: #6c757d;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-link:hover {
+            color: #495057;
+            background: #f8f9fa;
+        }
+
+        .nav-link.active {
+            color: #dc3545;
+            border-bottom-color: #dc3545;
+            background: #fff5f5;
+        }
+
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-left: auto;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #6c757d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .page-header {
+            margin-bottom: 40px;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #212529;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            color: #6c757d;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .date-selector {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-left: auto;
+        }
+
+        .date-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .date-control:hover {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .date-icon {
+            width: 16px;
+            height: 16px;
+            background: #6366f1;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+
+        .capacity-card {
+            background: linear-gradient(135deg, #1e293b 0%, #3730a3 100%);
+            border-radius: 16px;
+            padding: 32px;
+            color: white;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .capacity-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            transform: translate(50%, -50%);
+        }
+
+        .capacity-header {
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0.8;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .capacity-number {
+            font-size: 64px;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .capacity-description {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 16px;
+        }
+
+        .capacity-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e5e7eb;
+            position: relative;
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .stat-icon {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .stat-icon.monthly { background: #8b5cf6; }
+        .stat-icon.accumulated { background: #10b981; }
+        .stat-icon.extra { background: #f59e0b; }
+
+        .stat-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #6b7280;
+        }
+
+        .stat-number {
+            font-size: 48px;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .stat-number.monthly { color: #1f2937; }
+        .stat-number.accumulated { color: #10b981; }
+        .stat-number.extra { color: #f59e0b; }
+
+        .stat-detail {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .stat-fraction {
+            font-size: 24px;
+            color: #9ca3af;
+            margin-left: 4px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            margin-top: 16px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8b5cf6, #6366f1);
+            border-radius: 3px;
+            width: 77.4%;
+            transition: width 0.3s ease;
+        }
+
+        .extra-card {
+            background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+            color: white;
+            position: relative;
+        }
+
+        .extra-card::before {
+            content: '';
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 24px;
+            height: 24px;
+            background: #f59e0b;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .extra-card::after {
+            content: '⚡';
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            z-index: 1;
+        }
+
+        .extra-header {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
+            margin-bottom: 16px;
+        }
+
+        .extra-number {
+            font-size: 48px;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 4px;
+            color: #f59e0b;
+        }
+
+        .extra-detail {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+
+        .extra-section {
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 16px;
+        }
+
+        .extra-section-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.6;
+            margin-bottom: 8px;
+        }
+
+        .extra-amount {
+            font-size: 32px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            
+            .main-container {
+                padding: 20px 16px;
+            }
+            
+            .capacity-number {
+                font-size: 48px;
+            }
+            
+            .stat-number {
+                font-size: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <div class="icon">🏠</div>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="#" class="nav-link">Contabilidad</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">Análisis</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">CCostos</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">Terceros</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">Impuestos</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">Inventarios</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">Facturación</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">Activos</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">PH</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">Nómina</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">Producción</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">Conciliación</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link active">Admin</a>
+                </li>
+            </ul>
+            
+            <div class="nav-user">
+                <span>👤 Usuario</span>
+                <div class="user-avatar">G</div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <!-- Page Header -->
+        <div class="header-controls">
+            <div class="page-header">
+                <h1 class="page-title">Mi Consumo</h1>
+                <p class="page-subtitle">Gestiona tu capacidad operativa inteligentemente.</p>
+            </div>
+            
+            <div class="date-selector">
+                <div class="date-control">
+                    <div class="date-icon">📅</div>
+                    <span>Enero</span>
+                    <span>▼</span>
+                </div>
+                <div class="date-control">
+                    <span>2026</span>
+                    <span>▼</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Capacity Card -->
+        <div class="capacity-card">
+            <div class="capacity-header">Capacidad Operativa Total</div>
+            <div class="capacity-number">2330</div>
+            <div class="capacity-description">registros disponibles hoy</div>
+            <div class="capacity-status">
+                <div class="status-dot"></div>
+                <span>Sistema habilitado para crear documentos.</span>
+            </div>
+        </div>
+
+        <!-- Statistics Grid -->
+        <div class="stats-grid">
+            <!-- Plan Mensual -->
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon monthly"></div>
+                    <div class="stat-label">Plan Mensual</div>
+                </div>
+                <div class="stat-number monthly">
+                    350
+                    <span class="stat-fraction">/ 452</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+            </div>
+
+            <!-- Bolsa Acumulada -->
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon accumulated"></div>
+                    <div class="stat-label">Bolsa Acumulada</div>
+                </div>
+                <div class="stat-number accumulated">1980</div>
+                <div class="stat-detail">
+                    Tienes <strong>2 tramos</strong> disponibles de meses anteriores
+                </div>
+            </div>
+
+            <!-- Recargas Extra -->
+            <div class="stat-card extra-card">
+                <div class="extra-header">Recargas Extra</div>
+                <div class="extra-number">0</div>
+                <div class="extra-detail">registros</div>
+                
+                <div class="extra-section">
+                    <div class="extra-section-title">Total a Pagar (Pendiente)</div>
+                    <div class="extra-amount">$0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simulación de datos dinámicos
+        function updateStats() {
+            // Aquí se pueden agregar funciones para actualizar los datos en tiempo real
+            console.log('Estadísticas actualizadas');
+        }
+
+        // Funcionalidad de selectores de fecha
+        document.querySelectorAll('.date-control').forEach(control => {
+            control.addEventListener('click', function() {
+                // Aquí se puede agregar la lógica para mostrar el selector de fecha
+                console.log('Selector de fecha clickeado');
+            });
+        });
+
+        // Animación de la barra de progreso
+        window.addEventListener('load', function() {
+            const progressBar = document.querySelector('.progress-fill');
+            progressBar.style.width = '0%';
+            setTimeout(() => {
+                progressBar.style.width = '77.4%';
+            }, 500);
+        });
+    </script>
+</body>
+</html>

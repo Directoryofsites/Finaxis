@@ -571,7 +571,7 @@ export default function SmartSearchSection() {
             )}
 
             {/* Search Bar Section */}
-            <div className="relative w-full max-w-2xl z-50">
+            <div className="relative w-full max-w-2xl z-20">
                 <form onSubmit={handleSearch} className="relative group">
                     {/* ... (Existing Input Styles) ... */}
                     <div className={`absolute -inset-0.5 rounded-full blur opacity-30 group-hover:opacity-75 transition duration-1000 group-hover:duration-200 animate-pulse-slow

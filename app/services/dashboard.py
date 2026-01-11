@@ -359,26 +359,53 @@ def get_financial_ratios_analysis(db: Session, empresa_id: int, fecha_inicio: da
 # -----------------------------------------------------------------------------
 # NUEVA FUNCIÓN AUXILIAR (Pegar antes de get_consumo_actual)
 # -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# NUEVA FUNCIÓN AUXILIAR
+# -----------------------------------------------------------------------------
 def get_limite_real_mes(db: Session, empresa_id: int, anio: int, mes: int) -> int:
     """
     Calcula el límite TOTAL para un mes específico:
-    Plan Base + Cupos Adicionales comprados para ese mes.
+    Si hay un plan manual, usa ese.
+    Si no, usa Plan Base + Cupos Adicionales comprados.
     """
+    from app.models.consumo_registros import RecargaAdicional, ControlPlanMensual
+    
+    # 0. Verificar si hay un límite MANUAL fijado para este mes
+    plan_mensual = db.query(ControlPlanMensual).filter(
+        ControlPlanMensual.empresa_id == empresa_id,
+        ControlPlanMensual.anio == anio,
+        ControlPlanMensual.mes == mes
+    ).first()
+    
+    if plan_mensual and plan_mensual.es_manual:
+        # Si es manual, retornamos el valor fijado explícitamente, ignorando cálculos automáticos
+        return plan_mensual.limite_asignado
+
     # 1. Obtener Plan Base
     empresa = db.query(models_empresa.Empresa).filter(models_empresa.Empresa.id == empresa_id).first()
     limite_base = empresa.limite_registros if empresa and empresa.limite_registros else 0
     
-    # 2. Buscar si hay adicionales para ese mes específico
+    # 2. Buscar Cupo Adicional (Legacy/Static)
     adicional = db.query(CupoAdicional).filter(
         CupoAdicional.empresa_id == empresa_id,
         CupoAdicional.anio == anio,
         CupoAdicional.mes == mes
     ).first()
     
-    cantidad_extra = adicional.cantidad_adicional if adicional else 0
+    cantidad_cupo = adicional.cantidad_adicional if (adicional and adicional.cantidad_adicional > 0) else 0
     
-    return limite_base + cantidad_extra
-
+    # 3. Buscar Recargas Adicionales (Sync con compras de paquetes)
+    recargas = db.query(RecargaAdicional).filter(
+        RecargaAdicional.empresa_id == empresa_id,
+        RecargaAdicional.anio == anio,
+        RecargaAdicional.mes == mes
+    ).all()
+    
+    cantidad_recarga = sum(r.cantidad_comprada for r in recargas)
+    
+    # TOTAL = Base + Cupo + Recargas
+    return limite_base + cantidad_cupo + cantidad_recarga
 
 # -----------------------------------------------------------------------------
 # FUNCIÓN PRINCIPAL ACTUALIZADA
@@ -417,7 +444,6 @@ def get_consumo_actual(db: Session, empresa_id: int, mes: Optional[int] = None, 
         ).scalar() or 0
 
     # 4. Obtener el límite REAL del mes (Base + Adicionales)
-    # Usamos la nueva función auxiliar que creamos arriba
     limite = get_limite_real_mes(db, empresa_id, fecha_base.year, fecha_base.month)
 
     # 5. Calcular porcentaje
@@ -436,32 +462,6 @@ def get_consumo_actual(db: Session, empresa_id: int, mes: Optional[int] = None, 
         "estado": "OK" if porcentaje < 90 else "CRITICO",
         "periodo_texto": f"{nombre_mes} {fecha_base.year}"
     }
-
-
-# EN app/services/dashboard.py
-
-# EN app/services/dashboard.py -> Función get_limite_real_mes
-
-def get_limite_real_mes(db: Session, empresa_id: int, anio: int, mes: int) -> int:
-    # 1. Obtener Plan Base
-    empresa = db.query(models_empresa.Empresa).filter(models_empresa.Empresa.id == empresa_id).first()
-    limite_base = empresa.limite_registros if empresa and empresa.limite_registros else 0
-    
-    # 2. Buscar excepción
-    adicional = db.query(CupoAdicional).filter(
-        CupoAdicional.empresa_id == empresa_id,
-        CupoAdicional.anio == anio,
-        CupoAdicional.mes == mes
-    ).first()
-    
-    # CORRECCIÓN AQUÍ TAMBIÉN:
-    if adicional and adicional.cantidad_adicional > 0:
-        return adicional.cantidad_adicional
-    
-    # Si no hay adicional o es 0, retornamos la base
-    return limite_base
-
-    return limite_base
 
 
 # ==========================================================

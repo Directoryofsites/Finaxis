@@ -429,6 +429,18 @@ export default function TopNavigationBar() {
                             // RESTRICTION: onlySoporte (Hardcoded for security as requested)
                             if (link.onlySoporte && user?.email !== 'soporte@soporte.com') return null;
 
+                            // --- BLINDAJE AUDITORÍA/CLON ---
+                            const restrictedSafeHrefs = [
+                                '/contabilidad/documentos',
+                                '/contabilidad/captura-rapida',
+                                '/contabilidad/facturacion',
+                                '/contabilidad/compras',
+                                '/contabilidad/traslados'
+                            ];
+                            if (user?.empresa?.modo_operacion === 'AUDITORIA_READONLY' && restrictedSafeHrefs.includes(link.href)) {
+                                return null;
+                            }
+
                             return (
                                 <Link
                                     key={link.href}
@@ -454,6 +466,18 @@ export default function TopNavigationBar() {
                             const visibleLinks = sub.links.filter(link => {
                                 // RESTRICTION: onlySoporte
                                 if (link.onlySoporte && user?.email !== 'soporte@soporte.com') return false;
+
+                                // --- BLINDAJE AUDITORÍA/CLON ---
+                                const restrictedSafeHrefs = [
+                                    '/contabilidad/documentos',
+                                    '/contabilidad/captura-rapida',
+                                    '/contabilidad/facturacion',
+                                    '/contabilidad/compras',
+                                    '/contabilidad/traslados'
+                                ];
+                                if (user?.empresa?.modo_operacion === 'AUDITORIA_READONLY' && restrictedSafeHrefs.includes(link.href)) {
+                                    return false;
+                                }
 
                                 if (!link.permission) return true;
                                 const userPermissions = user?.roles?.flatMap(r => r.permisos?.map(p => p.nombre)) || [];

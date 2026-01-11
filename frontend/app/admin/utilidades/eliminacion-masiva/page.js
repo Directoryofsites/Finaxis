@@ -24,6 +24,93 @@ const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 trackin
 const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none";
 const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none bg-white";
 
+// ... (imports remain)
+
+// New Component: MultiSelectDropdown
+const MultiSelectDropdown = ({ label, options, selectedIds, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggleOption = (id) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    onChange(Array.from(newSelected));
+  };
+
+  const handleSelectAll = () => {
+    const allIds = options.map(opt => opt.id);
+    onChange(allIds);
+  };
+
+  const handleDeselectAll = () => {
+    onChange([]);
+  };
+
+  return (
+    <div className="relative">
+      <label className={labelClass}>{label}</label>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`${selectClass} text-left flex justify-between items-center relative`}
+      >
+        <span className="truncate block max-w-[90%]">
+          {selectedIds.length === 0
+            ? "Seleccionar..."
+            : selectedIds.length === options.length
+              ? "Todos seleccionados"
+              : `${selectedIds.length} seleccionados`}
+        </span>
+        <span className="ml-2 text-xs text-gray-400">▼</span>
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-hidden flex flex-col">
+          <div className="p-2 border-b bg-gray-50 flex gap-2">
+            <button
+              type="button"
+              onClick={handleSelectAll}
+              className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 flex-1"
+            >
+              Todos
+            </button>
+            <button
+              type="button"
+              onClick={handleDeselectAll}
+              className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200 flex-1"
+            >
+              Ninguno
+            </button>
+          </div>
+          <div className="overflow-y-auto p-2 space-y-1">
+            {options.map((opt) => (
+              <label
+                key={opt.id}
+                className="flex items-center space-x-2 p-1 hover:bg-indigo-50 rounded cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(opt.id)}
+                  onChange={() => toggleOption(opt.id)}
+                  className="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                />
+                <span className="text-sm text-gray-700">{opt.nombre || opt.razon_social}</span>
+              </label>
+            ))}
+          </div>
+          <div
+            className="fixed inset-0 z-[-1]"
+            onClick={() => setIsOpen(false)}
+          ></div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function EliminacionMasivaPage() {
 
   const { user, loading: authLoading } = useAuth();
@@ -35,8 +122,10 @@ export default function EliminacionMasivaPage() {
   const [centrosCosto, setCentrosCosto] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Updated State: tipoDocIds is now an array
   const [filtros, setFiltros] = useState({
-    tipoDocId: '', numero: '', fechaInicio: '', fechaFin: '',
+    tipoDocIds: [], // Changed from string to array
+    numero: '', fechaInicio: '', fechaFin: '',
     terceroId: '', cuentaId: '', centroCostoId: '',
     conceptoKeyword: '', valorOperador: 'mayor', valorMonto: ''
   });
@@ -95,6 +184,11 @@ export default function EliminacionMasivaPage() {
     setFiltros(prev => ({ ...prev, [name]: value }));
   };
 
+  // New handler for MultiSelect
+  const handleTipoDocChange = (newIds) => {
+    setFiltros(prev => ({ ...prev, tipoDocIds: newIds }));
+  }
+
   const handleBuscar = async () => {
     setIsSearching(true);
     setMensaje({ text: '', type: 'info' });
@@ -103,20 +197,20 @@ export default function EliminacionMasivaPage() {
     try {
       const filtrosParaApi = { ...filtros };
 
-      const camposNumericos = ['tipoDocId', 'terceroId', 'cuentaId', 'centroCostoId', 'valorMonto'];
+      // Limpieza de campos vacíos y conversión numérica para campos simples
+      const camposNumericos = ['terceroId', 'cuentaId', 'centroCostoId', 'valorMonto'];
       camposNumericos.forEach(key => {
         if (filtrosParaApi[key]) {
           const numValue = parseFloat(filtrosParaApi[key]);
           if (!isNaN(numValue)) {
             // Mapeo especial para coincidir con DocumentoGestionFiltros del backend (Listas)
-            if (key === 'tipoDocId') filtrosParaApi.tipoDocIds = [numValue];
-            else if (key === 'terceroId') filtrosParaApi.terceroIds = [numValue];
+            if (key === 'terceroId') filtrosParaApi.terceroIds = [numValue];
             else if (key === 'cuentaId') filtrosParaApi.cuentaIds = [numValue];
             else if (key === 'centroCostoId') filtrosParaApi.centroCostoIds = [numValue];
-            else filtrosParaApi[key] = numValue; // valorMonto se queda igual
+            else filtrosParaApi[key] = numValue;
           }
-          // Limpiamos la clave singular original para no ensuciar
-          if (['tipoDocId', 'terceroId', 'cuentaId', 'centroCostoId'].includes(key)) {
+          // Limpiamos la clave singular original
+          if (['terceroId', 'cuentaId', 'centroCostoId'].includes(key)) {
             delete filtrosParaApi[key];
           } else if (isNaN(numValue)) {
             delete filtrosParaApi[key];
@@ -125,6 +219,13 @@ export default function EliminacionMasivaPage() {
           delete filtrosParaApi[key];
         }
       });
+
+      // Manejo de tipoDocIds (ya es array gracias al nuevo componente)
+      if (filtrosParaApi.tipoDocIds && filtrosParaApi.tipoDocIds.length > 0) {
+        // Ya está en formato correcto, no hacemos nada
+      } else {
+        delete filtrosParaApi.tipoDocIds;
+      }
 
       if (!filtrosParaApi.fechaInicio) delete filtrosParaApi.fechaInicio;
       if (!filtrosParaApi.fechaFin) delete filtrosParaApi.fechaFin;
@@ -317,7 +418,15 @@ export default function EliminacionMasivaPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Columna 1: Identificación */}
             <div className="space-y-4">
-              <div><label className={labelClass}>Tipo de Documento</label><select name="tipoDocId" value={filtros.tipoDocId} onChange={handleFiltroChange} className={selectClass}><option value="">Todos</option>{tiposDocumento.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}</select></div>
+              <div>
+                {/* REPLACED SINGLE SELECT WITH MULTISELECT */}
+                <MultiSelectDropdown
+                  label="Tipos de Documento"
+                  options={tiposDocumento}
+                  selectedIds={filtros.tipoDocIds}
+                  onChange={handleTipoDocChange}
+                />
+              </div>
               <div><label className={labelClass}>Tercero (Beneficiario)</label><select name="terceroId" value={filtros.terceroId} onChange={handleFiltroChange} className={selectClass}><option value="">Todos</option>{terceros.map(t => <option key={t.id} value={t.id}>{t.razon_social}</option>)}</select></div>
               <div><label className={labelClass}>Número(s) de Documento</label><input type="text" name="numero" value={filtros.numero} onChange={handleFiltroChange} placeholder="Ej: 101, 105, 210" className={inputClass} /><p className="text-xs text-gray-400 mt-1">Separar por comas para varios.</p></div>
             </div>

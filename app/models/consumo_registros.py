@@ -13,11 +13,13 @@ class EstadoBolsa(str, enum.Enum):
     VIGENTE = "VIGENTE"
     AGOTADO = "AGOTADO"
     VENCIDO = "VENCIDO"
+    ANULADO = "ANULADO"
 
 class EstadoRecarga(str, enum.Enum):
     VIGENTE = "VIGENTE"
     AGOTADA = "AGOTADA"
     EXPIRADA = "EXPIRADA"
+    ANULADA = "ANULADA"
 
 class TipoFuenteConsumo(str, enum.Enum):
     PLAN = "PLAN"
@@ -29,6 +31,7 @@ class TipoOperacionConsumo(str, enum.Enum):
     REVERSION = "REVERSION"
     CIERRE = "CIERRE"
     EXPIRACION = "EXPIRACION"
+    COMPRA = "COMPRA"
 
 class ControlPlanMensual(Base):
     __tablename__ = "control_plan_mensual"
@@ -44,6 +47,8 @@ class ControlPlanMensual(Base):
     fecha_cierre = Column(DateTime, nullable=True)
     
     estado = Column(String, default=EstadoPlan.ABIERTO.value)  # Usamos String para compatibilidad fácil, validado por lógica
+    
+    es_manual = Column(Boolean, default=False) # Si es True, el límite no se recalcula automáticamente
 
     # Relaciones
     empresa = relationship("Empresa")

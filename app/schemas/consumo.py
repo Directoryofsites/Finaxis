@@ -33,6 +33,8 @@ class RecargaItemRead(BaseModel):
     cantidad_comprada: int
     cantidad_disponible: int
     fecha_compra: datetime
+    valor_total: int
+    facturado: bool
     estado: EstadoRecarga
     
     class Config:
@@ -54,7 +56,8 @@ class HistorialConsumoRead(BaseModel):
     fuente_id: Optional[int]
     saldo_fuente_antes: int
     saldo_fuente_despues: int
-    documento_id: Optional[int] # Podríamos expandir con info del documento si se requiere
+    documento_id: Optional[int] # ID interno DB
+    documento_numero: Optional[int] = None # Consecutivo Humano
     
     class Config:
         from_attributes = True

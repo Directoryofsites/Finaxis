@@ -110,6 +110,7 @@ class UniversalImportService:
         is_user_format = False
         is_extended_format = False 
         is_journal_format = False
+        is_smart_export_format = False
         
         if not mapping_config:
             # AUTO-DETECTION LOGIC (only if no template provided)
@@ -122,50 +123,73 @@ class UniversalImportService:
                 header_row = [str(cell).lower() for cell in all_rows[0]]
             
             if header_row:
-                 if any('documento' in h for h in header_row) and not any('tipo' in h for h in header_row):
+                 print(f"[DEBUG IMPORT] Headers: {header_row}")
+                 
+                 # SMART EXPORT DETECTION (Relaxed)
+                 # Check for "Nombre Tipo" OR just "Tipo" and "Nombre" 
+                 if any('nombre tipo' in h for h in header_row) or (any('tipo' in h for h in header_row) and any('nombre' in h for h in header_row) and len(header_row) >= 11):
+                     is_smart_export_format = True
+                     print(f"[DEBUG IMPORT] Detected SMART EXPORT format. Headers: {header_row}")
+                 
+                 if any('documento' in h for h in header_row) and not any('tipo' in h for h in header_row) and not is_smart_export_format:
                      is_user_format = True
-                 elif len(header_row) == 8:
+                 elif len(header_row) == 8 and not is_smart_export_format:
                      is_user_format = True
                  
                  # Extended detection via Headers
-                 if any('nombre cuenta' in h for h in header_row) or any('nom cta' in h for h in header_row):
+                 elif (any('nombre cuenta' in h for h in header_row) or any('nom cta' in h for h in header_row)) and not is_smart_export_format:
                      if len(header_row) == 10:
                          is_journal_format = True
+                         print("[DEBUG IMPORT] Detected JOURNAL format")
                      else:
                          is_extended_format = True
+                         print("[DEBUG IMPORT] Detected EXTENDED format")
 
             elif rows_iter and len(rows_iter[0]) == 8:
                  # Fallback: Count cols of first data row
                  is_user_format = True
+                 print("[DEBUG IMPORT] Fallback: USER format detected by col count (8)")
                  
             # Fallback length check if headers didn't decide
-            if not is_extended_format and not is_user_format and not is_journal_format and rows_iter:
+            if not is_extended_format and not is_user_format and not is_journal_format and not is_smart_export_format and rows_iter:
                  row_len = len(rows_iter[0])
+                 print(f"[DEBUG IMPORT] Fallback check. Row Len: {row_len}")
                  if row_len >= 11:
-                      is_extended_format = True
+                      # Ambiguity: 11 cols could be Extended OR Smart. 
+                      # Smart usually has 'nombre tipo' at col 2. Extended has Num at col 2.
+                      # We check content of col 2 of first row. If it looks like a number, likely Extended. If text, Smart.
+                      sample_val = str(rows_iter[0][2])
+                      if not any(char.isdigit() for char in sample_val) and len(sample_val) > 4:
+                          is_smart_export_format = True
+                          print("[DEBUG IMPORT] Fallback: SMART EXPORT detected by 11+ cols and text in col 2")
+                      else:
+                          is_extended_format = True
+                          print("[DEBUG IMPORT] Fallback: EXTENDED format detected by 11+ cols")
                  elif row_len == 10:
                       is_journal_format = True
+                      print("[DEBUG IMPORT] Fallback: JOURNAL format detected by 10 cols")
 
         for row_idx, row in enumerate(rows_iter, start=2):
             if not row: continue
             
-            # --- DEBUG LOGGING ---
-            print(f"[DEBUG IMPORT] Row {row_idx} | Len: {len(row)}")
-            # print(f"[DEBUG IMPORT] Raw: {row}") 
-            # ---------------------
-
-            # --- DEBUG LOGGING ---
-            print(f"[DEBUG IMPORT] Row {row_idx} Raw: {row}")
-            if len(row) > 3:
-                print(f"[DEBUG IMPORT] 0(A):'{row[0]}' | 1(B):'{row[1]}' | 2(C):'{row[2]}'")
-            # ---------------------
-            
             # Normalizar longitud row para evitar index error (Expand to 50 cols just in case)
             if len(row) < 50:
                 row = list(row) + [None]*(50-len(row))
+            
+            # --- HEURISTICS: Runtime Format Switch ---
+            # If we detected EXTENDED but row[2] is clearly text (e.g. "COMPROBANTE...") and row[3] is number
+            # Then we made a mistake and it IS Smart Export.
+            if is_extended_format and not is_smart_export_format:
+                val_2 = str(row[2]).strip()
+                val_3 = str(row[3]).strip()
+                # Check if val_2 is NOT numeric (has letters) and val_3 IS numeric
+                if (any(c.isalpha() for c in val_2)) and (any(c.isdigit() for c in val_3)):
+                    print(f"[DEBUG IMPORT] SWITCHING to SMART EXPORT based on row content (2='{val_2}', 3='{val_3}')")
+                    is_extended_format = False
+                    is_smart_export_format = True
+            # ------------------------------------------
 
             # Limpieza básica
-            # If mapping config exists, check mapped Date col for None. Else check col 0.
             check_col = mapping_config.get('fecha', 0) if mapping_config else 0
             if not row[check_col]: continue 
             
@@ -216,28 +240,24 @@ class UniversalImportService:
                             val = row[int(idx)]
                             return val
                         except: return default
-
+                    
                     # Extraer campos directos
-                    tipo_code = clean_str(get_val('tipo_doc'))  # Ahora 'tipo_doc' es el CODIGO
-                    tipo_name = clean_str(get_val('nombre_tipo_doc')) # Nuevo campo NOMBRE
+                    tipo_code = clean_str(get_val('tipo_doc'))
+                    tipo_name = clean_str(get_val('nombre_tipo_doc'))
                     numero_val = clean_str(get_val('numero'))
                     
-                    # Fallback robusto
-                    # FIX: Si no hay codigo pero sí nombre, usamos el nombre como codigo temporal
-                    # Esto asegura que el agrupamiento (Key) separe los documentos por nombre.
                     if not tipo_code and tipo_name:
                         tipo_code = tipo_name
-                    
                     if not tipo_code and not tipo_name:
                          tipo_code = "GEN"
 
                     entry = {
                         "fecha": fecha_obj,
                         "tipo_doc": tipo_code,
-                        "nombre_tipo_doc": tipo_name, # PASAR EL NOMBRE
+                        "nombre_tipo_doc": tipo_name,
                         "numero": numero_val or "1",
                         "cuenta": clean_str(get_val('cuenta')),
-                        "nombre_cuenta": clean_str(get_val('nombre_cuenta')), # PASAR NOMBRE CUENTA
+                        "nombre_cuenta": clean_str(get_val('nombre_cuenta')),
                         "nit": clean_str(get_val('nit')),
                         "nombre_tercero": clean_str(get_val('tercero') or get_val('nombre_tercero')).upper(),
                         "detalle": clean_str(get_val('detalle')) or "Importación Plantilla",
@@ -245,11 +265,26 @@ class UniversalImportService:
                         "credito": clean_float(get_val('credito'))
                     }
 
+                elif is_smart_export_format:
+                     # Mapping SMART EXPORT (Corrected Mappings for Shifted Cols)
+                     # 0=Fecha, 1=Tipo, 2=NomTipo, 3=Num, 4=NameTer, 5=Nit, 6=Cta, 7=NomCta, 8=Detalle, 9=Deb, 10=Cred
+                     entry = {
+                        "fecha": fecha_obj,
+                        "tipo_doc": clean_str(row[1]) or "GEN",
+                        "nombre_tipo_doc": clean_str(row[2]),
+                        "numero": clean_str(row[3]),
+                        "cuenta": clean_str(row[6]),  # Shifted to 6
+                        "nombre_cuenta": clean_str(row[7]), # Shifted to 7
+                        "nit": clean_str(row[5]),
+                        "nombre_tercero": clean_str(row[4]).upper(), # Name at 4
+                        "detalle": clean_str(row[8]) or "Importación Automática",
+                        "debito": clean_float(row[9]), # Might need check if these shifted too
+                        "credito": clean_float(row[10]) # Assuming Deb/Cred are at end
+                     }
+
                 elif is_user_format:
                     # Mapping Formato Usuario (8 cols)
-                    # 0=Fecha, 1=Doc(Tipo+Num), 2=Benef, 3=Cta, 4=NomCta, 5=Concepto, 6=Deb, 7=Cred
                     raw_doc = clean_str(row[1])
-                    # Split Tipo / Num. Ej: "CDE #333" -> Tipo="CDE", Num="333"
                     import re
                     match = re.match(r"([A-Za-z\s]+).*?(\d+)", raw_doc)
                     if match:
@@ -266,15 +301,14 @@ class UniversalImportService:
                         "tipo_doc": tipo_val or "GEN",
                         "numero": num_val,
                         "cuenta": clean_str(row[3]),
-                        "nit": "", # No hay NIT en este formato
+                        "nit": "", 
                         "nombre_tercero": benef_name.upper(),
                         "detalle": clean_str(row[5]) or "Importación",
                         "debito": clean_float(row[6]),
                         "credito": clean_float(row[7])
                     }
                 elif is_extended_format:
-                    # Mapping Extended (11 cols based on user image)
-                    # 0=Fecha, 1=Tipo, 2=Num, 3=BeneName, 4=Nit, 5=Cta, 6=NomCta, 7=Detalle, 8=Ref?, 9=Deb, 10=Cred
+                    # Mapping Extended (11 cols)
                     entry = {
                         "fecha": fecha_obj,
                         "tipo_doc": clean_str(row[1]) or "GEN",
@@ -284,17 +318,12 @@ class UniversalImportService:
                         "nombre_tercero": clean_str(row[3]).upper(),
                         "detalle": clean_str(row[7]) or "Importación Universal",
                         "debito": clean_float(row[9]),
-                        "credito": clean_float(row[10]) # Check len above
+                        "credito": clean_float(row[10]) 
                     }
                 elif is_journal_format:
-                    # Mapping Journal Format (10 cols - Libro Diario Export)
-                    # 0=Fecha, 1=Tipo(Name), 2=Num, 3=BeneName, 4=Nit, 5=Cta, 6=NomCta, 7=Detalle, 8=Deb, 9=Cred
-                    t_val = clean_str(row[1])
-                    # If tipo is long name e.g "Comprobante de Egreso", backend handles match by Name.
-                    
                     entry = {
                         "fecha": fecha_obj,
-                        "tipo_doc": t_val or "GEN",
+                        "tipo_doc": clean_str(row[1]) or "GEN",
                         "numero": clean_str(row[2]),
                         "cuenta": clean_str(row[5]),
                         "nit": clean_str(row[4]),
@@ -498,13 +527,16 @@ class UniversalImportService:
                      continue
 
                 # C2. Verificar Duplicidad (Idempotencia)
+                # SOLO verificamos si existe un documento ACTIVO (no anulado).
+                # Esto permite re-importar (reutilizar número) si el anterior fue anulado/eliminado soft.
                 exists = db.query(Documento).filter_by(
                     empresa_id=empresa_id,
                     tipo_documento_id=tipo_id,
-                    numero=doc_num
+                    numero=doc_num,
+                    anulado=False
                 ).first()
                 if exists:
-                    results["errors"].append(f"Doc {tipo_code}-{doc_num} saltado: Ya existe.")
+                    results["errors"].append(f"Doc {tipo_code}-{doc_num} saltado: Ya existe (Activo).")
                     continue
 
                 # D. Crear Documento

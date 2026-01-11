@@ -146,6 +146,43 @@ def analizar_erradicacion_endpoint(
     return diagnostico_service.analizar_erradicacion(db=db, request=request)
 
 # ===============================================================
+# GESTIÓN DE RECARGAS EXTRAORDINARIAS (SOPORTE)
+# ===============================================================
+
+@router.get("/recargas-empresa/{empresa_id}", response_model=List[consumo_schemas.RecargaItemRead])
+def get_recargas_empresa(
+    empresa_id: int,
+    mes: int,
+    anio: int,
+    db: Session = Depends(get_db),
+    current_user: models_usuario.Usuario = Depends(has_permission("utilidades:usar_herramientas"))
+):
+    """Obtiene las recargas compradas por una empresa en un mes/año específico."""
+    from app.models.consumo_registros import RecargaAdicional
+    recargas = db.query(RecargaAdicional).filter(
+        RecargaAdicional.empresa_id == empresa_id,
+        RecargaAdicional.mes == mes,
+        RecargaAdicional.anio == anio
+    ).all()
+    return recargas
+
+@router.delete("/recargas-empresa/{recarga_id}")
+def delete_recarga_empresa(
+    recarga_id: int,
+    db: Session = Depends(get_db),
+    current_user: models_usuario.Usuario = Depends(has_permission("utilidades:usar_herramientas"))
+):
+    """Elimina una recarga específica (Soporte)."""
+    from app.models.consumo_registros import RecargaAdicional
+    recarga = db.query(RecargaAdicional).filter(RecargaAdicional.id == recarga_id).first()
+    if not recarga:
+        raise HTTPException(status_code=404, detail="Recarga no encontrada")
+    
+    db.delete(recarga)
+    db.commit()
+    return {"msg": "Recarga eliminada exitosamente"}
+
+# ===============================================================
 # GESTIÓN DE PAQUETES DE RECARGA (ADMIN)
 # ===============================================================
 @router.get("/paquetes-recarga", response_model=List[consumo_schemas.PaqueteRecargaRead])
@@ -451,3 +488,49 @@ def purgar_tipo_documento(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error al purgar: {str(e)}")
+
+# ===============================================================
+# CONFIGURACIÓN DEL SISTEMA (Relacionado con Consumo/Precios)
+# ===============================================================
+@router.get("/config/precio-registro")
+def get_precio_registro(db: Session = Depends(get_db)):
+    """Obtiene el precio por registro configurado en el sistema."""
+    from app.models.configuracion_sistema import ConfiguracionSistema
+    from sqlalchemy import inspect
+    
+    if not inspect(db.get_bind()).has_table("configuracion_sistema"):
+        return {"precio": 150}
+
+    config = db.query(ConfiguracionSistema).filter_by(clave="PRECIO_POR_REGISTRO").first()
+    return {"precio": int(config.valor) if config else 150}
+
+# Rutas de precio por empresa MOVIDAS a app/api/empresas/routes.py
+
+@router.post("/config/precio-registro")
+def set_precio_registro(
+    data: dict, 
+    db: Session = Depends(get_db), 
+    current_user: models_usuario.Usuario = Depends(has_permission("utilidades:usar_herramientas"))
+):
+    """Actualiza el precio por registro (Solo Soporte)."""
+    from app.models.configuracion_sistema import ConfiguracionSistema
+    from sqlalchemy import inspect
+    
+    if not inspect(db.get_bind()).has_table("configuracion_sistema"):
+        ConfiguracionSistema.__table__.create(db.get_bind())
+
+    nuevo_precio = str(data.get("precio", 150))
+    
+    config = db.query(ConfiguracionSistema).filter_by(clave="PRECIO_POR_REGISTRO").first()
+    if config:
+        config.valor = nuevo_precio
+    else:
+        new_config = ConfiguracionSistema(clave="PRECIO_POR_REGISTRO", valor=nuevo_precio)
+        db.add(new_config)
+    
+    db.commit()
+    return {"msg": "Precio actualizado correctamente", "precio": int(nuevo_precio)}
+
+
+    db.commit()
+    return {"msg": "Precio actualizado correctamente", "precio": int(nuevo_precio)}

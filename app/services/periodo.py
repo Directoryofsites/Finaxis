@@ -9,7 +9,7 @@ from typing import List
 from ..models.periodo_contable_cerrado import PeriodoContableCerrado
 from ..models.empresa import Empresa
 from ..schemas import periodo as schemas
-# --- FIN DE LA CORRECCIÓN CLAVE ---
+from app.services.consumo.cierre_mensual_service import ejecutar_cierre_mensual, revertir_cierre_mensual
 
 def cerrar_periodo(db: Session, empresa_id: int, ano: int, mes: int, user_id: int):
     """
@@ -59,7 +59,11 @@ def cerrar_periodo(db: Session, empresa_id: int, ano: int, mes: int, user_id: in
         if not periodo_anterior_cerrado:
             raise HTTPException(status_code=409, detail=f"No se puede cerrar el período {mes}/{ano} porque el período anterior ({mes_anterior}/{ano_anterior}) está abierto.")
 
-    # 3. Si todas las validaciones pasan, crear el registro de cierre
+    # 3. Si todas las validaciones pasan, ejecutar logica de Negocio de Consumo y crear registro
+    
+    # --- PROCESO DE CIERRE DE CONSUMO (TRASLADO EXCEDENTES) ---
+    ejecutar_cierre_mensual(db, empresa_id, ano, mes, user_id)
+    
     db_periodo = PeriodoContableCerrado(
         empresa_id=empresa_id,
         ano=ano,
@@ -73,7 +77,7 @@ def cerrar_periodo(db: Session, empresa_id: int, ano: int, mes: int, user_id: in
 
 def reabrir_periodo(db: Session, empresa_id: int, ano: int, mes: int):
     """
-    Reabre un período contable, eliminando el registro de bloqueo.
+    Reabre un período contable, eliminando el registro de bloqueoy revirtiendo cierre consumo.
     """
     # 1. Validar que no se pueda reabrir un período si el siguiente está cerrado
     fecha_periodo_actual = date(ano, mes, 1)
@@ -98,6 +102,9 @@ def reabrir_periodo(db: Session, empresa_id: int, ano: int, mes: int):
 
     if not db_periodo:
         raise HTTPException(status_code=404, detail=f"El período {mes}/{ano} no se encuentra cerrado.")
+
+    # --- PROCESO DE REVERSION CONSUMO ---
+    revertir_cierre_mensual(db, empresa_id, ano, mes)
 
     db.delete(db_periodo)
     db.commit()

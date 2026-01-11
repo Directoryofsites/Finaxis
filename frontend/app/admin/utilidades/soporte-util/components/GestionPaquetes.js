@@ -4,9 +4,11 @@ import {
     getPaquetesRecarga,
     createPaqueteRecarga,
     updatePaqueteRecarga,
-    deletePaqueteRecarga
+    deletePaqueteRecarga,
+    getPrecioRegistro,
+    setPrecioRegistro
 } from '../../../../../lib/soporteApiService';
-import { FaPlus, FaEdit, FaTrash, FaCheck, FaTimes, FaSave } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaCheck, FaTimes, FaSave, FaCog } from 'react-icons/fa';
 
 export default function GestionPaquetes({ isOpen, onClose }) {
     const [paquetes, setPaquetes] = useState([]);
@@ -17,14 +19,22 @@ export default function GestionPaquetes({ isOpen, onClose }) {
     // Estado para "Nuevo Paquete"
     const [isCreating, setIsCreating] = useState(false);
 
-    const fetchPaquetes = async () => {
+    // Estado Global Pricing
+    const [precioGlobal, setPrecioGlobal] = useState('');
+    const [savingGlobal, setSavingGlobal] = useState(false);
+
+    const fetchAllData = async () => {
         setLoading(true);
         try {
-            const res = await getPaquetesRecarga();
-            setPaquetes(res.data);
+            const [resPaquetes, resConfig] = await Promise.all([
+                getPaquetesRecarga(),
+                getPrecioRegistro()
+            ]);
+            setPaquetes(resPaquetes.data);
+            setPrecioGlobal(resConfig.data.precio);
         } catch (error) {
             console.error(error);
-            alert("Error cargando paquetes");
+            alert("Error cargando datos");
         } finally {
             setLoading(false);
         }
@@ -32,9 +42,23 @@ export default function GestionPaquetes({ isOpen, onClose }) {
 
     useEffect(() => {
         if (isOpen) {
-            fetchPaquetes();
+            fetchAllData();
         }
     }, [isOpen]);
+
+    const handleSaveGlobal = async () => {
+        setSavingGlobal(true);
+        try {
+            await setPrecioRegistro(precioGlobal);
+            alert("Precio por registro actualizado correctamente.");
+        } catch (error) {
+            alert("Error guardando precio global.");
+        } finally {
+            setSavingGlobal(false);
+        }
+    };
+
+    // ... resetForm, handleEdit, handleDelete, handleSave (Paquetes) ...
 
     const resetForm = () => {
         setFormData({ nombre: '', cantidad_registros: '', precio: '', activo: true });
@@ -50,14 +74,14 @@ export default function GestionPaquetes({ isOpen, onClose }) {
             precio: pkg.precio,
             activo: pkg.activo
         });
-        setIsCreating(true); // Reusamos la vista de creación para editar
+        setIsCreating(true);
     };
 
     const handleDelete = async (id) => {
         if (!confirm("¿Eliminar este paquete?")) return;
         try {
             await deletePaqueteRecarga(id);
-            fetchPaquetes();
+            fetchAllData(); // Reload all
         } catch (e) {
             alert("Error eliminando");
         }
@@ -77,7 +101,7 @@ export default function GestionPaquetes({ isOpen, onClose }) {
             } else {
                 await createPaqueteRecarga(payload);
             }
-            fetchPaquetes();
+            fetchAllData();
             resetForm();
         } catch (error) {
             alert("Error guardando paquete");
@@ -101,9 +125,44 @@ export default function GestionPaquetes({ isOpen, onClose }) {
                 </div>
 
                 <div className="p-6">
+
+                    {/* SECCION 1: PRECIO GLOBAL */}
+                    <div className="bg-amber-50 rounded-xl p-5 mb-8 border border-amber-100 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-white rounded-full text-amber-500 shadow-sm">
+                                <FaCog />
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-amber-900">Costo Base por Registro</h4>
+                                <p className="text-xs text-amber-700">Usado para calcular recargas personalizadas.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm font-bold text-amber-800">Valor Unitario:</label>
+                            <div className="join">
+                                <span className="join-item btn btn-sm btn-ghost bg-white border border-gray-200 no-animation">$</span>
+                                <input
+                                    type="number"
+                                    value={precioGlobal}
+                                    onChange={e => setPrecioGlobal(e.target.value)}
+                                    className="join-item input input-sm input-bordered w-24 text-right font-mono font-bold"
+                                />
+                            </div>
+                            <button
+                                onClick={handleSaveGlobal}
+                                disabled={savingGlobal}
+                                className="btn btn-sm btn-warning text-white shadow-amber-200 shadow-md"
+                            >
+                                {savingGlobal ? '...' : <FaSave />} Actualizar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="divider"></div>
+
                     {/* Toolbar Acciones */}
                     <div className="flex justify-between items-center mb-6">
-                        <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Paquetes Activos</h4>
+                        <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Paquetes Predefinidos</h4>
                         {!isCreating && (
                             <button onClick={() => setIsCreating(true)} className="btn btn-sm btn-primary gap-2 shadow-sm font-normal">
                                 <FaPlus size={12} /> Nuevo Paquete

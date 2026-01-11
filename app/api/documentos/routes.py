@@ -193,7 +193,7 @@ def update_documento_endpoint(
     documento_id: int,
     documento_update: schemas.DocumentoUpdate,
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(has_permission("contabilidad:crear_documento"))
+    current_user: models_usuario = Depends(has_permission("contabilidad:editar_documento"))
 ):
     try:
         db_documento = service.update_documento(

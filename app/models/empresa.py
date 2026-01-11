@@ -11,6 +11,8 @@ class Empresa(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     fecha_inicio_operaciones = Column(Date, nullable=True)
     limite_registros = Column(Integer, nullable=True, default=None)
+    precio_por_registro = Column(Integer, nullable=True, default=None) # Precio personalizado por registro (NULL = Usa Global)
+    modo_operacion = Column(String(50), nullable=False, default='STANDARD') # STANDARD, AUDITORIA_READONLY
 
     # --- AGREGAR ESTAS LÍNEAS ---
     direccion = Column(String, nullable=True)

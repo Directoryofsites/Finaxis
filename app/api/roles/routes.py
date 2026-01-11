@@ -62,13 +62,21 @@ def create_rol(
     db: Session = Depends(get_db),
     current_user: models_usuario.Usuario = Depends(has_permission("empresa:usuarios_roles"))
 ):
-    """Crea un nuevo rol personalizado para la empresa."""
-    if not current_user.empresa_id:
+    """Crea un nuevo rol personalizado para la empresa o un rol de sistema (Soporte)."""
+    # 1. Verificar si es Soporte
+    is_soporte = any(role.nombre == 'soporte' for role in current_user.roles)
+    
+    empresa_id_to_use = current_user.empresa_id
+
+    if is_soporte:
+        # Soporte puede crear roles "Globales" (empresa_id=None) o para una empresa específica si se enviara (futuro)
+        # Por ahora asumimos que Soporte crea Roles Globales si no tiene empresa (o incluso si la tiene, para el sistema)
+        # La lógica de negocio: Si Soporte crea un rol desde la utilidad de soporte, es global.
+        empresa_id_to_use = None 
+    elif not current_user.empresa_id:
          raise HTTPException(status_code=400, detail="Solo usuarios de una empresa pueden crear roles")
     
-    # Validar nombre único en la empresa (opcional, DB lo hace pero mejor aquí también)
-    # Dejamos que el service/DB maneje el error de constraint por ahora.
-    return service.create_rol(db, rol_data, current_user.empresa_id)
+    return service.create_rol(db, rol_data, empresa_id_to_use)
 
 @router.put("/{rol_id}", response_model=schemas.Rol)
 def update_rol(
@@ -82,9 +90,18 @@ def update_rol(
     if not rol:
         raise HTTPException(status_code=404, detail="Rol no encontrado")
     
-    # Seguridad: Solo editar roles PROPIOS de la empresa
-    if rol.empresa_id != current_user.empresa_id:
-        raise HTTPException(status_code=403, detail="No tiene permiso para editar este rol (Puede ser un rol del sistema)")
+    is_soporte = any(role.nombre == 'soporte' for role in current_user.roles)
+
+    # Seguridad: 
+    # - Usuario normal: Solo editar roles DE SU EMPRESA
+    # - Soporte: Puede editar roles globales (empresa_id=None) o cualquiera si es superadmin
+    if not is_soporte:
+        if rol.empresa_id != current_user.empresa_id:
+            raise HTTPException(status_code=403, detail="No tiene permiso para editar este rol")
+    else:
+        # Es soporte. Si es rol de sistema (None) o de alguna empresa, puede editarlo.
+        # (Opcional: restringir que soporte edite roles privados de empresas, pero usuario pidió poder total)
+        pass 
         
     return service.update_rol(db, rol, rol_update)
 
@@ -99,8 +116,14 @@ def delete_rol(
     if not rol:
         raise HTTPException(status_code=404, detail="Rol no encontrado")
     
-    if rol.empresa_id != current_user.empresa_id:
-        raise HTTPException(status_code=403, detail="No tiene permiso para eliminar este rol (Puede ser un rol del sistema)")
+    is_soporte = any(role.nombre == 'soporte' for role in current_user.roles)
+
+    if not is_soporte:
+        if rol.empresa_id != current_user.empresa_id:
+            raise HTTPException(status_code=403, detail="No tiene permiso para eliminar este rol")
+    
+    # Validar si hay usuarios usando este rol antes de borrar (Opcional, pero recomendado)
+    # Por ahora confiamos en el cascade o error de FK
         
     service.delete_rol(db, rol)
     return {"message": "Rol eliminado exitosamente"}

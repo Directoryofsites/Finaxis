@@ -1,6 +1,24 @@
 import axios from 'axios';
 
+// NOTE: We change roles endpoint to allow fetching system roles (no empresa_id needed for support)
+export const getRoles = (empresaId = null) => {
+  let url = '/roles/';
+  if (empresaId) {
+    url += `?empresa_id=${empresaId}`;
+  }
+  return soporteApiService.get(url);
+};
+
 const SOPORTE_TOKEN_KEY = 'soporteAuthToken';
+
+// --- CONFIGURACIÓN DE PRECIOS POR EMPRESA (NUEVO) ---
+export const getPrecioEmpresa = (empresaId) => {
+  return soporteApiService.get(`/empresas/${empresaId}/config-precio`);
+};
+
+export const setPrecioEmpresa = (empresaId, precio) => {
+  return soporteApiService.put(`/empresas/${empresaId}/config-precio`, { precio });
+};
 
 export const soporteApiService = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api` : 'http://127.0.0.1:8000/api',
@@ -117,10 +135,7 @@ export const updateSoporteUserPassword = (userId, passwordData) => {
   return soporteApiService.put(`/usuarios/soporte/${userId}/password`, passwordData);
 };
 
-export const getRoles = (empresaId = null) => {
-  const params = empresaId ? { empresa_id: empresaId } : {};
-  return soporteApiService.get('/roles', { params });
-};
+// getRoles removed (duplicate)
 
 // --- FUNCIÓN CORREGIDA (Usaba 'soporteApi' en vez de 'soporteApiService') ---
 export const setCupoAdicional = (empresaId, anio, mes, cantidad) => {
@@ -139,6 +154,16 @@ export const getConsumoEmpresa = (empresaId, mes, anio) => {
   });
 };
 
+export const getRecargasEmpresa = (empresaId, mes, anio) => {
+  return soporteApiService.get(`/utilidades/recargas-empresa/${empresaId}`, {
+    params: { mes, anio }
+  });
+};
+
+export const deleteRecargaEmpresa = (recargaId) => {
+  return soporteApiService.delete(`/utilidades/recargas-empresa/${recargaId}`);
+};
+
 
 export const getPaquetesRecarga = () => {
   return soporteApiService.get('/utilidades/paquetes-recarga');
@@ -154,4 +179,25 @@ export const updatePaqueteRecarga = (id, data) => {
 
 export const deletePaqueteRecarga = (id) => {
   return soporteApiService.delete(`/utilidades/paquetes-recarga/${id}`);
+};
+
+export const getPrecioRegistro = () => {
+  return soporteApiService.get('/utilidades/config/precio-registro');
+};
+
+export const setPrecioRegistro = (precio) => {
+  return soporteApiService.post('/utilidades/config/precio-registro', { precio });
+};
+
+export const markRecargaPaid = (recargaId, pagado) => {
+  return soporteApiService.put(`/consumo/recargas/${recargaId}/pago`, { pagado });
+};
+
+export const updatePlanMensualManual = (empresaId, anio, mes, limite) => {
+  return soporteApiService.put(`/empresas/${empresaId}/plan-mensual`, {
+    anio: parseInt(anio),
+    mes: parseInt(mes),
+    limite: parseInt(limite),
+    es_manual: true
+  });
 };

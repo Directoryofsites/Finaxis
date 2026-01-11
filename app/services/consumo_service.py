@@ -46,46 +46,93 @@ def delete_paquete(db: Session, paquete_id: int):
     db.commit()
     return True
 
-def comprar_recarga(db: Session, empresa_id: int, paquete_identifier: str):
+def comprar_recarga(db: Session, empresa_id: int, paquete_id: str = None, cantidad_custom: int = None, mes: int = None, anio: int = None):
     """
     Registra la compra de un paquete de recarga adicional.
-    Soporta ID de BD (preferido) o claves hardcoded legacy.
+    Soporta ID de BD (preferido), claves hardcoded legacy, o cantidad personalizada.
     """
+    from app.models.configuracion_sistema import ConfiguracionSistema # Import local to avoid circular deps if any
+    from sqlalchemy import inspect
+
     cantidad = 0
-    precio = 0
+    valor_total = 0
     
-    # 1. Intentar buscar en DB
-    if str(paquete_identifier).isdigit():
-        paquete_db = db.query(PaqueteRecarga).get(int(paquete_identifier))
-        if paquete_db:
-            cantidad = paquete_db.cantidad_registros
-            precio = paquete_db.precio
-    
-    # 2. Fallback Legacy
-    if cantidad == 0:
-        if paquete_identifier in PAQUETES_RECARGA:
-            paquete = PAQUETES_RECARGA[paquete_identifier]
-            cantidad = paquete["cantidad"]
-            precio = paquete["precio"]
+    # 1. Determinar Cantidad y Precio
+    if paquete_id:
+        # A. Por Paquete (Legacy o DB)
+        if paquete_id in PAQUETES_RECARGA:
+            pkg = PAQUETES_RECARGA[paquete_id]
+            cantidad = pkg["cantidad"]
+            valor_total = pkg["precio"]
+        elif str(paquete_id).isdigit():
+             # Fallback: Buscar en DB por ID
+             pkg_db = db.query(PaqueteRecarga).get(int(paquete_id))
+             if pkg_db:
+                 cantidad = pkg_db.cantidad_registros
+                 valor_total = pkg_db.precio
+             else:
+                 raise ValueError(f"Paquete ID {paquete_id} no encontrado")
         else:
-            raise ValueError(f"Paquete de recarga inválido: {paquete_identifier}")
+            raise ValueError(f"Paquete {paquete_id} no válido.")
+
+    elif cantidad_custom and cantidad_custom > 0:
+        # B. Personalizado
+        # Prioridad 1: Precio específico de la empresa
+        empresa_obj = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+        precio_empresa = empresa_obj.precio_por_registro if empresa_obj else None
+
+        if precio_empresa is not None and precio_empresa > 0:
+             precio_unitario = precio_empresa
+        else:
+             # Prioridad 2: Precio Global del Sistema
+             if inspect(db.get_bind()).has_table("configuracion_sistema"):
+                  config_p = db.query(ConfiguracionSistema).filter_by(clave="PRECIO_POR_REGISTRO").first()
+                  precio_unitario = int(config_p.valor) if config_p else 150
+             else:
+                  precio_unitario = 150
+             
+        cantidad = cantidad_custom
+        valor_total = cantidad * precio_unitario
+        
+    else:
+        raise ValueError("Debe indicar un paquete o una cantidad personalizada válida.")
     
     now = datetime.now()
     
+    # Usar mes/año proporcionado o actual
+    target_year = anio if anio else now.year
+    target_month = mes if mes else now.month
+    
     nueva_recarga = RecargaAdicional(
         empresa_id=empresa_id,
-        anio=now.year,
-        mes=now.month,
+        anio=target_year,
+        mes=target_month,
         cantidad_comprada=cantidad,
         cantidad_disponible=cantidad,
-        fecha_compra=now,
+        fecha_compra=now, 
         estado=EstadoRecarga.VIGENTE,
-        valor_total=precio,
+        valor_total=valor_total,
         facturado=False,
         fecha_facturacion=None
     )
     
     db.add(nueva_recarga)
+    db.flush() # Para obtener ID
+    
+    # Registrar Historial de COMPRA
+    historial = HistorialConsumo(
+        empresa_id=empresa_id,
+        cantidad=cantidad,
+        tipo_operacion=TipoOperacionConsumo.COMPRA,
+        fuente_tipo=TipoFuenteConsumo.RECARGA,
+        fuente_id=nueva_recarga.id,
+        saldo_fuente_antes=0,
+        saldo_fuente_despues=cantidad,
+        documento_id=None,
+        fecha=now
+    )
+    db.add(historial)
+    
     db.commit()
     db.refresh(nueva_recarga)
     
@@ -142,32 +189,81 @@ def _get_or_create_plan_mensual(db: Session, empresa_id: int, fecha_doc: datetim
     anio = fecha_doc.year
     mes = fecha_doc.month
     
+    # Imports necesarios para el sync
+    from app.models.documento import Documento
+    from app.models.movimiento_contable import MovimientoContable
+    from sqlalchemy import func, extract
+    from app.models.empresa import Empresa # Ensure import
+    from app.models.cupo_adicional import CupoAdicional # Importar modelo Cupo
+
     plan = db.query(ControlPlanMensual).filter(
         ControlPlanMensual.empresa_id == empresa_id,
         ControlPlanMensual.anio == anio,
         ControlPlanMensual.mes == mes
     ).with_for_update().first()
     
+    # 1. Obtener límite BASE de la empresa
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    limite_base = empresa.limite_registros if empresa and empresa.limite_registros is not None else 0
+    
+    # 2. Obtener CUPO ADICIONAL para este mes específico
+    cupo_adicional = db.query(CupoAdicional).filter(
+        CupoAdicional.empresa_id == empresa_id,
+        CupoAdicional.anio == anio,
+        CupoAdicional.mes == mes
+    ).first()
+    cantidad_extra = cupo_adicional.cantidad_adicional if cupo_adicional else 0
+    
+    # LIMIT TOTAL REAL = Base + Adicional
+    limite_total = limite_base + cantidad_extra
+    
+    # Calcular Consumo Real (Siempre útil para sync)
+    consumo_real = db.query(func.count(MovimientoContable.id))\
+        .join(Documento, MovimientoContable.documento_id == Documento.id)\
+        .filter(
+            Documento.empresa_id == empresa_id,
+            extract('year', Documento.fecha) == anio,
+            extract('month', Documento.fecha) == mes,
+            Documento.anulado == False
+        ).scalar() or 0
+
     if not plan:
-        # Recuperar límite de la empresa
-        empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
-        limite = empresa.limite_registros if empresa.limite_registros is not None else 0 # 0 podría ser ilimitado? Asumamos estricto plan.
-        # Regla de negocio: Si no tiene límite configurado, ¿qué hacemos? 
-        # Asumiremos un plan básico default o bloqueamos?
-        # Para evitar bloqueos totales en migración, si es None asumimos 1000 por defecto temp?
-        # Mejor: Si es None -> 0.
+        # CREACIÓN NUEVA
+        disponible_inicial = max(0, limite_total - consumo_real)
         
         plan = ControlPlanMensual(
             empresa_id=empresa_id,
             anio=anio,
             mes=mes,
-            limite_asignado=limite,
-            cantidad_disponible=limite, # Inicia lleno
+            limite_asignado=limite_total,
+            cantidad_disponible=disponible_inicial,
             estado=EstadoPlan.ABIERTO
         )
         db.add(plan)
-        db.flush() # Para tenerlo disponible
+        db.flush()
         
+    else:
+        # Si está CERRADO, no tocamos nada, respetamos el cierre (cantidad=0 usualmente)
+        # Usamos .value por si el ORM devuelve string
+        if plan.estado == EstadoPlan.CERRADO.value or plan.estado == "CERRADO":
+            return plan
+
+        # AUTO-HEALING / SYNC CONTINUO
+        # Verificamos si el límite total ha cambiado (por cambio de plan o nuevo cupo adicional)
+        
+        # FIX: Si el plan es MANUAL, no tocamos el límite asignado (respetamos la decisión de soporte)
+        if plan.es_manual:
+             return plan
+
+        limit_mismatch = (plan.limite_asignado != limite_total and limite_total > 0)
+        
+        if limit_mismatch:
+            plan.limite_asignado = limite_total
+            # Recalcular disponible
+            plan.cantidad_disponible = max(0, limite_total - consumo_real)
+            db.add(plan)
+            db.flush()
+
     return plan
 
 def registrar_consumo(db: Session, empresa_id: int, cantidad: int, documento_id: int, fecha_doc: datetime):
@@ -248,6 +344,8 @@ def registrar_consumo(db: Session, empresa_id: int, cantidad: int, documento_id:
         if tramo.cantidad_disponible == 0:
             tramo.estado = EstadoBolsa.AGOTADO
             
+        db.add(tramo) # Explicit add for safety
+
         # Historial
         historial = HistorialConsumo(
             empresa_id=empresa_id,

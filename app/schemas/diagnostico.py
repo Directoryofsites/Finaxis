@@ -23,6 +23,7 @@ class InspectorUniversalResult(BaseModel):
 class ConteoResult(BaseModel):
     empresa_id: int
     nombre_empresa: str
+    nit: Optional[str] = None # Nuevo campo NIT
     total_registros: int
     limite_registros: Optional[int] = None
     bolsa_excedente_total: int = 0

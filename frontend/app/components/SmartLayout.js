@@ -65,7 +65,7 @@ export default function SmartLayout({ children }) {
             {/* 2. Top Navigation (Fixed Top, adjusted margin?) */}
             {/* TopNav suele ser fixed. Si queremos que se ajuste con el Pin, debemos pasare props o envolverlo */}
             {/* Por simplicidad actual, TopNav está fixed w-full. Puede que el RightSidebar la tape. Idealmente RightSidebar tiene z-index mayor. */}
-            <div className="z-40">
+            <div className="z-50">
                 <TopNavigationBar />
             </div>
 
