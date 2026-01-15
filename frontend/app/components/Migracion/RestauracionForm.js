@@ -29,6 +29,7 @@ export default function RestauracionForm({
   const [analysisReport, setAnalysisReport] = useState(null);
   const [targetEmpresaId, setTargetEmpresaId] = useState('');
   const [parsedBackupData, setParsedBackupData] = useState(null);
+  const [selectedModules, setSelectedModules] = useState({});
 
   const handleFileSelect = async (e) => {
     const file = e.target.files[0];
@@ -58,10 +59,64 @@ export default function RestauracionForm({
       const { data: report } = await analizarBackup(payload);
 
       setAnalysisReport(report);
+
+      // Inicializar todos los módulos como seleccionados por defecto
+      const initialSelection = {};
+      Object.keys(report.summary).forEach(key => {
+        initialSelection[key.replace(/_/g, ' ')] = true;
+        // Nota: report.summary keys son como 'plan_cuentas', pero migración usa nombres Human Readable en should_restore
+        // Sin embargo, mi backend should_restore usa strings literales como 'Plan de Cuentas'.
+        // Debo asegurarme que las keys coincidan.
+        // Revisando backend: keys en summary son internal keys (e.g. 'terceros'). 
+        // should_restore usa 'Terceros', 'Plan de Cuentas'.
+        // Necesito un mapeo o usar las mismas keys.
+        // Revisaré el mapping en el backend para ser consistente.
+      });
+      // Corrección: El backend usa strings hardcoded en los IFs (e.g. 'Grupos Inventario').
+      // El report.summary viene de 'analizar_backup'. Veamos qué keys genera 'analizar_backup'.
+      // 'analizar_backup' no lo vi, pero asumo keys standard pythonicas.
+      // ESTRATEGIA: Usaré un mapeo en Frontend para mostrar nombres bonitos, pero enviaré las KEYS bonitas al backend
+      // porque el backend espera 'Terceros', 'Plan de Cuentas' etc. en should_restore.
+      // Espera... should_restore(module_key) verifica module_key in modulesToRestore.
+      // Si el backend hace if should_restore('Plan de Cuentas'), entonces el FE debe enviar 'Plan de Cuentas'.
+      // Entonces mi initialSelection debe usar esas keys.
+
+      // MAPPING MANUAL PARA GARANTIZAR COINCIDENCIA CON BACKEND
+      const keyMapping = {
+        'terceros': 'Terceros',
+        'plan_cuentas': 'Plan de Cuentas',
+        'centros_costo': 'Centros de Costo',
+        'bodegas': 'Bodegas',
+        'productos': 'Productos',
+        'grupos_inventario': 'Grupos Inventario',
+        'transacciones': 'Documentos y Movimientos', // Legacy key often used
+        'documentos': 'Documentos y Movimientos',
+        'propiedad_horizontal': 'Propiedad Horizontal',
+        'activos_fijos': 'Activos Fijos',
+        'cotizaciones': 'Cotizaciones',
+        'produccion': 'Producción',
+        'conciliacion_bancaria': 'Conciliación Bancaria',
+        'nomina': 'Nómina',
+        'tasas_impuesto': 'Tasas Impuesto',
+        'tipos_documento': 'Tipos de Documento',
+        'conceptos_favoritos': 'Conceptos Favoritos',
+        'listas_precio': 'Listas de Precio',
+        'formatos_impresion': 'Formatos PDF',
+        'plantillas': 'Plantillas Contables'
+      };
+
+      const selectionState = {};
+      Object.keys(report.summary).forEach(rawKey => {
+        const niceKey = keyMapping[rawKey] || rawKey; // Fallback to raw if not mapped
+        selectionState[niceKey] = true;
+      });
+      setSelectedModules(selectionState);
+
       setMessage("Análisis completado. Revise el reporte de impacto antes de proceder.");
 
     } catch (err) {
       const errorMsg = err.response?.data?.detail || err.message;
+      console.error(err);
       setError(`Error crítico al procesar el archivo: ${errorMsg}`);
       setMessage('');
     } finally {
@@ -94,7 +149,8 @@ export default function RestauracionForm({
       const payload = {
         backupData: parsedBackupData,
         targetEmpresaId: analysisReport.targetEmpresaId,
-        bypass_signature: analysisReport.integrity_valid === false
+        bypass_signature: analysisReport.integrity_valid === false,
+        modulesToRestore: Object.keys(selectedModules).filter(k => selectedModules[k])
       };
 
       const { data: result } = await ejecutarRestauracion(payload);
@@ -112,6 +168,21 @@ export default function RestauracionForm({
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const toggleModule = (moduleKey) => {
+    setSelectedModules(prev => ({
+      ...prev,
+      [moduleKey]: !prev[moduleKey]
+    }));
+  };
+
+  const toggleAll = (selectAll) => {
+    const newState = {};
+    Object.keys(selectedModules).forEach(key => {
+      newState[key] = selectAll;
+    });
+    setSelectedModules(newState);
   };
 
   return (
@@ -193,6 +264,13 @@ export default function RestauracionForm({
             </div>
           </div>
 
+          {/* Controles de Selección */}
+          <div className="flex justify-end gap-2 mb-2">
+            <button onClick={() => toggleAll(true)} className="text-xs text-green-600 font-semibold hover:underline">Seleccionar Todo</button>
+            <span className="text-gray-300">|</span>
+            <button onClick={() => toggleAll(false)} className="text-xs text-red-500 font-semibold hover:underline">Deseleccionar Todo</button>
+          </div>
+
           {/* Grid de Resumen */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             {Object.entries(analysisReport.summary).map(([key, value]) => {
@@ -200,15 +278,52 @@ export default function RestauracionForm({
               const importar = value.a_importar || value.a_crear || 0;
               const conflicto = value.conflictos || (total - importar);
 
+              const keyMapping = {
+                'terceros': 'Terceros',
+                'plan_cuentas': 'Plan de Cuentas',
+                'centros_costo': 'Centros de Costo',
+                'bodegas': 'Bodegas',
+                'productos': 'Productos',
+                'grupos_inventario': 'Grupos Inventario',
+                'transacciones': 'Documentos y Movimientos',
+                'documentos': 'Documentos y Movimientos',
+                'propiedad_horizontal': 'Propiedad Horizontal',
+                'activos_fijos': 'Activos Fijos',
+                'cotizaciones': 'Cotizaciones',
+                'produccion': 'Producción',
+                'conciliacion_bancaria': 'Conciliación Bancaria',
+                'nomina': 'Nómina',
+                'tasas_impuesto': 'Tasas Impuesto',
+                'tipos_documento': 'Tipos de Documento',
+                'conceptos_favoritos': 'Conceptos Favoritos',
+                'listas_precio': 'Listas de Precio',
+                'formatos_impresion': 'Formatos PDF',
+                'plantillas': 'Plantillas Contables'
+              };
+              const niceKey = keyMapping[key] || key.replace(/_/g, ' ');
+
               return (
-                <div key={key} className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col">
-                  <span className="text-xs font-bold text-gray-400 uppercase mb-2 border-b border-gray-200 pb-1">{key.replace(/_/g, ' ')}</span>
+                <div
+                  key={key}
+                  className={`p-4 rounded-lg border transition-all cursor-pointer ${selectedModules[niceKey] ? 'bg-white border-green-300 shadow-sm' : 'bg-gray-50 border-gray-200 opacity-60'}`}
+                  onClick={() => toggleModule(niceKey)}
+                >
+                  <div className="flex items-center gap-2 mb-2 border-b border-gray-100 pb-2">
+                    <input
+                      type="checkbox"
+                      checked={!!selectedModules[niceKey]}
+                      onChange={() => { }} // Handled by div click
+                      className="rounded text-green-600 focus:ring-green-500 cursor-pointer h-4 w-4"
+                    />
+                    <span className="text-sm font-bold text-gray-700 uppercase tracking-wide truncate">{niceKey}</span>
+                  </div>
+
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-600">Encontrados:</span>
                     <span className="font-bold">{total}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm mt-1">
-                    <span className="text-green-600 font-medium flex items-center gap-1"><FaArrowRight size={10} /> Importar:</span>
+                    <span className="text-green-600 font-medium flex items-center gap-1"><FaArrowRight size={10} /> Restaurar:</span>
                     <span className="font-bold text-green-700">{importar}</span>
                   </div>
                   {conflicto > 0 && (

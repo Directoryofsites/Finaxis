@@ -152,8 +152,14 @@ def create_documento(db: Session, documento: schemas_doc.DocumentoCreate, user_i
         
         # Validación de "Simulación" rápida antes de iniciar todo el proceso pesado
         # Esto mejora la UX al fallar rápido, aunque la validación real estricta será al final.
+        # Validación de "Simulación" rápida antes de iniciar todo el proceso pesado
+        # Esto mejora la UX al fallar rápido.
         if not consumo_service.verificar_disponibilidad(db, documento.empresa_id, cantidad_registros_consumo):
-             raise HTTPException(status_code=409, detail="⛔ Saldo insuficiente (Validación preliminar). Verifique su Plan o Bolsa.")
+             deficit = consumo_service.calcular_deficit(db, documento.empresa_id, cantidad_registros_consumo)
+             raise HTTPException(
+                 status_code=409, 
+                 detail=f"⛔ Saldo insuficiente. Necesita {deficit} registros adicionales para completar este documento."
+             )
 
         # ==============================================================================
 
@@ -204,36 +210,34 @@ def create_documento(db: Session, documento: schemas_doc.DocumentoCreate, user_i
         if not tipo_doc.numeracion_manual:
             tipo_doc.consecutivo_actual = documento.numero
 
+        # FIX CRÍTICO: ATOMICIDAD TRANSACCIONAL
+        # 1. Intentamos añadir el documento a la sesión.
         db.add(db_documento)
         
+        # 2. Hacemos FLUSH para que la BD asigne el ID (autoincrement) y valores por defecto,
+        #    pero SIN confirmar la transacción todavía.
+        db.flush()
+        db.refresh(db_documento)
+        
+        # 3. REGISTRO DE CONSUMO (Ahora dentro de la misma transacción)
+        #    Si esto falla (SaldoInsuficiente), la excepción subirá, el bloque 'except' general
+        #    hará 'db.rollback()', y el documento NUNCA existirá en la BD.
+        #    Esto elimina la posibilidad de "Documentos Zombis" sin historial.
+        consumo_service.registrar_consumo(
+            db=db,
+            empresa_id=db_documento.empresa_id,
+            cantidad=len(db_documento.movimientos),
+            documento_id=db_documento.id,
+            fecha_doc=db_documento.fecha
+        )
+            
+        # 4. Si todo salió bien hasta aquí, y se pidió commit, confirmamos TODO junto.
         if commit:
             db.commit()
             db.refresh(db_documento)
         else:
-            db.flush()
-            db.refresh(db_documento)
-            
-        # --- REGISTRO DE CONSUMO (Post-Flush) ---
-        # Ahora que tenemos el ID del documento, registramos el consumo.
-        # Si esto falla (SaldoInsuficiente), la excepción subirá y hará rollback de todo
-        # (si estamos en 'commit=True', el rollback lo captura el except general abajo).
-        try:
-            consumo_service.registrar_consumo(
-                db=db,
-                empresa_id=db_documento.empresa_id,
-                cantidad=len(db_documento.movimientos),
-                documento_id=db_documento.id,
-                fecha_doc=db_documento.fecha
-            )
-            # Si ya habíamos hecho commit arriba (commit=True), necesitamos OTRO commit para el historial?
-            # SÍ. registrar_consumo añade objetos a la sesión pero no hace commit por defecto.
-            if commit:
-                db.commit()
-        except SaldoInsuficienteException as e:
-            # Si falla consumo, debemos deshacer el documento creado
-            # Si commit=True, ya se commiteó el documento. Tocaría borrarlo manualmente?
-            # O mejor hacemos el flush primero, registramos consumo, y LUEGO el commit final.
-            raise HTTPException(status_code=409, detail=f"⛔ {str(e)}")
+            # Si commit=False (test/dry-run), mantenemos el estado flushed pero sin commit final
+            pass
         
         funciones_relevantes = [
             FuncionEspecial.RC_CLIENTE, 

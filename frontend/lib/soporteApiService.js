@@ -44,13 +44,33 @@ soporteApiService.interceptors.request.use(
 soporteApiService.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.data && error.response.data.detail) {
-      const errorDetail = error.response.data.detail;
-      const safeErrorMessage =
-        typeof errorDetail === 'string'
-          ? errorDetail
-          : JSON.stringify(errorDetail, null, 2);
-      error.response.data.detail = safeErrorMessage;
+    if (error.response) {
+      // 401: Token expirado o inválido -> Redirigir al login
+      if (error.response.status === 401) {
+        if (typeof window !== 'undefined') {
+          // Opcional: limpiar token
+          localStorage.removeItem(SOPORTE_TOKEN_KEY);
+
+          // Redirigir a la misma página raíz (donde vive el login inline)
+          const targetPath = '/admin/utilidades/soporte-util';
+
+          if (window.location.pathname !== targetPath) {
+            window.location.href = targetPath;
+          } else {
+            // Si ya estamos ahí, recargar para limpiar estado React y mostrar form login
+            window.location.reload();
+          }
+        }
+      }
+
+      if (error.response.data && error.response.data.detail) {
+        const errorDetail = error.response.data.detail;
+        const safeErrorMessage =
+          typeof errorDetail === 'string'
+            ? errorDetail
+            : JSON.stringify(errorDetail, null, 2);
+        error.response.data.detail = safeErrorMessage;
+      }
     }
     return Promise.reject(error);
   }
@@ -199,5 +219,14 @@ export const updatePlanMensualManual = (empresaId, anio, mes, limite) => {
     mes: parseInt(mes),
     limite: parseInt(limite),
     es_manual: true
+  });
+};
+
+export const resetConsumoFactory = (empresaId, params = {}) => {
+  return soporteApiService.delete(`/consumo/reset-factory`, {
+    params: {
+      empresa_id: empresaId,
+      ...params
+    }
   });
 };

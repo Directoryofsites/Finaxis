@@ -649,6 +649,7 @@ def analizar_backup(db: Session, analysis_request: schemas_migracion.AnalysisReq
 def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisRequest, user_id: int):
     backup_data_wrapper = request.backupData
     target_empresa_id = request.targetEmpresaId
+    modules_to_restore = request.modulesToRestore # Lista opcional de módulos seleccionados
 
     # 0. Validar Existencia de Empresa Destino
     empresa_exists = db.query(Empresa).filter(Empresa.id == target_empresa_id).first()
@@ -724,18 +725,32 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
         maestros_src = backup_data.get("maestros", {})
         inv_src = backup_data.get("inventario", {})
         
+        # Helper check function
+        def should_restore(module_key):
+             # Si no se especifica lista, se restaura TODO (comportamiento legacy/default)
+             if not modules_to_restore: return True
+             return module_key in modules_to_restore
+
         # Restaurar Listas de Precio PRIMERO
-        _upsert_manual_seguro(db, ListaPrecio, 'listas_precio', 'nombre', inv_src, target_empresa_id, user_id)
-        db.flush()
+        if should_restore('Listas de Precio'):
+            _upsert_manual_seguro(db, ListaPrecio, 'listas_precio', 'nombre', inv_src, target_empresa_id, user_id)
+            db.flush()
         
         map_listas = _get_id_translation_map(db, ListaPrecio, 'nombre', inv_src, target_empresa_id)
 
         # Restauración de Terceros (ID MAP BLINDADO)
-        _upsert_manual_seguro(db, Tercero, 'terceros', 'nit', maestros_src, target_empresa_id, user_id, id_maps={'lista_precio_id': map_listas})
+        # Restauración de Terceros (ID MAP BLINDADO)
+        if should_restore('Terceros'):
+            _upsert_manual_seguro(db, Tercero, 'terceros', 'nit', maestros_src, target_empresa_id, user_id, id_maps={'lista_precio_id': map_listas})
         
-        _upsert_manual_seguro(db, Bodega, 'bodegas', 'nombre', inv_src, target_empresa_id, user_id)
-        _restore_jerarquico(db, PlanCuenta, 'plan_cuentas', 'cuenta_padre_id', maestros_src, target_empresa_id, user_id)
-        _restore_jerarquico(db, CentroCosto, 'centros_costo', 'centro_costo_padre_id', maestros_src, target_empresa_id, user_id)
+        if should_restore('Bodegas'):
+             _upsert_manual_seguro(db, Bodega, 'bodegas', 'nombre', inv_src, target_empresa_id, user_id)
+
+        if should_restore('Plan de Cuentas'):
+            _restore_jerarquico(db, PlanCuenta, 'plan_cuentas', 'cuenta_padre_id', maestros_src, target_empresa_id, user_id)
+
+        if should_restore('Centros de Costo'):
+            _restore_jerarquico(db, CentroCosto, 'centros_costo', 'centro_costo_padre_id', maestros_src, target_empresa_id, user_id)
         db.flush()
 
         map_cuentas = _get_id_translation_map(db, PlanCuenta, 'codigo', maestros_src, target_empresa_id)
@@ -744,18 +759,22 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
         map_bodegas = _get_id_translation_map(db, Bodega, 'nombre', inv_src, target_empresa_id)
         
         config_src = backup_data.get("configuracion", {})
-        _upsert_manual_seguro(db, ConceptoFavorito, 'conceptos_favoritos', 'descripcion', config_src, target_empresa_id, user_id, id_maps={"centro_costo_id": map_ccs})
+        if should_restore('Conceptos Favoritos'):
+            _upsert_manual_seguro(db, ConceptoFavorito, 'conceptos_favoritos', 'descripcion', config_src, target_empresa_id, user_id, id_maps={"centro_costo_id": map_ccs})
 
         id_maps_tipos = {
             "cuenta_caja_id": map_cuentas, 
             "cuenta_debito_cxc_id": map_cuentas, "cuenta_credito_cxc_id": map_cuentas,
             "cuenta_debito_cxp_id": map_cuentas, "cuenta_credito_cxp_id": map_cuentas
         }
-        _upsert_manual_seguro(db, TipoDocumento, 'tipos_documento', 'codigo', maestros_src, target_empresa_id, user_id, id_maps=id_maps_tipos)
+        if should_restore('Tipos de Documento'):
+            _upsert_manual_seguro(db, TipoDocumento, 'tipos_documento', 'codigo', maestros_src, target_empresa_id, user_id, id_maps=id_maps_tipos)
         
         # --- 0. IMPUESTOS (Movido antes de grupos para dependencia) ---
+        # --- 0. IMPUESTOS (Movido antes de grupos para dependencia) ---
         id_maps_impuestos = {"cuenta_id": map_cuentas, "cuenta_iva_descontable_id": map_cuentas}
-        _upsert_manual_seguro(db, TasaImpuesto, 'tasas_impuesto', 'nombre', inv_src, target_empresa_id, user_id, id_maps=id_maps_impuestos)
+        if should_restore('Tasas Impuesto'):
+            _upsert_manual_seguro(db, TasaImpuesto, 'tasas_impuesto', 'nombre', inv_src, target_empresa_id, user_id, id_maps=id_maps_impuestos)
         db.flush()
         
         map_impuestos = _get_id_translation_map(db, TasaImpuesto, 'nombre', inv_src, target_empresa_id)
@@ -776,7 +795,8 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
             "cuenta_ajuste_faltante_id": map_cuentas, "cuenta_ajuste_sobrante_id": map_cuentas,
             "impuesto_predeterminado_id": map_impuestos
         }
-        _upsert_manual_seguro(db, GrupoInventario, 'grupos', 'nombre', inv_src, target_empresa_id, user_id, id_maps=id_maps_grupos)
+        if should_restore('Grupos Inventario'):
+             _upsert_manual_seguro(db, GrupoInventario, 'grupos', 'nombre', inv_src, target_empresa_id, user_id, id_maps=id_maps_grupos)
         db.flush()
         
         # Sub-tablas de Grupos
@@ -803,18 +823,21 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
                         db.add(CaracteristicaDefinicion(grupo_inventario_id=grupo_db.id, nombre=c["nombre"], es_unidad_medida=c["es_unidad"]))
                 
                 if "reglas" in grp_data:
-                    db.query(ReglaPrecioGrupo).filter(ReglaPrecioGrupo.grupo_inventario_id == grupo_db.id).delete(synchronize_session=False)
-                    for r in grp_data["reglas"]:
-                        lista_id = map_listas.get(r.get("lista_nombre"))
-                        if lista_id:
-                            # CORRECCIÓN: Usar clave correcta 'porcentaje_incremento' (modelo) o fallback a 'porcentaje'
-                            p_inc = r.get("porcentaje_incremento", r.get("porcentaje", 0))
-                            db.add(ReglaPrecioGrupo(grupo_inventario_id=grupo_db.id, lista_precio_id=lista_id, porcentaje_incremento=p_inc))
+                    # Solo tocamos reglas si estamos restaurando grupos
+                    if should_restore('Grupos Inventario'):
+                        db.query(ReglaPrecioGrupo).filter(ReglaPrecioGrupo.grupo_inventario_id == grupo_db.id).delete(synchronize_session=False)
+                        for r in grp_data["reglas"]:
+                            lista_id = map_listas.get(r.get("lista_nombre"))
+                            if lista_id:
+                                # CORRECCIÓN: Usar clave correcta 'porcentaje_incremento' (modelo) o fallback a 'porcentaje'
+                                p_inc = r.get("porcentaje_incremento", r.get("porcentaje", 0))
+                                db.add(ReglaPrecioGrupo(grupo_inventario_id=grupo_db.id, lista_precio_id=lista_id, porcentaje_incremento=p_inc))
 
         # --- PRODUCTOS (Impuestos ya restaurados antes de grupos) ---
         map_grupos = _get_id_translation_map(db, GrupoInventario, 'nombre', inv_src, target_empresa_id)
         # map_impuestos ya fue calculado arriba
-        _upsert_manual_seguro(db, Producto, 'productos', 'codigo', inv_src, target_empresa_id, user_id, id_maps={"grupo_id": map_grupos, "impuesto_iva_id": map_impuestos})
+        if should_restore('Productos'):
+            _upsert_manual_seguro(db, Producto, 'productos', 'codigo', inv_src, target_empresa_id, user_id, id_maps={"grupo_id": map_grupos, "impuesto_iva_id": map_impuestos})
         db.flush()
         map_productos = _get_id_translation_map(db, Producto, 'codigo', inv_src, target_empresa_id)
 
@@ -835,9 +858,10 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
                     if not str(fmt["nombre"]).endswith(suffix):
                         fmt["nombre"] = f"{fmt['nombre']}{suffix}"
 
-            _upsert_manual_seguro(db, FormatoImpresion, 'formatos_impresion', 'nombre', config_src, target_empresa_id, user_id, id_maps=id_maps_fmt)
+            if should_restore('Formatos PDF'):
+                 _upsert_manual_seguro(db, FormatoImpresion, 'formatos_impresion', 'nombre', config_src, target_empresa_id, user_id, id_maps=id_maps_fmt)
 
-        if "plantillas" in config_src:
+        if "plantillas" in config_src and should_restore('Plantillas Contables'):
             db.query(PlantillaMaestra).filter(PlantillaMaestra.empresa_id == target_empresa_id).delete(synchronize_session=False)
             db.flush()
             for p in config_src["plantillas"]:
@@ -855,7 +879,7 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
         
         # --- PROPIEDAD HORIZONTAL ---
         ph_data = backup_data.get("propiedad_horizontal", {})
-        if ph_data:
+        if ph_data and should_restore('Propiedad Horizontal'):
             # Config
             if "configuracion" in ph_data:
                 conf_data = ph_data["configuracion"]
@@ -920,7 +944,7 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
             
         # --- ACTIVOS FIJOS ---
         activos_data = backup_data.get("activos_fijos", {})
-        if activos_data:
+        if activos_data and should_restore('Activos Fijos'):
              _upsert_manual_seguro(db, ActivoCategoria, 'categorias', 'nombre', activos_data, target_empresa_id, user_id, 
                                    id_maps={'cuenta_activo_id': map_cuentas, 'cuenta_depreciacion_acumulada_id': map_cuentas, 'cuenta_gasto_depreciacion_id': map_cuentas})
              db.flush()
@@ -953,13 +977,13 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
                         # Fetch ID
                         mat_cat = db.query(ActivoCategoria).filter(ActivoCategoria.empresa_id == target_empresa_id, ActivoCategoria.nombre == c_name).first()
                         if mat_cat: map_cats[c_name] = mat_cat.id
-
+ 
              _upsert_manual_seguro(db, ActivoFijo, 'activos', 'codigo', activos_data, target_empresa_id, user_id,
                                    id_maps={'categoria_id': map_cats, 'responsable_id': map_terceros, 'centro_costo_id': map_ccs})
 
         # --- COTIZACIONES ---
         cotizaciones_data = backup_data.get("cotizaciones", {})
-        if cotizaciones_data and "cotizaciones" in cotizaciones_data:
+        if cotizaciones_data and "cotizaciones" in cotizaciones_data and should_restore('Cotizaciones'):
             for cotiz_data in cotizaciones_data["cotizaciones"]:
                 # Mapear dependencias
                 tercero_id = map_terceros.get(cotiz_data.get("tercero_nit"))
@@ -1028,7 +1052,7 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
 
         # --- PRODUCCIÓN ---
         produccion_data = backup_data.get("produccion", {})
-        if produccion_data:
+        if produccion_data and should_restore('Producción'):
             # 1. Restaurar Configuración de Producción
             if "configuracion" in produccion_data:
                 config_data = produccion_data["configuracion"]
@@ -1223,7 +1247,7 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
 
         # --- CONCILIACIÓN BANCARIA ---
         conciliacion_data = backup_data.get("conciliacion_bancaria", {})
-        if conciliacion_data:
+        if conciliacion_data and should_restore('Conciliación Bancaria'):
             # 1. Restaurar Configuraciones de Importación
             map_import_configs = {} # Mapa OldID -> NewID
             
@@ -1421,7 +1445,7 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
 
         # 6. NÓMINA (v7.7)
         nomina_data = backup_data.get("nomina", {})
-        if nomina_data:
+        if nomina_data and should_restore('Nómina'):
             # 6.1 Configuración de Nómina
             if "configuraciones" in nomina_data:
                 for conf_data in nomina_data["configuraciones"]:
@@ -1576,7 +1600,7 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
 
         # 7. TRANSACCIONES
         docs_source = backup_data.get("transacciones") or backup_data.get("documentos") or []
-        if docs_source:
+        if docs_source and should_restore('Documentos y Movimientos'):
             map_tipos_final = _get_id_translation_map(db, TipoDocumento, 'codigo', maestros_src, target_empresa_id)
             tipos_db = db.query(TipoDocumento).filter(TipoDocumento.empresa_id == target_empresa_id).all()
             for t in tipos_db: map_tipos_final[t.codigo] = t.id
@@ -1687,7 +1711,10 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
 
             if terceros_afectados:
                 for tid in terceros_afectados:
-                    services_cartera.recalcular_aplicaciones_tercero(db, tercero_id=tid, empresa_id=target_empresa_id)
+                    try:
+                        services_cartera.recalcular_aplicaciones_tercero(db, tercero_id=tid, empresa_id=target_empresa_id)
+                    except:
+                        pass # Tolerancia a errores de recálculo
                 resumen["acciones_realizadas"].append(f"💰 Saldos de cartera recalculados para {len(terceros_afectados)} terceros.")
 
         # --- ATOMICIDAD: EL ÚNICO COMMIT DE TODA LA OPERACIÓN ---

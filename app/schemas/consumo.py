@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Any
 from pydantic import BaseModel
 from datetime import datetime
 from app.models.consumo_registros import EstadoPlan, EstadoBolsa, EstadoRecarga, TipoOperacionConsumo, TipoFuenteConsumo
@@ -57,10 +57,20 @@ class HistorialConsumoRead(BaseModel):
     saldo_fuente_antes: int
     saldo_fuente_despues: int
     documento_id: Optional[int] # ID interno DB
+    documento_id: Optional[int] # ID interno DB
     documento_numero: Optional[int] = None # Consecutivo Humano
+    
+    # Campos inyectados para Cierre/Origen
+    bolsa_mes: Optional[int] = None
+    bolsa_anio: Optional[int] = None
+    bolsa_origen: Optional[str] = None
     
     class Config:
         from_attributes = True
+
+class HistorialConsumoPage(BaseModel):
+    items: List[HistorialConsumoRead]
+    total_cantidad: int
 
 class PaqueteRecargaBase(BaseModel):
     nombre: str

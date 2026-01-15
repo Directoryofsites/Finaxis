@@ -78,6 +78,7 @@ class AnalysisRequest(BaseModel):
     backupData: Dict[str, Any]
     targetEmpresaId: int
     bypass_signature: bool = False
+    modulesToRestore: Optional[List[str]] = None
 
 class AnalysisSummaryItem(BaseModel):
     """ Define el resumen para un tipo de dato (ej. terceros). """

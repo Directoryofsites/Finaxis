@@ -293,16 +293,11 @@ export default function NuevoDocumentoPage() {
 
   const handlePlantillaChange = async (plantillaId) => {
     if (!plantillaId) {
-      setBeneficiarioId('');
-      setCentroCostoId('');
-      setTipoDocumentoId('');
-      setMovimientos([
-        { rowId: Date.now(), cuentaId: '', concepto: '', debito: '', credito: '', cuentaInput: '' },
-        { rowId: Date.now() + 1, cuentaId: '', concepto: '', debito: '', credito: '', cuentaInput: '' },
-      ]);
-      setError('');
-      setMensaje('');
-      setFechaVencimiento(null);
+      // Si el usuario "des-selecciona" la plantilla, ¿qué deberíamos hacer?
+      // Comportamiento anterior: Borrar todo.
+      // Nuevo comportamiento: Quizás no hacer nada o limpiar solo si no hay nada más escrito.
+      // Para respetar la lógica de "limpieza", si seleccionan "vacío" (placeholder), podríamos preguntar o limpiar.
+      // Por ahora, mantendremos el reset si eligen la opción vacía explícitamente, pero el usuario raramente hace eso.
       return;
     }
 
@@ -312,21 +307,29 @@ export default function NuevoDocumentoPage() {
       const res = await apiService.get(`/plantillas/${plantillaId}`);
       const plantilla = res.data;
 
-      if (plantilla.tipo_documento_id_sugerido) {
+      // 1. CABECERA: Solo sobrescribir si el campo está vacío
+      if (plantilla.tipo_documento_id_sugerido && !tipoDocumentoId) {
         await handleTipoDocumentoChange(String(plantilla.tipo_documento_id_sugerido));
       }
 
-      setBeneficiarioId(String(plantilla.beneficiario_id_sugerido || ''));
-      setCentroCostoId(String(plantilla.centro_costo_id_sugerido || ''));
+      if (!beneficiarioId && plantilla.beneficiario_id_sugerido) {
+        setBeneficiarioId(String(plantilla.beneficiario_id_sugerido));
+      }
 
+      if (!centroCostoId && plantilla.centro_costo_id_sugerido) {
+        setCentroCostoId(String(plantilla.centro_costo_id_sugerido));
+      }
+
+      // 2. DETALLES (Movimientos): Aditivos
       const nuevosMovimientos = plantilla.detalles.map((d, i) => {
         const cuentaCompleta = maestros.cuentas.find(c => c.id === d.cuenta_id);
         if (!cuentaCompleta || !cuentaCompleta.permite_movimiento) {
           console.warn(`ADVERTENCIA: La cuenta de la plantilla no es válida o no permite movimientos. Se omitirá.`);
           return null;
         }
+        // Usamos un offset largo para asegurar que no choque con Date.now() de los anteriores
         return {
-          rowId: Date.now() + i,
+          rowId: Date.now() + i + 1000,
           cuentaId: d.cuenta_id,
           concepto: d.concepto || '',
           debito: d.debito ? parseFloat(d.debito).toFixed(2) : '',
@@ -336,14 +339,20 @@ export default function NuevoDocumentoPage() {
       }).filter(Boolean);
 
       if (nuevosMovimientos.length > 0) {
-        setMovimientos(nuevosMovimientos);
+        setMovimientos(prev => {
+          // Filtramos las filas "vacías" de la grilla anterior para que no queden huecos feos
+          // Consideramos vacía si no tiene cuentaId y no tiene montos.
+          const filasAnterioresUtiles = prev.filter(m => m.cuentaId || (m.debito && m.debito !== '') || (m.credito && m.credito !== ''));
+          return [...filasAnterioresUtiles, ...nuevosMovimientos];
+        });
       } else if (plantilla.detalles.length > 0) {
         setError("No se pudieron cargar movimientos de la plantilla porque las cuentas no son válidas.");
       }
 
-      setMensaje(`Plantilla "${plantilla.nombre_plantilla}" cargada exitosamente.`);
+      setMensaje(`Plantilla "${plantilla.nombre_plantilla}" agregada exitosamente.`);
 
     } catch (err) {
+      console.error(err);
       setError(err.response?.data?.detail || 'Error al cargar la plantilla.');
       setMensaje('');
     }

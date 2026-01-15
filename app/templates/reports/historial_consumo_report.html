@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Historial de Consumo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header {
+            margin-bottom: 20px;
+            border-bottom: 2px solid #555;
+            padding-bottom: 10px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #2c3e50;
+        }
+
+        .header h2 {
+            margin: 5px 0 0;
+            font-size: 16px;
+            color: #666;
+            font-weight: normal;
+        }
+
+        .meta-info {
+            margin-bottom: 20px;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .filters-info {
+            background: #f0f4f8;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border: 1px solid #dce4ec;
+        }
+
+        .filters-info strong {
+            color: #2c3e50;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            /* Asegurar que la cabecera se repita en cada página */
+            display: table;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        tfoot {
+            display: table-footer-group;
+        }
+
+        tr {
+            page-break-inside: avoid;
+        }
+
+        th,
+        td {
+            border-bottom: 1px solid #eee;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            color: #495057;
+            font-weight: bold;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        tr:nth-child(even) {
+            background-color: #fdfdfd;
+        }
+
+        .impact-positive {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .impact-negative {
+            color: #c0392b;
+            font-weight: bold;
+        }
+
+        .footer {
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+            pt-4;
+            text-align: center;
+            color: #999;
+            font-size: 10px;
+        }
+
+        .tag {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        .tag-consumo {
+            background: #e0e7ff;
+            color: #4338ca;
+        }
+
+        .tag-compra {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .tag-reversion {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .tag-cierre {
+            background: #f1f5f9;
+            color: #475569;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <h2>Reporte de Historial de Consumo</h2>
+        <div class="meta-info">NIT: {{ empresa.nit }} | Generado el: {{ fecha_generacion }}</div>
+    </div>
+
+    <div class="filters-info">
+        <strong>Filtros Aplicados:</strong><br>
+        Rango de Fechas: {{ filtros.fecha_inicio or 'Inicio' }} - {{ filtros.fecha_fin or 'Actualidad' }} <br>
+        Tipo de Operación: {{ filtros.tipo_operacion or 'TODOS' }} <br>
+        <strong>Registros Exportados: {{ items|length }} (Max: 5000)</strong>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th width="15%">Fecha</th>
+                <th width="15%">Operación</th>
+                <th width="40%">Detalle / Documento</th>
+                <th width="20%">Origen/Bolsa</th>
+                <th width="10%" style="text-align: right">Impacto</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.fecha.strftime('%d/%m/%Y') }} <br> <span style="font-size: 9px; color:#999">{{
+                        item.fecha.strftime('%H:%M') }}</span></td>
+                <td>
+                    {% if item.tipo_operacion == 'CONSUMO' %} <span class="tag tag-consumo">CONSUMO</span>
+                    {% elif item.tipo_operacion == 'COMPRA' %} <span class="tag tag-compra">COMPRA RECARGA</span>
+                    {% elif item.tipo_operacion == 'REVERSION' %} <span class="tag tag-reversion">REVERSIÓN</span>
+                    {% elif item.tipo_operacion == 'CIERRE' %} <span class="tag tag-cierre">CIERRE MENSUAL</span>
+                    {% else %} {{ item.tipo_operacion }} {% endif %}
+                </td>
+                <td>
+                    {% if item.documento_numero %}
+                    <strong>Documento #{{ item.documento_numero }}</strong>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if item.tipo_operacion == 'CIERRE' and item.bolsa_origen %}
+                    <span style="color:#555">Cierre {{ item.bolsa_origen }}</span>
+                    {% else %}
+                    {{ item.fuente_tipo or '-' }}
+                    {% endif %}
+                </td>
+                <td style="text-align: right">
+                    {% if item.tipo_operacion in ['REVERSION', 'COMPRA'] %}
+                    <span class="impact-positive">+{{ item.cantidad }}</span>
+                    {% else %}
+                    <span class="impact-negative">-{{ item.cantidad }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr style="background-color: #f0f4f8; font-weight: bold;">
+                <td colspan="4" style="text-align: right;">IMPACTO TOTAL DEL PERIODO:</td>
+                <td style="text-align: right;">{{ total_cantidad }}</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="footer">
+        Este reporte fue generado automáticamente por el sistema ContaPY2.
+    </div>
+</body>
+
+</html>
