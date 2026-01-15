@@ -185,7 +185,47 @@ def verificar_disponibilidad(db: Session, empresa_id: int, cantidad_necesaria: i
     
     return total_disponible >= cantidad_necesaria
 
-def _get_or_create_plan_mensual(db: Session, empresa_id: int, fecha_doc: datetime) -> ControlPlanMensual:
+def calcular_deficit(db: Session, empresa_id: int, cantidad_necesaria: int) -> int:
+    """
+    Calcula cuántos registros faltan para cubrir una operación.
+    Retorna 0 si hay saldo suficiente.
+    Retorna > 0 con la cantidad faltante.
+    """
+    now = datetime.now()
+    anio, mes = now.year, now.month
+    
+    # 1. Plan Mensual
+    plan = db.query(ControlPlanMensual).filter(
+        ControlPlanMensual.empresa_id == empresa_id,
+        ControlPlanMensual.anio == anio,
+        ControlPlanMensual.mes == mes
+    ).first()
+    
+    saldo_plan = plan.cantidad_disponible if plan and plan.estado == EstadoPlan.ABIERTO else 0
+    
+    # 2. Bolsas
+    saldo_bolsa = db.query(BolsaExcedente).filter(
+        BolsaExcedente.empresa_id == empresa_id,
+        BolsaExcedente.estado == EstadoBolsa.VIGENTE,
+        BolsaExcedente.fecha_vencimiento >= now
+    ).with_entities(BolsaExcedente.cantidad_disponible).all()
+    total_bolsa = sum([b.cantidad_disponible for b in saldo_bolsa])
+    
+    # 3. Recargas
+    saldo_recargas = db.query(RecargaAdicional).filter(
+        RecargaAdicional.empresa_id == empresa_id,
+        RecargaAdicional.estado == EstadoRecarga.VIGENTE
+    ).with_entities(RecargaAdicional.cantidad_disponible).all()
+    total_recargas = sum([r.cantidad_disponible for r in saldo_recargas])
+    
+    total_disponible = saldo_plan + total_bolsa + total_recargas
+    
+    if total_disponible >= cantidad_necesaria:
+        return 0
+    
+    return cantidad_necesaria - total_disponible
+
+def _get_or_create_plan_mensual(db: Session, empresa_id: int, fecha_doc: datetime, exclude_document_id: int = None) -> ControlPlanMensual:
     anio = fecha_doc.year
     mes = fecha_doc.month
     
@@ -218,14 +258,21 @@ def _get_or_create_plan_mensual(db: Session, empresa_id: int, fecha_doc: datetim
     limite_total = limite_base + cantidad_extra
     
     # Calcular Consumo Real (Siempre útil para sync)
-    consumo_real = db.query(func.count(MovimientoContable.id))\
+    query_consumo = db.query(func.count(MovimientoContable.id))\
         .join(Documento, MovimientoContable.documento_id == Documento.id)\
         .filter(
             Documento.empresa_id == empresa_id,
             extract('year', Documento.fecha) == anio,
             extract('month', Documento.fecha) == mes,
             Documento.anulado == False
-        ).scalar() or 0
+        )
+    
+    # FIX: Excluir documento actual para evitar doble conteo durante auto-healing
+    # Si excluimos el doc actual, el consumo_real será lo que había ANTES de esta transacción.
+    if exclude_document_id:
+        query_consumo = query_consumo.filter(Documento.id != exclude_document_id)
+
+    consumo_real = query_consumo.scalar() or 0
 
     if not plan:
         # CREACIÓN NUEVA
@@ -257,12 +304,23 @@ def _get_or_create_plan_mensual(db: Session, empresa_id: int, fecha_doc: datetim
 
         limit_mismatch = (plan.limite_asignado != limite_total and limite_total > 0)
         
+        # Sync simple de límite
         if limit_mismatch:
-            plan.limite_asignado = limite_total
-            # Recalcular disponible
-            plan.cantidad_disponible = max(0, limite_total - consumo_real)
-            db.add(plan)
-            db.flush()
+             plan.limite_asignado = limite_total
+
+        # RECALCULO DE DISPONIBILIDAD (Sanity Check)
+        # Disponible Esperado = Límite - Consumo Real (Excluyendo doc actual)
+        # Solo corregimos si hay discrepancia significativa para no sobreescribir lógica compleja
+        # Pero la idea del auto-healing es confiar en el conteo real.
+        
+        # OJO: Si consumo_service decrementa el disponible, entonces:
+        # disponible_en_db debería ser == limite - consumo_real (sin contar doc actual, porque aún no se descuenta)
+        
+        esperado = max(0, limite_total - consumo_real)
+        if plan.cantidad_disponible != esperado:
+             plan.cantidad_disponible = esperado
+             db.add(plan)
+             db.flush()
 
     return plan
 
@@ -284,7 +342,8 @@ def registrar_consumo(db: Session, empresa_id: int, cantidad: int, documento_id:
     
     # 1. PLAN MENSUAL (Del mes del documento)
     # Usamos with_for_update dentro de _get_or_create
-    plan_mensual = _get_or_create_plan_mensual(db, empresa_id, fecha_doc)
+    # FIX: Pasamos exclude_document_id para que el sync no cuente este documento ANTES de descontarlo
+    plan_mensual = _get_or_create_plan_mensual(db, empresa_id, fecha_doc, exclude_document_id=documento_id)
     
     consumo_plan = 0
     if plan_mensual.estado == EstadoPlan.ABIERTO and plan_mensual.cantidad_disponible > 0:

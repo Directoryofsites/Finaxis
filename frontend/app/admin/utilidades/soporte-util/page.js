@@ -26,6 +26,7 @@ import CrearEmpresaPanel from './components/CrearEmpresaPanel';
 import InspectorUniversal from './components/InspectorUniversal';
 import UltimasOperaciones from './components/UltimasOperaciones';
 import AuditoriaConsecutivosSoporte from './components/AuditoriaConsecutivosSoporte';
+import ResetConsumoPanel from './components/ResetConsumoPanel';
 import RolesManagementView from '../../../../components/admin/RolesManagementView';
 
 
@@ -616,7 +617,9 @@ export default function SoporteUtilPage() {
                 <button onClick={() => setActiveTab('buscadorLlaveNatural')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'buscadorLlaveNatural' ? 'border-b-2 border-teal-600 font-semibold text-teal-600' : 'text-gray-500'}`}>Buscador</button>
                 <button onClick={() => setActiveTab('inspectorUniversal')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'inspectorUniversal' ? 'border-b-2 border-purple-600 font-semibold text-purple-600' : 'text-gray-500'}`}>Inspector (ID)</button>
                 <button onClick={() => setActiveTab('operaciones')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'operaciones' ? 'border-b-2 border-blue-600 font-semibold text-blue-600' : 'text-gray-500'}`}>Últimas Operaciones</button>
+
                 <button onClick={() => setActiveTab('conteo')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'conteo' ? 'border-b-2 border-blue-600 font-semibold text-blue-600' : 'text-gray-500'}`}>Conteo</button>
+                <button onClick={() => setActiveTab('resetConsumo')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'resetConsumo' ? 'border-b-2 border-red-600 font-semibold text-red-600' : 'text-gray-500'}`}>Reset Consumo (PELIGRO)</button>
                 <button onClick={() => setActiveTab('erradicadorUniversal')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'erradicadorUniversal' ? 'border-b-2 border-red-600 font-semibold text-red-600' : 'text-gray-500'}`}>Erradicador</button>
             </div>
             <div>
@@ -634,6 +637,7 @@ export default function SoporteUtilPage() {
                         {activeTab === 'inspectorUniversal' && <InspectorUniversal />}
                         {activeTab === 'operaciones' && <UltimasOperaciones todasLasEmpresas={dashboardData.empresas} />}
                         {activeTab === 'conteo' && <ConteoRegistros />}
+                        {activeTab === 'resetConsumo' && <ResetConsumoPanel todasLasEmpresas={dashboardData.empresas} />}
                         {activeTab === 'erradicadorUniversal' && <ErradicadorUniversal todasLasEmpresas={dashboardData.empresas} />}
                     </>
                 )}

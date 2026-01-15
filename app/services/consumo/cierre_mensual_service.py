@@ -43,15 +43,16 @@ def ejecutar_cierre_mensual(db: Session, empresa_id: int, anio: int, mes: int, u
             estado=EstadoBolsa.VIGENTE
         )
         db.add(nueva_bolsa)
+        db.flush() # CRITICAL: Obtain ID for linking
         
-        # Log Historial
+        # Log Historial linked to the specific Bolsa
         historial = HistorialConsumo(
             empresa_id=empresa_id,
             fecha=now,
             cantidad=remanente_plan,
             tipo_operacion=TipoOperacionConsumo.CIERRE,
             fuente_tipo=TipoFuenteConsumo.BOLSA,
-            fuente_id=None, # Se asignará tras commit, pero por ahora lo dejamos genérico o requerimos flush
+            fuente_id=nueva_bolsa.id, # Ahora sí tenemos el ID
             saldo_fuente_antes=0,
             saldo_fuente_despues=remanente_plan,
             documento_id=None
@@ -85,7 +86,24 @@ def ejecutar_cierre_mensual(db: Session, empresa_id: int, anio: int, mes: int, u
     ).all()
     
     for r in recargas:
-        if r.cantidad_disponible > 0:
+            # Ajuste de Deuda (Nuevo Requerimiento):
+            # Si expira, recalcular el valor_total proporcionalmente a lo que realmente se consumió.
+            # "El cliente no la utilizó, por lo tanto, no se le cobra"
+            
+            # Solo si NO ha sido facturada aún (si ya se facturó, ya es deuda legal, requeriría NC)
+            if not r.facturado:
+                cantidad_original = r.cantidad_comprada
+                if cantidad_original > 0:
+                     # Cuánto se consumió realmente? (Original - Lo que sobró y va a morir)
+                     consumido = cantidad_original - r.cantidad_disponible
+                     
+                     # Proporción de consumo (0.0 a 1.0)
+                     proporcion = consumido / cantidad_original
+                     
+                     # Nuevo valor ajustado
+                     nuevo_valor = r.valor_total * proporcion
+                     r.valor_total = int(nuevo_valor)
+
             # Log Expiracion
             h_exp = HistorialConsumo(
                 empresa_id=empresa_id,

@@ -102,13 +102,13 @@ export const menuStructure = [
             { name: 'Explorador Doc.', href: '/contabilidad/explorador', mnemonic: 'e', icon: FaBook, description: 'Búsqueda avanzada de movimientos.', permission: 'contabilidad:explorador' },
             { name: 'Libro Diario Detallado', href: '/contabilidad/reportes/libro-diario', mnemonic: 'l', icon: FaBook, description: 'Movimientos cronológicos por día.', permission: 'contabilidad:libro_diario' },
             { name: 'Libro Diario Resumen', href: '/contabilidad/reportes/libro-diario-resumen', mnemonic: 'u', icon: FaBook, description: 'Resumen por tipo de documento.', permission: 'contabilidad:libro_diario' },
-            { name: 'Análisis de Cuenta por Documento', href: '/contabilidad/reportes/analisis-cuenta-documento', mnemonic: 'y', icon: FaBook, description: 'Desglose por fuente.', permission: 'contabilidad:analisis_cuenta' },
+            { name: 'Análisis de Cuenta por Documento', href: '/contabilidad/reportes/analisis-cuenta-documento', mnemonic: 'n', icon: FaBook, description: 'Desglose por fuente.', permission: 'contabilidad:analisis_cuenta' },
             { name: 'Balance General', href: '/contabilidad/reportes/balance-general', mnemonic: 'b', icon: FaBalanceScale, description: 'Estado de situación financiera (ESF).', permission: 'contabilidad:balance_general' },
             { name: 'Resultados (PYG)', href: '/contabilidad/reportes/estado-resultados', mnemonic: 'p', icon: FaChartBar, description: 'Pérdidas y Ganancias (PYG).', permission: 'contabilidad:pyg' },
             { name: 'Balance Prueba', href: '/contabilidad/reportes/balance-de-prueba', mnemonic: 'a', icon: FaCheckCircle, description: 'Resumen de saldos débito y crédito.', permission: 'contabilidad:balance_prueba' },
             { name: 'Auxiliar Contable', href: '/contabilidad/reportes/auxiliar-cuenta', mnemonic: 'x', icon: FaFileAlt, description: 'Detalle de movimientos por cuenta.', permission: 'contabilidad:auxiliar' },
             { name: 'Libros Oficiales', href: '/admin/utilidades/libros-oficiales', mnemonic: 'o', icon: FaUniversity, description: 'Generación de libros reglamentarios.', permission: 'contabilidad:libros_oficiales' },
-            { name: 'Auditoría Contable Avanzada', href: '/contabilidad/reportes/super-informe', mnemonic: '1', icon: FaClipboardList, description: 'Cruce de información y auditoría.', permission: 'contabilidad:auditoria_avanzada' },
+            { name: 'Auditoría Contable Avanzada', href: '/contabilidad/reportes/super-informe', mnemonic: 'v', icon: FaClipboardList, description: 'Cruce de información y auditoría.', permission: 'contabilidad:auditoria_avanzada' },
         ]
     },
     // 2. Análisis Financiero -> Análisis (L - "A" is taken by Activos)
