@@ -6,8 +6,10 @@ import { phService } from '../../../lib/phService';
 
 import { FaFileInvoiceDollar, FaPlus, FaEdit, FaTrash, FaSave, FaTimes, FaLayerGroup } from 'react-icons/fa';
 import BuscadorCuentas from '../../../components/BuscadorCuentas';
+import { useRecaudos } from '../../../contexts/RecaudosContext'; // IMPORT
 
 export default function ConceptosPage() {
+    const { labels } = useRecaudos(); // HOOK
     const [conceptos, setConceptos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -30,6 +32,7 @@ export default function ConceptosPage() {
         cuenta_caja_codigo: '',
         cuenta_caja_nombre: '',
         es_fijo: true,
+        es_interes: false,
         valor_defecto: 0,
         usa_coeficiente: false,
         modulos_ids: []
@@ -106,6 +109,7 @@ export default function ConceptosPage() {
             cuenta_caja_codigo: c.cuenta_caja ? c.cuenta_caja.codigo : '',
             cuenta_caja_nombre: c.cuenta_caja ? `${c.cuenta_caja.codigo} - ${c.cuenta_caja.nombre}` : '',
             es_fijo: c.es_fijo,
+            es_interes: c.es_interes,
             valor_defecto: c.valor_defecto,
             usa_coeficiente: c.usa_coeficiente,
             modulos_ids: c.modulos ? c.modulos.map(m => m.id) : []
@@ -140,6 +144,7 @@ export default function ConceptosPage() {
             cuenta_caja_codigo: '',
             cuenta_caja_nombre: '',
             es_fijo: true,
+            es_interes: false,
             valor_defecto: 0,
             usa_coeficiente: false,
             modulos_ids: []
@@ -193,7 +198,7 @@ export default function ConceptosPage() {
                                     </td>
                                     <td className="px-6 py-4">
                                         {c.usa_coeficiente ?
-                                            <span className="badge bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">Por Coeficiente</span> :
+                                            <span className="badge bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">Por {labels.coeficiente}</span> :
                                             <span className="badge bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Valor Fijo</span>
                                         }
                                     </td>
@@ -246,10 +251,10 @@ export default function ConceptosPage() {
                             {/* MÓDULOS */}
                             <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-lg">
                                 <label className="block text-xs font-bold text-indigo-700 uppercase mb-2 flex items-center gap-2">
-                                    <FaLayerGroup /> Restricción por Módulo
+                                    <FaLayerGroup /> Restricción por {labels.module}
                                 </label>
                                 <p className="text-xs text-gray-500 mb-3">
-                                    Si seleccionas un módulo, este cobro <strong>SOLO</strong> se aplicará a las unidades que pertenezcan a él.
+                                    Si seleccionas un módulo, este cobro <strong>SOLO</strong> se aplicará a las {labels.unidad.toLowerCase()}s que pertenezcan a él.
                                     Si no seleccionas nada, <strong>se cobrará a todos</strong>.
                                 </p>
 
@@ -291,7 +296,7 @@ export default function ConceptosPage() {
                                     onSelect={(cta) => setFormData({ ...formData, cuenta_cxc_id: cta.id, cuenta_cxc_codigo: cta.codigo, cuenta_cxc_nombre: cta.nombre })}
                                     selectedCodigo={formData.cuenta_cxc_codigo}
                                 />
-                                <p className="text-xs text-gray-500 mt-1">Cuenta por cobrar. Si se deja vacía, se usa la cuenta global del Propietario o del Sistema (Ej: 1305).</p>
+                                <p className="text-xs text-gray-500 mt-1">Cuenta por cobrar. Si se deja vacía, se usa la cuenta global del {labels.propietario} o del Sistema (Ej: 1305).</p>
                             </div>
 
                             <div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
@@ -322,7 +327,7 @@ export default function ConceptosPage() {
                                         onChange={e => setFormData({ ...formData, usa_coeficiente: e.target.value === 'true' })}
                                     >
                                         <option value="false">Valor Fijo ($)</option>
-                                        <option value="true">Por Coeficiente (%)</option>
+                                        <option value="true">Por {labels.coeficiente} (%)</option>
                                     </select>
                                 </div>
                                 <div>
@@ -335,6 +340,48 @@ export default function ConceptosPage() {
                                     />
                                 </div>
                             </div>
+
+                            {/* NUEVO: CHECKBOX DE COBRO FIJO/PERIODICO */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3">
+                                    <input
+                                        type="checkbox"
+                                        id="esFijoCheck"
+                                        className="w-5 h-5 mt-1 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                                        checked={formData.es_fijo}
+                                        onChange={e => setFormData({ ...formData, es_fijo: e.target.checked })}
+                                    />
+                                    <div>
+                                        <label htmlFor="esFijoCheck" className="font-bold text-gray-800 cursor-pointer block">
+                                            ¿Es un Cobro Fijo?
+                                        </label>
+                                        <p className="text-[10px] text-gray-500 leading-tight mt-1">
+                                            Marcado: Se pre-selecciona siempre (Ej: Administración).
+                                            <br />Desmarcado: Novedad ocasional.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                                    <input
+                                        type="checkbox"
+                                        id="esInteresCheck"
+                                        className="w-5 h-5 mt-1 text-red-600 rounded border-gray-300 focus:ring-red-500"
+                                        checked={formData.es_interes}
+                                        onChange={e => setFormData({ ...formData, es_interes: e.target.checked })}
+                                    />
+                                    <div>
+                                        <label htmlFor="esInteresCheck" className="font-bold text-red-800 cursor-pointer block">
+                                            ¿Es Interés de Mora?
+                                        </label>
+                                        <p className="text-[10px] text-red-600 leading-tight mt-1">
+                                            Marcado: El sistema calcula el valor según días de mora (Smart).
+                                            <br />Desmarcado: Cobra el valor fijo definido arriba.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            {/* ------------------------------------- */}
 
                             <div className="flex justify-end gap-3 mt-6">
                                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>

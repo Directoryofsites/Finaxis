@@ -12,6 +12,7 @@ class PHConceptoBase(BaseModel):
     cuenta_caja_id: Optional[int] = None
     usa_coeficiente: bool = False
     es_fijo: bool = True
+    es_interes: bool = False
     valor_defecto: Decimal = 0
 
 class PHConceptoCreate(PHConceptoBase):
@@ -21,6 +22,8 @@ class PHConceptoUpdate(PHConceptoBase):
     nombre: Optional[str] = None
     cuenta_ingreso_id: Optional[int] = None
     cuenta_caja_id: Optional[int] = None
+    es_fijo: Optional[bool] = None
+    es_interes: Optional[bool] = None
     modulos_ids: Optional[List[int]] = []
 
 class PHConcepto(PHConceptoBase):

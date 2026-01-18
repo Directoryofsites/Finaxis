@@ -26,6 +26,7 @@ class PHConfiguracion(Base):
     # Integración Contable
     tipo_documento_factura_id = Column(Integer, ForeignKey("tipos_documento.id"), nullable=True)
     tipo_documento_recibo_id = Column(Integer, ForeignKey("tipos_documento.id"), nullable=True)
+    tipo_documento_mora_id = Column(Integer, ForeignKey("tipos_documento.id"), nullable=True) # New Field
     
     # Cuentas Contables Centralizadas (Overrides)
     cuenta_cartera_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Para CXC (13, 14, 16...)
@@ -36,10 +37,14 @@ class PHConfiguracion(Base):
     interes_mora_habilitado = Column(Boolean, default=True)
 
     empresa = relationship("Empresa")
-    tipo_documento_factura = relationship("app.models.tipo_documento.TipoDocumento", foreign_keys=[tipo_documento_factura_id])
     tipo_documento_recibo = relationship("app.models.tipo_documento.TipoDocumento", foreign_keys=[tipo_documento_recibo_id])
+    tipo_documento_mora = relationship("app.models.tipo_documento.TipoDocumento", foreign_keys=[tipo_documento_mora_id])
     cuenta_cartera = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_cartera_id])
     cuenta_caja = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_caja_id])
     cuenta_ingreso_intereses = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_ingreso_intereses_id])
+
+    # --- NUEVO CAMPO: TIPO DE NEGOCIO (SECTOR) ---
+    # Valores: 'PH_RESIDENCIAL', 'PH_COMERCIAL', 'TRANSPORTE', 'EDUCATIVO', 'PARQUEADERO', 'GENERICO'
+    tipo_negocio = Column(String(50), nullable=False, default='PH_RESIDENCIAL')
 
 

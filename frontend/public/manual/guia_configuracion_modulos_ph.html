@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía de Configuración de Módulos en Propiedad Horizontal (PH)</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+        }
+
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 20px 0;
+            padding: 10px 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .step {
+            margin-bottom: 30px;
+            background-color: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .step-number {
+            font-weight: bold;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .icon-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background-color: #e0e7ff;
+            color: #3730a3;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <a href="javascript:history.back()" class="back-link">← Volver</a>
+
+        <div class="content">
+            <h1>Guía de Segmentación de Cobros (Módulos PH)</h1>
+            <p>Aprenda a configurar cobros diferenciados (Ej: Cobrar "Administración Residencial" solo a apartamentos y
+                "Administración Locales" solo a locales comerciales) utilizando los <strong>Módulos de
+                    Contribución</strong>.</p>
+
+            <blockquote style="background-color: #eff6ff; border-left-color: #2563eb;">
+                <strong>Concepto Clave:</strong> Un "Módulo" es simplemente un grupo de unidades. Si usted crea un
+                módulo llamado "Residencial" y mete allí a todos los apartamentos, luego puede decirle al cobro de
+                administración que solo le cobre a los miembros de ese grupo.
+            </blockquote>
+
+            <div class="step">
+                <span class="step-number">Paso 1: Crear los Grupos (Módulos)</span>
+                <h3>Definir los sectores de su copropiedad</h3>
+                <p>Lo primero es crear los contenedores donde agruparemos las unidades.</p>
+                <ol>
+                    <li>Vaya al menú <span class="icon-box">Propiedad Horizontal</span> &gt; <span
+                            class="icon-box">Configuración</span> &gt; <span class="icon-box">Módulos</span>.</li>
+                    <li>Haga clic en el botón <strong>+ Nuevo Módulo</strong>.</li>
+                    <li>Escriba el nombre del grupo. Ejemplos comunes:
+                        <ul>
+                            <li><code>Unidades Residenciales</code></li>
+                            <li><code>Sector Locales Comerciales</code></li>
+                            <li><code>Torre A</code></li>
+                            <li><code>Parqueaderos Privados</code></li>
+                        </ul>
+                    </li>
+                    <li>En "Tipo de Distribución", generalmente se usa <strong>Por Coeficiente</strong>.</li>
+                    <li>Guarde el módulo. Repita esto para todos los grupos que necesite.</li>
+                </ol>
+            </div>
+
+            <div class="step">
+                <span class="step-number">Paso 2: Asignar Unidades a los Grupos</span>
+                <h3>Meter cada unidad en sus grupos correspondientes</h3>
+                <p>Ahora debemos decirle al sistema qué unidades pertenecen a qué grupo. Una unidad puede pertenecer a
+                    varios grupos al mismo tiempo.</p>
+                <ol>
+                    <li>Vaya al menú <span class="icon-box">Propiedad Horizontal</span> &gt; <span
+                            class="icon-box">Unidades</span>.</li>
+                    <li>Busque una unidad (ej. "Apt 501") y haga clic en el botón de <strong>Editar</strong> (Lápiz
+                        azul).</li>
+                    <li>Baje hasta la sección llamada <strong>Módulos de Contribución (PH Mixta)</strong>.</li>
+                    <li>Verá los módulos que creó en el paso anterior. <strong>Marque la casilla</strong> de los grupos
+                        a los que pertenece esta unidad.
+                        <br><em>Ejemplo: Para el Apt 501, marque "Unidades Residenciales". Para el Local 1, marque
+                            "Sector Locales".</em>
+                    </li>
+                    <li>Haga clic en <strong>Actualizar Unidad</strong>.</li>
+                </ol>
+                <blockquote>
+                    <strong>Tip:</strong> Debe hacer esto con todas las unidades. Si olvida asignar una unidad al grupo,
+                    el cobro no se le generará.
+                </blockquote>
+            </div>
+
+            <div class="step">
+                <span class="step-number">Paso 3: Configurar el Cobro (Concepto)</span>
+                <h3>Restringir el cobro solo al grupo deseado</h3>
+                <p>Finalmente, configuramos el concepto de facturación para que obedezca a los grupos.</p>
+                <ol>
+                    <li>Vaya al menú <span class="icon-box">Propiedad Horizontal</span> &gt; <span
+                            class="icon-box">Conceptos</span>.</li>
+                    <li>Cree un nuevo concepto o edite uno existente (ej. "Cuota Administración Residencial").</li>
+                    <li>En el formulario, busque la sección <strong>Restricción por Módulo</strong>.</li>
+                    <li>Haga clic sobre el módulo correspondiente (ej. <code>Unidades Residenciales</code>).
+                        <ul>
+                            <li>Si el módulo se pone de color (seleccionado), significa que <strong>SOLO</strong> se le
+                                cobrará a los miembros de ese grupo.</li>
+                            <li>Si no selecciona nada, el cobro será para <strong>TODAS</strong> las unidades de la
+                                copropiedad.</li>
+                        </ul>
+                    </li>
+                    <li>Guarde el concepto.</li>
+                </ol>
+            </div>
+
+            <div class="step">
+                <span class="step-number">Verificación</span>
+                <h3>¿Cómo sé si quedó bien?</h3>
+                <p>Para probar, puede generar una <strong>Facturación Masiva</strong> de prueba.</p>
+                <ol>
+                    <li>Vaya a Facturación Masiva.</li>
+                    <li>Genere la facturación.</li>
+                    <li>Revise los documentos generados. Debería ver que a los Apartamentos se les cobró la
+                        "Administración Residencial" y a los Locales la "Administración Locales", sin mezclarse.</li>
+                </ol>
+            </div>
+
+        </div>
+
+        <footer>
+            Sistema Finaxis - Manual de Usuario
+        </footer>
+    </div>
+
+</body>
+
+</html>

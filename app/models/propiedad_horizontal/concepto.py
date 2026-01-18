@@ -24,6 +24,7 @@ class PHConcepto(Base):
     # Configuración de Cobro
     usa_coeficiente = Column(Boolean, default=False)
     es_fijo = Column(Boolean, default=True) # True: Se cobra todos los meses. False: Novedad ocasional.
+    es_interes = Column(Boolean, default=False) # True: Este concepto activa el cálculo de Interés de Mora.
     valor_defecto = Column(Numeric(14, 2), default=0)
     
     activo = Column(Boolean, default=True)

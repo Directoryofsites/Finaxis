@@ -8,6 +8,8 @@ import { useAuth } from '../../../../context/AuthContext';
 import { apiService } from '../../../../../lib/apiService';
 
 
+import { phService } from '../../../../../lib/phService'; // NEW IMPORT
+
 export default function DetalleDocumentoPage() {
   const router = useRouter();
   const params = useParams();
@@ -160,9 +162,17 @@ export default function DetalleDocumentoPage() {
     }
   };
 
+  // --- MODAL RECALCULO ---
+  const [showRecalculoModal, setShowRecalculoModal] = useState(false);
+  const [recalculoData, setRecalculoData] = useState(null); // { unidad_id, fecha }
+  const [recalculando, setRecalculando] = useState(false);
+  const [recalculoResult, setRecalculoResult] = useState(null);
+
   const handleUpdate = async () => {
     setError('');
     setMensaje('');
+    setRecalculoResult(null); // Reset
+
     if (!estaBalanceado) {
       setError('El documento no está balanceado.');
       return;
@@ -190,6 +200,24 @@ export default function DetalleDocumentoPage() {
       setMensaje('¡Documento actualizado exitosamente!');
       setDocumentoOriginal(res.data);
 
+      // --- DETECCION RECALCULO INTELIGENTE ---
+      // Detectar si es un documento de PH (Recibo o Factura) asociado a una unidad
+      // Necesitamos la unidad_ph_id. Si el doc tiene unidad_ph_id o si se puede inferir.
+      // El endpoint de update retorna el documento con unidad_ph_id si la tiene.
+
+      const docUpdated = res.data;
+      if (docUpdated.unidad_ph_id) {
+        const fechaDoc = new Date(payload.fecha);
+        const hoy = new Date();
+        const mesDoc = new Date(fechaDoc.getFullYear(), fechaDoc.getMonth(), 1);
+        const mesActual = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+
+        if (mesDoc < mesActual) {
+          setRecalculoData({ unidad_id: docUpdated.unidad_ph_id, fecha: payload.fecha });
+          setShowRecalculoModal(true);
+        }
+      }
+
     } catch (err) {
       const detail = err.response?.data?.detail;
       if (typeof detail === 'string') {
@@ -199,6 +227,21 @@ export default function DetalleDocumentoPage() {
       }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleRecalcular = async () => {
+    if (!recalculoData) return;
+    setRecalculando(true);
+    try {
+      const res = await phService.recalcularIntereses(recalculoData.unidad_id, recalculoData.fecha);
+      setRecalculoResult(res);
+      setMensaje(`¡Documento actualizado y se ajustaron ${res.actualizadas} facturas posteriores!`);
+      setTimeout(() => setShowRecalculoModal(false), 3000);
+    } catch (err) {
+      alert("Error recalculando: " + (err.response?.data?.detail || err.message));
+    } finally {
+      setRecalculando(false);
     }
   };
 
@@ -371,6 +414,46 @@ export default function DetalleDocumentoPage() {
           >
             {isSubmitting ? 'Guardando Cambios...' : 'Guardar Cambios'}
           </button>
+        </div>
+      )}
+
+      {/* MODAL RECALCULO */}
+      {showRecalculoModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 animate-scaleIn border-t-4 border-indigo-500">
+            <div className="flex items-center gap-3 mb-4 text-indigo-700">
+              <div className="text-3xl">⚠️</div>
+              <h3 className="text-xl font-bold">¡Edición Retroactiva Detectada!</h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Has modificado un documento con fecha anterior a este mes. Es posible que existan facturas posteriores con intereses de mora calculados sobre el saldo antiguo.
+              <br /><br />
+              <strong>¿Deseas recalcular automáticamente los intereses de las facturas futuras?</strong>
+            </p>
+
+            {recalculoResult ? (
+              <div className="bg-green-100 text-green-700 p-3 rounded mb-4">
+                <strong>¡Listo!</strong> Se actualizaron {recalculoResult.actualizadas} facturas.
+              </div>
+            ) : (
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowRecalculoModal(false)}
+                  className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg font-bold"
+                  disabled={recalculando}
+                >
+                  No, dejar así
+                </button>
+                <button
+                  onClick={handleRecalcular}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-lg flex items-center gap-2"
+                  disabled={recalculando}
+                >
+                  {recalculando ? 'Procesando...' : 'SÍ, RECALCULAR INTERESES'}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

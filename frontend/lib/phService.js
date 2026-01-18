@@ -92,8 +92,12 @@ export const phService = {
         return response.data;
     },
 
-    generarFacturacionMasiva: async (fecha, conceptosIds = []) => {
-        const response = await apiService.post('/ph/facturacion/masiva', { fecha, conceptos_ids: conceptosIds });
+    generarFacturacionMasiva: async (fecha, conceptosIds = [], configuracionConceptos = []) => {
+        const response = await apiService.post('/ph/facturacion/masiva', {
+            fecha,
+            conceptos_ids: conceptosIds,
+            configuracion_conceptos: configuracionConceptos
+        });
         return response.data;
     },
 
@@ -161,6 +165,14 @@ export const phService = {
     // --- UTILIDADES ---
     getTiposDocumento: async () => {
         const response = await apiService.get('/tipos-documento/');
+        return response.data;
+    },
+
+    recalcularIntereses: async (unidadId, fechaPago) => {
+        const response = await apiService.post('/ph/facturacion/recalcular-intereses', {
+            unidad_id: unidadId,
+            fecha_pago: fechaPago
+        });
         return response.data;
     }
 };

@@ -43,7 +43,13 @@ def read_tipos_documento(
     [FIX] Obtiene la lista COMPLETA de tipos de documento.
     """
     # [FIX] Ahora llama a la función renombrada 'get_tipos_documento'
-    return service.get_tipos_documento(db, empresa_id=current_user.empresa_id, skip=skip, limit=limit)
+    docs = service.get_tipos_documento(db, empresa_id=current_user.empresa_id, skip=skip, limit=limit)
+    try:
+        with open("c:\\ContaPY2\\debug_types.log", "a") as f:
+            f.write(f"User: {current_user.email}, Emp: {current_user.empresa_id}, Found: {len(docs)}\n")
+    except:
+        pass
+    return docs
 # ##################################################################
 # ########### FIN DE LA CORRECCIÓN DEFINITIVA ###########
 # ##################################################################

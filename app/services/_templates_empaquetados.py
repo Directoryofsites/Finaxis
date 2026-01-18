@@ -3,6 +3,321 @@
 # No editar este archivo manualmente. Ejecutar precompile_templates.py para actualizar.
 
 TEMPLATES_EMPAQUETADOS = {
+    'reports/detalle_facturacion_report.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Detalle de Facturación PH</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 10px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { font-size: 16px; margin: 0; }
+        .header h2 { font-size: 12px; font-weight: normal; margin: 5px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+        th { background-color: #f2f2f2; font-weight: bold; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .total-row td { background-color: #e6f3ff; font-weight: bold; }
+        .badge { padding: 2px 5px; border-radius: 3px; font-size: 9px; color: white; }
+        .bg-green { background-color: #2da44e; }
+        .bg-gray { background-color: #6e7781; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <h2>NIT: {{ empresa.nit }}</h2>
+        {% if empresa.direccion or empresa.telefono %}
+        <p style="margin: 2px 0; font-size: 9px; color: #555;">{{ empresa.direccion }} | Tel: {{ empresa.telefono }}</p>
+        {% endif %}
+        <h3>Detalle de Facturación - Periodo {{ periodo }}</h3>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 10%">Factura</th>
+                <th style="width: 10%">Fecha</th>
+                <th style="width: 25%">Tercero / Propietario</th>
+                <th style="width: 25%">Concepto / {{ labels.entidad_secundaria_short }}</th>
+                <th style="width: 15%" class="text-right">Total</th>
+                <th style="width: 10%" class="text-center">Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.consecutivo }}</td>
+                <td>{{ item.fecha }}</td>
+                <td>
+                    <strong>{{ item.tercero_nombre }}</strong><br>
+                    <span style="color: #666; font-size: 9px">{{ item.tercero_nit }}</span>
+                </td>
+                <td>{{ item.detalle }}
+                    {% if item.sub_items %}
+                        <div style="margin-top: 4px; padding-left: 10px; font-size: 8px; color: #555;">
+                            {% for sub in item.sub_items %}
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                                <span>{{ sub.nombre }}</span>
+                                <span style="font-family: monospace;">${{ "{:,.0f}".format(sub.valor) }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </td>
+                <td class="text-right">${{ "{:,.0f}".format(item.total) }}</td>
+                <td class="text-center">
+                    {% if item.anulado %}
+                        <span class="badge bg-gray">ANULADA</span>
+                    {% else %}
+                        <span class="badge bg-green">ACTIVA</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td colspan="4" class="text-right">TOTAL PERIODO</td>
+                <td class="text-right">${{ "{:,.0f}".format(total_periodo) }}</td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
+    
+    <div style="margin-top: 20px; text-align: center; color: #888; font-size: 9px;">
+        Generado automáticamente por el Sistema Finaxis
+    </div>
+</body>
+</html>
+    ''',
+    'reports/estado_cuenta_ph_historico_report.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Estado de Cuenta Histórico</title>
+    <style>
+        body { font-family: 'Helvetica', Arial, sans-serif; font-size: 10px; color: #333; }
+        .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #004085; padding-bottom: 10px; }
+        .header h1 { font-size: 18px; margin: 0; color: #004085; text-transform: uppercase; }
+        .header h2 { font-size: 12px; font-weight: normal; margin: 5px 0; color: #555; }
+        .company-data { font-size: 9px; color: #777; margin-top: 3px; }
+        
+        .client-info { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px; margin-bottom: 20px; }
+        .client-info table { width: 100%; border: none; margin: 0; }
+        .client-info td { border: none; padding: 2px; }
+        .label { font-weight: bold; color: #004085; width: 120px; }
+
+        .main-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .main-table th, .main-table td { border: 1px solid #dee2e6; padding: 8px; text-align: left; }
+        .main-table th { background-color: #004085; color: white; font-weight: bold; text-align: center; text-transform: uppercase; font-size: 9px; }
+        
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .text-green { color: #28a745; }
+        
+        .sub-items { margin-top: 5px; padding: 5px; background-color: #fdfdfe; border-left: 2px solid #17a2b8; font-size: 9px; color: #555; }
+        .sub-row { display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 2px 0; }
+        .sub-row:last-child { border-bottom: none; }
+
+        .total-row td { background-color: #e9ecef; font-weight: bold; font-size: 11px; }
+        .balance-final { font-size: 14px; color: #004085; }
+
+        .footer { margin-top: 30px; text-align: center; font-size: 8px; color: #999; border-top: 1px solid #eee; padding-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <h2>NIT: {{ empresa.nit }}</h2>
+        {% if empresa.direccion or empresa.telefono %}
+        <div class="company-data">{{ empresa.direccion }} | Tel: {{ empresa.telefono }}</div>
+        {% endif %}
+        <h3 style="margin: 10px 0 0 0; font-size: 14px; color: #333;">{{ labels.titulo_reporte_historico }}</h3>
+    </div>
+
+    <div class="client-info">
+        <table>
+            <tr>
+                <td class="label">{{ labels.entidad_principal }}:</td>
+                <td>{{ propietario.nombre }}</td>
+                <td class="label">IDENTIFICACIÓN:</td>
+                <td>{{ propietario.documento }}</td>
+            </tr>
+            <tr>
+                <td class="label">{{ labels.entidad_secundaria }}:</td>
+                <td><strong>{{ unidad_codigo }}</strong></td>
+                <td class="label">FECHA IMPRESIÓN:</td>
+                <td>{{ fecha_impresion }}</td>
+            </tr>
+            <tr>
+                <td class="label">PERIODO:</td>
+                <td colspan="3">Del {{ fecha_inicio }} al {{ fecha_fin }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <table class="main-table">
+        <thead>
+            <tr>
+                <th style="width: 12%">Fecha</th>
+                <th style="width: 15%">Documento</th>
+                <th style="width: 35%">Detalle / Conceptos</th>
+                <th style="width: 12%">Cargos</th>
+                <th style="width: 12%">Pagos/Abonos</th>
+                <th style="width: 14%">Saldo</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Saldo Anterior -->
+             <tr style="background-color: #f2f2f2; font-weight: bold;">
+                <td colspan="5" class="text-right">SALDO ANTERIOR AL PERIODO</td>
+                <td class="text-right">${{ "{:,.0f}".format(saldo_anterior) }}</td>
+            </tr>
+
+            {% for item in transacciones %}
+            <tr>
+                <td>{{ item.fecha }}</td>
+                <td class="text-center" style="font-weight: bold; font-family: monospace;">{{ item.documento }}</td>
+                <td>
+                    {% if item.unidad_codigo %}
+                      <div style="font-size: 9px; color: #0056b3; font-weight: bold; margin-bottom: 2px;">
+                          [{{ labels.entidad_secundaria_short }}: {{ item.unidad_codigo }}]
+                      </div>
+                    {% endif %}
+                    <div style="font-weight: bold; color: #333;">{{ item.observacion_header }}</div>
+                    {% if item.sub_items %}
+                        <div class="sub-items">
+                            {% for sub in item.sub_items %}
+                            <div class="sub-row">
+                                <span>{{ sub.concepto }}</span>
+                                <span>${{ "{:,.0f}".format(sub.valor) }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </td>
+                <td class="text-right">
+                    {% if item.debito > 0 %}
+                        ${{ "{:,.0f}".format(item.debito) }}
+                    {% else %} - {% endif %}
+                </td>
+                <td class="text-right text-green">
+                    {% if item.credito > 0 %}
+                        ${{ "{:,.0f}".format(item.credito) }}
+                    {% else %} - {% endif %}
+                </td>
+                <td class="text-right" style="font-weight: bold; background-color: #fafafa;">
+                    ${{ "{:,.0f}".format(item.saldo_acumulado) }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td colspan="5" class="text-right">SALDO FINAL A LA FECHA</td>
+                <td class="text-right balance-final">${{ "{:,.0f}".format(saldo_final) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="footer">
+        Este documento es un extracto informativo y no constituye un paz y salvo definitivo sin sello de tesorería.<br>
+        Generado el {{ fecha_impresion }} por Finaxis.
+    </div>
+</body>
+</html>
+    ''',
+    'reports/estado_cuenta_ph_pendientes_report.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Relación de Cobro</title>
+    <style>
+        body { font-family: 'Helvetica', Arial, sans-serif; font-size: 11px; color: #333; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #dc3545; padding-bottom: 15px; }
+        .header h1 { font-size: 20px; margin: 0; color: #dc3545; text-transform: uppercase; }
+        .header h2 { font-size: 12px; margin: 5px 0; color: #555; }
+        
+        .summary-box { 
+            background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; 
+            padding: 15px; text-align: center; margin: 20px auto; width: 60%; 
+            border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .summary-total { font-size: 24px; font-weight: bold; margin-top: 5px; color: #dc3545; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #343a40; color: white; font-weight: bold; text-align: center; }
+        .text-right { text-align: right; }
+        
+        .client-info { margin-bottom: 20px; font-size: 12px; }
+        .client-info span { font-weight: bold; display: inline-block; width: 100px; }
+
+        .footer { margin-top: 40px; text-align: center; font-size: 9px; color: #777; border-top: 1px solid #eee; padding-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <h2>NIT: {{ empresa.nit }}</h2>
+        <h3 style="margin-top: 15px; color: #333;">{{ labels.titulo_reporte_cobro }}</h3>
+    </div>
+
+    <div class="client-info">
+        <div><span>{{ labels.entidad_principal }}:</span> {{ propietario.nombre }}</div>
+        <div><span>IDENTIFICACIÓN:</span> {{ propietario.documento }}</div>
+        <div><span>{{ labels.entidad_secundaria_short }}:</span> <strong>{{ unidad_codigo }}</strong></div>
+        <div><span>FECHA CORTE:</span> {{ fecha_impresion }}</div>
+    </div>
+
+    <div class="summary-box">
+        <div>TOTAL A PAGAR A LA FECHA</div>
+        <div class="summary-total">${{ "{:,.0f}".format(total_pendiente) }}</div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha Emisión</th>
+                <th>Documento</th>
+                <th>Concepto / {{ labels.entidad_secundaria_short }}</th>
+                <th>Valor Original</th>
+                <th>Saldo Pendiente</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td style="text-align: center;">{{ item.fecha_fmt }}</td>
+                <td style="text-align: center; font-weight: bold;">{{ item.numero }}</td>
+                <td>{{ item.unidad_codigo }} ({{ item.tipo }})</td>
+                <td class="text-right" style="color: #777;">${{ "{:,.0f}".format(item.valor_total) }}</td>
+                <td class="text-right" style="font-weight: bold; color: #dc3545;">
+                    ${{ "{:,.0f}".format(item.saldo_pendiente) }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr style="background-color: #f8f9fa; font-weight: bold;">
+                <td colspan="4" class="text-right">TOTAL CARTERA PENDIENTE</td>
+                <td class="text-right" style="font-size: 14px;">${{ "{:,.0f}".format(total_pendiente) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="footer">
+        Por favor realizar el pago antes de la fecha límite para evitar intereses de mora.<br>
+        {{ empresa.direccion }} | {{ empresa.telefono }}
+    </div>
+</body>
+</html>
+    ''',
     'reports/ventas_cliente_report.html': r'''
 <!DOCTYPE html>
 <html lang="es">

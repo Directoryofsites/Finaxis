@@ -12,12 +12,14 @@ class PHConfiguracionBase(BaseModel):
     descuento_pronto_pago: float = Field(default=0.0, ge=0)
     mensaje_factura: Optional[str] = None
     tipo_documento_factura_id: Optional[int] = None
-    # Duplicate line removed in cleanup, keeping one
     tipo_documento_recibo_id: Optional[int] = None
+    tipo_documento_mora_id: Optional[int] = None # Nuevo
     cuenta_cartera_id: Optional[int] = None
+    cuenta_caja_id: Optional[int] = None
     cuenta_caja_id: Optional[int] = None
     cuenta_ingreso_intereses_id: Optional[int] = None
     interes_mora_habilitado: bool = True
+    tipo_negocio: str = 'PH_RESIDENCIAL' # Nuevo campo
 
 class PHConfiguracionUpdate(PHConfiguracionBase):
     pass
