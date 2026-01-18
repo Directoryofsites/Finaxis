@@ -1,13 +1,16 @@
 'use client';
+// Force reload
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { phService } from '../../../../lib/phService';
+import { useRecaudos } from '../../../../contexts/RecaudosContext'; // IMPORT
 
 import { FaLayerGroup, FaPlus, FaEdit, FaTrash, FaSave, FaTimes } from 'react-icons/fa';
 
 export default function ModulosConfigPage() {
     const { user } = useAuth();
+    const { labels } = useRecaudos(); // HOOK
     const [modulos, setModulos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -96,18 +99,127 @@ export default function ModulosConfigPage() {
                                 <div className="p-2 bg-purple-100 rounded-lg text-purple-600"><FaLayerGroup /></div>
                                 Módulos de Contribución
                             </h1>
-                            <p className="text-sm text-gray-500">Define sectores para cobros diferenciados (PH Mixta)</p>
+                            <p className="text-sm text-gray-500">Define sectores para cobros diferenciados.</p>
                         </div>
                     </div>
                 </div>
 
                 {/* INFO CARD */}
-                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-r-lg">
-                    <p className="text-sm text-blue-700">
-                        <strong>¿Para qué sirve esto?</strong> Aquí defines grupos de unidades que pagan gastos específicos.
-                        <br />Ejemplos: <em>"Sector Comercial"</em> (Solo locales), <em>"Torre A"</em> (Solo aptos Torre A), <em>"Parqueaderos"</em>.
-                        <br />Luego, asigna cada unidad a sus respectivos módulos en el menú de Unidades.
-                    </p>
+                <div className="bg-white border-l-4 border-indigo-600 p-8 mb-8 rounded-r-xl shadow-lg">
+                    {/* ENCABEZADO */}
+                    <div className="flex items-start gap-4 mb-6">
+                        <div className="p-3 bg-indigo-100 rounded-full text-indigo-700 mt-1">
+                            <FaLayerGroup className="text-2xl" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-1">
+                                Guía Maestra: Módulos de Contribución
+                            </h3>
+                            <p className="text-gray-600 text-sm leading-relaxed max-w-2xl">
+                                Los módulos son el corazón de la facturación inteligente. Permiten agrupar a tus miembros para aplicar cobros masivos y diferenciados. No importa tu negocio, la lógica es la misma: <strong>Agrupa para no cobrar uno por uno.</strong>
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* SECCION DE EJEMPLOS RICOS */}
+                    <div className="bg-indigo-50/50 rounded-xl p-6 border border-indigo-100 mb-8">
+                        <h4 className="text-sm font-bold text-indigo-900 uppercase tracking-wide mb-4">
+                            💡 Ejemplos Prácticos por Tipo de Negocio
+                        </h4>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="text-xs text-indigo-500 uppercase font-bold border-b border-indigo-200">
+                                    <tr>
+                                        <th className="pb-2 pr-4">Si tu negocio es...</th>
+                                        <th className="pb-2 pr-4">Tus Módulos podrían ser...</th>
+                                        <th className="pb-2">¿Para qué sirve?</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-gray-700 divide-y divide-indigo-100">
+                                    <tr>
+                                        <td className="py-3 pr-4 font-medium text-indigo-900">Propiedad Horizontal</td>
+                                        <td className="py-3 pr-4"><span className="bg-white border px-2 py-1 rounded text-xs">Torre A</span> <span className="bg-white border px-2 py-1 rounded text-xs">Locales</span> <span className="bg-white border px-2 py-1 rounded text-xs">Parqueaderos</span></td>
+                                        <td className="py-3 text-xs">Para cobrar expensas diferentes a apartamentos vs. locales.</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="py-3 pr-4 font-medium text-indigo-900">Colegio / Instituto</td>
+                                        <td className="py-3 pr-4"><span className="bg-white border px-2 py-1 rounded text-xs">Primaria</span> <span className="bg-white border px-2 py-1 rounded text-xs">Bachillerato</span> <span className="bg-white border px-2 py-1 rounded text-xs">Extracurriculares</span></td>
+                                        <td className="py-3 text-xs">Bachillerato paga una pensión más alta que Primaria.</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="py-3 pr-4 font-medium text-indigo-900">Transporte</td>
+                                        <td className="py-3 pr-4"><span className="bg-white border px-2 py-1 rounded text-xs">Taxis</span> <span className="bg-white border px-2 py-1 rounded text-xs">Busetas</span> <span className="bg-white border px-2 py-1 rounded text-xs">Vans VIP</span></td>
+                                        <td className="py-3 text-xs">Cada tipo de vehículo paga un rodamiento distinto.</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="py-3 pr-4 font-medium text-indigo-900">Club Social</td>
+                                        <td className="py-3 pr-4"><span className="bg-white border px-2 py-1 rounded text-xs">Socio Platinum</span> <span className="bg-white border px-2 py-1 rounded text-xs">Socio Regular</span> <span className="bg-white border px-2 py-1 rounded text-xs">Invitados</span></td>
+                                        <td className="py-3 text-xs">Los socios Platinum tienen cuotas más altas pero más servicios.</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="py-3 pr-4 font-medium text-indigo-900">Parqueadero</td>
+                                        <td className="py-3 pr-4"><span className="bg-white border px-2 py-1 rounded text-xs">Carros</span> <span className="bg-white border px-2 py-1 rounded text-xs">Motos</span> <span className="bg-white border px-2 py-1 rounded text-xs">Bicicletas</span></td>
+                                        <td className="py-3 text-xs">Las motos pagan mensualidad diferente a los carros.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {/* DIFERENCIA CON CONCEPTOS */}
+                        <div>
+                            <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                <span className="w-6 h-6 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-xs">A</span>
+                                Diferencia Vital
+                            </h4>
+                            <div className="space-y-3 bg-gray-50 p-4 rounded-lg text-sm border border-gray-100">
+                                <div className="flex gap-3">
+                                    <div className="mt-1 min-w-[80px]">
+                                        <span className="font-bold bg-indigo-100 text-indigo-700 px-2 rounded text-xs py-1">MÓDULO</span>
+                                    </div>
+                                    <p className="text-gray-600">
+                                        <strong>Define QUIÉN eres.</strong> Es tu etiqueta de grupo. <br />
+                                        <em>"Soy un Estudiante de Primaria"</em>
+                                    </p>
+                                </div>
+                                <div className="flex gap-3">
+                                    <div className="mt-1 min-w-[80px]">
+                                        <span className="font-bold bg-green-100 text-green-700 px-2 rounded text-xs py-1">CONCEPTO</span>
+                                    </div>
+                                    <p className="text-gray-600">
+                                        <strong>Define QUÉ pagas.</strong> Es la factura que recibes. <br />
+                                        <em>"Pago la Pensión de Marzo"</em>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* WORKFLOW */}
+                        <div>
+                            <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                <span className="w-6 h-6 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-xs">B</span>
+                                Flujo de Configuración
+                            </h4>
+                            <ol className="relative border-l border-gray-200 ml-3 space-y-6">
+                                <li className="ml-6">
+                                    <span className="absolute flex items-center justify-center w-6 h-6 bg-indigo-100 rounded-full -left-3 ring-4 ring-white text-xs font-bold text-indigo-600">1</span>
+                                    <h3 className="font-bold text-gray-900 text-sm">Crea los Módulos</h3>
+                                    <p className="text-xs text-gray-500">Hazlo aquí. Define tantos grupos como necesites (Ej: "Motos", "Carros").</p>
+                                </li>
+                                <li className="ml-6">
+                                    <span className="absolute flex items-center justify-center w-6 h-6 bg-indigo-100 rounded-full -left-3 ring-4 ring-white text-xs font-bold text-indigo-600">2</span>
+                                    <h3 className="font-bold text-gray-900 text-sm">Asigna los Miembros</h3>
+                                    <p className="text-xs text-gray-500">Ve a tu maestro de clientes/activos y asígnales su módulo correspondiente.</p>
+                                </li>
+                                <li className="ml-6">
+                                    <span className="absolute flex items-center justify-center w-6 h-6 bg-indigo-100 rounded-full -left-3 ring-4 ring-white text-xs font-bold text-indigo-600">3</span>
+                                    <h3 className="font-bold text-gray-900 text-sm">Crea el Cobro</h3>
+                                    <p className="text-xs text-gray-500">Ve a "Conceptos de Facturación" y di: "El módulo Motos paga $50.000".</p>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -211,7 +323,7 @@ export default function ModulosConfigPage() {
                                     value={formData.tipo_distribucion}
                                     onChange={(e) => setFormData({ ...formData, tipo_distribucion: e.target.value })}
                                 >
-                                    <option value="COEFICIENTE">Por Coeficiente (Recomendado)</option>
+                                    <option value="COEFICIENTE">Por {labels.coeficiente} (Recomendado)</option>
                                     <option value="IGUALITARIO">Igualitario (Todos pagan lo mismo)</option>
                                 </select>
                                 <p className="text-xs text-gray-500 mt-1">

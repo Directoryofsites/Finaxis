@@ -1,6 +1,7 @@
 from typing import List, Dict, Any
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import and_, func, select, or_
+from datetime import date
 
 from ..models import PlanCuenta as models_plan
 from ..models import Documento as models_doc
@@ -36,11 +37,24 @@ def get_cuentas_especiales_ids(db: Session, empresa_id: int, tipo: str) -> List[
     # Obtener configuración de prefijos de la empresa
     empresa = db.query(models_empresa).filter(models_empresa.id == empresa_id).first()
 
-    # --- INTEGRACION PH: Verificar si hay cuenta centralizada de Carter ---
+    # --- INTEGRACION PH: Verificar si hay cuenta centralizada de Cartera ---
     # Esto asegura que la cuenta 16 (o cualquiera) configurada en PH sea reconocida como CXC
     ph_config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
     ph_cuenta_cartera_id = ph_config.cuenta_cartera_id if ph_config else None
     
+    # --- INTEGRACION PH: CONCEPTOS CON CUENTAS PROPIAS ---
+    # Si un concepto tiene su propia cuenta CXC (ej: 1399 Multas), debemos incluirla
+    # o de lo contrario la factura parecerá tener saldo 0.
+    from ..models.propiedad_horizontal import PHConcepto
+    conceptos_cxc = db.query(PHConcepto.cuenta_cxc_id).filter(
+        PHConcepto.empresa_id == empresa_id,
+        PHConcepto.cuenta_cxc_id.isnot(None)
+    ).all()
+    
+    for row in conceptos_cxc:
+        if row.cuenta_cxc_id:
+            cuentas_ids.add(row.cuenta_cxc_id)
+
     # Lógica flexible para CXC:
     # En PH y otros negocios, la cartera puede ser 13, 14, 16, etc.
     # El problema original era que incluía la 11 (Caja) y los recibos sumaban deuda.
@@ -235,7 +249,7 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
         db.rollback()
         raise e
             
-def get_facturas_pendientes_por_tercero(db: Session, tercero_id: int, empresa_id: int, unidad_ph_id: int = None):
+def get_facturas_pendientes_por_tercero(db: Session, tercero_id: int, empresa_id: int, unidad_ph_id: int = None, fecha_corte: date = None):
     cuentas_cxc_ids = get_cuentas_especiales_ids(db, empresa_id, 'cxc')
     if not cuentas_cxc_ids:
         return []
@@ -249,12 +263,19 @@ def get_facturas_pendientes_por_tercero(db: Session, tercero_id: int, empresa_id
         models_mov.cuenta_id.in_(cuentas_cxc_ids) 
     ).group_by(models_mov.documento_id).subquery()
 
-    subquery_valor_aplicado = db.query(
+    # Construir query base para pagos aplicados
+    q_pagos = db.query(
         models_aplica.documento_factura_id.label("documento_id"),
         func.sum(models_aplica.valor_aplicado).label("total_aplicado")
     ).join(models_doc, models_aplica.documento_pago_id == models_doc.id).filter(
         models_doc.anulado == False
-    ).group_by(models_aplica.documento_factura_id).subquery()
+    )
+    
+    # [NUEVO] Filtro de fecha de corte para ver el pasado
+    if fecha_corte:
+        q_pagos = q_pagos.filter(models_doc.fecha <= fecha_corte)
+        
+    subquery_valor_aplicado = q_pagos.group_by(models_aplica.documento_factura_id).subquery()
 
     query = db.query(
         models_doc.id, models_doc.numero, models_doc.fecha, models_doc.fecha_vencimiento,
@@ -272,6 +293,10 @@ def get_facturas_pendientes_por_tercero(db: Session, tercero_id: int, empresa_id
         models_doc.anulado == False,
         subquery_valor_total.c.valor_total > func.coalesce(subquery_valor_aplicado.c.total_aplicado, 0)
     )
+    
+    # DEBUG SPY
+    # print(f"DEBUG CARTERA: Buscando pendientes para Tercero {tercero_id} (Unidad {unidad_ph_id})")
+    # print(f"DEBUG CARTERA: Cuentas CXC IDs usadas: {cuentas_cxc_ids}")
 
     if unidad_ph_id:
         query = query.filter(models_doc.unidad_ph_id == unidad_ph_id)

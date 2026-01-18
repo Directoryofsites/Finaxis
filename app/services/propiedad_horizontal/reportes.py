@@ -44,6 +44,34 @@ def get_movimientos_ph_report(
      .outerjoin(PHUnidad, Documento.unidad_ph_id == PHUnidad.id)\
      .outerjoin(Tercero, Documento.beneficiario_id == Tercero.id)
 
+    # --- FILTRO MAESTRO: SOLO CUENTAS POR COBRAR (CARTERA) ---
+    # Para el "Extracto de Cuenta", solo nos interesan los movimientos de las cuentas 13xx (Cartera)
+    # Obtenemos las cuentas configuradas en PHConfiguracion y/o las cuentas de CXC de los Tipos Doc.
+    
+    config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
+    ids_cartera = set()
+    
+    if config:
+        if config.cuenta_cartera_id: ids_cartera.add(config.cuenta_cartera_id)
+        # if config.cuenta_intereses_id: ids_cartera.add(config.cuenta_intereses_id) # ELIMINADO: Campo no existe
+        
+        # Tambien buscamos cuentas cxc de los tipos de documento usados en PH
+        if config.tipo_documento_factura_id:
+             td = db.query(TipoDocumento).filter(TipoDocumento.id == config.tipo_documento_factura_id).first()
+             if td and td.cuenta_debito_cxc_id: ids_cartera.add(td.cuenta_debito_cxc_id)
+             
+    # Si no hay cuentas configuradas, intentamos fallback genérico a cuentas que empiecen por '13'
+    # pero es mas seguro usar las configuradas para no traer ruido.
+    
+    # Para asegurar que traemos TODO lo de cartera, vamos a filtrar donde la cuenta sea de tipo "Deudores" (13)
+    # OJO: Esto requiere joinear con PlanCuenta.
+    
+    from app.models.plan_cuenta import PlanCuenta
+    query = query.join(PlanCuenta, MovimientoContable.cuenta_id == PlanCuenta.id)
+    query = query.filter(PlanCuenta.codigo.like("13%")) # Convención estándar Colombia
+    
+    # ---------------------------------------------------------
+
     # Filtros Obligatorios
     query = query.filter(Documento.empresa_id == empresa_id)
     query = query.filter(Documento.estado.in_(['ACTIVO', 'PROCESADO']))
@@ -71,28 +99,32 @@ def get_movimientos_ph_report(
 
     # Filtro por Tipo de Movimiento (Facturas vs Recibos)
     if tipo_movimiento and tipo_movimiento in ['FACTURAS', 'RECIBOS']:
-        config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
         
         if config:
             if tipo_movimiento == 'FACTURAS':
                 if config.tipo_documento_factura_id:
                     query = query.filter(Documento.tipo_documento_id == config.tipo_documento_factura_id)
             elif tipo_movimiento == 'RECIBOS':
-                if config.tipo_documento_recibo_id:
-                    query = query.filter(Documento.tipo_documento_id == config.tipo_documento_recibo_id)
+                # Nota: Recibos no siempre tienen ID unico en config, podria ser cualquier comprobante
+                # Mejor filtrar por naturaleza: Facturas (Debito > 0), Recibos (Credito > 0) dentro de Cartera
+                if tipo_movimiento == 'FACTURAS':
+                     query = query.filter(MovimientoContable.debito > 0)
+                elif tipo_movimiento == 'RECIBOS':
+                     query = query.filter(MovimientoContable.credito > 0)
 
-    # Filtro Especial por Concepto de PH
-    # Si se selecciona un concepto PH, buscamos movimientos que afecten a la cuenta de ingreso asociada.
+
+    # Filtro Especial por Concepto de PH -> AHORA FILTRA POR DETALLE DE TEXTO O CONCEPTOS
     if concepto_id:
-        ph_concepto = db.query(PHConcepto).filter(
-            PHConcepto.id == concepto_id, 
-            PHConcepto.empresa_id == empresa_id
-        ).first()
-        
-        if ph_concepto and ph_concepto.cuenta_ingreso_id:
-            query = query.filter(MovimientoContable.cuenta_id == ph_concepto.cuenta_ingreso_id)
+        # Si el usuario filtra por concepto, buscamos en el texto del movimiento
+        # ya que ahora estamos filtrando solo cuentas de cartera.
+        ph_concepto = db.query(PHConcepto).filter(PHConcepto.id == concepto_id).first()
+        if ph_concepto:
+             query = query.filter(MovimientoContable.concepto.ilike(f"%{ph_concepto.nombre}%"))
 
-    # Ordenamiento
+    # Ordenamiento: Ascendente para poder calcular saldos correctamente (opcional)
+    # Pero el usuario pidió ver historial, usualmente Descendente. 
+    # Para saldos acumulados en frontend, es mejor Ascendente y luego reversear, o hacerlo desc desde saldo final.
+    # Mantendremos DESC como estaba.
     query = query.order_by(Documento.fecha.desc(), Documento.id.desc())
 
     results = query.all()

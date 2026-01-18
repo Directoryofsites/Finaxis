@@ -4,14 +4,15 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { phService } from '../../../lib/phService';
+import { useRecaudos } from '../../../contexts/RecaudosContext'; // IMPORT
 
 import { FaBuilding, FaPrint, FaMoneyBillWave, FaHistory, FaSearch, FaUserTie, FaReceipt, FaFileInvoiceDollar } from 'react-icons/fa';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+
 import AutocompleteInput from '../../components/AutocompleteInput';
 
 export default function EstadoCuentaPage() {
     const { user, loading: authLoading } = useAuth();
+    const { labels } = useRecaudos(); // HOOK
 
     // Modos
     const [searchMode, setSearchMode] = useState('UNIT'); // 'UNIT' | 'OWNER'
@@ -139,69 +140,52 @@ export default function EstadoCuentaPage() {
         resetData();
     };
 
-    const handlePrint = () => {
+    const handlePrint = async () => {
         if (!selectedId) return;
-        const doc = new jsPDF();
-        const title = viewMode === 'PENDING' ? "RELACIÓN DE COBRO (PENDIENTES)" : "ESTADO DE CUENTA (HISTÓRICO)";
 
-        // Header
-        doc.setFontSize(18);
-        doc.text(title, 105, 20, { align: 'center' });
+        try {
+            setLoading(true); // Mostrar loading mientras descarga
 
-        doc.setFontSize(12);
-        if (searchMode === 'UNIT') {
-            doc.text(`Unidad: ${selectedItem?.codigo} - ${selectedItem?.propietario_nombre || ''}`, 14, 35);
-        } else {
-            doc.text(`Propietario: ${selectedItem?.razon_social || ''}`, 14, 35);
+            // Construir Query Params
+            const params = new URLSearchParams({
+                mode: searchMode,
+                view: viewMode,
+            });
+            if (fechaInicio) params.append('fecha_inicio', fechaInicio);
+            if (fechaFin) params.append('fecha_fin', fechaFin);
+
+            // Obtener Token
+            const token = localStorage.getItem('authToken');
+
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ph/pagos/estado-cuenta/${selectedId}/pdf?${params.toString()}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || "Error al generar el PDF");
+            }
+
+            // Descargar Blob
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `EstadoCuenta_${searchMode}_${selectedId}_${viewMode}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+
+        } catch (error) {
+            console.error("Error downloading PDF:", error);
+            alert("No se pudo descargar el reporte: " + error.message);
+        } finally {
+            setLoading(false);
         }
-        doc.text(`Fecha Impresión: ${new Date().toLocaleDateString()}`, 14, 42);
-
-        // Resumen
-        if (resumen) {
-            doc.setFillColor(240, 240, 240);
-            doc.rect(14, 48, 180, 15, 'F');
-            doc.setFontSize(14);
-            doc.text(`Total a Pagar: $${parseFloat(resumen.saldo_total || 0).toLocaleString()}`, 105, 58, { align: 'center' });
-        }
-
-        // Tabla
-        let head = [];
-        let body = [];
-        let styles = {};
-
-        if (viewMode === 'PENDING') {
-            head = [['Fecha', 'Documento', 'Unidad', 'Total Doc', 'Saldo Pendiente']];
-            body = pendientes.map(p => [
-                new Date(p.fecha).toLocaleDateString(),
-                p.numero, // Mostrar numero doc
-                p.unidad_codigo || 'N/A',
-                `$${parseFloat(p.valor_total).toLocaleString()}`,
-                `$${parseFloat(p.saldo_pendiente).toLocaleString()}`
-            ]);
-            styles = { 4: { halign: 'right', fontStyle: 'bold' } };
-        } else {
-            head = [['Fecha', 'Doc', 'Detalle', 'Cargos', 'Pagos', 'Saldo']];
-            body = historial.map(h => [
-                new Date(h.fecha).toLocaleDateString(),
-                h.documento,
-                h.concepto,
-                h.debito > 0 ? `$${parseFloat(h.debito).toLocaleString()}` : '-',
-                h.credito > 0 ? `$${parseFloat(h.credito).toLocaleString()}` : '-',
-                `$${parseFloat(h.saldo).toLocaleString()}`
-            ]);
-            styles = { 5: { halign: 'right', fontStyle: 'bold' } };
-        }
-
-        autoTable(doc, {
-            startY: 70,
-            head: head,
-            body: body,
-            theme: 'grid',
-            headStyles: { fillColor: [63, 81, 181] },
-            columnStyles: styles
-        });
-
-        doc.save(`EstadoCuenta_${searchMode}_${new Date().toISOString().slice(0, 10)}.pdf`);
     };
 
     if (authLoading) return <div className="p-10 text-center">Cargando...</div>;
@@ -216,7 +200,7 @@ export default function EstadoCuentaPage() {
                                 <FaBuilding className="text-2xl" />
                             </div>
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-800">Centro de Consulta PH</h1>
+                                <h1 className="text-3xl font-bold text-gray-800">Centro de Consulta {labels.module}</h1>
                                 <p className="text-gray-500">Consulta integral de estados de cuenta y cartera.</p>
                             </div>
                         </div>
@@ -238,25 +222,25 @@ export default function EstadoCuentaPage() {
                         <label className={`flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg transition-all ${searchMode === 'UNIT' ? 'bg-blue-100 text-blue-700 font-bold' : 'hover:bg-gray-100 text-gray-600'}`}>
                             <input type="radio" name="mode" className="hidden"
                                 checked={searchMode === 'UNIT'} onChange={() => handleSearchModeChange('UNIT')} />
-                            <FaBuilding /> Por Unidad Privada
+                            <FaBuilding /> Por {labels.unidad}
                         </label>
                         <label className={`flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg transition-all ${searchMode === 'OWNER' ? 'bg-blue-100 text-blue-700 font-bold' : 'hover:bg-gray-100 text-gray-600'}`}>
                             <input type="radio" name="mode" className="hidden"
                                 checked={searchMode === 'OWNER'} onChange={() => handleSearchModeChange('OWNER')} />
-                            <FaUserTie /> Por Propietario (Agrupado)
+                            <FaUserTie /> Por {labels.propietario} (Agrupado)
                         </label>
                     </div>
 
                     {/* Autocomplete */}
                     <div className="relative">
                         <label className="block text-sm font-bold text-gray-700 mb-2">
-                            {searchMode === 'UNIT' ? 'Buscar Inmueble (Apto, Casa, Local...)' : 'Buscar Propietario (Nombre, Razón Social)'}
+                            {searchMode === 'UNIT' ? `Buscar ${labels.unidad}` : `Buscar ${labels.propietario} (Nombre, Razón Social)`}
                         </label>
                         {searchMode === 'UNIT' ? (
                             <AutocompleteInput
                                 items={unidades}
                                 value={selectedItem?.codigo || ''}
-                                placeholder="Escriba código de unidad..."
+                                placeholder={`Escriba código de ${labels.unidad}...`}
                                 searchKey="codigo"
                                 displayKey="codigo"
                                 onChange={(val) => {
@@ -301,7 +285,7 @@ export default function EstadoCuentaPage() {
                                     ${parseFloat(resumen.saldo_total || 0).toLocaleString()}
                                 </p>
                                 <p className="text-sm mt-1 opacity-70">
-                                    {searchMode === 'UNIT' ? `Unidad: ${selectedItem?.codigo}` : `Propietario: ${selectedItem?.razon_social}`}
+                                    {searchMode === 'UNIT' ? `${labels.unidad}: ${selectedItem?.codigo}` : `${labels.propietario}: ${selectedItem?.razon_social}`}
                                 </p>
                             </div>
 

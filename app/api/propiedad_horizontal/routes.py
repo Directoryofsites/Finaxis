@@ -52,9 +52,14 @@ def eliminar_modulo(
     return modulo_service.delete_modulo(db, id, current_user.empresa_id)
 
 # --- REQUEST SCHEMAS ---
+class ConceptoConfiguracion(BaseModel):
+    concepto_id: int
+    unidades_ids: List[int]
+
 class FacturacionMasivaRequest(BaseModel):
     fecha: date
     conceptos_ids: Optional[List[int]] = None
+    configuracion_conceptos: Optional[List[ConceptoConfiguracion]] = None
 
 class PagoRequest(BaseModel):
     unidad_id: int
@@ -148,6 +153,7 @@ def update_configuracion(
     print(f"DEBUG: update_configuracion called by user {current_user.id}. Payload: {config.dict()}")
     return configuracion_service.update_configuracion(db, current_user.empresa_id, config)
 
+
 # Rutas de Conceptos movidas a conceptos.py y gestionadas por configuracion_service en unidad_service.py o similar si fuera necesario.
 # Anteriormente estaban duplicadas aquí.
 
@@ -175,7 +181,8 @@ def generar_facturacion_masiva(
         empresa_id=current_user.empresa_id, 
         fecha_factura=payload.fecha,
         usuario_id=current_user.id,
-        conceptos_ids=payload.conceptos_ids
+        conceptos_ids=payload.conceptos_ids,
+        configuracion_conceptos=payload.configuracion_conceptos # Pasar nueva config
     )
     return resultado
 
@@ -222,6 +229,28 @@ def eliminar_facturacion_masiva(
     # periodo formato YYYY-MM
     return facturacion_service.eliminar_facturacion_masiva(db, current_user.empresa_id, periodo, current_user.id)
 
+# --- RECALCULO INTELIGENTE ---
+class RecalculoInteresesRequest(BaseModel):
+    unidad_id: int
+    fecha_pago: date
+
+@router.post("/facturacion/recalcular-intereses")
+def recalcular_intereses_endpoint(
+    payload: RecalculoInteresesRequest,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Recalcula intereses en facturas POSTERIORES a la fecha_pago.
+    """
+    return facturacion_service.recalcular_intereses_posteriores(
+        db, 
+        current_user.empresa_id, 
+        payload.unidad_id, 
+        payload.fecha_pago,
+        current_user.id
+    )
+
 # --- PAGOS Y TESORERIA ---
 @router.get("/pagos/estado-cuenta/{unidad_id}")
 def get_estado_cuenta(
@@ -237,6 +266,14 @@ def registrar_pago(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
+    """
+    Registra un pago y retorna:
+    {
+        "documento": {...},
+        "sugerir_recalculo": bool,
+        "facturas_futuras_count": int
+    }
+    """
     return pago_service.registrar_pago_unidad(
         db,
         unidad_id=payload.unidad_id,
@@ -303,6 +340,39 @@ def get_cartera_pendiente(
         unidad_id=unidad_id,
         propietario_id=propietario_id
     )
+
+@router.get("/pagos/estado-cuenta/{id}/pdf")
+def get_estado_cuenta_pdf(
+    id: int,
+    mode: str = 'UNIT', # 'UNIT' | 'OWNER'
+    view: str = 'PENDING', # 'PENDING' | 'HISTORY'
+    fecha_inicio: Optional[date] = None,
+    fecha_fin: Optional[date] = None,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Genera el PDF del Estado de Cuenta (Relación de Cobro o Histórico Detallado).
+    """
+    unidad_id = id if mode == 'UNIT' else None
+    propietario_id = id if mode == 'OWNER' else None
+    
+    pdf_content = pago_service.generar_pdf_estado_cuenta(
+        db, 
+        empresa_id=current_user.empresa_id,
+        unidad_id=unidad_id,
+        propietario_id=propietario_id,
+        view_mode=view,
+        fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin
+    )
+    
+    filename = f"EstadoCuenta_{mode}_{id}_{view}_{date.today()}.pdf"
+    
+    headers = {
+        'Content-Disposition': f'attachment; filename="{filename}"'
+    }
+    return Response(content=pdf_content, media_type="application/pdf", headers=headers)
 
 # --- REPORTES ---
 @router.post("/reportes/movimientos")

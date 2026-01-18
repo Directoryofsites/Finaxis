@@ -283,7 +283,102 @@ def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_
 
     new_doc = documento_service.create_documento(db, doc_create, user_id=usuario_id)
 
-    return new_doc
+    # --- 4. OPCIÓN 2: GENERACIÓN AUTOMÁTICA DE MORA (Late Payment Sanction) ---
+    # Si la fecha de pago supera el límite, generamos una Nota Débito automática.
+    if False and config.interes_mora_habilitado and config.dia_limite_pago: # DISABLED: Deferred Model (Cobro en Facturacion)
+        if fecha_pago.day > config.dia_limite_pago:
+            # Calcular Sanción
+            # Usamos el % configurado sobre el valor pagado como simplificación "Sanción por Extemporaneidad"
+            # Si hubiera un campo "valor_sancion_fija", lo usaríamos aquí.
+            tasa = config.interes_mora_mensual or 0
+            valor_sancion = monto * (tasa / 100.0)
+            
+            if valor_sancion > 0:
+                print(f"DEBUG: Pago Extemporáneo detectado (Día {fecha_pago.day} > {config.dia_limite_pago}). Generando ND por {valor_sancion}")
+                
+                # Buscar Tipo Doc para la Mora (ND)
+                # PRIORITY: Configurado explícitamente
+                tipo_nd = None
+                if config.tipo_documento_mora_id:
+                    tipo_nd = db.query(TipoDocumento).filter(TipoDocumento.id == config.tipo_documento_mora_id).first()
+                
+                # Fallback: Buscar por código 'ND'
+                if not tipo_nd:
+                    tipo_nd = db.query(TipoDocumento).filter(TipoDocumento.codigo == 'ND', TipoDocumento.empresa_id == empresa_id).first()
+                
+                # Fallback Global
+                if not tipo_nd:
+                     tipo_nd = db.query(TipoDocumento).filter(TipoDocumento.codigo == 'ND').first()
+                
+                if tipo_nd:
+                    # Cuentas para la Mora
+                    cta_cartera = cuenta_cartera_final # Aumenta la deuda (Misma cuenta del pago)
+                    cta_ingreso = config.cuenta_ingreso_intereses_id
+                    
+                    if not cta_ingreso:
+                        # Fallback: Usar cuenta credito del Tipo ND si existe
+                        cta_ingreso = tipo_nd.cuenta_credito_id
+                    
+                    if cta_cartera and cta_ingreso:
+                        movs_nd = [
+                            # Debito a Cartera (Aumenta la deuda del cliente)
+                            doc_schemas.MovimientoContableCreate(
+                                cuenta_id=cta_cartera,
+                                concepto=f"Sanción Mora ({tasa}% sobre ${monto:,.0f})",
+                                debito=valor_sancion,
+                                credito=0
+                            ),
+                            # Credito a Ingreso (Ganancia para la empresa)
+                            doc_schemas.MovimientoContableCreate(
+                                cuenta_id=cta_ingreso,
+                                concepto=f"Ingreso Mora ({tasa}% sobre ${monto:,.0f}) - {estado_cuenta['unidad']}",
+                                debito=0,
+                                credito=valor_sancion
+                            )
+                        ]
+                        
+                        doc_nd_create = doc_schemas.DocumentoCreate(
+                            empresa_id=empresa_id,
+                            tipo_documento_id=tipo_nd.id,
+                            numero=0,
+                            fecha=fecha_pago,
+                            beneficiario_id=estado_cuenta['propietario_id'],
+                            unidad_ph_id=unidad_id,
+                            observaciones=f"Sanción Mora ({tasa}% sobre ${monto:,.0f})",
+                            movimientos=movs_nd
+                        )
+                        documento_service.create_documento(db, doc_nd_create, user_id=usuario_id)
+                    else:
+                        print("WARN: No se pudo generar Mora Automática. Faltan cuentas contables (Cartera o Ingreso Intereses).")
+                else:
+                     print("WARN: No se pudo generar Mora Automática. Tipo Documento 'ND' no existe.")
+
+    # --- 5. DETECCIÓN DE NECESIDAD DE RECÁLCULO (Retroactivo) ---
+    sugerir_recalculo = False
+    try:
+        # Verificar si existen FACTURAS ACTIVAS posteriores a la fecha de este pago
+        # que podrían requerir recalculo de intereses.
+        facturas_futuras = db.query(Documento).join(TipoDocumento).filter(
+            Documento.empresa_id == empresa_id,
+            Documento.unidad_ph_id == unidad_id,
+            Documento.fecha > fecha_pago,
+            Documento.estado.in_(['ACTIVO', 'PROCESADO']),
+            TipoDocumento.codigo == 'FPH' # O el código que usen para facturas PH
+        ).count()
+        
+        if facturas_futuras > 0:
+            print(f"DEBUG: Pago retroactivo. Existen {facturas_futuras} facturas posteriores.")
+            sugerir_recalculo = True
+            
+    except Exception as e:
+        print(f"WARN: Error verificando facturas futuras: {e}")
+
+    # Retornamos estructura enriquecida (routes.py debe manejar esto)
+    return {
+        "documento": new_doc,
+        "sugerir_recalculo": sugerir_recalculo,
+        "facturas_futuras_count": facturas_futuras if 'facturas_futuras' in locals() else 0
+    }
 
 # --- NUEVOS SERVICIOS PARA VISTA CONSOLIDADA (Analysis Implementation) ---
 
@@ -495,3 +590,249 @@ def get_cartera_ph_pendientes(db: Session, empresa_id: int, unidad_id: int = Non
     formateado.sort(key=lambda x: x['fecha'])
         
     return formateado
+
+def generar_pdf_estado_cuenta(db: Session, empresa_id: int, unidad_id: int = None, propietario_id: int = None, view_mode: str = 'PENDING', fecha_inicio: date = None, fecha_fin: date = None):
+    from weasyprint import HTML
+    from jinja2 import Environment, select_autoescape
+    from app.services._templates_empaquetados import TEMPLATES_EMPAQUETADOS
+    from app.models.empresa import Empresa
+    from app.models.propiedad_horizontal.configuracion import PHConfiguracion
+
+    # 1. Obtener Datos Generales
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    
+    # Resolver Entidad Principal (Unidad o Propietario)
+    unidad_codigo = "N/A"
+    propietario_data = {"nombre": "Desconocido", "documento": ""}
+    
+    if unidad_id:
+        unidad = db.query(PHUnidad).filter(PHUnidad.id == unidad_id).first()
+        if unidad: 
+            unidad_codigo = unidad.codigo
+            if unidad.propietario_principal:
+                propietario_data = {
+                    "nombre": unidad.propietario_principal.razon_social,
+                    "documento": unidad.propietario_principal.nit
+                }
+    elif propietario_id:
+        from app.models.tercero import Tercero
+        prop = db.query(Tercero).filter(Tercero.id == propietario_id).first()
+        if prop:
+            propietario_data = {"nombre": prop.razon_social, "documento": prop.nit}
+            # Buscar unidades del propietario
+            units = db.query(PHUnidad).filter(PHUnidad.propietario_principal_id == propietario_id).all()
+            if units:
+                unidad_codigo = ", ".join([u.codigo for u in units])
+            else:
+                unidad_codigo = "VARIAS (Ver Detalle)"
+
+    
+    # 2. Selección de Modo y Datos y TERMINOLOGÍA
+    # Detectar Tipo de Negocio para etiquetas dinámicas
+    tipo_negocio = 'PH_RESIDENCIAL'
+    tipo_negocio = 'PH_RESIDENCIAL'
+    # Validar existencia de atributo en modelo Empresa (no existe actualmente)
+    if hasattr(empresa, 'tipo_negocio') and empresa.tipo_negocio: 
+         tipo_negocio = empresa.tipo_negocio
+    
+    # Buscar en PHConfiguracion si no está en Empresa
+    ph_config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
+    if ph_config:
+         tipo_negocio = ph_config.tipo_negocio
+         
+    # Definir Etiquetas
+    labels = {
+        "entidad_principal": "PROPIETARIO",
+        "entidad_secundaria": "UNIDAD / INMUEBLE",
+        "entidad_secundaria_short": "UNIDAD",
+        "titulo_reporte_historico": "ESTADO DE CUENTA - HISTÓRICO DETALLADO",
+        "titulo_reporte_cobro": "RELACIÓN DE COBRO (PENDIENTES)"
+    }
+    
+    if tipo_negocio == 'EDUCATIVO':
+        labels = {
+            "entidad_principal": "ACUDIENTE / TITULAR",
+            "entidad_secundaria": "ESTUDIANTE / GRADO",
+            "entidad_secundaria_short": "ESTUDIANTE",
+            "titulo_reporte_historico": "ESTADO DE CUENTA - GESTIÓN EDUCATIVA",
+            "titulo_reporte_cobro": "RELACIÓN DE COBRO - PENSIONES"
+        }
+
+    template_name = ""
+    context = {
+        "empresa": empresa,
+        "propietario": propietario_data,
+        "unidad_codigo": unidad_codigo,
+        "fecha_impresion": date.today().strftime('%Y-%m-%d'),
+        "labels": labels # IS NEW
+    }
+
+    if view_mode == 'PENDING':
+        # --- RELACION DE COBRO ---
+        items = get_cartera_ph_pendientes(
+            db, empresa_id, unidad_id=unidad_id, propietario_id=propietario_id
+        )
+        
+        # Reformatear para template
+        items_fmt = []
+        total_pendiente = 0
+        for i in items:
+            items_fmt.append({
+                "fecha_fmt": i['fecha'][:10],
+                "numero": i['numero'],
+                "tipo": i['tipo'],
+                "unidad_codigo": i['unidad_codigo'],
+                "valor_total": i['valor_total'],
+                "saldo_pendiente": i['saldo_pendiente']
+            })
+            total_pendiente += i['saldo_pendiente']
+            
+        context["items"] = items_fmt
+        context["total_pendiente"] = total_pendiente
+        template_name = 'reports/estado_cuenta_ph_pendientes_report.html'
+
+    elif view_mode == 'HISTORY':
+        # --- HISTORIAL DETALLADO ---
+        data_hist = get_historial_cuenta_ph_detailed(
+            db, empresa_id, unidad_id=unidad_id, propietario_id=propietario_id,
+            fecha_inicio=fecha_inicio, fecha_fin=fecha_fin
+        )
+        
+        context.update(data_hist)
+        # data_hist trae: transacciones, saldo_anterior, saldo_final, fecha_inicio, fecha_fin
+        
+        template_name = 'reports/estado_cuenta_ph_historico_report.html'
+    
+    else:
+        raise HTTPException(status_code=400, detail="Modo de vista inválido")
+
+    # 3. Renderizar PDF
+    if template_name not in TEMPLATES_EMPAQUETADOS:
+        raise HTTPException(status_code=500, detail=f"Plantilla {template_name} no encontrada.")
+
+    try:
+        env = Environment(loader=None, autoescape=select_autoescape(['html', 'xml']))
+        template = env.from_string(TEMPLATES_EMPAQUETADOS[template_name])
+        html_content = template.render(context)
+        return HTML(string=html_content).write_pdf()
+    except Exception as e:
+        print(f"ERROR GENERANDO PDF PH: {str(e)}")
+        # Fallback simple
+        return HTML(string=f"<h1>Error generando reporte</h1><p>{str(e)}</p>").write_pdf()
+
+def get_historial_cuenta_ph_detailed(db: Session, empresa_id: int, unidad_id: int = None, propietario_id: int = None, fecha_inicio: date = None, fecha_fin: date = None):
+    # 1. Calcular Saldo Anterior
+    saldo_anterior = 0
+    if fecha_inicio:
+        from datetime import timedelta
+        fecha_corte_saldo = fecha_inicio - timedelta(days=1)
+        # Reusamos la logica existente que acumula todo hasta una fecha
+        # OJO: get_historial_cuenta_unidad filtra movimientos por fecha, asi que debemos 
+        # pedirle todo hasta fecha_corte.
+        
+        # Para eficiencia, simplemente sumamos movimientos previos al inicio
+        # Clonamos logica basica de saldo:
+        # (Esto es un poco pesado pero seguro)
+        state_prev = get_historial_cuenta_unidad(
+            db, unidad_id, empresa_id, 
+            fecha_inicio=None, # Desde el principio de los tiempos
+            fecha_fin=fecha_corte_saldo,
+            propietario_id=propietario_id
+        )
+        saldo_anterior = state_prev['saldo_actual']
+    
+    # 2. Obtener Documentos del Periodo
+    query = db.query(Documento).options(
+        joinedload(Documento.tipo_documento),
+        joinedload(Documento.unidad_ph),
+        selectinload(Documento.movimientos).joinedload(MovimientoContable.cuenta)
+    ).filter(
+        Documento.empresa_id == empresa_id,
+        Documento.estado.in_(['ACTIVO', 'PROCESADO'])
+    )
+
+    if unidad_id: query = query.filter(Documento.unidad_ph_id == unidad_id)
+    if propietario_id: query = query.filter(Documento.beneficiario_id == propietario_id)
+    
+    if fecha_inicio: query = query.filter(Documento.fecha >= fecha_inicio)
+    if fecha_fin: query = query.filter(Documento.fecha <= fecha_fin)
+    
+    docs = query.order_by(Documento.fecha.asc(), Documento.id.asc()).all()
+    
+    # 3. Procesar Transacciones Detalladas
+    transacciones = []
+    saldo_acumulado = saldo_anterior
+    
+    cuentas_cxc_ids = cartera_service.get_cuentas_especiales_ids(db, empresa_id, 'cxc')
+    
+    for doc in docs:
+        # Calcular Total Documento (Impacto en Cartera)
+        debito_cxc = 0
+        credito_cxc = 0
+        
+        # Identificar Sub-Items (Conceptos que explican el documento)
+        sub_items = []
+        observacion_header = doc.observaciones or ""
+        
+        is_factura = False
+        
+        # Analisis de Movimientos
+        for mov in doc.movimientos:
+            if mov.cuenta_id in cuentas_cxc_ids:
+                debito_cxc += mov.debito
+                credito_cxc += mov.credito
+            else:
+                # Si NO es cuenta de cartera, es la contrapartida (Ingreso o Caja)
+                # Esto es lo que queremos mostrar en el detalle
+                
+                # Para facturas (CXC Debito > 0), mostramos movimientos CRÉDITO (Ingresos)
+                # Para recibos (CXC Credito > 0), mostramos movimientos DÉBITO (Caja) o simplificamos
+                
+                # Guardamos todos temporalmente
+                sub_items.append({
+                    "concepto": mov.concepto,
+                    "valor_debito": mov.debito,
+                    "valor_credito": mov.credito,
+                    "cuenta": mov.cuenta.nombre if mov.cuenta else ""
+                })
+
+        impacto_neto = debito_cxc - credito_cxc
+        
+        # Filtrar Sub-items visuales
+        visual_sub_items = []
+        if impacto_neto > 0 and len(sub_items) > 0: # ES UNA FACTURA (Cargo)
+            is_factura = True
+            # Mostrar Ingresos (Creditos)
+            for sub in sub_items:
+                if sub['valor_credito'] > 0:
+                    visual_sub_items.append({
+                        "concepto": sub['concepto'],
+                        "valor": sub['valor_credito']
+                    })
+        elif impacto_neto < 0: # ES UN PAGO (Abono)
+            # Generalmente no desglosamos recibos, o mostramos "Pago Caja..."
+            det_obs = doc.observaciones if doc.observaciones else ""
+            observacion_header = f"Pago Recibido - {det_obs}" if det_obs else "Pago Recibido"
+            # Opcional: Mostrar si hubo descuentos o multiples medios pago
+        
+        # Actualizar Saldo
+        saldo_acumulado += impacto_neto
+        
+        transacciones.append({
+            "fecha": doc.fecha.strftime('%Y-%m-%d'),
+            "documento": f"{doc.tipo_documento.codigo}-{doc.numero}",
+            "observacion_header": observacion_header,
+            "unidad_codigo": doc.unidad_ph.codigo if doc.unidad_ph else "", # NEW
+            "sub_items": visual_sub_items,
+            "debito": impacto_neto if impacto_neto > 0 else 0,
+            "credito": abs(impacto_neto) if impacto_neto < 0 else 0,
+            "saldo_acumulado": saldo_acumulado
+        })
+        
+    return {
+        "transacciones": transacciones,
+        "saldo_anterior": saldo_anterior,
+        "saldo_final": saldo_acumulado,
+        "fecha_inicio": fecha_inicio.strftime('%Y-%m-%d') if fecha_inicio else "Inicio",
+        "fecha_fin": fecha_fin.strftime('%Y-%m-%d') if fecha_fin else date.today().strftime('%Y-%m-%d')
+    }

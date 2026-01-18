@@ -8,9 +8,11 @@ import { FaUsers, FaBuilding, FaSearch, FaPhone, FaEnvelope, FaIdCard, FaFileExc
 
 import { useAuth } from '../../context/AuthContext';
 import { phService } from '../../../lib/phService';
+import { useRecaudos } from '../../../contexts/RecaudosContext'; // IMPORT
 
 export default function DirectorioPropietariosPage() {
     const { user, loading: authLoading } = useAuth();
+    const { labels } = useRecaudos(); // HOOK
     const [propietarios, setPropietarios] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -28,7 +30,7 @@ export default function DirectorioPropietariosPage() {
             setPropietarios(data);
         } catch (error) {
             console.error("Error cargando directorio:", error);
-            alert("Error al cargar el directorio de propietarios.");
+            alert("Error al cargar el directorio.");
         } finally {
             setLoading(false);
         }
@@ -52,13 +54,13 @@ export default function DirectorioPropietariosPage() {
             // Header
             doc.setFontSize(18);
             doc.setTextColor(40);
-            doc.text("Directorio de Propietarios - Propiedad Horizontal", 14, 22);
+            doc.text(`Directorio de ${labels.propietario}s - ${labels.module}`, 14, 22);
             doc.setFontSize(11);
             doc.setTextColor(100);
             doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 14, 30);
 
             // Table Data
-            const tableColumn = ["Propietario / Razón Social", "Identificación", "Teléfono", "Email", "Propiedades", "Coeficiente"];
+            const tableColumn = [`${labels.propietario} / Nombre`, "Identificación", "Teléfono", "Email", `${labels.unidad}s`, labels.coeficiente];
             const tableRows = propietariosFiltrados.map(p => [
                 p.razon_social || '',
                 p.numero_documento || '',
@@ -78,7 +80,7 @@ export default function DirectorioPropietariosPage() {
                 styles: { fontSize: 9 },
             });
 
-            doc.save(`directorio_propietarios_${new Date().toISOString().slice(0, 10)}.pdf`);
+            doc.save(`directorio_${labels.propietario.toLowerCase()}_${new Date().toISOString().slice(0, 10)}.pdf`);
         } catch (error) {
             console.error("Error exporting PDF:", error);
             alert("Error al generar el PDF. Por favor intente nuevamente.");
@@ -93,7 +95,6 @@ export default function DirectorioPropietariosPage() {
         <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                     <div>
                         <div className="flex items-center gap-3 mt-3">
@@ -101,8 +102,8 @@ export default function DirectorioPropietariosPage() {
                                 <FaUsers className="text-2xl" />
                             </div>
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-800">Directorio de Propietarios</h1>
-                                <p className="text-gray-500">Gestión unificada de propietarios y sus unidades inmobiliarias.</p>
+                                <h1 className="text-3xl font-bold text-gray-800">Directorio de {labels.propietario}s</h1>
+                                <p className="text-gray-500">Gestión unificada de terceros y sus {labels.unidad}es.</p>
                             </div>
                         </div>
                     </div>
@@ -112,10 +113,10 @@ export default function DirectorioPropietariosPage() {
                             <FaFilePdf /> <span>PDF</span>
                         </button>
                         <Link href="/ph/unidades" className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all shadow-md font-medium">
-                            <FaExchangeAlt /> <span>Asignar Unidades</span>
+                            <FaExchangeAlt /> <span>Asignar {labels.unidad}s</span>
                         </Link>
                         <Link href="/admin/terceros" className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-md font-medium">
-                            <FaPlus /> <span>Nuevo Propietario</span>
+                            <FaPlus /> <span>Nuevo {labels.propietario}</span>
                         </Link>
                     </div>
                 </div>
@@ -126,7 +127,7 @@ export default function DirectorioPropietariosPage() {
                         <FaSearch className="absolute left-3 top-3.5 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="Buscar por nombre, documento o número de unidad..."
+                            placeholder={`Buscar por nombre, documento o ${labels.unidad}...`}
                             className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -139,11 +140,11 @@ export default function DirectorioPropietariosPage() {
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Propietario / Razón Social</th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{labels.propietario} / Razón Social</th>
                                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Identificación</th>
                                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Datos de Contacto</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Propiedades Asociadas</th>
-                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Coef. Total</th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{labels.unidad}s Asociadas</th>
+                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">{labels.coeficiente} Total</th>
                                 <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
                             </tr>
                         </thead>
@@ -154,7 +155,7 @@ export default function DirectorioPropietariosPage() {
                                         <td className="px-6 py-4">
                                             <div className="text-sm font-bold text-gray-900">{p.razon_social}</div>
                                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
-                                                {p.total_unidades} Unidad(es)
+                                                {p.total_unidades} {labels.unidad}(s)
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-600 font-mono">
@@ -190,7 +191,7 @@ export default function DirectorioPropietariosPage() {
                                             <Link
                                                 href={`/admin/terceros/editar/${p.tercero_id}`}
                                                 className="text-blue-600 hover:text-blue-800 font-medium text-sm flex justify-center items-center gap-1"
-                                                title="Editar Datos del Tercero"
+                                                title={`Editar Datos del ${labels.propietario}`}
                                             >
                                                 <FaHandshake /> Ver
                                             </Link>
@@ -200,7 +201,7 @@ export default function DirectorioPropietariosPage() {
                             ) : (
                                 <tr>
                                     <td colSpan="6" className="px-6 py-10 text-center text-gray-400 italic bg-gray-50">
-                                        No se encontraron propietarios. Asegúrate de asignar unidades a terceros en la gestión de Unidades.
+                                        No se encontraron registros. Asegúrate de asignar {labels.unidad}s a terceros.
                                     </td>
                                 </tr>
                             )}

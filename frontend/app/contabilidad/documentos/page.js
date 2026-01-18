@@ -18,7 +18,8 @@ import {
   FaBook,
   FaCheckCircle,
   FaExclamationTriangle,
-  FaList
+  FaList,
+  FaEraser
 } from 'react-icons/fa';
 
 // Importaciones de dependencias
@@ -1207,13 +1208,31 @@ export default function NuevoDocumentoPage() {
                 <span className="bg-indigo-100 text-indigo-600 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span>
                 Detalle Contable
               </h3>
-              <button
-                type="button"
-                onClick={agregarFila}
-                className="px-3 py-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-              >
-                <FaPlus className="text-indigo-500" /> Agregar Fila
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Confirmar antes de borrar
+                    if (window.confirm("¿Estás seguro de que deseas limpiar todas las filas de asientos?")) {
+                      setMovimientos([
+                        { rowId: Date.now(), cuentaId: '', concepto: '', debito: '', credito: '', cuentaInput: '' },
+                        { rowId: Date.now() + 1, cuentaId: '', concepto: '', debito: '', credito: '', cuentaInput: '' },
+                      ]);
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                  title="Limpiar todos los asientos"
+                >
+                  <FaEraser /> Limpiar Asientos
+                </button>
+                <button
+                  type="button"
+                  onClick={agregarFila}
+                  className="px-3 py-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  <FaPlus className="text-indigo-500" /> Agregar Fila
+                </button>
+              </div>
             </div>
 
             <div className="overflow-hidden rounded-lg border border-gray-200">

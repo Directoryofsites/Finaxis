@@ -8,6 +8,7 @@ import BuscadorTerceros from '../../../../../components/BuscadorTerceros';
 import { phService } from '../../../../../lib/phService';
 import { getTerceroById } from '../../../../../lib/terceroService';
 import { FaSave, FaBuilding, FaCar, FaPaw, FaTrash, FaPlus, FaPen, FaLayerGroup } from 'react-icons/fa';
+import { useRecaudos } from '../../../../../contexts/RecaudosContext'; // IMPORT
 
 // Estilos
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
@@ -18,6 +19,7 @@ export default function EditarUnidadPage() {
     const router = useRouter();
     const { id } = useParams();
     const { user, loading: authLoading } = useAuth();
+    const { labels, config, SECTOR_TYPES } = useRecaudos(); // HOOK
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
@@ -82,7 +84,7 @@ export default function EditarUnidadPage() {
                     }
 
                 } catch (err) {
-                    setError("No se pudo cargar la unidad.");
+                    setError(`No se pudo cargar la ${labels.unidad}.`);
                     console.error(err);
                 } finally {
                     setLoading(false);
@@ -156,7 +158,7 @@ export default function EditarUnidadPage() {
             };
 
             await phService.updateUnidad(id, payload);
-            alert('Unidad actualizada exitosamente');
+            alert(`${labels.unidad} actualizada exitosamente`);
             router.push('/ph/unidades');
         } catch (err) {
             const detail = err.response?.data?.detail;
@@ -168,7 +170,7 @@ export default function EditarUnidadPage() {
             } else if (typeof detail === 'object') {
                 setError(JSON.stringify(detail));
             } else {
-                setError('Error al actualizar la unidad.');
+                setError(`Error al actualizar la ${labels.unidad}.`);
             }
         } finally {
             setSaving(false);
@@ -185,7 +187,7 @@ export default function EditarUnidadPage() {
                     <div className="flex items-center gap-4">
                         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                             <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600"><FaPen /></div>
-                            Editar Unidad {formData.codigo}
+                            Editar {labels.unidad} {formData.codigo}
                         </h1>
                     </div>
                 </div>
@@ -205,7 +207,7 @@ export default function EditarUnidadPage() {
                         {/* BUSCADOR PROPIETARIO */}
                         <div className="mb-4 bg-indigo-50/50 p-4 rounded-lg border border-indigo-100">
                             <BuscadorTerceros
-                                label="Propietario Principal *"
+                                label={`${labels.propietario} Principal *`}
                                 onSelect={handlePropietarioSelect}
                                 selected={selectedPropietario}
                             />
@@ -217,27 +219,56 @@ export default function EditarUnidadPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className={labelClass}>Código / Número *</label>
-                                <input name="codigo" required className={inputClass} placeholder="Ej: 501, LC-101" value={formData.codigo} onChange={handleChange} />
+                                <input name="codigo" required className={inputClass} placeholder={`Ej: 501, LC-101`} value={formData.codigo} onChange={handleChange} />
                             </div>
                             <div>
-                                <label className={labelClass}>Tipo de Unidad *</label>
-                                <select name="tipo" className={inputClass} value={formData.tipo} onChange={handleChange}>
-                                    <option value="RESIDENCIAL">Residencial</option>
-                                    <option value="COMERCIAL">Comercial</option>
-                                    <option value="PARQUEADERO">Parqueadero</option>
-                                    <option value="DEPOSITO">Depósito</option>
-                                </select>
+                                <label className={labelClass}>Tipo {labels.unidad} *</label>
+                                <div className="flex gap-2">
+                                    <select
+                                        name="tipo"
+                                        className={inputClass}
+                                        value={
+                                            (SECTOR_TYPES[config?.tipo_negocio] || SECTOR_TYPES['PH_RESIDENCIAL']).includes(formData.tipo)
+                                                ? formData.tipo
+                                                : 'OTRO'
+                                        }
+                                        onChange={(e) => {
+                                            if (e.target.value === 'OTRO') {
+                                                setFormData(prev => ({ ...prev, tipo: '' }));
+                                            } else {
+                                                setFormData(prev => ({ ...prev, tipo: e.target.value }));
+                                            }
+                                        }}
+                                    >
+                                        {(SECTOR_TYPES[config?.tipo_negocio] || SECTOR_TYPES['PH_RESIDENCIAL']).map((t) => (
+                                            <option key={t} value={t}>{t}</option>
+                                        ))}
+                                        <option value="OTRO">Otro (Especificar)</option>
+                                    </select>
+
+                                    {/* Si es "OTRO" o el valor actual no está en la lista sembrada, mostramos input libre */}
+                                    {((!(SECTOR_TYPES[config?.tipo_negocio] || SECTOR_TYPES['PH_RESIDENCIAL']).includes(formData.tipo)) || formData.tipo === 'OTRO') && (
+                                        <input
+                                            name="tipo_custom"
+                                            className={`${inputClass} bg-yellow-50 border-yellow-300`}
+                                            placeholder="Especifique..."
+                                            value={formData.tipo}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, tipo: e.target.value }))}
+                                            autoFocus
+                                        />
+                                    )}
+                                </div>
                             </div>
                             <div>
-                                <label className={labelClass}>Coeficiente (%) *</label>
+                                <label className={labelClass}>{labels.coeficiente} (%) *</label>
                                 <input type="number" step="0.000001" name="coeficiente" required className={inputClass} placeholder="0.00" value={formData.coeficiente} onChange={handleChange} />
                             </div>
                             <div>
-                                <label className={labelClass}>Área Privada (m²)</label>
+                                <label className={labelClass}>Área (m²)</label>
                                 <input type="number" step="0.01" name="area_privada" className={inputClass} value={formData.area_privada} onChange={handleChange} />
                             </div>
                             <div>
-                                <label className={labelClass}>Matrícula Inmobiliaria</label>
+                                <label className={labelClass}>Matrícula / Identificador</label>
                                 <input name="matricula_inmobiliaria" className={inputClass} value={formData.matricula_inmobiliaria} onChange={handleChange} />
                             </div>
                         </div>
@@ -245,9 +276,9 @@ export default function EditarUnidadPage() {
 
                     {/* MÓDULOS DE CONTRIBUCIÓN (PH MIXTA) */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h2 className={sectionTitleClass}><FaLayerGroup /> Módulos de Contribución (PH Mixta)</h2>
+                        <h2 className={sectionTitleClass}><FaLayerGroup /> Módulos de Contribución ({labels.module})</h2>
                         <p className="text-xs text-gray-400 mb-3">
-                            Selecciona los sectores a los que pertenece esta unidad. Esto determinará qué gastos debe pagar.
+                            Selecciona los sectores a los que pertenece. Esto determinará qué gastos debe pagar.
                         </p>
 
                         {availableModulos.length === 0 ? (
@@ -279,21 +310,21 @@ export default function EditarUnidadPage() {
                         )}
                     </div>
 
-                    {/* VEHÍCULOS */}
+                    {/* VEHÍCULOS / ITEMS EXTENSIBLES */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                         <div className="flex justify-between items-center border-b pb-2 mb-4">
-                            <h2 className="text-lg font-bold text-gray-700 flex items-center gap-2"><FaCar /> Vehículos</h2>
+                            <h2 className="text-lg font-bold text-gray-700 flex items-center gap-2"><FaCar /> Vehículos / Adicionales</h2>
                             <button type="button" onClick={addVehiculo} className="px-3 py-1 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 text-sm font-medium flex items-center gap-1">
                                 <FaPlus /> Agregar
                             </button>
                         </div>
-                        {vehiculos.length === 0 && <p className="text-gray-400 italic text-sm">No hay vehículos registrados.</p>}
+                        {vehiculos.length === 0 && <p className="text-gray-400 italic text-sm">No hay registros.</p>}
 
                         <div className="space-y-3">
                             {vehiculos.map((v, i) => (
                                 <div key={i} className="flex gap-2 items-end bg-gray-50 p-3 rounded-lg">
                                     <div className="flex-1">
-                                        <label className="text-xs font-bold text-gray-500">Placa</label>
+                                        <label className="text-xs font-bold text-gray-500">Placa / ID</label>
                                         <input className={inputClass} value={v.placa} onChange={(e) => updateVehiculo(i, 'placa', e.target.value)} placeholder="XXX-123" />
                                     </div>
                                     <div className="w-32">
@@ -301,10 +332,11 @@ export default function EditarUnidadPage() {
                                         <select className={inputClass} value={v.tipo} onChange={(e) => updateVehiculo(i, 'tipo', e.target.value)}>
                                             <option>Carro</option>
                                             <option>Moto</option>
+                                            <option>Otro</option>
                                         </select>
                                     </div>
                                     <div className="flex-1">
-                                        <label className="text-xs font-bold text-gray-500">Marca/Color</label>
+                                        <label className="text-xs font-bold text-gray-500">Detalle</label>
                                         <input className={inputClass} value={v.marca} onChange={(e) => updateVehiculo(i, 'marca', e.target.value)} placeholder="Mazda Rojo" />
                                     </div>
                                     <button type="button" onClick={() => removeVehiculo(i)} className="p-2 text-red-500 hover:bg-red-100 rounded-lg mb-1"><FaTrash /></button>
@@ -313,15 +345,15 @@ export default function EditarUnidadPage() {
                         </div>
                     </div>
 
-                    {/* MASCOTAS */}
+                    {/* MOCOTAS / OTROS */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                         <div className="flex justify-between items-center border-b pb-2 mb-4">
-                            <h2 className="text-lg font-bold text-gray-700 flex items-center gap-2"><FaPaw /> Mascotas</h2>
+                            <h2 className="text-lg font-bold text-gray-700 flex items-center gap-2"><FaPaw /> Mascotas / Otros</h2>
                             <button type="button" onClick={addMascota} className="px-3 py-1 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 text-sm font-medium flex items-center gap-1">
                                 <FaPlus /> Agregar
                             </button>
                         </div>
-                        {mascotas.length === 0 && <p className="text-gray-400 italic text-sm">No hay mascotas registradas.</p>}
+                        {mascotas.length === 0 && <p className="text-gray-400 italic text-sm">No hay registros.</p>}
 
                         <div className="space-y-3">
                             {mascotas.map((m, i) => (
@@ -351,7 +383,7 @@ export default function EditarUnidadPage() {
                             disabled={saving}
                             className="flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-md transform hover:-translate-y-1 transition-all font-bold disabled:opacity-50"
                         >
-                            {saving ? 'Guardando...' : <><FaSave /> Actualizar Unidad</>}
+                            {saving ? 'Guardando...' : <><FaSave /> Actualizar {labels.unidad}</>}
                         </button>
                     </div>
 

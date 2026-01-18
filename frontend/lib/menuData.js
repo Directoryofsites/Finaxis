@@ -26,18 +26,18 @@ const ANALISIS_FINANCIERO_MODULE = {
 
 const PH_MODULE = {
     id: 'ph',
-    name: 'Propiedad Horizontal',
+    name: 'Gestión de Recaudos', // RENAMED from 'Propiedad Horizontal'
     icon: FaBuilding,
     permission: 'ph:acceso',
     links: [
-        { name: 'Unidades', href: '/ph/unidades', mnemonic: 'u', icon: FaHome, description: 'Administrar apartamentos, casas y locales.', permission: 'ph:unidades' },
-        { name: 'Propietarios', href: '/ph/propietarios', mnemonic: 'p', icon: FaUsers, description: 'Directorio de copropietarios y residentes.', permission: 'ph:propietarios' },
-        { name: 'Conceptos de Cobro', href: '/ph/conceptos', mnemonic: 'c', icon: FaListUl, description: 'Definir cuotas de administración y extras.', permission: 'ph:conceptos' },
-        { name: 'Generar Cuentas Cobro', href: '/ph/facturacion', mnemonic: 'g', icon: FaFileInvoiceDollar, description: 'Generar cuentas de cobro mensuales.', permission: 'ph:facturacion' },
-        { name: 'Recaudos (Pagos)', href: '/ph/pagos', mnemonic: 'r', icon: FaHandshake, description: 'Asentar recaudos de administración.', permission: 'ph:pagos' },
-        { name: 'Estado de Cuenta', href: '/ph/estado-cuenta', mnemonic: 'e', icon: FaFileContract, description: 'Consultar saldos y descargar paz y salvos.', permission: 'ph:estado_cuenta' },
-        { name: 'Reportes PH', href: '/ph/reportes', mnemonic: 'o', icon: FaChartBar, description: 'Informes financieros y de cartera.', permission: 'ph:reportes' },
-        { name: 'Configuración PH', href: '/ph/configuracion', mnemonic: 'f', icon: FaCog, description: 'Parámetros generales del conjunto.', permission: 'ph:configuracion' }
+        { name: 'Unidades / Activos', href: '/ph/unidades', mnemonic: 'u', icon: FaHome, description: 'Administrar activos sujetos de cobro.', permission: 'ph:unidades' },
+        { name: 'Terceros / Miembros', href: '/ph/propietarios', mnemonic: 'p', icon: FaUsers, description: 'Directorio de responsables de pago.', permission: 'ph:propietarios' },
+        { name: 'Conceptos de Cobro', href: '/ph/conceptos', mnemonic: 'c', icon: FaListUl, description: 'Definir cuotas y servicios recurrentes.', permission: 'ph:conceptos' },
+        { name: 'Generar Recaudos', href: '/ph/facturacion', mnemonic: 'g', icon: FaFileInvoiceDollar, description: 'Generar cobros masivos.', permission: 'ph:facturacion' },
+        { name: 'Recaudos (Pagos)', href: '/ph/pagos', mnemonic: 'r', icon: FaHandshake, description: 'Asentar pagos recibidos.', permission: 'ph:pagos' },
+        { name: 'Estado de Cuenta', href: '/ph/estado-cuenta', mnemonic: 'e', icon: FaFileContract, description: 'Consultar saldos y movimientos.', permission: 'ph:estado_cuenta' },
+        { name: 'Reportes Recaudos', href: '/ph/reportes', mnemonic: 'o', icon: FaChartBar, description: 'Informes de cartera y financieros.', permission: 'ph:reportes' },
+        { name: 'Configuración', href: '/ph/configuracion', mnemonic: 'f', icon: FaCog, description: 'Parámetros del sistema de recaudos.', permission: 'ph:configuracion' }
     ]
 };
 const NOMINA_MODULE = {
@@ -210,7 +210,7 @@ export const menuStructure = [
         ]
     },
     // 9. Propiedad Horizontal -> PH (P)
-    { ...PH_MODULE, name: 'PH', mnemonic: 'p' },
+    { ...PH_MODULE, mnemonic: 'p' },
     // 10. Nómina (N - [N]omina - Updated to avoid M conflict)
     { ...NOMINA_MODULE, mnemonic: 'n' },
     // 11. Producción (R - P[r]oduccion)

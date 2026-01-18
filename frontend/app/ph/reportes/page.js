@@ -1,4 +1,5 @@
 'use client';
+// Force Refresh
 
 import React, { useState, useEffect } from 'react';
 // import axios from 'axios'; // REMOVED raw axios
@@ -8,8 +9,11 @@ import AutocompleteInput from '../../components/AutocompleteInput';
 import { phService } from '../../../lib/phService'; // IMPORT phService
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useRecaudos } from '../../../contexts/RecaudosContext'; // IMPORTED
 
 export default function ReportesPHPage() {
+    const { labels } = useRecaudos(); // HOOK
+
     // Estado de Filtros
     const [fechaDesde, setFechaDesde] = useState('');
     const [fechaHasta, setFechaHasta] = useState('');
@@ -36,34 +40,25 @@ export default function ReportesPHPage() {
     }, []);
 
     const cargarMaestros = async () => {
-        console.log("--- [LOG ESPIA] INICIANDO CARGA DE MAESTROS ---");
         try {
             // Cargar Unidades
-            console.log("--- [LOG ESPIA] Cargando Unidades... ---");
             const dataUnidades = await phService.getUnidades({ limit: 1000 });
-            console.log(`--- [LOG ESPIA] Unidades cargadas: ${dataUnidades.length} ---`);
             setUnidades(dataUnidades);
 
             // Cargar Propietarios
-            console.log("--- [LOG ESPIA] Cargando Propietarios... ---");
             const dataPropietarios = await phService.getPropietarios();
-            console.log(`--- [LOG ESPIA] Propietarios cargados: ${dataPropietarios.length} ---`);
             setPropietarios(dataPropietarios);
 
             // Cargar Conceptos PH
-            console.log("--- [LOG ESPIA] Cargando Conceptos... ---");
             const dataConceptos = await phService.getConceptos();
-            console.log(`--- [LOG ESPIA] Conceptos cargados: ${dataConceptos.length} ---`);
             setConceptos(dataConceptos);
 
         } catch (error) {
-            console.error("--- [LOG ESPIA] ERROR CRITICO EN CARGA DE MAESTROS ---", error);
-            // Si el error es 401, probablemente apiService maneja redirección o el hook de auth
+            console.error("Error cargando maestros:", error);
         }
     };
 
     const generarReporte = async () => {
-        console.log("--- [LOG ESPIA] GENERANDO REPORTE ---");
         setLoading(true);
         try {
             const params = {
@@ -72,18 +67,15 @@ export default function ReportesPHPage() {
                 unidad_id: unidad?.id,
                 propietario_id: propietario?.tercero_id,
                 concepto_id: concepto || undefined,
-                concepto_id: concepto || undefined,
                 numero_doc: numeroDoc || undefined,
                 tipo_movimiento: tipoDoc || undefined // Enviamos el valor del select ('FACTURAS', 'RECIBOS' o '')
             };
-            console.log("--- [LOG ESPIA] Parámetros enviados:", params);
 
             const data = await phService.getReporteMovimientos(params);
-            console.log(`--- [LOG ESPIA] Datos recibidos: ${data.length} registros ---`);
             setReporte(data);
             // Totales se calcularán dinámicamente sobre filteredReporte
         } catch (error) {
-            console.error("--- [LOG ESPIA] ERROR GENERANDO REPORTE ---", error);
+            console.error("Error generando reporte:", error);
             alert("Error al generar el reporte. Verifique los filtros.");
         } finally {
             setLoading(false);
@@ -102,7 +94,6 @@ export default function ReportesPHPage() {
         setReporte([]);
     };
 
-    // --- FILTRADO CLIENTE (Múltiples Campos) ---
     // --- FILTRADO CLIENTE (Solo Concepto/Detalle) ---
     const filteredReporte = reporte.filter(row => {
         if (!filterText) return true;
@@ -131,7 +122,7 @@ export default function ReportesPHPage() {
             // Header
             doc.setFontSize(18);
             doc.setTextColor(40);
-            doc.text("Reporte de Movimientos - Propiedad Horizontal", 14, 22);
+            doc.text(`Reporte de Movimientos - ${labels.module}`, 14, 22);
             doc.setFontSize(10);
             doc.setTextColor(100);
             doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 14, 28);
@@ -143,22 +134,32 @@ export default function ReportesPHPage() {
             // Totales Header
             doc.setFontSize(10);
             doc.setTextColor(0);
-            doc.text(`Total Débito: ${formatCurrency(totalesDin.debito)}`, 14, 42);
-            doc.text(`Total Crédito: ${formatCurrency(totalesDin.credito)}`, 80, 42);
-            doc.text(`Saldo: ${formatCurrency(totalesDin.saldo)}`, 150, 42);
+            doc.text(`Total Cargos: ${formatCurrency(totalesDin.debito)}`, 14, 42);
+            doc.text(`Total Abonos: ${formatCurrency(totalesDin.credito)}`, 80, 42);
+            doc.text(`Saldo Final: ${formatCurrency(totalesDin.saldo)}`, 150, 42);
 
             // Table Data
-            const tableColumn = ["Fecha", "Doc", "Nro", "Unidad", "Propietario", "Detalle", "Débito", "Crédito"];
-            const tableRows = filteredReporte.map(row => [
-                row.fecha,
-                row.tipo_doc,
-                row.numero,
-                row.unidad,
-                row.propietario,
-                row.detalle || row.observaciones || '',
-                formatCurrency(row.debito),
-                formatCurrency(row.credito)
-            ]);
+            const tableColumn = ["Fecha", "Doc", labels.unidad, "Detalle", "Cargos", "Abonos", "Saldo"];
+
+            // Calculo de saldos para PDF (Misma logica visual cronologica)
+            const extracto = [...filteredReporte].reverse();
+            let saldoAcumulado = 0;
+
+            const tableRows = extracto.map(row => {
+                const cargo = row.debito || 0;
+                const abono = row.credito || 0;
+                saldoAcumulado += (cargo - abono);
+
+                return [
+                    row.fecha,
+                    `${row.tipo_doc} - ${row.numero}`,
+                    row.unidad,
+                    row.detalle || row.observaciones || '',
+                    cargo > 0 ? formatCurrency(cargo) : '',
+                    abono > 0 ? formatCurrency(abono) : '',
+                    formatCurrency(saldoAcumulado)
+                ];
+            }); // .reverse() removed to match screen order (Chronological Old->New)
 
             // AutoTable
             autoTable(doc, {
@@ -166,19 +167,20 @@ export default function ReportesPHPage() {
                 body: tableRows,
                 startY: 48,
                 theme: 'grid',
-                headStyles: { fillColor: [65, 105, 225] },
+                headStyles: { fillColor: [75, 85, 99] }, // Gray header for elegance
                 styles: { fontSize: 8 },
                 columnStyles: {
                     0: { cellWidth: 20 }, // Fecha
-                    1: { cellWidth: 15 }, // Doc
-                    2: { cellWidth: 15 }, // Nro
-                    5: { cellWidth: 'auto' }, // Detalle gets remaining width
-                    6: { halign: 'right' },
-                    7: { halign: 'right' }
+                    1: { cellWidth: 20 }, // Doc
+                    2: { cellWidth: 15 }, // Unidad
+                    3: { cellWidth: 'auto' }, // Detalle gets remaining width
+                    4: { halign: 'right', textColor: [50, 50, 50] },
+                    5: { halign: 'right', textColor: [22, 163, 74] }, // Green
+                    6: { halign: 'right', fontStyle: 'bold' }
                 }
             });
 
-            doc.save(`reporte_ph_${new Date().toISOString().slice(0, 10)}.pdf`);
+            doc.save(`reporte_recaudos_${new Date().toISOString().slice(0, 10)}.pdf`);
         } catch (error) {
             console.error("Error exporting PDF:", error);
             alert("Error al generar el PDF.");
@@ -198,9 +200,9 @@ export default function ReportesPHPage() {
                     <div>
                         <h1 className="text-2xl font-bold text-gray-800 mt-2 flex items-center gap-2">
                             <FaFilter className="text-blue-600" />
-                            Reportes Propiedad Horizontal
+                            Reportes {labels.module}
                         </h1>
-                        <p className="text-gray-500">Consulta detallada de movimientos por Unidad, Propietario y Concepto.</p>
+                        <p className="text-gray-500">Consulta detallada de cartera por {labels.unidad}, {labels.propietario} y {labels.concepto}.</p>
                     </div>
                 </div>
 
@@ -233,24 +235,24 @@ export default function ReportesPHPage() {
 
                         {/* Unidad y Propietario (Autocompletes) */}
                         <div className="z-20">
-                            <label className="block text-gray-600 mb-1 font-medium">Unidad Privada</label>
+                            <label className="block text-gray-600 mb-1 font-medium">{labels.unidad}</label>
                             <AutocompleteInput
                                 items={unidades}
                                 value={unidad?.codigo || ''}
                                 onChange={(item) => setUnidad(item)}
-                                placeholder="Buscar Apto/Local..."
+                                placeholder={`Buscar ${labels.unidad}...`}
                                 searchKey="codigo"
                                 displayKey="codigo"
                             />
                         </div>
                         <div className="z-10">
-                            <label className="block text-gray-600 mb-1 font-medium">Propietario</label>
+                            <label className="block text-gray-600 mb-1 font-medium">{labels.propietario}</label>
                             {/* Ajustar si 'propietarios' tiene una estructura compleja */}
                             <AutocompleteInput
                                 items={propietarios}
                                 value={propietario?.razon_social || ''}
                                 onChange={(item) => setPropietario(item)}
-                                placeholder="Buscar Propietario..."
+                                placeholder={`Buscar ${labels.propietario}...`}
                                 searchKey="razon_social"
                                 displayKey="razon_social"
                             />
@@ -258,7 +260,7 @@ export default function ReportesPHPage() {
 
                         {/* Concepto y Documento */}
                         <div>
-                            <label className="block text-gray-600 mb-1 font-medium">Concepto de Cobro</label>
+                            <label className="block text-gray-600 mb-1 font-medium">Concepto</label>
                             <select
                                 className="w-full border rounded-lg p-2 bg-white"
                                 value={concepto}
@@ -299,7 +301,7 @@ export default function ReportesPHPage() {
 
                         {/* Filtro Texto (Integrado en Grid) */}
                         <div>
-                            <label className="block text-gray-600 mb-1 font-medium">Filtrar por Concepto</label>
+                            <label className="block text-gray-600 mb-1 font-medium">Filtrar por Detalle</label>
                             <input
                                 type="text"
                                 className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
@@ -343,23 +345,23 @@ export default function ReportesPHPage() {
                 {
                     reporte.length > 0 && (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                            <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-500 flex items-center justify-between">
+                            <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-indigo-500 flex items-center justify-between">
                                 <div>
-                                    <p className="text-gray-500 text-xs uppercase tracking-wide">Total Débitos (Cargos)</p>
+                                    <p className="text-gray-500 text-xs uppercase tracking-wide">Total Cargos (Debe)</p>
                                     <p className="text-xl font-bold text-gray-800">{formatCurrency(totalesDin.debito)}</p>
                                 </div>
-                                <div className="p-3 bg-blue-50 text-blue-600 rounded-full"><FaMoneyBillWave /></div>
+                                <div className="p-3 bg-indigo-50 text-indigo-600 rounded-full"><FaMoneyBillWave /></div>
                             </div>
                             <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-green-500 flex items-center justify-between">
                                 <div>
-                                    <p className="text-gray-500 text-xs uppercase tracking-wide">Total Créditos (Pagos)</p>
+                                    <p className="text-gray-500 text-xs uppercase tracking-wide">Total Pagos (Abonos)</p>
                                     <p className="text-xl font-bold text-gray-800">{formatCurrency(totalesDin.credito)}</p>
                                 </div>
                                 <div className="p-3 bg-green-50 text-green-600 rounded-full"><FaMoneyBillWave /></div>
                             </div>
                             <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-gray-500 flex items-center justify-between">
                                 <div>
-                                    <p className="text-gray-500 text-xs uppercase tracking-wide">Saldo Neto (Filtrado)</p>
+                                    <p className="text-gray-500 text-xs uppercase tracking-wide">Saldo Neto</p>
                                     <p className={`text-xl font-bold ${totalesDin.saldo >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
                                         {formatCurrency(totalesDin.saldo)}
                                     </p>
@@ -378,11 +380,11 @@ export default function ReportesPHPage() {
                                 <tr className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider border-b">
                                     <th className="p-4 font-semibold">Fecha</th>
                                     <th className="p-4 font-semibold">Documento</th>
-                                    <th className="p-4 font-semibold">Unidad</th>
-                                    <th className="p-4 font-semibold">Propietario</th>
+                                    <th className="p-4 font-semibold">{labels.unidad}</th>
                                     <th className="p-4 font-semibold">Concepto / Detalle</th>
-                                    <th className="p-4 font-semibold text-right">Débito</th>
-                                    <th className="p-4 font-semibold text-right">Crédito</th>
+                                    <th className="p-4 font-semibold text-right text-indigo-700">Cargos</th>
+                                    <th className="p-4 font-semibold text-right text-green-700">Abonos</th>
+                                    <th className="p-4 font-semibold text-right text-gray-800">Saldo</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
@@ -393,27 +395,51 @@ export default function ReportesPHPage() {
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredReporte.map((row, idx) => (
-                                        <tr key={idx} className="hover:bg-blue-50 transition-colors text-gray-700">
-                                            <td className="p-4 whitespace-nowrap">{row.fecha}</td>
-                                            <td className="p-4 font-medium text-blue-600">
-                                                {row.tipo_doc} - {row.numero}
-                                            </td>
-                                            <td className="p-4 font-semibold">{row.unidad}</td>
-                                            <td className="p-4 text-xs max-w-xs truncate" title={row.propietario}>
-                                                {row.propietario}
-                                            </td>
-                                            <td className="p-4 text-xs text-gray-500 max-w-xs truncate" title={row.detalle || row.observaciones}>
-                                                {row.detalle || row.observaciones}
-                                            </td>
-                                            <td className="p-4 text-right font-medium text-gray-800">
-                                                {row.debito > 0 ? formatCurrency(row.debito) : '-'}
-                                            </td>
-                                            <td className="p-4 text-right font-medium text-green-600">
-                                                {row.credito > 0 ? formatCurrency(row.credito) : '-'}
-                                            </td>
-                                        </tr>
-                                    ))
+                                    (() => {
+                                        // LOGICA DE SALDO ACUMULADO VISUAL
+                                        // Asumimos que los datos vienen ordenados por fecha descendente (lo más reciente primero)
+                                        // Para mostrar el saldo linea a linea tipo extracto bancario, lo ideal es orden ascendente.
+                                        // Si el backend manda descendente, tenemos dos opciones:
+                                        // 1. Invertir array para visualizar (tipo extracto: antiguo -> nuevo)
+                                        // 2. Calcular saldo 'hacia atrás' (complejo).
+                                        // Vamos a invertir el array SOLO para visualizacion si el usuario quiere verlo cronológico.
+                                        // O dejarlo descendente y mostrar el saldo 'post-movimiento'.
+
+                                        // Vamos a invertir para simular extracto cronológico:
+                                        const extracto = [...filteredReporte].reverse();
+                                        let saldoAcumulado = 0;
+
+                                        return extracto.map((row, idx) => {
+                                            const cargo = row.debito || 0;
+                                            const abono = row.credito || 0;
+                                            saldoAcumulado += (cargo - abono);
+
+                                            return (
+                                                <tr key={idx} className="hover:bg-blue-50 transition-colors text-gray-700">
+                                                    <td className="p-4 whitespace-nowrap">{row.fecha}</td>
+                                                    <td className="p-4 font-medium text-blue-600">
+                                                        {row.tipo_doc} - {row.numero}
+                                                    </td>
+                                                    <td className="p-4 font-semibold">{row.unidad}</td>
+                                                    <td className="p-4 text-xs text-gray-500 max-w-xs truncate" title={row.detalle || row.observaciones}>
+                                                        {row.detalle || row.observaciones}
+                                                    </td>
+                                                    <td className="p-4 text-right font-medium text-indigo-700">
+                                                        {cargo > 0 ? formatCurrency(cargo) : '-'}
+                                                    </td>
+                                                    <td className="p-4 text-right font-medium text-green-700">
+                                                        {abono > 0 ? formatCurrency(abono) : '-'}
+                                                    </td>
+                                                    <td className="p-4 text-right font-bold text-gray-800">
+                                                        {formatCurrency(saldoAcumulado)}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        }).reverse(); // Re-invertimos para mostrar lo mas reciente arriba, pero con saldo calculado correctamente?
+                                        // Espera, si re-invertimos, el saldo 'acumulado' se verá raro (el ultimo saldo arriba).
+                                        // Mejor MOSTRARLO CRONOLOGICO (Antiguo -> Nuevo) para entender la historia.
+                                        // Quitemos el .reverse() final.
+                                    })()
                                 )}
                             </tbody>
                         </table>

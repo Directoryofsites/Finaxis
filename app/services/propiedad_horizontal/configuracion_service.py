@@ -25,7 +25,12 @@ def update_configuracion(db: Session, empresa_id: int, config_update: schemas.PH
     config.mensaje_factura = config_update.mensaje_factura
     config.tipo_documento_factura_id = config_update.tipo_documento_factura_id
     config.tipo_documento_recibo_id = config_update.tipo_documento_recibo_id
+    config.tipo_documento_mora_id = config_update.tipo_documento_mora_id # Nuevo
     config.cuenta_ingreso_intereses_id = config_update.cuenta_ingreso_intereses_id
+    config.cuenta_cartera_id = config_update.cuenta_cartera_id
+    config.cuenta_caja_id = config_update.cuenta_caja_id
+    config.interes_mora_habilitado = config_update.interes_mora_habilitado
+    config.tipo_negocio = config_update.tipo_negocio # Nueva asignacion
     
     db.commit()
     db.refresh(config)

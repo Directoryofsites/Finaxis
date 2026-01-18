@@ -56,7 +56,8 @@ export default function ConfiguracionPHPage() {
                 ...configData,
                 interes_mora_habilitado: configData.interes_mora_habilitado ?? true,
                 cuenta_ingreso_intereses_codigo: configData.cuenta_ingreso_intereses ? configData.cuenta_ingreso_intereses.codigo : '',
-                cuenta_ingreso_intereses_nombre: configData.cuenta_ingreso_intereses ? configData.cuenta_ingreso_intereses.nombre : ''
+                cuenta_ingreso_intereses_nombre: configData.cuenta_ingreso_intereses ? configData.cuenta_ingreso_intereses.nombre : '',
+                tipo_negocio: configData.tipo_negocio || 'PH_RESIDENCIAL'
             });
             setTiposDoc(tiposData);
         } catch (err) {
@@ -100,7 +101,7 @@ export default function ConfiguracionPHPage() {
                             <FaCogs className="text-2xl" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-800">Configuración PH</h1>
+                            <h1 className="text-3xl font-bold text-gray-800">Configuración de Gestión</h1>
                             <p className="text-gray-500 text-sm">Parámetros generales y conceptos de facturación.</p>
                         </div>
                     </div>
@@ -114,7 +115,7 @@ export default function ConfiguracionPHPage() {
                         </div>
                         <div>
                             <h3 className="font-bold text-gray-800 group-hover:text-purple-700 transition-colors">Módulos de Contribución</h3>
-                            <p className="text-xs text-gray-500 mt-1">Definir sectores, torres y grupos de gasto (PH Mixta).</p>
+                            <p className="text-xs text-gray-500 mt-1">Definir sectores y grupos de gasto.</p>
                         </div>
                     </Link>
                 </div>
@@ -124,7 +125,7 @@ export default function ConfiguracionPHPage() {
                     {/* PANEL CENTRAL: CONFIGURACIÓN GENERAL */}
                     <div className="md:col-span-1">
                         <form onSubmit={handleSaveConfig} className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-                            <h2 className={sectionTitleClass}><FaCogs /> Parámetros Generales de PH</h2>
+                            <h2 className={sectionTitleClass}><FaCogs /> Parámetros Generales</h2>
                             <p className="text-sm text-gray-500 mb-6">Defina aquí las reglas de negocio globales para la facturación y cartera.</p>
 
                             <div className="space-y-6">
@@ -139,6 +140,26 @@ export default function ConfiguracionPHPage() {
                                                 <input type="checkbox" name="interes_mora_habilitado" id="toggle" checked={config.interes_mora_habilitado} onChange={(e) => setConfig({ ...config, interes_mora_habilitado: e.target.checked })} className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" style={{ right: config.interes_mora_habilitado ? '0' : '50%' }} />
                                                 <label htmlFor="toggle" className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${config.interes_mora_habilitado ? 'bg-orange-500' : 'bg-gray-300'}`}></label>
                                             </div>
+                                        </div>
+
+                                        {/* SECTOR / TIPO DE NEGOCIO */}
+                                        <div className="mt-4 pt-4 border-t border-orange-200">
+                                            <label className="block text-xs font-bold text-orange-800 uppercase mb-1 tracking-wide">Tipología de Recaudo (Sector)</label>
+                                            <select
+                                                name="tipo_negocio"
+                                                value={config.tipo_negocio || 'PH_RESIDENCIAL'}
+                                                onChange={handleConfigChange}
+                                                className="w-full px-4 py-2 border border-orange-300 rounded-lg shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm bg-white"
+                                            >
+                                                <option value="PH_RESIDENCIAL">Propiedad Horizontal (Residencial)</option>
+                                                <option value="PH_COMERCIAL">Centro Comercial / Locales</option>
+                                                <option value="TRANSPORTE">Cooperativa de Transporte</option>
+                                                <option value="EDUCATIVO">Institución Educativa</option>
+                                                <option value="PARQUEADERO">Parqueadero / Alquiler Espacios</option>
+                                                <option value="CREDITO">Cartera Financiera / Créditos</option>
+                                                <option value="GENERICO">Gestión Genérica de Recaudos</option>
+                                            </select>
+                                            <p className="text-xs text-orange-700 mt-1">Ajusta la terminología del sistema según su negocio (Ej. Unidad vs Vehículo).</p>
                                         </div>
 
                                         {config.interes_mora_habilitado && (
@@ -200,7 +221,7 @@ export default function ConfiguracionPHPage() {
                                     <p className="text-xs text-indigo-600 mb-4 font-bold uppercase tracking-wider flex items-center gap-2">
                                         <FaMoneyBillWave /> Integración Contable Global
                                     </p>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         <div>
                                             <label className={labelClass}>Tipo Doc. Facturación</label>
                                             <select name="tipo_documento_factura_id" value={config.tipo_documento_factura_id || ''} onChange={handleConfigChange} className={inputClass}>
@@ -220,6 +241,16 @@ export default function ConfiguracionPHPage() {
                                                 ))}
                                             </select>
                                             <p className="text-xs text-gray-400 mt-1">Usado para registrar pagos de propietarios.</p>
+                                        </div>
+                                        <div>
+                                            <label className={labelClass}>Tipo Doc. Mora/Ajuste</label>
+                                            <select name="tipo_documento_mora_id" value={config.tipo_documento_mora_id || ''} onChange={handleConfigChange} className={inputClass}>
+                                                <option value="">-- Seleccionar --</option>
+                                                {tiposDoc.map(t => (
+                                                    <option key={t.id} value={t.id}>{t.codigo} - {t.nombre}</option>
+                                                ))}
+                                            </select>
+                                            <p className="text-xs text-gray-400 mt-1">Usado para cargar la Mora Automática.</p>
                                         </div>
                                     </div>
                                 </div>

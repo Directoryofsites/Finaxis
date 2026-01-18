@@ -5,9 +5,11 @@ import { useAuth } from '../../context/AuthContext';
 
 import { phService } from '../../../lib/phService';
 import { FaMoneyBillWave, FaUser, FaBuilding, FaCheckCircle, FaExclamationTriangle, FaCalendarAlt } from 'react-icons/fa';
+import { useRecaudos } from '../../../contexts/RecaudosContext'; // IMPORT
 
 export default function PagosPHPage() {
     const { user, loading: authLoading } = useAuth();
+    const { labels } = useRecaudos(); // HOOK
 
     // Estados
     const [unidades, setUnidades] = useState([]);
@@ -60,26 +62,44 @@ export default function PagosPHPage() {
         }
     };
 
+    // --- MODAL RECALCULO ---
+    const [showRecalculoModal, setShowRecalculoModal] = useState(false);
+    const [recalculoData, setRecalculoData] = useState(null); // { unidad_id, fecha }
+    const [recalculando, setRecalculando] = useState(false);
+    const [recalculoResult, setRecalculoResult] = useState(null);
+
     const handlePagoSubmit = async (e) => {
         e.preventDefault();
         if (!selectedUnidadId) return;
-        if (!confirm(`¿Confirmar pago de $${Number(pagoForm.monto).toLocaleString()} para la unidad?`)) return;
+        if (!confirm(`¿Confirmar pago de $${Number(pagoForm.monto).toLocaleString()} para la ${labels.unidad}?`)) return;
 
         setProcessing(true);
         setErrorMsg('');
         setSuccessMsg('');
+        setRecalculoResult(null);
 
         try {
-            await phService.registrarPago({
+            const res = await phService.registrarPago({
                 unidad_id: parseInt(selectedUnidadId),
                 monto: parseFloat(pagoForm.monto),
                 fecha: pagoForm.fecha
             });
             setSuccessMsg('Pago registrado exitosamente. El saldo se ha actualizado.');
+
             // Recargar estado
             const data = await phService.getEstadoCuenta(selectedUnidadId);
             setEstadoCuenta(data);
             setPagoForm(prev => ({ ...prev, monto: '' }));
+
+            // --- DETECCION INTELIGENTE DE RECALCULO (Backend-Driven) ---
+            if (false && res && res.sugerir_recalculo) { // DISABLED BY USER REQUEST
+                console.log("Backend sugiere recálculo. Facturas afectadas:", res.facturas_futuras_count);
+                setRecalculoData({ unidad_id: parseInt(selectedUnidadId), fecha: pagoForm.fecha });
+                setShowRecalculoModal(true);
+            } else {
+                console.log("Backend NO sugiere recálculo.");
+            }
+
         } catch (err) {
             setErrorMsg(err.response?.data?.detail || 'Error registrando pago.');
         } finally {
@@ -87,10 +107,65 @@ export default function PagosPHPage() {
         }
     };
 
+    const handleRecalcular = async () => {
+        if (!recalculoData) return;
+        setRecalculando(true);
+        try {
+            const res = await phService.recalcularIntereses(recalculoData.unidad_id, recalculoData.fecha);
+            setRecalculoResult(res);
+            setSuccessMsg(`Pago registrado y se actualizaron ${res.actualizadas} facturas posteriores con nuevo interés.`);
+            setTimeout(() => setShowRecalculoModal(false), 3000);
+        } catch (err) {
+            alert("Error recalculando: " + (err.response?.data?.detail || err.message));
+        } finally {
+            setRecalculando(false);
+        }
+    };
+
     if (authLoading) return <p className="p-8 text-center">Cargando...</p>;
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6 font-sans pb-20">
+        <div className="min-h-screen bg-gray-50 p-6 font-sans pb-20 relative">
+            {/* MODAL RECALCULO */}
+            {showRecalculoModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 animate-scaleIn border-t-4 border-indigo-500">
+                        <div className="flex items-center gap-3 mb-4 text-indigo-700">
+                            <FaExclamationTriangle className="text-3xl" />
+                            <h3 className="text-xl font-bold">¡Pago Retroactivo Detectado!</h3>
+                        </div>
+                        <p className="text-gray-600 mb-6">
+                            El pago tiene fecha anterior a este mes. Es posible que existan facturas posteriores con intereses de mora calculados sobre el saldo antiguo.
+                            <br /><br />
+                            <strong>¿Deseas recalcular automáticamente los intereses de las facturas futuras?</strong>
+                        </p>
+
+                        {recalculoResult ? (
+                            <div className="bg-green-100 text-green-700 p-3 rounded mb-4">
+                                <strong>¡Listo!</strong> Se actualizaron {recalculoResult.actualizadas} facturas.
+                            </div>
+                        ) : (
+                            <div className="flex gap-3 justify-end">
+                                <button
+                                    onClick={() => setShowRecalculoModal(false)}
+                                    className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg font-bold"
+                                    disabled={recalculando}
+                                >
+                                    No, dejar así
+                                </button>
+                                <button
+                                    onClick={handleRecalcular}
+                                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-lg flex items-center gap-2"
+                                    disabled={recalculando}
+                                >
+                                    {recalculando ? 'Procesando...' : 'SÍ, RECALCULAR INTERESES'}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             <div className="max-w-5xl mx-auto">
                 <div className="mb-6">
                     <div className="flex items-center gap-3 mt-3">
@@ -98,8 +173,8 @@ export default function PagosPHPage() {
                             <FaMoneyBillWave className="text-2xl" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-800">Recaudos y Pagos PH</h1>
-                            <p className="text-gray-500 text-sm">Registro de pagos de administración y consulta de cartera por unidad.</p>
+                            <h1 className="text-3xl font-bold text-gray-800">Recaudos y Pagos {labels.module}</h1>
+                            <p className="text-gray-500 text-sm">Registro de pagos de administración y consulta de cartera por {labels.unidad}.</p>
                         </div>
                     </div>
                 </div>
@@ -107,13 +182,13 @@ export default function PagosPHPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* SELECCIÓN Y FORMULARIO */}
                     <div className="md:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit">
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide">Seleccione Unidad</label>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide">Seleccione {labels.unidad}</label>
                         <select
                             value={selectedUnidadId}
                             onChange={handleUnidadChange}
                             className="w-full px-4 py-2 mb-6 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 outline-none transition-all"
                         >
-                            <option value="">-- Buscar Unidad --</option>
+                            <option value="">-- Buscar {labels.unidad} --</option>
                             {unidades.map(u => (
                                 <option key={u.id} value={u.id}>{u.codigo} - Torre {u.torre?.nombre}</option>
                             ))}
@@ -173,7 +248,7 @@ export default function PagosPHPage() {
                         {!loadingData && !estadoCuenta && (
                             <div className="bg-gray-100 rounded-xl p-10 text-center text-gray-400 border-2 border-dashed border-gray-200">
                                 <FaBuilding className="text-4xl mx-auto mb-2 opacity-50" />
-                                <p>Seleccione una unidad para ver su estado de cuenta.</p>
+                                <p>Seleccione una {labels.unidad.toLowerCase()} para ver su estado de cuenta.</p>
                             </div>
                         )}
 
@@ -183,11 +258,11 @@ export default function PagosPHPage() {
                                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 animate-slideUp">
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                         <div>
-                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">PROPIETARIO</p>
+                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{labels.propietario.toUpperCase()}</p>
                                             <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                                                 <FaUser className="text-indigo-500" /> {estadoCuenta.propietario_nombre}
                                             </h2>
-                                            <p className="text-sm text-gray-500 mt-1">Unidad {estadoCuenta.unidad}</p>
+                                            <p className="text-sm text-gray-500 mt-1">{labels.unidad} {estadoCuenta.unidad}</p>
                                         </div>
                                         <div className="text-right bg-red-50 p-4 rounded-lg border border-red-100 min-w-[200px]">
                                             <p className="text-xs font-bold text-red-400 uppercase tracking-wider">SALDO PENDIENTE</p>
