@@ -9,9 +9,11 @@ import AutocompleteInput from '../../components/AutocompleteInput';
 import { phService } from '../../../lib/phService'; // IMPORT phService
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useAuth } from '../../context/AuthContext'; // IMPORT useAuth
 import { useRecaudos } from '../../../contexts/RecaudosContext'; // IMPORTED
 
 export default function ReportesPHPage() {
+    const { user } = useAuth(); // HOOK
     const { labels } = useRecaudos(); // HOOK
 
     // Estado de Filtros
@@ -65,7 +67,7 @@ export default function ReportesPHPage() {
                 fecha_desde: fechaDesde || undefined,
                 fecha_hasta: fechaHasta || undefined,
                 unidad_id: unidad?.id,
-                propietario_id: propietario?.tercero_id,
+                propietario_id: propietario?.id,
                 concepto_id: concepto || undefined,
                 numero_doc: numeroDoc || undefined,
                 tipo_movimiento: tipoDoc || undefined // Enviamos el valor del select ('FACTURAS', 'RECIBOS' o '')
@@ -123,13 +125,21 @@ export default function ReportesPHPage() {
             doc.setFontSize(18);
             doc.setTextColor(40);
             doc.text(`Reporte de Movimientos - ${labels.module}`, 14, 22);
+
             doc.setFontSize(10);
             doc.setTextColor(100);
-            doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 14, 28);
 
-            if (fechaDesde && fechaHasta) {
-                doc.text(`Periodo: ${fechaDesde} al ${fechaHasta}`, 14, 34);
-            }
+            console.log("PDF User Context:", user); // DEBUG
+            const empresaName = user?.empresaNombre || user?.empresa?.razon_social || user?.empresa?.nombre || 'Consorcio';
+            doc.text(`Empresa: ${empresaName}`, 14, 28);
+            doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 14, 33);
+
+            let rangoTexto = "Histórico Completo";
+            if (fechaDesde && fechaHasta) rangoTexto = `${fechaDesde} al ${fechaHasta}`;
+            else if (fechaDesde) rangoTexto = `Desde ${fechaDesde}`;
+            else if (fechaHasta) rangoTexto = `Hasta ${fechaHasta}`;
+
+            doc.text(`Rango: ${rangoTexto}`, 14, 38);
 
             // Totales Header
             doc.setFontSize(10);
@@ -250,11 +260,11 @@ export default function ReportesPHPage() {
                             {/* Ajustar si 'propietarios' tiene una estructura compleja */}
                             <AutocompleteInput
                                 items={propietarios}
-                                value={propietario?.razon_social || ''}
+                                value={propietario?.nombre || ''}
                                 onChange={(item) => setPropietario(item)}
                                 placeholder={`Buscar ${labels.propietario}...`}
-                                searchKey="razon_social"
-                                displayKey="razon_social"
+                                searchKey="nombre"
+                                displayKey="nombre"
                             />
                         </div>
 

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Libreto Demo Gerencial: Facturación Inteligente PH</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px;
+            background-color: #f9fafb;
+        }
+
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #111827;
+            text-align: center;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        .scene {
+            margin-bottom: 40px;
+            border-left: 4px solid #e5e7eb;
+            padding-left: 20px;
+        }
+
+        .scene-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #374151;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .action {
+            background-color: #eff6ff;
+            color: #1e40af;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-family: monospace;
+            display: inline-block;
+            margin: 10px 0;
+            border: 1px solid #bfdbfe;
+        }
+
+        .speech {
+            font-size: 1.1rem;
+            color: #1f2937;
+            margin: 10px 0;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            font-style: italic;
+        }
+
+        .speech::before {
+            content: "🎙️ Usted dice:";
+            display: block;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #6b7280;
+            margin-bottom: 5px;
+            font-style: normal;
+        }
+
+        .highlight {
+            background-color: #fef3c7;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        .note {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+
+        .btn-start {
+            display: block;
+            width: 100%;
+            text-align: center;
+            background-color: #2563eb;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        .btn-start:hover {
+            background-color: #1d4ed8;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>🎬 Libreto de Demostración Gerencial: Facturación PH</h1>
+
+        <div class="note" style="text-align: center; margin-bottom: 30px;">
+            <strong>Objetivo:</strong> Convencer a un Gerente/Administrador de que el sistema elimina el caos de Excel y
+            garantiza cobros exactos.<br>
+            <strong>Tono:</strong> Seguro, Profesional, Enfocado en Resultados (No en botones).
+        </div>
+
+        <div class="scene">
+            <div className="scene-title">Escena 1: El Dolor (La Introducción)</div>
+            <div class="action">[CÁMARA: Primer plano a usted o pantalla con el Logo del Sistema]</div>
+            <div class="speech">
+                "Hola. Sabemos que administrar una Propiedad Horizontal se vuelve una pesadilla cuando llega el momento
+                de facturar. <br><br>
+                Tener que separar manualmentes cuánto pagan los aptos, cuánto los locales, quién paga parqueadero y
+                quién no... usualmente significa horas peleando con un Excel y un alto riesgo de error humano. <br><br>
+                Hoy quiero mostrarles cómo nuestra plataforma **automatiza** todo este caos en 3 simples pasos lógicos."
+            </div>
+        </div>
+
+        <div class="scene">
+            <div className="scene-title">Escena 2: La Lógica de "Familias" (Módulos)</div>
+            <div class="action">[PANTALLA: Ir a Configuración > Módulos]</div>
+            <div class="action">[ACCIÓN: Mostrar el Gráfico del "Triángulo" que acabamos de crear]</div>
+            <div class="speech">
+                "Todo empieza aquí. Olvídense de configurar unidad por unidad cada mes. <br><br>
+                Nuestro sistema usa una lógica inteligente de **'Familias' o Módulos**. <br>
+                Miren este gráfico: En lugar de cobrarle a 100 personas, nosotros simplemente creamos la Familia
+                'Locales' y la Familia 'Apartamentos'. <br><br>
+                Esta configuración se hace **una sola vez en la vida**."
+            </div>
+        </div>
+
+        <div class="scene">
+            <div className="scene-title">Escena 3: El Poder del Presupuesto Global</div>
+            <div class="action">[PANTALLA: Ir a Conceptos de Facturación]</div>
+            <div class="action">[ACCIÓN: Abrir concepto 'Vigilancia' y señalar el valor total]</div>
+            <div class="speech">
+                "Aquí está la magia gerencial. <br><br>
+                Usted como administrador no piensa en centavos, usted piensa en Presupuestos. <br>
+                Si la empresa de seguridad le cobra **10 Millones**, usted simplemente pone aquí '10 Millones'. <br><br>
+                El sistema ya sabe que este gasto es exclusivo para la Familia 'Locales'. Usted no tiene que hacer la
+                regla de tres, el software la hace por usted."
+            </div>
+        </div>
+
+        <div class="scene">
+            <div className="scene-title">Escena 4: La Exactitud Matemática (Coeficientes)</div>
+            <div class="action">[PANTALLA: Ir a Editar Un Inmueble (ej. Local 1)]</div>
+            <div class="speech">
+                "Y finalmente, definimos la participación. <br><br>
+                Cada inmueble tiene su coeficiente legal cargado. El sistema toma ese presupuesto de 10 millones, mira
+                el coeficiente de este local, y calcula matemáticamente su cuota exacta. sin margen de error."
+            </div>
+        </div>
+
+        <div class="scene">
+            <div className="scene-title">Escena 5: El Gran Final (Facturación Masiva)</div>
+            <div class="action">[PANTALLA: Ir a Facturación Masiva > Simulación]</div>
+            <div class="action">[ACCIÓN: Clic en Generar/Simular y mostrar los resultados]</div>
+            <div class="speech">
+                "¿El resultado? <br><br>
+                Un clic. <br>
+                En segundos, el sistema generó cientos de facturas diferenciadas. <br>
+                - A los locales les cobró su vigilancia por coeficiente. <br>
+                - A los apartamentos, su cuota fija. <br><br>
+                Todo cuadrado al centavo, listo para enviar por email. <br>
+                Esto no es solo un software contable, es **tranquilidad operativa** para su administración."
+            </div>
+        </div>
+
+        <div class="scene" style="border-left-color: #10b981;">
+            <div className="scene-title">Cierre</div>
+            <div class="speech">
+                "Bienvenidos a la verdadera automatización."
+            </div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

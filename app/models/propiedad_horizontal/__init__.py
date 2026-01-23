@@ -2,3 +2,4 @@ from .unidad import PHTorre, PHUnidad, PHVehiculo, PHMascota, PHCoeficienteHisto
 from .configuracion import PHConfiguracion
 from .concepto import PHConcepto
 from .modulo_contribucion import PHModuloContribucion
+from .presupuesto import PHPresupuesto

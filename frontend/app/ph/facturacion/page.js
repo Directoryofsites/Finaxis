@@ -37,6 +37,7 @@ export default function FacturacionPHPage() {
     const [selectedConceptos, setSelectedConceptos] = useState([]); // IDs
     const [historial, setHistorial] = useState([]);
     const [unidades, setUnidades] = useState([]); // Todas las unidades para el selector
+    const [torres, setTorres] = useState([]); // Nuevas Torres para filtro
 
     // --- CONFIGURACIÓN FLEXIBLE (EXCEPCIONES) ---
     // Estructura: { conceptoId: [unidadId1, unidadId2] }
@@ -64,15 +65,17 @@ export default function FacturacionPHPage() {
 
     const loadInitialData = async () => {
         try {
-            const [conceptosData, historialData, unidadesData] = await Promise.all([
+            const [conceptosData, historialData, unidadesData, torresData] = await Promise.all([
                 phService.getConceptos(),
                 phService.getHistorialFacturacion(),
-                phService.getUnidades({ limit: 1000 }) // Traer todas para el selector
+                phService.getUnidades({ limit: 1000 }), // Traer todas para el selector
+                phService.getTorres() // Fetch torres
             ]);
             // Filtrar solo activos y ordenar por nombre
             const activos = conceptosData.filter(c => c.activo).sort((a, b) => a.nombre.localeCompare(b.nombre));
             setConceptos(activos);
             setUnidades(unidadesData);
+            setTorres(torresData || []); // Set torres
 
             // --- AUTO-SELECCIÓN INTELIGENTE ---
             const conceptosFijos = activos.filter(c => c.es_fijo || c.es_interes).map(c => c.id);
@@ -147,6 +150,28 @@ export default function FacturacionPHPage() {
         const newConfigs = { ...conceptConfigs };
         delete newConfigs[conceptoId];
         setConceptConfigs(newConfigs);
+    };
+
+    // --- NUEVO HANDLER: SELECCION POR TORRE ---
+    const handleToggleTower = (torreId) => {
+        // 1. Identificar unidades de esta torre
+        // Asumiendo que unidad tiene torre_id (verificado en modelo)
+        const unidadesTorre = unidades.filter(u => u.torre_id === torreId).map(u => u.id);
+
+        if (unidadesTorre.length === 0) return;
+
+        // 2. Verificar estado actual (¿Todos seleccionados?)
+        const allSelected = unidadesTorre.every(uid => tempSelectedUnits.includes(uid));
+
+        if (allSelected) {
+            // Deseleccionar todos
+            setTempSelectedUnits(prev => prev.filter(uid => !unidadesTorre.includes(uid)));
+        } else {
+            // Seleccionar todos (Union)
+            // Usamos Set para evitar duplicados
+            const parking = new Set([...tempSelectedUnits, ...unidadesTorre]);
+            setTempSelectedUnits(Array.from(parking));
+        }
     };
 
     // --- LÓGICA DE EJECUCIÓN ---
@@ -494,6 +519,46 @@ export default function FacturacionPHPage() {
                                     }
                                 </div>
                             </div>
+
+                            {/* FILTRO POR TORRES (NUEVO) */}
+                            {torres.length > 0 && (
+                                <div className="p-3 bg-white border-b overflow-x-auto">
+                                    <div className="flex gap-2 min-w-max">
+                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider py-1">Agrupar por:</span>
+                                        {torres.map(t => {
+                                            // Calcular si está "full", "partial" o "none"
+                                            const unitsInTower = unidades.filter(u => u.torre_id === t.id).map(u => u.id);
+                                            const selectedInTower = unitsInTower.filter(uid => tempSelectedUnits.includes(uid));
+
+                                            let statusClass = "bg-gray-100 text-gray-600 border-gray-200";
+                                            let icon = <FaRegSquare className="text-gray-400" />;
+
+                                            if (unitsInTower.length > 0) {
+                                                if (selectedInTower.length === unitsInTower.length) {
+                                                    statusClass = "bg-indigo-100 text-indigo-700 border-indigo-200 font-bold";
+                                                    icon = <FaCheckSquare className="text-indigo-600" />;
+                                                } else if (selectedInTower.length > 0) {
+                                                    statusClass = "bg-indigo-50 text-indigo-600 border-indigo-200 border-dashed";
+                                                    icon = <div className="w-3 h-3 bg-indigo-500 rounded-sm"></div>; // Indeterminate look
+                                                }
+                                            }
+
+                                            return (
+                                                <button
+                                                    key={t.id}
+                                                    onClick={() => handleToggleTower(t.id)}
+                                                    className={`px-3 py-1 rounded-full text-xs border flex items-center gap-2 transition-all hover:scale-105 active:scale-95 ${statusClass}`}
+                                                    title={`Seleccionar toda la ${t.nombre}`}
+                                                >
+                                                    {icon}
+                                                    {t.nombre}
+                                                    <span className="opacity-60 text-[10px]">({selectedInTower.length}/{unitsInTower.length})</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="flex-1 overflow-y-auto p-2 bg-gray-50">
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">

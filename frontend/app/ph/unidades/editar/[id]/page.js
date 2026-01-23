@@ -39,6 +39,7 @@ export default function EditarUnidadPage() {
 
     const [selectedPropietario, setSelectedPropietario] = useState(null);
     const [availableModulos, setAvailableModulos] = useState([]);
+    const [torres, setTorres] = useState([]);
 
     // Estado para Listas Anidadas
     const [vehiculos, setVehiculos] = useState([]);
@@ -51,13 +52,15 @@ export default function EditarUnidadPage() {
                 try {
                     setLoading(true);
 
-                    // Cargar Unidad y Módulos en paralelo
-                    const [data, mods] = await Promise.all([
+                    // Cargar Unidad, Módulos y Torres en paralelo
+                    const [data, mods, torresData] = await Promise.all([
                         phService.getUnidadById(id),
-                        phService.getModulos()
+                        phService.getModulos(),
+                        phService.getTorres()
                     ]);
 
                     setAvailableModulos(mods);
+                    setTorres(torresData);
 
                     setFormData({
                         codigo: data.codigo,
@@ -217,6 +220,17 @@ export default function EditarUnidadPage() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* TORRE SELECTOR */}
+                            <div className="md:col-span-2">
+                                <label className={labelClass}>Torre / Bloque / Zona</label>
+                                <select name="torre_id" className={inputClass} value={formData.torre_id} onChange={handleChange}>
+                                    <option value="">-- Ninguna (Zona General) --</option>
+                                    {torres.map(t => (
+                                        <option key={t.id} value={t.id}>{t.nombre}</option>
+                                    ))}
+                                </select>
+                            </div>
+
                             <div>
                                 <label className={labelClass}>Código / Número *</label>
                                 <input name="codigo" required className={inputClass} placeholder={`Ej: 501, LC-101`} value={formData.codigo} onChange={handleChange} />

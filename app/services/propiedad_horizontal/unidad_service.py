@@ -33,6 +33,48 @@ def get_unidades(db: Session, empresa_id: int, skip: int = 0, limit: int = 100):
         })
     return results
 
+# --- TORRES ---
+def get_torres(db: Session, empresa_id: int):
+    from app.models.propiedad_horizontal import PHTorre
+    return db.query(PHTorre).filter(PHTorre.empresa_id == empresa_id).all()
+
+def create_torre(db: Session, torre: schemas.PHTorreCreate, empresa_id: int):
+    from app.models.propiedad_horizontal import PHTorre
+    db_torre = PHTorre(
+        empresa_id=empresa_id,
+        nombre=torre.nombre,
+        descripcion=torre.descripcion
+    )
+    db.add(db_torre)
+    db.commit()
+    db.refresh(db_torre)
+    return db_torre
+
+def update_torre(db: Session, torre_id: int, torre: schemas.PHTorreCreate, empresa_id: int):
+    from app.models.propiedad_horizontal import PHTorre
+    db_torre = db.query(PHTorre).filter(PHTorre.id == torre_id, PHTorre.empresa_id == empresa_id).first()
+    if not db_torre:
+        return None
+    
+    db_torre.nombre = torre.nombre
+    db_torre.descripcion = torre.descripcion
+    db.commit()
+    db.refresh(db_torre)
+    return db_torre
+
+def delete_torre(db: Session, torre_id: int, empresa_id: int):
+    from app.models.propiedad_horizontal import PHTorre
+    db_torre = db.query(PHTorre).filter(PHTorre.id == torre_id, PHTorre.empresa_id == empresa_id).first()
+    if not db_torre:
+        return False
+    
+    # Optional: Check if used by units? (Foreign key usually protects or sets null depending on config)
+    # Assuming DB enforcement or soft handling.
+    
+    db.delete(db_torre)
+    db.commit()
+    return True
+
 def crear_unidad(db: Session, unidad: schemas.PHUnidadCreate, empresa_id: int):
     # 1. Crear Unidad base
     db_unidad = PHUnidad(
@@ -193,9 +235,9 @@ def get_propietarios_resumen(db: Session, empresa_id: int):
         total_coeficiente = sum(float(u.coeficiente) if u.coeficiente else 0 for u in unidades)
         
         resultados.append({
-            "tercero_id": tercero.id,
-            "razon_social": tercero.razon_social,
-            "numero_documento": f"{tercero.nit}-{tercero.dv}" if tercero.dv else tercero.nit,
+            "id": tercero.id,
+            "nombre": tercero.razon_social,
+            "documento": f"{tercero.nit}-{tercero.dv}" if tercero.dv else tercero.nit,
             "contacto_telefono": tercero.telefono or "N/A",
             "contacto_email": tercero.email or "N/A",
             "unidades": info_unidades,
@@ -205,3 +247,54 @@ def get_propietarios_resumen(db: Session, empresa_id: int):
         })
         
     return resultados
+
+def masive_update_modules(db: Session, mass_update: schemas.PHUnidadMassUpdateModules, empresa_id: int):
+    """
+    Actualiza masivamente los módulos de contribución para una lista de unidades.
+    - add_modules_ids: Módulos a AGREGAR (si no existen)
+    - remove_modules_ids: Módulos a REMOVER (si existen)
+    """
+    from app.models.propiedad_horizontal.modulo_contribucion import PHModuloContribucion
+    
+    # 1. Validar Módulos
+    modulos_to_add = []
+    if mass_update.add_modules_ids:
+        modulos_to_add = db.query(PHModuloContribucion).filter(
+            PHModuloContribucion.id.in_(mass_update.add_modules_ids),
+            PHModuloContribucion.empresa_id == empresa_id
+        ).all()
+        
+    modulos_to_remove_ids = set(mass_update.remove_modules_ids)
+    
+    # 2. Buscar Unidades
+    unidades = db.query(PHUnidad).filter(
+        PHUnidad.id.in_(mass_update.unidades_ids),
+        PHUnidad.empresa_id == empresa_id
+    ).all()
+    
+    count_updated = 0
+    
+    for unidad in unidades:
+        current_modules = {m.id for m in unidad.modulos_contribucion}
+        modified = False
+        
+        # ADD
+        for mod in modulos_to_add:
+            if mod.id not in current_modules:
+                unidad.modulos_contribucion.append(mod)
+                modified = True
+                
+        # REMOVE
+        if modulos_to_remove_ids:
+            # Rebuild list excluding removed ones
+            # (Modifying relationship list in place while iterating can be tricky in some ORMs, using reconstruction)
+            new_list = [m for m in unidad.modulos_contribucion if m.id not in modulos_to_remove_ids]
+            if len(new_list) != len(unidad.modulos_contribucion):
+                unidad.modulos_contribucion = new_list
+                modified = True
+        
+        if modified:
+            count_updated += 1
+            
+    db.commit()
+    return count_updated

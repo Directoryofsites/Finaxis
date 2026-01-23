@@ -36,6 +36,7 @@ export default function CrearUnidadPage() {
 
     const [selectedPropietario, setSelectedPropietario] = useState(null);
     const [availableModulos, setAvailableModulos] = useState([]);
+    const [torres, setTorres] = useState([]);
 
     // Cargar Módulos al inicio
     React.useEffect(() => {
@@ -43,6 +44,8 @@ export default function CrearUnidadPage() {
             try {
                 const mods = await phService.getModulos();
                 setAvailableModulos(mods);
+                const torresData = await phService.getTorres();
+                setTorres(torresData);
             } catch (error) {
                 console.error("Error loading dependencies", error);
             }
@@ -178,6 +181,17 @@ export default function CrearUnidadPage() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* TORRE SELECTOR */}
+                            <div className="md:col-span-2">
+                                <label className={labelClass}>Torre / Bloque / Zona</label>
+                                <select name="torre_id" className={inputClass} value={formData.torre_id} onChange={handleChange}>
+                                    <option value="">-- Ninguna (Zona General) --</option>
+                                    {torres.map(t => (
+                                        <option key={t.id} value={t.id}>{t.nombre}</option>
+                                    ))}
+                                </select>
+                            </div>
+
                             <div>
                                 <label className={labelClass}>Código / Número *</label>
                                 <input name="codigo" required className={inputClass} placeholder={`Ej: 501, LC-101`} value={formData.codigo} onChange={handleChange} />

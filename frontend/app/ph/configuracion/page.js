@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 
 import { phService } from '../../../lib/phService';
 import BuscadorCuentas from '../../../components/BuscadorCuentas';
-import { FaCogs, FaSave, FaPlus, FaTrash, FaEdit, FaExclamationTriangle, FaListUl, FaMoneyBillWave, FaLayerGroup } from 'react-icons/fa';
+import { FaCogs, FaSave, FaPlus, FaTrash, FaEdit, FaExclamationTriangle, FaListUl, FaMoneyBillWave, FaLayerGroup, FaBuilding } from 'react-icons/fa';
 
 // Estilos
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
@@ -116,6 +116,16 @@ export default function ConfiguracionPHPage() {
                         <div>
                             <h3 className="font-bold text-gray-800 group-hover:text-purple-700 transition-colors">Módulos de Contribución</h3>
                             <p className="text-xs text-gray-500 mt-1">Definir sectores y grupos de gasto.</p>
+                        </div>
+                    </Link>
+
+                    <Link href="/ph/configuracion/torres" className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all group cursor-pointer flex items-center gap-4">
+                        <div className="p-4 bg-indigo-100 text-indigo-600 rounded-full group-hover:scale-110 transition-transform">
+                            <FaBuilding className="text-xl" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-gray-800 group-hover:text-indigo-700 transition-colors">Gestionar Torres</h3>
+                            <p className="text-xs text-gray-500 mt-1">Definir torres, bloques o zonas.</p>
                         </div>
                     </Link>
                 </div>
