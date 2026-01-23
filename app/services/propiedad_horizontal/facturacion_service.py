@@ -84,7 +84,16 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
     # MEJOR: En este MVP, si ya tiene factura, NO generamos otra. El usuario deberá borrarla y regenerar 
     # o hacer factura manual. Este es el trade-off de la "Facturación Masiva".
     
-    unidades_a_procesar = [u for u in unidades if u.id not in ids_ya_facturados]
+    # Identificar unidades con excepciones (whitelisted)
+    unidades_con_excepciones = set()
+    for u_set in mapa_excepciones.values():
+        unidades_con_excepciones.update(u_set)
+        
+    unidades_a_procesar = []
+    for u in unidades:
+        # Aceptar si NO está facturada O SÍ está facturada pero tiene excepción (Delta)
+        if u.id not in ids_ya_facturados or u.id in unidades_con_excepciones:
+            unidades_a_procesar.append(u)
     
     if len(unidades_a_procesar) == 0:
          return {
@@ -102,6 +111,9 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
                 resultados["errores"] += 1
                 resultados["detalles"].append(f"Unidad {unidad.codigo}: Sin propietario asignado.")
                 continue
+            
+            # Chequeo de seguridad: Si ya está facturada, solo permitir conceptos excepcionales
+            ya_facturada = unidad.id in ids_ya_facturados
 
             movimientos = []
             total_factura = 0
@@ -112,9 +124,16 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
             for concepto in conceptos:
                 # --- NUEVO FILTRO DE EXCEPCIONES ---
                 # Si el concepto está en el mapa de excepciones, verificar si esta unidad está en la lista permitida
+                es_excepcion_unidad = False
                 if concepto.id in mapa_excepciones:
-                    if unidad.id not in mapa_excepciones[concepto.id]:
+                    if unidad.id in mapa_excepciones[concepto.id]:
+                        es_excepcion_unidad = True
+                    else:
                         continue # Este concepto ES una excepción y esta unidad NO está en la lista.
+                
+                # BLINDAJE DELTA: Si la unidad ya tiene factura, SOLO procesar si es excepción explicita
+                if ya_facturada and not es_excepcion_unidad:
+                    continue
                 # -----------------------------------
 
                 valor_linea = 0
@@ -122,7 +141,7 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
                 saldo_mora = 0
 
                 # --- LÓGICA DE MÓDULOS DE CONTRIBUCIÓN ---
-                if concepto.modulos and concepto.id not in mapa_excepciones:
+                if concepto.modulos and not es_excepcion_unidad:
                     # El concepto tiene restricción por módulo (y no fue forzado por excepción manual)
                     unidad_modulos_ids = [m.id for m in unidad.modulos_contribucion]
                     concepto_modulos_ids = [m.id for m in concepto.modulos]
@@ -136,7 +155,11 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
                     
                     # --- LÓGICA DE INTERÉS DIFERIDO DISCRIMINADO (Pagos Tardios del Mes Anterior) ---
                     # MOVIDO AL INICIO PARA QUE APAREZCA PRIMERO EN EL DETALLE
-                    if not pagos_tardios_procesados and float(config.interes_mora_mensual) > 0:
+                    if not pagos_tardios_procesados and float(config.interes_mora_mensual) > 0 and not ya_facturada:
+                        # NOTA: Si es Delta (ya_facturada), ¿deberíamos recalcular intereses de mora?
+                        # Probablemente NO, porque ya se cobraron en la factura principal.
+                        # Asumimos que el Delta es para OTROS conceptos (Multas, etc).
+                        # Si el usuario quiere recalcular mora, debería borrar y regenerar.
                         try:
                             # 1. Calcular fechas del mes anterior
                             # Ejemplo: fecha_factura 2026-02-01 -> Mes Anterior: Enero 2026 (01 al 31)
@@ -267,8 +290,8 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
                     else:
                         valor_linea = float(concepto.valor_defecto)
                 
-                # Redondear
-                valor_linea = round(valor_linea, 2)
+                # Redondear a la unidad más cercana (Sin decimales) según solicitud usuario
+                valor_linea = round(valor_linea, 0)
                 
                 if valor_linea > 0:
                     # 1. Credito (Ingreso)

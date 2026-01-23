@@ -37,6 +37,10 @@ const PH_MODULE = {
         { name: 'Recaudos (Pagos)', href: '/ph/pagos', mnemonic: 'r', icon: FaHandshake, description: 'Asentar pagos recibidos.', permission: 'ph:pagos' },
         { name: 'Estado de Cuenta', href: '/ph/estado-cuenta', mnemonic: 'e', icon: FaFileContract, description: 'Consultar saldos y movimientos.', permission: 'ph:estado_cuenta' },
         { name: 'Reportes Recaudos', href: '/ph/reportes', mnemonic: 'o', icon: FaChartBar, description: 'Informes de cartera y financieros.', permission: 'ph:reportes' },
+        { name: 'Cartera por Edades', href: '/ph/reportes/edades', mnemonic: 'd', icon: FaChartPie, description: 'Vencimientos 30-60-90 días.', permission: 'ph:reportes' },
+        { name: 'Balance de Cartera', href: '/ph/reportes/saldos', mnemonic: 'b', icon: FaBalanceScale, description: 'Saldos detallados por unidad y concepto.', permission: 'ph:reportes' },
+        { name: 'Presupuestos', href: '/ph/presupuestos/gestion', mnemonic: 'x', icon: FaCalculator, description: 'Matriz de proyección anual.', permission: 'ph:configuracion' },
+        { name: 'Ejecución PPT (Junta)', href: '/ph/reportes/ejecucion', mnemonic: 'j', icon: FaChartArea, description: 'Informe comparativo vs real.', permission: 'ph:reportes' },
         { name: 'Configuración', href: '/ph/configuracion', mnemonic: 'f', icon: FaCog, description: 'Parámetros del sistema de recaudos.', permission: 'ph:configuracion' }
     ]
 };

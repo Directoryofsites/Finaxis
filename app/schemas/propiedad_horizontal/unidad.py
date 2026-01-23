@@ -1,9 +1,9 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from decimal import Decimal
-from .modulo_contribucion import PHModuloContribucionResponse
 
-# --- TORRES ---
+# ... (Previous Schemas)
+
 class PHTorreBase(BaseModel):
     nombre: str = Field(..., max_length=50)
     descripcion: Optional[str] = Field(None, max_length=200)
@@ -16,12 +16,11 @@ class PHTorre(PHTorreBase):
     empresa_id: int
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
-# --- VEHICULOS ---
 class PHVehiculoBase(BaseModel):
     placa: str = Field(..., max_length=20)
-    tipo: Optional[str] = "Carro"
+    tipo: str = "AUTOMOVIL" # MOTO, BICICLETA
     marca: Optional[str] = None
     color: Optional[str] = None
     propietario_nombre: Optional[str] = None
@@ -33,12 +32,11 @@ class PHVehiculo(PHVehiculoBase):
     id: int
     unidad_id: int
     class Config:
-        from_attributes = True
+        orm_mode = True
 
-# --- MASCOTAS ---
 class PHMascotaBase(BaseModel):
     nombre: str = Field(..., max_length=50)
-    especie: str = Field(..., max_length=30)
+    especie: str = "PERRO" # GATO, OTRO
     raza: Optional[str] = None
     vacunas_al_dia: bool = False
 
@@ -49,9 +47,8 @@ class PHMascota(PHMascotaBase):
     id: int
     unidad_id: int
     class Config:
-        from_attributes = True
+        orm_mode = True
 
-# --- UNIDADES ---
 class PHUnidadBase(BaseModel):
     codigo: str = Field(..., max_length=50, title="Número de Apto/Casa")
     tipo: str = "RESIDENCIAL" 
@@ -67,23 +64,26 @@ class PHUnidadBase(BaseModel):
     observaciones: Optional[str] = None
 
 class PHUnidadCreate(PHUnidadBase):
-    vehiculos: Optional[List[PHVehiculoCreate]] = []
-    mascotas: Optional[List[PHMascotaCreate]] = []
-    modulos_ids: Optional[List[int]] = []
+    vehiculos: List[PHVehiculoCreate] = []
+    mascotas: List[PHMascotaCreate] = []
+    modulos_ids: Optional[List[int]] = None
 
-class PHUnidadUpdate(PHUnidadBase):
-    modulos_ids: Optional[List[int]] = []
+from app.schemas.propiedad_horizontal.modulo_contribucion import PHModuloContribucionResponse
 
 class PHUnidad(PHUnidadBase):
     id: int
     empresa_id: int
-    
-    # Nested info
-    torre_nombre: Optional[str] = None # Calculated or joined
-    mascotas: List[PHMascota] = []
     vehiculos: List[PHVehiculo] = []
+    mascotas: List[PHMascota] = []
+    modulos_contribucion: List[PHModuloContribucionResponse] = []
+    torre_nombre: Optional[str] = None
     propietario_nombre: Optional[str] = None
-    modulos_contribucion: List["PHModuloContribucionResponse"] = []
-
+    
     class Config:
-        from_attributes = True
+        orm_mode = True
+
+# --- NEW SCHEMA FOR MASS UPDATE ---
+class PHUnidadMassUpdateModules(BaseModel):
+    unidades_ids: List[int]
+    add_modules_ids: List[int] = []
+    remove_modules_ids: List[int] = []

@@ -56,7 +56,8 @@ export default function EstadoCuentaPage() {
 
         doc.setFontSize(10);
         doc.setTextColor(100);
-        doc.text(`Generado el: ${new Date().toLocaleString()}`, 14, 28);
+        doc.text(`Empresa: ${user?.empresaNombre || 'Consorcio'}`, 14, 28);
+        doc.text(`Generado el: ${new Date().toLocaleString()}`, 14, 34);
 
         // Info Unidad / Propietario
         doc.setDrawColor(200);

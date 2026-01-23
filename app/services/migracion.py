@@ -28,6 +28,7 @@ from ..services import cartera as services_cartera
 
 # --- NUEVOS MODELOS SOPORTADOS (v7.5) ---
 from ..models.propiedad_horizontal import PHConfiguracion, PHConcepto, PHTorre, PHUnidad, PHVehiculo, PHMascota
+from ..models.propiedad_horizontal.modulo_contribucion import PHModuloContribucion
 from ..models.activo_fijo import ActivoFijo
 from ..models.activo_categoria import ActivoCategoria
 
@@ -285,9 +286,84 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
 
     # E. MÓDULOS ESPECIALIZADOS
     if special_flags.get('propiedad_horizontal', False):
-        # ... lógica simplificada para PH ...
+        # 1. Configuraciones
         ph_config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).all()
         backup_data["propiedad_horizontal"]["configuraciones"] = [serialize_model(c.__dict__) for c in ph_config]
+        
+        # 2. Conceptos
+        ph_conceptos = db.query(PHConcepto).filter(PHConcepto.empresa_id == empresa_id).all()
+        backup_data["propiedad_horizontal"]["conceptos"] = [serialize_model(c.__dict__) for c in ph_conceptos]
+
+        # 3. Módulos de Contribución (Sectores)
+        ph_modulos = db.query(PHModuloContribucion).filter(PHModuloContribucion.empresa_id == empresa_id).all()
+        backup_data["propiedad_horizontal"]["modulos_contribucion"] = [serialize_model(m.__dict__) for m in ph_modulos]
+
+        # 4. Torres y Unidades (Jerárquico)
+        ph_torres = db.query(PHTorre).filter(PHTorre.empresa_id == empresa_id).all()
+        torres_list = []
+        for torre in ph_torres:
+            t_dict = serialize_model(torre.__dict__)
+            # Obtener unidades de esta torre
+            unidades = db.query(PHUnidad).filter(PHUnidad.torre_id == torre.id).all()
+            unidades_list = []
+            for u in unidades:
+                u_dict = serialize_model(u.__dict__)
+                # Enriquecer con NITs de Propietario/Arrendatario para mapeo
+                if u.propietario_principal_id:
+                    prop = db.query(Tercero).filter(Tercero.id == u.propietario_principal_id).first()
+                    if prop: u_dict['propietario_nit'] = prop.nit
+                
+                if u.residente_actual_id:
+                    arr = db.query(Tercero).filter(Tercero.id == u.residente_actual_id).first()
+                    if arr: u_dict['arrendatario_nit'] = arr.nit
+                
+                # Exportar Sub-Listas: Vehículos, Mascotas, Módulos
+                u_dict['vehiculos'] = [serialize_model(v.__dict__) for v in u.vehiculos]
+                u_dict['mascotas'] = [serialize_model(m.__dict__) for m in u.mascotas]
+                
+                # Módulos vinculados (Solo nombres para reconexión)
+                u_dict['modulos_vinculados'] = [m.nombre for m in u.modulos_contribucion]
+
+                unidades_list.append(u_dict)
+            
+            t_dict['unidades'] = unidades_list
+            torres_list.append(t_dict)
+        
+        # 4.1. Unidades Huérfanas (Sin Torre)
+        # Se agrupan en una "Zona General" virtual para no perderlas
+        unidades_huerfanas = db.query(PHUnidad).filter(PHUnidad.empresa_id == empresa_id, PHUnidad.torre_id == None).all()
+        if unidades_huerfanas:
+            print(f"⚠️ [EXPORT] Encontradas {len(unidades_huerfanas)} unidades sin torre. Creando Zona General.")
+            t_virtual = {
+                "nombre": "Zona General",
+                "descripcion": "Agrupación automática de unidades sin torre asignada",
+                "unidades": []
+            }
+            unidades_list_h = []
+            for u in unidades_huerfanas:
+                u_dict = serialize_model(u.__dict__)
+                # Enriquecer con NITs de Propietario/Arrendatario para mapeo
+                if u.propietario_principal_id:
+                    prop = db.query(Tercero).filter(Tercero.id == u.propietario_principal_id).first()
+                    if prop: u_dict['propietario_nit'] = prop.nit
+                
+                if u.residente_actual_id:
+                    arr = db.query(Tercero).filter(Tercero.id == u.residente_actual_id).first()
+                    if arr: u_dict['arrendatario_nit'] = arr.nit
+                
+                # Exportar Sub-Listas: Vehículos, Mascotas, Módulos
+                u_dict['vehiculos'] = [serialize_model(v.__dict__) for v in u.vehiculos]
+                u_dict['mascotas'] = [serialize_model(m.__dict__) for m in u.mascotas]
+                
+                # Módulos vinculados (Solo nombres para reconexión)
+                u_dict['modulos_vinculados'] = [m.nombre for m in u.modulos_contribucion]
+
+                unidades_list_h.append(u_dict)
+            
+            t_virtual['unidades'] = unidades_list_h
+            torres_list.append(t_virtual)
+        
+        backup_data["propiedad_horizontal"]["torres"] = torres_list
         
     if special_flags.get('activos_fijos', False):
         # 1. Categorías
@@ -423,6 +499,8 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
                 "tercero_nit": d.beneficiario.nit if d.beneficiario else None,
                 "centro_costo_codigo": d.centro_costo.codigo if d.centro_costo else None,
                 "anulado": d.anulado, "observaciones": getattr(d, 'observaciones', None),
+                # --- CORRECCIÓN PH: Exportar unidad vinculada ---
+                "unidad_ph_codigo": d.unidad_ph.codigo if d.unidad_ph else None,
                 "movimientos_contables": [], "movimientos_inventario": []
             }
             
@@ -680,9 +758,9 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
         else:
             raise HTTPException(status_code=400, detail=f"Backup incompatible: {compatibilidad['mensaje']}")
     
-    # Migrar automáticamente si es necesario
-    if version_backup != "7.6":
-        backup_data = migrar_backup_version(backup_data, version_backup, "7.6")
+    # Migrar automáticamente si es necesario (Solo si es menor a v7.7)
+    # if version_backup < "7.7":
+    #    backup_data = migrar_backup_version(backup_data, version_backup, "7.7")
     
     resumen = {
         "acciones_realizadas": [],
@@ -696,6 +774,9 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
     try:
         print(f"🚀 INICIANDO PROTOCOLO ESPEJO ATÓMICO v7.0 PARA EMPRESA {target_empresa_id}")
         
+        # DEBUG: Ver qué módulos se piden restaurar
+        print(f"🔍 [RESTORE] Módulos solicitados: {modules_to_restore}")
+
         safety_snapshot = generar_backup_json(db, target_empresa_id)
         filename = f"SAFETY_RESTORE_{target_empresa_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         os.makedirs("backups/safety", exist_ok=True)
@@ -703,6 +784,21 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
             json.dump(safety_snapshot, f, cls=AlchemyEncoder)
             
         resumen["acciones_realizadas"].append(f"🔒 Snapshot de seguridad creado: {filename}")
+
+        # Helper check function mejorada
+        def should_restore(module_keys):
+             # Si no se especifica lista, se restaura TODO
+             if not modules_to_restore: return True
+             # Soporte para chequeo multiple (OR)
+             if isinstance(module_keys, str): module_keys = [module_keys]
+             
+             for k in module_keys:
+                 if k in modules_to_restore: return True
+             return False
+
+        print(f"🔍 [RESTORE-DEBUG] Claves en backup: {list(backup_data.keys())}")
+        if "propiedad_horizontal" in backup_data:
+             print(f"🔍 [RESTORE-DEBUG] Contenido PH: {list(backup_data['propiedad_horizontal'].keys())}")
 
         # 1. RESTAURAR CONFIGURACIÓN DE EMPRESA
         empresa = db.query(Empresa).filter(Empresa.id == target_empresa_id).first()
@@ -725,11 +821,7 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
         maestros_src = backup_data.get("maestros", {})
         inv_src = backup_data.get("inventario", {})
         
-        # Helper check function
-        def should_restore(module_key):
-             # Si no se especifica lista, se restaura TODO (comportamiento legacy/default)
-             if not modules_to_restore: return True
-             return module_key in modules_to_restore
+
 
         # Restaurar Listas de Precio PRIMERO
         if should_restore('Listas de Precio'):
@@ -879,49 +971,68 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
         
         # --- PROPIEDAD HORIZONTAL ---
         ph_data = backup_data.get("propiedad_horizontal", {})
-        if ph_data and should_restore('Propiedad Horizontal'):
+        if ph_data and should_restore(['Propiedad Horizontal', 'PH Torres', 'PH Conceptos', 'PH Config']):
+            print(f"🔍 [RESTORE-PH] Entrando a bloque restauración PH. Sub-secciones: {list(ph_data.keys())}")
             # Config
-            if "configuracion" in ph_data:
-                conf_data = ph_data["configuracion"]
-                # Upsert PH Config
-                ph_conf = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == target_empresa_id).first()
-                if not ph_conf:
-                    ph_conf = PHConfiguracion(empresa_id=target_empresa_id)
-                    db.add(ph_conf)
-                # Actualizar campos simples
-                # Generar mapas de traducción de ID (Old ID -> New ID)
-                map_tipos_code = _get_id_translation_map(db, TipoDocumento, 'codigo', maestros_src, target_empresa_id)
-                map_tipos_id = {}
-                for item in maestros_src.get('tipos_documento', []):
-                    if str(item.get('codigo')) in map_tipos_code:
-                        map_tipos_id[str(item['id'])] = map_tipos_code[str(item['codigo'])]
+            if "configuraciones" in ph_data:
+                print("🔍 [RESTORE-PH] Restaurando Configuración...")
+                conf_list = ph_data["configuraciones"]
+                # Manejo robusto: si es lista, tomar el primero; si es dict, usar directo
+                if isinstance(conf_list, list) and len(conf_list) > 0:
+                    conf_data = conf_list[0]
+                elif isinstance(conf_list, dict):
+                    conf_data = conf_list
+                else:
+                    conf_data = None
 
-                map_cuentas_id = {}
-                for item in maestros_src.get('plan_cuentas', []):
-                     if str(item.get('codigo')) in map_cuentas:
-                         map_cuentas_id[str(item['id'])] = map_cuentas[str(item['codigo'])]
+                if conf_data:
+                    # Upsert PH Config
+                    ph_conf = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == target_empresa_id).first()
+                    if not ph_conf:
+                        ph_conf = PHConfiguracion(empresa_id=target_empresa_id)
+                        db.add(ph_conf)
+                    # Actualizar campos simples
+                    # Generar mapas de traducción de ID (Old ID -> New ID)
+                    map_tipos_code = _get_id_translation_map(db, TipoDocumento, 'codigo', maestros_src, target_empresa_id)
+                    map_tipos_id = {}
+                    for item in maestros_src.get('tipos_documento', []):
+                        if str(item.get('codigo')) in map_tipos_code:
+                            map_tipos_id[str(item['id'])] = map_tipos_code[str(item['codigo'])]
 
-                # Actualizar campos con mapeo
-                for k, v in conf_data.items():
-                    if not hasattr(ph_conf, k) or k in ['id', 'empresa_id']: continue
-                    
-                    val_to_set = v
-                    
-                    # Mapear Foreign Keys
-                    if k in ['tipo_documento_factura_id', 'tipo_documento_recibo_id'] and v is not None:
-                         val_to_set = map_tipos_id.get(str(v))
-                    elif k in ['cuenta_cartera_id', 'cuenta_caja_id', 'cuenta_ingreso_intereses_id'] and v is not None:
-                         val_to_set = map_cuentas_id.get(str(v))
-                    
-                    setattr(ph_conf, k, val_to_set)
+                    map_cuentas_id = {}
+                    for item in maestros_src.get('plan_cuentas', []):
+                         if str(item.get('codigo')) in map_cuentas:
+                             map_cuentas_id[str(item['id'])] = map_cuentas[str(item['codigo'])]
+
+                    # Actualizar campos con mapeo
+                    for k, v in conf_data.items():
+                        if not hasattr(ph_conf, k) or k in ['id', 'empresa_id']: continue
+                        
+                        val_to_set = v
+                        
+                        # Mapear Foreign Keys
+                        if k in ['tipo_documento_factura_id', 'tipo_documento_recibo_id', 'tipo_documento_mora_id'] and v is not None:
+                             val_to_set = map_tipos_id.get(str(v))
+                        elif k in ['cuenta_cartera_id', 'cuenta_caja_id', 'cuenta_ingreso_intereses_id'] and v is not None:
+                             val_to_set = map_cuentas_id.get(str(v))
+                        
+                        setattr(ph_conf, k, val_to_set)
             
             # Conceptos
             _upsert_manual_seguro(db, PHConcepto, 'conceptos', 'nombre', ph_data, target_empresa_id, user_id, 
                                 id_maps={"cuenta_cxc_id": map_cuentas, "cuenta_caja_id": map_cuentas,
                                          "cuenta_ingreso_id": map_cuentas, "cuenta_interes_id": map_cuentas})
             
+            # Módulos de Contribución
+            _upsert_manual_seguro(db, PHModuloContribucion, 'modulos_contribucion', 'nombre', ph_data, target_empresa_id, user_id)
+            
+            # Mapa de Módulos para vinculación
+            ph_modulos_db = db.query(PHModuloContribucion).filter(PHModuloContribucion.empresa_id == target_empresa_id).all()
+            map_modulos = {m.nombre: m for m in ph_modulos_db}
+
             # Torres y Unidades
             if "torres" in ph_data:
+                print(f"🔍 [RESTORE-PH] Restaurando {len(ph_data['torres'])} Torres...")
                 for t_data in ph_data["torres"]:
                     torre = db.query(PHTorre).filter(PHTorre.empresa_id == target_empresa_id, PHTorre.nombre == t_data["nombre"]).first()
                     if not torre:
@@ -935,12 +1046,44 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
                         arr_id = map_terceros.get(u_data.get("arrendatario_nit"))
                         
                         if not unidad:
-                             unidad = PHUnidad(empresa_id=target_empresa_id, torre_id=torre.id, codigo=u_data["codigo"], nombre=u_data["nombre"])
+                             unidad = PHUnidad(empresa_id=target_empresa_id, torre_id=torre.id, codigo=u_data["codigo"])
                              db.add(unidad)
                         
                         unidad.coeficiente = u_data["coeficiente"]
-                        unidad.propietario_id = prop_id
-                        unidad.arrendatario_id = arr_id
+                        unidad.propietario_principal_id = prop_id
+                        unidad.residente_actual_id = arr_id
+                        # Importar tipo, matricula, area, etc.
+                        for f_u in ['tipo', 'matricula_inmobiliaria', 'area_privada', 'observaciones', 'activo']:
+                             if f_u in u_data: setattr(unidad, f_u, u_data[f_u])
+                        
+                        db.flush() # Ensure Unity ID
+
+                        # Restaurar Sub-Tablas
+                        # 1. Vehículos
+                        current_placas = {v.placa for v in unidad.vehiculos}
+                        for v_data in u_data.get('vehiculos', []):
+                             if v_data['placa'] not in current_placas:
+                                 v_new = PHVehiculo(unidad_id=unidad.id, placa=v_data['placa'], tipo=v_data.get('tipo'), 
+                                                    marca=v_data.get('marca'), color=v_data.get('color'), propietario_nombre=v_data.get('propietario_nombre'))
+                                 db.add(v_new)
+                        
+                        # 2. Mascotas
+                        current_mascotas = {m.nombre for m in unidad.mascotas} # Simple dedupe by name per unit
+                        for m_data in u_data.get('mascotas', []):
+                             if m_data['nombre'] not in current_mascotas:
+                                 m_new = PHMascota(unidad_id=unidad.id, nombre=m_data['nombre'], especie=m_data.get('especie'), 
+                                                   raza=m_data.get('raza'), vacunas_al_dia=m_data.get('vacunas_al_dia', False))
+                                 db.add(m_new)
+                        
+                        # 3. Vinculación Módulos
+                        # Limpiar asociaciones existentes para evitar duplicados masivos o inconsistencias (opcional, o aditivo)
+                        # Aquí haremos aditivo seguro
+                        if 'modulos_vinculados' in u_data:
+                             for mod_nombre in u_data['modulos_vinculados']:
+                                 modulo = map_modulos.get(mod_nombre)
+                                 if modulo and modulo not in unidad.modulos_contribucion:
+                                     unidad.modulos_contribucion.append(modulo)
+
             
         # --- ACTIVOS FIJOS ---
         activos_data = backup_data.get("activos_fijos", {})
@@ -1617,6 +1760,10 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
             exorcizados_count = 0
             terceros_afectados = set()
 
+            # Pre-cargar mapa de Unidades PH para eficiencia (si se restauró PH o existen)
+            unidades_db = db.query(PHUnidad).filter(PHUnidad.empresa_id == target_empresa_id).all()
+            map_unidades = {u.codigo: u.id for u in unidades_db}
+
             for doc_data in docs_source:
                 tipo_codigo = doc_data.get('tipo_doc_codigo')
                 tipo_id = map_tipos_final.get(tipo_codigo)
@@ -1633,6 +1780,7 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
                 tercero_id = map_terceros.get(doc_data.get('tercero_nit'))
                 if tercero_id: terceros_afectados.add(tercero_id)
                 cc_id = map_ccs.get(doc_data.get('centro_costo_codigo'))
+                unidad_ph_id = map_unidades.get(doc_data.get('unidad_ph_codigo')) # <-- MAPEO UNIDAD
 
                 val_anulado = doc_data.get('anulado', False)
                 val_estado = 'ANULADO' if val_anulado else 'ACTIVO'
@@ -1652,6 +1800,7 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
                     documento_bd.observaciones = doc_data.get('observaciones')
                     documento_bd.anulado = val_anulado
                     documento_bd.estado = val_estado
+                    documento_bd.unidad_ph_id = unidad_ph_id # <-- ACTUALIZAR UNIDAD
                     
                     db.query(MovimientoContable).filter(MovimientoContable.documento_id == documento_bd.id).delete()
                     db.query(MovimientoInventario).filter(MovimientoInventario.documento_id == documento_bd.id).delete()
@@ -1662,6 +1811,7 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
                         empresa_id=target_empresa_id, tipo_documento_id=tipo_id, numero=doc_data['numero'],
                         fecha=fecha_doc, beneficiario_id=tercero_id, centro_costo_id=cc_id,
                         anulado=val_anulado, estado=val_estado,
+                        unidad_ph_id=unidad_ph_id, # <-- CREAR CON UNIDAD
                         usuario_creador_id=user_id, fecha_operacion=datetime.utcnow()
                     )
                     db.add(documento_bd)
@@ -2231,6 +2381,8 @@ def _upsert_manual_seguro(db, model, json_key, natural_key, data_source, target_
             existing_map[key_val] = new_obj
             
         count += 1
+    
+    db.flush() # CRITICAL: Ensure IDs are generated for immediate use
     return count
 
 def exportar_datos(db: Session, export_request: schemas_migracion.ExportRequest, empresa_id: int):

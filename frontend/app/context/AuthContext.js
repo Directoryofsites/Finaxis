@@ -54,7 +54,8 @@ export const AuthProvider = ({ children }) => {
         // Mapeo explícito para asegurar que empresaId existe en camelCase si el backend manda snake_case
         const fullProfile = {
           ...response.data,
-          empresaId: response.data.empresa_id || response.data.empresaId
+          empresaId: response.data.empresa_id || response.data.empresaId,
+          empresaNombre: response.data.empresa?.razon_social || response.data.empresa?.nombre || 'Consorcio'
         };
         console.log("Perfil Final SetUser:", fullProfile);
 

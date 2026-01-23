@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentación Técnica Funcional - ContaPY2</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #1e40af;
+            --bg: #f8fafc;
+            --text: #1e293b;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 2rem;
+        }
+
+        header {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            margin: 0;
+            color: var(--primary);
+            font-size: 1.5rem;
+        }
+
+        .badge {
+            background: #dbeafe;
+            color: var(--secondary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        nav {
+            position: sticky;
+            top: 5rem;
+            height: fit-content;
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        nav li {
+            margin-bottom: 0.5rem;
+        }
+
+        nav a {
+            display: block;
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            color: #64748b;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        nav a:hover,
+        nav a.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        main {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        section {
+            margin-bottom: 4rem;
+            scroll-margin-top: 6rem;
+        }
+
+        h2 {
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 0.5rem;
+            color: var(--secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .card {
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            background: #fff;
+        }
+
+        .card h3 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        ul.features {
+            padding-left: 1.25rem;
+        }
+
+        ul.features li {
+            margin-bottom: 0.25rem;
+        }
+
+        .tech-stack {
+            background: #1e293b;
+            color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            margin-top: 2rem;
+        }
+
+        code {
+            background: #f1f5f9;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="header-content">
+            <h1>ContaPY2 <span style="font-weight:300">| Documentación Técnica</span></h1>
+            <span class="badge">Versión 7.7 (Enterprise)</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <nav>
+            <ul>
+                <li><a href="#intro">Introducción</a></li>
+                <li><a href="#core">1. Núcleo Contable</a></li>
+                <li><a href="#ph">2. Propiedad Horizontal</a></li>
+                <li><a href="#bancos">3. Conciliación Bancaria</a></li>
+                <li><a href="#inventarios">4. Inventarios y Producción</a></li>
+                <li><a href="#facturacion">5. Facturación y Ventas</a></li>
+                <li><a href="#nomina">6. Nómina (RRHH)</a></li>
+                <li><a href="#admin">7. Administración y Seguridad</a></li>
+                <li><a href="#tech">Anexo Técnico</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <section id="intro">
+                <h2>Introducción</h2>
+                <p><strong>ContaPY2</strong> es una plataforma ERP (Enterprise Resource Planning) integral diseñada para
+                    el mercado colombiano, con especialización vertical en <strong>Propiedad Horizontal, Manufactura y
+                        Servicios</strong>. A diferencia de softwares contables tradicionales, ContaPY2 integra la
+                    operativa diaria (portería, producción, nómina) directamente con la contabilidad en tiempo real,
+                    eliminando la doble digitación.</p>
+                <p>Este documento detalla la arquitectura funcional, módulos operativos y capacidades de reporte del
+                    sistema hasta la fecha (Enero 2026).</p>
+            </section>
+
+            <section id="core">
+                <h2>1. Núcleo Contable & Financiero</h2>
+                <p>El corazón del sistema. Cada transacción en cualquier módulo satélite (Ventas, PH, Nómina) genera
+                    automáticamente movimientos contables en este núcleo.</p>
+
+                <div class="grid">
+                    <div class="card">
+                        <h3>Libros Oficiales & Auxiliares</h3>
+                        <ul class="features">
+                            <li><strong>Libro Diario:</strong> Vista cronológica y detallada (asiento por asiento).</li>
+                            <li><strong>Libro Mayor y Balances:</strong> Resumen mensual por cuenta n-digitos.</li>
+                            <li><strong>Auxiliares:</strong> Desglose por Tercero, Centro de Costo o Documento.</li>
+                            <li><strong>Super Informe de Auditoría:</strong> Herramienta exclusiva que cruza Saldos vs
+                                Movimientos para detectar descuadres automáticamente.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Estados Financieros (NIIF)</h3>
+                        <ul class="features">
+                            <li><strong>Estado de Situación Financiera (Balance General):</strong> Activos, Pasivos y
+                                Patrimonio en tiempo real.</li>
+                            <li><strong>Estado de Resultados (PYG):</strong> Ingresos vs Gastos con desglose por Centro
+                                de Costo.</li>
+                            <li><strong>Balance de Prueba:</strong> Verificación rápida de saldos débito/crédito.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Análisis Financiero</h3>
+                        <ul class="features">
+                            <li><strong>Indicadores (KPIs):</strong> Liquidez, Solvencia, Rentabilidad calculados al
+                                instante.</li>
+                            <li><strong>Análisis Horizontal:</strong> Comparativo periodo a periodo (Variación $ y %).
+                            </li>
+                            <li><strong>Analisis Vertical:</strong> Peso porcentual de cada rubro.</li>
+                            <li><strong>Flujo de Efectivo:</strong> Método directo e indirecto.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="ph">
+                <h2>2. Propiedad Horizontal (Especialidad)</h2>
+                <p>Módulo vertical diseñado para Edificios, Conjuntos Residenciales y Centros Comerciales. Cumple con la
+                    Ley 675 de Colombia.</p>
+
+                <div class="grid">
+                    <div class="card">
+                        <h3>Gestión de Unidades</h3>
+                        <ul class="features">
+                            <li><strong>Maestro de Inmuebles:</strong> Unidades privadas con Coeficiente de Copropiedad,
+                                Matrícula y Área.</li>
+                            <li><strong>Estructura Jerárquica:</strong> Torres / Bloques -> Unidades.</li>
+                            <li><strong>Censo de Población:</strong> Registro de Propietarios, Arrendatarios, Vehículos
+                                y Mascotas por unidad.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Facturación Recurrente</h3>
+                        <ul class="features">
+                            <li><strong>Motor de Facturación Masiva:</strong> Genera cientos de facturas en segundos
+                                basadas en el Coeficiente o cuota fija.</li>
+                            <li><strong>Múltiples Conceptos:</strong> Administración, Fondo de Imprevistos, Parqueadero,
+                                Sanciones, Intereses.</li>
+                            <li><strong>Edición Masiva:</strong> Herramienta para asignar/retirar cobros (Ej: "Cobrar
+                                gimnasio a toda la Torre 1") en un clic.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Cartera Especializada</h3>
+                        <ul class="features">
+                            <li><strong>Estado de Cuenta PH:</strong> Reporte diseñado para el residente, claro y
+                                detallado.</li>
+                            <li><strong>Historial de Pagos:</strong> Trazabilidad completa de abonos y saldos.</li>
+                            <li><strong>Intereses de Mora (Roadmap):</strong> Cálculo automático de sanciones por pago
+                                extemporáneo.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="bancos">
+                <h2>3. Conciliación Bancaria Inteligente</h2>
+                <p>Sistema avanzado para cruzar los movimientos del banco con la contabilidad de la empresa.</p>
+                <div class="grid">
+                    <div class="card">
+                        <h3>Importación de Extractos</h3>
+                        <ul class="features">
+                            <li><strong>Soporte Multi-Formato:</strong> Lee Excel, CSV y TXT de bancos nacionales
+                                (Bancolombia, Davivienda, etc.).</li>
+                            <li><strong>Detección de Duplicados:</strong> Hash de seguridad para evitar cargar el mismo
+                                extracto dos veces.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Conciliación Automática</h3>
+                        <ul class="features">
+                            <li><strong>Algoritmo de Matching:</strong> Cruza movimientos por Fecha + Valor +
+                                Referencia.</li>
+                            <li><strong>Sugerencias IA:</strong> Propone contabilizaciones para movimientos no cruzados.
+                            </li>
+                            <li><strong>Auditoría:</strong> Log completo de quién concilió qué y cuándo.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="inventarios">
+                <h2>4. Inventarios y Producción</h2>
+                <p>Control total de la cadena de suministro, desde la materia prima hasta el producto terminado.</p>
+                <div class="grid">
+                    <div class="card">
+                        <h3>Gestión de Stock</h3>
+                        <ul class="features">
+                            <li><strong>Multi-Bodega:</strong> Control de existencias por ubicación física.</li>
+                            <li><strong>Kardex Valorizado:</strong> Costo promedio ponderado en tiempo real.</li>
+                            <li><strong>Tipos de Inventario:</strong> Materia Prima, Producto en Proceso, Producto
+                                Terminado, Servicios.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Manufactura (Producción)</h3>
+                        <ul class="features">
+                            <li><strong>Recetas / Fórmulas:</strong> Definición de materiales requeridos para producir
+                                un ítem (Lista de Materiales - BOM).</li>
+                            <li><strong>Órdenes de Producción:</strong> Descuenta materia prima y crea producto
+                                terminado automáticamente, calculando el costo real.</li>
+                            <li><strong>Costeo:</strong> Asignación de Costos Indirectos de Fabricación (CIF) y Mano de
+                                Obra.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="facturacion">
+                <h2>5. Facturación y Ventas</h2>
+                <div class="grid">
+                    <div class="card">
+                        <h3>Ciclo Comercial</h3>
+                        <ul class="features">
+                            <li><strong>Cotizaciones:</strong> Creación de propuestas que no afectan contabilidad.</li>
+                            <li><strong>Remisiones:</strong> Salida de mercancía sin factura (control de entregas).</li>
+                            <li><strong>Facturación Electrónica:</strong> Estructura de datos lista para integración con
+                                proveedores tecnológicos (DIAN).</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Análisis de Rentabilidad</h3>
+                        <ul class="features">
+                            <li><strong>Margen por Producto:</strong> ¿Cuánto gano por cada ítem vendido?</li>
+                            <li><strong>Margen por Cliente:</strong> Ranking de los mejores clientes.</li>
+                            <li><strong>Reporte de Ventas:</strong> Tablas dinámicas por zona, vendedor o línea.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="nomina">
+                <h2>6. Nómina y RRHH</h2>
+                <p>Liquidación y contabilización de la fuerza laboral.</p>
+                <div class="grid">
+                    <div class="card">
+                        <h3>Liquidación</h3>
+                        <ul class="features">
+                            <li><strong>Devengados:</strong> Salario, Auxilio de Transporte, Horas Extras, Comisiones.
+                            </li>
+                            <li><strong>Deducciones:</strong> Salud, Pensión, Libranzas, Fondo de Solidaridad.</li>
+                            <li><strong>Provisiones:</strong> Cálculo automático de Cesantías, Prima, Vacaciones e
+                                Intereses (Parafiscales).</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Contabilización</h3>
+                        <ul class="features">
+                            <li><strong>Interfaz Contable:</strong> Un clic genera el asiento de nómina completo,
+                                distribuyendo costos por centro de costo si es necesario.</li>
+                            <li><strong>Desprendibles de Pago:</strong> Generación masiva de PDFs para empleados.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="admin">
+                <h2>7. Administración y Seguridad</h2>
+                <div class="grid">
+                    <div class="card">
+                        <h3>Seguridad Robusta</h3>
+                        <ul class="features">
+                            <li><strong>RBAC (Role Based Access Control):</strong> Permisos granulares por rol (Ej:
+                                "Cajero" solo ve Facturación, no ve Balances).</li>
+                            <li><strong>Auditoría Forense:</strong> Registro inmutable de cada creación, edición o
+                                borrado de documentos (Quién, Cuándo, Desde qué IP, Qué cambió).</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Utilidades Críticas</h3>
+                        <ul class="features">
+                            <li><strong>Copias de Seguridad:</strong> Backups automáticos y restauración granular con
+                                firma digital (HMAC) para evitar alteraciones.</li>
+                            <li><strong>Cierre de Periodos:</strong> Bloqueo de meses contables para evitar
+                                modificaciones en periodos declarados.</li>
+                            <li><strong>Migración de Datos:</strong> Herramientas para importar terceros y saldos
+                                iniciales desde Excel.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tech">
+                <h2>Anexo Técnico: Stack Tecnológico</h2>
+                <div class="tech-stack">
+                    <p><strong>Backend:</strong> Python 3.10+ con FastAPI (Asíncrono, Alto Rendimiento).</p>
+                    <p><strong>Base de Datos:</strong> PostgreSQL con SQLAlchemy ORM (Relacional, Robusta).</p>
+                    <p><strong>Frontend:</strong> React 18, Next.js 13+ (SPA, Renderizado Dinámico).</p>
+                    <p><strong>Reportes:</strong> Motor Jinja2 + WeasyPrint (Generación PDF de alta fidelidad con CSS).
+                    </p>
+                    <p><strong>Integración:</strong> API RESTful documentada con OpenAPI (Swagger).</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+</body>
+
+</html>

@@ -35,6 +35,11 @@ export default function EstadoCuentaPage() {
     const [fechaInicio, setFechaInicio] = useState('');
     const [fechaFin, setFechaFin] = useState('');
 
+    // Estado Detalle Manual
+    const [showPortfolioDetail, setShowPortfolioDetail] = useState(false);
+    const [detailedPortfolio, setDetailedPortfolio] = useState([]);
+    const [loadingDetail, setLoadingDetail] = useState(false);
+
     const [loading, setLoading] = useState(false);
     const [loadingMaestros, setLoadingMaestros] = useState(false);
 
@@ -188,6 +193,51 @@ export default function EstadoCuentaPage() {
         }
     };
 
+    const handleOpenDetailReference = async () => {
+        if (!selectedId) return;
+
+        setLoadingDetail(true);
+        try {
+            const data = await phService.getCarteraDetallada(selectedId);
+            setDetailedPortfolio(data);
+            setShowPortfolioDetail(true);
+        } catch (error) {
+            console.error("Error cargando detalle cartera:", error);
+            alert("Error al cargar detalle: " + error.message);
+        } finally {
+            setLoadingDetail(false);
+        }
+    };
+
+    const handleDownloadDetailPDF = async () => {
+        if (!selectedId) return;
+        setLoadingDetail(true);
+        try {
+            const token = localStorage.getItem('authToken');
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ph/pagos/cartera-detallada/${selectedId}/pdf`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error("Error generando PDF");
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `DetalleCartera_${selectedId}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+        } catch (error) {
+            console.error("Error downloading PDF:", error);
+            alert("Error al descargar PDF");
+        } finally {
+            setLoadingDetail(false);
+        }
+    };
+
     if (authLoading) return <div className="p-10 text-center">Cargando...</div>;
 
     return (
@@ -257,14 +307,14 @@ export default function EstadoCuentaPage() {
                         ) : (
                             <AutocompleteInput
                                 items={propietarios}
-                                value={selectedItem?.razon_social || ''}
+                                value={selectedItem?.nombre || ''}
                                 placeholder="Escriba nombre del propietario..."
-                                searchKey="razon_social" // La API retorna razon_social
-                                displayKey="razon_social"
-                                onChange={(val) => { // val es el objeto propietario: { tercero_id, razon_social, ... }
-                                    // OJO: getPropietarios retorna lista resumen { tercero_id, ... }
+                                searchKey="nombre" // La API retorna nombre
+                                displayKey="nombre"
+                                onChange={(val) => { // val es el objeto propietario: { id, nombre, ... }
+                                    // OJO: getPropietarios retorna lista resumen { id, ... }
                                     setSelectedItem(val);
-                                    setSelectedId(val?.tercero_id);
+                                    setSelectedId(val?.id);
                                 }}
                             />
                         )}
@@ -285,23 +335,30 @@ export default function EstadoCuentaPage() {
                                     ${parseFloat(resumen.saldo_total || 0).toLocaleString()}
                                 </p>
                                 <p className="text-sm mt-1 opacity-70">
-                                    {searchMode === 'UNIT' ? `${labels.unidad}: ${selectedItem?.codigo}` : `${labels.propietario}: ${selectedItem?.razon_social}`}
+                                    {searchMode === 'UNIT' ? `${labels.unidad}: ${selectedItem?.codigo}` : `${labels.propietario}: ${selectedItem?.nombre}`}
                                 </p>
                             </div>
 
                             {/* Selector de VISTA (Tabs) */}
-                            <div className="flex bg-gray-700 p-1 rounded-lg">
+                            <div className="flex bg-gray-700 p-1 rounded-lg gap-1">
                                 <button
                                     onClick={() => setViewMode('PENDING')}
-                                    className={`px-4 py-2 rounded-md font-medium text-sm transition-all flex items-center gap-2 ${viewMode === 'PENDING' ? 'bg-blue-600 text-white shadow' : 'text-gray-300 hover:text-white'}`}
+                                    className={`px-3 py-2 rounded-md font-medium text-sm transition-all flex items-center gap-2 ${viewMode === 'PENDING' ? 'bg-blue-600 text-white shadow' : 'text-gray-300 hover:text-white'}`}
                                 >
-                                    <FaFileInvoiceDollar /> Relación de Cobro
+                                    <FaFileInvoiceDollar /> Cobro
+                                </button>
+                                <button
+                                    onClick={handleOpenDetailReference}
+                                    className={`px-3 py-2 rounded-md font-medium text-sm transition-all flex items-center gap-2 bg-yellow-600 text-white hover:bg-yellow-700 shadow`}
+                                    title="Ver desglose por conceptos (Intereses, Multas, etc.)"
+                                >
+                                    <FaReceipt /> Detalle Conceptos
                                 </button>
                                 <button
                                     onClick={() => setViewMode('HISTORY')}
-                                    className={`px-4 py-2 rounded-md font-medium text-sm transition-all flex items-center gap-2 ${viewMode === 'HISTORY' ? 'bg-blue-600 text-white shadow' : 'text-gray-300 hover:text-white'}`}
+                                    className={`px-3 py-2 rounded-md font-medium text-sm transition-all flex items-center gap-2 ${viewMode === 'HISTORY' ? 'bg-blue-600 text-white shadow' : 'text-gray-300 hover:text-white'}`}
                                 >
-                                    <FaHistory /> Historial Detallado
+                                    <FaHistory /> Historial
                                 </button>
                             </div>
                         </div>
@@ -409,7 +466,28 @@ export default function EstadoCuentaPage() {
                                                         <tr key={idx} className="hover:bg-gray-50 transition-colors">
                                                             <td className="px-6 py-4">{new Date(h.fecha).toLocaleDateString()}</td>
                                                             <td className="px-6 py-4 text-blue-600 font-mono text-xs">{h.documento}</td>
-                                                            <td className="px-6 py-4 text-gray-600 max-w-xs truncate" title={h.concepto}>{h.concepto}</td>
+                                                            <td className="px-6 py-4 text-gray-600 max-w-xs">
+                                                                <div className="truncate font-medium text-gray-700" title={h.concepto}>{h.concepto}</div>
+                                                                {/* Mostrar desglose de pago si existe */}
+                                                                {h.detalle_pago && h.detalle_pago.length > 0 && (
+                                                                    <div className="text-xs text-green-700 bg-green-50 p-1.5 rounded mt-1 border border-green-200">
+                                                                        {h.detalle_pago.map((d, i) => (
+                                                                            <div key={i} className="flex gap-1 items-start">
+                                                                                <span>•</span> <span>{d}</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                                {/* Mostrar desglose de factura si existe (opcional, pero útil) */}
+                                                                {h.detalle_conceptos && h.detalle_conceptos.length > 0 && (
+                                                                    <div className="text-xs text-gray-500 mt-1 pl-1 border-l-2 border-gray-300">
+                                                                        {h.detalle_conceptos.slice(0, 3).map((c, i) => (
+                                                                            <div key={i}>{c.concepto}: ${c.valor.toLocaleString()}</div>
+                                                                        ))}
+                                                                        {h.detalle_conceptos.length > 3 && <div>... (+{h.detalle_conceptos.length - 3})</div>}
+                                                                    </div>
+                                                                )}
+                                                            </td>
                                                             <td className="px-6 py-4 text-right">{h.debito > 0 ? `$${parseFloat(h.debito).toLocaleString()}` : '-'}</td>
                                                             <td className="px-6 py-4 text-right text-green-600">{h.credito > 0 ? `$${parseFloat(h.credito).toLocaleString()}` : '-'}</td>
                                                             <td className="px-6 py-4 text-right font-bold bg-gray-50">${parseFloat(h.saldo).toLocaleString()}</td>
@@ -432,6 +510,102 @@ export default function EstadoCuentaPage() {
                     </div>
                 )}
             </div>
+
+            {/* MODAL DETALLE OBLIGACIONES */}
+            {showPortfolioDetail && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4 animate-fadeIn">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100">
+                        {/* Header */}
+                        <div className="bg-gray-800 text-white px-6 py-4 flex justify-between items-center">
+                            <div>
+                                <h3 className="text-xl font-bold">Detalle de Cartera</h3>
+                                <p className="text-gray-400 text-sm">Desglose por Conceptos</p>
+                            </div>
+                            <button
+                                onClick={() => setShowPortfolioDetail(false)}
+                                className="text-gray-400 hover:text-white transition-colors"
+                            >
+                                <span className="text-2xl">&times;</span>
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-6 max-h-[60vh] overflow-y-auto">
+                            {loadingDetail ? (
+                                <div className="text-center py-10">
+                                    <span className="loading loading-spinner text-blue-600"></span>
+                                    <p className="mt-2 text-gray-500">Calculando distribución...</p>
+                                </div>
+                            ) : detailedPortfolio.length === 0 ? (
+                                <div className="text-center py-10 text-gray-500">
+                                    No hay obligaciones pendientes.
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {/* Lista de Conceptos */}
+                                    <div className="divide-y divide-dashed border rounded-xl overflow-hidden">
+                                        {detailedPortfolio.map((item, idx) => (
+                                            <div key={idx} className="flex justify-between items-center p-4 hover:bg-gray-50">
+                                                <div className="flex items-center gap-3">
+                                                    {/* Icono segun tipo */}
+                                                    <div className={`p-2 rounded-full ${item.tipo === 'INTERES' ? 'bg-red-100 text-red-600' :
+                                                        item.tipo === 'MULTA' ? 'bg-orange-100 text-orange-600' :
+                                                            'bg-blue-100 text-blue-600'
+                                                        }`}>
+                                                        {item.tipo === 'INTERES' ? <span className="font-bold text-xs">INT</span> :
+                                                            item.tipo === 'MULTA' ? <span className="font-bold text-xs">MUL</span> :
+                                                                <FaFileInvoiceDollar />}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-gray-800">{item.concepto}</p>
+                                                        <p className="text-xs text-gray-500 badge badge-outline badge-sm mt-0.5">{item.tipo}</p>
+                                                    </div>
+                                                </div>
+                                                <span className="font-bold text-gray-800 text-lg">
+                                                    ${parseFloat(item.saldo).toLocaleString()}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Total Footer */}
+                                    <div className="flex justify-between items-center bg-gray-100 p-4 rounded-xl border border-gray-200">
+                                        <span className="font-bold text-gray-600">TOTAL ANALIZADO</span>
+                                        <span className="font-extrabold text-xl text-gray-900">
+                                            ${detailedPortfolio.reduce((acc, curr) => acc + parseFloat(curr.saldo), 0).toLocaleString()}
+                                        </span>
+                                    </div>
+
+                                    <div className="bg-yellow-50 p-3 rounded-lg flex gap-3 items-start text-xs text-yellow-800 border border-yellow-100">
+                                        <span className="text-lg">💡</span>
+                                        <p>
+                                            Este reporte simula la distribución de pagos realizados sobre las facturas pendientes aplicando la prelación:
+                                            <b> 1. Intereses, 2. Multas, 3. Capital</b>.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer Actions */}
+                        <div className="bg-gray-50 px-6 py-4 flex justify-between">
+                            <button
+                                onClick={handleDownloadDetailPDF}
+                                disabled={loadingDetail}
+                                className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-bold"
+                            >
+                                <FaFileInvoiceDollar /> Descargar PDF
+                            </button>
+                            <button
+                                onClick={() => setShowPortfolioDetail(false)}
+                                className="btn btn-primary bg-gray-800 text-white px-6 py-2 rounded-lg hover:bg-gray-700"
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

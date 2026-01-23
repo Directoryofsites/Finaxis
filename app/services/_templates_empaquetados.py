@@ -173,9 +173,21 @@ TEMPLATES_EMPAQUETADOS = {
         </thead>
         <tbody>
             <!-- Saldo Anterior -->
-             <tr style="background-color: #f2f2f2; font-weight: bold;">
-                <td colspan="5" class="text-right">SALDO ANTERIOR AL PERIODO</td>
-                <td class="text-right">${{ "{:,.0f}".format(saldo_anterior) }}</td>
+             <tr style="background-color: #f2f2f2; font-weight: bold; border-bottom: 2px solid #ddd;">
+                <td colspan="5" class="text-right" style="vertical-align: top; padding-top: 8px;">
+                    <div style="font-size: 12px; margin-bottom: 4px;">SALDO ANTERIOR AL PERIODO</div>
+                    {% if saldo_anterior_detalle %}
+                        <div style="font-weight: normal; font-size: 9px; color: #444; margin-top: 4px;">
+                            {% for sub in saldo_anterior_detalle %}
+                            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 2px;">
+                                <span style="font-style: italic;">{{ sub.concepto }}</span>
+                                <span>${{ "{:,.0f}".format(sub.valor|default(0)) }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </td>
+                <td class="text-right" style="vertical-align: top; padding-top: 8px;">${{ "{:,.0f}".format(saldo_anterior|default(0)) }}</td>
             </tr>
 
             {% for item in transacciones %}
@@ -194,7 +206,7 @@ TEMPLATES_EMPAQUETADOS = {
                             {% for sub in item.sub_items %}
                             <div class="sub-row">
                                 <span>{{ sub.concepto }}</span>
-                                <span>${{ "{:,.0f}".format(sub.valor) }}</span>
+                                <span>${{ "{:,.0f}".format(sub.valor|default(0)) }}</span>
                             </div>
                             {% endfor %}
                         </div>
@@ -202,16 +214,16 @@ TEMPLATES_EMPAQUETADOS = {
                 </td>
                 <td class="text-right">
                     {% if item.debito > 0 %}
-                        ${{ "{:,.0f}".format(item.debito) }}
+                        ${{ "{:,.0f}".format(item.debito|default(0)) }}
                     {% else %} - {% endif %}
                 </td>
                 <td class="text-right text-green">
                     {% if item.credito > 0 %}
-                        ${{ "{:,.0f}".format(item.credito) }}
+                        ${{ "{:,.0f}".format(item.credito|default(0)) }}
                     {% else %} - {% endif %}
                 </td>
                 <td class="text-right" style="font-weight: bold; background-color: #fafafa;">
-                    ${{ "{:,.0f}".format(item.saldo_acumulado) }}
+                    ${{ "{:,.0f}".format(item.saldo_acumulado|default(0)) }}
                 </td>
             </tr>
             {% endfor %}
@@ -219,7 +231,7 @@ TEMPLATES_EMPAQUETADOS = {
         <tfoot>
             <tr class="total-row">
                 <td colspan="5" class="text-right">SALDO FINAL A LA FECHA</td>
-                <td class="text-right balance-final">${{ "{:,.0f}".format(saldo_final) }}</td>
+                <td class="text-right balance-final">${{ "{:,.0f}".format(saldo_final|default(0)) }}</td>
             </tr>
         </tfoot>
     </table>

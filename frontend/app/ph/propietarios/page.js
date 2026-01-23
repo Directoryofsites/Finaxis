@@ -40,8 +40,8 @@ export default function DirectorioPropietariosPage() {
         if (!searchTerm) return propietarios;
         const lower = searchTerm.toLowerCase();
         return propietarios.filter(p =>
-            (p.razon_social || '').toLowerCase().includes(lower) ||
-            (p.numero_documento || '').includes(lower) ||
+            (p.nombre || '').toLowerCase().includes(lower) ||
+            (p.documento || '').includes(lower) ||
             p.unidades.some(u => u.codigo.toLowerCase().includes(lower))
         );
     }, [propietarios, searchTerm]);
@@ -62,8 +62,8 @@ export default function DirectorioPropietariosPage() {
             // Table Data
             const tableColumn = [`${labels.propietario} / Nombre`, "Identificación", "Teléfono", "Email", `${labels.unidad}s`, labels.coeficiente];
             const tableRows = propietariosFiltrados.map(p => [
-                p.razon_social || '',
-                p.numero_documento || '',
+                p.nombre || '',
+                p.documento || '',
                 p.contacto_telefono,
                 p.contacto_email,
                 p.unidades.map(u => u.codigo).join(", "),
@@ -151,9 +151,9 @@ export default function DirectorioPropietariosPage() {
                         <tbody className="bg-white divide-y divide-gray-100">
                             {propietariosFiltrados.length > 0 ? (
                                 propietariosFiltrados.map((p) => (
-                                    <tr key={p.tercero_id} className="hover:bg-blue-50/30 transition-colors">
+                                    <tr key={p.id} className="hover:bg-blue-50/30 transition-colors">
                                         <td className="px-6 py-4">
-                                            <div className="text-sm font-bold text-gray-900">{p.razon_social}</div>
+                                            <div className="text-sm font-bold text-gray-900">{p.nombre}</div>
                                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
                                                 {p.total_unidades} {labels.unidad}(s)
                                             </span>
@@ -161,7 +161,7 @@ export default function DirectorioPropietariosPage() {
                                         <td className="px-6 py-4 text-sm text-gray-600 font-mono">
                                             <div className="flex items-center gap-2">
                                                 <FaIdCard className="text-gray-400" />
-                                                {p.numero_documento}
+                                                {p.documento}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-600">
@@ -189,7 +189,7 @@ export default function DirectorioPropietariosPage() {
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <Link
-                                                href={`/admin/terceros/editar/${p.tercero_id}`}
+                                                href={`/admin/terceros/editar/${p.id}`}
                                                 className="text-blue-600 hover:text-blue-800 font-medium text-sm flex justify-center items-center gap-1"
                                                 title={`Editar Datos del ${labels.propietario}`}
                                             >

@@ -12,6 +12,33 @@ export const phService = {
         return response.data;
     },
 
+    // --- TORRES ---
+    getTorres: async () => {
+        const response = await apiService.get('/ph/torres');
+        return response.data;
+    },
+
+    createTorre: async (data) => {
+        const response = await apiService.post('/ph/torres', data);
+        return response.data;
+    },
+
+    updateTorre: async (id, data) => {
+        const response = await apiService.put(`/ph/torres/${id}`, data);
+        return response.data;
+    },
+
+    deleteTorre: async (id) => {
+        const response = await apiService.delete(`/ph/torres/${id}`);
+        return response.data;
+    },
+
+    // --- MASS ACTIONS ---
+    massUpdateModules: async (payload) => {
+        const response = await apiService.post('/ph/unidades/masivo/modulos', payload);
+        return response.data;
+    },
+
     createUnidad: async (data) => {
         const response = await apiService.post('/ph/unidades', data);
         return response.data;
@@ -132,6 +159,11 @@ export const phService = {
         const response = await apiService.post('/ph/pagos/registrar', pagoData);
         return response.data;
     },
+
+    registrarPagoConsolidado: async (pagoData) => {
+        const response = await apiService.post('/ph/pagos/consolidado', pagoData);
+        return response.data;
+    },
     getHistorialCuenta: async (unidadId, params = {}) => {
         // params: { fecha_inicio, fecha_fin }
         const response = await apiService.get(`/ph/pagos/historial/${unidadId}`, { params });
@@ -156,9 +188,48 @@ export const phService = {
         return response.data;
     },
 
+    getCarteraDetallada: async (unidadId) => {
+        const response = await apiService.get(`/ph/pagos/cartera-detallada/${unidadId}`);
+        return response.data;
+    },
+
     // --- REPORTES ---
     getReporteMovimientos: async (params) => {
         const response = await apiService.post('/ph/reportes/movimientos', null, { params });
+        return response.data;
+    },
+
+    getReporteEdades: async (params = {}) => {
+        const response = await apiService.get('/ph/reportes/cartera-edades', { params });
+        return response.data;
+    },
+
+    getReporteSaldos: async (params = {}) => {
+        // params: { fecha_corte, unidad_id, propietario_id, torre_id, concepto_busqueda }
+        const response = await apiService.get('/ph/reportes/saldos', { params });
+        return response.data;
+    },
+
+    // --- PRESUPUESTOS ---
+    getPresupuestos: async (anio) => {
+        const response = await apiService.get(`/ph/presupuestos/${anio}`);
+        return response.data;
+    },
+
+    savePresupuestosMasivo: async (payload) => {
+        // payload: { anio, items: [...] }
+        const response = await apiService.post('/ph/presupuestos/masivo', payload);
+        return response.data;
+    },
+
+    getEjecucionPresupuestal: async (anio, mesCorte, fechaInicio, fechaFin) => {
+        const params = {};
+        if (anio) params.anio = anio;
+        if (mesCorte) params.mes_corte = mesCorte;
+        if (fechaInicio) params.fecha_inicio = fechaInicio;
+        if (fechaFin) params.fecha_fin = fechaFin;
+
+        const response = await apiService.get('/ph/reportes/ejecucion-presupuestal', { params });
         return response.data;
     },
 

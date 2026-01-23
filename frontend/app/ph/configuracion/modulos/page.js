@@ -222,6 +222,132 @@ export default function ModulosConfigPage() {
                     </div>
                 </div>
 
+                {/* GUÍA MAESTRA PARTE 2: EL ENLACE CON LOS COBROS */}
+                <div className="bg-white border-l-4 border-emerald-500 p-8 mb-8 rounded-r-xl shadow-lg">
+                    <div className="flex items-start gap-4 mb-6">
+                        <div className="p-3 bg-emerald-100 rounded-full text-emerald-700 mt-1">
+                            <FaLayerGroup className="text-2xl" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-1">
+                                Parte 2: ¿Cómo configurar el cobro? (Fijo vs. Coeficiente)
+                            </h3>
+                            <p className="text-gray-600 text-sm leading-relaxed max-w-2xl">
+                                Una vez definidos tus grupos (módulos), el siguiente paso es "llenarlos de dinero". Aquí es donde decides cómo se reparte la factura entre los miembros.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {/* IZQUIERDA: LÓGICA */}
+                        <div className="bg-emerald-50/50 p-6 rounded-xl border border-emerald-100">
+                            <h4 className="text-sm font-bold text-emerald-900 uppercase tracking-wide mb-4">
+                                🧠 La Lógica del Dinero
+                            </h4>
+                            <div className="space-y-4 text-sm">
+                                <div className="p-3 bg-white rounded-lg border border-emerald-200 shadow-sm">
+                                    <h5 className="font-bold text-gray-800 mb-1">Opción A: COBRO FIJO</h5>
+                                    <p className="text-gray-600 text-xs">
+                                        "A todos les cobro lo mismo". <br />
+                                        <em>Ej: Cuota de $50,000 para todos los miembros del módulo "Motos".</em>
+                                    </p>
+                                </div>
+                                <div className="p-3 bg-white rounded-lg border border-emerald-200 shadow-sm relative overflow-hidden">
+                                    <div className="absolute right-0 top-0 bg-emerald-500 text-white text-[10px] px-2 py-0.5 font-bold rounded-bl">RECOMENDADO</div>
+                                    <h5 className="font-bold text-gray-800 mb-1">Opción B: POR COEFICIENTE</h5>
+                                    <p className="text-gray-600 text-xs">
+                                        "Reparto una factura grande entre todos según su tamaño". <br />
+                                        <em>Ej: La factura de vigilancia ($10 Millones) se reparte proporcionalmente entre los locales grandes y pequeños.</em>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* DERECHA: LOS 3 PASOS */}
+                        <div>
+                            <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">!</span>
+                                El Triángulo de Configuración
+                            </h4>
+                            <ul className="space-y-4 text-sm text-gray-600">
+                                {/* DIAGRAMA VISUAL QUE RESPONDE AL USUARIO */}
+                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6 relative">
+                                    <p className="text-xs text-center text-gray-500 mb-4 font-medium">
+                                        Para que funcione, el Módulo debe estar en el centro, apuntando a dos lados:
+                                    </p>
+
+                                    {/* NIVEL 1: MODULO */}
+                                    <div className="flex justify-center mb-6 relative">
+                                        <div className="border-2 border-gray-400 bg-white px-4 py-2 rounded text-center z-10 w-40 shadow-sm">
+                                            <div className="font-bold text-xs text-gray-800">MÓDULO</div>
+                                            <div className="text-[10px] text-gray-500">(La Familia "Locales")</div>
+                                        </div>
+
+                                        {/* Lineas Conectoras Estilo Arbol */}
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0.5 h-4 bg-gray-300"></div>
+                                        <div className="absolute top-[calc(100%+16px)] left-1/2 -translate-x-1/2 w-[70%] h-4 border-t-2 border-x-2 border-gray-300 rounded-t-xl"></div>
+                                    </div>
+
+                                    {/* NIVEL 2: CONCEPTO Y UNIDAD */}
+                                    <div className="grid grid-cols-2 gap-2 mt-4">
+                                        {/* CONCEPTO */}
+                                        <div className="flex flex-col items-center relative">
+                                            {/* Flechita bajando */}
+                                            <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[6px] border-t-gray-300 mb-1"></div>
+
+                                            <div className="border-2 border-dashed border-emerald-400 bg-emerald-50 px-2 py-2 rounded text-center w-full shadow-sm mb-2">
+                                                <div className="font-bold text-[10px] text-emerald-800">CONCEPTO</div>
+                                                <div className="text-[9px] text-gray-500">(La Factura)</div>
+                                            </div>
+                                            <div className="text-[10px] text-center leading-tight">
+                                                <span className="block text-gray-400">Le dices:</span>
+                                                <span className="font-bold text-gray-700">"Cóbrale a la Familia Locales"</span>
+                                            </div>
+                                        </div>
+
+                                        {/* UNIDAD */}
+                                        <div className="flex flex-col items-center relative">
+                                            {/* Flechita bajando */}
+                                            <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[6px] border-t-gray-300 mb-1"></div>
+
+                                            <div className="border-2 border-dashed border-emerald-400 bg-emerald-50 px-2 py-2 rounded text-center w-full shadow-sm mb-2">
+                                                <div className="font-bold text-[10px] text-emerald-800">UNIDAD</div>
+                                                <div className="text-[9px] text-gray-500">(El Inmueble)</div>
+                                            </div>
+                                            <div className="text-[10px] text-center leading-tight">
+                                                <span className="block text-gray-400">Le dices:</span>
+                                                <span className="font-bold text-gray-700">"Tú eres de la Familia Locales"</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <li className="flex gap-3">
+                                    <span className="font-bold text-emerald-600">1.</span>
+                                    <span>
+                                        <strong>Crea el Módulo aquí.</strong> (Ej: "Locales").
+                                    </span>
+                                </li>
+                                <li className="flex gap-3">
+                                    <span className="font-bold text-emerald-600">2.</span>
+                                    <span>
+                                        <strong>Ve a Conceptos de Facturación:</strong> Crea el cobro (Ej: "Vigilancia"), pon el VALOR TOTAL de la factura ($10M) y marca que aplica al módulo "Locales".
+                                    </span>
+                                </li>
+                                <li className="flex gap-3">
+                                    <span className="font-bold text-emerald-600">3.</span>
+                                    <span>
+                                        <strong>Ve a Editar Unidad:</strong> En cada Local, pon su <strong>Coeficiente (0.X)</strong>. El sistema multiplicará: <em>$10M x 0.4 = $4 Millones a ese local.</em>
+                                    </span>
+                                </li>
+                            </ul>
+                            <div className="mt-4 p-3 bg-yellow-50 text-yellow-800 text-xs rounded border border-yellow-200">
+                                <strong>⚠️ Nota Importante:</strong> El coeficiente es un multiplicador. Si pones "50", multiplica por 50. Si quieres el 50%, escribe <strong>0.50</strong>.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-lg font-bold text-gray-700">Listado de Módulos</h2>

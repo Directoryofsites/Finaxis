@@ -10,7 +10,9 @@ from app.models import Usuario
 from app.schemas.propiedad_horizontal import unidad as schemas
 from app.schemas.propiedad_horizontal import configuracion as config_schemas
 from app.schemas.propiedad_horizontal import modulo_contribucion as modulo_schemas
-from app.services.propiedad_horizontal import unidad_service, configuracion_service, facturacion_service, pago_service, reportes as reportes_service, modulo_service
+from app.schemas.propiedad_horizontal import recaudos as recaudo_schemas
+from app.schemas.propiedad_horizontal import presupuesto as presupuesto_schemas
+from app.services.propiedad_horizontal import unidad_service, configuracion_service, facturacion_service, pago_service, reportes as reportes_service, modulo_service, presupuesto_service
 
 from . import conceptos
 
@@ -66,6 +68,61 @@ class PagoRequest(BaseModel):
     monto: float
     fecha: date
     forma_pago_id: int = None # Opcional por ahora
+
+class PagoRequest(BaseModel):
+    unidad_id: int
+    monto: float
+    fecha: date
+    forma_pago_id: int = None # Opcional por ahora
+
+# --- TORRES ---
+@router.get("/torres", response_model=List[schemas.PHTorre])
+def listar_torres(
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    return unidad_service.get_torres(db, current_user.empresa_id)
+
+@router.post("/torres", response_model=schemas.PHTorre)
+def crear_torre(
+    torre: schemas.PHTorreCreate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    return unidad_service.create_torre(db, torre, current_user.empresa_id)
+
+@router.put("/torres/{id}", response_model=schemas.PHTorre)
+def actualizar_torre(
+    id: int,
+    torre: schemas.PHTorreCreate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    updated = unidad_service.update_torre(db, id, torre, current_user.empresa_id)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Torre no encontrada")
+    return updated
+
+@router.delete("/torres/{id}")
+def eliminar_torre(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    success = unidad_service.delete_torre(db, id, current_user.empresa_id)
+    if not success:
+         raise HTTPException(status_code=404, detail="Torre no encontrada")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+# --- MASS ACTIONS ---
+@router.post("/unidades/masivo/modulos")
+def mass_update_modules(
+    payload: schemas.PHUnidadMassUpdateModules,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    count = unidad_service.masive_update_modules(db, mass_update=payload, empresa_id=current_user.empresa_id)
+    return {"message": "Actualización masiva completada", "updated_count": count}
 
 # --- UNIDADES ---
 
@@ -143,6 +200,27 @@ def get_configuracion(
     current_user: Usuario = Depends(get_current_user)
 ):
     return configuracion_service.get_configuracion(db, current_user.empresa_id)
+
+# --- PAGOS CONSOLIDADOS ---
+@router.post("/pagos/consolidado", response_model=recaudo_schemas.PagoConsolidadoResponse)
+def registrar_pago_consolidado(
+    payload: recaudo_schemas.PagoConsolidadoCreate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Registra un pago único distribuido entre las unidades de un propietario.
+    """
+    return pago_service.registrar_pago_consolidado(
+        db, 
+        propietario_id=payload.propietario_id,
+        monto_total=payload.monto_total,
+        fecha=payload.fecha,
+        empresa_id=current_user.empresa_id,
+        usuario_id=current_user.id,
+        forma_pago_id=payload.forma_pago_id,
+        observaciones=payload.observaciones
+    )
 
 @router.put("/configuracion", response_model=config_schemas.PHConfiguracionResponse)
 def update_configuracion(
@@ -341,6 +419,35 @@ def get_cartera_pendiente(
         propietario_id=propietario_id
     )
 
+@router.get("/pagos/cartera-detallada/{unidad_id}")
+def get_cartera_detallada(
+    unidad_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Retorna la cartera pendiente desagregada por conceptos (Intereses, Multas, Capital).
+    Aplica prelación de pagos virtual.
+    """
+    return pago_service.get_cartera_ph_pendientes_detallada(db, current_user.empresa_id, unidad_id)
+
+@router.get("/pagos/cartera-detallada/{unidad_id}/pdf")
+def get_cartera_detallada_pdf(
+    unidad_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Descarga PDF de la cartera detallada.
+    """
+    pdf_content = pago_service.generar_pdf_cartera_detallada(db, current_user.empresa_id, unidad_id)
+    
+    filename = f"DetalleCartera_{unidad_id}_{date.today()}.pdf"
+    headers = {
+        'Content-Disposition': f'attachment; filename="{filename}"'
+    }
+    return Response(content=pdf_content, media_type="application/pdf", headers=headers)
+
 @router.get("/pagos/estado-cuenta/{id}/pdf")
 def get_estado_cuenta_pdf(
     id: int,
@@ -400,3 +507,77 @@ def get_reporte_movimientos(
         numero_doc=numero_doc,
         tipo_movimiento=tipo_movimiento
     )
+
+@router.get("/reportes/cartera-edades", response_model=recaudo_schemas.CarteraEdadesResponse)
+def get_reporte_cartera_edades(
+    fecha_corte: Optional[date] = None,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Reporte de cartera clasificada por edades: 0-30, 31-60, 61-90, >90
+    Soporta fecha de corte histórica.
+    """
+    return reportes_service.get_cartera_edades(db, current_user.empresa_id, fecha_corte=fecha_corte)
+
+@router.get("/reportes/saldos", response_model=recaudo_schemas.ReporteSaldoResponse)
+def get_reporte_saldos(
+    fecha_corte: Optional[date] = None,
+    unidad_id: Optional[int] = None,
+    propietario_id: Optional[int] = None,
+    torre_id: Optional[int] = None,
+    concepto_busqueda: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Reporte de Saldos (Balance General) detallado.
+    Permite filtrar por Torre, Unidad, Prop y Concepto.
+    """
+    return reportes_service.get_reporte_saldos(
+        db, 
+        current_user.empresa_id, 
+        fecha_corte=fecha_corte,
+        unidad_id=unidad_id,
+        propietario_id=propietario_id,
+        torre_id=torre_id,
+        concepto_busqueda=concepto_busqueda
+    )
+
+# --- PRESUPUESTOS ---
+@router.get("/presupuestos/{anio}", response_model=List[presupuesto_schemas.PHPresupuestoResponse])
+def get_presupuestos(
+    anio: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    return presupuesto_service.get_presupuestos(db, current_user.empresa_id, anio)
+
+@router.post("/presupuestos/masivo")
+def save_presupuestos(
+    payload: presupuesto_schemas.PHPresupuestoMasivo,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Guarda o actualiza multiples rubros presupuestales
+    """
+    return presupuesto_service.save_presupuestos_masivo(db, current_user.empresa_id, payload)
+
+@router.get("/reportes/ejecucion-presupuestal", response_model=presupuesto_schemas.EjecucionPresupuestalResponse)
+def get_ejecucion_presupuestal(
+    anio: Optional[int] = None,
+    mes_corte: Optional[int] = None,
+    fecha_inicio: Optional[date] = None,
+    fecha_fin: Optional[date] = None,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Retorna la ejecución presupuestal.
+    Modos:
+    1. Por Defecto (anio + mes_corte): Acumulado desde Ene 1 hasta fin del mes_corte.
+    2. Por Rango (fecha_inicio + fecha_fin): Acumulado exacto en el rango.
+    """
+    return presupuesto_service.get_ejecucion_presupuestal(db, current_user.empresa_id, anio, mes_corte, fecha_inicio, fecha_fin)
+
