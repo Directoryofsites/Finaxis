@@ -45,7 +45,7 @@ export default function CarteraEdadesPage() {
         doc.text("Reporte de Cartera por Edades (Vencimiento)", 14, 20);
 
         doc.setFontSize(10);
-        doc.text(`Empresa: ${user?.empresaNombre || 'Consorcio'}`, 14, 28);
+        doc.text(`Empresa: ${user?.empresaNombre || user?.empresa?.razon_social || user?.empresa?.nombre || 'Consorcio'}`, 14, 28);
         doc.text(`Fecha de Corte: ${fechaCorte || new Date().toLocaleDateString()}`, 14, 34);
 
         const tableColumn = ["Unidad", "Propietario", "Corriente", "1-30 Días", "31-60 Días", "61-90 Días", "> 90 Días", "TOTAL"];

@@ -50,17 +50,21 @@ export default function SmartLayout({ children }) {
     const rightSidebarWidth = 350; // Debe coincidir con el w-[350px] de tailwind
 
     // Estilo para el contenedor principal
+    const isPortal = pathname?.startsWith('/portal');
+
     const mainContentStyle = {
         transition: 'margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         // FIX: Empujar contenido siempre que esté visible (Open o Pinned) para evitar solapamiento
-        marginRight: (rightState === 'pinned' || rightState === 'open') ? `${rightSidebarWidth}px` : '48px'
+        // En portal no hay sidebar derecho ni izquierdo ocupando espacio
+        marginRight: (!isPortal && (rightState === 'pinned' || rightState === 'open')) ? `${rightSidebarWidth}px` : (!isPortal ? '48px' : '0px'),
+        marginLeft: isPortal ? '0px' : '48px' // Ajuste para el sidebar izquierdo
     };
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
 
-            {/* 1. Left Sidebar (Fixed, High Z-Index) */}
-            <SidebarFavorites />
+            {/* 1. Left Sidebar (Fixed, High Z-Index) - Hide in Portal */}
+            {!isPortal && <SidebarFavorites />}
 
             {/* 2. Top Navigation (Fixed Top, adjusted margin?) */}
             {/* TopNav suele ser fixed. Si queremos que se ajuste con el Pin, debemos pasare props o envolverlo */}

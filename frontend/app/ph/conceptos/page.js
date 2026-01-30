@@ -7,6 +7,7 @@ import { phService } from '../../../lib/phService';
 import { FaFileInvoiceDollar, FaPlus, FaEdit, FaTrash, FaSave, FaTimes, FaLayerGroup } from 'react-icons/fa';
 import BuscadorCuentas from '../../../components/BuscadorCuentas';
 import { useRecaudos } from '../../../contexts/RecaudosContext'; // IMPORT
+import ManualButton from '../../components/ManualButton';
 
 export default function ConceptosPage() {
     const { labels } = useRecaudos(); // HOOK
@@ -172,9 +173,16 @@ export default function ConceptosPage() {
                             <FaFileInvoiceDollar className="text-green-600" /> Conceptos de Facturación
                         </h1>
                     </div>
-                    <button onClick={openNew} className="btn-primary flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg">
-                        <FaPlus /> Nuevo Concepto
-                    </button>
+                    <div className="flex gap-3">
+                        <ManualButton 
+                            manualPath="conceptos.html"
+                            title="Manual de Conceptos de Cobro"
+                            position="header"
+                        />
+                        <button onClick={openNew} className="btn-primary flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg">
+                            <FaPlus /> Nuevo Concepto
+                        </button>
+                    </div>
                 </div>
 
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

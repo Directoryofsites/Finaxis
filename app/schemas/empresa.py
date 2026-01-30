@@ -33,15 +33,15 @@ class EmpresaConUsuariosCreate(BaseModel):
     
     # --- ROL INICIAL MANUAL (Opcional, si no se envía se auto-detecta) ---
     rol_inicial_id: Optional[int] = None
+    
+    # --- PLANTILLA DE INDUSTRIA (Clonación) ---
+    template_category: Optional[str] = None # RETAIL, SERVICIOS, PH
     # ---------------------------------------------------------
 
-    usuarios: List[UsuarioData]
+    usuarios: List[UsuarioData] = []
 
-    @validator('usuarios')
-    def debe_haber_al_menos_un_usuario(cls, v):
-        if not v:
-            raise ValueError('Se debe proporcionar al menos un usuario administrador.')
-        return v
+    # Se elimina validación obligatoria de usuario para permitir creación por contador/holding
+    # sin usuarios internos iniciales.
 
 # --- ESQUEMA PARA LA ACTUALIZACIÓN DE DATOS DE LA EMPRESA ---
 class EmpresaUpdate(BaseModel):
@@ -55,6 +55,10 @@ class EmpresaUpdate(BaseModel):
     email: Optional[str] = None
     logo_url: Optional[str] = None
 
+    # --- PLANTILLAS ---
+    is_template: Optional[bool] = None
+    template_category: Optional[str] = None
+
 class EmpresaLimiteUpdate(BaseModel):
     limite_registros: Optional[int] = Field(None, ge=0)
 
@@ -64,12 +68,18 @@ class EmpresaBase(BaseModel):
     nit: str
     fecha_inicio_operaciones: Optional[date] = None
     limite_registros: Optional[int] = None
+    limite_registros_mensual: Optional[int] = None # Exposed for portal
+    consumo_actual: Optional[int] = 0 # Calculated field
     
     # --- NUEVOS CAMPOS DE LECTURA ---
     direccion: Optional[str] = None
     telefono: Optional[str] = None
     email: Optional[str] = None
     logo_url: Optional[str] = None
+    
+    # --- PLANTILLAS ---
+    is_template: Optional[bool] = None
+    template_category: Optional[str] = None
 
 class Empresa(EmpresaBase):
     id: int

@@ -1,16 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FaBook } from 'react-icons/fa';
+import { FaBook, FaCopy } from 'react-icons/fa';
 // --- INICIO: CORRECCIÓN DE IMPORTACIÓN ---
 // Nos aseguramos de importar la función desde el servicio de SOPORTE.
-import { crearEmpresaConUsuarios, getRoles } from '@/lib/soporteApiService';
+import { crearEmpresaConUsuarios, getRoles, searchEmpresas, createEmpresaFromTemplate } from '@/lib/soporteApiService';
 // --- FIN: CORRECCIÓN DE IMPORTACIÓN ---
 
 export default function CrearEmpresaPanel() {
   const [empresaData, setEmpresaData] = useState({
     razon_social: '',
-    nit: '',
     nit: '',
     fecha_inicio_operaciones: '',
     // Nuevo estado para el Modo Clon
@@ -18,20 +17,29 @@ export default function CrearEmpresaPanel() {
     rol_inicial_id: '', // Nuevo campo para selección manual de rol
   });
 
+  // --- NUEVO ESTADO: PLANTILLAS ---
+  const [plantillas, setPlantillas] = useState([]);
+  const [selectedTemplateCategory, setSelectedTemplateCategory] = useState(''); // Si tiene valor, usamos creación por plantilla
+
   const [rolesDisponibles, setRolesDisponibles] = useState([]);
 
-  // Cargar roles al montar el componente
+  // Cargar roles y plantillas al montar el componente
   React.useEffect(() => {
-    const cargarRoles = async () => {
+    const cargarDatos = async () => {
       try {
-        // Obtenemos roles globales (que Soporte ha creado)
-        const response = await getRoles(null);
-        setRolesDisponibles(response.data);
+        // 1. Obtener roles globales
+        const responseRoles = await getRoles(null);
+        setRolesDisponibles(responseRoles.data);
+
+        // 2. Obtener Plantillas Disponibles
+        // Usamos el servicio de búsqueda filtrando por type_filter='PLANTILLA'
+        const responseTemplates = await searchEmpresas({ type_filter: 'PLANTILLA', size: 100 }); // Traemos todas (limit 100)
+        setPlantillas(responseTemplates.data.items);
       } catch (error) {
-        console.error("Error al cargar roles:", error);
+        console.error("Error al cargar datos iniciales:", error);
       }
     };
-    cargarRoles();
+    cargarDatos();
   }, []);
 
   const [usuarios, setUsuarios] = useState([
@@ -79,14 +87,28 @@ export default function CrearEmpresaPanel() {
       return;
     }
 
-    const payload = { ...empresaData, usuarios };
-
     try {
-      const response = await crearEmpresaConUsuarios(payload);
+      let response;
+      const basePayload = { ...empresaData, usuarios };
 
-      setSuccess(`¡Empresa "${response.data.razon_social}" y sus usuarios creados exitosamente!`);
-      setEmpresaData({ razon_social: '', nit: '', fecha_inicio_operaciones: '', modo_operacion: 'STANDARD' });
+      if (selectedTemplateCategory) {
+        // --- FLUJO: CREACIÓN DESDE PLANTILLA ---
+        const templatePayload = {
+          empresa_data: basePayload,
+          template_category: selectedTemplateCategory,
+          owner_id: null // Por ahora null, o podríamos asignar el usuario actual si fuera contador
+        };
+        response = await createEmpresaFromTemplate(templatePayload);
+        setSuccess(`¡Empresa "${response.data.razon_social}" creada desde PLANTILLA exitosamente! (PUC y Documentos copiados)`);
+      } else {
+        // --- FLUJO: CREACIÓN STANDARD ---
+        response = await crearEmpresaConUsuarios(basePayload);
+        setSuccess(`¡Empresa "${response.data.razon_social}" creada exitosamente!`);
+      }
+
+      setEmpresaData({ razon_social: '', nit: '', fecha_inicio_operaciones: '', modo_operacion: 'STANDARD', rol_inicial_id: '' });
       setUsuarios([{ email: '', password: '' }]);
+      setSelectedTemplateCategory(''); // Reset selector
 
     } catch (err) {
       setError(err.response?.data?.detail || 'Ocurrió un error al crear la empresa.');
@@ -98,7 +120,7 @@ export default function CrearEmpresaPanel() {
   return (
     <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-gray-800">Crear Nueva Empresa y Usuarios</h2>
+        <h2 className="text-xl font-semibold text-gray-800">Crear Nueva Empresa</h2>
         <button
           onClick={() => window.open('/manual/capitulo_15_crear_empresa.html', '_blank')}
           className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors"
@@ -107,10 +129,40 @@ export default function CrearEmpresaPanel() {
           <FaBook className="text-lg" /> <span className="font-bold text-sm">Manual</span>
         </button>
       </div>
+
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* El JSX del formulario se mantiene igual */}
+
+        {/* --- NUEVO: SELECTOR DE PLANTILLA --- */}
+        <div className={`p-4 border-2 rounded-md transition-colors ${selectedTemplateCategory ? 'border-purple-300 bg-purple-50' : 'border-gray-200 bg-gray-50'}`}>
+          <div className="flex items-start gap-3">
+            <FaCopy className={`text-2xl mt-1 ${selectedTemplateCategory ? 'text-purple-600' : 'text-gray-400'}`} />
+            <div className="flex-1">
+              <label className="block text-sm font-bold text-gray-700 mb-1">
+                ¿Basar en una Plantilla? (Recomendado)
+              </label>
+              <p className="text-xs text-gray-500 mb-3">
+                Si seleccionas una plantilla, la nueva empresa copiará automáticamen el Plan de Cuentas (PUC),
+                Tipos de Documento e Impuestos de la plantilla seleccionada.
+              </p>
+              <select
+                value={selectedTemplateCategory}
+                onChange={(e) => setSelectedTemplateCategory(e.target.value)}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
+              >
+                <option value="">-- No usar plantilla (Empresa en Blanco) --</option>
+                {plantillas.map(t => (
+                  <option key={t.id} value={t.template_category || 'DEFAULT'}>
+                    📂 {t.razon_social} ({t.template_category || 'Sin Categoría'})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+
         <div className="p-4 border rounded-md space-y-4">
-          <h3 className="font-medium text-gray-700">Datos de la Empresa</h3>
+          <h3 className="font-medium text-gray-700">Datos Básicos</h3>
           <div>
             <label className="block text-sm font-medium text-gray-600">Razón Social</label>
             <input type="text" name="razon_social" value={empresaData.razon_social} onChange={handleEmpresaChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required />
@@ -126,6 +178,7 @@ export default function CrearEmpresaPanel() {
             </div>
           </div>
         </div>
+
         {/* Nuevo Control para Modo Auditoría */}
         <div className="flex items-center mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
           <div className="flex items-center h-5">
@@ -204,7 +257,9 @@ export default function CrearEmpresaPanel() {
           {error && <p className="text-red-600 bg-red-100 p-3 rounded-md mb-4">{error}</p>}
           {success && <p className="text-green-600 bg-green-100 p-3 rounded-md mb-4">{success}</p>}
           <button type="submit" disabled={isProcessing} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400">
-            {isProcessing ? 'Creando empresa...' : 'Crear Empresa y Usuarios'}
+            {isProcessing ? 'Creando empresa...' : (
+              selectedTemplateCategory ? 'Crear desde Plantilla' : 'Crear Empresa y Usuarios'
+            )}
           </button>
         </div>
       </form >

@@ -204,7 +204,7 @@ export default function PlanDeCuentasPage() {
     const term = e.target.value;
     setSearchTerm(term);
 
-    if (term.length >= 4) {
+    if (term.length >= 1) {
       const cuentaEncontrada = cuentasFlat.find(c => c.codigo.startsWith(term));
       if (cuentaEncontrada) {
         expandirAncestros(cuentaEncontrada);

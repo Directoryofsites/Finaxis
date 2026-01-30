@@ -4,7 +4,7 @@ from app.schemas import documento as schemas_doc
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
-from datetime import date
+from datetime import date, datetime
 
 from app.core.database import get_db
 
@@ -788,6 +788,146 @@ def get_income_statement_report_pdf(
     )
     from fastapi.responses import Response
     return Response(content=pdf_content, media_type="application/pdf")
+
+
+# --- NUEVO: REPORTE RELACIÓN DE SALDOS (CUENTA Y TERCEROS) ---
+@router.get("/relacion-saldos", response_model=List[Dict[str, Any]])
+def get_relacion_saldos_report(
+    fecha_inicio: date = Query(..., description="Fecha Inicio"),
+    fecha_fin: date = Query(..., description="Fecha Fin"),
+    cuenta_ids: Optional[str] = Query(None, description="IDs Cuentas (separados por coma)"),
+    tercero_ids: Optional[str] = Query(None, description="IDs Terceros (separados por coma)"),
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    filtros = {
+        "fecha_inicio": fecha_inicio,
+        "fecha_fin": fecha_fin,
+        "cuenta_ids": [int(x) for x in cuenta_ids.split(',')] if cuenta_ids else None,
+        "tercero_ids": [int(x) for x in tercero_ids.split(',')] if tercero_ids else None
+    }
+    return reports_service.generate_relacion_saldos_report(db, current_user.empresa_id, filtros)
+
+@router.get("/relacion-saldos/get-signed-url", response_model=Dict[str, str])
+def get_signed_relacion_saldos_url(
+    fecha_inicio: date = Query(..., description="Fecha Inicio"),
+    fecha_fin: date = Query(..., description="Fecha Fin"),
+    cuenta_ids: Optional[str] = Query(None, description="IDs Cuentas"),
+    tercero_ids: Optional[str] = Query(None, description="IDs Terceros"),
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    pdf_endpoint = "/api/reports/relacion-saldos/imprimir"
+    params = {
+        "fecha_inicio": fecha_inicio.isoformat(),
+        "fecha_fin": fecha_fin.isoformat(),
+        "cuenta_ids": [int(x) for x in cuenta_ids.split(',')] if cuenta_ids else None,
+        "tercero_ids": [int(x) for x in tercero_ids.split(',')] if tercero_ids else None,
+        "empresa_id": current_user.empresa_id
+    }
+    signed_token = reports_service.generate_signed_report_url(
+        endpoint=pdf_endpoint,
+        expiration_seconds=60,
+        **params
+    )
+    return {"signed_url_token": signed_token}
+
+@router.get("/relacion-saldos/imprimir")
+def print_relacion_saldos_pdf(
+    signed_token: str = Query(...),
+    db: Session = Depends(get_db)
+):
+    try:
+        decoded_data = reports_service.decode_signed_report_token(signed_token)
+        # Parse params back
+        filtros = {
+            "fecha_inicio": datetime.fromisoformat(decoded_data["fecha_inicio"]).date(),
+            "fecha_fin": datetime.fromisoformat(decoded_data["fecha_fin"]).date(),
+            "cuenta_ids": decoded_data.get("cuenta_ids"),
+            "tercero_ids": decoded_data.get("tercero_ids")
+        }
+        
+        pdf_content = reports_service.generate_relacion_saldos_pdf(db, decoded_data["empresa_id"], filtros)
+        
+        return Response(
+            content=pdf_content,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename=Relacion_Saldos_{filtros['fecha_fin']}.pdf"
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# --- NUEVO: AUXILIAR INVERSO (Cuenta -> Terceros) ---
+# Se usa para la vista "Por Cuenta" del Auxiliar de Terceros
+@router.get("/auxiliar-inverso", response_model=Dict[str, Any])
+def get_auxiliar_inverso_report(
+    cuenta_id: int = Query(..., description="Cuenta Principal"),
+    fecha_inicio: date = Query(..., description="Fecha Inicio"),
+    fecha_fin: date = Query(..., description="Fecha Fin"),
+    tercero_ids: Optional[str] = Query(None, description="IDs Terceros a filtrar (opcional)"),
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    filtros = {
+        "cuenta_id": cuenta_id,
+        "fecha_inicio": fecha_inicio,
+        "fecha_fin": fecha_fin,
+        "tercero_ids": [int(x) for x in tercero_ids.split(',')] if tercero_ids else None
+    }
+    return reports_service.generate_auxiliar_inverso_report(db, current_user.empresa_id, filtros)
+
+@router.get("/auxiliar-inverso/get-signed-url", response_model=Dict[str, str])
+def get_signed_auxiliar_inverso_url(
+    cuenta_id: int = Query(..., description="Cuenta Principal"),
+    fecha_inicio: date = Query(..., description="Fecha Inicio"),
+    fecha_fin: date = Query(..., description="Fecha Fin"),
+    tercero_ids: Optional[str] = Query(None, description="IDs Terceros"),
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    pdf_endpoint = "/api/reports/auxiliar-inverso/imprimir"
+    params = {
+        "cuenta_id": cuenta_id,
+        "fecha_inicio": fecha_inicio.isoformat(),
+        "fecha_fin": fecha_fin.isoformat(),
+        "tercero_ids": [int(x) for x in tercero_ids.split(',')] if tercero_ids else None,
+        "empresa_id": current_user.empresa_id
+    }
+    signed_token = reports_service.generate_signed_report_url(
+        endpoint=pdf_endpoint,
+        expiration_seconds=60,
+        **params
+    )
+    return {"signed_url_token": signed_token}
+
+@router.get("/auxiliar-inverso/imprimir")
+def get_auxiliar_inverso_pdf(
+    signed_token: str = Query(..., description="Token"),
+    db: Session = Depends(get_db)
+):
+    pdf_endpoint = "/api/reports/auxiliar-inverso/imprimir"
+    verified_params = reports_service.verify_signed_report_url(signed_token, pdf_endpoint)
+    if not verified_params:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="URL inválida.")
+        
+    fecha_inicio = date.fromisoformat(verified_params["fecha_inicio"])
+    fecha_fin = date.fromisoformat(verified_params["fecha_fin"])
+    empresa_id = verified_params["empresa_id"]
+    cuenta_id = verified_params["cuenta_id"]
+    tercero_ids = verified_params.get("tercero_ids")
+    
+    filtros = {
+        "fecha_inicio": fecha_inicio,
+        "fecha_fin": fecha_fin,
+        "cuenta_id": cuenta_id,
+        "tercero_ids": tercero_ids
+    }
+    
+    pdf_content = reports_service.generate_auxiliar_inverso_pdf(db, empresa_id, filtros)
+    return Response(content=pdf_content, media_type="application/pdf")
+
 
 # --- RUTAS PARA REPORTE ESTADO DE RESULTADOS POR CENTRO DE COSTO ---
 @router.get("/income-statement-cc", response_model=Dict[str, Any])

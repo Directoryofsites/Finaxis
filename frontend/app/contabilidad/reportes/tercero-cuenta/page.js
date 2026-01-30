@@ -25,10 +25,10 @@ import { recalcularSaldosTercero } from '../../../../lib/reportesService';
 // --- ESTILOS REUSABLES (Manual v2.0) ---
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
 const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none pl-10";
-const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none bg-white pl-10";
+const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none bg-white pl-10 text-gray-900";
 const multiSelectClass = "w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none bg-white h-32";
 
-const MultiSelect = ({ options, selected, onChange }) => {
+const MultiSelect = ({ options, selected, onChange, labelAll = "-- Todas las Cuentas --" }) => {
   const handleSelect = (e) => {
     const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
     onChange(selectedOptions);
@@ -36,10 +36,10 @@ const MultiSelect = ({ options, selected, onChange }) => {
   return (
     <div className="relative">
       <select multiple={true} value={selected} onChange={handleSelect} className={multiSelectClass}>
-        <option value="all">-- Todas las Cuentas --</option>
+        <option value="all">{labelAll}</option>
         {options.map(option => (
           <option key={option.id} value={option.id}>
-            {option.codigo} - {option.nombre}
+            {option.codigo ? `${option.codigo} - ` : ''}{option.nombre || option.razon_social}
           </option>
         ))}
       </select>
@@ -57,6 +57,14 @@ export default function ReporteTerceroCuentaPage() {
   const [selectedTercero, setSelectedTercero] = useState('');
   const [cuentasDelTercero, setCuentasDelTercero] = useState([]);
   const [selectedCuentas, setSelectedCuentas] = useState(['all']);
+
+  // NUEVO: Estado para Modo Inverso (Cuenta -> Terceros)
+  const [reportMode, setReportMode] = useState('tercero_first'); // 'tercero_first' | 'cuenta_first'
+  const [cuentasAll, setCuentasAll] = useState([]); // Lista completa para el select
+  const [selectedCuentaPrincipal, setSelectedCuentaPrincipal] = useState('');
+  const [tercerosDelReporte, setTercerosDelReporte] = useState([]); // Terceros filtrados
+  const [selectedTercerosMulti, setSelectedTercerosMulti] = useState(['all']);
+
   const [fechas, setFechas] = useState({
     inicio: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
     fin: new Date().toISOString().split('T')[0]
@@ -103,7 +111,23 @@ export default function ReporteTerceroCuentaPage() {
       };
       fetchTerceros();
     }
+
   }, [user, authLoading]);
+
+  // NUEVO: Carga de Cuentas Completas (Solo si se activa modo inverso)
+  useEffect(() => {
+    if (reportMode === 'cuenta_first' && user && cuentasAll.length === 0) {
+      const fetchAllCuentas = async () => {
+        try {
+          const res = await apiService.get('/plan-cuentas/list-flat?permite_movimiento=true');
+          setCuentasAll(res.data);
+        } catch (err) {
+          console.error("Error cargando cuentas", err);
+        }
+      };
+      fetchAllCuentas();
+    }
+  }, [reportMode, user, cuentasAll]);
 
   // Carga de Configuración desde IA (Reactiva a URL/SearchParams)
   useEffect(() => {
@@ -347,8 +371,8 @@ export default function ReporteTerceroCuentaPage() {
   }, [shouldAutoRun, selectedTercero, fechas, isLoading, selectedCuentas]);
 
   const handleGenerateReport = async () => {
-    if (!selectedTercero || !fechas.inicio || !fechas.fin) {
-      setError("Por favor, seleccione un tercero y un rango de fechas.");
+    if (!fechas.inicio || !fechas.fin) {
+      setError("Por favor, seleccione un rango de fechas.");
       return;
     }
     setIsLoading(true);
@@ -357,16 +381,42 @@ export default function ReporteTerceroCuentaPage() {
     setRecalculoStatus({ loading: false, message: '', error: '' });
 
     const params = {
-      tercero_id: selectedTercero,
       fecha_inicio: fechas.inicio,
       fecha_fin: fechas.fin,
     };
-    if (selectedCuentas.length > 0 && !selectedCuentas.includes('all')) {
-      params.cuenta_ids = selectedCuentas.join(',');
+
+    // LOGICA DUAL SEGUN MODO
+    if (reportMode === 'tercero_first') {
+      if (!selectedTercero) { setError("Seleccione un tercero."); setIsLoading(false); return; }
+      params.tercero_id = selectedTercero;
+      if (selectedCuentas.length > 0 && !selectedCuentas.includes('all')) {
+        params.cuenta_ids = selectedCuentas.join(',');
+      }
+    } else {
+      // MODO INVERSO
+      if (!selectedCuentaPrincipal) { setError("Seleccione una cuenta principal."); setIsLoading(false); return; }
+      // Para usar el mismo endpoint, necesitamos adaptarnos.
+      // El endpoint actual espera 1 tercero.
+      // SI el usuario elige "Todos los Terceros", necesitamos un nuevo endpoint o iterar.
+      // DECISIÓN: Usaremos el nuevo endpoint 'relacion-saldos' O 'auxiliar-inverso'. 
+      // Por ahora, para mantener compatibilidad con la solicitud del usuario ("agregar una pestañita"),
+      // vamos a intentar usar un endpoint ad-hoc o asumir que el backend lo soportará.
+      // VAMOS A ENVIAR params.cuenta_principal_id y params.tercero_ids
+
+      params.cuenta_id = selectedCuentaPrincipal; // Cambio semántico
+      if (selectedTercerosMulti.length > 0 && !selectedTercerosMulti.includes('all')) {
+        params.tercero_ids = selectedTercerosMulti.join(',');
+      }
+      // Nota: Backend debe ser actualizado para esto.
     }
 
     try {
-      const res = await apiService.get('/reports/tercero-cuenta', { params: params });
+      let endpoint = '/reports/tercero-cuenta';
+      if (reportMode === 'cuenta_first') {
+        endpoint = '/reports/auxiliar-inverso';
+      }
+
+      const res = await apiService.get(endpoint, { params: params });
       setReportData(res.data);
     } catch (err) {
       setError(err.response?.data?.detail || 'Error al generar el reporte.');
@@ -461,22 +511,40 @@ export default function ReporteTerceroCuentaPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const params = {
-        fecha_inicio: fechas.inicio,
-        fecha_fin: fechas.fin,
-        tercero_id: selectedTercero,
-      };
-      if (selectedCuentas.length > 0 && !selectedCuentas.includes('all')) {
-        params.cuenta_ids = selectedCuentas.join(',');
-      }
-      const res = await apiService.get('/reports/tercero-cuenta/get-signed-url', { params });
-      const token = res.data.signed_url_token;
-      const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/reports/tercero-cuenta/imprimir?signed_token=${token}`;
+      if (reportMode === 'tercero_first') {
+        const params = {
+          fecha_inicio: fechas.inicio,
+          fecha_fin: fechas.fin,
+          tercero_id: selectedTercero,
+        };
+        if (selectedCuentas.length > 0 && !selectedCuentas.includes('all')) {
+          params.cuenta_ids = selectedCuentas.join(',');
+        }
+        const res = await apiService.get('/reports/tercero-cuenta/get-signed-url', { params });
+        const token = res.data.signed_url_token;
+        const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/reports/tercero-cuenta/imprimir?signed_token=${token}`;
+        window.location.href = pdfUrl;
+      } else {
+        // MODO INVERSO
+        const params = {
+          fecha_inicio: fechas.inicio,
+          fecha_fin: fechas.fin,
+          cuenta_id: selectedCuentaPrincipal
+        };
+        if (selectedTercerosMulti.length > 0 && !selectedTercerosMulti.includes('all')) {
+          params.tercero_ids = selectedTercerosMulti.join(',');
+        }
 
-      // MÉTODO BRUTO: Navegación directa para forzar descarga seguro
-      window.location.href = pdfUrl;
+        const res = await apiService.get('/reports/auxiliar-inverso/get-signed-url', { params });
+        const token = res.data.signed_url_token;
+        const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/reports/auxiliar-inverso/imprimir?signed_token=${token}`;
+        window.location.href = pdfUrl;
+      }
+
     } catch (err) {
-      setError(err.response?.data?.detail || 'Error PDF.');
+      // Fix React Error by ensuring string
+      const msg = err.response?.data?.detail || err.message || 'Error generando PDF.';
+      setError(typeof msg === 'object' ? JSON.stringify(msg) : msg);
     } finally {
       setIsLoading(false);
     }
@@ -517,6 +585,7 @@ export default function ReporteTerceroCuentaPage() {
                     <span className="text-lg">📖</span> <span className="font-bold text-sm hidden md:inline">Manual</span>
                   </button>
                 </div>
+
                 <p className="text-gray-500 text-sm">Auditoría detallada de movimientos por cuenta para un tercero.</p>
                 {/* STATUS INDICATOR */}
                 {(wppNumber || autoPdfTrigger || emailAddress) && (
@@ -537,18 +606,57 @@ export default function ReporteTerceroCuentaPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
-            {/* Tercero */}
-            <div className="md:col-span-2">
-              <label className={labelClass}>Tercero</label>
-              <div className="relative">
-                <select value={selectedTercero} onChange={(e) => setSelectedTercero(e.target.value)} className={selectClass}>
-                  <option value="">-- Seleccione Tercero --</option>
-                  <option value="all">-- Todos los Terceros --</option>
-                  {terceros.map(t => <option key={t.id} value={t.id}>{t.razon_social}</option>)}
-                </select>
-                <FaUserTag className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
+
+            {/* TOGGLE DE MODO */}
+            <div className="md:col-span-4 flex justify-center mb-4 border-b border-gray-100 pb-4">
+              <div className="bg-gray-100 p-1 rounded-lg flex gap-1">
+                <button
+                  onClick={() => setReportMode('tercero_first')}
+                  className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${reportMode === 'tercero_first' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  Por Tercero
+                </button>
+                <button
+                  onClick={() => setReportMode('cuenta_first')}
+                  className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${reportMode === 'cuenta_first' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  Por Cuenta (Inverso)
+                </button>
               </div>
             </div>
+
+            {/* MODO NORMAL: Tercero -> Cuentas */}
+            {reportMode === 'tercero_first' && (
+              <>
+                <div className="md:col-span-2">
+                  <label className={labelClass}>Tercero</label>
+                  <div className="relative">
+                    <select value={selectedTercero} onChange={(e) => setSelectedTercero(e.target.value)} className={selectClass}>
+                      <option value="">-- Seleccione Tercero --</option>
+                      {terceros.map(t => <option key={t.id} value={t.id}>{t.razon_social}</option>)}
+                    </select>
+                    <FaUserTag className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* MODO INVERSO: Cuenta -> Terceros */}
+            {reportMode === 'cuenta_first' && (
+              <>
+                <div className="md:col-span-2">
+                  <label className={labelClass}>Cuenta Principal</label>
+                  <div className="relative">
+                    {/* Idealmente un Autocomplete, por ahora Select simple */}
+                    <select value={selectedCuentaPrincipal} onChange={(e) => setSelectedCuentaPrincipal(e.target.value)} className={selectClass}>
+                      <option value="">-- Seleccione Cuenta --</option>
+                      {cuentasAll.map(c => <option key={c.id} value={c.id}>{c.codigo} - {c.nombre}</option>)}
+                    </select>
+                    <FaBook className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Fechas */}
             <div>
@@ -566,12 +674,33 @@ export default function ReporteTerceroCuentaPage() {
               </div>
             </div>
 
-            {/* Cuentas MultiSelect */}
-            <div className="md:col-span-4">
-              <label className={labelClass}>Filtrar Cuentas (Opcional)</label>
-              <MultiSelect options={cuentasDelTercero} selected={selectedCuentas} onChange={setSelectedCuentas} />
-              <p className="text-xs text-gray-400 mt-1">Mantenga presionado Ctrl (Windows) o Cmd (Mac) para seleccionar varias.</p>
-            </div>
+            {/* Cuentas MultiSelect (MODO NORMAL) */}
+            {reportMode === 'tercero_first' && (
+              <div className="md:col-span-4">
+                <label className={labelClass}>Filtrar Cuentas (Opcional)</label>
+                <MultiSelect
+                  options={cuentasDelTercero}
+                  selected={selectedCuentas}
+                  onChange={setSelectedCuentas}
+                  labelAll="-- Todas las Cuentas --"
+                />
+                <p className="text-xs text-gray-400 mt-1">Mantenga presionado Ctrl (Windows) o Cmd (Mac) para seleccionar varias.</p>
+              </div>
+            )}
+
+            {/* Terceros MultiSelect (MODO INVERSO) */}
+            {reportMode === 'cuenta_first' && (
+              <div className="md:col-span-4">
+                <label className={labelClass}>Filtrar Terceros (Opcional)</label>
+                <MultiSelect
+                  options={terceros.map(t => ({ id: t.id, codigo: t.numero_identificacion, nombre: t.razon_social }))}
+                  selected={selectedTercerosMulti}
+                  onChange={setSelectedTercerosMulti}
+                  labelAll="-- Todos los Terceros --"
+                />
+                <p className="text-xs text-gray-400 mt-1">Seleccione '-- Todos los Terceros --' para ver reporte completo.</p>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end mt-6 pt-4 border-t border-gray-100">
@@ -663,17 +792,45 @@ export default function ReporteTerceroCuentaPage() {
                   </tr>
 
                   {reportData.movimientos.map((mov, index) => {
-                    const isNewAccountGroup = index === 0 || mov.cuenta_id !== reportData.movimientos[index - 1].cuenta_id;
+                    // LÓGICA DE AGRUPACIÓN DINÁMICA
+                    let isNewGroup = false;
+                    let groupHeader = null;
+                    let groupSaldoProps = { label: '', value: 0 };
+
+                    if (reportMode === 'tercero_first') {
+                      // Agrupar por Cuenta
+                      isNewGroup = index === 0 || mov.cuenta_id !== reportData.movimientos[index - 1].cuenta_id;
+                      if (isNewGroup) {
+                        groupHeader = <span>Cuenta: <span className="text-indigo-600">{mov.cuenta_codigo} - {mov.cuenta_nombre}</span></span>;
+                        groupSaldoProps = {
+                          label: 'Saldo Inicial Cuenta:',
+                          value: reportData.saldos_iniciales_por_cuenta ? reportData.saldos_iniciales_por_cuenta[String(mov.cuenta_id)] : 0
+                        };
+                      }
+                    } else {
+                      // Agrupar por Tercero (Inverso)
+                      // Nota: El backend de auxiliar inverso debe retornar 'tercero_id' y 'tercero_nombre' en cada movimiento
+                      isNewGroup = index === 0 || mov.tercero_id !== reportData.movimientos[index - 1].tercero_id;
+                      if (isNewGroup) {
+                        groupHeader = <span>Tercero: <span className="text-indigo-600">{mov.tercero_nombre}</span></span>;
+                        // El backend retorna 'saldos_iniciales_por_tercero' en modo inverso
+                        groupSaldoProps = {
+                          label: 'Saldo Inicial Tercero:',
+                          value: reportData.saldos_iniciales_por_tercero ? reportData.saldos_iniciales_por_tercero[String(mov.tercero_id)] : 0
+                        };
+                      }
+                    }
+
                     return (
-                      <React.Fragment key={`group-${mov.cuenta_id}-${index}`}>
-                        {isNewAccountGroup && (
+                      <React.Fragment key={`group-${index}`}>
+                        {isNewGroup && (
                           <tr className="bg-gray-100 border-t border-gray-200">
                             <td colSpan={4} className="px-4 py-2 text-xs font-bold text-gray-600 uppercase">
-                              Cuenta: <span className="text-indigo-600">{mov.cuenta_codigo} - {mov.cuenta_nombre}</span>
+                              {groupHeader}
                             </td>
-                            <td colSpan={2} className="px-4 py-2 text-right text-xs font-bold text-gray-500">Saldo Inicial Cuenta:</td>
+                            <td colSpan={2} className="px-4 py-2 text-right text-xs font-bold text-gray-500">{groupSaldoProps.label}</td>
                             <td className="px-4 py-2 text-right text-xs font-mono font-bold text-gray-700 bg-gray-200">
-                              {formatCurrency(reportData.saldos_iniciales_por_cuenta[String(mov.cuenta_id)])}
+                              {formatCurrency(groupSaldoProps.value)}
                             </td>
                           </tr>
                         )}

@@ -11,6 +11,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useAuth } from '../../context/AuthContext'; // IMPORT useAuth
 import { useRecaudos } from '../../../contexts/RecaudosContext'; // IMPORTED
+import ManualButton from '../../components/ManualButton';
 
 export default function ReportesPHPage() {
     const { user } = useAuth(); // HOOK
@@ -213,6 +214,13 @@ export default function ReportesPHPage() {
                             Reportes {labels.module}
                         </h1>
                         <p className="text-gray-500">Consulta detallada de cartera por {labels.unidad}, {labels.propietario} y {labels.concepto}.</p>
+                    </div>
+                    <div>
+                        <ManualButton 
+                            manualPath="reportes.html"
+                            title="Manual de Reportes"
+                            position="header"
+                        />
                     </div>
                 </div>
 

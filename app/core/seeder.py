@@ -127,7 +127,60 @@ def seed_database():
                 "conciliacion_bancaria:reportes",
                 "inventario:ver_reportes"
             ],
-            # Añadir aquí permisos para 'contador' o 'invitado' si es necesario
+            "contador": [
+                "dashboard:contador",
+                "empresa:crear_desde_plantilla",
+                "empresa:gestionar_cartera",
+                "reportes:ver_consolidado_cartera",
+                "utilidades:comprar_recargas",
+                "administracion:acceso",
+                
+                # --- PERMISOS OPERATIVOS (HEREDADOS DE ADMIN) ---
+                # El contador debe poder operar totalmente las empresas de sus clientes
+                "contabilidad:acceso",
+                "analisis_financiero:acceso",
+                "ph:acceso",
+                "nomina:acceso",
+                "produccion:acceso",
+                "conciliacion_bancaria:acceso",
+                "facturacion:acceso",
+                "compras:acceso",
+                "activos:acceso",
+                "centros_costo:acceso",
+                "terceros:acceso",
+                "impuestos:acceso",
+                "inventario:acceso",
+                "tesoreria:acceso", 
+                "cartera:acceso",   
+                
+                "contabilidad:crear_documento",
+                "contabilidad:editar_documento",
+                "contabilidad:anular_documento",
+                "contabilidad:explorador",
+                "contabilidad:configuracion_tipos_doc",
+                "contabilidad:gestionar_puc",
+                
+                "inventario:ver_reportes",
+                "inventario:eliminar_producto",
+                "plantilla:crear",
+                
+                "conciliacion_bancaria:ver",
+                "conciliacion_bancaria:configurar",
+                "conciliacion_bancaria:importar",
+                "conciliacion_bancaria:conciliar",
+                "conciliacion_bancaria:ajustar",
+                "conciliacion_bancaria:reportes",
+                "conciliacion_bancaria:auditoria",
+                
+                "reportes:rentabilidad_producto",
+                "ventas:ver_reporte_gestion",
+                "reportes:ver_facturacion_detallado",
+                "reportes:ver_officiales",
+                
+                "tesoreria:crear_comprobante",
+                "cartera:ver_informes",
+                "papelera:usar"
+            ],
             "clon_restringido": [
                  # Rol CLON RESTRINGIDO (Auditoría): Solo lectura, sin creación de documentos.
                  # Bloqueado: contabilidad:crear_documento, facturacion:crear (si existiera), etc.
@@ -178,6 +231,15 @@ def seed_database():
         print("--> Asignando permisos a los roles correspondientes...")
         for rol_nombre, lista_permisos in permisos_por_rol.items():
             rol_db = db.query(models_permiso.Rol).filter(models_permiso.Rol.nombre == rol_nombre).one()
+            
+            # --- FIX: PROTECCIÓN DE ROL CONTADOR ---
+            # Si el rol es 'contador' y ya tiene permisos asignados, NO los sobrescribimos.
+            # Esto permite al usuario personalizar el rol sin perder cambios en cada reinicio.
+            if rol_nombre == "contador" and rol_db.permisos:
+                 print(f"--> PROTEGIDO: Saltando actualización de permisos para rol '{rol_nombre}' (Personalizado por usuario).")
+                 continue
+            # ---------------------------------------
+
             permisos_db = db.query(models_permiso.Permiso).filter(models_permiso.Permiso.nombre.in_(lista_permisos)).all()
             rol_db.permisos = permisos_db
         
@@ -202,13 +264,42 @@ def seed_database():
         else:
             print(f"--> Empresa Demo ya existe (ID: {empresa_demo.id}). Saltando creación.")
         
-        # --- NUEVO: SEMBRAR PUC SIMPLIFICADO ---
+        # --- NUEVO: EMPRESAS PLANTILLA (SEED COMPANIES) ---
+        # print("--> Verificando/Creando Empresas Plantilla (Industria)...")
+        # templates_data = [
+        #     {"nit": "TEMPLATE-RETAIL", "razon_social": "PLANTILLA RETAIL (COMERCIO)", "cat": "RETAIL"},
+        #     {"nit": "TEMPLATE-SERVICIOS", "razon_social": "PLANTILLA SERVICIOS PROFESIONALES", "cat": "SERVICIOS"},
+        #     {"nit": "TEMPLATE-PH", "razon_social": "PLANTILLA PROPIEDAD HORIZONTAL", "cat": "PH"},
+        # ]
+        
+        # for tpl in templates_data:
+        #     if not db.query(Empresa).filter(Empresa.nit == tpl["nit"]).first():
+        #          new_tpl = Empresa(
+        #              razon_social=tpl["razon_social"],
+        #              nit=tpl["nit"],
+        #              is_template=True,
+        #              template_category=tpl["cat"],
+        #              limite_registros=0, # Templates don't consume quotas
+        #              fecha_inicio_operaciones=datetime.fromisoformat("2025-01-01").date()
+        #          )
+        #          db.add(new_tpl)
+        #          db.flush()
+        #          print(f"--> Plantilla creada: {tpl['razon_social']}")
+        #          # Seed PUC for template? Maybe later or reuse existing
+        #          # seed_puc_simplificado(db, new_tpl.id) 
+        #     else:
+        #          print(f"--> Plantilla {tpl['cat']} ya existe.")
+        # --------------------------------------------------
+
+        # --- NUEVO: SEMBRAR PUC SIMPLIFICADO EN DEMO ---
         seed_puc_simplificado(db, empresa_demo.id)
         # ---------------------------------------
 
         usuarios_data = [
             {"email": "soporte@soporte.com", "nombre_completo": "Usuario de Soporte Global", "password": "Jh811880", "rol_nombre": "soporte", "empresa_id": None},
-            {"email": "admin@empresa.com", "nombre_completo": "Admin de Empresa Demo", "password": "admin123", "rol_nombre": "administrador", "empresa_id": empresa_demo.id}
+            {"email": "admin@empresa.com", "nombre_completo": "Admin de Empresa Demo", "password": "admin123", "rol_nombre": "administrador", "empresa_id": empresa_demo.id},
+            # Crear usuario contador de prueba
+            {"email": "contador@ejemplo.com", "nombre_completo": "Contador Demo", "password": "conta123", "rol_nombre": "contador", "empresa_id": None} 
         ]
         
         for usuario_data in usuarios_data:
@@ -225,6 +316,12 @@ def seed_database():
             )
             
             if not usuario_service.get_user_by_email(db, email=usuario_a_crear.email):
+                 # Si es contador y tiene empresa_id=None, create_user_in_company podría fallar si exige empresa.
+                 # Pero create_user_in_company usualmente maneja la creación base.
+                 # Revisar lógica: create_user_in_company asigna empresa_id...
+                 # Para el contador, idealmente se le asigna su Holding que deberíamos crear.
+                 # Por simplicidad ahora, lo creamos sin empresa o con None si es permitido.
+                 # El modelo Usuario ahora permite empresa_id nullable.
                 usuario_service.create_user_in_company(db=db, user_data=usuario_a_crear, empresa_id=usuario_data['empresa_id'])
             else:
                  print(f"INFO: Usuario {usuario_data['email']} ya existe, saltando creación.")

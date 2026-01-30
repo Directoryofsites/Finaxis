@@ -383,7 +383,8 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
         backup_data["activos_fijos"]["activos"] = activos_list
 
     if special_flags.get('favoritos', False):
-        favoritos = db.query(UsuarioFavorito).join(Usuario).join(Empresa).filter(Empresa.id == empresa_id).all()
+        # FIX: Join explícito para evitar ambigüedad (Usuario -> Empresa)
+        favoritos = db.query(UsuarioFavorito).join(Usuario).join(Empresa, Usuario.empresa_id == Empresa.id).filter(Empresa.id == empresa_id).all()
         backup_data["modulos_especializados"]["favoritos"] = [serialize_model(f.__dict__) for f in favoritos]
 
     if special_flags.get('cotizaciones', False):

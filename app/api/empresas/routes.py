@@ -9,7 +9,7 @@ from app.services import dashboard as dashboard_service  # Importación consolid
 from app.schemas import empresa as schemas, usuario as schemas_usuario
 from app.models import Usuario as models_usuario
 # Importamos ambos tipos de dependencias de seguridad
-from app.core.security import get_current_soporte_user, get_current_user, has_permission 
+from app.core.security import get_current_soporte_user, get_current_user, has_permission, get_user_permissions 
 
 router = APIRouter()
 
@@ -41,22 +41,71 @@ def read_empresas(
     """
     return service.get_empresas_para_usuario(db, current_user)
 
+@router.get("/templates", response_model=List[schemas.Empresa])
+def read_templates(
+    db: Session = Depends(get_db),
+    current_user: models_usuario = Depends(get_current_user)
+):
+    """
+    Obtiene la lista de plantillas disponibles (Globales + Privadas).
+    """
+    return service.get_templates(db, current_user)
+
 @router.post("/", response_model=schemas.Empresa)
 def create_empresa(
     empresa: schemas.EmpresaConUsuariosCreate, 
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_soporte_user)
+    current_user: models_usuario = Depends(get_current_user)
 ):
-    # CORRECCIÓN CRÍTICA: Se cambia 'empresa=' por 'empresa_data=' para coincidir 
-    # con la definición en app/services/empresa.py
-    return service.create_empresa_con_usuarios(db=db, empresa_data=empresa)
+    # 1. Autorización y Contexto (Soporte vs Contador)
+    user_roles = {r.nombre for r in current_user.roles}
+    is_soporte = "soporte" in user_roles
+    is_contador = "contador" in user_roles
+    
+    if not is_soporte and not is_contador:
+         raise HTTPException(status_code=403, detail="No tiene permisos para crear empresas.")
+         
+    padre_id = None
+    owner_id = None
+    
+    if is_contador:
+        # El contador crea empresas HIJAS de su Holding (si la tiene) o de sí mismo (si es freelance)
+        # Asumimos que la 'empresa_id' del usuario contador es su Holding.
+        padre_id = current_user.empresa_id 
+        owner_id = current_user.id
+        
+    # 2. Lógica de Creación (Plantilla vs Standard)
+    if empresa.template_category:
+        return service.create_empresa_from_template(
+            db=db,
+            empresa_data=empresa,
+            template_category=empresa.template_category,
+            owner_id=owner_id,
+            padre_id=padre_id
+        )
+    
+    # Fallback Standard (Solo Soporte debería usar esto para empresas sin molde)
+    return service.create_empresa_con_usuarios(db=db, empresa_data=empresa, owner_id=owner_id, padre_id=padre_id)
 
 @router.get("/{empresa_id}", response_model=schemas.Empresa)
 def read_empresa(
     empresa_id: int, 
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(has_permission("empresa:gestionar_empresas"))
+    current_user: models_usuario = Depends(get_current_user)
 ):
+    # Validamos permiso manualmente para permitir Soporte
+    # Validamos permiso: Soporte O Permiso Gestión O Es Su Propia Empresa
+    is_soporte = any(r.nombre == 'soporte' for r in current_user.roles)
+    user_permissions = get_user_permissions(current_user)
+    has_perm = "empresa:gestionar_empresas" in user_permissions
+    es_su_empresa = (current_user.empresa_id == empresa_id)
+    
+    if not is_soporte and not has_perm and not es_su_empresa:
+         raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado: No tiene permisos para ver esta empresa."
+        )
+
     verificar_permiso_empresa(current_user, empresa_id)
     
     db_empresa = service.get_empresa(db, empresa_id=empresa_id)
@@ -69,8 +118,21 @@ def update_empresa(
     empresa_id: int, 
     empresa: schemas.EmpresaUpdate, 
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(has_permission("empresa:gestionar_empresas"))
+    current_user: models_usuario = Depends(get_current_user)
 ):
+    # Validamos permiso manualmente para permitir Soporte
+    # Validamos permiso: Soporte O Permiso Gestión O Es Su Propia Empresa
+    is_soporte = any(r.nombre == 'soporte' for r in current_user.roles)
+    user_permissions = get_user_permissions(current_user)
+    has_perm = "empresa:gestionar_empresas" in user_permissions
+    es_su_empresa = (current_user.empresa_id == empresa_id)
+    
+    if not is_soporte and not has_perm and not es_su_empresa:
+         raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado: No tiene permisos para editar esta empresa."
+        )
+
     verificar_permiso_empresa(current_user, empresa_id)
     
     db_empresa = service.update_empresa(db, empresa_id=empresa_id, empresa=empresa)
@@ -280,3 +342,46 @@ def update_precio_empresa_endpoint(
     db.refresh(db_empresa)
     
     return {"msg": "Configuración de precio actualizada", "nuevo_precio": nuevo_precio}
+
+# --- TEMPORARY FIX ENDPOINT ---
+@router.get("/fix-quota/{empresa_id}")
+def fix_quota_manual_internal(
+    empresa_id: int,
+    db: Session = Depends(get_db)
+):
+    from app.models.empresa import Empresa
+    from app.models.consumo_registros import ControlPlanMensual
+    from datetime import datetime
+    
+    # 1. Update Master Limit
+    empresa = db.query(Empresa).get(empresa_id)
+    if not empresa: return {"error": "Empresa no encontrada"}
+    
+    limit_was = empresa.limite_registros
+    empresa.limite_registros = 1800
+    empresa.limite_registros_mensual = 1800
+    db.add(empresa)
+    
+    # 2. Delete Current Plan (Nuclear Reset)
+    now = datetime.now()
+    plan = db.query(ControlPlanMensual).filter(
+        ControlPlanMensual.empresa_id == empresa_id,
+        ControlPlanMensual.anio == now.year,
+        ControlPlanMensual.mes == now.month
+    ).first()
+    
+    deleted_msg = "No plan found"
+    if plan:
+        deleted_msg = f"Plan {plan.id} deleted. Was: Lim={plan.limite_asignado} Avail={plan.cantidad_disponible}"
+        db.delete(plan)
+        
+    db.commit()
+    
+    return {
+        "status": "FIX APPLIED",
+        "empresa": empresa.razon_social,
+        "master_limit_before": limit_was,
+        "master_limit_now": 1800,
+        "reset_action": deleted_msg,
+        "message": "Quota system reset. Please refresh your page and try to save."
+    }

@@ -157,14 +157,29 @@ async def get_current_user(
 
     user = db.query(models_usuario.Usuario).options(
         selectinload(models_usuario.Usuario.roles).selectinload(models_permiso.Rol.permisos),
-        selectinload(models_usuario.Usuario.excepciones).selectinload(models_permiso.UsuarioPermisoExcepcion.permiso)
+        selectinload(models_usuario.Usuario.excepciones).selectinload(models_permiso.UsuarioPermisoExcepcion.permiso),
+        selectinload(models_usuario.Usuario.empresas_asignadas) # <--- EAGER LOAD FIX
     ).filter(models_usuario.Usuario.email == token_data.email).first()
 
     if user is None:
         print(f"DEBUG AUTH: User {token_data.email} not found in DB")
         raise credentials_exception
     
-    # print("DEBUG AUTH: User found and validated")
+    # --- FIX CRÍTICO: CONTEXT SWITCHING ---
+    token_empresa_id = payload.get("empresa_id")
+    if token_empresa_id:
+        # 1. Override ID
+        user.empresa_id = token_empresa_id
+        
+        # 2. Override Relationship (para que Pydantic serialice la empresa correcta)
+        # Necesitamos la clase Empresa, pero evitar import circular.
+        # SQLAlchemy permite lanzar una query ad-hoc en la sesión.
+        # Como user está en la sesión db, podemos usar db.
+        from app.models.empresa import Empresa
+        empresa_context = db.query(Empresa).filter(Empresa.id == token_empresa_id).first()
+        if empresa_context:
+            user.empresa = empresa_context
+            
     return user
 
 oauth2_soporte_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/soporte/login")

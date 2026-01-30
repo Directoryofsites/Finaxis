@@ -16,6 +16,7 @@ const ANALISIS_FINANCIERO_MODULE = {
     permission: 'analisis_financiero:acceso',
     links: [
         { name: 'Dashboard', href: '/analisis/dashboard', mnemonic: 'd', icon: FaChartPie, permission: 'analisis_financiero:dashboard' },
+        { name: 'Presupuestos', href: '/analisis/presupuesto', mnemonic: 'p', icon: FaCalculator, permission: 'analisis_financiero:dashboard' }, // Nueva herramienta
         { name: 'Ratios', href: '/analisis/ratios', mnemonic: 'r', icon: FaPercentage, permission: 'analisis_financiero:ratios' },
         { name: 'Vertical', href: '/analisis/vertical', mnemonic: 'v', icon: FaArrowUp, permission: 'analisis_financiero:vertical' },
         { name: 'Horizontal', href: '/analisis/horizontal', mnemonic: 'h', icon: FaExchangeAlt, permission: 'analisis_financiero:horizontal' },
@@ -31,7 +32,7 @@ const PH_MODULE = {
     permission: 'ph:acceso',
     links: [
         { name: 'Unidades / Activos', href: '/ph/unidades', mnemonic: 'u', icon: FaHome, description: 'Administrar activos sujetos de cobro.', permission: 'ph:unidades' },
-        { name: 'Terceros / Miembros', href: '/ph/propietarios', mnemonic: 'p', icon: FaUsers, description: 'Directorio de responsables de pago.', permission: 'ph:propietarios' },
+        { name: 'Terceros / Miembros', href: '/ph/propietarios', mnemonic: 'm', icon: FaUsers, description: 'Directorio de responsables de pago.', permission: 'ph:propietarios' },
         { name: 'Conceptos de Cobro', href: '/ph/conceptos', mnemonic: 'c', icon: FaListUl, description: 'Definir cuotas y servicios recurrentes.', permission: 'ph:conceptos' },
         { name: 'Generar Recaudos', href: '/ph/facturacion', mnemonic: 'g', icon: FaFileInvoiceDollar, description: 'Generar cobros masivos.', permission: 'ph:facturacion' },
         { name: 'Recaudos (Pagos)', href: '/ph/pagos', mnemonic: 'r', icon: FaHandshake, description: 'Asentar pagos recibidos.', permission: 'ph:pagos' },
@@ -39,8 +40,8 @@ const PH_MODULE = {
         { name: 'Reportes Recaudos', href: '/ph/reportes', mnemonic: 'o', icon: FaChartBar, description: 'Informes de cartera y financieros.', permission: 'ph:reportes' },
         { name: 'Cartera por Edades', href: '/ph/reportes/edades', mnemonic: 'd', icon: FaChartPie, description: 'Vencimientos 30-60-90 días.', permission: 'ph:reportes' },
         { name: 'Balance de Cartera', href: '/ph/reportes/saldos', mnemonic: 'b', icon: FaBalanceScale, description: 'Saldos detallados por unidad y concepto.', permission: 'ph:reportes' },
-        { name: 'Presupuestos', href: '/ph/presupuestos/gestion', mnemonic: 'x', icon: FaCalculator, description: 'Matriz de proyección anual.', permission: 'ph:configuracion' },
-        { name: 'Ejecución PPT (Junta)', href: '/ph/reportes/ejecucion', mnemonic: 'j', icon: FaChartArea, description: 'Informe comparativo vs real.', permission: 'ph:reportes' },
+        { name: 'Presupuestos', href: '/ph/presupuestos/gestion', mnemonic: 'p', icon: FaCalculator, description: 'Matriz de proyección anual.', permission: 'ph:configuracion' },
+        { name: 'Ejecución PPT (Junta)', href: '/ph/reportes/ejecucion', mnemonic: 't', icon: FaChartArea, description: 'Informe comparativo vs real.', permission: 'ph:reportes' },
         { name: 'Configuración', href: '/ph/configuracion', mnemonic: 'f', icon: FaCog, description: 'Parámetros del sistema de recaudos.', permission: 'ph:configuracion' }
     ]
 };
@@ -143,9 +144,10 @@ export const menuStructure = [
             { name: 'Gestionar Terceros', href: '/admin/terceros', mnemonic: 'g', icon: FaHandshake, description: 'Directorio de clientes y proveedores.', permission: 'terceros:gestionar' },
             { name: 'Auxiliar Terceros', href: '/contabilidad/reportes/tercero-cuenta', mnemonic: 'a', icon: FaFileAlt, description: 'Movimientos por beneficiario.', permission: 'terceros:auxiliar' },
             { name: 'Estado de Cuenta (Clientes)', href: '/contabilidad/reportes/estado-cuenta-cliente', mnemonic: 'c', icon: FaLock, description: 'Cuentas por cobrar a clientes.', permission: 'terceros:estado_cuenta_cliente' },
-            { name: 'Auxiliar de Cartera', href: '/contabilidad/reportes/auxiliar-cartera', mnemonic: 'v', icon: FaClipboardList, description: 'Detalle de vencimientos cartera.', permission: 'terceros:cartera' },
+            { name: 'Auxiliar de Cartera', href: '/contabilidad/reportes/auxiliar-cartera', mnemonic: 'x', icon: FaClipboardList, description: 'Detalle de vencimientos cartera.', permission: 'terceros:cartera' },
             { name: 'Estado de Cuenta (Proveedores)', href: '/contabilidad/reportes/estado-cuenta-proveedor', mnemonic: 'p', icon: FaTruckMoving, description: 'Cuentas por pagar a proveedores.', permission: 'terceros:estado_cuenta_proveedor' },
             { name: 'Auxiliar de Proveedores', href: '/contabilidad/reportes/auxiliar-proveedores', mnemonic: 'r', icon: FaReceipt, description: 'Detalle de pasivos con terceros.', permission: 'terceros:auxiliar_proveedores' },
+            { name: 'Relación de Saldos', href: '/contabilidad/reportes/relacion-saldos', mnemonic: 's', icon: FaBalanceScale, description: 'Saldos netos por cuenta y tercero.', permission: 'terceros:auxiliar' },
         ]
     },
     // 5. Impuestos (I)
@@ -214,7 +216,7 @@ export const menuStructure = [
         ]
     },
     // 9. Propiedad Horizontal -> PH (P)
-    { ...PH_MODULE, mnemonic: 'p' },
+    { ...PH_MODULE, mnemonic: 'g' },
     // 10. Nómina (N - [N]omina - Updated to avoid M conflict)
     { ...NOMINA_MODULE, mnemonic: 'n' },
     // 11. Producción (R - P[r]oduccion)
@@ -263,7 +265,7 @@ export const menuStructure = [
                     { name: 'Edición Masiva', href: '/admin/utilidades/eliminacion-masiva', mnemonic: 'm', icon: FaFileAlt, permission: 'utilidades:edicion_masiva' },
                     { name: 'Recodificación', href: '/admin/utilidades/recodificacion-masiva', mnemonic: 'd', icon: FaRedoAlt, permission: 'utilidades:recodificacion' },
                     { name: 'Papelera', href: '/admin/utilidades/papelera', mnemonic: 'l', icon: FaTimes, permission: 'papelera:usar' },
-                    { name: 'Configuración Correo', href: '/admin/utilidades/configuracion-correo', mnemonic: 'g', icon: FaEnvelope, permission: 'utilidades:config_correo' },
+                    { name: 'Configuración Correo', href: '/admin/utilidades/configuracion-correo', mnemonic: 'f', icon: FaEnvelope, permission: 'utilidades:config_correo' },
                 ]
             },
         ]

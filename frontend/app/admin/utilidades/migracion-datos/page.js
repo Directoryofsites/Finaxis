@@ -128,7 +128,7 @@ export default function MigracionDatosPage() {
 
   // --- INTERFAZ PRINCIPAL ---
   return (
-    <div className="min-h-screen bg-gray-50 p-6 font-sans">
+    <div className="bg-gray-50 p-6 font-sans h-[calc(100vh-80px)] overflow-y-auto pb-32">
       <div className="max-w-7xl mx-auto">
 
         {/* ENCABEZADO CON JERARQUÍA VISUAL */}

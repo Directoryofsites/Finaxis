@@ -3,10 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../../context/AuthContext';
+import { useRecaudos } from '../../../contexts/RecaudosContext';
 
 import { phService } from '../../../lib/phService';
 import BuscadorCuentas from '../../../components/BuscadorCuentas';
 import { FaCogs, FaSave, FaPlus, FaTrash, FaEdit, FaExclamationTriangle, FaListUl, FaMoneyBillWave, FaLayerGroup, FaBuilding } from 'react-icons/fa';
+import ManualButton from '../../components/ManualButton';
 
 // Estilos
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
@@ -15,6 +17,7 @@ const sectionTitleClass = "text-lg font-bold text-gray-700 flex items-center gap
 
 export default function ConfiguracionPHPage() {
     const { user, loading: authLoading } = useAuth();
+    const { labels, refreshConfig } = useRecaudos();
 
     // Estados Globales
     const [loading, setLoading] = useState(true);
@@ -73,7 +76,9 @@ export default function ConfiguracionPHPage() {
         e.preventDefault();
         try {
             setSaving(true);
+            setSaving(true);
             await phService.updateConfiguracion(config);
+            await refreshConfig(); // Actualizar el contexto con el nuevo tipo de negocio
             alert('Configuración guardada correctamente.');
         } catch (err) {
             alert('Error guardando configuración.');
@@ -96,13 +101,22 @@ export default function ConfiguracionPHPage() {
             <div className="max-w-6xl mx-auto">
                 {/* HEAD */}
                 <div className="mb-8">
-                    <div className="flex items-center gap-3 mt-3">
-                        <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
-                            <FaCogs className="text-2xl" />
+                    <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-3 mt-3">
+                            <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
+                                <FaCogs className="text-2xl" />
+                            </div>
+                            <div>
+                                <h1 className="text-3xl font-bold text-gray-800">Configuración de Gestión</h1>
+                                <p className="text-gray-500 text-sm">Parámetros generales y conceptos de facturación.</p>
+                            </div>
                         </div>
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-800">Configuración de Gestión</h1>
-                            <p className="text-gray-500 text-sm">Parámetros generales y conceptos de facturación.</p>
+                        <div className="mt-3">
+                            <ManualButton
+                                manualPath="configuracion.html"
+                                title="Manual de Configuración"
+                                position="header"
+                            />
                         </div>
                     </div>
                 </div>
@@ -124,8 +138,8 @@ export default function ConfiguracionPHPage() {
                             <FaBuilding className="text-xl" />
                         </div>
                         <div>
-                            <h3 className="font-bold text-gray-800 group-hover:text-indigo-700 transition-colors">Gestionar Torres</h3>
-                            <p className="text-xs text-gray-500 mt-1">Definir torres, bloques o zonas.</p>
+                            <h3 className="font-bold text-gray-800 group-hover:text-indigo-700 transition-colors">Gestionar {labels?.torre_plural || 'Torres'}</h3>
+                            <p className="text-xs text-gray-500 mt-1">Definir {labels?.torre_plural?.toLowerCase() || 'torres'}, bloques o zonas.</p>
                         </div>
                     </Link>
                 </div>

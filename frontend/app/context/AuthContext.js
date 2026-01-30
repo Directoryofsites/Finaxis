@@ -50,12 +50,14 @@ export const AuthProvider = ({ children }) => {
       try {
         const response = await apiService.get('/usuarios/me');
         console.log("Perfil backend Loaded:", response.data);
+        console.log("CHECK Campo Original:", response.data.empresa_original_nombre);
 
         // Mapeo explícito para asegurar que empresaId existe en camelCase si el backend manda snake_case
         const fullProfile = {
           ...response.data,
           empresaId: response.data.empresa_id || response.data.empresaId,
-          empresaNombre: response.data.empresa?.razon_social || response.data.empresa?.nombre || 'Consorcio'
+          empresaNombre: response.data.empresa?.razon_social || response.data.empresa?.nombre || 'Consorcio',
+          empresaOriginal: response.data.empresa_original_nombre // Nuevo campo Matriz
         };
         console.log("Perfil Final SetUser:", fullProfile);
 
@@ -103,7 +105,28 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const value = { user, authLoading, login, logout };
+  const switchCompany = async (empresaId) => {
+    try {
+      // 1. Llamar al endpoint de switch
+      const response = await apiService.post('/auth/switch-company', { empresa_id: empresaId });
+      const newToken = response.data.access_token;
+
+      if (!newToken) throw new Error("No se recibió token");
+
+      // 2. Actualizar estado y storage
+      localStorage.setItem(TOKEN_KEY, newToken);
+      setAuthToken(newToken);
+
+      // 3. Re-inicializar perfil
+      await initializeAuth(newToken);
+      return true;
+    } catch (error) {
+      console.error("Error al cambiar de empresa:", error);
+      return false;
+    }
+  };
+
+  const value = { user, authLoading, login, logout, switchCompany };
 
   return (
     <AuthContext.Provider value={value}>

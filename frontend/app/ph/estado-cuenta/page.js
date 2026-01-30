@@ -9,6 +9,7 @@ import { useRecaudos } from '../../../contexts/RecaudosContext'; // IMPORT
 import { FaBuilding, FaPrint, FaMoneyBillWave, FaHistory, FaSearch, FaUserTie, FaReceipt, FaFileInvoiceDollar } from 'react-icons/fa';
 
 import AutocompleteInput from '../../components/AutocompleteInput';
+import ManualButton from '../../components/ManualButton';
 
 export default function EstadoCuentaPage() {
     const { user, loading: authLoading } = useAuth();
@@ -254,14 +255,21 @@ export default function EstadoCuentaPage() {
                                 <p className="text-gray-500">Consulta integral de estados de cuenta y cartera.</p>
                             </div>
                         </div>
-                        {selectedId && !loading && (
-                            <button
-                                onClick={handlePrint}
-                                className="btn-secondary flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors shadow-md"
-                            >
-                                <FaPrint /> Imprimir {viewMode === 'PENDING' ? 'Cobro' : 'Historial'}
-                            </button>
-                        )}
+                        <div className="flex gap-3">
+                            <ManualButton 
+                                manualPath="estado-cuenta.html"
+                                title="Manual de Estado de Cuenta"
+                                position="header"
+                            />
+                            {selectedId && !loading && (
+                                <button
+                                    onClick={handlePrint}
+                                    className="btn-secondary flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors shadow-md"
+                                >
+                                    <FaPrint /> Imprimir {viewMode === 'PENDING' ? 'Cobro' : 'Historial'}
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
 

@@ -9,6 +9,7 @@ import { FaUsers, FaBuilding, FaSearch, FaPhone, FaEnvelope, FaIdCard, FaFileExc
 import { useAuth } from '../../context/AuthContext';
 import { phService } from '../../../lib/phService';
 import { useRecaudos } from '../../../contexts/RecaudosContext'; // IMPORT
+import ManualButton from '../../components/ManualButton';
 
 export default function DirectorioPropietariosPage() {
     const { user, loading: authLoading } = useAuth();
@@ -109,6 +110,11 @@ export default function DirectorioPropietariosPage() {
                     </div>
 
                     <div className="flex gap-3">
+                        <ManualButton 
+                            manualPath="propietarios.html"
+                            title="Manual de Directorio de Propietarios"
+                            position="header"
+                        />
                         <button onClick={handleExportPDF} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all shadow-md font-medium">
                             <FaFilePdf /> <span>PDF</span>
                         </button>
