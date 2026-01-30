@@ -21,6 +21,61 @@ class LegacyParsingService:
     @staticmethod
     def parse_coma_accounts(file_content: bytes) -> List[Dict[str, Any]]:
         accounts = []
+        
+        # 0. Try Text/CSV Parse First
+        try:
+            # Try to decode as text
+            try:
+                text_content = file_content.decode('utf-8')
+            except:
+                text_content = file_content.decode('latin1', errors='ignore')
+                
+            lines = text_content.split('\n')
+            
+            # Simple Heuristic: If we find comma separated "Code,Name" OR simple "Code Name"
+            valid_txt_lines = 0
+            temp_accounts = []
+            
+            for line in lines:
+                line = line.strip()
+                if not line: continue
+                # CSV check
+                if ',' in line:
+                    parts = line.split(',')
+                    c = parts[0].strip().replace('"', '')
+                    n = ",".join(parts[1:]).strip().replace('"', '')
+                    if c.isdigit() and len(c) >= 4:
+                         temp_accounts.append({"codigo": c, "nombre": n})
+                         valid_txt_lines += 1
+                         continue
+                         
+                # Fixed Width / Space Sep check
+                # "110505 CAJA"
+                parts = line.split(None, 1)
+                if len(parts) == 2:
+                     c = parts[0].strip()
+                     n = parts[1].strip()
+                     
+                     # Check for "110505000...NAME" format (no space)
+                     # Regex for that: ^(\d{4,})([A-Z].*)$
+                     match_dense = re.match(r'^(\d{4,16})([^0-9].*)$', line)
+                     
+                     if match_dense:
+                         c = match_dense.group(1).strip()
+                         n = match_dense.group(2).strip()
+                     
+                     if c.isdigit() and len(c) >= 4:
+                          temp_accounts.append({"codigo": c, "nombre": n})
+                          valid_txt_lines += 1
+            
+            # If we found substantial text records, return them
+            if valid_txt_lines > 5:
+                print(f"Parsed COMA as TEXT/CSV. Found {valid_txt_lines} accounts.")
+                return temp_accounts
+        except Exception as e:
+            print(f"Text parse failed, falling back to binary: {e}")
+
+        # Fallback to Binary COMA Logic
         record_size = 64
         total_len = len(file_content)
         

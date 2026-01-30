@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useRef, useContext } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { FaUserCircle, FaSignOutAlt, FaSearch, FaTimes, FaKeyboard, FaArrowRight, FaCog } from 'react-icons/fa';
+import { FaUserCircle, FaSignOutAlt, FaSearch, FaTimes, FaKeyboard, FaArrowRight, FaCog, FaBuilding } from 'react-icons/fa';
 import { menuStructure } from '../lib/menuData';
 import { useAuth } from '../app/context/AuthContext';
 
@@ -344,31 +344,38 @@ export default function TopNavigationBar() {
                         🏠
                     </button>
 
-                    {menuStructure.map((module) => {
-                        // VERIFICACIÓN DE PERMISOS (MÓDULO)
-                        if (module.permission) {
-                            const userPermissions = user?.roles?.flatMap(r => r.permisos?.map(p => p.nombre)) || [];
-                            if (!userPermissions.includes(module.permission)) return null;
-                        }
+                    {/* BLINDAJE VISUAL: Si es contador y NO ha seleccionado empresa, no mostramos menús rotos */}
+                    {user?.roles?.some(r => r.nombre === 'contador') && !user?.empresaId ? (
+                        <div className="flex items-center px-4 bg-yellow-100 text-yellow-800 text-sm font-bold border-l-4 border-yellow-500 h-full">
+                            ⚠️ Modo Global: Seleccione una empresa para operar
+                        </div>
+                    ) : (
+                        menuStructure.map((module) => {
+                            // VERIFICACIÓN DE PERMISOS (MÓDULO)
+                            if (module.permission) {
+                                const userPermissions = user?.roles?.flatMap(r => r.permisos?.map(p => p.nombre)) || [];
+                                if (!userPermissions.includes(module.permission)) return null;
+                            }
 
-                        const isOpen = isMenuOpen === module.id;
-                        const mnemonicKey = module.mnemonic;
+                            const isOpen = isMenuOpen === module.id;
+                            const mnemonicKey = module.mnemonic;
 
-                        return (
-                            <div key={module.id} className="relative h-full flex items-center group">
-                                <button
-                                    ref={el => buttonsRef.current[module.id] = el}
-                                    className={`px-3 py-0.5 rounded-sm text-sm font-medium transition-colors whitespace-nowrap border border-transparent select-none relative z-[100001]
-                                        ${isOpen ? 'bg-white border-b-0 border-gray-300 rounded-b-none shadow-none font-bold' : 'text-gray-700 hover:bg-gray-200'}
-                                    `}
-                                    onClick={(e) => handleModuleClick(e, module)}
-                                // Removed onMouseEnter
-                                >
-                                    {renderMnemonic(module.name, mnemonicKey)}
-                                </button>
-                            </div>
-                        );
-                    })}
+                            return (
+                                <div key={module.id} className="relative h-full flex items-center group">
+                                    <button
+                                        ref={el => buttonsRef.current[module.id] = el}
+                                        className={`px-3 py-0.5 rounded-sm text-sm font-medium transition-colors whitespace-nowrap border border-transparent select-none relative z-[100001]
+                                            ${isOpen ? 'bg-white border-b-0 border-gray-300 rounded-b-none shadow-none font-bold' : 'text-gray-700 hover:bg-gray-200'}
+                                        `}
+                                        onClick={(e) => handleModuleClick(e, module)}
+                                    // Removed onMouseEnter
+                                    >
+                                        {renderMnemonic(module.name, mnemonicKey)}
+                                    </button>
+                                </div>
+                            );
+                        })
+                    )}
                 </nav>
 
                 <div className="flex items-center space-x-1 pl-2 border-l border-gray-300 h-5 my-auto relative">
@@ -386,7 +393,16 @@ export default function TopNavigationBar() {
                                 <div className="px-4 py-2 border-b border-gray-100 text-xs text-gray-500">
                                     Conectado como <strong>{user?.role || 'Admin'}</strong>
                                 </div>
-                                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 flex items-center">
+                                <button
+                                    onClick={() => { router.push('/portal'); closeAll(); }}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 flex items-center"
+                                >
+                                    <FaBuilding className="mr-2" /> Mis Empresas
+                                </button>
+                                <button
+                                    onClick={() => { router.push('/admin/configuracion/perfil'); closeAll(); }}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 flex items-center"
+                                >
                                     <FaCog className="mr-2" /> Configuración
                                 </button>
                                 <button

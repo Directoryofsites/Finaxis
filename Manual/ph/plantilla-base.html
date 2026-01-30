@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{TITULO}} - Manual de Gestión de Recaudos</title>
+    <link rel="stylesheet" href="assets/css/manual-styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">📋 {{TITULO}}</div>
+                <div class="subtitle">Manual de Usuario - Gestión de Recaudos</div>
+                <div class="version">Sistema ContaPY2 - Módulo PH</div>
+            </div>
+        </header>
+
+        <nav class="nav">
+            <ul>
+                <li><a href="#introduccion">Introducción</a></li>
+                <li><a href="#acceso">Acceso</a></li>
+                <li><a href="#funcionalidades">Funcionalidades</a></li>
+                <li><a href="#ejemplos">Ejemplos</a></li>
+                <li><a href="#errores">Errores Comunes</a></li>
+            </ul>
+        </nav>
+
+        <main class="content">
+            <!-- Tabla de Contenidos -->
+            <div class="toc">
+                <h3>📑 Contenido</h3>
+                <ul>
+                    <!-- Se genera automáticamente con JavaScript -->
+                </ul>
+            </div>
+
+            <!-- Sección de Introducción -->
+            <section id="introduccion" class="section">
+                <h2>🎯 Introducción</h2>
+                <p>{{DESCRIPCION_FUNCIONALIDAD}}</p>
+                
+                <div class="info">
+                    <strong>💡 Objetivo:</strong> {{OBJETIVO_PRINCIPAL}}
+                </div>
+            </section>
+
+            <!-- Sección de Acceso -->
+            <section id="acceso" class="section">
+                <h2>🚪 Cómo Acceder</h2>
+                <ol class="step-list">
+                    <li>Ingrese al sistema ContaPY2</li>
+                    <li>Navegue al módulo "Gestión de Recaudos"</li>
+                    <li>Seleccione la opción "{{NOMBRE_OPCION}}"</li>
+                </ol>
+
+                <div class="screenshot">
+                    <img src="assets/images/screenshots/{{IMAGEN_ACCESO}}" alt="Acceso a {{TITULO}}">
+                    <div class="screenshot-caption">Ubicación del módulo en el menú principal</div>
+                </div>
+            </section>
+
+            <!-- Sección de Funcionalidades -->
+            <section id="funcionalidades" class="section">
+                <h2>⚙️ Funcionalidades Principales</h2>
+                {{CONTENIDO_FUNCIONALIDADES}}
+            </section>
+
+            <!-- Sección de Ejemplos -->
+            <section id="ejemplos" class="section">
+                <h2>📝 Ejemplos Prácticos</h2>
+                {{CONTENIDO_EJEMPLOS}}
+            </section>
+
+            <!-- Sección de Errores Comunes -->
+            <section id="errores" class="section">
+                <h2>⚠️ Errores Comunes y Soluciones</h2>
+                {{CONTENIDO_ERRORES}}
+            </section>
+
+            <!-- Sección de Ayuda Adicional -->
+            <section class="section">
+                <h2>🆘 ¿Necesita Más Ayuda?</h2>
+                <div class="highlight">
+                    <p><strong>Contacto de Soporte:</strong></p>
+                    <ul>
+                        <li>📧 Email: soporte@contapy2.com</li>
+                        <li>📞 Teléfono: +57 (1) 234-5678</li>
+                        <li>💬 Chat en línea: Disponible en el sistema</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 ContaPY2 - Sistema de Gestión Contable Integral</p>
+            <p>Manual generado automáticamente - Versión 1.0</p>
+        </footer>
+    </div>
+
+    <script src="assets/js/manual-navigation.js"></script>
+</body>
+</html>

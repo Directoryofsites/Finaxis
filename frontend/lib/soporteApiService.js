@@ -16,6 +16,24 @@ export const getPrecioEmpresa = (empresaId) => {
   return soporteApiService.get(`/empresas/${empresaId}/config-precio`);
 };
 
+export const getAccountants = () => {
+  return soporteApiService.get('/soporte/users/accountants');
+};
+
+export const searchEmpresas = (params) => {
+  // params should include { q, role_filter, type_filter, page, size, owner_id }
+  return soporteApiService.get('/soporte/empresas/search', { params });
+};
+
+export const createEmpresaFromTemplate = (data) => {
+  return soporteApiService.post('/soporte/empresas/from-template', data);
+};
+
+// FIX: Usamos el nuevo endpoint de clonación para no perder la empresa original
+export const convertirEnPlantilla = (empresaId, category) => {
+  return soporteApiService.post(`/soporte/empresas/${empresaId}/convert-to-template`, { template_category: category });
+};
+
 export const setPrecioEmpresa = (empresaId, precio) => {
   return soporteApiService.put(`/empresas/${empresaId}/config-precio`, { precio });
 };

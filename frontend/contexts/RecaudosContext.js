@@ -10,49 +10,63 @@ const SECTOR_LABELS = {
         unidad: 'Unidad Privada',
         propietario: 'Propietario',
         coeficiente: 'Coeficiente',
-        concepto: 'Expensa/Concepto'
+        concepto: 'Expensa/Concepto',
+        torre: 'Torre',
+        torre_plural: 'Torres'
     },
     'PH_COMERCIAL': {
         module: 'Centro Comercial',
         unidad: 'Local Comercial',
         propietario: 'Arrendatario/Dueño',
         coeficiente: 'Área/Coeficiente',
-        concepto: 'Cuota Admin'
+        concepto: 'Cuota Admin',
+        torre: 'Zona',
+        torre_plural: 'Zonas'
     },
     'TRANSPORTE': {
         module: 'Parque Automotor',
         unidad: 'Vehículo/Móvil',
         propietario: 'Asociado/Propietario',
         coeficiente: 'Cupo',
-        concepto: 'Rodamiento'
+        concepto: 'Rodamiento',
+        torre: 'Ruta',
+        torre_plural: 'Rutas'
     },
     'EDUCATIVO': {
         module: 'Gestión Educativa',
         unidad: 'Estudiante',
         propietario: 'Acudiente',
         coeficiente: 'Grado',
-        concepto: 'Pensión'
+        concepto: 'Pensión',
+        torre: 'Grado',
+        torre_plural: 'Grados'
     },
     'PARQUEADERO': {
         module: 'Alquiler de Espacios',
         unidad: 'Sitio/Plaza',
         propietario: 'Cliente',
         coeficiente: 'Área',
-        concepto: 'Mensualidad'
+        concepto: 'Mensualidad',
+        torre: 'Zona',
+        torre_plural: 'Zonas'
     },
     'CREDITO': {
         module: 'Cartera Financiera',
         unidad: 'Préstamo',
         propietario: 'Deudor',
         coeficiente: 'Tasa Interés',
-        concepto: 'Cuota'
+        concepto: 'Cuota',
+        torre: 'Línea',
+        torre_plural: 'Líneas'
     },
     'GENERICO': {
         module: 'Gestión de Recaudos',
         unidad: 'Activo/Contrato',
         propietario: 'Cliente',
         coeficiente: 'Factor',
-        concepto: 'Concepto'
+        concepto: 'Concepto',
+        torre: 'Grupo',
+        torre_plural: 'Grupos'
     }
 };
 

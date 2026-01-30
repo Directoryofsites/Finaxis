@@ -19,7 +19,8 @@ from app.models import (
     PlantillaMaestra, PlantillaDetalle, ConceptoFavorito, Documento, 
     DocumentoEliminado, MovimientoContable, MovimientoEliminado,
     LogOperacion, PeriodoContableCerrado, FormatoImpresion, AplicacionPago,
-    Remision, RemisionDetalle, ConfiguracionReporte, nomina, UsuarioBusqueda # <--- Added explicit import
+    Remision, RemisionDetalle, ConfiguracionReporte, nomina, UsuarioBusqueda,
+    EscenarioPresupuestal, PresupuestoItem # <--- Modelos Presupuesto Avanzado
 )
 Base.metadata.create_all(bind=engine)
 # --- FIN: LÓGICA DE AUTO-CREACIÓN ---
@@ -362,6 +363,14 @@ app.include_router(conciliacion_bancaria_router.router, prefix="/api", tags=["Co
 # --- MODULO CONSUMO DE REGISTROS ---
 from app.api.api_v1.endpoints import consumo as consumo_router
 app.include_router(consumo_router.router, prefix="/api/consumo", tags=["Consumo y Auditoria"])
+
+# --- MODULO PRESUPUESTO AVANZADO (NUEVO) ---
+from app.api.presupuesto_avanzado import routes as presupuesto_router
+app.include_router(presupuesto_router.router, prefix="/api/presupuesto", tags=["Presupuesto Avanzado"])
+
+# --- MODULO INDICADORES ECONOMICOS ---
+from app.api.indicadores import routes as indicadores_router
+app.include_router(indicadores_router.router, prefix="/api", tags=["Indicadores Económicos"])
 
 if __name__ == "__main__":
     import uvicorn

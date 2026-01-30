@@ -27,7 +27,7 @@ TEMPLATES_EMPAQUETADOS = {
 </head>
 <body>
     <div class="header">
-        <h1>{{ empresa.razon_social }}</h1>
+        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
         <h2>NIT: {{ empresa.nit }}</h2>
         {% if empresa.direccion or empresa.telefono %}
         <p style="margin: 2px 0; font-size: 9px; color: #555;">{{ empresa.direccion }} | Tel: {{ empresa.telefono }}</p>
@@ -131,7 +131,7 @@ TEMPLATES_EMPAQUETADOS = {
 </head>
 <body>
     <div class="header">
-        <h1>{{ empresa.razon_social }}</h1>
+        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
         <h2>NIT: {{ empresa.nit }}</h2>
         {% if empresa.direccion or empresa.telefono %}
         <div class="company-data">{{ empresa.direccion }} | Tel: {{ empresa.telefono }}</div>
@@ -275,7 +275,7 @@ TEMPLATES_EMPAQUETADOS = {
 </head>
 <body>
     <div class="header">
-        <h1>{{ empresa.razon_social }}</h1>
+        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
         <h2>NIT: {{ empresa.nit }}</h2>
         <h3 style="margin-top: 15px; color: #333;">{{ labels.titulo_reporte_cobro }}</h3>
     </div>
@@ -379,7 +379,7 @@ TEMPLATES_EMPAQUETADOS = {
 </head>
 <body>
     <div class="header">
-        <h1>{{ empresa.razon_social }}</h1>
+        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
         <h2>NIT: {{ empresa.nit }}</h2>
         <p><strong>ANÁLISIS INTEGRAL DE VENTAS POR CLIENTE</strong></p>
         <p>Periodo: {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
@@ -760,7 +760,7 @@ TEMPLATES_EMPAQUETADOS = {
 </head>
 <body>
     <div class="company-info">
-        <h1>{{ empresa.razon_social }}</h1>
+        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
         <h2>NIT: {{ empresa.nit }}</h2>
     </div>
     <div class="report-info">
@@ -935,7 +935,7 @@ TEMPLATES_EMPAQUETADOS = {
     </style>
 </head>
 <body>
-    <div class="company-info"><h1>{{ empresa.razon_social }}</h1><h2>NIT: {{ empresa.nit }}</h2></div>
+    <div class="company-info"><h1>{{ empresa.razon_social or 'Consorcio' }}</h1><h2>NIT: {{ empresa.nit }}</h2></div>
     <div class="report-info">
         <h2>Auxiliar de Cartera por Facturas</h2>
         <p><strong>Cliente:</strong> {{ tercero.razon_social }} (NIT: {{ tercero.nit }})</p>
@@ -1004,7 +1004,7 @@ TEMPLATES_EMPAQUETADOS = {
     </style>
 </head>
 <body>
-    <div class="company-info"><h1>{{ empresa.razon_social }}</h1><h2>NIT: {{ empresa.nit }}</h2></div>
+    <div class="company-info"><h1>{{ empresa.razon_social or 'Consorcio' }}</h1><h2>NIT: {{ empresa.nit }}</h2></div>
     <div class="report-info">
         <h2>Auxiliar de Cartera por Recibos de Caja</h2>
         <p><strong>Cliente:</strong> {{ tercero.razon_social }} (NIT: {{ tercero.nit }})</p>
@@ -1067,7 +1067,7 @@ TEMPLATES_EMPAQUETADOS = {
     </style>
 </head>
 <body>
-    <div class="company-info"><h1>{{ empresa.razon_social }}</h1><h2>NIT: {{ empresa.nit }}</h2></div>
+    <div class="company-info"><h1>{{ empresa.razon_social or 'Consorcio' }}</h1><h2>NIT: {{ empresa.nit }}</h2></div>
     <div class="report-info">
         <h2>Auxiliar de Proveedores por Facturas de Compra</h2>
         <p><strong>Proveedor:</strong> {{ tercero.razon_social }} (NIT: {{ tercero.nit }})</p>
@@ -1136,7 +1136,7 @@ TEMPLATES_EMPAQUETADOS = {
     </style>
 </head>
 <body>
-    <div class="company-info"><h1>{{ empresa.razon_social }}</h1><h2>NIT: {{ empresa.nit }}</h2></div>
+    <div class="company-info"><h1>{{ empresa.razon_social or 'Consorcio' }}</h1><h2>NIT: {{ empresa.nit }}</h2></div>
     <div class="report-info">
         <h2>Auxiliar de Proveedores por Comprobantes de Egreso</h2>
         <p><strong>Proveedor:</strong> {{ tercero.razon_social }} (NIT: {{ tercero.nit }})</p>
@@ -1200,7 +1200,7 @@ TEMPLATES_EMPAQUETADOS = {
 </head>
 <body>
     <div class="company-info">
-        <h1>{{ empresa.razon_social }}</h1>
+        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
         <h2>NIT: {{ empresa.nit }}</h2>
     </div>
     <div class="report-info">
@@ -1843,7 +1843,7 @@ TEMPLATES_EMPAQUETADOS = {
 </head>
 <body>
     <div class="company-info">
-        <h1>{{ empresa.razon_social }}</h1>
+        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
         <h2>NIT: {{ empresa.nit }}</h2>
     </div>
     <div class="report-info">
@@ -1928,7 +1928,7 @@ TEMPLATES_EMPAQUETADOS = {
 </head>
 <body>
     <div class="company-info">
-        <h1>{{ empresa.razon_social }}</h1>
+        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
         <h2>NIT: {{ empresa.nit }}</h2>
     </div>
     <div class="report-info">
@@ -2219,7 +2219,7 @@ TEMPLATES_EMPAQUETADOS = {
 
 <body>
     <div class="header">
-        <h1>{{ empresa.razon_social }}</h1>
+        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
         <p>NIT: {{ empresa.nit }}</p>
         <p><strong>ESTADO DE FUENTES Y USOS (CAPITAL DE TRABAJO)</strong></p>
         <p>Periodo: {{ fecha_inicio }} al {{ fecha_fin }}</p>
@@ -2560,7 +2560,7 @@ TEMPLATES_EMPAQUETADOS = {
 <body>
 
     <div class="header">
-        <h1>{{ empresa.razon_social }}</h1>
+        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
         <h2>NIT: {{ empresa.nit }}</h2>
         <p><strong>Libro de Inventarios y Balances (Estado de Situación Financiera)</strong></p>
         <p>Con corte al {{ fecha_corte.strftime('%d de %B de %Y') }}</p>
@@ -2740,16 +2740,22 @@ TEMPLATES_EMPAQUETADOS = {
 
     <table>
         <colgroup>
-            <col style="width: 12%"> <!-- Documento -->
-            <col style="width: 20%"> <!-- Beneficiario -->
-            <col style="width: 20%"> <!-- Cuenta -->
-            <col style="width: 28%"> <!-- Concepto -->
             {% if has_cost_centers %}
-            <col style="width: 20%"> <!-- Reduced Concepto if CC exists? -->
-            <col style="width: 8%"> <!-- CC -->
+                <col style="width: 11%"> <!-- Documento -->
+                <col style="width: 15%"> <!-- Beneficiario -->
+                <col style="width: 15%"> <!-- Cuenta -->
+                <col style="width: 21%"> <!-- Concepto -->
+                <col style="width: 8%">  <!-- C. Costo -->
+                <col style="width: 15%"> <!-- Debito -->
+                <col style="width: 15%"> <!-- Credito -->
+            {% else %}
+                <col style="width: 12%"> <!-- Documento -->
+                <col style="width: 20%"> <!-- Beneficiario -->
+                <col style="width: 20%"> <!-- Cuenta -->
+                <col style="width: 20%"> <!-- Concepto -->
+                <col style="width: 14%"> <!-- Debito -->
+                <col style="width: 14%"> <!-- Credito -->
             {% endif %}
-            <col style="width: 10%"> <!-- Debito -->
-            <col style="width: 10%"> <!-- Credito -->
         </colgroup>
         <thead>
             <tr>
@@ -3379,7 +3385,7 @@ TEMPLATES_EMPAQUETADOS = {
 </head>
 <body>
     <div class="header">
-        <h1>{{ empresa.razon_social }}</h1>
+        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
         <p>NIT: {{ empresa.nit }}</p>
         <p>Reporte Generado: {{ now()|date("%d/%m/%Y %H:%M") }}</p>
     </div>
@@ -3847,7 +3853,7 @@ TEMPLATES_EMPAQUETADOS = {
 </head>
 <body>
     <div class="header">
-        <h1>{{ empresa.razon_social }}</h1>
+        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
         <h3>NIT: {{ empresa.nit }}</h3>
         <h2>Explorador de Transacciones de {{ filtros.tipo_reporte.capitalize() }}</h2>
         <p>Período del {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
@@ -4651,7 +4657,7 @@ TEMPLATES_EMPAQUETADOS = {
 </head>
 <body>
     <div class="header">
-        <h1>{{ empresa.razon_social }}</h1>
+        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
         <h2>NIT: {{ empresa.nit }}</h2>
         <p>{{ empresa.direccion }} - {{ empresa.telefono }}</p>
     </div>

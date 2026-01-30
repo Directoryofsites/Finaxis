@@ -91,7 +91,8 @@ export default function UsuariosRolesPage() {
             });
         } else {
             setEditingItem(null);
-            setUserData({ email: '', password: '', nombre_completo: '', rolId: roles[0]?.id || '' });
+            const defaultRole = roles.find(r => r.empresa_id);
+            setUserData({ email: '', password: '', nombre_completo: '', rolId: defaultRole?.id || '' });
         }
         setShowUserModal(true);
     };
@@ -293,7 +294,7 @@ export default function UsuariosRolesPage() {
                             </button>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {roles.map(rol => {
+                            {roles.filter(r => r.empresa_id).map(rol => {
                                 const isGlobal = !rol.empresa_id;
                                 return (
                                     <div key={rol.id} className={`border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden ${isGlobal ? 'bg-gray-50 border-gray-200' : 'bg-white border-indigo-100'}`}>
@@ -367,7 +368,7 @@ export default function UsuariosRolesPage() {
                                     required
                                 >
                                     <option value="">Seleccione...</option>
-                                    {roles.map(r => (
+                                    {roles.filter(r => r.empresa_id).map(r => (
                                         <option key={r.id} value={r.id}>{r.nombre}</option>
                                     ))}
                                 </select>

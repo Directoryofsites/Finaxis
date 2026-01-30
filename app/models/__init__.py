@@ -71,3 +71,9 @@ from .consumo_registros import ControlPlanMensual, BolsaExcedente, RecargaAdicio
 
 # --- IMPORTACIÓN UNIVERSAL (Nuevo Módulo) ---
 from .import_template import ImportTemplate
+
+# --- PRESUPUESTO AVANZADO (Nuevo Módulo) ---
+from .presupuesto_avanzado import EscenarioPresupuestal, PresupuestoItem
+
+# --- INDICADORES ECONOMICOS ---
+from .indicador_economico import IndicadorEconomico

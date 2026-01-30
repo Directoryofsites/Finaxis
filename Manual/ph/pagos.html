@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Pagos - Manual de Gestión de Recaudos</title>
+    <link rel="stylesheet" href="assets/css/manual-styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">💰 Registro de Pagos</div>
+                <div class="subtitle">Manual de Usuario - Gestión de Recaudos</div>
+                <div class="version">Sistema ContaPY2 - Módulo PH</div>
+            </div>
+        </header>
+
+        <nav class="nav">
+            <ul>
+                <li><a href="#introduccion">Introducción</a></li>
+                <li><a href="#acceso">Acceso</a></li>
+                <li><a href="#individual">Pago Individual</a></li>
+                <li><a href="#consolidado">Pago Consolidado</a></li>
+                <li><a href="#consultas">Consultas</a></li>
+                <li><a href="#errores">Errores Comunes</a></li>
+            </ul>
+        </nav>
+
+        <main class="content">
+            <div class="toc">
+                <h3>📑 Contenido</h3>
+                <ul></ul>
+            </div>
+
+            <section id="introduccion" class="section">
+                <h2>🎯 Introducción</h2>
+                <p>El módulo de Registro de Pagos permite asentar todos los recaudos recibidos de los propietarios, aplicándolos automáticamente a las cuentas pendientes. El sistema maneja tanto pagos individuales por unidad como pagos consolidados por propietario.</p>
+                
+                <div class="info">
+                    <strong>💡 Objetivo:</strong> Registrar de forma precisa todos los pagos recibidos, aplicándolos correctamente a las obligaciones pendientes y manteniendo actualizada la cartera.
+                </div>
+
+                <h3>Tipos de Pagos</h3>
+                <ul>
+                    <li>💳 <strong>Pago Individual:</strong> Pago específico de una unidad</li>
+                    <li>🏢 <strong>Pago Consolidado:</strong> Pago de múltiples unidades de un propietario</li>
+                    <li>💰 <strong>Pago Parcial:</strong> Abono a cuenta sin cubrir el total</li>
+                    <li>✅ <strong>Pago Total:</strong> Cubre completamente las obligaciones</li>
+                    <li>📅 <strong>Pago Anticipado:</strong> Pago antes del vencimiento</li>
+                </ul>
+
+                <h3>Formas de Pago Soportadas</h3>
+                <ul>
+                    <li>💵 Efectivo</li>
+                    <li>🏦 Transferencia bancaria</li>
+                    <li>💳 Tarjeta de crédito/débito</li>
+                    <li>📄 Cheque</li>
+                    <li>📱 Pago electrónico (PSE, Nequi, etc.)</li>
+                </ul>
+            </section>
+
+            <section id="acceso" class="section">
+                <h2>🚪 Cómo Acceder</h2>
+                <ol class="step-list">
+                    <li>Ingrese al sistema ContaPY2</li>
+                    <li>Navegue al módulo "Gestión de Recaudos"</li>
+                    <li>Haga clic en "Registro de Pagos" o "Recaudos (Pagos)"</li>
+                </ol>
+            </section>
+
+            <section id="individual" class="section">
+                <h2>💳 Pago Individual por Unidad</h2>
+                
+                <h3>Proceso de Registro</h3>
+                <ol class="step-list">
+                    <li><strong>Buscar Unidad:</strong> Localice la unidad que está pagando</li>
+                    <li><strong>Consultar Cartera:</strong> Revise las obligaciones pendientes</li>
+                    <li><strong>Ingresar Pago:</strong> Registre el monto y forma de pago</li>
+                    <li><strong>Aplicar Pago:</strong> El sistema aplica automáticamente</li>
+                    <li><strong>Confirmar:</strong> Verifique y confirme el registro</li>
+                </ol>
+
+                <h3>Información Requerida</h3>
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Campo</th>
+                                <th>Descripción</th>
+                                <th>Requerido</th>
+                                <th>Ejemplo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Unidad</td>
+                                <td>Unidad que realiza el pago</td>
+                                <td>✅ Sí</td>
+                                <td>APT-101</td>
+                            </tr>
+                            <tr>
+                                <td>Fecha de Pago</td>
+                                <td>Cuándo se recibió el pago</td>
+                                <td>✅ Sí</td>
+                                <td>2024-03-15</td>
+                            </tr>
+                            <tr>
+                                <td>Valor Pagado</td>
+                                <td>Monto recibido</td>
+                                <td>✅ Sí</td>
+                                <td>$250,000</td>
+                            </tr>
+                            <tr>
+                                <td>Forma de Pago</td>
+                                <td>Método utilizado</td>
+                                <td>✅ Sí</td>
+                                <td>Transferencia</td>
+                            </tr>
+                            <tr>
+                                <td>Referencia</td>
+                                <td>Número de transacción</td>
+                                <td>❌ No</td>
+                                <td>TRF-123456</td>
+                            </tr>
+                            <tr>
+                                <td>Observaciones</td>
+                                <td>Notas adicionales</td>
+                                <td>❌ No</td>
+                                <td>Pago mes de marzo</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Aplicación Automática</h3>
+                <p>El sistema aplica los pagos siguiendo este orden de prioridad:</p>
+                <ol class="step-list">
+                    <li><strong>Intereses de Mora:</strong> Primero se cubren los intereses</li>
+                    <li><strong>Saldos Más Antiguos:</strong> Se paga desde lo más vencido</li>
+                    <li><strong>Por Concepto:</strong> Según configuración de prioridades</li>
+                    <li><strong>Saldo Restante:</strong> Se deja como saldo a favor si sobra</li>
+                </ol>
+
+                <div class="info">
+                    <strong>💡 Consejo:</strong> Si el pago no cubre todo el saldo, se aplicará proporcionalmente a todas las obligaciones pendientes.
+                </div>
+
+                <h3>Consulta de Cartera Pendiente</h3>
+                <p>Antes de registrar el pago, puede consultar:</p>
+                <ul>
+                    <li>📋 Saldo total pendiente</li>
+                    <li>📅 Obligaciones por período</li>
+                    <li>💰 Detalle por concepto</li>
+                    <li>📈 Intereses acumulados</li>
+                    <li>📊 Antigüedad de la cartera</li>
+                </ul>
+            </section>
+
+            <section id="consolidado" class="section">
+                <h2>🏢 Pago Consolidado por Propietario</h2>
+                
+                <h3>¿Cuándo Usar Pago Consolidado?</h3>
+                <p>Use esta opción cuando:</p>
+                <ul>
+                    <li>🏠 Un propietario tiene múltiples unidades</li>
+                    <li>💰 Realiza un solo pago para todas sus unidades</li>
+                    <li>🔄 Quiere distribuir el pago entre sus obligaciones</li>
+                    <li>⚖️ Necesita compensar saldos a favor con deudas</li>
+                </ul>
+
+                <h3>Proceso de Pago Consolidado</h3>
+                <ol class="step-list">
+                    <li><strong>Buscar Propietario:</strong> Localice el propietario en el sistema</li>
+                    <li><strong>Ver Resumen:</strong> Consulte todas sus unidades y saldos</li>
+                    <li><strong>Registrar Pago:</strong> Ingrese el monto total recibido</li>
+                    <li><strong>Distribuir:</strong> El sistema distribuye automáticamente</li>
+                    <li><strong>Ajustar:</strong> Modifique la distribución si es necesario</li>
+                    <li><strong>Confirmar:</strong> Aplique el pago a todas las unidades</li>
+                </ol>
+
+                <h3>Distribución Automática</h3>
+                <p>El sistema distribuye el pago siguiendo estas reglas:</p>
+                
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Prioridad</th>
+                                <th>Concepto</th>
+                                <th>Criterio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td>Intereses de Mora</td>
+                                <td>Todos los intereses primero</td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>Saldos Vencidos</td>
+                                <td>Desde el más antiguo</td>
+                            </tr>
+                            <tr>
+                                <td>3</td>
+                                <td>Saldos Corrientes</td>
+                                <td>Obligaciones del período actual</td>
+                            </tr>
+                            <tr>
+                                <td>4</td>
+                                <td>Saldo a Favor</td>
+                                <td>Excedente queda como anticipo</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Distribución Manual</h3>
+                <p>También puede distribuir manualmente:</p>
+                <ol class="step-list">
+                    <li>Seleccione "Distribución Manual"</li>
+                    <li>Asigne montos específicos a cada unidad</li>
+                    <li>Verifique que la suma coincida con el pago total</li>
+                    <li>Confirme la distribución personalizada</li>
+                </ol>
+
+                <div class="warning">
+                    <strong>⚠️ Importante:</strong> En distribución manual, asegúrese de que la suma de los montos asignados sea igual al valor total del pago.
+                </div>
+            </section>
+
+            <section id="consultas" class="section">
+                <h2>🔍 Consultas y Reportes</h2>
+                
+                <h3>Estado de Cuenta por Unidad</h3>
+                <p>Consulte el estado detallado de cualquier unidad:</p>
+                <ul>
+                    <li>📊 Saldo actual total</li>
+                    <li>📋 Detalle por concepto</li>
+                    <li>📅 Movimientos por período</li>
+                    <li>💰 Historial de pagos</li>
+                    <li>📈 Cálculo de intereses</li>
+                </ul>
+
+                <h3>Historial de Pagos</h3>
+                <p>Vea todos los pagos registrados con:</p>
+                
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Información</th>
+                                <th>Descripción</th>
+                                <th>Utilidad</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>📅 Fecha</td>
+                                <td>Cuándo se registró el pago</td>
+                                <td>Orden cronológico</td>
+                            </tr>
+                            <tr>
+                                <td>💰 Valor</td>
+                                <td>Monto del pago</td>
+                                <td>Análisis de recaudos</td>
+                            </tr>
+                            <tr>
+                                <td>💳 Forma de Pago</td>
+                                <td>Método utilizado</td>
+                                <td>Estadísticas de medios</td>
+                            </tr>
+                            <tr>
+                                <td>👤 Usuario</td>
+                                <td>Quién registró el pago</td>
+                                <td>Auditoría y control</td>
+                            </tr>
+                            <tr>
+                                <td>📝 Referencia</td>
+                                <td>Número de transacción</td>
+                                <td>Conciliación bancaria</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Cartera Pendiente</h3>
+                <p>Consulte la cartera general con filtros por:</p>
+                <ul>
+                    <li>🏠 Unidad específica</li>
+                    <li>👤 Propietario</li>
+                    <li>📅 Rango de fechas</li>
+                    <li>💰 Rango de valores</li>
+                    <li>📊 Antigüedad de saldos</li>
+                </ul>
+
+                <h3>Reportes Disponibles</h3>
+                <ul>
+                    <li>📄 <strong>Recibo de Pago:</strong> Comprobante para el propietario</li>
+                    <li>📊 <strong>Reporte Diario:</strong> Recaudos del día</li>
+                    <li>📈 <strong>Reporte Mensual:</strong> Consolidado del mes</li>
+                    <li>🏦 <strong>Conciliación:</strong> Para cuadre con bancos</li>
+                    <li>📋 <strong>Cartera Detallada:</strong> Saldos pendientes</li>
+                </ul>
+            </section>
+
+            <section id="errores" class="section">
+                <h2>⚠️ Errores Comunes y Soluciones</h2>
+                
+                <h3>Error: "Unidad no encontrada"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> No se puede localizar la unidad para registrar el pago.
+                    <br><strong>Causa:</strong> Código de unidad incorrecto o unidad inactiva.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique el código de la unidad</li>
+                        <li>Use el buscador para localizar la unidad</li>
+                        <li>Confirme que la unidad esté activa</li>
+                        <li>Revise si hay errores de digitación</li>
+                    </ul>
+                </div>
+
+                <h3>Error: "Valor de pago inválido"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> El sistema no acepta el valor del pago.
+                    <br><strong>Causa:</strong> Formato incorrecto o valor negativo.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Use solo números, sin puntos ni comas</li>
+                        <li>Asegúrese de que sea un valor positivo</li>
+                        <li>No use símbolos de moneda ($)</li>
+                        <li>Verifique que no exceda límites del sistema</li>
+                    </ul>
+                </div>
+
+                <h3>Error: "Fecha de pago inválida"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> No se puede registrar el pago con esa fecha.
+                    <br><strong>Causa:</strong> Fecha futura o muy antigua.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Use fechas dentro del rango permitido</li>
+                        <li>No use fechas futuras</li>
+                        <li>Verifique el formato de fecha (DD/MM/YYYY)</li>
+                        <li>Consulte con administrador sobre períodos cerrados</li>
+                    </ul>
+                </div>
+
+                <h3>Problema: "El pago no se aplicó correctamente"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> El pago se registró pero no se aplicó a las cuentas.
+                    <br><strong>Causa:</strong> Error en la configuración contable o proceso interrumpido.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique el estado del pago en el historial</li>
+                        <li>Consulte si se generaron los movimientos contables</li>
+                        <li>Revise la configuración de cuentas en los conceptos</li>
+                        <li>Contacte soporte si el problema persiste</li>
+                    </ul>
+                </div>
+
+                <h3>Problema: "Diferencias en la distribución consolidada"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> La suma de la distribución no coincide con el pago total.
+                    <br><strong>Causa:</strong> Error en la distribución manual o cálculo automático.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique que la suma de distribución sea igual al pago total</li>
+                        <li>Revise si hay redondeos que causen diferencias</li>
+                        <li>Use la distribución automática si hay dudas</li>
+                        <li>Ajuste manualmente las diferencias menores</li>
+                    </ul>
+                </div>
+
+                <h3>Problema: "No se puede anular el pago"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> Necesita anular un pago registrado incorrectamente.
+                    <br><strong>Causa:</strong> Restricciones del sistema o permisos insuficientes.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique que tenga permisos de anulación</li>
+                        <li>Confirme que el pago no esté en un período cerrado</li>
+                        <li>Use la función de "Reversar Pago" si está disponible</li>
+                        <li>Contacte al administrador para anulaciones especiales</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>🆘 ¿Necesita Más Ayuda?</h2>
+                <div class="highlight">
+                    <p><strong>Recursos Relacionados:</strong></p>
+                    <ul>
+                        <li>📖 Manual de Estado de Cuenta - Para consultar saldos detallados</li>
+                        <li>📖 Manual de Facturación - Para entender las obligaciones generadas</li>
+                        <li>📖 Manual de Reportes - Para generar informes de recaudos</li>
+                        <li>📖 Manual de Propietarios - Para gestionar información de pagadores</li>
+                    </ul>
+                </div>
+
+                <div class="info">
+                    <p><strong>Contacto de Soporte:</strong></p>
+                    <ul>
+                        <li>📧 Email: soporte@contapy2.com</li>
+                        <li>📞 Teléfono: +57 (1) 234-5678</li>
+                        <li>💬 Chat en línea: Disponible en el sistema</li>
+                        <li>🕒 Horario: Lunes a Viernes 8:00 AM - 6:00 PM</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 ContaPY2 - Sistema de Gestión Contable Integral</p>
+            <p>Manual generado automáticamente - Versión 1.0</p>
+        </footer>
+    </div>
+
+    <script src="assets/js/manual-navigation.js"></script>
+</body>
+</html>

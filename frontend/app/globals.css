@@ -36,3 +36,16 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* GLOBAL INPUT VISIBILITY FIX */
+input,
+select,
+textarea,
+select option {
+  color: var(--foreground) !important;
+  /* Enforce dark text (or light in dark mode) */
+  opacity: 1 !important;
+  /* Prevent browser autofill transparency issues */
+  background-color: var(--background);
+  /* Ensure background is also standard */
+}

@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
+import ManualButton from '../components/ManualButton';
 
 import {
     FaBuilding,
@@ -83,11 +84,22 @@ export default function DashboardPHPage() {
         <div className="min-h-screen bg-gray-50 p-6 font-sans">
             <div className="max-w-6xl mx-auto">
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-800 mt-4 flex items-center gap-3">
-                        <FaBuilding className="text-gray-400" />
-                        Gestión de Propiedad Horizontal
-                    </h1>
-                    <p className="text-gray-500 mt-1">Administración centralizada de copropiedades.</p>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-800 mt-4 flex items-center gap-3">
+                                <FaBuilding className="text-gray-400" />
+                                Gestión de Propiedad Horizontal
+                            </h1>
+                            <p className="text-gray-500 mt-1">Administración centralizada de copropiedades.</p>
+                        </div>
+                        <div className="mt-4">
+                            <ManualButton 
+                                manualPath="dashboard.html"
+                                title="Manual del Dashboard Principal"
+                                position="header"
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

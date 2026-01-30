@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
+import { useRecaudos } from '../../../../contexts/RecaudosContext';
 import { phService } from '../../../../lib/phService';
 import { FaBuilding, FaPlus, FaEdit, FaTrash, FaSave, FaTimes, FaLayerGroup } from 'react-icons/fa';
 
 export default function GestionTorresPage() {
     const { user, loading: authLoading } = useAuth();
+    const { labels } = useRecaudos();
 
     // States
     const [torres, setTorres] = useState([]);
@@ -65,13 +67,13 @@ export default function GestionTorresPage() {
             loadTorres();
             handleCloseModal();
         } catch (error) {
-            alert('Error al guardar la torre');
+            alert(`Error al guardar ${labels?.torre?.toLowerCase() || 'torre'}`);
             console.error(error);
         }
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('¿Está seguro de eliminar esta torre?')) {
+        if (window.confirm(`¿Está seguro de eliminar esta ${labels?.torre?.toLowerCase() || 'torre'}?`)) {
             try {
                 await phService.deleteTorre(id);
                 loadTorres();
@@ -93,7 +95,7 @@ export default function GestionTorresPage() {
                             <FaLayerGroup className="text-2xl" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-800">Grupos y Torres</h1>
+                            <h1 className="text-2xl font-bold text-gray-800">Grupos y {labels?.torre_plural || 'Torres'}</h1>
                             <p className="text-gray-500 text-sm">Organización estructural de la copropiedad.</p>
                         </div>
                     </div>
@@ -101,7 +103,7 @@ export default function GestionTorresPage() {
                         onClick={() => handleOpenModal()}
                         className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-md font-bold"
                     >
-                        <FaPlus /> Nueva Torre
+                        <FaPlus /> Nueva {labels?.torre || 'Torre'}
                     </button>
                 </div>
 
@@ -118,7 +120,7 @@ export default function GestionTorresPage() {
                         <tbody className="bg-white divide-y divide-gray-200">
                             {torres.length === 0 ? (
                                 <tr>
-                                    <td colSpan="3" className="px-6 py-8 text-center text-gray-400 italic">No hay torres creadas aún.</td>
+                                    <td colSpan="3" className="px-6 py-8 text-center text-gray-400 italic">No hay {labels?.torre_plural?.toLowerCase() || 'torres'} creadas aún.</td>
                                 </tr>
                             ) : (
                                 torres.map(t => (
@@ -146,7 +148,7 @@ export default function GestionTorresPage() {
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fadeIn">
                         <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100">
                             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                                <h3 className="text-lg font-bold text-gray-800">{currentTorre ? 'Editar Torre' : 'Nueva Torre'}</h3>
+                                <h3 className="text-lg font-bold text-gray-800">{currentTorre ? `Editar ${labels?.torre || 'Torre'}` : `Nueva ${labels?.torre || 'Torre'}`}</h3>
                                 <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600"><FaTimes /></button>
                             </div>
                             <form onSubmit={handleSubmit} className="p-6">

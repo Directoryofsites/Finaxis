@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRecaudos } from '../../../contexts/RecaudosContext'; // IMPORT
+import ManualButton from '../../components/ManualButton';
 
 import { phService } from '../../../lib/phService';
 import {
@@ -315,13 +316,22 @@ export default function FacturacionPHPage() {
             <div className="max-w-6xl mx-auto">
                 {/* HEADER */}
                 <div className="mb-8">
-                    <div className="flex items-center gap-3 mt-4">
-                        <div className="p-3 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-xl text-white shadow-lg">
-                            <FaFileInvoiceDollar className="text-3xl" />
+                    <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-3 mt-4">
+                            <div className="p-3 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-xl text-white shadow-lg">
+                                <FaFileInvoiceDollar className="text-3xl" />
+                            </div>
+                            <div>
+                                <h1 className="text-3xl font-extrabold text-gray-800 tracking-tight">Facturación Masiva</h1>
+                                <p className="text-gray-500 font-medium">Generación y causación de cuotas de {labels.module.toLowerCase()}.</p>
+                            </div>
                         </div>
-                        <div>
-                            <h1 className="text-3xl font-extrabold text-gray-800 tracking-tight">Facturación Masiva</h1>
-                            <p className="text-gray-500 font-medium">Generación y causación de cuotas de {labels.module.toLowerCase()}.</p>
+                        <div className="mt-4">
+                            <ManualButton 
+                                manualPath="facturacion.html"
+                                title="Manual de Facturación Masiva"
+                                position="header"
+                            />
                         </div>
                     </div>
                 </div>

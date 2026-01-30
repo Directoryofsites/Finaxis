@@ -110,7 +110,7 @@ export default function ReporteSaldosPage() {
         doc.text("Reporte de Saldos de Cartera", 14, 22);
 
         doc.setFontSize(10);
-        doc.text(`Empresa: ${user?.empresaNombre || 'Consorcio'}`, 14, 28);
+        doc.text(`Empresa: ${user?.empresaNombre || user?.empresa?.razon_social || user?.empresa?.nombre || 'Consorcio'}`, 14, 28);
         doc.text(`Fecha de Corte: ${fechaCorte || new Date().toLocaleDateString()}`, 14, 34);
         if (conceptoBusqueda) doc.text(`Filtro Concepto: ${conceptoBusqueda}`, 14, 40);
 
@@ -182,14 +182,14 @@ export default function ReporteSaldosPage() {
                         {/* Torre */}
                         <div>
                             <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                                <FaBuilding className="text-indigo-500" /> Filtrar por Torre
+                                <FaBuilding className="text-indigo-500" /> Filtrar por {labels?.torre || 'Torre'}
                             </label>
                             <select
                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
                                 value={selectedTorre}
                                 onChange={(e) => setSelectedTorre(e.target.value)}
                             >
-                                <option value="">Todas las Torres</option>
+                                <option value="">Todas las {labels?.torre_plural || 'Torres'}</option>
                                 {torres.map(t => (
                                     <option key={t.id} value={t.id}>{t.nombre}</option>
                                 ))}
@@ -199,7 +199,7 @@ export default function ReporteSaldosPage() {
                         {/* Concepto (Texto) */}
                         <div className="md:col-span-2">
                             <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                                <FaFilter className="text-indigo-500" /> Filtrar por Concepto
+                                <FaFilter className="text-indigo-500" /> Filtrar por {labels?.concepto || 'Concepto'}
                             </label>
                             <div className="relative">
                                 <FaSearch className="absolute left-3 top-3 text-gray-400" />
@@ -238,7 +238,7 @@ export default function ReporteSaldosPage() {
                         </div>
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                             <div>
-                                <p className="text-gray-500 text-sm font-bold uppercase">Unidades con Deuda</p>
+                                <p className="text-gray-500 text-sm font-bold uppercase">{labels?.unidad_plural || labels?.unidad || 'Unidades'} con Deuda</p>
                                 <h2 className="text-3xl font-bold text-gray-800">{data.items.length}</h2>
                             </div>
                             <div className="bg-indigo-50 p-3 rounded-full text-indigo-600">
@@ -274,10 +274,10 @@ export default function ReporteSaldosPage() {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-gray-50 text-gray-500 uppercase text-xs tracking-wider font-bold">
-                                        <th className="p-4 border-b">Torre</th>
-                                        <th className="p-4 border-b">Unidad</th>
-                                        <th className="p-4 border-b">Propietario</th>
-                                        <th className="p-4 border-b">Detalle / Conceptos</th>
+                                        <th className="p-4 border-b">{labels?.torre || 'Torre'}</th>
+                                        <th className="p-4 border-b">{labels?.unidad || 'Unidad'}</th>
+                                        <th className="p-4 border-b">{labels?.propietario || 'Propietario'}</th>
+                                        <th className="p-4 border-b">Detalle / {labels?.concepto || 'Conceptos'}</th>
                                         <th className="p-4 border-b text-right">Saldo Total</th>
                                     </tr>
                                 </thead>

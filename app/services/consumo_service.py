@@ -148,18 +148,32 @@ class SaldoInsuficienteException(Exception):
 def verificar_disponibilidad(db: Session, empresa_id: int, cantidad_necesaria: int) -> bool:
     """
     Verifica si existe saldo suficiente sumando todas las fuentes VIGENTES.
-    NO realiza bloqueos ni modificaciones.
+    Soporta Jerarquía (Si es hija, valida cupo local Y saldo del padre).
     """
-    # 1. Plan Mensual Actual
-    # Asumimos mes actual del sistema o recibimos fecha? Mejor usar NOW para disponibilidad inmediata
-    now = datetime.now()
-    anio, mes = now.year, now.month
+    # DEBUG TRACE REMOVED (Restoring function)
     
-    plan = db.query(ControlPlanMensual).filter(
-        ControlPlanMensual.empresa_id == empresa_id,
-        ControlPlanMensual.anio == anio,
-        ControlPlanMensual.mes == mes
-    ).first()
+    # 0. Check Jerarquía y Cupo Local (Si aplica)
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    if not empresa: return False # Should not happen
+
+    # Si tiene Padre (Es Hija) -> Lógica de Doble Validación
+    if empresa.padre_id:
+        # A. Validación Local (Cupo Asignado) -> ELIMINADA PARA MODELO SHARED WALLET
+        # En el modelo de Bolsa Maestra, la hija no debe bloquearse por cupo local,
+        # sino consumir libremente del padre. El plan local queda solo como monitor.
+        # pass
+
+        # B. Validación Global (Saldo del Padre)
+        parent_result = verificar_disponibilidad(db, empresa.padre_id, cantidad_necesaria)
+        if not parent_result:
+             raise HTTPException(status_code=500, detail=f"DEBUG FAIL PARENT CHECK: ParentID={empresa.padre_id} returned False")
+        return True
+
+
+    # --- LÓGICA ESTÁNDAR (Para Padre o Empresa Independiente) ---
+    # 1. Plan Mensual Actual (Auto-inicializar si no existe)
+    now = datetime.now()
+    plan = _get_or_create_plan_mensual(db, empresa_id, now)
     
     saldo_plan = plan.cantidad_disponible if plan and plan.estado == EstadoPlan.ABIERTO else 0
     
@@ -179,13 +193,32 @@ def verificar_disponibilidad(db: Session, empresa_id: int, cantidad_necesaria: i
         RecargaAdicional.estado == EstadoRecarga.VIGENTE
     ).with_entities(RecargaAdicional.cantidad_disponible).all()
     
+    # Correction: The model has 'cantidad_disponible'.
     total_recargas = sum([r.cantidad_disponible for r in saldo_recargas])
-    
+
     total_disponible = saldo_plan + total_bolsa + total_recargas
     
-    return total_disponible >= cantidad_necesaria
+    if total_disponible < cantidad_necesaria:
+         missing = cantidad_necesaria - total_disponible
+         raise HTTPException(
+            status_code=400,
+            detail=f"Saldo insuficiente. Te faltan {missing} registros para completar esta transacción."
+        )
+    
+    return True
 
 def calcular_deficit(db: Session, empresa_id: int, cantidad_necesaria: int) -> int:
+    # Simplemente reusamos lógica base, si tiene padre delegamos
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    
+    # --- LOGICA HIJA -> PADRE ---
+    if empresa and empresa.padre_id:
+        # A. Validación Local (Cupo Asignado) -> ELIMINADA PARA MODELO SHARED WALLET
+        # pass
+
+        # B. Validación Global (Saldo del Padre)
+        return calcular_deficit(db, empresa.padre_id, cantidad_necesaria)
+        
     """
     Calcula cuántos registros faltan para cubrir una operación.
     Retorna 0 si hay saldo suficiente.
@@ -244,7 +277,15 @@ def _get_or_create_plan_mensual(db: Session, empresa_id: int, fecha_doc: datetim
     
     # 1. Obtener límite BASE de la empresa
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
-    limite_base = empresa.limite_registros if empresa and empresa.limite_registros is not None else 0
+    
+    # MODIFICADO MULTI-TENANCY:
+    # Si tiene padre (es hija), el ControlPlanMensual actúa como "Monitor de Cupo".
+    # Su límite es el 'limite_registros_mensual' asignado administrativamente.
+    # Si es Independiente/Padre, su límite es 'limite_registros' del plan comprado.
+    if empresa and empresa.padre_id:
+        limite_base = empresa.limite_registros_mensual if empresa.limite_registros_mensual is not None else 0
+    else:
+        limite_base = empresa.limite_registros if empresa and empresa.limite_registros is not None else 0
     
     # 2. Obtener CUPO ADICIONAL para este mes específico
     cupo_adicional = db.query(CupoAdicional).filter(
@@ -295,76 +336,103 @@ def _get_or_create_plan_mensual(db: Session, empresa_id: int, fecha_doc: datetim
         if plan.estado == EstadoPlan.CERRADO.value or plan.estado == "CERRADO":
             return plan
 
-        # AUTO-HEALING / SYNC CONTINUO
-        # Verificamos si el límite total ha cambiado (por cambio de plan o nuevo cupo adicional)
-        
         # FIX: Si el plan es MANUAL, no tocamos el límite asignado (respetamos la decisión de soporte)
         if plan.es_manual:
              return plan
 
+        # AUTO-HEALING / SYNC CONTINUO
+        # Verificamos si el límite total ha cambiado (por cambio de plan o nuevo cupo adicional)
         limit_mismatch = (plan.limite_asignado != limite_total and limite_total > 0)
         
         # Sync simple de límite
+        # Sync inteligente de límite: Preservamos el consumo realizado al actualizar el límite.
         if limit_mismatch:
+             old_limit = plan.limite_asignado if plan.limite_asignado is not None else 0
+             diff = limite_total - old_limit
              plan.limite_asignado = limite_total
+             plan.cantidad_disponible += diff
+             # Nota: Ajustamos 'plan.cantidad_disponible' por el delta, confiando en que refleja el consumo acumulado (incluyendo hijos)
 
-        # RECALCULO DE DISPONIBILIDAD (Sanity Check)
+        # RECALCULO DE DISPONIBILIDAD (Sanity Check "Down-only")
         # Disponible Esperado = Límite - Consumo Real (Excluyendo doc actual)
-        # Solo corregimos si hay discrepancia significativa para no sobreescribir lógica compleja
-        # Pero la idea del auto-healing es confiar en el conteo real.
-        
-        # OJO: Si consumo_service decrementa el disponible, entonces:
-        # disponible_en_db debería ser == limite - consumo_real (sin contar doc actual, porque aún no se descuenta)
+        # Nota: 'consumo_real' solo cuenta docs propios. Para Shared Wallet, esto subestima el uso.
+        # Por eso, NUNCA corregimos hacia arriba basándonos en esto (saldría 'free refill').
         
         esperado = max(0, limite_total - consumo_real)
-        if plan.cantidad_disponible != esperado:
+        
+        should_heal = False
+        if plan.cantidad_disponible > esperado:
+             should_heal = True # Corrección conservadora (Solo si DB dice que tenemos MAYOR disponible que el teórico propio)
+        
+        # ELIMINADO: 'elif limit_mismatch...' -> Ya manejamos el ajuste por delta arriba. No forzamos plan = esperado.
+             
+        if should_heal:
+             print(f"[AUTO-HEAL] Corrigiendo discrepancia cupo LOCAL. DB({plan.cantidad_disponible}) -> Real({esperado}). Reason: LimitChange={limit_mismatch}")
              plan.cantidad_disponible = esperado
              db.add(plan)
              db.flush()
+        
+        # Caso contrario (plan.cantidad_disponible < esperado):
+        # Es totalmente válido para un Reseller/Contador. No hacemos nada.
 
     return plan
 
 def registrar_consumo(db: Session, empresa_id: int, cantidad: int, documento_id: int, fecha_doc: datetime):
     """
-    Ejecuta el consumo estricto FIFO.
-    Lanza SaldoInsuficienteException si falla.
+    Ejecuta el consumo estricto.
+    Si es Hija: Valida Cupo Local y DEBITA Saldo del Padre.
     """
-    if cantidad <= 0:
-        return # Nada que consumir
+    if cantidad <= 0: return
         
-    # Validacion Previa (Optimista)
-    #if not verificar_disponibilidad(db, empresa_id, cantidad):
-    #    raise SaldoInsuficienteException("No hay saldo suficiente para esta operación.")
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    
+    # --- LOGICA HIJA -> PADRE ---
+    # --- LOGICA HIJA -> PADRE ---
+    if empresa and empresa.padre_id:
+        # 1. Validar Cupo Local (Freno de Mano) -> ELIMINADO
+        # Mantenemos el objeto monitor_cupo solo para actualizar estadísticas después.
+        monitor_cupo = _get_or_create_plan_mensual(db, empresa_id, fecha_doc, exclude_document_id=documento_id)
         
-    # --- INICIO TRANSACCIÓN DE CONSUMO ---
+        # if monitor_cupo.limite_asignado > 0:
+             # if monitor_cupo.cantidad_disponible < cantidad:
+                  # raise SaldoInsuficienteException(...)
+        
+        # 2. Si pasa el filtro local, DEBITAR AL PADRE
+        # Delegamos recursivamente el débito real al padre.
+        try:
+            registrar_consumo(db, empresa.padre_id, cantidad, documento_id=documento_id, fecha_doc=fecha_doc)
+        except SaldoInsuficienteException as e:
+            raise SaldoInsuficienteException(f"Proveedor de servicios sin saldo: {str(e)}")
+            
+        # 3. Actualizar Monitor Local (Reflejar el consumo realizado)
+        monitor_cupo.cantidad_disponible -= cantidad
+        db.add(monitor_cupo)
+        
+        return # Fin flujo Hija
+
+
+    # --- LÓGICA ESTÁNDAR (Padre / Independiente) ---
     
     remanente_a_consumir = cantidad
     
-    # 1. PLAN MENSUAL (Del mes del documento)
-    # Usamos with_for_update dentro de _get_or_create
-    # FIX: Pasamos exclude_document_id para que el sync no cuente este documento ANTES de descontarlo
+    # 1. PLAN MENSUAL
     plan_mensual = _get_or_create_plan_mensual(db, empresa_id, fecha_doc, exclude_document_id=documento_id)
     
-    consumo_plan = 0
     if plan_mensual.estado == EstadoPlan.ABIERTO and plan_mensual.cantidad_disponible > 0:
         disponible = plan_mensual.cantidad_disponible
         a_tomar = min(disponible, remanente_a_consumir)
         
-        # Auditoría Snapshot Antes
         saldo_antes = plan_mensual.cantidad_disponible
         
-        # Consumir
         plan_mensual.cantidad_disponible -= a_tomar
         remanente_a_consumir -= a_tomar
-        consumo_plan = a_tomar
         
-        # Registrar Historial
         historial = HistorialConsumo(
             empresa_id=empresa_id,
             cantidad=a_tomar,
             tipo_operacion=TipoOperacionConsumo.CONSUMO,
             fuente_tipo=TipoFuenteConsumo.PLAN,
-            fuente_id=None, # Plan se identifica por fecha implícita
+            fuente_id=None,
             saldo_fuente_antes=saldo_antes,
             saldo_fuente_despues=plan_mensual.cantidad_disponible,
             documento_id=documento_id,
@@ -373,10 +441,9 @@ def registrar_consumo(db: Session, empresa_id: int, cantidad: int, documento_id:
         db.add(historial)
         
     if remanente_a_consumir == 0:
-        return # Éxito total solo con plan
+        return
 
-    # 2. BOLSA EXCEDENTE (FIFO)
-    # Buscar tramos VIGENTES ordenados por antigüedad
+    # 2. BOLSA EXCEDENTE
     now = datetime.now()
     tramos_bolsa = db.query(BolsaExcedente).filter(
         BolsaExcedente.empresa_id == empresa_id,
@@ -385,8 +452,7 @@ def registrar_consumo(db: Session, empresa_id: int, cantidad: int, documento_id:
     ).order_by(asc(BolsaExcedente.fecha_vencimiento)).with_for_update().all()
     
     for tramo in tramos_bolsa:
-        if remanente_a_consumir <= 0:
-            break
+        if remanente_a_consumir <= 0: break
             
         disponible = tramo.cantidad_disponible
         if disponible <= 0: 
@@ -429,8 +495,7 @@ def registrar_consumo(db: Session, empresa_id: int, cantidad: int, documento_id:
     ).order_by(asc(RecargaAdicional.fecha_compra)).with_for_update().all()
     
     for recarga in tramos_recarga:
-        if remanente_a_consumir <= 0:
-            break
+        if remanente_a_consumir <= 0: break
             
         disponible = recarga.cantidad_disponible
         if disponible <= 0:
@@ -464,7 +529,7 @@ def registrar_consumo(db: Session, empresa_id: int, cantidad: int, documento_id:
         # Falla atómica: Si llegamos aquí es que realmente no alcanzó a pesar de todo.
         # Como hemos modificado objetos en session pero no commit, el caller debe hacer rollback.
         raise SaldoInsuficienteException(
-            f"Saldo insuficiente. Faltan {remanente_a_consumir} registros para completar la operación.",
+            f"Saldo insuficiente. Faltan {remanente_a_consumir} registros.",
             detalle={"faltante": remanente_a_consumir}
         )
 

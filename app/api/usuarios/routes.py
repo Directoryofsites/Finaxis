@@ -24,12 +24,43 @@ def get_current_active_soporte_user(
 # --- ENDPOINTS GLOBALES (AUTOSERVICIO) ---
 
 @router.get("/me", response_model=schemas_usuario.User)
-def read_users_me(current_user: models_usuario.Usuario = Depends(get_current_user)):
+def read_users_me(
+    current_user: models_usuario.Usuario = Depends(get_current_user),
+):
     """
     Retorna el perfil del usuario actual, incluyendo ROLES y PERMISOS.
     Esencial para que el frontend pueda renderizar los menús correctamente.
     """
-    return current_user
+    # 1. Obtener Empresa Original (sin contexto switch) usando una Sesión LIMPIA
+    # Esto es necesario porque get_current_user modifica el objeto user en la sesión principal para simular el contexto
+    from app.core.database import SessionLocal
+    
+    clean_db = SessionLocal()
+    try:
+        # Consultamos el usuario "puro" de la BD
+        db_user = clean_db.query(models_usuario.Usuario).filter(models_usuario.Usuario.id == current_user.id).first()
+        
+        
+        home_company = "Consorcio"
+        if db_user and db_user.empresa:
+            curr_emp = db_user.empresa
+            # Traverse up to the root parent
+            while curr_emp.padre:
+                print(f"DEBUG WELCOME: Climbing up from {curr_emp.razon_social} to parent...")
+                curr_emp = curr_emp.padre
+            
+            home_company = curr_emp.razon_social
+            print(f"DEBUG WELCOME: Root Company Found: {home_company}")
+            
+        # Asignamos al objeto de respuesta current_user (que es el que se serializa)
+        current_user.empresa_original_nombre = home_company
+        print(f"DEBUG WELCOME: Final Field Set: {current_user.empresa_original_nombre}")
+    finally:
+        clean_db.close()
+    
+    return current_user 
+
+
 
 @router.get("/", response_model=List[schemas_usuario.User])
 def read_company_users(

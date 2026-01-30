@@ -49,7 +49,7 @@ class User(UserBasic):
     if TYPE_CHECKING:
         from .empresa import EmpresaBase
     empresa: Optional['EmpresaBase'] = None
-    # --------------------------------------------------------
+    empresa_original_nombre: Optional[str] = None # Nombre de la empresa raíz/original (Permanente)
 
     class Config:
         from_attributes = True

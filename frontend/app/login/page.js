@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext'; // Corregido para usar el contexto
 import { apiService } from '../../lib/apiService';
+import { jwtDecode } from 'jwt-decode';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,12 +32,30 @@ export default function LoginPage() {
       });
 
       const { access_token } = response.data;
-      
+
       // La clave: Informamos al contexto sobre el login exitoso
+      // 1. Informamos al contexto sobre el login exitoso (establece estado y localstorage)
       login(access_token);
-      
       setMessage('Inicio de sesión exitoso. Redirigiendo...');
-      router.push('/'); // Redirigimos a la página principal
+
+      // 2. Decodificamos el token para saber el rol y redirigir inteligentemente
+      try {
+        const decoded = jwtDecode(access_token);
+        console.log("Decoded Token for Redirect:", decoded);
+        const roles = decoded.roles || []; // Asumimos que viene como lista de strings o objetos
+
+        // Normalización de roles (si vienen como objetos {nombre: 'x'} o strings)
+        const roleNames = roles.map(r => (typeof r === 'string' ? r : r.nombre));
+
+        if (roleNames.includes('contador')) {
+          router.push('/portal');
+        } else {
+          router.push('/');
+        }
+      } catch (decodeErr) {
+        console.error("Error decoding token for redirect logic:", decodeErr);
+        router.push('/'); // Fallback seguro
+      }
 
     } catch (error) {
       const errorMessage = error.response?.data?.detail || 'Credenciales inválidas o error en el servidor.';

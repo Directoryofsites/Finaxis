@@ -28,6 +28,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { phService } from '../../../lib/phService';
 import { useRecaudos } from '../../../contexts/RecaudosContext'; // IMPORTED
+import ManualButton from '../../components/ManualButton';
 
 // --- ESTILOS REUSABLES (Estandarizados) ---
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
@@ -317,6 +318,11 @@ export default function GestionUnidadesPage() {
                     </div>
 
                     <div className="flex gap-3">
+                        <ManualButton 
+                            manualPath="unidades.html"
+                            title="Manual de Gestión de Unidades"
+                            position="header"
+                        />
                         {selectedUnits.size > 0 && (
                             <button
                                 onClick={() => setShowMassEditModal(true)}

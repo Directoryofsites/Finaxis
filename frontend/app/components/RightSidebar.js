@@ -4,11 +4,14 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
     FaRobot, FaCalculator, FaStickyNote, FaBell,
     FaThumbtack, FaTimes, FaExpandAlt, FaMagic, FaPaperPlane,
-    FaBackspace, FaTrash, FaMicrophone, FaStop, FaPlus, FaSave, FaList, FaShareSquare, FaHistory, FaClock
+    FaBackspace, FaTrash, FaMicrophone, FaStop, FaPlus, FaSave, FaList, FaShareSquare, FaHistory, FaClock,
+    FaBuilding, FaChartLine // Added FaChartLine for Indicators
 } from 'react-icons/fa';
 import { CONTEXT_CONFIG } from '../config/rightSidebarConfig';
 import { toast } from 'react-toastify';
 import { apiService } from '@/lib/apiService';
+import { useAuth } from '@/app/context/AuthContext';
+import EconomicIndicatorsPanel from './EconomicIndicatorsPanel';
 
 // --- HELPER: FORMAT NUMBERS ---
 const formatNumber = (numStr) => {
@@ -237,9 +240,13 @@ const WidgetRenderer = ({ config }) => {
 };
 
 export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClose }) {
+    const { user } = useAuth();
     const pathname = usePathname();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState('ai');
+
+    // --- NUEVO ESTADO PARA INDICADORES ---
+    const [showIndicators, setShowIndicators] = useState(false);
 
     // Hooks
     const { display, expression, handleInput } = useCalculator();
@@ -259,7 +266,7 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
     // HISTORY STATE
     const [commandHistory, setCommandHistory] = useState([]);
     const [showHistory, setShowHistory] = useState(false);
-    const [showLibraryTabInModal, setShowLibraryTabInModal] = useState(false); // <--- FIXED: Missing state
+    const [showLibraryTabInModal, setShowLibraryTabInModal] = useState(false);
 
 
     // --- SAVED SEARCHES STATE ---
@@ -820,6 +827,33 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                 <button onClick={() => handleTabClick('calc')} className={`nav-item p-2 mb-2 rounded-lg ${activeTab === 'calc' && (isOpen || isPinned) ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:bg-blue-50'}`}><FaCalculator /></button>
                 <button onClick={() => handleTabClick('notes')} className={`nav-item p-2 mb-2 rounded-lg ${activeTab === 'notes' && (isOpen || isPinned) ? 'bg-yellow-100 text-yellow-600' : 'text-gray-400 hover:bg-yellow-50'}`}><FaStickyNote /></button>
                 <button onClick={() => handleTabClick('notif')} className={`nav-item p-2 rounded-lg ${activeTab === 'notif' && (isOpen || isPinned) ? 'bg-red-100 text-red-600' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}><FaBell /><span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white"></span></button>
+
+                {/* BOTÓN IDENTIFICADOR DE EMPRESA */}
+                <button
+                    onClick={() => toast.info(
+                        <div>
+                            <p className="font-bold">🏢 Empresa Actual:</p>
+                            <p className="text-lg text-indigo-700">{user?.empresa?.razon_social || 'Sin Empresa'}</p>
+                            <p className="text-xs text-gray-500">NIT: {user?.empresa?.nit}</p>
+                            <p className="text-xs text-gray-400 mt-1">Usuario: {user?.email}</p>
+                        </div>,
+                        { position: "bottom-left", autoClose: 5000 }
+                    )}
+                    className="nav-item p-2 mt-2 rounded-lg text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                    title="Ver Empresa Actual"
+                >
+                    <FaBuilding />
+                </button>
+
+                {/* BOTÓN INDICADORES ECONÓMICOS */}
+                <button
+                    onClick={() => setShowIndicators(!showIndicators)}
+                    className={`nav-item p-2 mt-2 rounded-lg transition-colors ${showIndicators ? 'bg-green-100 text-green-600' : 'text-gray-400 hover:text-green-600 hover:bg-green-50'}`}
+                    title="Indicadores Económicos (Dólar, UVT, Nómina)"
+                >
+                    <span className="font-bold text-lg">$</span>
+                </button>
+
                 <div className="flex-grow"></div>
                 {(isOpen || isPinned) ? (
                     <div className="flex flex-col gap-2 mb-2">
@@ -1044,6 +1078,14 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                     )}
                 </div>
             </div>
+
+            {/* INDICATORS PANEL */}
+            {/* Dynamic positioning based on sidebar width */}
+            <EconomicIndicatorsPanel
+                isOpen={showIndicators}
+                onClose={() => setShowIndicators(false)}
+                sidebarExpanded={isOpen || isPinned}
+            />
         </div>
     );
 }

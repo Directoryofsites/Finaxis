@@ -15,7 +15,10 @@ import {
     updateSoporteUserPassword,
     getRoles,
     deleteUser,
-    updateUser
+    updateUser,
+    convertirEnPlantilla,
+    searchEmpresas,
+    getAccountants
 } from '@/lib/soporteApiService';
 
 import ConteoRegistros from './components/ConteoRegistros';
@@ -282,9 +285,80 @@ function ModalGestionarEmpresa({ empresa, onClose, onDataChange }) {
     );
 }
 
-function GestionEmpresasPanel({ empresas, onDataChange, onOpenModal }) {
+function GestionEmpresasPanel({ onDataChange, onOpenModal }) {
+    // --- ESTADO LOCAL PARA BÚSQUEDA Y PAGINACIÓN ---
+    const [empresas, setEmpresas] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+
+    // Filtros
+    const [searchText, setSearchText] = useState('');
+    const [roleFilter, setRoleFilter] = useState('ADMIN'); // 'ADMIN' | 'CONTADOR'
+    const [showTemplates, setShowTemplates] = useState(false); // Solo para ADMIN
+
+    // NUEVO: Filtro por Contador Específico
+    const [accountants, setAccountants] = useState([]);
+    const [selectedAccountant, setSelectedAccountant] = useState('');
+    const [isLoadingAccountants, setIsLoadingAccountants] = useState(false);
+
+    // Acciones y mensajes
     const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
     const [procesandoId, setProcesandoId] = useState(null);
+
+    // DEBOUNCE: Esperar que el usuario termine de escribir
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchEmpresas();
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchText, roleFilter, showTemplates, page, selectedAccountant]);
+
+    // NUEVO: Cargar lista de contadores cuando se cambia a la pestaña CONTADOR
+    useEffect(() => {
+        if (roleFilter === 'CONTADOR' && accountants.length === 0) {
+            fetchAccountants();
+        }
+    }, [roleFilter]);
+
+    const fetchAccountants = async () => {
+        setIsLoadingAccountants(true);
+        try {
+            const response = await getAccountants();
+            setAccountants(response.data);
+        } catch (error) {
+            console.error('Error fetching accountants:', error);
+            setMensaje({ texto: 'Error al cargar lista de contadores.', tipo: 'error' });
+        } finally {
+            setIsLoadingAccountants(false);
+        }
+    };
+
+    const fetchEmpresas = async () => {
+        setIsLoading(true);
+        try {
+            const params = {
+                q: searchText,
+                role_filter: roleFilter,
+                type_filter: showTemplates ? 'PLANTILLA' : 'REAL',
+                page: page,
+                size: 20,
+                owner_id: selectedAccountant || null
+            };
+            // Llamamos a la nueva función de búsqueda
+            const response = await searchEmpresas(params);
+
+            setEmpresas(response.data.items);
+            setTotalPages(response.data.pages);
+            setTotalItems(response.data.total);
+        } catch (error) {
+            console.error(error);
+            setMensaje({ texto: 'Error al cargar empresas. Intente recargar.', tipo: 'error' });
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleDelete = async (empresaId, razonSocial) => {
         setMensaje({ texto: '', tipo: '' });
@@ -292,8 +366,9 @@ function GestionEmpresasPanel({ empresas, onDataChange, onOpenModal }) {
         setProcesandoId(empresaId);
         try {
             const response = await deleteEmpresa(empresaId);
-            setMensaje({ texto: response.data.message || 'Empresa eliminada. Actualizando...', tipo: 'success' });
-            onDataChange();
+            setMensaje({ texto: response.data.message || 'Empresa eliminada.', tipo: 'success' });
+            fetchEmpresas(); // Recargar lista actual
+            if (onDataChange) onDataChange(); // Notificar al padre si es necesario
         } catch (error) {
             const errorMsg = error.response?.data?.detail || 'Error al eliminar la empresa.';
             setMensaje({ texto: errorMsg, tipo: 'error' });
@@ -302,10 +377,27 @@ function GestionEmpresasPanel({ empresas, onDataChange, onOpenModal }) {
         }
     };
 
+    // --- MANEJADORES DE UI ---
+    const handleTabChange = (newRole) => {
+        setRoleFilter(newRole);
+        setPage(1); // Resetear a página 1 al cambiar pestaña
+        setSearchText(''); // Opcional: limpiar búsqueda
+        if (newRole === 'CONTADOR') {
+            setShowTemplates(false); // Contadores no ven plantillas aquí
+            setSelectedAccountant('');
+        }
+        if (newRole === 'ADMIN') {
+            setSelectedAccountant('');
+        }
+    };
+
     return (
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-800">Gestión de Empresas Registradas</h2>
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h2 className="text-xl font-bold text-gray-800">Gestión de Empresas</h2>
+                    <p className="text-sm text-gray-500">Administra el acceso y ciclo de vida de las organizaciones.</p>
+                </div>
                 <button
                     onClick={() => window.open('/manual/capitulo_16_gestion_empresas.html', '_blank')}
                     className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md flex items-center gap-2 transition-colors"
@@ -314,33 +406,182 @@ function GestionEmpresasPanel({ empresas, onDataChange, onOpenModal }) {
                     <FaBook className="text-lg" /> <span className="font-bold text-sm">Manual</span>
                 </button>
             </div>
+
             {mensaje.texto && <div className={`p-4 mb-4 rounded-md ${mensaje.tipo === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{mensaje.texto}</div>}
-            <div className="overflow-x-auto">
+
+            {/* --- CONTROLES DE FILTRO --- */}
+            <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 mb-6 border-b pb-4">
+
+                {/* PESTAÑAS */}
+                <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+                    <button
+                        onClick={() => handleTabChange('ADMIN')}
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-shadow ${roleFilter === 'ADMIN' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        🏢 Mis Empresas
+                    </button>
+                    <button
+                        onClick={() => handleTabChange('CONTADOR')}
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-shadow ${roleFilter === 'CONTADOR' ? 'bg-white text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        💼 De Contadores
+                    </button>
+                </div>
+
+                {/* BUSCADOR Y TOGGLES */}
+                <div className="flex flex-1 items-center gap-4 w-full md:w-auto">
+                    {roleFilter === 'ADMIN' && (
+                        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer bg-gray-50 px-3 py-2 rounded border hover:bg-gray-100">
+                            <input
+                                type="checkbox"
+                                checked={showTemplates}
+                                onChange={(e) => { setShowTemplates(e.target.checked); setPage(1); }}
+                                className="rounded text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                            />
+                            Ver Plantillas
+                        </label>
+                    )}
+
+                    {/* Filtro: Selección de Contador (Solo Contadores) */}
+                    {roleFilter === 'CONTADOR' && (
+                        <select
+                            value={selectedAccountant}
+                            onChange={(e) => { setSelectedAccountant(e.target.value); setPage(1); }}
+                            disabled={isLoadingAccountants}
+                            className="text-sm border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                        >
+                            <option value="">Todos los Contadores</option>
+                            {isLoadingAccountants ? <option disabled>Cargando...</option> :
+                                accountants.map(acc => (
+                                    <option key={acc.id} value={acc.id}>
+                                        {acc.nombre_completo || acc.email}
+                                    </option>
+                                ))
+                            }
+                        </select>
+                    )}
+
+                    <div className="relative flex-1 max-w-md">
+                        <input
+                            type="text"
+                            placeholder="Buscar por Nombre o NIT..."
+                            value={searchText}
+                            onChange={(e) => setSearchText(e.target.value)}
+                            className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                        {/* Spinner de carga mini si está buscando */}
+                        {isLoading && (
+                            <div className="absolute right-3 top-2.5">
+                                <span className="flex h-5 w-5 relative">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-5 w-5 bg-indigo-500 opacity-20"></span>
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* --- TABLA --- */}
+            <div className="overflow-x-auto min-h-[300px]">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">NIT</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Razón Social</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado / Rol</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {empresas.map((empresa) => (
-                            <tr key={empresa.id}>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm">{empresa.nit}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm">{empresa.razon_social}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-4">
-                                    <button onClick={() => onOpenModal(empresa)} className="text-indigo-600 hover:text-indigo-900">Gestionar</button>
-                                    <button onClick={() => handleDelete(empresa.id, empresa.razon_social)} disabled={procesandoId === empresa.id} className="text-red-600 hover:text-red-900 disabled:text-gray-400">
-                                        {procesandoId === empresa.id ? 'Eliminando...' : 'Eliminar'}
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
+                        {isLoading && empresas.length === 0 ? (
+                            <tr><td colSpan="4" className="text-center py-10 text-gray-400">Buscando empresas...</td></tr>
+                        ) : empresas.length === 0 ? (
+                            <tr><td colSpan="4" className="text-center py-10 text-gray-500 bg-gray-50">No se encontraron empresas con estos filtros.</td></tr>
+                        ) : (
+                            empresas.map((empresa) => (
+                                <tr key={empresa.id} className="hover:bg-gray-50 transition-colors">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600">{empresa.nit}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-800 flex items-center gap-2">
+                                        {empresa.razon_social}
+                                        {empresa.is_template && <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200">Plantilla</span>}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {roleFilter === 'ADMIN' ? 'Sistema' : 'Creada por Contador'}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                        <button onClick={() => onOpenModal(empresa)} className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 border border-indigo-200">
+                                            Gestionar
+                                        </button>
+
+                                        {!empresa.is_template && roleFilter === 'ADMIN' && (
+                                            <button
+                                                onClick={async () => {
+                                                    const category = prompt('Escribe la CATEGORÍA para esta nueva plantilla (ej: PH, RETAIL, SALUD):');
+                                                    if (!category) return;
+                                                    setProcesandoId(empresa.id);
+                                                    try {
+                                                        await convertirEnPlantilla(empresa.id, category.toUpperCase());
+                                                        setMensaje({ texto: `¡Empresa convertida en Plantilla (${category}) exitosamente!`, tipo: 'success' });
+                                                        fetchEmpresas();
+                                                    } catch (error) {
+                                                        setMensaje({ texto: 'Error al convertir en plantilla.', tipo: 'error' });
+                                                    } finally {
+                                                        setProcesandoId(null);
+                                                    }
+                                                }}
+                                                disabled={procesandoId === empresa.id}
+                                                className="px-3 py-1 bg-purple-50 text-purple-700 rounded hover:bg-purple-100 border border-purple-200"
+                                            >
+                                                Convertir en Plantilla
+                                            </button>
+                                        )}
+
+                                        <button
+                                            onClick={() => handleDelete(empresa.id, empresa.razon_social)}
+                                            disabled={procesandoId === empresa.id}
+                                            className="px-3 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100 border border-red-200 disabled:opacity-50"
+                                        >
+                                            {procesandoId === empresa.id ? '...' : 'Eliminar'}
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
                     </tbody>
                 </table>
             </div>
-        </div>
+
+            {/* --- PAGINACIÓN --- */}
+            {
+                totalPages > 1 && (
+                    <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-100">
+                        <span className="text-sm text-gray-500">
+                            Mostrando {empresas.length} de {totalItems} resultados
+                        </span>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page === 1}
+                                className="px-4 py-2 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Anterior
+                            </button>
+                            <span className="px-4 py-2 text-sm bg-indigo-50 text-indigo-700 font-medium rounded border border-indigo-100">
+                                Página {page} de {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                disabled={page === totalPages}
+                                className="px-4 py-2 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Siguiente
+                            </button>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     );
 }
 
@@ -488,8 +729,8 @@ export default function SoporteUtilPage() {
 
     const [activeTab, setActiveTab] = useState('gestionSoporte');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    // CHANGE: Store ID instead of object to avoid stale state
-    const [selectedEmpresaId, setSelectedEmpresaId] = useState(null);
+    // CHANGE: Store the full object directly to avoid lookup issues if dashboardData is stale/incomplete
+    const [selectedEmpresa, setSelectedEmpresa] = useState(null);
 
     const fetchDashboardData = useCallback(async () => {
         setIsDataLoading(true);
@@ -558,22 +799,24 @@ export default function SoporteUtilPage() {
     };
 
     const openModal = (empresa) => {
-        setSelectedEmpresaId(empresa.id);
+        setSelectedEmpresa(empresa);
         setIsModalOpen(true);
     };
     const closeModal = () => {
         setIsModalOpen(false);
-        setSelectedEmpresaId(null);
+        setSelectedEmpresa(null);
     };
 
     const handleDataUpdatedInModal = () => {
         fetchDashboardData();
+        // Also could trigger refresh of the child panel if we had a way, 
+        // but fetchDashboardData updates dashboardData which is passed down?
+        // Actually GestionEmpresasPanel has its own fetch, so we might need a signal.
+        // But for now, fixing the modal open is the priority.
     };
 
-    // DERIVED STATE: Get the fresh company object from the main list
-    const activeEmpresa = selectedEmpresaId
-        ? dashboardData.empresas.find(e => e.id === selectedEmpresaId)
-        : null;
+    // Obsolete derived state removed
+    const activeEmpresa = selectedEmpresa;
 
     if (isLoading) return <p className="text-center mt-10">Cargando...</p>;
 

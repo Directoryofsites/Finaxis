@@ -348,7 +348,7 @@ export default function UniversalImportForm({ maestros, empresaActual, isProcess
                                         </thead>
                                         <tbody>
                                             {result.created_documents.map((row, i) => (
-                                                <tr key={i} className="hover:bg-gray-50 border-b border-gray-100">
+                                                <tr key={i} className="hover:bg-gray-50 border-b border-gray-100 text-gray-800">
                                                     <td className="whitespace-nowrap">{row.fecha}</td>
                                                     <td className="font-mono">{row.tipo_doc}</td>
                                                     <td className="truncate max-w-[150px]" title={row.nombre_tipo_doc}>{row.nombre_tipo_doc}</td>

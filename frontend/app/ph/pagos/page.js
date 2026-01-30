@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { phService } from '../../../lib/phService';
 import { FaMoneyBillWave, FaUser, FaBuilding, FaCheckCircle, FaExclamationTriangle, FaCalendarAlt } from 'react-icons/fa';
 import { useRecaudos } from '../../../contexts/RecaudosContext'; // IMPORT
+import ManualButton from '../../components/ManualButton';
 
 export default function PagosPHPage() {
     const { user, loading: authLoading } = useAuth();
@@ -247,13 +248,22 @@ export default function PagosPHPage() {
 
             <div className="max-w-6xl mx-auto">
                 <div className="mb-6">
-                    <div className="flex items-center gap-3 mt-3">
-                        <div className="p-2 bg-green-100 rounded-lg text-green-600">
-                            <FaMoneyBillWave className="text-2xl" />
+                    <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-3 mt-3">
+                            <div className="p-2 bg-green-100 rounded-lg text-green-600">
+                                <FaMoneyBillWave className="text-2xl" />
+                            </div>
+                            <div>
+                                <h1 className="text-3xl font-bold text-gray-800">Recaudos y Pagos {labels.module}</h1>
+                                <p className="text-gray-500 text-sm">Gestión de recaudos por {labels.unidad} o consolidado por Propietario.</p>
+                            </div>
                         </div>
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-800">Recaudos y Pagos {labels.module}</h1>
-                            <p className="text-gray-500 text-sm">Gestión de recaudos por {labels.unidad} o consolidado por Propietario.</p>
+                        <div className="mt-3">
+                            <ManualButton 
+                                manualPath="pagos.html"
+                                title="Manual de Registro de Pagos"
+                                position="header"
+                            />
                         </div>
                     </div>
                 </div>

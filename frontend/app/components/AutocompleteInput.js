@@ -66,7 +66,7 @@ export default function AutocompleteInput({ items, value, onChange, placeholder,
             <div className="relative">
                 <input
                     type="text"
-                    className="w-full border rounded-lg p-2 pr-8 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                    className="w-full border rounded-lg p-2 pr-8 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-gray-900"
                     placeholder={placeholder}
                     value={inputValue}
                     onChange={handleInputChange}
@@ -98,7 +98,7 @@ export default function AutocompleteInput({ items, value, onChange, placeholder,
                         filteredItems.map((item, index) => (
                             <li
                                 key={index}
-                                className="p-2 hover:bg-blue-50 cursor-pointer text-gray-700 text-sm border-b border-gray-50 last:border-0"
+                                className="p-2 hover:bg-blue-50 cursor-pointer text-gray-900 text-sm border-b border-gray-50 last:border-0"
                                 onClick={() => handleSelectItem(item)}
                             >
                                 {item[displayKey]}
@@ -109,7 +109,7 @@ export default function AutocompleteInput({ items, value, onChange, placeholder,
                             items.slice(0, 50).map((item, index) => (
                                 <li
                                     key={index}
-                                    className="p-2 hover:bg-blue-50 cursor-pointer text-gray-700 text-sm border-b border-gray-50 last:border-0"
+                                    className="p-2 hover:bg-blue-50 cursor-pointer text-gray-900 text-sm border-b border-gray-50 last:border-0"
                                     onClick={() => handleSelectItem(item)}
                                 >
                                     {item[displayKey]}

@@ -15,6 +15,14 @@ from ..models import documento as models_doc
 from ..models import plan_cuenta as models_pc
 from ..models import empresa as models_empresa # <--- AGREGAR ESTA LÍNEA
 
+# --- FIX: IMPORTACIONES PARA CONSUMO DE REGISTROS ---
+from sqlalchemy import extract
+from app.models.consumo_registros import (
+    HistorialConsumo,
+    TipoOperacionConsumo
+)
+# ----------------------------------------------------
+
 from datetime import date, timedelta
 import calendar
 from typing import Optional # <--- Asegúrate de importar esto arriba
@@ -383,8 +391,19 @@ def get_limite_real_mes(db: Session, empresa_id: int, anio: int, mes: int) -> in
         return plan_mensual.limite_asignado
 
     # 1. Obtener Plan Base
+    # 1. Obtener Plan Base (Prioridad: limite_registros_mensual > limite_registros)
     empresa = db.query(models_empresa.Empresa).filter(models_empresa.Empresa.id == empresa_id).first()
-    limite_base = empresa.limite_registros if empresa and empresa.limite_registros else 0
+    limite_base = 0
+    if empresa:
+        # FIX: Si es hija (tiene padre), su límite local es irrelevante para el cálculo visual.
+        # Retornamos 0 para que el frontend oculte la barra de progreso y muestre solo consumo.
+        if empresa.padre_id:
+            return 0
+
+        if empresa.limite_registros_mensual is not None:
+             limite_base = empresa.limite_registros_mensual
+        elif empresa.limite_registros is not None:
+             limite_base = empresa.limite_registros
     
     # 2. Buscar Cupo Adicional (Legacy/Static)
     adicional = db.query(CupoAdicional).filter(
@@ -433,8 +452,11 @@ def get_consumo_actual(db: Session, empresa_id: int, mes: Optional[int] = None, 
     ultimo_dia = calendar.monthrange(fecha_base.year, fecha_base.month)[1]
     fin_mes = fecha_base.replace(day=ultimo_dia)
 
-    # 3. Contar movimientos en ese rango histórico
-    total_registros_mes = db.query(func.count(models_mov_cont.MovimientoContable.id))\
+    # 3. Contar (MODO DUAL: FÍSICO vs FINANCIERO)
+
+    # A. Conteo Físico (Local Documents)
+    # Relevante para Hijas/Independientes
+    physical_count = db.query(func.count(models_mov_cont.MovimientoContable.id))\
         .join(models_doc.Documento, models_mov_cont.MovimientoContable.documento_id == models_doc.Documento.id)\
         .filter(
             models_doc.Documento.empresa_id == empresa_id,
@@ -442,6 +464,28 @@ def get_consumo_actual(db: Session, empresa_id: int, mes: Optional[int] = None, 
             models_doc.Documento.fecha >= inicio_mes,
             models_doc.Documento.fecha <= fin_mes
         ).scalar() or 0
+
+    # B. Conteo Financiero (Historial Wallet Global)
+    # Relevante para Padres/Contadores
+    total_consumo = db.query(func.sum(HistorialConsumo.cantidad)).filter(
+        HistorialConsumo.empresa_id == empresa_id,
+        extract('year', HistorialConsumo.fecha) == fecha_base.year,
+        extract('month', HistorialConsumo.fecha) == fecha_base.month,
+        HistorialConsumo.tipo_operacion == TipoOperacionConsumo.CONSUMO
+    ).scalar() or 0
+    
+    total_reversion = db.query(func.sum(HistorialConsumo.cantidad)).filter(
+        HistorialConsumo.empresa_id == empresa_id,
+        extract('year', HistorialConsumo.fecha) == fecha_base.year,
+        extract('month', HistorialConsumo.fecha) == fecha_base.month,
+        HistorialConsumo.tipo_operacion == TipoOperacionConsumo.REVERSION
+    ).scalar() or 0
+    
+    financial_count = total_consumo - total_reversion
+    
+    # C. Definir Total (El mayor de los dos refleja la realidad más cruda)
+    # Para Contadores: Físico=0, Financiero=35 -> Consumo Real=35
+    total_registros_mes = max(physical_count, financial_count)
 
     # 4. Obtener el límite REAL del mes (Base + Adicionales)
     limite = get_limite_real_mes(db, empresa_id, fecha_base.year, fecha_base.month)

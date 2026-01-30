@@ -217,7 +217,7 @@ export default function EjecucionPresupuestalPage() {
         doc.setFontSize(16);
         doc.text("Informe de Ejecución Presupuestal", 14, 20);
         doc.setFontSize(10);
-        doc.text(`Empresa: ${user?.empresaNombre || 'Consorcio'}`, 14, 28);
+        doc.text(`Empresa: ${user?.empresaNombre || user?.empresa?.razon_social || user?.empresa?.nombre || 'Consorcio'}`, 14, 28);
         doc.text(`Rango: ${fechaInicio} a ${fechaFin}`, 14, 34);
 
         const rows = [];
