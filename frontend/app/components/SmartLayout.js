@@ -64,13 +64,19 @@ export default function SmartLayout({ children }) {
         <div className="min-h-screen bg-gray-50 flex flex-col">
 
             {/* 1. Left Sidebar (Fixed, High Z-Index) - Hide in Portal */}
-            {!isPortal && <SidebarFavorites />}
+            {!isPortal && (
+                <React.Suspense fallback={<div className="w-12 bg-white h-screen border-r border-gray-200"></div>}>
+                    <SidebarFavorites />
+                </React.Suspense>
+            )}
 
             {/* 2. Top Navigation (Fixed Top, adjusted margin?) */}
             {/* TopNav suele ser fixed. Si queremos que se ajuste con el Pin, debemos pasare props o envolverlo */}
             {/* Por simplicidad actual, TopNav está fixed w-full. Puede que el RightSidebar la tape. Idealmente RightSidebar tiene z-index mayor. */}
             <div className="z-50">
-                <TopNavigationBar />
+                <React.Suspense fallback={<div className="h-16 w-full bg-gray-100"></div>}>
+                    <TopNavigationBar />
+                </React.Suspense>
             </div>
 
             {/* 3. Main Content Wrapper */}
