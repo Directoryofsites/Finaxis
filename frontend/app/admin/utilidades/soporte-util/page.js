@@ -717,7 +717,7 @@ function GestionSoportePanel({ soporteUsers, onDataChange }) {
 // ########### FIN DE LA MODIFICACIÓN ###########
 // ##################################################################
 
-export default function SoporteUtilPage() {
+function SoporteUtilContent() {
     const [soporteIsLoggedIn, setSoporteIsLoggedIn] = useState(false);
     const [loginError, setLoginError] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -798,44 +798,26 @@ export default function SoporteUtilPage() {
         setActiveTab('gestionSoporte');
     };
 
-    const openModal = (empresa) => {
-        setSelectedEmpresa(empresa);
-        setIsModalOpen(true);
-    };
-    const closeModal = () => {
-        setIsModalOpen(false);
-        setSelectedEmpresa(null);
-    };
-
-    const handleDataUpdatedInModal = () => {
-        fetchDashboardData();
-        // Also could trigger refresh of the child panel if we had a way, 
-        // but fetchDashboardData updates dashboardData which is passed down?
-        // Actually GestionEmpresasPanel has its own fetch, so we might need a signal.
-        // But for now, fixing the modal open is the priority.
-    };
-
-    // Obsolete derived state removed
-    const activeEmpresa = selectedEmpresa;
-
-    if (isLoading) return <p className="text-center mt-10">Cargando...</p>;
+    if (isLoading) return <div className="p-10 text-center">Cargando panel de soporte...</div>;
 
     if (!soporteIsLoggedIn) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-100">
-                <div className="p-8 max-w-md w-full bg-white rounded-lg shadow-md">
-                    <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Acceso de Soporte</h2>
-                    <form onSubmit={handleSoporteLogin}>
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Usuario</label>
-                            <input type="text" value={soporteEmail} onChange={(e) => setSoporteEmail(e.target.value)} className="shadow appearance-none border rounded w-full py-2 px-3" required />
+            <div className="flex h-screen items-center justify-center bg-gray-100">
+                <div className="bg-white p-8 rounded-lg shadow-lg max-w-sm w-full border border-gray-200">
+                    <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Acceso Soporte</h2>
+                    {loginError && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert"><strong className="font-bold">Error:</strong> <span className="block sm:inline">{loginError}</span></div>}
+                    <form onSubmit={handleSoporteLogin} className="space-y-4">
+                        <div>
+                            <label className="block text-gray-700 text-sm font-bold mb-2">Email Soporte</label>
+                            <input type="email" value={soporteEmail} onChange={(e) => setSoporteEmail(e.target.value)} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-indigo-500" required />
                         </div>
-                        <div className="mb-6">
+                        <div>
                             <label className="block text-gray-700 text-sm font-bold mb-2">Contraseña</label>
-                            <input type="password" value={soportePassword} onChange={(e) => setSoportePassword(e.target.value)} className="shadow appearance-none border rounded w-full py-2 px-3" required />
+                            <input type="password" value={soportePassword} onChange={(e) => setSoportePassword(e.target.value)} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-indigo-500" required />
                         </div>
-                        {loginError && <p className="text-red-500 text-xs italic mb-4">{loginError}</p>}
-                        <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded w-full">Ingresar</button>
+                        <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
+                            Ingresar
+                        </button>
                     </form>
                 </div>
             </div>
@@ -843,55 +825,138 @@ export default function SoporteUtilPage() {
     }
 
     return (
-        <div className="container mx-auto p-4 max-w-screen-2xl space-y-8 bg-gray-50 min-h-screen">
-            <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-extrabold text-gray-900">Panel de Herramientas de Soporte</h1>
-                <div>
-                    <button onClick={handleLogout} className="text-sm text-red-600 hover:underline mr-4">Cerrar Sesión</button>
+        <div className="min-h-screen bg-gray-50 pb-20">
+            {/* Header */}
+            <header className="bg-white shadow-sm border-b sticky top-0 z-30">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+                    <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                        🛡️ Panel de Soporte
+                    </h1>
+                    <button onClick={handleLogout} className="text-red-600 hover:text-red-800 font-medium text-sm border border-red-200 px-3 py-1 rounded bg-red-50 hover:bg-red-100 transition-colors">
+                        Cerrar Sesión
+                    </button>
                 </div>
-            </div>
-            <div className="flex border-b mb-6 overflow-x-auto">
-                <button onClick={() => setActiveTab('gestionSoporte')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'gestionSoporte' ? 'border-b-2 border-pink-600 font-semibold text-pink-600' : 'text-gray-500'}`}>Gestión Soporte</button>
-                <button onClick={() => setActiveTab('gestionRoles')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'gestionRoles' ? 'border-b-2 border-orange-600 font-semibold text-orange-600' : 'text-gray-500'}`}>Gestión Roles</button>
-                <button onClick={() => setActiveTab('crearEmpresa')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'crearEmpresa' ? 'border-b-2 border-green-600 font-semibold text-green-600' : 'text-gray-500'}`}>Crear Empresa</button>
-                <button onClick={() => setActiveTab('gestionEmpresas')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'gestionEmpresas' ? 'border-b-2 border-yellow-600 font-semibold text-yellow-600' : 'text-gray-500'}`}>Gestión Empresas</button>
-                <button onClick={() => setActiveTab('auditoriaConsecutivos')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'auditoriaConsecutivos' ? 'border-b-2 border-cyan-600 font-semibold text-cyan-600' : 'text-gray-500'}`}>Auditoría Consecutivos</button>
-                <button onClick={() => setActiveTab('inspectorMaestros')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'inspectorMaestros' ? 'border-b-2 border-indigo-600 font-semibold text-indigo-600' : 'text-gray-500'}`}>Inspector Maestros</button>
-                <button onClick={() => setActiveTab('buscadorLlaveNatural')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'buscadorLlaveNatural' ? 'border-b-2 border-teal-600 font-semibold text-teal-600' : 'text-gray-500'}`}>Buscador</button>
-                <button onClick={() => setActiveTab('inspectorUniversal')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'inspectorUniversal' ? 'border-b-2 border-purple-600 font-semibold text-purple-600' : 'text-gray-500'}`}>Inspector (ID)</button>
-                <button onClick={() => setActiveTab('operaciones')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'operaciones' ? 'border-b-2 border-blue-600 font-semibold text-blue-600' : 'text-gray-500'}`}>Últimas Operaciones</button>
+            </header>
 
-                <button onClick={() => setActiveTab('conteo')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'conteo' ? 'border-b-2 border-blue-600 font-semibold text-blue-600' : 'text-gray-500'}`}>Conteo</button>
-                <button onClick={() => setActiveTab('resetConsumo')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'resetConsumo' ? 'border-b-2 border-red-600 font-semibold text-red-600' : 'text-gray-500'}`}>Reset Consumo (PELIGRO)</button>
-                <button onClick={() => setActiveTab('erradicadorUniversal')} className={`py-2 px-4 whitespace-nowrap ${activeTab === 'erradicadorUniversal' ? 'border-b-2 border-red-600 font-semibold text-red-600' : 'text-gray-500'}`}>Erradicador</button>
-            </div>
-            <div>
-                {isDataLoading ? (
-                    <p className="text-center mt-10">Cargando datos del panel...</p>
-                ) : (
-                    <>
-                        {activeTab === 'gestionSoporte' && <GestionSoportePanel soporteUsers={dashboardData.usuarios_soporte} onDataChange={fetchDashboardData} />}
-                        {activeTab === 'gestionRoles' && <RolesManagementView />}
-                        {activeTab === 'crearEmpresa' && <CrearEmpresaPanel onEmpresaCreada={fetchDashboardData} />}
-                        {activeTab === 'gestionEmpresas' && <GestionEmpresasPanel empresas={dashboardData.empresas} onDataChange={fetchDashboardData} onOpenModal={openModal} />}
-                        {activeTab === 'auditoriaConsecutivos' && <AuditoriaConsecutivosSoporte todasLasEmpresas={dashboardData.empresas} />}
-                        {activeTab === 'inspectorMaestros' && <InspectorMaestros todasLasEmpresas={dashboardData.empresas} />}
-                        {activeTab === 'buscadorLlaveNatural' && <BuscadorPorLlaveNatural todasLasEmpresas={dashboardData.empresas} />}
-                        {activeTab === 'inspectorUniversal' && <InspectorUniversal />}
-                        {activeTab === 'operaciones' && <UltimasOperaciones todasLasEmpresas={dashboardData.empresas} />}
-                        {activeTab === 'conteo' && <ConteoRegistros />}
-                        {activeTab === 'resetConsumo' && <ResetConsumoPanel todasLasEmpresas={dashboardData.empresas} />}
-                        {activeTab === 'erradicadorUniversal' && <ErradicadorUniversal todasLasEmpresas={dashboardData.empresas} />}
-                    </>
-                )}
-            </div>
-            {isModalOpen && activeEmpresa && (
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Tabs de Navegación */}
+                <div className="mb-8 border-b border-gray-200">
+                    <nav className="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
+                        {['gestionSoporte', 'gestionEmpresas', 'crearEmpresa', 'roles', 'auditoria', 'utilidades', 'erradicador', 'maestros'].map((tab) => {
+                            const labels = {
+                                gestionSoporte: 'Usuarios Soporte',
+                                gestionEmpresas: 'Gestión Empresas',
+                                crearEmpresa: 'Crear Empresa',
+                                roles: 'Roles Globales',
+                                auditoria: 'Auditoría',
+                                utilidades: 'Utilidades',
+                                erradicador: 'Erradicador',
+                                maestros: 'Inspector Maestros'
+                            };
+                            return (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`
+                                        whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors
+                                        ${activeTab === tab
+                                            ? 'border-indigo-500 text-indigo-600'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
+                                    `}
+                                >
+                                    {labels[tab]}
+                                </button>
+                            );
+                        })}
+                    </nav>
+                </div>
+
+                {/* Contenido de Tabs */}
+                <div className="animate-fadeIn">
+                    {activeTab === 'gestionSoporte' && (
+                        <div className="grid grid-cols-1 gap-6">
+                            <GestionSoportePanel soporteUsers={dashboardData.usuarios_soporte} onDataChange={fetchDashboardData} />
+                            <UltimasOperaciones limit={5} />
+                        </div>
+                    )}
+
+                    {activeTab === 'gestionEmpresas' && (
+                        <GestionEmpresasPanel
+                            onDataChange={fetchDashboardData}
+                            onOpenModal={(empresa) => {
+                                setSelectedEmpresa(empresa);
+                                setIsModalOpen(true);
+                            }}
+                        />
+                    )}
+
+                    {activeTab === 'crearEmpresa' && (
+                        <CrearEmpresaPanel
+                            onEmpresaCreated={(newEmpresa) => {
+                                setActiveTab('gestionEmpresas');
+                                fetchDashboardData();
+                            }}
+                        />
+                    )}
+
+                    {activeTab === 'roles' && (
+                        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-xl font-bold text-gray-800">Gestión Global de Roles</h2>
+                                <p className="text-sm text-gray-500">Configuración de plantillas de permisos para nuevas empresas.</p>
+                            </div>
+                            <RolesManagementView isGlobalMode={true} />
+                        </div>
+                    )}
+
+                    {activeTab === 'auditoria' && (
+                        <div className="space-y-8">
+                            <AuditoriaConsecutivosSoporte />
+                            <InspectorUniversal />
+                        </div>
+                    )}
+
+                    {activeTab === 'utilidades' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <ResetConsumoPanel />
+                            <ConteoRegistros />
+                            <BuscadorPorLlaveNatural />
+                        </div>
+                    )}
+
+                    {activeTab === 'erradicador' && (
+                        <ErradicadorUniversal />
+                    )}
+
+                    {activeTab === 'maestros' && (
+                        <InspectorMaestros />
+                    )}
+                </div>
+            </main>
+
+            {/* Modal Global */}
+            {isModalOpen && selectedEmpresa && (
                 <ModalGestionarEmpresa
-                    empresa={activeEmpresa}
-                    onClose={closeModal}
-                    onDataChange={handleDataUpdatedInModal}
+                    empresa={selectedEmpresa}
+                    onClose={() => {
+                        setIsModalOpen(false);
+                        setSelectedEmpresa(null);
+                    }}
+                    onDataChange={() => {
+                        fetchDashboardData();
+                        setIsModalOpen(false);
+                        setSelectedEmpresa(null); // Force close to refresh potential stale data references
+                    }}
                 />
             )}
         </div>
+    );
+}
+
+export default function SoporteUtilPage() {
+    return (
+        <React.Suspense fallback={<div className="h-screen flex items-center justify-center text-indigo-500">Cargando Soporte...</div>}>
+            <SoporteUtilContent />
+        </React.Suspense>
     );
 }

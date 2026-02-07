@@ -16,7 +16,7 @@ const getErrorMessage = (err, defaultMessage = 'Ocurrió un error inesperado.') 
   return err.response?.data?.detail || defaultMessage;
 };
 
-export default function GestionarConceptosPage() {
+function GestionarConceptosContent() {
   const { user, loading: authLoading } = useAuth();
 
   const [conceptos, setConceptos] = useState([]);
@@ -351,5 +351,13 @@ export default function GestionarConceptosPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function GestionarConceptosPage() {
+  return (
+    <React.Suspense fallback={<div className="h-screen flex items-center justify-center text-blue-500">Cargando Conceptos...</div>}>
+      <GestionarConceptosContent />
+    </React.Suspense>
   );
 }

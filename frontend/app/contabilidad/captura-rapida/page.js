@@ -29,7 +29,7 @@ const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 trackin
 const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none";
 const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none bg-white";
 
-export default function CapturaRapidaPage() {
+function CapturaRapidaContent() {
   const router = useRouter();
   const searchParams = useSearchParams(); // Hook initializes searchParams
   const { user, loading: authLoading } = useAuth();
@@ -1119,5 +1119,13 @@ export default function CapturaRapidaPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function CapturaRapidaPage() {
+  return (
+    <React.Suspense fallback={<div className="h-screen flex items-center justify-center text-indigo-500">Cargando Captura Rápida...</div>}>
+      <CapturaRapidaContent />
+    </React.Suspense>
   );
 }

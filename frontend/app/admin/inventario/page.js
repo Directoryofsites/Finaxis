@@ -54,7 +54,8 @@ const CustomValueContainer = ({ children, ...props }) => {
 
 const SELECT_ALL_OPTION = { label: "Seleccionar Todos", value: "all" };
 
-export default function GestionInventarioPage() {
+// --- COMPONENTE INTERNO (CONTENIDO) ---
+function GestionInventarioContent() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -451,5 +452,13 @@ export default function GestionInventarioPage() {
                 />
             )}
         </div>
+    );
+}
+
+export default function GestionInventarioPage() {
+    return (
+        <React.Suspense fallback={<div className="h-screen flex items-center justify-center text-indigo-500">Cargando...</div>}>
+            <GestionInventarioContent />
+        </React.Suspense>
     );
 }
