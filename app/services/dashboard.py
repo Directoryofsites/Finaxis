@@ -1,7 +1,7 @@
 # app/services/dashboard.py (REEMPLAZO COMPLETO - FIX FINAL DE SUSTITUCIÓN DE MARGEN BRUTO)
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case, and_
+from sqlalchemy import func, case, and_, or_
 from typing import List, Dict
 from datetime import date
 from decimal import Decimal
@@ -19,7 +19,8 @@ from ..models import empresa as models_empresa # <--- AGREGAR ESTA LÍNEA
 from sqlalchemy import extract
 from app.models.consumo_registros import (
     HistorialConsumo,
-    TipoOperacionConsumo
+    TipoOperacionConsumo,
+    ControlPlanMensual
 )
 # ----------------------------------------------------
 
@@ -405,26 +406,81 @@ def get_limite_real_mes(db: Session, empresa_id: int, anio: int, mes: int) -> in
         elif empresa.limite_registros is not None:
              limite_base = empresa.limite_registros
     
-    # 2. Buscar Cupo Adicional (Legacy/Static)
-    adicional = db.query(CupoAdicional).filter(
-        CupoAdicional.empresa_id == empresa_id,
-        CupoAdicional.anio == anio,
-        CupoAdicional.mes == mes
-    ).first()
-    
-    cantidad_cupo = adicional.cantidad_adicional if (adicional and adicional.cantidad_adicional > 0) else 0
-    
-    # 3. Buscar Recargas Adicionales (Sync con compras de paquetes)
-    recargas = db.query(RecargaAdicional).filter(
-        RecargaAdicional.empresa_id == empresa_id,
-        RecargaAdicional.anio == anio,
-        RecargaAdicional.mes == mes
-    ).all()
-    
-    cantidad_recarga = sum(r.cantidad_comprada for r in recargas)
-    
-    # TOTAL = Base + Cupo + Recargas
-    return limite_base + cantidad_cupo + cantidad_recarga
+    # 2. Definir si es el mes ACTUAL (Para activar lógica Rolling)
+    from datetime import datetime
+    now = datetime.now()
+    is_current_month = (anio == now.year and mes == now.month)
+
+    # 3. Lógica Diferenciada
+    if not is_current_month:
+        # --- MES PASADO / FUTURO (Cálculo Estático / Snapshot) ---
+        # Solo sumamos lo que estaba asignado para ese mes específicamente.
+        # No podemos calcular fácilmente el "rolling" de ese momento sin viajar en el tiempo.
+        # Mostramos solo lo "Nominal" del mes.
+        
+        # A. Cupo Adicional (Legacy)
+        adicional = db.query(CupoAdicional).filter(
+            CupoAdicional.empresa_id == empresa_id,
+            CupoAdicional.anio == anio,
+            CupoAdicional.mes == mes
+        ).first()
+        cantidad_cupo = adicional.cantidad_adicional if (adicional and adicional.cantidad_adicional > 0) else 0
+
+        # B. Recargas compradas ese mes
+        recargas = db.query(RecargaAdicional).filter(
+            RecargaAdicional.empresa_id == empresa_id,
+            RecargaAdicional.anio == anio,
+            RecargaAdicional.mes == mes
+        ).all()
+        cantidad_recarga = sum(r.cantidad_comprada for r in recargas)
+        
+        return limite_base + cantidad_cupo + cantidad_recarga
+
+    else:
+        # --- MES ACTUAL (Cálculo Dinámico Rolling) ---
+        # Limit = Plan Base + Rolling Disponible (Planes Pasados) + Recargas Vigentes (Saldo)
+        
+        # A. Rolling Quota (Planes Pasados con Saldo)
+        from sqlalchemy import and_, desc, asc
+        
+        # FIX: Strict Past Logic for Dashboard as well
+        query_rolling = db.query(ControlPlanMensual).filter(
+            ControlPlanMensual.empresa_id == empresa_id,
+            ControlPlanMensual.cantidad_disponible > 0,
+            or_(
+                ControlPlanMensual.anio < anio,
+                and_(ControlPlanMensual.anio == anio, ControlPlanMensual.mes < mes)
+            )
+        )
+
+        # FIX: Excluir planes anteriores a la creación de la empresa
+        if empresa.created_at:
+            c_year = empresa.created_at.year
+            c_month = empresa.created_at.month
+            from sqlalchemy import or_
+            query_rolling = query_rolling.filter(
+                or_(
+                    ControlPlanMensual.anio > c_year,
+                    and_(ControlPlanMensual.anio == c_year, ControlPlanMensual.mes >= c_month)
+                )
+            )
+        saldo_rolling = sum(p.cantidad_disponible for p in query_rolling.all())
+        
+        # B. Recargas Vigentes (Saldo Disponible Total)
+        # Sumamos el saldo de TODAS las recargas vigentes, sin importar cuando se compraron.
+        from app.models.consumo_registros import EstadoRecarga
+        
+        query_recargas = db.query(RecargaAdicional).filter(
+            RecargaAdicional.empresa_id == empresa_id,
+            RecargaAdicional.estado == EstadoRecarga.VIGENTE
+        )
+        saldo_recargas = sum(r.cantidad_disponible for r in query_recargas.all())
+        
+        # OJO: Para el Plan Base, usamos 'limite_base' (Capacidad Total del Plan) 
+        # y no 'cantidad_disponible' (Saldo), porque queremos mostrar la "Barra Total".
+        # Barra = (Consumido Mes) / (Plan Base + Rolling + Recargas)
+        
+        return limite_base + saldo_rolling + saldo_recargas
 
 # -----------------------------------------------------------------------------
 # FUNCIÓN PRINCIPAL ACTUALIZADA
@@ -433,6 +489,9 @@ def get_consumo_actual(db: Session, empresa_id: int, mes: Optional[int] = None, 
     """
     Calcula el consumo de registros para un mes específico.
     Si no se especifica mes/anio, usa la fecha actual.
+    
+    MODIFICADO: Prioriza la "Verdad de la BD" (ControlPlanMensual) sobre los logs de historial
+    para reflejar correctamente el consumo diferido (e.g. Diciembre consumiendo de Noviembre).
     """
     # 1. Determinar la fecha base
     hoy = date.today()
@@ -444,51 +503,67 @@ def get_consumo_actual(db: Session, empresa_id: int, mes: Optional[int] = None, 
     try:
         fecha_base = date(target_year, target_month, 1)
     except ValueError:
-        # Fallback por si envían un mes 13 o algo raro
         fecha_base = hoy.replace(day=1)
 
-    # 2. Definir rango del mes
+    # 2. Definir rango del mes (para queries de logs auxiliares)
     inicio_mes = fecha_base
     ultimo_dia = calendar.monthrange(fecha_base.year, fecha_base.month)[1]
     fin_mes = fecha_base.replace(day=ultimo_dia)
 
-    # 3. Contar (MODO DUAL: FÍSICO vs FINANCIERO)
-
-    # A. Conteo Físico (Local Documents)
-    # Relevante para Hijas/Independientes
-    physical_count = db.query(func.count(models_mov_cont.MovimientoContable.id))\
-        .join(models_doc.Documento, models_mov_cont.MovimientoContable.documento_id == models_doc.Documento.id)\
-        .filter(
-            models_doc.Documento.empresa_id == empresa_id,
-            models_doc.Documento.anulado == False,
-            models_doc.Documento.fecha >= inicio_mes,
-            models_doc.Documento.fecha <= fin_mes
-        ).scalar() or 0
-
-    # B. Conteo Financiero (Historial Wallet Global)
-    # Relevante para Padres/Contadores
-    total_consumo = db.query(func.sum(HistorialConsumo.cantidad)).filter(
-        HistorialConsumo.empresa_id == empresa_id,
-        extract('year', HistorialConsumo.fecha) == fecha_base.year,
-        extract('month', HistorialConsumo.fecha) == fecha_base.month,
-        HistorialConsumo.tipo_operacion == TipoOperacionConsumo.CONSUMO
-    ).scalar() or 0
+    # --------------------------------------------------------
+    # ESTRATEGIA HÍBRIDA (Persistence-First)
+    # --------------------------------------------------------
     
-    total_reversion = db.query(func.sum(HistorialConsumo.cantidad)).filter(
-        HistorialConsumo.empresa_id == empresa_id,
-        extract('year', HistorialConsumo.fecha) == fecha_base.year,
-        extract('month', HistorialConsumo.fecha) == fecha_base.month,
-        HistorialConsumo.tipo_operacion == TipoOperacionConsumo.REVERSION
-    ).scalar() or 0
+    # --------------------------------------------------------
+    # ESTRATEGIA HÍBRIDA (Persistence-First)
+    # --------------------------------------------------------
     
-    financial_count = total_consumo - total_reversion
+    # A. CÁLCULO DEL CONSUMO DE PLAN (Base + Cupo Extra)
     
-    # C. Definir Total (El mayor de los dos refleja la realidad más cruda)
-    # Para Contadores: Físico=0, Financiero=35 -> Consumo Real=35
-    total_registros_mes = max(physical_count, financial_count)
+    # FIX: Para Empresas Hijas (Shared Wallet), NO usamos ControlPlanMensual (que es dummy o monitor local resetado).
+    # Usamos directamenta la suma de logs (Fallback) para ver su consumo real.
+    empresa_obj = db.query(models_empresa.Empresa).filter(models_empresa.Empresa.id == empresa_id).first()
+    es_hija = empresa_obj and empresa_obj.padre_id is not None
+    
+    plan_mensual = None
+    if not es_hija:
+        # Solo buscamos plan si es Padre o Independiente
+        plan_mensual = db.query(ControlPlanMensual).filter(
+            ControlPlanMensual.empresa_id == empresa_id,
+            ControlPlanMensual.anio == fecha_base.year,
+            ControlPlanMensual.mes == fecha_base.month
+        ).first()
+    
+    total_registros_mes = 0
+    limite = 0
+    
+    if plan_mensual:
+        # Si existe plan control, la verdad absoluta es (Límite - Disponible)
+        # Esto captura consumos locales Y consumos remotos (futuro robando pasado)
+        limite = plan_mensual.limite_asignado
+        disponible_real = plan_mensual.cantidad_disponible
+        
+        # El consumo total es simplemente lo que falta para llegar al límite
+        total_registros_mes = max(0, limite - disponible_real)
+        
+    else:
+        # Fallback: Si no hay plan creado (raro si estamos consultando), usamos logs
+        # OJO: Si no hay plan, calculamos 'consumo_extras_logs' como backup
+        consumo_extras_logs = db.query(func.sum(HistorialConsumo.cantidad)) \
+            .outerjoin(models_doc.Documento, HistorialConsumo.documento_id == models_doc.Documento.id) \
+            .filter(
+                or_(
+                    HistorialConsumo.empresa_id == empresa_id,
+                    models_doc.Documento.empresa_id == empresa_id
+                ),
+                extract('year', func.coalesce(models_doc.Documento.fecha, HistorialConsumo.fecha)) == fecha_base.year,
+                extract('month', func.coalesce(models_doc.Documento.fecha, HistorialConsumo.fecha)) == fecha_base.month,
+                HistorialConsumo.tipo_operacion == TipoOperacionConsumo.CONSUMO
+            ).scalar() or 0
+        total_registros_mes = consumo_extras_logs
+        limite = get_limite_real_mes(db, empresa_id, fecha_base.year, fecha_base.month)
 
-    # 4. Obtener el límite REAL del mes (Base + Adicionales)
-    limite = get_limite_real_mes(db, empresa_id, fecha_base.year, fecha_base.month)
+    # 4. Obtener el límite VISUAL (Base + Adicionales) -> Already set above
 
     # 5. Calcular porcentaje
     porcentaje = 0

@@ -202,6 +202,12 @@ export const deleteRecargaEmpresa = (recargaId) => {
   return soporteApiService.delete(`/utilidades/recargas-empresa/${recargaId}`);
 };
 
+export const getRecargasGlobales = (mes, anio) => {
+  return soporteApiService.get(`/utilidades/recargas-globales`, {
+    params: { mes, anio }
+  });
+};
+
 
 export const getPaquetesRecarga = () => {
   return soporteApiService.get('/utilidades/paquetes-recarga');

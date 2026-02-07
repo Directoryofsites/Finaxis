@@ -1,5 +1,5 @@
 # app/api/empresas/routes.py
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -32,14 +32,17 @@ def verificar_permiso_empresa(usuario: models_usuario, empresa_id: int):
 @router.get("/", response_model=List[schemas.Empresa])
 def read_empresas(
     db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(get_current_user)
+    current_user: models_usuario = Depends(get_current_user),
+    mes: Optional[int] = None,
+    anio: Optional[int] = None
 ):
     """
     Lista las empresas.
     - Si es Soporte: Devuelve TODAS.
     - Si es Usuario Normal: Devuelve SOLO SU PROPIA EMPRESA.
+    - mes/anio: Opcionales para calcular consumo histórico.
     """
-    return service.get_empresas_para_usuario(db, current_user)
+    return service.get_empresas_para_usuario(db, current_user, mes, anio)
 
 @router.get("/templates", response_model=List[schemas.Empresa])
 def read_templates(
@@ -75,17 +78,55 @@ def create_empresa(
         owner_id = current_user.id
         
     # 2. Lógica de Creación (Plantilla vs Standard)
-    if empresa.template_category:
+    # Support both category (legacy) and ID (new)
+    if empresa.template_category or empresa.template_id:
         return service.create_empresa_from_template(
             db=db,
             empresa_data=empresa,
-            template_category=empresa.template_category,
+            template_category=empresa.template_category, # Service will handle None if ID is present
             owner_id=owner_id,
             padre_id=padre_id
         )
     
     # Fallback Standard (Solo Soporte debería usar esto para empresas sin molde)
     return service.create_empresa_con_usuarios(db=db, empresa_data=empresa, owner_id=owner_id, padre_id=padre_id)
+
+@router.post("/{empresa_id}/extract-template", response_model=schemas.Empresa)
+def extract_template(
+    empresa_id: int,
+    payload: schemas.TemplateExtraction,
+    db: Session = Depends(get_db),
+    current_user: models_usuario = Depends(get_current_user)
+):
+    """
+    Convierte la configuración de una empresa existente en una nueva Plantilla.
+    Si es Contador, la plantilla será Privada (owner_id = current_user).
+    Si es Soporte, la plantilla será Pública (owner_id = None) o asignada según lógica.
+    """
+    # 1. Permisos
+    verificar_permiso_empresa(current_user, empresa_id)
+    
+    user_roles = {r.nombre for r in current_user.roles}
+    is_soporte = "soporte" in user_roles
+    
+    # 2. Definir Dueño de la Plantilla
+    new_template_owner = None
+    if not is_soporte:
+        # Si es contador, la plantilla es SUYA.
+        new_template_owner = current_user.id
+        
+    # 3. Llamar al servicio de clonación
+    try:
+        nueva_plantilla = service.create_template_from_existing(
+            db=db,
+            source_empresa_id=empresa_id,
+            template_category=payload.category,
+            owner_id=new_template_owner,
+            custom_name=payload.name
+        )
+        return nueva_plantilla
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creando plantilla: {str(e)}")
 
 @router.get("/{empresa_id}", response_model=schemas.Empresa)
 def read_empresa(
@@ -195,9 +236,8 @@ def delete_empresa(
     db: Session = Depends(get_db),
     current_user: models_usuario = Depends(get_current_soporte_user)
 ):
-    success = service.delete_empresa(db, empresa_id=empresa_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Empresa no encontrada")
+    # Usamos la versión robusta que limpia referencias complejas (Nómina, PH, etc.)
+    service.delete_empresa_y_usuarios(db, empresa_id=empresa_id)
     return {"message": "Empresa eliminada exitosamente"}
 
 @router.post("/{empresa_id}/adicionales")

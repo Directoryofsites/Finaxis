@@ -7,6 +7,7 @@ class FacturaItemCreate(BaseModel):
     producto_id: int
     cantidad: float = Field(..., gt=0) # gt=0 asegura que la cantidad sea mayor a cero
     precio_unitario: float = Field(..., ge=0) # ge=0 asegura que el precio no sea negativo
+    descuento_tasa: Optional[float] = Field(default=0.0, ge=0, le=100) # Nueva
 
 class FacturaCreate(BaseModel):
     """ Define la estructura completa para crear una nueva factura. """
@@ -20,6 +21,11 @@ class FacturaCreate(BaseModel):
     # --- FIN DE LA MODIFICACIÓN ---
 
     bodega_id: int
+    
+    # --- NUEVOS CAMPOS DE DESCUENTO Y CARGOS ---
+    descuento_global_valor: Optional[float] = Field(default=0.0, ge=0)
+    cargos_globales_valor: Optional[float] = Field(default=0.0, ge=0)
+    # -------------------------------------------
 
     # Una factura se compone de una lista de ítems
     items: List[FacturaItemCreate]

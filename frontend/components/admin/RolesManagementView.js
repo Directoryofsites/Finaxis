@@ -119,6 +119,7 @@ export default function RolesManagementView() {
         }
     };
 
+    // Modifica un permiso individualmente
     const togglePermiso = (permisoItem) => {
         if (!editingRol) return;
 
@@ -129,6 +130,57 @@ export default function RolesManagementView() {
             newPermisos = editingRol.permisos.filter(p => p.id !== permisoItem.id);
         } else {
             newPermisos = [...editingRol.permisos, permisoItem];
+        }
+
+        setEditingRol({ ...editingRol, permisos: newPermisos });
+    };
+
+    // --- NUEVO: Selección en Cascada por Módulo ---
+    const handleToggleModuleAccess = (moduleData, currentAccessPermission, isChecking) => {
+        if (!editingRol) return;
+
+        // 1. Recolectar nombres de todos los permisos hijos de este módulo
+        let targetPermissionNames = [];
+
+        // A) Módulo Principal Access
+        // (Ya lo tenemos en currentAccessPermission, pero lo agregamos a la lista target)
+        if (currentAccessPermission) targetPermissionNames.push(currentAccessPermission.nombre);
+
+        // B) Links Directos
+        if (moduleData.links) {
+            moduleData.links.forEach(link => {
+                if (link.permission) targetPermissionNames.push(link.permission);
+            });
+        }
+
+        // C) Subgrupos
+        if (moduleData.subgroups) {
+            moduleData.subgroups.forEach(sub => {
+                if (sub.links) {
+                    sub.links.forEach(link => {
+                        if (link.permission) targetPermissionNames.push(link.permission);
+                    });
+                }
+            });
+        }
+
+        // 2. Mapear nombres a objetos de permisos reales disponibles en allPermisos
+        // (Solo los que existen en BD)
+        const targetPermisosObjs = allPermisos.filter(p => targetPermissionNames.includes(p.nombre));
+        const targetIds = targetPermisosObjs.map(p => p.id);
+
+        let newPermisos = [...editingRol.permisos];
+
+        if (isChecking) {
+            // AGREGAR: Añadir los que no estén ya
+            targetPermisosObjs.forEach(p => {
+                if (!newPermisos.some(existing => existing.id === p.id)) {
+                    newPermisos.push(p);
+                }
+            });
+        } else {
+            // QUITAR: Filtrar fuera todos los que pertenezcan a este módulo
+            newPermisos = newPermisos.filter(p => !targetIds.includes(p.id));
         }
 
         setEditingRol({ ...editingRol, permisos: newPermisos });
@@ -231,7 +283,7 @@ export default function RolesManagementView() {
                                                             <input
                                                                 type="checkbox"
                                                                 checked={isSelected}
-                                                                onChange={() => togglePermiso(permissionObj)}
+                                                                onChange={(e) => handleToggleModuleAccess(module, permissionObj, e.target.checked)}
                                                                 className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                                                             />
                                                             <span className="text-[10px] font-semibold text-blue-800 uppercase">Acceso</span>

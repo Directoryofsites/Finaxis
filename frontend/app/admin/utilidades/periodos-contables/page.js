@@ -60,7 +60,7 @@ export default function GestionPeriodosPage() {
   // Generar lista de años disponibles (Mínimo desde 2019 o Inicio Operaciones)
   const availableYears = [];
   const currentYear = new Date().getFullYear();
-  const endYear = currentYear + 1;
+  const endYear = 2050; // Extend range to 2050 per user request
 
   let startYear = 2019; // Piso histórico solicitado
   if (fechaInicioOp) {

@@ -145,67 +145,7 @@ class SaldoInsuficienteException(Exception):
         self.detalle = detalle
         super().__init__(self.message)
 
-def verificar_disponibilidad(db: Session, empresa_id: int, cantidad_necesaria: int) -> bool:
-    """
-    Verifica si existe saldo suficiente sumando todas las fuentes VIGENTES.
-    Soporta Jerarquía (Si es hija, valida cupo local Y saldo del padre).
-    """
-    # DEBUG TRACE REMOVED (Restoring function)
-    
-    # 0. Check Jerarquía y Cupo Local (Si aplica)
-    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
-    if not empresa: return False # Should not happen
 
-    # Si tiene Padre (Es Hija) -> Lógica de Doble Validación
-    if empresa.padre_id:
-        # A. Validación Local (Cupo Asignado) -> ELIMINADA PARA MODELO SHARED WALLET
-        # En el modelo de Bolsa Maestra, la hija no debe bloquearse por cupo local,
-        # sino consumir libremente del padre. El plan local queda solo como monitor.
-        # pass
-
-        # B. Validación Global (Saldo del Padre)
-        parent_result = verificar_disponibilidad(db, empresa.padre_id, cantidad_necesaria)
-        if not parent_result:
-             raise HTTPException(status_code=500, detail=f"DEBUG FAIL PARENT CHECK: ParentID={empresa.padre_id} returned False")
-        return True
-
-
-    # --- LÓGICA ESTÁNDAR (Para Padre o Empresa Independiente) ---
-    # 1. Plan Mensual Actual (Auto-inicializar si no existe)
-    now = datetime.now()
-    plan = _get_or_create_plan_mensual(db, empresa_id, now)
-    
-    saldo_plan = plan.cantidad_disponible if plan and plan.estado == EstadoPlan.ABIERTO else 0
-    
-    # 2. Bolsa Excedente (VIGENTE y NO VENCIDA)
-    # Filtro defensivo explícito
-    saldo_bolsa = db.query(BolsaExcedente).filter(
-        BolsaExcedente.empresa_id == empresa_id,
-        BolsaExcedente.estado == EstadoBolsa.VIGENTE,
-        BolsaExcedente.fecha_vencimiento >= now
-    ).with_entities(BolsaExcedente.cantidad_disponible).all()
-    
-    total_bolsa = sum([b.cantidad_disponible for b in saldo_bolsa])
-    
-    # 3. Recargas (VIGENTE)
-    saldo_recargas = db.query(RecargaAdicional).filter(
-        RecargaAdicional.empresa_id == empresa_id,
-        RecargaAdicional.estado == EstadoRecarga.VIGENTE
-    ).with_entities(RecargaAdicional.cantidad_disponible).all()
-    
-    # Correction: The model has 'cantidad_disponible'.
-    total_recargas = sum([r.cantidad_disponible for r in saldo_recargas])
-
-    total_disponible = saldo_plan + total_bolsa + total_recargas
-    
-    if total_disponible < cantidad_necesaria:
-         missing = cantidad_necesaria - total_disponible
-         raise HTTPException(
-            status_code=400,
-            detail=f"Saldo insuficiente. Te faltan {missing} registros para completar esta transacción."
-        )
-    
-    return True
 
 def calcular_deficit(db: Session, empresa_id: int, cantidad_necesaria: int) -> int:
     # Simplemente reusamos lógica base, si tiene padre delegamos
@@ -333,47 +273,70 @@ def _get_or_create_plan_mensual(db: Session, empresa_id: int, fecha_doc: datetim
     else:
         # Si está CERRADO, no tocamos nada, respetamos el cierre (cantidad=0 usualmente)
         # Usamos .value por si el ORM devuelve string
-        if plan.estado == EstadoPlan.CERRADO.value or plan.estado == "CERRADO":
-            return plan
+        # Si está CERRADO, permitimos el Recálculo de Disponibilidad (para corregir discrepancias)
+        # pero EVITAMOS cambiar el límite asignado (para mantener la foto histórica administrativa).
+        
+        # if plan.estado == EstadoPlan.CERRADO.value or plan.estado == "CERRADO":
+        #    return plan  <-- REMOVIDO para permitir sync de saldos
 
         # FIX: Si el plan es MANUAL, no tocamos el límite asignado (respetamos la decisión de soporte)
         if plan.es_manual:
-             return plan
+             pass # Continuar a sanity check, pero no tocar límite
 
         # AUTO-HEALING / SYNC CONTINUO
         # Verificamos si el límite total ha cambiado (por cambio de plan o nuevo cupo adicional)
-        limit_mismatch = (plan.limite_asignado != limite_total and limite_total > 0)
         
-        # Sync simple de límite
-        # Sync inteligente de límite: Preservamos el consumo realizado al actualizar el límite.
-        if limit_mismatch:
-             old_limit = plan.limite_asignado if plan.limite_asignado is not None else 0
-             diff = limite_total - old_limit
-             plan.limite_asignado = limite_total
-             plan.cantidad_disponible += diff
-             # Nota: Ajustamos 'plan.cantidad_disponible' por el delta, confiando en que refleja el consumo acumulado (incluyendo hijos)
+        # Solo actualizamos LÍMITES si está ABIERTO. Si está cerrado, el límite es sagrado.
+        if plan.estado != EstadoPlan.CERRADO.value and plan.estado != "CERRADO":
+            limit_mismatch = (plan.limite_asignado != limite_total and limite_total > 0)
+            
+            # Sync simple de límite
+            # Sync inteligente de límite: Preservamos el consumo realizado al actualizar el límite.
+            if limit_mismatch and not plan.es_manual:
+                 old_limit = plan.limite_asignado if plan.limite_asignado is not None else 0
+                 diff = limite_total - old_limit
+                 plan.limite_asignado = limite_total
+                 plan.cantidad_disponible += diff
+                 # Nota: Ajustamos 'plan.cantidad_disponible' por el delta, confiando en que refleja el consumo acumulado (incluyendo hijos)
 
-        # RECALCULO DE DISPONIBILIDAD (Sanity Check "Down-only")
-        # Disponible Esperado = Límite - Consumo Real (Excluyendo doc actual)
-        # Nota: 'consumo_real' solo cuenta docs propios. Para Shared Wallet, esto subestima el uso.
-        # Por eso, NUNCA corregimos hacia arriba basándonos en esto (saldría 'free refill').
+        # RECALCULO DE DISPONIBILIDAD (Sanity Check)
+        # MODIFICADO: Usar HistorialConsumo como fuente de verdad para el "Esperado".
+        # El conteo simple de Documentos falla si hay "Cupo Rodante" (Consumo diferido).
         
-        esperado = max(0, limite_total - consumo_real)
+        # 1. Calcular Uso Real de ESTE Plan (Suma de Historial donde este plan fue la fuente)
+        # Incluye consumos hechos en ESTE mes y en FUTUROS meses (si se tomó prestado)
+        consumo_ledger = db.query(func.sum(HistorialConsumo.cantidad)).filter(
+            HistorialConsumo.fuente_id == plan.id,
+            HistorialConsumo.fuente_tipo.in_([TipoFuenteConsumo.PLAN, 'PLAN_PASADO']),
+            HistorialConsumo.tipo_operacion == TipoOperacionConsumo.CONSUMO
+        ).scalar() or 0
+        
+        reversiones_ledger = db.query(func.sum(HistorialConsumo.cantidad)).filter(
+            HistorialConsumo.fuente_id == plan.id,
+            HistorialConsumo.fuente_tipo.in_([TipoFuenteConsumo.PLAN, 'PLAN_PASADO']),
+            HistorialConsumo.tipo_operacion == TipoOperacionConsumo.REVERSION
+        ).scalar() or 0
+        
+        uso_neto_plan = consumo_ledger - reversiones_ledger
+        
+        esperado = max(0, limite_total - uso_neto_plan)
         
         should_heal = False
-        if plan.cantidad_disponible > esperado:
-             should_heal = True # Corrección conservadora (Solo si DB dice que tenemos MAYOR disponible que el teórico propio)
         
-        # ELIMINADO: 'elif limit_mismatch...' -> Ya manejamos el ajuste por delta arriba. No forzamos plan = esperado.
-             
+        # Corrección: El "Esperado" (Ledger) debería coincidir con el "Disponible" (Snapshot).
+        # Permitimos una tolerancia mínima.
+        if plan.cantidad_disponible != esperado:
+             should_heal = True
+             print(f"[AUTO-HEAL] Corrigiendo Plan {plan.id} ({mes}/{anio}). DB({plan.cantidad_disponible}) -> Calc({esperado}). Ledger: -{consumo_ledger} +{reversiones_ledger}")
+
         if should_heal:
-             print(f"[AUTO-HEAL] Corrigiendo discrepancia cupo LOCAL. DB({plan.cantidad_disponible}) -> Real({esperado}). Reason: LimitChange={limit_mismatch}")
              plan.cantidad_disponible = esperado
              db.add(plan)
-             db.flush()
-        
-        # Caso contrario (plan.cantidad_disponible < esperado):
-        # Es totalmente válido para un Reseller/Contador. No hacemos nada.
+             db.flush() # Commit parcial
+             
+             # Nota: Eliminamos la lógica recursiva de "Familia" porque el HistorialConsumo
+             # YA tiene registrado quién consumió (hijos, nietos, etc) apuntando a este FuenteID.
+             # El Historial es la verdad absoluta.
 
     return plan
 
@@ -415,114 +378,158 @@ def registrar_consumo(db: Session, empresa_id: int, cantidad: int, documento_id:
     
     remanente_a_consumir = cantidad
     
-    # 1. PLAN MENSUAL
+    # 1. OBTENER CANDIDATOS: PLAN ACTUAL Y PLANES ANTERIORES (FIFO)
+    # El usuario requiere que se consuma SIEMPRE del mes más antiguo disponible.
+    # Por tanto, construimos una lista ordenada cronológicamente: [Planes Pasados] + [Plan Actual]
+    
     plan_mensual = _get_or_create_plan_mensual(db, empresa_id, fecha_doc, exclude_document_id=documento_id)
     
-    if plan_mensual.estado == EstadoPlan.ABIERTO and plan_mensual.cantidad_disponible > 0:
-        disponible = plan_mensual.cantidad_disponible
-        a_tomar = min(disponible, remanente_a_consumir)
-        
-        saldo_antes = plan_mensual.cantidad_disponible
-        
-        plan_mensual.cantidad_disponible -= a_tomar
-        remanente_a_consumir -= a_tomar
-        
-        historial = HistorialConsumo(
-            empresa_id=empresa_id,
-            cantidad=a_tomar,
-            tipo_operacion=TipoOperacionConsumo.CONSUMO,
-            fuente_tipo=TipoFuenteConsumo.PLAN,
-            fuente_id=None,
-            saldo_fuente_antes=saldo_antes,
-            saldo_fuente_despues=plan_mensual.cantidad_disponible,
-            documento_id=documento_id,
-            fecha=datetime.now()
-        )
-        db.add(historial)
-        
-    if remanente_a_consumir == 0:
-        return
-
-    # 2. BOLSA EXCEDENTE
+    # A. Buscar Planes Anteriores (Rolling Quota / FIFO)
     now = datetime.now()
-    tramos_bolsa = db.query(BolsaExcedente).filter(
-        BolsaExcedente.empresa_id == empresa_id,
-        BolsaExcedente.estado == EstadoBolsa.VIGENTE,
-        BolsaExcedente.fecha_vencimiento >= now
-    ).order_by(asc(BolsaExcedente.fecha_vencimiento)).with_for_update().all()
+    anio_limite = now.year - 1 
+
+    empresa_obj = db.query(Empresa).get(empresa_id)
+    start_filter = True 
+    ref_date = empresa_obj.fecha_inicio_operaciones if empresa_obj.fecha_inicio_operaciones else empresa_obj.created_at
+
+    if ref_date:
+        if isinstance(ref_date, datetime):
+            c_year = ref_date.year
+            c_month = ref_date.month
+        else:
+            c_year = ref_date.year
+            c_month = ref_date.month
+            
+        from sqlalchemy import or_
+        start_filter = or_(
+            ControlPlanMensual.anio > c_year,
+            and_(ControlPlanMensual.anio == c_year, ControlPlanMensual.mes >= c_month)
+        )
     
-    for tramo in tramos_bolsa:
+    planes_antiguos = db.query(ControlPlanMensual).filter(
+        ControlPlanMensual.empresa_id == empresa_id,
+        ControlPlanMensual.cantidad_disponible > 0,
+        ControlPlanMensual.estado == EstadoPlan.ABIERTO, 
+        or_(
+            ControlPlanMensual.anio < plan_mensual.anio,
+            and_(ControlPlanMensual.anio == plan_mensual.anio, ControlPlanMensual.mes < plan_mensual.mes)
+        ),
+        start_filter
+    ).order_by(asc(ControlPlanMensual.anio), asc(ControlPlanMensual.mes)).with_for_update().all()
+    
+    # B. Construir Lista Prioritaria (FIFO Total)
+    # [Nov, Dec... (Past)] + [Current]
+    # Nota: plan_mensual se añade al final porque es el "último recurso" antes de ir a bolsas/extras.
+    candidatos_plan = list(planes_antiguos)
+    if plan_mensual.cantidad_disponible > 0:
+        candidatos_plan.append(plan_mensual)
+        
+    # C. Iterar y Consumir
+    for plan_candidato in candidatos_plan:
         if remanente_a_consumir <= 0: break
-            
-        disponible = tramo.cantidad_disponible
-        if disponible <= 0: 
-            continue
-            
+        
+        disponible = plan_candidato.cantidad_disponible
         a_tomar = min(disponible, remanente_a_consumir)
         
-        saldo_antes = tramo.cantidad_disponible
+        saldo_antes = plan_candidato.cantidad_disponible
         
-        tramo.cantidad_disponible -= a_tomar
+        plan_candidato.cantidad_disponible -= a_tomar
         remanente_a_consumir -= a_tomar
         
-        # Actualizar estado si se agota
-        if tramo.cantidad_disponible == 0:
-            tramo.estado = EstadoBolsa.AGOTADO
-            
-        db.add(tramo) # Explicit add for safety
-
-        # Historial
+        # Determinar tipo de fuente (Visual)
+        # Si es el plan del documento -> PLAN. Si es pasado -> PLAN_PASADO.
+        es_plan_doc = (plan_candidato.id == plan_mensual.id)
+        fuente_tipo = TipoFuenteConsumo.PLAN if es_plan_doc else "PLAN_PASADO"
+        
         historial = HistorialConsumo(
             empresa_id=empresa_id,
             cantidad=a_tomar,
             tipo_operacion=TipoOperacionConsumo.CONSUMO,
-            fuente_tipo=TipoFuenteConsumo.BOLSA,
-            fuente_id=tramo.id,
+            fuente_tipo=fuente_tipo, 
+            fuente_id=plan_candidato.id,
             saldo_fuente_antes=saldo_antes,
-            saldo_fuente_despues=tramo.cantidad_disponible,
+            saldo_fuente_despues=plan_candidato.cantidad_disponible,
             documento_id=documento_id,
             fecha=datetime.now()
         )
         db.add(historial)
-
+        
     if remanente_a_consumir == 0:
         return
 
-    # 3. RECARGAS ADICIONALES
-    tramos_recarga = db.query(RecargaAdicional).filter(
-        RecargaAdicional.empresa_id == empresa_id,
-        RecargaAdicional.estado == EstadoRecarga.VIGENTE
-    ).order_by(asc(RecargaAdicional.fecha_compra)).with_for_update().all()
     
-    for recarga in tramos_recarga:
-        if remanente_a_consumir <= 0: break
-            
-        disponible = recarga.cantidad_disponible
-        if disponible <= 0:
-            continue
-            
-        a_tomar = min(disponible, remanente_a_consumir)
+    # 2.5 BOLSAS DE EXCEDENTES (Prioridad 2.5)
+    # Si los planes abiertos pasados no alcanzaron, miramos las Bolsas (Periodos Cerrados con ahorro)
+    if remanente_a_consumir > 0:
+        bolsas = db.query(BolsaExcedente).filter(
+            BolsaExcedente.empresa_id == empresa_id,
+            BolsaExcedente.estado == EstadoBolsa.VIGENTE,
+            BolsaExcedente.cantidad_disponible > 0,
+            BolsaExcedente.fecha_vencimiento >= now
+        ).order_by(asc(BolsaExcedente.fecha_vencimiento)).with_for_update().all()
         
-        saldo_antes = recarga.cantidad_disponible
-        
-        recarga.cantidad_disponible -= a_tomar
-        remanente_a_consumir -= a_tomar
-        
-        if recarga.cantidad_disponible == 0:
-            recarga.estado = EstadoRecarga.AGOTADA
+        for bolsa in bolsas:
+            if remanente_a_consumir <= 0: break
             
-        historial = HistorialConsumo(
-            empresa_id=empresa_id,
-            cantidad=a_tomar,
-            tipo_operacion=TipoOperacionConsumo.CONSUMO,
-            fuente_tipo=TipoFuenteConsumo.RECARGA,
-            fuente_id=recarga.id,
-            saldo_fuente_antes=saldo_antes,
-            saldo_fuente_despues=recarga.cantidad_disponible,
-            documento_id=documento_id,
-            fecha=datetime.now()
-        )
-        db.add(historial)
+            disponible = bolsa.cantidad_disponible
+            a_tomar = min(disponible, remanente_a_consumir)
+            
+            saldo_antes = bolsa.cantidad_disponible
+            
+            bolsa.cantidad_disponible -= a_tomar
+            remanente_a_consumir -= a_tomar
+            
+            historial = HistorialConsumo(
+                empresa_id=empresa_id,
+                cantidad=a_tomar,
+                tipo_operacion=TipoOperacionConsumo.CONSUMO,
+                fuente_tipo=TipoFuenteConsumo.BOLSA,
+                fuente_id=bolsa.id,
+                saldo_fuente_antes=saldo_antes,
+                saldo_fuente_despues=bolsa.cantidad_disponible,
+                documento_id=documento_id,
+                fecha=datetime.now()
+            )
+            db.add(historial)
+
+
+    # 3. RECARGAS ADICIONALES (Prioridad 3)
+    # Solo si el Plan Actual y los Planes Pasados no cubrieron la demanda.
+    if remanente_a_consumir > 0:
+        tramos_recarga = db.query(RecargaAdicional).filter(
+            RecargaAdicional.empresa_id == empresa_id,
+            RecargaAdicional.estado == EstadoRecarga.VIGENTE
+        ).order_by(asc(RecargaAdicional.fecha_compra)).with_for_update().all()
+        
+        for recarga in tramos_recarga:
+            if remanente_a_consumir <= 0: break
+                
+            disponible = recarga.cantidad_disponible
+            if disponible <= 0:
+                continue
+                
+            a_tomar = min(disponible, remanente_a_consumir)
+            
+            saldo_antes = recarga.cantidad_disponible
+            
+            recarga.cantidad_disponible -= a_tomar
+            remanente_a_consumir -= a_tomar
+            
+            if recarga.cantidad_disponible == 0:
+                recarga.estado = EstadoRecarga.AGOTADA
+                
+            historial = HistorialConsumo(
+                empresa_id=empresa_id,
+                cantidad=a_tomar,
+                tipo_operacion=TipoOperacionConsumo.CONSUMO,
+                fuente_tipo=TipoFuenteConsumo.RECARGA,
+                fuente_id=recarga.id,
+                saldo_fuente_antes=saldo_antes,
+                saldo_fuente_despues=recarga.cantidad_disponible,
+                documento_id=documento_id,
+                fecha=datetime.now()
+            )
+            db.add(historial)
 
     # FINAL CHECK
     if remanente_a_consumir > 0:
@@ -536,7 +543,7 @@ def registrar_consumo(db: Session, empresa_id: int, cantidad: int, documento_id:
 def revertir_consumo(db: Session, documento_id: int):
     """
     Revierte TODO el consumo asociado a un documento.
-    Restaura el saldo a la fuente original SI es posible, o al Plan Actual.
+    Restaura el saldo a la fuente original exacta (Plan ID, Recarga ID).
     """
     # 1. Buscar todo el historial de consumo de este documento
     consumos_previos = db.query(HistorialConsumo).filter(
@@ -545,68 +552,108 @@ def revertir_consumo(db: Session, documento_id: int):
     ).all()
     
     if not consumos_previos:
-        return # No hubo consumo registrado (tal vez era documento viejo o sin costo)
+        return # No hubo consumo registrado
         
-    now = datetime.now()
-    plan_actual = _get_or_create_plan_mensual(db, consumos_previos[0].empresa_id, now)
-    
     for consumo in consumos_previos:
-        cantidad_a_devolver = consumo.cantidad
-        fuente_destino = None
-        tipo_destino = None # Para log
-        
-        # Intento de restauración a fuente original
-        if consumo.fuente_tipo == TipoFuenteConsumo.PLAN:
-            # Plan Mensual original
-            # El plan mensual "original" es difícil de rastrear directamente por ID (es null),
-            # pero podemos inferirlo de la fecha del consumo o documento original?
-            # En el modelo Historial NO guardamos el año/mes del plan, solo 'PLAN'.
-            # Asumiremos que si fue PLAN, tratamos de devolver al Plan del DOCUMENTO original o al ACTUAL?
-            # Regla defensiva: Devolver al Plan ACTUAL es lo más seguro y beneficioso para el usuario.
-            # Salvo que queramos reactivar un plan viejo.
-            # Dado que el 'bolsillo' es el plan, lo devolvemos al Plan Actual que es donde lo necesita hoy.
-            fuente_destino = plan_actual
-            tipo_destino = TipoFuenteConsumo.PLAN
-            
-        elif consumo.fuente_tipo == TipoFuenteConsumo.BOLSA:
-            bolsa = db.query(BolsaExcedente).get(consumo.fuente_id)
-            if bolsa and bolsa.estado in [EstadoBolsa.VIGENTE, EstadoBolsa.AGOTADO] and bolsa.fecha_vencimiento >= now:
-                fuente_destino = bolsa
-                tipo_destino = TipoFuenteConsumo.BOLSA
-                # Si estaba agotado, lo revivimos
-                if bolsa.estado == EstadoBolsa.AGOTADO:
-                    bolsa.estado = EstadoBolsa.VIGENTE
-            else:
-                # Bolsa vencida o inexistente -> Plan Actual
-                fuente_destino = plan_actual
-                tipo_destino = TipoFuenteConsumo.PLAN
+        # Revertir según el tipo de fuente
+        if consumo.fuente_tipo == TipoFuenteConsumo.PLAN or consumo.fuente_tipo == "PLAN_PASADO":
+            # Restaurar a ControlPlanMensual específico por ID
+            plan_origen = db.query(ControlPlanMensual).get(consumo.fuente_id)
+            if plan_origen:
+                plan_origen.cantidad_disponible += consumo.cantidad
+                # No cambiamos el estado (si estaba cerrado, sigue cerrado pero con más saldo)
+                db.add(plan_origen)
                 
         elif consumo.fuente_tipo == TipoFuenteConsumo.RECARGA:
             recarga = db.query(RecargaAdicional).get(consumo.fuente_id)
-            if recarga and recarga.estado in [EstadoRecarga.VIGENTE, EstadoRecarga.AGOTADA]:
-                fuente_destino = recarga
-                tipo_destino = TipoFuenteConsumo.RECARGA
+            if recarga:
+                recarga.cantidad_disponible += consumo.cantidad
                 if recarga.estado == EstadoRecarga.AGOTADA:
                     recarga.estado = EstadoRecarga.VIGENTE
-            else:
-                # Recarga expirada -> Plan Actual
-                fuente_destino = plan_actual
-                tipo_destino = TipoFuenteConsumo.PLAN
+                db.add(recarga)
         
-        # Ejecutar devolución
-        saldo_antes = fuente_destino.cantidad_disponible
-        fuente_destino.cantidad_disponible += cantidad_a_devolver
-        
-        # Registrar Historial de Reversión
-        log_reversion = HistorialConsumo(
+        elif consumo.fuente_tipo == TipoFuenteConsumo.BOLSA:
+             # Legacy Support: Por si estamos revirtiendo un documento viejo que usó Bolsas
+             from app.models.consumo_registros import BolsaExcedente
+             bolsa = db.query(BolsaExcedente).get(consumo.fuente_id)
+             if bolsa:
+                 bolsa.cantidad_disponible += consumo.cantidad
+                 if bolsa.estado == EstadoBolsa.AGOTADO:
+                      bolsa.estado = EstadoBolsa.VIGENTE
+                 db.add(bolsa)
+
+        # Crear LOG de reversión (opcional, por ahora borramos el log de consumo o creamos contra-asiento?)
+        # Lo ideal es crear un contra-asiento:
+        reversion = HistorialConsumo(
             empresa_id=consumo.empresa_id,
-            cantidad=cantidad_a_devolver, # Positivo porque 'añadimos' saldo
+            fecha=datetime.now(),
+            cantidad=consumo.cantidad, # Cantidad positiva devuelta
             tipo_operacion=TipoOperacionConsumo.REVERSION,
-            fuente_tipo=tipo_destino,
-            fuente_id=fuente_destino.id if tipo_destino != TipoFuenteConsumo.PLAN else None,
-            saldo_fuente_antes=saldo_antes,
-            saldo_fuente_despues=fuente_destino.cantidad_disponible,
-            documento_id=documento_id,
-            fecha=now
+            fuente_tipo=consumo.fuente_tipo,
+            fuente_id=consumo.fuente_id,
+            saldo_fuente_antes=0, # No recalculamos snapshots para reversion simple
+            saldo_fuente_despues=0,
+            documento_id=documento_id
         )
-        db.add(log_reversion)
+        db.add(reversion)
+        
+        # OJO: ¿Borramos el registro original de consumo? 
+        # Si borramos, perdemos la historia de que "existió". Mejor marcamos REVERSION.
+        # Pero para simplicidad de reporting, a veces se borra.
+        # Dejaremos el registro de Reversion.
+
+    # Finalmente, commits manejados por caller.
+
+def verificar_disponibilidad(db: Session, empresa_id: int, cantidad_necesaria: int) -> bool:
+    """
+    Verifica si existe saldo suficiente sumando todas las fuentes VIGENTES:
+    1. Plan Actual
+    2. Planes Pasados Desbloqueados (Rolling Quota)
+    3. Recargas
+    """
+    # 0. Check Jerarquía y Cupo Local (Si aplica)
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    if not empresa: return False
+
+    # Si tiene Padre (Es Hija) -> Lógica de Doble Validación
+    if empresa.padre_id:
+        return verificar_disponibilidad(db, empresa.padre_id, cantidad_necesaria)
+
+    # --- LÓGICA ESTÁNDAR ---
+    # 1. Plan Mensual Actual
+    now = datetime.now()
+    plan = _get_or_create_plan_mensual(db, empresa_id, now)
+    
+    saldo_plan = plan.cantidad_disponible if plan and plan.estado == EstadoPlan.ABIERTO else 0
+    
+    # 2. Planes Pasados (Rolling Quota)
+    # Sumar saldo de planes pasados (cantidad_disponible > 0)
+    # Ventana de 1 año (similar a registrar_consumo)
+    anio_limite = now.year - 1
+    
+    query_rolling = db.query(ControlPlanMensual).filter(
+        ControlPlanMensual.empresa_id == empresa_id,
+        ControlPlanMensual.cantidad_disponible > 0,
+        ~and_(ControlPlanMensual.anio == plan.anio, ControlPlanMensual.mes == plan.mes),
+        # ControlPlanMensual.anio >= anio_limite # Opcional
+    )
+    saldo_rolling = sum(p.cantidad_disponible for p in query_rolling.all())
+    
+    # 3. Recargas (VIGENTE)
+    saldo_recargas = db.query(RecargaAdicional).filter(
+        RecargaAdicional.empresa_id == empresa_id,
+        RecargaAdicional.estado == EstadoRecarga.VIGENTE
+    ).with_entities(RecargaAdicional.cantidad_disponible).all()
+    
+    total_recargas = sum([r.cantidad_disponible for r in saldo_recargas])
+
+    total_disponible = saldo_plan + saldo_rolling + total_recargas
+    
+    if total_disponible < cantidad_necesaria:
+         missing = cantidad_necesaria - total_disponible
+         raise HTTPException(
+            status_code=400,
+            detail=f"Saldo insuficiente (Empresa {empresa_id}). Te faltan {missing} registros para completar esta transacción."
+        )
+    
+    return True

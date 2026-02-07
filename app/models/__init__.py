@@ -60,6 +60,9 @@ from .propiedad_horizontal import PHTorre, PHUnidad, PHVehiculo, PHMascota, PHCo
 from .produccion import Receta, RecetaDetalle, RecetaRecurso, OrdenProduccion, OrdenProduccionInsumo, OrdenProduccionRecurso
 from .configuracion_produccion import ConfiguracionProduccion
 
+# --- NOMINA (Importación para evitar errores de mapper) ---
+from .nomina import Nomina, DetalleNomina, Empleado, ConfiguracionNomina, TipoNomina
+
 # --- CONCILIACION BANCARIA (Nuevo Módulo) ---
 from .conciliacion_bancaria import (
     ImportConfig, ImportSession, BankMovement, Reconciliation, 
@@ -76,4 +79,8 @@ from .import_template import ImportTemplate
 from .presupuesto_avanzado import EscenarioPresupuestal, PresupuestoItem
 
 # --- INDICADORES ECONOMICOS ---
+# --- INDICADORES ECONOMICOS ---
 from .indicador_economico import IndicadorEconomico
+
+# --- FACTURACION ELECTRONICA ---
+from .configuracion_fe import ConfiguracionFE

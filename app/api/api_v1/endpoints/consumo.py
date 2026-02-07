@@ -26,6 +26,51 @@ def get_precio_unitario(db: Session = Depends(get_db), current_user = Depends(ge
     config = db.query(ConfiguracionSistema).filter_by(clave="PRECIO_POR_REGISTRO").first()
     return {"precio": int(config.valor) if config else 150}
 
+
+def _calcular_saldo_historico(db: Session, empresa_id: int, anio_corte: int, mes_corte: int) -> int:
+    """
+    Suma el saldo disponible de todos los planes MENSUALES anteriores al periodo consultado.
+    (Rolling Quota: Lo que sobró del pasado y sigue acumulado).
+    """
+    from app.models.consumo_registros import ControlPlanMensual, EstadoPlan
+    
+    # Busca planes anteriores que tengan saldo y esten ABIERTOS (o cerrados si la politica lo permite, 
+    # pero usualmente saldo 'vivo' implica estado ABIERTO o VIGENTE).
+    # Dado que "cerrado" adminitrativamente aun puede tener saldo en el modelo Rolling, 
+    # chequeamos 'cantidad_disponible > 0'.
+    
+    # FIX: Validar fecha de inicio de operaciones para evitar sumar "Ghost Plans"
+    from app.models.empresa import Empresa
+    empresa_obj = db.query(Empresa).get(empresa_id)
+    
+    start_filter = True
+    ref_date = empresa_obj.fecha_inicio_operaciones if empresa_obj.fecha_inicio_operaciones else empresa_obj.created_at
+
+    if ref_date:
+        if isinstance(ref_date, datetime):
+            c_year = ref_date.year
+            c_month = ref_date.month
+        else:
+            c_year = ref_date.year
+            c_month = ref_date.month
+            
+        start_filter = or_(
+            ControlPlanMensual.anio > c_year,
+            and_(ControlPlanMensual.anio == c_year, ControlPlanMensual.mes >= c_month)
+        )
+
+    query = db.query(func.sum(ControlPlanMensual.cantidad_disponible)).filter(
+        ControlPlanMensual.empresa_id == empresa_id,
+        ControlPlanMensual.cantidad_disponible > 0,
+        # Logica: FechaPlan < FechaCorte
+        or_(
+            ControlPlanMensual.anio < anio_corte,
+            and_(ControlPlanMensual.anio == anio_corte, ControlPlanMensual.mes < mes_corte)
+        ),
+        start_filter
+    )
+    return query.scalar() or 0
+
 @router.get("/resumen", response_model=ResumenConsumo)
 def get_resumen_consumo(
     mes: int = Query(None, ge=1, le=12, description="Mes a consultar (1-12)"),
@@ -34,49 +79,38 @@ def get_resumen_consumo(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ) -> Any:
-    """
-    Obtiene el estado actual del cupo de registros para el periodo especificado:
-    - Plan Mensual del mes/año solicitado.
-    - Bolsas de excedentes vigentes EN ese periodo.
-    - Recargas adicionales vigentes EN ese periodo.
-    """
+    # ... (unchanged override logic) ...
     # Lógica de Seguridad para Override
     target_empresa_id = current_user.empresa_id
     
     if empresa_id and empresa_id != current_user.empresa_id:
-        # Verificar permisos elevados
         roles_permitidos = ['soporte', 'administrador', 'super_admin', 'dev']
         tiene_permiso = any(r.nombre.lower() in roles_permitidos for r in current_user.roles)
         
         if tiene_permiso:
             target_empresa_id = empresa_id
-        # Si no tiene permiso, falla silenciosamente y usa su propia empresa (o podría lanzar 403)
     
     now = datetime.now()
-    
-    # Defaults si no se especifican
     query_mes = mes if mes else now.month
     query_anio = anio if anio else now.year
     
-    # Fecha de referencia para el periodo consultado (Primer día del mes)
-    
-    # Construir fecha arbitraria para el servicio (día 1)
     fecha_consulta = datetime(query_anio, query_mes, 1)
     
-    # Usar el servicio para obtener O CREAR (y sincronizar) el plan
     plan = _get_or_create_plan_mensual(db, target_empresa_id, fecha_consulta)
     try:
-        db.commit() # Persistir la creación/sync del plan si era nuevo
+        db.commit() 
     except:
         db.rollback()
     
-    # Recargar para asegurar data fresca tras commit
     db.refresh(plan)
     
-    # Asignar el plan para la respuesta
+    if plan:
+        consumido = plan.limite_asignado - plan.cantidad_disponible
+        setattr(plan, 'cantidad_consumida', consumido)
+    
     plan_schema = plan
 
-    # 2. Bolsas Vigentes (Ordenadas por vencimiento, FIFO visual)
+    # 2. Bolsas Vigentes
     periodo_ref = datetime(query_anio, query_mes, 1)
     
     bolsas = db.query(BolsaExcedente).filter(
@@ -85,7 +119,7 @@ def get_resumen_consumo(
         BolsaExcedente.fecha_vencimiento >= periodo_ref
     ).order_by(asc(BolsaExcedente.fecha_vencimiento)).all()
     
-    # 3. Recargas y Compras del Periodo
+    # 3. Recargas y Compras 
     from sqlalchemy import or_
 
     recargas = db.query(RecargaAdicional).filter(
@@ -96,11 +130,61 @@ def get_resumen_consumo(
         )
     ).order_by(asc(RecargaAdicional.fecha_compra)).all()
     
-    # Calculo Total DISPONIBLE (Solo sumamos lo disponible real, no lo comprado histórico)
-    total = (plan.cantidad_disponible if plan and plan.estado == EstadoPlan.ABIERTO else 0) + \
-            sum(b.cantidad_disponible for b in bolsas) + \
-            sum(r.cantidad_disponible for r in recargas) # cantidad_disponible será 0 si está agotada
-            
+    # Calculo Total DISPONIBLE
+    
+    empresa_cursor = db.query(Empresa).get(target_empresa_id)
+    raiz_empresa = empresa_cursor
+    
+    depth = 0
+    while raiz_empresa.padre_id and depth < 10:
+        parent = db.query(Empresa).get(raiz_empresa.padre_id)
+        if not parent: break 
+        raiz_empresa = parent
+        depth += 1
+        
+    es_hija_o_nieta = (raiz_empresa.id != target_empresa_id)
+    
+    if es_hija_o_nieta:
+        padre_id = raiz_empresa.id
+        
+        # 1. Plan Padre Raíz
+        plan_padre = _get_or_create_plan_mensual(db, padre_id, fecha_consulta)
+        saldo_plan_padre = plan_padre.cantidad_disponible if plan_padre else 0
+        
+        # 1.1 ROLLING QUOTA (Saldo Acumulado Padre)
+        saldo_historico_padre = _calcular_saldo_historico(db, padre_id, query_anio, query_mes)
+        
+        # 2. Bolsas Padre Raíz
+        bolsas_padre = db.query(BolsaExcedente).filter(
+            BolsaExcedente.empresa_id == padre_id,
+            BolsaExcedente.estado == EstadoBolsa.VIGENTE,
+            BolsaExcedente.fecha_vencimiento >= periodo_ref
+        ).all()
+        saldo_bolsas_padre = sum(b.cantidad_disponible for b in bolsas_padre)
+        
+        # 3. Recargas Padre Raíz
+        recargas_padre = db.query(RecargaAdicional).filter(
+            RecargaAdicional.empresa_id == padre_id,
+            or_(
+                RecargaAdicional.estado == EstadoRecarga.VIGENTE,
+                (RecargaAdicional.mes == query_mes) & (RecargaAdicional.anio == query_anio)
+            )
+        ).all()
+        saldo_recargas_padre = sum(r.cantidad_disponible for r in recargas_padre)
+        
+        total = saldo_plan_padre + saldo_historico_padre + saldo_bolsas_padre + saldo_recargas_padre
+        
+    else:
+        # Lógica Estandar (Independiente/Padre)
+        saldo_mes = (plan.cantidad_disponible if plan else 0)
+        saldo_bolsas = sum(b.cantidad_disponible for b in bolsas) 
+        saldo_recargas = sum(r.cantidad_disponible for r in recargas)
+        
+        # 4. ROLLING QUOTA (Saldo Acumulado Propio)
+        saldo_historico = _calcular_saldo_historico(db, target_empresa_id, query_anio, query_mes)
+        
+        total = saldo_mes + saldo_historico + saldo_bolsas + saldo_recargas
+
     return {
         "plan_actual": plan_schema,
         "bolsas_vigentes": bolsas,
@@ -228,10 +312,30 @@ def _get_historial_paginated(db, current_user, skip, limit, fecha_inicio, fecha_
     # SUM(cantidad)
     total_cantidad = query.with_entities(func.sum(HistorialConsumo.cantidad)).scalar() or 0
 
-    # Query proyectada: Traemos el modelo Historial entero + el consecutivo del documento + Datos de Bolsa (si es cierre)
+    # Query proyectada: Traemos el modelo Historial entero + el consecutivo del documento + Datos de Bolsa + EMPRESA GENERADORA
     # JOIN con BolsaExcedente para obtener origen
     query = query.outerjoin(BolsaExcedente, HistorialConsumo.fuente_id == BolsaExcedente.id)
     
+    # NUEVO JOIN: Obtener Empresa Generadora (Desde Documento)
+    # Si hay documento, la empresa es la del documento (Hija). Si no, es la del historial (Padre/Self).
+    # Necesitamos join explicito a Empresa.
+    # Como ya tenemos join a Documento, hacemos join Documento -> Empresa
+    # Alias para evitar conflicto si Historial ya estuviera joineado (que no lo está explicitamente aqui pero por precaucion)
+    from sqlalchemy.orm import aliased
+    EmpresaGen = aliased(Empresa)
+    
+    query = query.outerjoin(EmpresaGen, Documento.empresa_id == EmpresaGen.id)
+    
+    # JOIN TipoDocumento
+    from app.models.tipo_documento import TipoDocumento
+    query = query.outerjoin(TipoDocumento, Documento.tipo_documento_id == TipoDocumento.id)
+
+    # JOIN ControlPlanMensual to get Plan details (Rolling Quota)
+    query = query.outerjoin(ControlPlanMensual, and_(
+        HistorialConsumo.fuente_tipo.in_(['PLAN', 'PLAN_PASADO']), 
+        HistorialConsumo.fuente_id == ControlPlanMensual.id
+    ))
+
     # Redefinir fecha_efectiva para el ordenamiento en este scope
     if filtro_fecha_doc:
         fecha_efectiva = func.coalesce(Documento.fecha, HistorialConsumo.fecha)
@@ -242,20 +346,36 @@ def _get_historial_paginated(db, current_user, skip, limit, fecha_inicio, fecha_
         Documento.numero,
         Documento.fecha.label('doc_fecha'), # Traemos también la fecha doc para uso en frontend si se requiere
         BolsaExcedente.mes_origen,
-        BolsaExcedente.anio_origen
+        BolsaExcedente.anio_origen,
+        EmpresaGen.razon_social.label('empresa_nombre'), # <--- NUEVO CAMPO
+        TipoDocumento.codigo.label('doc_codigo'), # <--- NUEVO CAMPO
+        ControlPlanMensual.mes.label('plan_mes'),
+        ControlPlanMensual.anio.label('plan_anio')
     ).order_by(desc(fecha_efectiva), desc(Documento.numero)).offset(skip).limit(limit).all()
     
     items = []
-    for historial_model, doc_nro, doc_fecha, mes_origen, anio_origen in results:
+    for historial_model, doc_nro, doc_fecha, mes_origen, anio_origen, empresa_nombre, doc_codigo, plan_mes, plan_anio in results:
         # Inyectar atributos 'virtuales' al modelo para Pydantic
         setattr(historial_model, "documento_numero", doc_nro)
+        setattr(historial_model, "empresa_generadora", empresa_nombre)
+        setattr(historial_model, "documento_tipo_codigo", doc_codigo) # <--- INYECCION
         
         # Inyectar origen de bolsa si aplica
+        # Generalizamos para que 'bolsa_origen' sea el campo visual de FUENTE DETALLADA
+        origen_txt = None
         if mes_origen and anio_origen:
-             setattr(historial_model, "bolsa_origen", f"{mes_origen}/{anio_origen}")
-             setattr(historial_model, "bolsa_mes", mes_origen)
-             setattr(historial_model, "bolsa_anio", anio_origen)
-        
+             origen_txt = f"Bolsa ({mes_origen:02d}/{anio_origen})"
+        elif plan_mes and plan_anio:
+             # Nuevo Rolling Quota format: "Plan (DIC. 2025)"
+             import calendar
+             nombre_mes = calendar.month_abbr[plan_mes].upper() if 1 <= plan_mes <= 12 else str(plan_mes)
+             origen_txt = f"Plan ({nombre_mes}. {plan_anio})"
+        elif historial_model.fuente_tipo == 'PLAN':
+             origen_txt = "Plan Mensual"
+
+        if origen_txt:
+            setattr(historial_model, "bolsa_origen", origen_txt) # Reusamos este campo para compatibilidad visual
+
         
         # Opcional: Si estamos en modo "historial contable", tal vez queramos que el campo .fecha 
         # del item refleje la fecha del documento en lugar de la fecha de creación.
@@ -312,13 +432,33 @@ def generar_reporte_pdf(
         
     query = query.outerjoin(BolsaExcedente, HistorialConsumo.fuente_id == BolsaExcedente.id)
     
+    # NEW: Join ControlPlanMensual to get Plan details for Rolling Quota tracking
+    # Use alias to avoid "DuplicateAlias" error if get_historial_query already joins it implicitly or via other paths
+    from sqlalchemy.orm import aliased
+    PlanMensualJoin = aliased(ControlPlanMensual)
+    
+    query = query.outerjoin(PlanMensualJoin, and_(
+        or_(HistorialConsumo.fuente_tipo == 'PLAN', HistorialConsumo.fuente_tipo == 'PLAN_PASADO'),
+        HistorialConsumo.fuente_id == PlanMensualJoin.id
+    ))
+
+    # Join Empresa similar to pagination
+    from app.models.empresa import Empresa
+    from sqlalchemy.orm import aliased
+    EmpresaGen = aliased(Empresa)
+    query = query.outerjoin(EmpresaGen, Documento.empresa_id == EmpresaGen.id)
+
+    # Join TipoDocumento para obtener el código (RC, CC, etc)
+    from app.models.tipo_documento import TipoDocumento
+    query = query.outerjoin(TipoDocumento, Documento.tipo_documento_id == TipoDocumento.id)
+    
     from sqlalchemy import case, asc, desc
     
     # Definir prioridad de fuente para el ordenamiento (Plan -> Bolsa -> Recarga)
-    # 1: PLAN, 2: BOLSA, 3: RECARGA
-    # Esto asegura que si un documento consume de todos, se vea el flujo lógico.
+    # 1: PLAN/PLAN_PASADO, 2: BOLSA, 3: RECARGA
     prioridad_fuente = case(
         (HistorialConsumo.fuente_tipo == 'PLAN', 1),
+         (HistorialConsumo.fuente_tipo == 'PLAN_PASADO', 1),
         (HistorialConsumo.fuente_tipo == 'BOLSA', 2),
         (HistorialConsumo.fuente_tipo == 'RECARGA', 3),
         else_=4
@@ -330,18 +470,30 @@ def generar_reporte_pdf(
         Documento.numero,
         Documento.fecha.label('doc_fecha'),
         BolsaExcedente.mes_origen,
-        BolsaExcedente.anio_origen
+        BolsaExcedente.anio_origen,
+        EmpresaGen.razon_social.label('empresa_nombre'),
+        TipoDocumento.codigo.label('doc_codigo'),
+        PlanMensualJoin.mes.label('plan_mes'),  # <--- NUEVO (Aliased)
+        PlanMensualJoin.anio.label('plan_anio') # <--- NUEVO (Aliased)
     ).order_by(
+        
         asc(fecha_efectiva), 
         asc(Documento.numero),
         prioridad_fuente
     ).limit(5000).all()
 
     # Procesar items
+    # Procesar items y Calcular Totales Categorizados
+    # Inicializar contadores
+    sum_plan = 0
+    sum_bolsa = 0
+    sum_recarga = 0
+    sum_anterior = 0
+    sum_total_consumo = 0
+
     items = []
-    for historial_model, doc_nro, doc_fecha, mes_origen, anio_origen in results:
+    for historial_model, doc_nro, doc_fecha, mes_origen, anio_origen, empresa_nombre, doc_codigo, plan_mes, plan_anio in results:
         # Clonar/usar objeto serializable ligero o dict 
-        # (El objeto SQLAlchemy puede dar problemas con Jinja si se desconecta)
         
         real_date = historial_model.fecha
         if filtro_fecha_doc and doc_fecha:
@@ -350,15 +502,47 @@ def generar_reporte_pdf(
              else:
                  real_date = datetime(doc_fecha.year, doc_fecha.month, doc_fecha.day)
         
+        # Calcular el Texto de Origen
+        origen_txt = None
+        if mes_origen and anio_origen:
+            # SIMPLIFICACIÓN: Todo saldo periódico (Bolsa o Plan Pasado) se muestra como "Plan"
+            # Antes: f"Bolsa ({mes_origen:02d}/{anio_origen})"
+            origen_txt = f"Plan ({mes_origen:02d}/{anio_origen})"
+        elif plan_mes and plan_anio:
+            # Nuevo Rolling Quota format
+            origen_txt = f"Plan ({plan_mes:02d}/{plan_anio})"
+        elif historial_model.fuente_tipo == 'PLAN':
+            # Legacy fallback (cuando id era null)
+            origen_txt = "Plan Mensual"
+        
         item_dict = {
             "fecha": real_date,
             "tipo_operacion": historial_model.tipo_operacion,
             "fuente_tipo": historial_model.fuente_tipo,
             "cantidad": historial_model.cantidad,
             "documento_numero": doc_nro,
-            "bolsa_origen": f"{mes_origen}/{anio_origen}" if mes_origen else None
+            "bolsa_origen": origen_txt, # Reusamos este campo para la col 'Origen'
+            "empresa_generadora": empresa_nombre,
+            "documento_tipo_codigo": doc_codigo
         }
         items.append(item_dict)
+
+        # Logica de Totalización (Solo CONSUMO resta quota, REVERSION suma pero aqui nos interesa 'Cuanto se consumió')
+        # El usuario pidió: "Total registros por: Consumo normal, consumo bolsas extras, y recargas"
+        # Esto implica sumar solo los CONSUMOS positivos.
+        if historial_model.tipo_operacion == 'CONSUMO':
+             qty = historial_model.cantidad
+             sum_total_consumo += qty
+             
+             if historial_model.fuente_tipo == 'PLAN':
+                 sum_plan += qty
+             elif historial_model.fuente_tipo == 'BOLSA':
+                 # SIMPLIFICACIÓN: Las bolsas se suman al PLAN GENERAL
+                 sum_plan += qty
+             elif historial_model.fuente_tipo == 'PLAN_PASADO':
+                 sum_anterior += qty
+             elif historial_model.fuente_tipo == 'RECARGA':
+                 sum_recarga += qty
 
     # 2. Renderizar Template
     from jinja2 import Environment, FileSystemLoader
@@ -374,7 +558,14 @@ def generar_reporte_pdf(
     html_content = template.render(
         empresa=empresa,
         items=items,
-        total_cantidad=total_cantidad,
+        total_cantidad=total_cantidad, # Impacto neto (Consumo - Reversion)
+        stats={
+            "consumo_plan": sum_plan,
+            # "consumo_bolsa": sum_bolsa, # REMOVIDO: Ya incluido en Plan
+            "consumo_recarga": sum_recarga,
+            "consumo_anterior": sum_anterior,
+            "consumo_total_bruto": sum_total_consumo
+        },
         filtros={
             "fecha_inicio": fecha_inicio,
             "fecha_fin": fecha_fin,

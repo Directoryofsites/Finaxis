@@ -30,7 +30,7 @@ class PHConcepto(Base):
     activo = Column(Boolean, default=True)
 
     # Relaciones
-    empresa = relationship("Empresa")
+    empresa = relationship("app.models.empresa.Empresa", back_populates="ph_conceptos")
     # CORRECCIÓN: Relaciones apuntando a app.models.plan_cuenta.PlanCuenta
     cuenta_ingreso = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_ingreso_id])
     cuenta_cxc = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_cxc_id])

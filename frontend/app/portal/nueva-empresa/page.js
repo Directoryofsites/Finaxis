@@ -154,19 +154,22 @@ export default function NuevaEmpresaPage() {
                                 {templates.map((tpl) => (
                                     <div
                                         key={tpl.id}
-                                        onClick={() => setFormData({ ...formData, template_category: tpl.template_category })} // Usamos category ID para mapear backend logic
-                                        className={`cursor-pointer border rounded-lg p-4 transition-all relative ${formData.template_category === tpl.template_category
+                                        onClick={() => setFormData({
+                                            ...formData,
+                                            template_category: tpl.template_category,
+                                            template_id: tpl.id // Store explicit ID
+                                        })}
+                                        className={`cursor-pointer border rounded-lg p-4 transition-all relative ${formData.template_id === tpl.id
                                             ? 'bg-white border-blue-500 shadow-md ring-2 ring-blue-500 ring-opacity-20'
                                             : 'bg-white border-slate-200 hover:border-blue-300'
                                             }`}
                                     >
-                                        {formData.template_category === tpl.template_category && (
+                                        {formData.template_id === tpl.id && ( // Check by ID
                                             <CheckCircleIcon className="absolute top-2 right-2 h-5 w-5 text-blue-600" />
                                         )}
                                         <div className="font-semibold text-slate-900">{tpl.razon_social}</div>
-                                        {/* TODO: Add description if backend sends it */}
                                         <div className="text-xs text-slate-500 mt-1">
-                                            {tpl.owner_id ? 'Plantilla Privada' : 'Plantilla del Sistema'}
+                                            {tpl.owner_id ? 'Plantilla Privada (Tuya)' : 'Plantilla del Sistema'}
                                         </div>
                                     </div>
                                 ))}

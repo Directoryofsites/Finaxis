@@ -21,6 +21,7 @@ import {
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
 import { getListasPrecio } from '../../../../lib/listaPrecioService';
+import { municipios, tiposDocumento, regimenesFiscales, responsabilidadesFiscales } from '../../../../data/municipios';
 
 // --- ESTILOS REUSABLES (Manual v2.0) ---
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
@@ -38,15 +39,19 @@ export default function CrearTerceroPage() {
         nombre_comercial: '',
         direccion: '',
         ciudad: '',
+        municipio_dane: '',
         telefono: '',
         email: '',
         es_cliente: false,
         es_proveedor: false,
         es_empleado: false,
-        responsabilidad_fiscal: '',
+        responsabilidad_fiscal: 'R-99-PN',
         actividad_economica_ciiu: '',
         es_regimen_simple: false,
-        lista_precio_id: ''
+        lista_precio_id: '',
+        tipo_documento: '13',
+        tipo_persona: '2',
+        regimen_fiscal: '49'
     });
 
     const [listasPrecio, setListasPrecio] = useState([]);
@@ -78,10 +83,36 @@ export default function CrearTerceroPage() {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setFormData(prevData => ({
-            ...prevData,
-            [name]: type === 'checkbox' ? checked : value
-        }));
+
+        setFormData(prevData => {
+            const newData = { ...prevData, [name]: type === 'checkbox' ? checked : value };
+
+            // Auto-Calculate DV if NIT changes
+            if (name === 'nit') {
+                if (newData.tipo_documento === '31') {
+                    newData.dv = calculateDV(value);
+                } else {
+                    newData.dv = '';
+                }
+            }
+
+            return newData;
+        });
+    };
+
+    const calculateDV = (nit) => {
+        if (!nit || isNaN(nit)) return '';
+        const vprimes = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71];
+        let sum = 0;
+        let myNit = String(nit).trim();
+
+        for (let i = 0; i < myNit.length; i++) {
+            sum += parseInt(myNit.charAt(myNit.length - 1 - i)) * vprimes[i];
+        }
+
+        let dv = sum % 11;
+        if (dv > 1) dv = 11 - dv;
+        return String(dv);
     };
 
     const handleSubmit = async (e) => {
@@ -106,9 +137,13 @@ export default function CrearTerceroPage() {
             ciudad: formData.ciudad || null,
             telefono: formData.telefono || null,
             email: formData.email || null,
-            responsabilidad_fiscal: formData.responsabilidad_fiscal || null,
+            responsabilidad_fiscal: formData.responsabilidad_fiscal || 'R-99-PN',
             actividad_economica_ciiu: formData.actividad_economica_ciiu || null,
             dv: formData.dv || null,
+            municipio_dane: formData.municipio_dane || '11001',
+            tipo_documento: formData.tipo_documento || '13',
+            tipo_persona: formData.tipo_persona || '2',
+            regimen_fiscal: formData.regimen_fiscal || '49'
         };
 
         try {
@@ -179,18 +214,28 @@ export default function CrearTerceroPage() {
                                 Identificación Básica
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                                <div className="md:col-span-5">
-                                    <label htmlFor="nit" className={labelClass}>NIT / Cédula <span className="text-red-500">*</span></label>
+                                <div className="md:col-span-3">
+                                    <label htmlFor="tipo_documento" className={labelClass}>Tipo Doc <span className="text-red-500">*</span></label>
                                     <div className="relative">
-                                        <input type="text" name="nit" id="nit" value={formData.nit} onChange={handleChange} className={inputClass} required autoFocus />
+                                        <select name="tipo_documento" id="tipo_documento" value={formData.tipo_documento} onChange={handleChange} className={selectClass}>
+                                            {tiposDocumento.map(tipo => (
+                                                <option key={tipo.codigo} value={tipo.codigo}>{tipo.nombre}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="md:col-span-4">
+                                    <label htmlFor="nit" className={labelClass}>Número <span className="text-red-500">*</span></label>
+                                    <div className="relative">
+                                        <input type="text" name="nit" id="nit" value={formData.nit} onChange={handleChange} className={inputClass} required autoFocus placeholder="Ej: 123456789" />
                                         <FaIdCard className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
                                     </div>
                                 </div>
                                 <div className="md:col-span-1">
                                     <label htmlFor="dv" className={labelClass}>DV</label>
-                                    <input type="text" name="dv" id="dv" maxLength="1" value={formData.dv} onChange={handleChange} className="w-full px-2 py-2 border border-gray-300 rounded-lg shadow-sm text-center text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+                                    <input type="text" name="dv" id="dv" maxLength="1" value={formData.dv} readOnly className="w-full px-2 py-2 border border-gray-200 bg-gray-50 rounded-lg shadow-sm text-center text-sm font-bold text-gray-600 outline-none" title="Dígito de Verificación (Auto)" />
                                 </div>
-                                <div className="md:col-span-6">
+                                <div className="md:col-span-4">
                                     <label htmlFor="razon_social" className={labelClass}>Razón Social / Nombre <span className="text-red-500">*</span></label>
                                     <div className="relative">
                                         <input type="text" name="razon_social" id="razon_social" value={formData.razon_social} onChange={handleChange} onBlur={handleNameCheck} className={inputClass} required />
@@ -202,11 +247,26 @@ export default function CrearTerceroPage() {
                                         </div>
                                     )}
                                 </div>
-                                <div className="md:col-span-6">
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                                <div>
                                     <label htmlFor="nombre_comercial" className={labelClass}>Nombre Comercial (Opcional)</label>
                                     <div className="relative">
                                         <input type="text" name="nombre_comercial" id="nombre_comercial" value={formData.nombre_comercial} onChange={handleChange} className={inputClass} />
                                         <FaBuilding className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Persona</label>
+                                    <div className="flex gap-4 mt-2">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" name="tipo_persona" value="1" checked={formData.tipo_persona === '1'} onChange={handleChange} className="text-indigo-600" />
+                                            <span className="text-sm">Jurídica</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" name="tipo_persona" value="2" checked={formData.tipo_persona === '2'} onChange={handleChange} className="text-indigo-600" />
+                                            <span className="text-sm">Natural</span>
+                                        </label>
                                     </div>
                                 </div>
                             </div>
@@ -227,11 +287,20 @@ export default function CrearTerceroPage() {
                                     </div>
                                 </div>
                                 <div>
-                                    <label htmlFor="ciudad" className={labelClass}>Ciudad</label>
+                                    <label htmlFor="municipio_dane" className={labelClass}>Ciudad / Municipio (DANE) <span className="text-red-500">*</span></label>
                                     <div className="relative">
-                                        <input type="text" name="ciudad" id="ciudad" value={formData.ciudad} onChange={handleChange} className={inputClass} />
+                                        <select name="municipio_dane" id="municipio_dane" value={formData.municipio_dane} onChange={(e) => {
+                                            const selected = municipios.find(m => m.codigo === e.target.value);
+                                            setFormData(prev => ({ ...prev, municipio_dane: e.target.value, ciudad: selected ? selected.nombre : '' }));
+                                        }} className={selectClass} required>
+                                            <option value="">-- Seleccione Ciudad --</option>
+                                            {municipios.map(m => (
+                                                <option key={m.codigo} value={m.codigo}>{m.nombre} - {m.departmento}</option>
+                                            ))}
+                                        </select>
                                         <FaCity className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
                                     </div>
+                                    <input type="hidden" name="ciudad" value={formData.ciudad} />
                                 </div>
                                 <div>
                                     <label htmlFor="telefono" className={labelClass}>Teléfono</label>
@@ -241,9 +310,9 @@ export default function CrearTerceroPage() {
                                     </div>
                                 </div>
                                 <div>
-                                    <label htmlFor="email" className={labelClass}>Email</label>
+                                    <label htmlFor="email" className={labelClass}>Email (Para Factura Electrónica) <span className="text-red-500">*</span></label>
                                     <div className="relative">
-                                        <input type="email" name="email" id="email" value={formData.email} onChange={handleChange} className={inputClass} />
+                                        <input type="email" name="email" id="email" value={formData.email} onChange={handleChange} className={inputClass} required />
                                         <FaEnvelope className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
                                     </div>
                                 </div>
@@ -258,6 +327,37 @@ export default function CrearTerceroPage() {
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
+                                    <label htmlFor="regimen_fiscal" className={labelClass}>Régimen Fiscal <span className="text-red-500">*</span></label>
+                                    <div className="relative">
+                                        <select name="regimen_fiscal" id="regimen_fiscal" value={formData.regimen_fiscal} onChange={handleChange} className={selectClass} required>
+                                            <option value="">-- Seleccione Régimen --</option>
+                                            {regimenesFiscales.map(r => (
+                                                <option key={r.codigo} value={r.codigo}>{r.nombre}</option>
+                                            ))}
+                                        </select>
+                                        <FaTags className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label htmlFor="responsabilidad_fiscal" className={labelClass}>Resp. Fiscal (Cód. DIAN)</label>
+                                    <div className="relative">
+                                        <select
+                                            name="responsabilidad_fiscal"
+                                            id="responsabilidad_fiscal"
+                                            value={formData.responsabilidad_fiscal}
+                                            onChange={handleChange}
+                                            className={selectClass}
+                                        >
+                                            {responsabilidadesFiscales.map(resp => (
+                                                <option key={resp.codigo} value={resp.codigo}>
+                                                    {resp.nombre}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <FaTags className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
+                                    </div>
+                                </div>
+                                <div>
                                     <label htmlFor="lista_precio_id" className={labelClass}>Lista de Precios</label>
                                     <div className="relative">
                                         <select name="lista_precio_id" id="lista_precio_id" value={formData.lista_precio_id} onChange={handleChange} className={selectClass}>
@@ -268,10 +368,6 @@ export default function CrearTerceroPage() {
                                         </select>
                                         <FaTags className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
                                     </div>
-                                </div>
-                                <div>
-                                    <label htmlFor="responsabilidad_fiscal" className={labelClass}>Resp. Fiscal</label>
-                                    <input type="text" name="responsabilidad_fiscal" id="responsabilidad_fiscal" placeholder="Ej: R-99-PN" value={formData.responsabilidad_fiscal} onChange={handleChange} className={`${inputClass} pl-4`} />
                                 </div>
                                 <div>
                                     <label htmlFor="actividad_economica_ciiu" className={labelClass}>Actividad CIIU</label>

@@ -165,7 +165,7 @@ export default function ResetConsumoPanel({ todasLasEmpresas = [] }) {
                                     onChange={(e) => setBorrarBolsas(e.target.checked)}
                                     className="form-checkbox h-4 w-4 text-red-600 rounded focus:ring-red-500"
                                 />
-                                <span className="text-sm text-slate-700">Borrar Bolsas de Excedentes</span>
+                                <span className="text-sm text-slate-700">Borrar Bolsas de Excedentes (Legacy)</span>
                             </label>
 
                             <label className="flex items-center space-x-2 cursor-pointer">

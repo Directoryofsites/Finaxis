@@ -24,6 +24,15 @@ class Tercero(Base):
     email = Column(String(255), nullable=True)
     actividad_economica_ciiu = Column(String(10), nullable=True)
     es_regimen_simple = Column(Boolean, nullable=False, default=False)
+    
+    # --- FACTURACIÓN ELECTRÓNICA ---
+    tipo_documento = Column(String(5), nullable=True, default='13', comment="13=Cedula, 31=NIT")
+    tipo_persona = Column(String(1), nullable=True, default='2', comment="1=Juridica, 2=Natural")
+    municipio_dane = Column(String(10), nullable=True)
+    codigo_postal = Column(String(10), nullable=True)
+    regimen_fiscal = Column(String(5), nullable=True)
+    responsabilidad_fiscal = Column(String(20), nullable=True)
+    # -------------------------------
 
     # --- INICIO NUEVA COLUMNA Y RELACIÓN ---
     lista_precio_id = Column(Integer, ForeignKey('listas_precio.id'), nullable=True)

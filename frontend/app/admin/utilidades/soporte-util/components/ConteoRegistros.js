@@ -13,7 +13,8 @@ import {
     markRecargaPaid,
     getPrecioEmpresa,
     setPrecioEmpresa,
-    updatePlanMensualManual
+    updatePlanMensualManual,
+    getRecargasGlobales // Nuevo import
 } from '@/lib/soporteApiService';
 import { toast } from 'react-toastify';
 
@@ -32,7 +33,16 @@ export default function ConteoRegistros() {
     const [loadingLista, setLoadingLista] = useState(false);
     const [busqueda, setBusqueda] = useState('');
 
-    // --- ESTADO SELECCIÓN ---
+    // --- ESTADO MODO GLOBAL (NUEVO) ---
+    const [verModoGlobal, setVerModoGlobal] = useState(false);
+    const [recargasGlobales, setRecargasGlobales] = useState([]);
+    const [loadingGlobales, setLoadingGlobales] = useState(false);
+    // Periodo global independiente
+    const nowGlobal = new Date();
+    const [mesGlobal, setMesGlobal] = useState(nowGlobal.getMonth() + 1);
+    const [anioGlobal, setAnioGlobal] = useState(nowGlobal.getFullYear());
+
+    // --- ESTADO SELECCIÓN EMPRESA ---
     const [empresaSelected, setEmpresaSelected] = useState(null);
 
     // --- DATOS EMPRESA SELECCIONADA ---
@@ -58,7 +68,7 @@ export default function ConteoRegistros() {
 
 
 
-    // Datos de Consumo y Recargas (Mes Actual por defecto)
+    // Datos de Consumo y Recargas (Mes Actual por defecto en vista empresa)
     const now = new Date();
     const [mesView, setMesView] = useState(now.getMonth() + 1);
     const [anioView, setAnioView] = useState(now.getFullYear());
@@ -79,6 +89,13 @@ export default function ConteoRegistros() {
         cargarListaEmpresas();
     }, []);
 
+    // Cargar Globales cuando se activa el modo o cambia fecha
+    useEffect(() => {
+        if (verModoGlobal) {
+            cargarRecargasGlobales();
+        }
+    }, [verModoGlobal, mesGlobal, anioGlobal]);
+
     const cargarListaEmpresas = async () => {
         setLoadingLista(true);
         try {
@@ -90,6 +107,19 @@ export default function ConteoRegistros() {
             toast.error("Error cargando directorio de empresas.");
         } finally {
             setLoadingLista(false);
+        }
+    };
+
+    const cargarRecargasGlobales = async () => {
+        setLoadingGlobales(true);
+        try {
+            const res = await getRecargasGlobales(mesGlobal, anioGlobal);
+            setRecargasGlobales(res.data);
+        } catch (error) {
+            console.error(error);
+            toast.error("Error cargando reporte global.");
+        } finally {
+            setLoadingGlobales(false);
         }
     };
 
@@ -161,28 +191,38 @@ export default function ConteoRegistros() {
         }
     };
 
-    const handleMarcarPagado = async (recargaId, nuevoEstado) => {
+    const handleMarcarPagado = async (recargaId, nuevoEstado, esGlobal = false) => {
         if (!confirm(nuevoEstado ? "¿Confirmar pago?" : "¿Deshacer pago?")) return;
         try {
             await markRecargaPaid(recargaId, nuevoEstado);
             toast.success(nuevoEstado ? "Pago registrado." : "Pago deshecho.");
-            actualizarVistaMes(empresaSelected.empresa_id, mesView, anioView);
+
+            if (esGlobal) {
+                cargarRecargasGlobales();
+            } else {
+                actualizarVistaMes(empresaSelected.empresa_id, mesView, anioView);
+            }
         } catch (error) {
             toast.error("Error actualizando pago.");
         }
     };
 
-    const handleEliminarRecarga = async (recargaId) => {
+    const handleEliminarRecarga = async (recargaId, esGlobal = false) => {
         if (!confirm("¿Eliminar esta recarga? Esto es irreversible.")) return;
         try {
             await deleteRecargaEmpresa(recargaId);
             toast.success("Recarga eliminada.");
-            actualizarVistaMes(empresaSelected.empresa_id, mesView, anioView);
+            if (esGlobal) {
+                cargarRecargasGlobales();
+            } else {
+                actualizarVistaMes(empresaSelected.empresa_id, mesView, anioView);
+            }
         } catch (error) {
             toast.error("Error eliminando recarga.");
         }
     };
 
+    // ... (Mantener handleGuardarLimite y handleGuardarLimiteMes igual)
     const handleGuardarLimite = async () => {
         try {
             await updateLimiteRegistros(empresaSelected.empresa_id, parseInt(limiteEditor));
@@ -213,7 +253,182 @@ export default function ConteoRegistros() {
         }
     };
 
+
     // --- RENDER ---
+
+    // 0. VISTA REPORTE GLOBAL
+    if (verModoGlobal) {
+        return (
+            <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/60 overflow-hidden min-h-[600px] flex flex-col">
+                {/* TOOLBAR SUPERIOR */}
+                <div className="bg-slate-900 text-white p-6 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setVerModoGlobal(false)}
+                            className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors text-slate-200 hover:text-white"
+                            title="Volver"
+                        >
+                            <FaArrowLeft />
+                        </button>
+                        <div>
+                            <h2 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                                <FaBolt className="text-amber-400" /> Reporte Global de Recargas
+                            </h2>
+                            <p className="text-slate-400 font-mono text-sm opacity-80">
+                                Vista consolidada de compras extra realizadas por todas las empresas.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                        {/* Period Selector (Global) */}
+                        <div className="flex items-center bg-slate-800 rounded-lg p-1">
+                            <select
+                                value={mesGlobal}
+                                onChange={e => setMesGlobal(parseInt(e.target.value))}
+                                className="bg-transparent text-sm font-bold border-none focus:ring-0 text-white cursor-pointer"
+                            >
+                                {Array.from({ length: 12 }, (_, i) => (
+                                    <option key={i + 1} value={i + 1} className="text-black">{new Date(0, i).toLocaleString('es-CO', { month: 'long' }).toUpperCase()}</option>
+                                ))}
+                            </select>
+                            <select
+                                value={anioGlobal}
+                                onChange={e => setAnioGlobal(parseInt(e.target.value))}
+                                className="bg-transparent text-sm font-bold border-none focus:ring-0 text-white cursor-pointer border-l border-slate-600"
+                            >
+                                {Array.from({ length: 36 }, (_, i) => {
+                                    const y = new Date().getFullYear() + 5 - i;
+                                    return (
+                                        <option key={y} value={y} className="text-black">{y}</option>
+                                    );
+                                })}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="p-8 flex-1 bg-slate-50/50">
+                    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+
+                        {/* HEADER STATS */}
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-end bg-slate-50">
+                            <div>
+                                <h4 className="font-bold text-slate-700 text-lg uppercase mb-1">Total Periodo</h4>
+                                <div className="flex gap-4">
+                                    <div className="badge badge-lg bg-indigo-100 text-indigo-700 font-bold border-0">
+                                        {recargasGlobales.length} Compras
+                                    </div>
+                                    <div className="badge badge-lg bg-amber-100 text-amber-700 font-bold border-0">
+                                        Pendiente: {currency(recargasGlobales.filter(r => !r.facturado).reduce((acc, r) => acc + (r.valor_total || 0), 0))}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <span className="block text-xs uppercase font-bold text-slate-400">Total Facturado + Pendiente</span>
+                                <span className="text-3xl font-black text-slate-900">
+                                    {currency(recargasGlobales.reduce((acc, r) => acc + (r.valor_total || 0), 0))}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            {loadingGlobales ? (
+                                <div className="p-12 flex justify-center"><div className="loading loading-spinner loading-lg text-primary"></div></div>
+                            ) : (
+                                <table className="w-full text-sm text-left">
+                                    <thead className="text-xs text-slate-400 uppercase bg-slate-50/50">
+                                        <tr>
+                                            <th className="px-6 py-3">Fecha</th>
+                                            <th className="px-6 py-3">Empresa</th>
+                                            <th className="px-6 py-3 text-center">Registros</th>
+                                            <th className="px-6 py-3 text-right">Valor</th>
+                                            <th className="px-6 py-3 text-center">Estado</th>
+                                            <th className="px-6 py-3 text-right">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {recargasGlobales.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="6" className="px-6 py-8 text-center text-slate-400 italic">
+                                                    No se encontraron recargas en este periodo global.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            recargasGlobales.map(r => (
+                                                <tr key={r.id} className="hover:bg-slate-50 transition-colors">
+                                                    <td className="px-6 py-4 font-bold text-slate-700">
+                                                        {new Date(r.fecha_compra).toLocaleDateString()}
+                                                        <br />
+                                                        <span className="text-[10px] font-normal text-slate-400">
+                                                            {new Date(r.fecha_compra).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="font-bold text-slate-800">{r.nombre_empresa}</div>
+                                                        <div className="text-xs font-mono text-slate-400">{r.nit}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded font-bold">
+                                                            +{r.cantidad_comprada}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right font-mono font-bold text-slate-800">
+                                                        {currency(r.valor_total)}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        {r.facturado ? (
+                                                            <span className="inline-flex items-center gap-1 text-emerald-600 font-bold text-xs bg-emerald-50 px-2 py-1 rounded-full">
+                                                                <FaCheckCircle /> PAGADO
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-1 text-amber-600 font-bold text-xs bg-amber-50 px-2 py-1 rounded-full">
+                                                                <FaExclamationTriangle /> PENDIENTE
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <div className="flex justify-end gap-2">
+                                                            {!r.facturado ? (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => handleMarcarPagado(r.id, true, true)}
+                                                                        className="btn btn-xs bg-blue-600 hover:bg-blue-700 text-white border-blue-600 shadow-md flex items-center gap-2 px-3 py-1 font-bold tracking-wide"
+                                                                        title="Registrar Pago"
+                                                                    >
+                                                                        <FaMoneyBillWave size={12} className="text-white" />
+                                                                        PAGAR
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleEliminarRecarga(r.id, true)}
+                                                                        className="btn btn-xs btn-ghost text-rose-300 hover:bg-rose-50 hover:text-rose-500"
+                                                                        title="Eliminar"
+                                                                    >
+                                                                        <FaTrash />
+                                                                    </button>
+                                                                </>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => handleMarcarPagado(r.id, false, true)}
+                                                                    className="text-[10px] font-bold text-slate-400 hover:text-amber-600 underline"
+                                                                >
+                                                                    DESHACER
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     // 1. VISTA BUSCADOR (Si no hay empresa seleccionada)
     if (!empresaSelected) {
@@ -232,6 +447,13 @@ export default function ConteoRegistros() {
                     <p className="text-slate-500 text-lg max-w-lg mx-auto">
                         Busca una empresa para administrar sus límites, precios y recargas.
                     </p>
+                    {/* BOTÓN REPORTE GLOBAL - AGREGADO AQUÍ */}
+                    <button
+                        onClick={() => setVerModoGlobal(true)}
+                        className="btn btn-outline btn-sm gap-2 border-slate-300 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 normal-case"
+                    >
+                        <FaBolt className="text-amber-500" /> Reporte Global de Recargas
+                    </button>
                 </div>
 
                 <div className="w-full max-w-2xl relative">
@@ -281,6 +503,7 @@ export default function ConteoRegistros() {
             </div>
         );
     }
+
 
     // 2. VISTA DASHBOARD (Empresa Seleccionada)
     return (

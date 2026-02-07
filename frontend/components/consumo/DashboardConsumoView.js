@@ -95,13 +95,14 @@ export default function DashboardConsumoView({ empresaIdOverride = null, apiClie
 
     const getMonthName = (monthIndex) => {
         const date = new Date();
+        date.setDate(1); // FIX: Evitar saltos de mes si es día 30/31
         date.setMonth(monthIndex - 1);
         return date.toLocaleString('es-CO', { month: 'long' });
     };
 
     const years = [];
     const currentYear = new Date().getFullYear();
-    for (let y = 2020; y <= currentYear + 2; y++) {
+    for (let y = 2020; y <= 2050; y++) {
         years.push(y);
     }
     const months = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -191,7 +192,7 @@ export default function DashboardConsumoView({ empresaIdOverride = null, apiClie
             </div>
 
             {/* TARJETAS SUPERIORES */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 {/* 1. PLAN MENSUAL */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-between">
@@ -256,29 +257,7 @@ export default function DashboardConsumoView({ empresaIdOverride = null, apiClie
                     </button>
                 </div>
 
-                {/* 3. BOLSAS Y EXCEDENTES */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 overflow-y-auto max-h-60">
-                    <div className="flex justify-between items-center mb-4 sticky top-0 bg-white pb-2 border-b border-slate-50">
-                        <h3 className="tex-sm font-semibold text-teal-600 uppercase tracking-wider">Bolsas Acumuladas</h3>
-                        <FaLeaf className="text-teal-400" />
-                    </div>
-
-                    <div className="space-y-3">
-                        {resumen.bolsas_vigentes.length > 0 ? (
-                            resumen.bolsas_vigentes.map(bolsa => (
-                                <div key={bolsa.id} className="flex justify-between items-center bg-teal-50 p-3 rounded-lg border border-teal-100">
-                                    <div>
-                                        <p className="text-xs font-bold text-teal-800">Origen: {getMonthName(bolsa.mes_origen)} {bolsa.anio_origen}</p>
-                                        <p className="text-[10px] text-teal-600">Vence: {new Date(bolsa.fecha_vencimiento).toLocaleDateString()}</p>
-                                    </div>
-                                    <span className="text-lg font-bold text-teal-700">+{bolsa.cantidad_disponible}</span>
-                                </div>
-                            ))
-                        ) : (
-                            <p className="text-sm text-slate-400 italic text-center py-4">No tienes bolsas acumuladas vigentes.</p>
-                        )}
-                    </div>
-                </div>
+                {/* 3. BOLSAS Y EXCEDENTES (REMOVIDO A PETICIÓN DE USUARIO, LOGICA ROLLING QUOTA LO HACE OBSOLETO VISUALMENTE) */}
             </div>
 
             {/* SECCIÓN INFERIOR: HISTORIAL Y DETALLE */}
@@ -366,6 +345,7 @@ export default function DashboardConsumoView({ empresaIdOverride = null, apiClie
                                 <option value="COMPRA">Compras Recargas</option>
                                 <option value="REVERSION">Reversiones (Anulaciones)</option>
                                 <option value="EXPIRACION">Expiraciones</option>
+                                <option value="CIERRE">Cierres de Bolsa</option>
                             </select>
 
                             {/* Exportar PDF Button */}
@@ -427,19 +407,29 @@ export default function DashboardConsumoView({ empresaIdOverride = null, apiClie
                                                     {item.tipo_operacion === 'COMPRA' ? 'Compra Recarga' : item.tipo_operacion.toLowerCase()}
                                                 </p>
                                                 <p className="text-xs text-slate-400 uppercase tracking-wide">
-                                                    {item.fuente_tipo}
-                                                    {item.bolsa_origen && <span className="ml-1 bg-teal-100 text-teal-700 px-1 rounded text-[9px]">{item.bolsa_origen}</span>}
+                                                    {item.bolsa_origen ? (
+                                                        <span className="font-bold text-indigo-600">{item.bolsa_origen}</span>
+                                                    ) : (
+                                                        item.fuente_tipo
+                                                    )}
                                                 </p>
                                                 {item.documento_numero && (
-                                                    <p className="text-xs text-indigo-500 font-bold">Doc #{item.documento_numero}</p>
+                                                    <p className="text-xs text-indigo-500 font-bold">
+                                                        {item.documento_tipo_codigo || 'Doc'} #{item.documento_numero}
+                                                    </p>
+                                                )}
+                                                {item.empresa_generadora && (
+                                                    <p className="text-[10px] text-slate-500 font-medium mt-0.5 truncate max-w-[150px]">
+                                                        {item.empresa_generadora}
+                                                    </p>
                                                 )}
                                             </div>
-                                        </div>
 
-                                        {/* Derecha: Cantidad */}
-                                        <div className={`text-right w-20 font-bold text-lg ${['REVERSION', 'COMPRA'].includes(item.tipo_operacion) ? 'text-green-500' : 'text-slate-800'
-                                            }`}>
-                                            {['REVERSION', 'COMPRA'].includes(item.tipo_operacion) ? '+' : '-'}{item.cantidad}
+                                            {/* Derecha: Cantidad */}
+                                            <div className={`text-right w-20 font-bold text-lg ${['REVERSION', 'COMPRA'].includes(item.tipo_operacion) ? 'text-green-500' : 'text-slate-800'
+                                                }`}>
+                                                {['REVERSION', 'COMPRA'].includes(item.tipo_operacion) ? '+' : '-'}{item.cantidad}
+                                            </div>
                                         </div>
                                     </div>
                                 ))
@@ -482,16 +472,18 @@ export default function DashboardConsumoView({ empresaIdOverride = null, apiClie
             </div>
 
             {/* MODAL COMPRA (Solo para usuario normal, no soporte mirror) */}
-            {!empresaIdOverride && showRecargaModal && (
-                <ModalComprarPaquete
-                    isOpen={showRecargaModal}
-                    onClose={() => setShowRecargaModal(false)}
-                    onSuccess={() => {
-                        fetchData();
-                        setShowRecargaModal(false);
-                    }}
-                />
-            )}
-        </div>
+            {
+                !empresaIdOverride && showRecargaModal && (
+                    <ModalComprarPaquete
+                        isOpen={showRecargaModal}
+                        onClose={() => setShowRecargaModal(false)}
+                        onSuccess={() => {
+                            fetchData();
+                            setShowRecargaModal(false);
+                        }}
+                    />
+                )
+            }
+        </div >
     );
 }

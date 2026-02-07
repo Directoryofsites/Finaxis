@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.schema import UniqueConstraint
 from ..core.database import Base
 
@@ -33,6 +34,14 @@ class TipoDocumento(Base):
     created_by = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
     updated_by = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
 
+    # --- CORRECCIÓN ORDEN ELIMINACIÓN ---
+    # Estas relaciones ayudan a SQLAlchemy a determinar que TipoDocumento depende de PlanCuenta
+    cuenta_caja = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_caja_id])
+    cuenta_debito_cxp = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_debito_cxp_id])
+
     __table_args__ = (
         UniqueConstraint('empresa_id', 'codigo', name='uq_tipos_documento_empresa_codigo'),
     )
+
+    # --- RELACIONES CON CASCADA ---
+    documentos = relationship("app.models.documento.Documento", back_populates="tipo_documento", cascade="all, delete-orphan")

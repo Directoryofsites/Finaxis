@@ -38,6 +38,11 @@ class MovimientoContableBase(BaseModel):
     credito: Decimal = Field(default=0, ge=0)
     producto_id: Optional[int] = None
     cantidad: Optional[float] = None
+    
+    # --- NUEVOS CAMPOS ---
+    descuento_tasa: Optional[float] = Field(default=0)
+    descuento_valor: Optional[float] = Field(default=0)
+    # ---------------------
 
 class MovimientoContableCreate(MovimientoContableBase):
     pass
@@ -59,6 +64,11 @@ class DocumentoBase(BaseModel):
     centro_costo_id: Optional[int] = None
     fecha_vencimiento: Optional[date] = None
     unidad_ph_id: Optional[int] = None # Added for PH Module
+    
+    # --- NUEVOS CAMPOS DESCUENTO/REC ---
+    descuento_global_valor: Optional[Decimal] = Field(default=0)
+    cargos_globales_valor: Optional[Decimal] = Field(default=0)
+    # ---------------------------------
 
 class DocumentoCreate(DocumentoBase):
     empresa_id: Optional[int] = None
@@ -72,6 +82,13 @@ class Documento(DocumentoBase):
     anulado: bool
     estado: str
     usuario_creador_id: Optional[int] = None
+    
+    # --- FACTURACION ELECTRONICA ---
+    dian_estado: Optional[str] = None
+    dian_cufe: Optional[str] = None
+    dian_xml_url: Optional[str] = None
+    dian_error: Optional[str] = None
+    # -------------------------------
     
     # En lugar de solo los movimientos crudos, ahora exponemos nuestro nuevo contrato.
     detalle_productos: Optional[List[DetalleProductoVendido]] = []
@@ -138,6 +155,7 @@ class DocumentoGestionFiltros(BaseModel):
     cuentaCodigoKeyword: Optional[str] = None
     cuentaNivel: Optional[int] = None
     permiteMovimiento: Optional[bool] = None
+    dianEstado: Optional[str] = None  # NUEVO: Filtro por estado DIAN
     pagina: int = Field(1, ge=1)
     limite: int = Field(50, ge=1, le=100)
 
@@ -150,6 +168,9 @@ class DocumentoGestionResult(BaseModel):
     total: Decimal
     anulado: bool
     estado: str
+    dian_estado: Optional[str] = None
+    dian_cufe: Optional[str] = None
+    dian_xml_url: Optional[str] = None
     class Config:
         from_attributes = True
 

@@ -12,6 +12,7 @@ class PlanMensualRead(BaseModel):
     cantidad_disponible: int
     estado: EstadoPlan
     fecha_cierre: Optional[datetime] = None
+    cantidad_consumida: Optional[int] = 0
     
     class Config:
         from_attributes = True
@@ -64,6 +65,8 @@ class HistorialConsumoRead(BaseModel):
     bolsa_mes: Optional[int] = None
     bolsa_anio: Optional[int] = None
     bolsa_origen: Optional[str] = None
+    empresa_generadora: Optional[str] = None
+    documento_tipo_codigo: Optional[str] = None # <--- RC, CC, etc
     
     class Config:
         from_attributes = True

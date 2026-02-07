@@ -25,7 +25,8 @@ class CentroCosto(Base):
     
     padre = relationship("CentroCosto", remote_side=[id], back_populates="hijos")
     hijos = relationship("CentroCosto", back_populates="padre", cascade="all, delete-orphan")
-
+    
+    documentos = relationship("app.models.documento.Documento", back_populates="centro_costo") # <-- NUEVA
     movimientos = relationship("MovimientoContable", back_populates="centro_costo")
     plantillas_detalles = relationship("PlantillaDetalle", back_populates="centro_costo")
     plantillas_maestras_sugeridas = relationship("PlantillaMaestra", back_populates="centro_costo_sugerido")

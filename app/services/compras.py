@@ -36,20 +36,26 @@ def crear_factura_compra(db: Session, compra: schemas_compras.CompraCreate, user
     debitos_inventario_por_cuenta = {} # DEPRECATED: Se usa movimiento detallado
     impuestos_descontables_por_cuenta: Dict[int, float] = {}
 
-    if not compra.items:
-        raise HTTPException(status_code=400, detail="La factura de compra no tiene items.")
+    # --- LÓGICA DE PRORRATEO COMPRAS (DOBLE PASADA) ---
+    items_procesados = []
+    total_base_para_prorrateo = 0.0
+    
+    # Cargar Productos
+    productos_ids = [item.producto_id for item in compra.items]
+    productos_db = db.query(models_producto.Producto).options(
+        joinedload(models_producto.Producto.grupo_inventario),
+        joinedload(models_producto.Producto.impuesto_iva)
+    ).filter(
+        models_producto.Producto.id.in_(productos_ids),
+        models_producto.Producto.empresa_id == empresa_id
+    ).all()
+    productos_map = {p.id: p for p in productos_db}
 
+    # Paso 1: Validaciones y Bases
     for item in compra.items:
-        producto_db = db.query(models_producto.Producto).options(
-            joinedload(models_producto.Producto.grupo_inventario),
-            joinedload(models_producto.Producto.impuesto_iva)
-        ).filter(
-            models_producto.Producto.id == item.producto_id,
-            models_producto.Producto.empresa_id == empresa_id
-        ).first()
-
+        producto_db = productos_map.get(item.producto_id)
         if not producto_db:
-            raise HTTPException(status_code=404, detail=f"Producto con ID {item.producto_id} no encontrado.")
+             raise HTTPException(status_code=404, detail=f"Producto con ID {item.producto_id} no encontrado.")
 
         if not producto_db.grupo_inventario or not producto_db.grupo_inventario.cuenta_inventario_id:
             grupo_nombre = producto_db.grupo_inventario.nombre if producto_db.grupo_inventario else "N/A"
@@ -57,33 +63,68 @@ def crear_factura_compra(db: Session, compra: schemas_compras.CompraCreate, user
         
         if producto_db.impuesto_iva and not producto_db.impuesto_iva.cuenta_iva_descontable_id:
             raise HTTPException(status_code=409, detail=f"La tasa de impuesto '{producto_db.impuesto_iva.nombre}' no tiene una cuenta de IVA Descontable configurada.")
-        
-        subtotal_item = item.cantidad * item.costo_unitario
-        valor_iva = 0
 
+        # Cálculos de Línea
+        costo_base = float(item.costo_unitario)
+        tasa_desc = float(item.descuento_tasa or 0)
+        subtotal_bruto = float(item.cantidad) * costo_base
+        valor_desc_linea = subtotal_bruto * (tasa_desc / 100.0)
+        subtotal_neto_linea = subtotal_bruto - valor_desc_linea
+        
+        total_base_para_prorrateo += subtotal_neto_linea
+        
+        items_procesados.append({
+            "item_input": item,
+            "producto_db": producto_db,
+            "subtotal_neto_linea": subtotal_neto_linea,
+            "valor_desc_linea": valor_desc_linea
+        })
+
+    # Paso 2: Generación
+    desc_global_val = float(compra.descuento_global_valor or 0)
+    cargo_global_val = float(compra.cargos_globales_valor or 0)
+    
+    for procesado in items_procesados:
+        item = procesado["item_input"]
+        producto_db = procesado["producto_db"]
+        subtotal_neto = procesado["subtotal_neto_linea"]
+        
+        # Prorrateo
+        participacion = 0.0
+        if total_base_para_prorrateo > 0:
+            participacion = subtotal_neto / total_base_para_prorrateo
+            
+        dist_desc_global = participacion * desc_global_val
+        dist_cargo_global = participacion * cargo_global_val
+        
+        base_contable_final = subtotal_neto - dist_desc_global + dist_cargo_global
+        total_descuento_acumulado = procesado["valor_desc_linea"] + dist_desc_global # Para registro
+        
+        # IVA (Descontable)
+        valor_iva = 0
         if producto_db.impuesto_iva and producto_db.impuesto_iva.tasa > 0:
-            valor_iva = subtotal_item * producto_db.impuesto_iva.tasa
+            valor_iva = base_contable_final * float(producto_db.impuesto_iva.tasa)
             cuenta_iva_id = producto_db.impuesto_iva.cuenta_iva_descontable_id
             impuestos_descontables_por_cuenta[cuenta_iva_id] = impuestos_descontables_por_cuenta.get(cuenta_iva_id, 0) + valor_iva
 
-        total_compra += subtotal_item + valor_iva
+        total_compra += base_contable_final + valor_iva
         
         cuenta_inventario_id = producto_db.grupo_inventario.cuenta_inventario_id
         
-        # CAMBIO: Crear movimiento detallado POR PRODUCTO inmediatamente
+        # Movimiento Inventario (Debito)
         movimientos_contables.append(schemas_doc.MovimientoContableCreate(
             cuenta_id=cuenta_inventario_id,
-            producto_id=item.producto_id,     # VITAL: Enlace para el filtro
-            cantidad=item.cantidad,           # VITAL: Cantidad para kárdex/auditoría
+            producto_id=item.producto_id,
+            cantidad=item.cantidad,
             concepto=f"Compra: {producto_db.nombre}",
-            debito=subtotal_item, 
-            credito=0
+            debito=base_contable_final, 
+            credito=0,
+            descuento_tasa=item.descuento_tasa,
+            descuento_valor=total_descuento_acumulado
         ))
 
     if total_compra > 0:
-        # Nota: Los débitos de inventario ya se agregaron en el bucle anterior.
-        # Solo agregamos los impuestos acumulados y el pasivo total.
-        
+        # Impuestos acumulados
         for cuenta_id, total_cuenta in impuestos_descontables_por_cuenta.items():
             movimientos_contables.append(schemas_doc.MovimientoContableCreate(
                 cuenta_id=cuenta_id, concepto="IVA Descontable en compra", debito=total_cuenta, credito=0
@@ -104,6 +145,12 @@ def crear_factura_compra(db: Session, compra: schemas_compras.CompraCreate, user
         fecha=compra.fecha,
         fecha_vencimiento=compra.fecha_vencimiento,
         centro_costo_id=compra.centro_costo_id,
+        
+        # --- NUEVO: Pasar valores ---
+        descuento_global_valor=compra.descuento_global_valor,
+        cargos_globales_valor=compra.cargos_globales_valor,
+        # ----------------------------
+
         movimientos=movimientos_contables,
         aplicaciones=None 
     )

@@ -86,27 +86,25 @@ def search_empresas(
         )
 
     # 3. Filtro Jerarquia (Admin/Holding vs Contadores/Hijas)
+    # 3. Filtro Jerarquia (Admin/Holding vs Contadores/Hijas)
     if role_filter == 'CONTADOR':
         # "De Contadores"
-        # Antes: Empresas con padre (hijas) -> query.filter(models_empresa.Empresa.padre_id != None)
-        # AHORA: Con la regla "Owner", podemos filtrar también por owner_id si se provee.
-        # Si no se provee owner_id, mostramos TODAS las empresas creadas por contadores (owner != null y role_check? o generic)
-        # La lógica original asumía que las de contadores TIENEN padre_id. Mantenemos eso + filtro owner_id.
-        
         if owner_id:
             # Filtrar por un contador ESPECÍFICO
-            # Mostramos empresas donde él es el dueño (Padre e hijas)
             query = query.filter(models_empresa.Empresa.owner_id == owner_id)
         else:
-             # Mostramos todas las que NO son del sistema.
-             # Definición de "De Contadores": Empresas que tienen padre o tienen owner definido (no null/system)
-             # Para mantener compatibilidad visual con lo que ve el usuario, usamos la logica inversa a 'Mis Empresas'
-             # O mejor, usamos: owner_id IS NOT NULL (ya que el sistema es owner null)
              query = query.filter(models_empresa.Empresa.owner_id != None)
              
     else:
-        # "Mis Empresas" (Admin/Sistema) -> Empresas root del sistema (sin owner personal)
-        query = query.filter(models_empresa.Empresa.owner_id == None)
+        # "Mis Empresas" (Admin/Sistema)
+        
+        # CORRECCIÓN: Si estamos buscando PLANTILLAS, el usuario de soporte debe poder ver 
+        # TODAS las plantillas disponibles en el sistema, incluso las creadas por contadores.
+        if type_filter == 'PLANTILLA':
+            pass # No filtramos por owner_id, mostramos todas las plantillas globales.
+        else:
+            # Si son empresas REALES, solo mostramos las propias del sistema (sin owner)
+            query = query.filter(models_empresa.Empresa.owner_id == None)
 
     # Paginación
     total = query.count()

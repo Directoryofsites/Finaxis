@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../../../context/AuthContext';
+import { apiService } from '../../../../lib/apiService';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 
@@ -38,34 +39,25 @@ export default function DocumentoDetallePage() {
         tiposDocRes,
         costoRes
       ] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/documentos/${id}`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/plan-cuentas/puc?empresa_id=${user.empresaId}`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/terceros?empresa_id=${user.empresaId}`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tipos-documento?empresa_id=${user.empresaId}`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/centros-costo?empresa_id=${user.empresaId}&permite_movimiento=true`),
+        apiService.get(`/documentos/${id}`),
+        apiService.get(`/plan-cuentas/list-flat`, { params: { empresa_id: user.empresaId } }),
+        apiService.get(`/terceros`, { params: { empresa_id: user.empresaId } }),
+        apiService.get(`/tipos-documento`, { params: { empresa_id: user.empresaId } }),
+        apiService.get(`/centros-costo/get-flat`, { params: { empresa_id: user.empresaId, permite_movimiento: true } }),
       ]);
 
-      const responses = [docRes, cuentasRes, tercerosRes, tiposDocRes, costoRes];
-      for (const res of responses) {
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({ message: `Error de red en ${res.url}` }));
-          throw new Error(errorData.message || 'Error al cargar datos maestros.');
-        }
-      }
-
-      const [docData, cuentasData, tercerosData, tiposDocData, costoData] = await Promise.all(responses.map(res => res.json()));
-
-      setDocumento(docData);
-      setCuentas(cuentasData);
-      setTerceros(tercerosData);
-      setTiposDocumento(tiposDocData);
-      setCentrosCosto(costoData);
+      setDocumento(docRes.data);
+      setCuentas(cuentasRes.data);
+      setTerceros(tercerosRes.data);
+      setTiposDocumento(tiposDocRes.data);
+      setCentrosCosto(costoRes.data);
 
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message || "Error desconocido");
     } finally {
       setIsLoading(false);
     }
+
   }, [id, user]);
 
   useEffect(() => {
@@ -155,6 +147,31 @@ export default function DocumentoDetallePage() {
     }
   };
 
+  // --- FACTURACIÓN ELECTRÓNICA ---
+  const handleEmitirDIAN = async () => {
+    if (!confirm("¿Estás seguro de emitir esta factura a la DIAN? Esta acción no se puede deshacer.")) return;
+
+    setIsLoading(true);
+    try {
+      const response = await apiService.post(`/fe/emitir/${id}`, {});
+      const result = response.data;
+
+      if (!result.success) {
+        throw new Error(result.error || result.message || "Error al emitir factura");
+      }
+
+      alert(`ÉXITO: ${result.message}`);
+      // Recargar datos para ver el nuevo estado
+      await fetchAllData();
+
+    } catch (err) {
+      alert(`ERROR DIAN: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
   // --- RENDERIZADO PRINCIPAL ---
   if (isLoading) return <div className="flex justify-center items-center h-screen"><p>Cargando documento...</p></div>;
   if (error) return <div className="flex justify-center items-center h-screen"><p className="text-red-500">Error: {error}</p></div>;
@@ -167,20 +184,67 @@ export default function DocumentoDetallePage() {
           <h1 className="text-3xl font-bold text-gray-800">
             {isEditing ? `Editando Documento` : `Detalle del Documento`}
           </h1>
+          {/* BADGE DE ESTADO DIAN */}
+          {documento && documento.dian_estado && (
+            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${documento.dian_estado === 'ACEPTADO' || documento.dian_estado === 'ENVIADO' ? 'bg-green-100 text-green-700 border-green-300' :
+              documento.dian_estado === 'rechazado' || documento.dian_estado === 'ERROR' ? 'bg-red-100 text-red-700 border-red-300' :
+                'bg-yellow-100 text-yellow-700 border-yellow-300'
+              }`}>
+              DIAN: {documento.dian_estado}
+            </span>
+          )}
+
           {!isEditing && (
-            <button
-              onClick={() => window.open('/manual/capitulo_10_edicion.html', '_blank')}
-              className="px-2 py-1 text-indigo-600 hover:bg-indigo-50 rounded-md font-bold flex items-center gap-2"
-              title="Ver Manual de Usuario"
-            >
-              <span className="text-lg">📖</span> <span className="hidden md:inline">Manual</span>
-            </button>
+            <>
+              {documento && documento.dian_xml_url && (
+                <>
+                  <a
+                    href={documento.dian_xml_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2 py-1 text-green-600 hover:bg-green-50 rounded-md font-bold flex items-center gap-2 border border-green-200"
+                    title="Ver Factura en sistema DIAN/Proveedor"
+                  >
+                    <span className="text-lg">🔗</span> <span className="hidden md:inline">Ver Factura DIAN</span>
+                  </a>
+
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(`Hola, aquí tienes tu factura electrónica: ${documento.dian_xml_url}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2 py-1 text-white bg-green-500 hover:bg-green-600 rounded-md font-bold flex items-center gap-2 shadow-sm"
+                    title="Enviar por WhatsApp"
+                  >
+                    <span className="text-lg">📱</span> <span className="hidden md:inline">WhatsApp</span>
+                  </a>
+                </>
+              )}
+
+              <button
+                onClick={() => window.open('/manual/capitulo_10_edicion.html', '_blank')}
+                className="px-2 py-1 text-indigo-600 hover:bg-indigo-50 rounded-md font-bold flex items-center gap-2"
+                title="Ver Manual de Usuario"
+              >
+                <span className="text-lg">📖</span> <span className="hidden md:inline">Manual</span>
+              </button>
+            </>
           )}
         </div>
 
         <div className="flex gap-2">
           {!isEditing ? (
             <>
+              {/* BOTÓN EMITIR A LA DIAN */}
+              {!documento.anulado && (!documento.dian_estado || documento.dian_estado === 'ERROR') && (
+                <button
+                  onClick={handleEmitirDIAN}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold shadow-sm flex items-center gap-2"
+                  title="Enviar a la DIAN (Facturación Electrónica)"
+                >
+                  📡 Emitir a DIAN
+                </button>
+              )}
+
               {!documento.anulado && (
                 <button onClick={() => { setIsEditing(true); setEditedDocument(JSON.parse(JSON.stringify(documento))); }} className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Editar</button>
               )}
@@ -243,6 +307,12 @@ export default function DocumentoDetallePage() {
               <div><p className="text-sm font-medium text-gray-500">Fecha</p><p>{new Date(documento.fecha).toLocaleDateString('es-CO')}</p></div>
               <div><p className="text-sm font-medium text-gray-500">Beneficiario</p><p>{documento.beneficiario}</p></div>
               <div><p className="text-sm font-medium text-gray-500">C. Costo</p><p>{documento.centro_costo || 'N/A'}</p></div>
+              {documento.dian_cufe && (
+                <div className="col-span-2 mt-2 p-2 bg-gray-50 border rounded text-xs break-all">
+                  <p className="font-bold text-gray-700">CUFE (Código Único Factura Electrónica):</p>
+                  <p className="font-mono text-gray-600">{documento.dian_cufe}</p>
+                </div>
+              )}
             </div>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-md">

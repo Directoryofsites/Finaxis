@@ -101,6 +101,9 @@ class ConfiguracionNomina(Base):
     id = Column(Integer, primary_key=True, index=True)
     empresa_id = Column(Integer, ForeignKey("empresas.id")) # Unique removed here, added to constraint below
     tipo_nomina_id = Column(Integer, ForeignKey("nomina_tipos.id"), nullable=True) # If null -> Global Default? Or just restrict to Types. Let's make it nullable for safety but ideally 1-1.
+    
+    # --- RELACION ---
+    tipo_nomina = relationship("TipoNomina")
 
     __table_args__ = (
         UniqueConstraint('empresa_id', 'tipo_nomina_id', name='uq_config_empresa_tipo'),
