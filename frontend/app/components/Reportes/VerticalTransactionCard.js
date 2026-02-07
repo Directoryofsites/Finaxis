@@ -45,8 +45,8 @@ const VerticalTransactionCard = ({ item }) => {
                     <FaUser className="mt-1 text-gray-400 shrink-0" />
                     <div>
                         <p className="text-xs font-bold text-gray-400 uppercase">Tercero / Beneficiario</p>
-                        <p className="text-sm font-semibold text-gray-700">{item.tercero_nombre || 'N/A'}</p>
-                        <p className="text-xs text-gray-500 font-mono">NIT: {item.tercero_identificacion || 'N/A'}</p>
+                        <p className="text-sm font-semibold text-gray-700">{item.beneficiario || item.tercero_nombre || 'N/A'}</p>
+                        <p className="text-xs text-gray-500 font-mono">NIT: {item.beneficiario_doc || item.tercero_identificacion || 'N/A'}</p>
                     </div>
                 </div>
 

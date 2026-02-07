@@ -241,6 +241,7 @@ export default function SidebarFavorites() {
                                 <Link
                                     key={item.path}
                                     href={item.path}
+                                    onClick={() => setIsOpen(false)}
                                     className={`
                                         flex items-center transition-all duration-200 rounded-xl
                                         ${isOpen

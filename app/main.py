@@ -268,7 +268,7 @@ from app.api.import_templates import routes as import_templates_router
 app.include_router(import_templates_router.router, prefix="/api/import-templates", tags=["Plantillas de Importación"])
 
 
-app.include_router(conceptos_favoritos_router.router, prefix="/api", tags=["Conceptos Favoritos"]) # <--- AÑADIR ESTA LÍNEA
+app.include_router(conceptos_favoritos_router.router, prefix="/api", tags=["Conceptos Favoritos"])
 
 app.include_router(documentos_router.router, prefix="/api/documentos", tags=["Documentos"])
 
