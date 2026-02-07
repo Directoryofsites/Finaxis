@@ -197,7 +197,12 @@ def create_documento(db: Session, documento: schemas_doc.DocumentoCreate, user_i
             beneficiario_id=documento.beneficiario_id,
             centro_costo_id=documento.centro_costo_id,
             usuario_creador_id=user_id,
-            unidad_ph_id=documento.unidad_ph_id # Added for PH Module
+            unidad_ph_id=documento.unidad_ph_id, # Added for PH Module
+            
+            # --- NUEVOS CAMPOS ---
+            descuento_global_valor=documento.descuento_global_valor,
+            cargos_globales_valor=documento.cargos_globales_valor
+            # ---------------------
         )
 
         for mov_in in documento.movimientos:
@@ -1872,7 +1877,10 @@ def buscar_documentos_para_gestion(db: Session, filtros: schemas_doc.DocumentoGe
         models_tercero.razon_social.label("beneficiario"),
         subquery_total.c.total,
         models_doc.anulado,
-        models_doc.estado
+        models_doc.estado,
+        models_doc.dian_estado,
+        models_doc.dian_cufe,
+        models_doc.dian_xml_url
     ).join(subquery_total, models_doc.id == subquery_total.c.documento_id) \
      .join(models_tipo, models_doc.tipo_documento_id == models_tipo.id) \
      .outerjoin(models_tercero, models_doc.beneficiario_id == models_tercero.id) \
@@ -1892,6 +1900,9 @@ def buscar_documentos_para_gestion(db: Session, filtros: schemas_doc.DocumentoGe
 
     if filtros.centroCostoIds:
         query = query.filter(models_doc.centro_costo_id.in_(filtros.centroCostoIds))
+
+    if filtros.dianEstado:
+        query = query.filter(models_doc.dian_estado == filtros.dianEstado)
 
     if filtros.numero:
         numeros = [n.strip() for n in filtros.numero.split(',') if n.strip()]
@@ -1922,7 +1933,8 @@ def buscar_documentos_para_gestion(db: Session, filtros: schemas_doc.DocumentoGe
     query = query.group_by(
         models_doc.id, models_doc.fecha, models_tipo.nombre,
         models_doc.numero, models_tercero.razon_social,
-        subquery_total.c.total, models_doc.anulado, models_doc.estado
+        subquery_total.c.total, models_doc.anulado, models_doc.estado,
+        models_doc.dian_estado, models_doc.dian_cufe, models_doc.dian_xml_url
     ).order_by(models_doc.fecha.desc(), models_doc.numero.desc())
 
     resultados = query.limit(500).all()

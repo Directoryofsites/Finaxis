@@ -7,6 +7,7 @@ class CompraItemCreate(BaseModel):
     producto_id: int
     cantidad: float = Field(..., gt=0)
     costo_unitario: float = Field(..., ge=0)
+    descuento_tasa: Optional[float] = Field(default=0.0, ge=0, le=100) # Nueva
 
 class CompraCreate(BaseModel):
     """ Define la estructura completa para crear una nueva factura de compra. """
@@ -16,6 +17,11 @@ class CompraCreate(BaseModel):
     
     items: List[CompraItemCreate]
     bodega_id: int
+    
+    # --- NUEVOS CAMPOS ---
+    descuento_global_valor: Optional[float] = Field(default=0.0, ge=0)
+    cargos_globales_valor: Optional[float] = Field(default=0.0, ge=0)
+    # ---------------------
 
     # --- INICIO: CAMPO AÑADIDO ---
     numero: Optional[str] = None # Para la numeración manual

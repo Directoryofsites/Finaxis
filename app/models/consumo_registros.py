@@ -23,6 +23,7 @@ class EstadoRecarga(str, enum.Enum):
 
 class TipoFuenteConsumo(str, enum.Enum):
     PLAN = "PLAN"
+    PLAN_PASADO = "PLAN_PASADO"
     BOLSA = "BOLSA"
     RECARGA = "RECARGA"
 
@@ -36,9 +37,15 @@ class TipoOperacionConsumo(str, enum.Enum):
 class ControlPlanMensual(Base):
     __tablename__ = "control_plan_mensual"
 
-    empresa_id = Column(Integer, ForeignKey("empresas.id"), primary_key=True)
-    anio = Column(Integer, primary_key=True)
-    mes = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, index=True) # Nuevo ID único
+    
+    empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=False)
+    anio = Column(Integer, nullable=False)
+    mes = Column(Integer, nullable=False)
+    
+    __table_args__ = (
+        Index("uq_plan_empresa_periodo", "empresa_id", "anio", "mes", unique=True),
+    )
     
     limite_asignado = Column(Integer, nullable=False, default=0)
     cantidad_disponible = Column(Integer, nullable=False, default=0)
@@ -130,4 +137,4 @@ class HistorialConsumo(Base):
     documento_id = Column(Integer, ForeignKey("documentos.id"), nullable=True)
     
     empresa = relationship("Empresa")
-    documento = relationship("Documento")
+    documento = relationship("Documento", back_populates="historial_consumos")

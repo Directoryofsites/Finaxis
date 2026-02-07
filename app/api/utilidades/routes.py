@@ -172,15 +172,64 @@ def delete_recarga_empresa(
     db: Session = Depends(get_db),
     current_user: models_usuario.Usuario = Depends(has_permission("utilidades:usar_herramientas"))
 ):
-    """Elimina una recarga específica (Soporte)."""
-    from app.models.consumo_registros import RecargaAdicional
+    """Elimina una recarga específica y limpia su historial (Soporte)."""
+    from app.models.consumo_registros import RecargaAdicional, HistorialConsumo, TipoFuenteConsumo
+    
     recarga = db.query(RecargaAdicional).filter(RecargaAdicional.id == recarga_id).first()
     if not recarga:
         raise HTTPException(status_code=404, detail="Recarga no encontrada")
     
+    # 1. Limpiar historial asociado (Corrige bug visual en cliente)
+    # Borramos los logs de COMPRA y CONSUMO asociados a esta fuente
+    db.query(HistorialConsumo).filter(
+        HistorialConsumo.fuente_tipo == TipoFuenteConsumo.RECARGA,
+        HistorialConsumo.fuente_id == recarga.id
+    ).delete(synchronize_session=False)
+
+    # 2. Eliminar la recarga física
     db.delete(recarga)
     db.commit()
-    return {"msg": "Recarga eliminada exitosamente"}
+    return {"msg": "Recarga y su historial eliminados exitosamente"}
+
+@router.get("/recargas-globales", response_model=List[Any])
+def get_recargas_globales(
+    mes: int,
+    anio: int,
+    db: Session = Depends(get_db),
+    current_user: models_usuario.Usuario = Depends(has_permission("utilidades:usar_herramientas"))
+):
+    """
+    Obtiene TODAS las recargas extra de TODAS las empresas en el periodo indicado.
+    Retorna datos enriquecidos con el nombre de la empresa.
+    """
+    from app.models.consumo_registros import RecargaAdicional
+    from app.models.empresa import Empresa
+    
+    recargas = db.query(RecargaAdicional, Empresa.razon_social, Empresa.nit)\
+        .join(Empresa, RecargaAdicional.empresa_id == Empresa.id)\
+        .filter(
+            RecargaAdicional.mes == mes,
+            RecargaAdicional.anio == anio
+        ).order_by(RecargaAdicional.fecha_compra.desc()).all()
+    
+    # Serialización manual rápida para incluir datos de empresa
+    result = []
+    for r, razon, nit in recargas:
+        item = {
+            "id": r.id,
+            "empresa_id": r.empresa_id,
+            "nombre_empresa": razon, 
+            "nit": nit,
+            "cantidad_comprada": r.cantidad_comprada,
+            "cantidad_disponible": r.cantidad_disponible,
+            "valor_total": r.valor_total,
+            "facturado": r.facturado,
+            "estado": r.estado,
+            "fecha_compra": r.fecha_compra
+        }
+        result.append(item)
+        
+    return result
 
 # ===============================================================
 # GESTIÓN DE PAQUETES DE RECARGA (ADMIN)

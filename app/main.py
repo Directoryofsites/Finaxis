@@ -370,7 +370,12 @@ app.include_router(presupuesto_router.router, prefix="/api/presupuesto", tags=["
 
 # --- MODULO INDICADORES ECONOMICOS ---
 from app.api.indicadores import routes as indicadores_router
+from app.api.indicadores import routes as indicadores_router
 app.include_router(indicadores_router.router, prefix="/api", tags=["Indicadores Económicos"])
+
+# --- MODULO FACTURACION ELECTRONICA ---
+from app.api.api_v1.endpoints import facturacion_electronica
+app.include_router(facturacion_electronica.router, prefix="/api/fe", tags=["Facturación Electrónica DIAN"])
 
 if __name__ == "__main__":
     import uvicorn

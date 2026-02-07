@@ -93,6 +93,44 @@ def update_user(db: Session, user: models_usuario.Usuario, user_update: schemas_
 
         user.roles = roles
 
+        # --- LOGICA PROPIEDAD EMPRESA (AUTO-FIX) ---
+        # Si se le asigna rol 'contador', asignarlo como Owner de su empresa actual.
+        # Si se le quita rol 'contador', quitar mastership (si la tenía).
+        es_contador = any(r.nombre.lower() == 'contador' for r in roles)
+        
+        if user.empresa_id:
+            u_empresa = user.empresa
+            if u_empresa:
+                if es_contador:
+                    # PROMOTION
+                    if u_empresa.owner_id != user.id:
+                        u_empresa.owner_id = user.id
+                        db.add(u_empresa)
+                        
+                        # Actualizar tabla pivote usuario_empresas
+                        stmt_chk = db.query(models_usuario.usuario_empresas).filter_by(usuario_id=user.id, empresa_id=u_empresa.id).first()
+                        if not stmt_chk:
+                            stmt = models_usuario.usuario_empresas.insert().values(usuario_id=user.id, empresa_id=u_empresa.id, is_owner=True)
+                            db.execute(stmt)
+                        else:
+                            stmt = models_usuario.usuario_empresas.update().where(
+                                models_usuario.usuario_empresas.c.usuario_id == user.id,
+                                models_usuario.usuario_empresas.c.empresa_id == u_empresa.id
+                            ).values(is_owner=True)
+                            db.execute(stmt)
+                else:
+                    # DEMOTION
+                    if u_empresa.owner_id == user.id:
+                        u_empresa.owner_id = None
+                        db.add(u_empresa)
+                        
+                        # Actualizar tabla pivote
+                        stmt = models_usuario.usuario_empresas.update().where(
+                                models_usuario.usuario_empresas.c.usuario_id == user.id,
+                                models_usuario.usuario_empresas.c.empresa_id == u_empresa.id
+                            ).values(is_owner=False)
+                        db.execute(stmt)
+
     db.add(user)
     db.commit()
     db.refresh(user)

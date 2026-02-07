@@ -36,7 +36,7 @@ class PHConfiguracion(Base):
     # Flags Logicos
     interes_mora_habilitado = Column(Boolean, default=True)
 
-    empresa = relationship("Empresa")
+    empresa = relationship("app.models.empresa.Empresa", back_populates="ph_configuracion")
     tipo_documento_recibo = relationship("app.models.tipo_documento.TipoDocumento", foreign_keys=[tipo_documento_recibo_id])
     tipo_documento_mora = relationship("app.models.tipo_documento.TipoDocumento", foreign_keys=[tipo_documento_mora_id])
     cuenta_cartera = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_cartera_id])

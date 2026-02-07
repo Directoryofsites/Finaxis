@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Date, DateTime, TIMESTAMP, text, Text
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Date, DateTime, TIMESTAMP, text, Text, Numeric
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from ..core.database import Base
@@ -33,15 +33,27 @@ class Documento(Base):
     # --- CORRECCIÓN: Se elimina el server_default PostgreSQL-específico ---
     fecha_operacion = Column(TIMESTAMP(timezone=True))
     
+    # --- FACTURACIÓN ELECTRÓNICA ---
+    dian_estado = Column(String(20), nullable=True, default=None) # PENDIENTE, ENVIADO, ACEPTADO, RECHAZADO, ERROR
+    dian_cufe = Column(String(255), nullable=True)
+    dian_xml_url = Column(String(500), nullable=True)
+    dian_error = Column(Text, nullable=True)
+    # -------------------------------
+    
     # --- CONCILIACION BANCARIA: NUEVA COLUMNA ---
     reconciliation_reference = Column(String(255), nullable=True)
     # --- FIN CONCILIACION BANCARIA ---
 
+    # --- DESCUENTOS Y RECARGOS GLOBALES ---
+    descuento_global_valor = Column(Numeric(15, 2), default=0)
+    cargos_globales_valor = Column(Numeric(15, 2), default=0)
+    # --------------------------------------
+
     # Relaciones existentes
     empresa = relationship("Empresa")
-    tipo_documento = relationship("TipoDocumento")
+    tipo_documento = relationship("TipoDocumento", back_populates="documentos")
     beneficiario = relationship("Tercero", back_populates="documentos")
-    centro_costo = relationship("CentroCosto")
+    centro_costo = relationship("CentroCosto", back_populates="documentos")
     unidad_ph = relationship("app.models.propiedad_horizontal.unidad.PHUnidad")
     usuario_creador = relationship("Usuario")
     movimientos = relationship("MovimientoContable", back_populates="documento", cascade="all, delete-orphan")
@@ -59,6 +71,13 @@ class Documento(Base):
         "AplicacionPago",
         foreign_keys="AplicacionPago.documento_pago_id",
         back_populates="documento_pago",
+        cascade="all, delete-orphan"
+    )
+
+    # --- HISTORIAL CONSUMO (CASCADA) ---
+    historial_consumos = relationship(
+        "app.models.consumo_registros.HistorialConsumo",
+        back_populates="documento",
         cascade="all, delete-orphan"
     )
 

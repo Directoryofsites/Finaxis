@@ -20,16 +20,18 @@ export default function PortalDashboard() {
     const [loading, setLoading] = useState(true);
     const [switching, setSwitching] = useState(false);
 
+    const [selectedDate, setSelectedDate] = useState(new Date());
+
     useEffect(() => {
         // Cargar empresas asignadas al usuario
         const fetchEmpresas = async () => {
             try {
-                // Asumimos que hay un endpoint que devuelve las empresas permitidas
-                // Puede ser /empresas (si es soporte) o filtrado en backend
-                // O mejor: /usuarios/me/empresas (si existiera)
-                // Por ahora usamos /empresas confiando en que el backend filtra para el usuario logueado
-                // Si el usuario es 'contador', debería ver su holding y sus hijas.
-                const response = await apiService.get('/empresas');
+                // Pass mes and anio
+                const mes = selectedDate.getMonth() + 1; // 1-12
+                const anio = selectedDate.getFullYear();
+                console.log("Fetching for:", mes, anio);
+
+                const response = await apiService.get(`/empresas?mes=${mes}&anio=${anio}`);
                 setEmpresas(response.data);
             } catch (error) {
                 console.error("Error cargando empresas:", error);
@@ -40,7 +42,29 @@ export default function PortalDashboard() {
         };
 
         if (user) fetchEmpresas();
-    }, [user]);
+    }, [user, selectedDate]);
+
+    // Handlers for Date Change
+    const handleMonthChange = (e) => {
+        const newMonth = parseInt(e.target.value);
+        const newDate = new Date(selectedDate);
+        newDate.setMonth(newMonth); // 0-11
+        setSelectedDate(newDate);
+    };
+
+    const handleYearChange = (e) => {
+        const newYear = parseInt(e.target.value);
+        const newDate = new Date(selectedDate);
+        newDate.setFullYear(newYear);
+        setSelectedDate(newDate);
+    };
+
+    // Helper for Selector UI
+    const months = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ];
+    const years = Array.from({ length: 2050 - 2023 }, (_, i) => 2024 + i); // From 2024 to 2050
 
     const handleSwitch = async (empresaId) => {
         setSwitching(true);
@@ -100,13 +124,35 @@ export default function PortalDashboard() {
                         Empresas Gestionadas
                     </h3>
                     {canCreateCompany && (
-                        <button
-                            onClick={handleCreateCompany}
-                            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition-all text-sm font-medium"
-                        >
-                            <PlusIcon className="h-5 w-5 mr-1" />
-                            Nueva Empresa
-                        </button>
+                        <div className="flex gap-2">
+                            {/* Date Selectors */}
+                            <select
+                                value={selectedDate.getMonth()}
+                                onChange={handleMonthChange}
+                                className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                {months.map((m, idx) => (
+                                    <option key={idx} value={idx}>{m}</option>
+                                ))}
+                            </select>
+                            <select
+                                value={selectedDate.getFullYear()}
+                                onChange={handleYearChange}
+                                className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                {years.map((y) => (
+                                    <option key={y} value={y}>{y}</option>
+                                ))}
+                            </select>
+
+                            <button
+                                onClick={handleCreateCompany}
+                                className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition-all text-sm font-medium"
+                            >
+                                <PlusIcon className="h-5 w-5 mr-1" />
+                                Nueva Empresa
+                            </button>
+                        </div>
                     )}
                 </div>
 
@@ -136,7 +182,7 @@ export default function PortalDashboard() {
                                     {/* Stats Miniatures */}
                                     <div className="mt-4 flex flex-col gap-2">
                                         <div className="flex justify-between text-xs text-slate-500 mb-1">
-                                            <span className="flex items-center gap-1"><ChartBarIcon className="h-3 w-3" /> Consumo Mes:</span>
+                                            <span className="flex items-center gap-1"><ChartBarIcon className="h-3 w-3" /> Consumo {emp.periodo_consumo || 'Mes'}:</span>
                                             {emp.limite_registros_mensual > 0 ? (
                                                 <span className={`font-bold ${emp.consumo_actual >= emp.limite_registros_mensual ? 'text-red-600' : 'text-slate-700'}`}>
                                                     {emp.consumo_actual || 0} / {emp.limite_registros_mensual}

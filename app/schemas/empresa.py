@@ -35,13 +35,20 @@ class EmpresaConUsuariosCreate(BaseModel):
     rol_inicial_id: Optional[int] = None
     
     # --- PLANTILLA DE INDUSTRIA (Clonación) ---
-    template_category: Optional[str] = None # RETAIL, SERVICIOS, PH
+    template_category: Optional[str] = None # RETAIL, SERVICIOS, PH (Legacy/Frontend string)
+    template_id: Optional[int] = None # Precise ID selection (New)
     # ---------------------------------------------------------
 
     usuarios: List[UsuarioData] = []
 
     # Se elimina validación obligatoria de usuario para permitir creación por contador/holding
     # sin usuarios internos iniciales.
+
+# --- ESQUEMA PARA LA EXTRACCIÓN DE PLANTILLA ---
+class TemplateExtraction(BaseModel):
+    name: Optional[str] = None
+    category: str = "PERSONALIZADO" # Default category
+
 
 # --- ESQUEMA PARA LA ACTUALIZACIÓN DE DATOS DE LA EMPRESA ---
 class EmpresaUpdate(BaseModel):

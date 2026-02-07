@@ -201,6 +201,7 @@ export const menuStructure = [
             { name: 'Rentabilidad Prod.', href: '/contabilidad/reportes/rentabilidad-producto', mnemonic: 'p', icon: FaChartLine, description: 'Margen de ganancia por ítem.', permission: 'facturacion:rentabilidad_producto' },
             { name: 'Rentabilidad Doc.', href: '/contabilidad/reportes/gestion-ventas', mnemonic: 'd', icon: FaChartLine, description: 'Análisis de utilidad por venta.', permission: 'facturacion:rentabilidad_doc' },
             { name: 'Análisis Ventas Cliente', href: '/contabilidad/reportes/ventas-cliente', mnemonic: 'a', icon: FaChartPie, description: 'Reporte integral de ventas por cliente.', permission: 'facturacion:ventas_cliente' },
+            { name: 'Reporte Fac. Electrónica', href: '/contabilidad/reportes/facturas-electronicas', mnemonic: 'e', icon: FaCheckCircle, description: 'Estado y gestión de facturación DIAN.', permission: 'facturacion:acceso' },
         ]
     },
     // 8. Activos Fijos -> Activos (A)

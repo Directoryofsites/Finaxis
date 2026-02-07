@@ -18,7 +18,8 @@ import {
     FaPlus,
     FaTrash,
     FaSave,
-    FaTag
+    FaTag,
+    FaEdit
 } from 'react-icons/fa';
 
 import { useAuth } from '../../context/AuthContext';
@@ -76,6 +77,12 @@ export default function NuevaFacturaPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    // --- NUEVO: Descuentos y Cargos Globales ---
+    const [descuentoGlobal, setDescuentoGlobal] = useState(0);
+    const [tipoDescuentoGlobal, setTipoDescuentoGlobal] = useState('$'); // '$' o '%'
+    const [cargoGlobal, setCargoGlobal] = useState(0);
+    // ------------------------------------------
+
     const [maestros, setMaestros] = useState({
         // terceros: [], // YA NO CARGAMOS TODOS LOS TERCEROS AL INICIO
         tiposDocumento: [],
@@ -83,24 +90,57 @@ export default function NuevaFacturaPage() {
         productos: [],
     });
 
-    const { subtotalGeneral, ivaGeneral, totalGeneral } = useMemo(() => {
+    const { subtotalGeneral, ivaGeneral, totalGeneral, totalDescuentoLineas, descuentoGlobalCalculado } = useMemo(() => {
         const result = items.reduce((acc, item) => {
             const cantidad = parseFloat(item.cantidad) || 0;
             const precio = parseFloat(item.precio_unitario) || 0;
-            const subtotalItem = cantidad * precio;
-            const ivaItem = subtotalItem * (item.porcentaje_iva || 0);
+            const descTasa = parseFloat(item.descuento_tasa) || 0;
 
-            acc.subtotal += subtotalItem;
+            const bruto = cantidad * precio;
+            const descuentoValor = bruto * (descTasa / 100);
+            const baseImponible = bruto - descuentoValor;
+            const ivaItem = baseImponible * (item.porcentaje_iva || 0);
+
+            acc.subtotal += baseImponible; // Base gravable real
             acc.iva += ivaItem;
+            acc.descuentoLineas += descuentoValor;
             return acc;
-        }, { subtotal: 0, iva: 0 });
+        }, { subtotal: 0, iva: 0, descuentoLineas: 0 });
+
+        // Total Final = (Subtotal + IVA) - DescuentoGlobal + CargoGlobal
+        // Nota: El subtotal ya tiene restado el descuento de línea.
+
+        let descGlobalVal = parseFloat(descuentoGlobal) || 0;
+
+        // --- LOGICA DE PORCENTAJE ---
+        if (tipoDescuentoGlobal === '%') {
+            descGlobalVal = result.subtotal * (descGlobalVal / 100.0);
+        }
+
+        // --- NUEVO: RECALCULO DE IVA VISUAL (PROPORCIONAL) ---
+        // Si hay descuento global, la base gravable baja, por ende el IVA baja.
+        // Ratio remanente = (BaseOriginal - Descuento) / BaseOriginal
+        let ratioBase = 1.0;
+        if (result.subtotal > 0) {
+            ratioBase = (result.subtotal - descGlobalVal) / result.subtotal;
+            if (ratioBase < 0) ratioBase = 0; // No negativo
+        }
+
+        // HABILITADO: Ajustamos el IVA visualmente para coincidir con Factus/DIAN
+        // que calculan el impuesto sobre la base neta (Base - Descuento Global)
+        const ivaAjustado = result.iva * ratioBase;
+        // -----------------------------------------------------
+
+        const cargoGlobalVal = parseFloat(cargoGlobal) || 0;
 
         return {
             subtotalGeneral: result.subtotal,
-            ivaGeneral: result.iva,
-            totalGeneral: result.subtotal + result.iva
+            ivaGeneral: ivaAjustado,
+            totalDescuentoLineas: result.descuentoLineas,
+            descuentoGlobalCalculado: descGlobalVal,
+            totalGeneral: result.subtotal + ivaAjustado - descGlobalVal + cargoGlobalVal
         };
-    }, [items]);
+    }, [items, descuentoGlobal, tipoDescuentoGlobal, cargoGlobal]);
 
     const tipoDocSeleccionado = useMemo(() =>
         maestros.tiposDocumento.find(td => td.id === parseInt(tipoDocumentoId))
@@ -387,7 +427,8 @@ export default function NuevaFacturaPage() {
         const itemsValidados = items.map(item => ({
             ...item,
             cantidad: parseFloat(item.cantidad) || 0,
-            precio_unitario: parseFloat(item.precio_unitario) || 0
+            precio_unitario: parseFloat(item.precio_unitario) || 0,
+            descuento_tasa: parseFloat(item.descuento_tasa) || 0
         }));
 
         if (itemsValidados.some(item => item.cantidad <= 0 || item.precio_unitario < 0)) {
@@ -406,6 +447,11 @@ export default function NuevaFacturaPage() {
             bodega_id: bodegaRequerida ? parseInt(selectedBodegaId) : null,
             remision_id: remisionId ? parseInt(remisionId) : null,
             cotizacion_id: cotizacionId ? parseInt(cotizacionId) : null,
+            cotizacion_id: cotizacionId ? parseInt(cotizacionId) : null,
+            descuento_global_valor: parseFloat(items.length > 0 ? (totalGeneral - (subtotalGeneral + ivaGeneral + parseFloat(cargoGlobal) || 0)) * -1 : 0) || parseFloat(descuentoGlobalCalculado || 0), // Fallback seguro
+            // Mejor usamos el calculado directamente del hook
+            descuento_global_valor: descuentoGlobalCalculado,
+            cargos_globales_valor: parseFloat(cargoGlobal) || 0,
             items: itemsValidados
         };
 
@@ -427,6 +473,75 @@ export default function NuevaFacturaPage() {
             setIsSubmitting(false);
         }
     };
+
+    // --- NUEVO: GUARDAR Y EMITIR ---
+    const handleSaveAndEmit = async () => {
+        if (!confirm("¿Desea crear la factura y enviarla INMEDIATAMENTE a la DIAN?")) return;
+
+        // 1. Validaciones (Reutilizamos lógica, idealmente abstraer validate())
+        if (!tipoDocumentoId) return toast.error("Seleccione un tipo de documento.");
+        if (!beneficiarioId) return toast.error("Seleccione un cliente.");
+        if (bodegaRequerida && !selectedBodegaId) return toast.error("Seleccione una bodega.");
+        if (items.length === 0) return toast.error("Añada al menos un producto.");
+
+        setIsSubmitting(true);
+
+        // Payload Construction
+        const itemsValidados = items.map(item => ({
+            ...item,
+            cantidad: parseFloat(item.cantidad) || 0,
+            precio_unitario: parseFloat(item.precio_unitario) || 0,
+            descuento_tasa: parseFloat(item.descuento_tasa) || 0
+        }));
+
+        const payload = {
+            tipo_documento_id: parseInt(tipoDocumentoId),
+            beneficiario_id: parseInt(beneficiarioId),
+            centro_costo_id: centroCostoId ? parseInt(centroCostoId) : null,
+            fecha: fecha.toISOString().split('T')[0],
+            fecha_vencimiento: condicionPago === 'Crédito' ? fechaVencimiento.toISOString().split('T')[0] : null,
+            condicion_pago: condicionPago,
+            bodega_id: bodegaRequerida ? parseInt(selectedBodegaId) : null,
+            remision_id: remisionId ? parseInt(remisionId) : null,
+            cotizacion_id: cotizacionId ? parseInt(cotizacionId) : null,
+            cotizacion_id: cotizacionId ? parseInt(cotizacionId) : null,
+            descuento_global_valor: descuentoGlobalCalculado,
+            cargos_globales_valor: parseFloat(cargoGlobal) || 0,
+            items: itemsValidados
+        };
+
+        try {
+            // A. Crear Factura
+            const response = await facturacionService.createFactura(payload);
+            const docId = response.id; // Asumimos que devuelve el objeto completo o {id: ...}
+
+            toast.success(`Factura #${response.numero} guardada. Emitiendo a DIAN...`);
+
+            // B. Emitir a DIAN
+            // Usamos apiService para incluir automáticamente el Token de Auth
+            const emitRes = await apiService.post(`/fe/emitir/${docId}`, {});
+            const emitJson = emitRes.data;
+
+            if (emitJson.success) {
+                toast.success(`¡EMISIÓN EXITOSA! CUFE: ${emitJson.cufe}`);
+            } else {
+                toast.error(`Factura creada pero FALLÓ EMISIÓN: ${emitJson.error}`);
+            }
+
+            setItems([]);
+            // Redirigir al detalle para ver el botón de Ver Factura
+            setTimeout(() => {
+                router.push(`/contabilidad/documentos/${docId}`);
+            }, 1500);
+
+        } catch (err) {
+            console.error(err);
+            toast.error("Error en el proceso Guardar+Emitir.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
 
     if (pageIsLoading || authLoading) {
         return (
@@ -629,35 +744,47 @@ export default function NuevaFacturaPage() {
                     </div>
 
                     <div className="overflow-hidden rounded-xl border border-gray-200">
-                        <table className="min-w-full divide-y divide-gray-200">
+                        <table className="min-w-full divide-y divide-gray-200 table-fixed">
                             <thead className="bg-slate-100">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Código</th>
-                                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Producto</th>
-                                    <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider w-32">Cantidad</th>
-                                    <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider w-40">Precio Unit.</th>
-                                    <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Subtotal</th>
-                                    <th className="px-4 py-3 text-center"></th>
+                                    <th className="px-4 py-3 text-left text-sm font-normal text-gray-500 uppercase tracking-wider w-[12%]">Código</th>
+                                    <th className="px-4 py-3 text-left text-sm font-normal text-gray-500 uppercase tracking-wider w-[34%]">Producto</th>
+                                    <th className="px-1 py-3 text-center text-sm font-normal text-gray-500 uppercase tracking-wider w-[10%]">Cant.</th>
+                                    <th className="px-4 py-3 text-right text-sm font-normal text-gray-500 uppercase tracking-wider w-[18%]">Precio Unitario</th>
+                                    <th className="px-0 py-3 text-center text-sm font-normal text-blue-600 uppercase tracking-wider w-[6%]">IVA%</th>
+                                    <th className="px-0 py-3 text-center text-sm font-normal text-gray-500 uppercase tracking-wider w-[6%]">Desc%</th>
+                                    <th className="px-4 py-3 text-right text-sm font-normal text-gray-500 uppercase tracking-wider w-[14%]">Subtotal</th>
+                                    <th className="px-2 py-3 text-center w-[3%]"></th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-100">
                                 {items.length === 0 ? (
-                                    <tr><td colSpan="6" className="text-center text-gray-400 py-8 italic">No hay productos seleccionados.</td></tr>
+                                    <tr>
+                                        <td colSpan="8" className="text-center text-gray-400 py-12 italic text-lg">No hay productos seleccionados.</td>
+                                    </tr>
                                 ) : (
                                     items.map((item) => (
-                                        <tr key={item.producto_id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-4 py-2 font-mono text-sm text-gray-600">{item.codigo}</td>
-                                            <td className="px-4 py-2 text-sm font-medium text-gray-800">{item.nombre}</td>
-                                            <td className="px-4 py-2 text-right">
-                                                <input type="number" value={item.cantidad} onChange={e => handleItemChange(item.producto_id, 'cantidad', e.target.value)} className="w-full px-2 py-1 border border-gray-300 rounded text-right focus:ring-2 focus:ring-blue-200 outline-none" min="0.01" step="any" />
+                                        <tr key={item.producto_id} className="hover:bg-gray-50 transition-colors align-middle">
+                                            <td className="px-4 py-4 font-mono text-sm text-gray-600 truncate" title={item.codigo}>{item.codigo}</td>
+                                            <td className="px-4 py-4 text-sm font-normal text-gray-900 break-words leading-tight" title={item.nombre}>{item.nombre}</td>
+                                            <td className="px-1 py-4 text-center">
+                                                <input type="number" value={item.cantidad} onChange={e => handleItemChange(item.producto_id, 'cantidad', e.target.value)} className="w-full px-1 py-2 border border-gray-300 rounded text-center focus:ring-2 focus:ring-blue-200 outline-none text-lg font-normal" min="0.01" step="any" />
                                             </td>
-                                            <td className="px-4 py-2 text-right">
-                                                <input type="number" step="0.01" value={item.precio_unitario} onChange={e => handleItemChange(item.producto_id, 'precio_unitario', e.target.value)} className="w-full px-2 py-1 border border-gray-300 rounded text-right focus:ring-2 focus:ring-blue-200 outline-none" min="0" />
+                                            <td className="px-4 py-4 text-right">
+                                                <input type="number" step="0.01" value={item.precio_unitario} onChange={e => handleItemChange(item.producto_id, 'precio_unitario', e.target.value)} className="w-full px-2 py-2 border border-gray-300 rounded text-right focus:ring-2 focus:ring-blue-100 outline-none text-lg font-normal text-gray-900" min="0" />
                                             </td>
-                                            <td className="px-4 py-2 text-right font-mono text-sm font-bold text-gray-700">
-                                                ${((parseFloat(item.cantidad) || 0) * (parseFloat(item.precio_unitario) || 0)).toLocaleString('es-CO')}
+                                            <td className="px-0 py-4 text-center">
+                                                <span className="text-blue-700 font-normal text-lg">
+                                                    {`${((item.porcentaje_iva || 0) * 100).toFixed(0)}%`}
+                                                </span>
                                             </td>
-                                            <td className="px-4 py-2 text-center">
+                                            <td className="px-0 py-4 text-center">
+                                                <input type="number" step="0.01" value={item.descuento_tasa || 0} onChange={e => handleItemChange(item.producto_id, 'descuento_tasa', e.target.value)} className="w-full px-1 py-2 border border-gray-300 rounded text-center focus:ring-2 focus:ring-blue-200 outline-none text-lg font-normal" min="0" max="100" />
+                                            </td>
+                                            <td className="px-4 py-4 text-right font-mono text-lg font-normal text-gray-900">
+                                                ${((parseFloat(item.cantidad) || 0) * (parseFloat(item.precio_unitario) || 0) * (1 - (parseFloat(item.descuento_tasa) || 0) / 100)).toLocaleString('es-CO')}
+                                            </td>
+                                            <td className="px-2 py-4 text-center">
                                                 <button onClick={() => handleRemoveItem(item.producto_id)} className="text-red-400 hover:text-red-600 p-1 rounded transition-colors"><FaTrash /></button>
                                             </td>
                                         </tr>
@@ -666,64 +793,145 @@ export default function NuevaFacturaPage() {
                             </tbody>
                             {items.length > 0 && (
                                 <tfoot className="bg-slate-50 border-t-2 border-slate-200">
+                                    {/* 1. SUBTOTAL BRUTO */}
                                     <tr>
+                                        <td colSpan="6" className="px-4 py-2 text-right text-sm font-normal text-gray-500 uppercase">Subtotal Bruto:</td>
+                                        <td className="px-4 py-2 text-right text-lg font-normal text-gray-700">
+                                            ${(items.reduce((acc, item) => acc + (parseFloat(item.cantidad) || 0) * (parseFloat(item.precio_unitario) || 0), 0)).toLocaleString('es-CO')}
+                                        </td>
+                                        <td></td>
+                                    </tr>
 
-                                        <td colSpan="4" className="px-4 py-2 text-right text-sm font-bold text-gray-500 uppercase">Subtotal:</td>
-                                        <td className="px-4 py-2 text-right text-base font-medium text-gray-700">
-                                            ${subtotalGeneral.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                    {/* 2. DESCUENTOS */}
+                                    <tr>
+                                        <td colSpan="6" className="px-4 py-2 text-right text-sm font-normal text-gray-500 uppercase align-middle">
+                                            <div className="flex justify-end items-center gap-2">
+                                                <span>Desc. Global:</span>
+                                                <div className="flex border rounded-md overflow-hidden bg-white shadow-sm">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setTipoDescuentoGlobal('$')}
+                                                        className={`px-3 py-1 text-sm font-bold ${tipoDescuentoGlobal === '$' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`}
+                                                    >
+                                                        $
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setTipoDescuentoGlobal('%')}
+                                                        className={`px-3 py-1 text-sm font-bold ${tipoDescuentoGlobal === '%' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`}
+                                                    >
+                                                        %
+                                                    </button>
+                                                </div>
+                                                <input
+                                                    type="number"
+                                                    value={descuentoGlobal}
+                                                    onChange={e => setDescuentoGlobal(parseFloat(e.target.value) || 0)}
+                                                    className="w-24 px-2 py-1 text-right border border-gray-300 rounded focus:ring-2 focus:ring-blue-100 outline-none font-bold text-gray-700"
+                                                    placeholder="0"
+                                                    min="0"
+                                                />
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-2 text-right text-lg font-normal text-red-600 align-middle">
+                                            -${(totalDescuentoLineas + (tipoDescuentoGlobal === '$' ? descuentoGlobal : (subtotalGeneral * descuentoGlobal / 100))).toLocaleString('es-CO')}
+                                        </td>
+                                        <td></td>
+                                    </tr>
+
+                                    {/* 3. OTROS CARGOS */}
+                                    <tr>
+                                        <td colSpan="6" className="px-4 py-2 text-right text-sm font-normal text-gray-500 uppercase align-middle">
+                                            <div className="flex justify-end items-center gap-2">
+                                                <span>Otros Cargos $:</span>
+                                                <input
+                                                    type="number"
+                                                    value={cargoGlobal}
+                                                    onChange={e => setCargoGlobal(parseFloat(e.target.value) || 0)}
+                                                    className="w-32 px-2 py-1 text-right border border-gray-300 rounded focus:ring-2 focus:ring-green-100 outline-none font-bold text-gray-700"
+                                                    placeholder="0"
+                                                    min="0"
+                                                />
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-2 text-right text-lg font-normal text-green-600 align-middle">
+                                            +${(parseFloat(cargoGlobal) || 0).toLocaleString('es-CO')}
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                    <tr className="bg-blue-50/50">
+                                        <td colSpan="6" className="px-4 py-2 text-right text-xs font-normal text-blue-800 uppercase italic">Base Factura:</td>
+                                        <td className="px-4 py-2 text-right text-lg font-normal text-blue-900 border-y border-blue-200">
+                                            ${(subtotalGeneral - (descuentoGlobalCalculado || 0) + (parseFloat(cargoGlobal) || 0)).toLocaleString('es-CO')}
                                         </td>
                                         <td></td>
                                     </tr>
                                     <tr>
-                                        <td colSpan="4" className="px-4 py-2 text-right text-sm font-bold text-gray-500 uppercase">IVA:</td>
-                                        <td className="px-4 py-2 text-right text-base font-medium text-gray-700">
-                                            ${ivaGeneral.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                        <td colSpan="6" className="px-4 py-2 text-right text-sm font-normal text-gray-500 uppercase">IVA Total:</td>
+                                        <td className="px-4 py-2 text-right text-lg font-normal text-gray-700">
+                                            ${ivaGeneral.toLocaleString('es-CO')}
                                         </td>
                                         <td></td>
                                     </tr>
-                                    <tr className="bg-blue-50">
-                                        <td colSpan="4" className="px-4 py-3 text-right text-sm font-bold text-gray-800 uppercase border-t border-blue-200">Total Factura:</td>
-                                        <td className="px-4 py-3 text-right text-xl font-bold font-mono text-blue-700 border-t border-blue-200">
-                                            ${totalGeneral.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                    <tr className="bg-slate-200">
+                                        <td colSpan="6" className="px-4 py-4 text-right text-sm font-normal text-slate-700 uppercase italic">Total Factura:</td>
+                                        <td className="px-4 py-4 text-right text-lg font-normal text-blue-700">
+                                            {totalGeneral.toLocaleString('es-CO')}
                                         </td>
-                                        <td></td>
+                                        <td className="bg-slate-200"></td>
                                     </tr>
                                 </tfoot>
                             )}
                         </table>
                     </div>
                 </div>
+            </div>
 
-                {/* BOTÓN FINAL */}
-                <div className="mt-8 flex justify-end">
-                    <button
-                        type="button" onClick={handleSubmit}
-                        disabled={isSubmitting || items.length === 0 || !beneficiarioId || !tipoDocumentoId || (bodegaRequerida && !selectedBodegaId)}
-                        className={`
-                            px-10 py-4 rounded-xl shadow-lg font-bold text-white text-lg transition-all transform hover:-translate-y-1 flex items-center gap-3
-                            ${isSubmitting || items.length === 0
-                                ? 'bg-gray-400 cursor-not-allowed'
-                                : 'bg-green-600 hover:bg-green-700 hover:shadow-green-200'}
-                        `}
-                    >
-                        {isSubmitting ? (
-                            <> <span className="loading loading-spinner"></span> Guardando... </>
-                        ) : (
-                            <> <FaSave className="text-xl" /> Crear Factura </>
-                        )}
-                    </button>
-                </div>
+            {/* BOTONES FINALES */}
+            <div className="mt-8 flex justify-end gap-4">
+                {/* BOTÓN EXTRA: GUARDAR Y EMITIR */}
+                <button
+                    type="button"
+                    onClick={handleSaveAndEmit}
+                    disabled={isSubmitting || items.length === 0 || !beneficiarioId || !tipoDocumentoId}
+                    className={`
+                        px-6 py-4 rounded-xl shadow-lg font-bold text-white text-lg transition-all transform hover:-translate-y-1 flex items-center gap-3
+                        ${isSubmitting ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700'}
+                    `}
+                >
+                    <span className="text-xl">🚀</span> Guardar y Emitir DIAN
+                </button>
 
-                <ProductSelectionModal
-                    isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                    onAddProducts={handleAddProducts}
-                    mode="venta"
-                    bodegaIdSeleccionada={bodegaRequerida ? (selectedBodegaId ? parseInt(selectedBodegaId) : null) : null}
-                />
+                <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={isSubmitting || items.length === 0 || !beneficiarioId || !tipoDocumentoId || (bodegaRequerida && !selectedBodegaId)}
+                    className={`
+                        px-10 py-4 rounded-xl shadow-lg font-bold text-white text-lg transition-all transform hover:-translate-y-1 flex items-center gap-3
+                        ${isSubmitting || items.length === 0
+                            ? 'bg-gray-400 cursor-not-allowed'
+                            : 'bg-green-600 hover:bg-green-700 hover:shadow-green-200'}
+                    `}
+                >
+                    {isSubmitting ? (
+                        <> <span className="loading loading-spinner"></span> Guardando... </>
+                    ) : (
+                        <> <FaSave className="text-xl" /> Solo Guardar </>
+                    )}
+                </button>
+            </div>
 
-                {/* MODAL SELECCION REMISION */}
-                {isRemisionModalOpen && (
+            <ProductSelectionModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onAddProducts={handleAddProducts}
+                mode="venta"
+                bodegaIdSeleccionada={bodegaRequerida ? (selectedBodegaId ? parseInt(selectedBodegaId) : null) : null}
+            />
+
+            {/* MODAL SELECCION REMISION */}
+            {
+                isRemisionModalOpen && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
                         <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
                             <div className="flex justify-between items-center mb-6 border-b pb-2">
@@ -765,10 +973,12 @@ export default function NuevaFacturaPage() {
                             </div>
                         </div>
                     </div>
-                )}
+                )
+            }
 
-                {/* MODAL SELECCION COTIZACION */}
-                {isCotizacionModalOpen && (
+            {/* MODAL SELECCION COTIZACION */}
+            {
+                isCotizacionModalOpen && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
                         <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
                             <div className="flex justify-between items-center mb-6 border-b pb-2">
@@ -810,8 +1020,8 @@ export default function NuevaFacturaPage() {
                             </div>
                         </div>
                     </div>
-                )}
-            </div>
-        </div>
+                )
+            }
+        </div >
     );
 }

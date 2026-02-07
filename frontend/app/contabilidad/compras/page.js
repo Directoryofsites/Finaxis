@@ -60,6 +60,11 @@ export default function NuevaCompraPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    // --- NUEVO: Descuentos y Cargos Globales ---
+    const [descuentoGlobal, setDescuentoGlobal] = useState(0);
+    const [cargoGlobal, setCargoGlobal] = useState(0);
+    // ------------------------------------------
+
     const [maestros, setMaestros] = useState({
         terceros: [],
         tiposDocumento: [],
@@ -67,24 +72,33 @@ export default function NuevaCompraPage() {
     });
 
     // Cálculo Memoizado
-    const { subtotalGeneral, ivaGeneral, totalGeneral } = useMemo(() => {
+    const { subtotalGeneral, ivaGeneral, totalGeneral, totalDescuentoLineas } = useMemo(() => {
         const result = items.reduce((acc, item) => {
             const cantidad = parseFloat(item.cantidad) || 0;
             const costo = parseFloat(item.costo_unitario) || 0;
-            const subtotalItem = cantidad * costo;
-            const ivaItem = subtotalItem * (item.porcentaje_iva || 0);
+            const descTasa = parseFloat(item.descuento_tasa) || 0;
 
-            acc.subtotal += subtotalItem;
+            const bruto = cantidad * costo;
+            const descuentoValor = bruto * (descTasa / 100);
+            const baseImponible = bruto - descuentoValor;
+            const ivaItem = baseImponible * (item.porcentaje_iva || 0);
+
+            acc.subtotal += baseImponible;
             acc.iva += ivaItem;
+            acc.descuentoLineas += descuentoValor;
             return acc;
-        }, { subtotal: 0, iva: 0 });
+        }, { subtotal: 0, iva: 0, descuentoLineas: 0 });
+
+        const descGlobalVal = parseFloat(descuentoGlobal) || 0;
+        const cargoGlobalVal = parseFloat(cargoGlobal) || 0;
 
         return {
             subtotalGeneral: result.subtotal,
             ivaGeneral: result.iva,
-            totalGeneral: result.subtotal + result.iva
+            totalDescuentoLineas: result.descuentoLineas,
+            totalGeneral: result.subtotal + result.iva - descGlobalVal + cargoGlobalVal
         };
-    }, [items]);
+    }, [items, descuentoGlobal, cargoGlobal]);
 
     // Carga de Datos Maestros
     useEffect(() => {
@@ -198,7 +212,8 @@ export default function NuevaCompraPage() {
                 return {
                     producto_id: item.producto_id,
                     cantidad: cantidadNum,
-                    costo_unitario: costoNum
+                    costo_unitario: costoNum,
+                    descuento_tasa: parseFloat(item.descuento_tasa) || 0
                 };
             });
         } catch (validationError) {
@@ -215,6 +230,8 @@ export default function NuevaCompraPage() {
             numero: esManual ? numeroManual.trim() : null,
             centro_costo_id: centroCostoId ? parseInt(centroCostoId) : null,
             bodega_id: parseInt(selectedBodegaId),
+            descuento_global_valor: parseFloat(descuentoGlobal) || 0,
+            cargos_globales_valor: parseFloat(cargoGlobal) || 0,
             items: itemsValidados
         };
 
@@ -417,6 +434,7 @@ export default function NuevaCompraPage() {
                                     <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Producto/Servicio</th>
                                     <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider w-32">Cantidad</th>
                                     <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider w-40">Costo Unit.</th>
+                                    <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider w-24">Desc %</th>
                                     <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Subtotal</th>
                                     <th className="px-4 py-3 text-center"></th>
                                 </tr>
@@ -435,8 +453,11 @@ export default function NuevaCompraPage() {
                                             <td className="px-4 py-2 text-right">
                                                 <input type="number" step="0.01" value={item.costo_unitario} onChange={e => handleItemChange(item.producto_id, 'costo_unitario', e.target.value)} className="w-full px-2 py-1 border border-gray-300 rounded text-right focus:ring-2 focus:ring-green-200 outline-none" min="0" required />
                                             </td>
+                                            <td className="px-4 py-2 text-right">
+                                                <input type="number" step="0.01" value={item.descuento_tasa || 0} onChange={e => handleItemChange(item.producto_id, 'descuento_tasa', e.target.value)} className="w-full px-2 py-1 border border-gray-300 rounded text-right focus:ring-2 focus:ring-green-200 outline-none" min="0" max="100" />
+                                            </td>
                                             <td className="px-4 py-2 text-right font-mono text-sm font-bold text-gray-700">
-                                                ${((parseFloat(item.cantidad) || 0) * (parseFloat(item.costo_unitario) || 0)).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                                ${((parseFloat(item.cantidad) || 0) * (parseFloat(item.costo_unitario) || 0) * (1 - (parseFloat(item.descuento_tasa) || 0) / 100)).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                             </td>
                                             <td className="px-4 py-2 text-center">
                                                 <button onClick={() => handleRemoveItem(item.producto_id)} className="text-red-400 hover:text-red-600 p-1 rounded transition-colors"><FaTrash /></button>
@@ -449,7 +470,7 @@ export default function NuevaCompraPage() {
                                 <tfoot className="bg-slate-50 border-t-2 border-slate-200">
                                     {/* Subtotal */}
                                     <tr>
-                                        <td colSpan="4" className="px-4 py-2 text-right text-sm font-bold text-gray-500 uppercase">Subtotal:</td>
+                                        <td colSpan="5" className="px-4 py-2 text-right text-sm font-bold text-gray-500 uppercase">Subtotal (Base):</td>
                                         <td className="px-4 py-2 text-right text-sm font-mono text-gray-700">
                                             ${subtotalGeneral.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                         </td>
@@ -457,15 +478,51 @@ export default function NuevaCompraPage() {
                                     </tr>
                                     {/* IVA */}
                                     <tr>
-                                        <td colSpan="4" className="px-4 py-2 text-right text-sm font-bold text-gray-500 uppercase">IVA:</td>
+                                        <td colSpan="5" className="px-4 py-2 text-right text-sm font-bold text-gray-500 uppercase">IVA:</td>
                                         <td className="px-4 py-2 text-right text-sm font-mono text-gray-700">
                                             ${ivaGeneral.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                         </td>
                                         <td></td>
                                     </tr>
+
+                                    {/* Global Discount Input */}
+                                    <tr>
+                                        <td colSpan="5" className="px-4 py-2 text-right text-sm font-bold text-gray-500 uppercase flex justify-end items-center gap-2">
+                                            <span>Descuento Global $:</span>
+                                            <input
+                                                type="number"
+                                                value={descuentoGlobal}
+                                                onChange={e => setDescuentoGlobal(e.target.value)}
+                                                className="w-32 px-2 py-1 border border-gray-300 rounded text-right focus:ring-1 focus:ring-green-300 outline-none text-sm"
+                                                min="0"
+                                            />
+                                        </td>
+                                        <td className="px-4 py-2 text-right text-base font-medium text-red-600">
+                                            -${(parseFloat(descuentoGlobal) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                    {/* Global Charges Input */}
+                                    <tr>
+                                        <td colSpan="5" className="px-4 py-2 text-right text-sm font-bold text-gray-500 uppercase flex justify-end items-center gap-2">
+                                            <span>Otros Cargos $:</span>
+                                            <input
+                                                type="number"
+                                                value={cargoGlobal}
+                                                onChange={e => setCargoGlobal(e.target.value)}
+                                                className="w-32 px-2 py-1 border border-gray-300 rounded text-right focus:ring-1 focus:ring-green-300 outline-none text-sm"
+                                                min="0"
+                                            />
+                                        </td>
+                                        <td className="px-4 py-2 text-right text-base font-medium text-green-600">
+                                            +${(parseFloat(cargoGlobal) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                        </td>
+                                        <td></td>
+                                    </tr>
+
                                     {/* Total Total */}
                                     <tr className="bg-green-50 border-t border-green-100">
-                                        <td colSpan="4" className="px-4 py-3 text-right text-base font-bold text-gray-700 uppercase">TOTAL COMPRA:</td>
+                                        <td colSpan="5" className="px-4 py-3 text-right text-base font-bold text-gray-700 uppercase">TOTAL COMPRA:</td>
                                         <td className="px-4 py-3 text-right text-xl font-bold font-mono text-blue-700">
                                             ${totalGeneral.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                         </td>

@@ -19,6 +19,15 @@ class TerceroBase(BaseModel):
     email: Optional[str] = Field(default=None, max_length=255)
     actividad_economica_ciiu: Optional[str] = Field(default=None, max_length=10)
     es_regimen_simple: Optional[bool] = False
+    
+    # --- FE ---
+    tipo_documento: Optional[str] = Field(default='13', max_length=5)
+    tipo_persona: Optional[str] = Field(default='2', max_length=1)
+    municipio_dane: Optional[str] = Field(default=None, max_length=10)
+    codigo_postal: Optional[str] = Field(default=None, max_length=10)
+    regimen_fiscal: Optional[str] = Field(default=None, max_length=5)
+    # ---------
+
     # --- INICIO NUEVO CAMPO OPCIONAL ---
     lista_precio_id: Optional[int] = None
     # --- FIN NUEVO CAMPO OPCIONAL ---
@@ -43,6 +52,15 @@ class TerceroUpdate(BaseModel):
     email: Optional[str] = Field(default=None, max_length=255)
     actividad_economica_ciiu: Optional[str] = Field(default=None, max_length=10)
     es_regimen_simple: Optional[bool] = None
+    
+    # --- FE Update ---
+    tipo_documento: Optional[str] = None
+    tipo_persona: Optional[str] = None
+    municipio_dane: Optional[str] = None
+    codigo_postal: Optional[str] = None
+    regimen_fiscal: Optional[str] = None
+    # ----------------
+    
     # --- INICIO NUEVO CAMPO OPCIONAL ---
     lista_precio_id: Optional[int] = None # Permitimos actualizar la lista de precios
     # --- FIN NUEVO CAMPO OPCIONAL ---

@@ -14,6 +14,7 @@ import {
 } from 'react-icons/fa';
 import { apiService } from '../../lib/apiService';
 import { useAuth } from '../../app/context/AuthContext';
+import { municipios, tiposDocumento, regimenesFiscales, responsabilidadesFiscales } from '../../data/municipios';
 
 // Estilos reusables
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
@@ -30,14 +31,17 @@ export default function ModalCrearTercero({ isOpen, onClose, onSuccess }) {
         nombre_comercial: '',
         direccion: '',
         ciudad: '',
+        municipio_dane: '',
         telefono: '',
         email: '',
-        es_cliente: true, // Por defecto asumimos cliente para agilizar
+        es_cliente: true,
         es_proveedor: false,
         es_empleado: false,
-        responsabilidad_fiscal: 'R-99-PN', // Valor por defecto común
-        // Omitimos validaciones complejas en el modal rápido para velocidad
-        lista_precio_id: ''
+        responsabilidad_fiscal: 'R-99-PN',
+        lista_precio_id: '',
+        tipo_documento: '13',
+        tipo_persona: '2',
+        regimen_fiscal: '49'
     });
 
     const [isLoading, setIsLoading] = useState(false);
@@ -53,13 +57,17 @@ export default function ModalCrearTercero({ isOpen, onClose, onSuccess }) {
                 nombre_comercial: '',
                 direccion: '',
                 ciudad: '',
+                municipio_dane: '',
                 telefono: '',
                 email: '',
                 es_cliente: true,
                 es_proveedor: false,
                 es_empleado: false,
                 responsabilidad_fiscal: 'R-99-PN',
-                lista_precio_id: ''
+                lista_precio_id: '',
+                tipo_documento: '13',
+                tipo_persona: '2',
+                regimen_fiscal: '49'
             });
             setError(null);
         }
@@ -69,10 +77,27 @@ export default function ModalCrearTercero({ isOpen, onClose, onSuccess }) {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
+        setFormData(prev => {
+            const newData = { ...prev, [name]: type === 'checkbox' ? checked : value };
+
+            if (name === 'nit' && newData.tipo_documento === '31') {
+                newData.dv = calculateDV(value);
+            }
+            return newData;
+        });
+    };
+
+    const calculateDV = (nit) => {
+        if (!nit || isNaN(nit)) return '';
+        const vprimes = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71];
+        let sum = 0;
+        let myNit = String(nit).trim();
+        for (let i = 0; i < myNit.length; i++) {
+            sum += parseInt(myNit.charAt(myNit.length - 1 - i)) * vprimes[i];
+        }
+        let dv = sum % 11;
+        if (dv > 1) dv = 11 - dv;
+        return String(dv);
     };
 
     const handleSubmit = async (e) => {
@@ -96,7 +121,11 @@ export default function ModalCrearTercero({ isOpen, onClose, onSuccess }) {
             telefono: formData.telefono || null,
             email: formData.email || null,
             lista_precio_id: formData.lista_precio_id ? parseInt(formData.lista_precio_id) : null,
-            responsabilidad_fiscal: formData.responsabilidad_fiscal || 'R-99-PN'
+            responsabilidad_fiscal: formData.responsabilidad_fiscal || 'R-99-PN',
+            municipio_dane: formData.municipio_dane || '11001',
+            tipo_documento: formData.tipo_documento || '13',
+            tipo_persona: formData.tipo_persona || '2',
+            regimen_fiscal: formData.regimen_fiscal || '49'
         };
 
         try {
@@ -139,8 +168,14 @@ export default function ModalCrearTercero({ isOpen, onClose, onSuccess }) {
 
                     {/* Sección 1: Identificación */}
                     <div className="grid grid-cols-12 gap-4">
-                        <div className="col-span-8 md:col-span-5">
-                            <label className={labelClass}>NIT / Cédula <span className="text-red-500">*</span></label>
+                        <div className="col-span-12 md:col-span-4">
+                            <label className={labelClass}>Tipo Doc</label>
+                            <select name="tipo_documento" value={formData.tipo_documento} onChange={handleChange} className={inputClass}>
+                                {tiposDocumento.map(t => <option key={t.codigo} value={t.codigo}>{t.nombre}</option>)}
+                            </select>
+                        </div>
+                        <div className="col-span-8 md:col-span-6">
+                            <label className={labelClass}>Número <span className="text-red-500">*</span></label>
                             <div className="relative">
                                 <FaIdCard className="absolute left-3 top-2.5 text-gray-400" />
                                 <input
@@ -151,7 +186,7 @@ export default function ModalCrearTercero({ isOpen, onClose, onSuccess }) {
                                     className={`${inputClass} pl-9`}
                                     required
                                     autoFocus
-                                    placeholder="Número de documento"
+                                    placeholder="Documento"
                                 />
                             </div>
                         </div>
@@ -161,13 +196,12 @@ export default function ModalCrearTercero({ isOpen, onClose, onSuccess }) {
                                 type="text"
                                 name="dv"
                                 value={formData.dv}
-                                onChange={handleChange}
-                                className={`${inputClass} text-center`}
-                                maxLength={1}
+                                readOnly
+                                className={`${inputClass} text-center bg-gray-50`}
                                 placeholder="-"
                             />
                         </div>
-                        <div className="col-span-12 md:col-span-5">
+                        <div className="col-span-12">
                             <label className={labelClass}>Razón Social / Nombre <span className="text-red-500">*</span></label>
                             <div className="relative">
                                 <FaBuilding className="absolute left-3 top-2.5 text-gray-400" />
@@ -233,18 +267,36 @@ export default function ModalCrearTercero({ isOpen, onClose, onSuccess }) {
                             </div>
                         </div>
                         <div>
-                            <label className={labelClass}>Ciudad</label>
+                            <label className={labelClass}>Ciudad (DANE)</label>
                             <div className="relative">
                                 <FaCity className="absolute left-3 top-2.5 text-gray-400" />
-                                <input
-                                    type="text"
-                                    name="ciudad"
-                                    value={formData.ciudad}
-                                    onChange={handleChange}
+                                <select
+                                    name="municipio_dane"
+                                    value={formData.municipio_dane}
+                                    onChange={(e) => {
+                                        const selected = municipios.find(m => m.codigo === e.target.value);
+                                        setFormData(prev => ({ ...prev, municipio_dane: e.target.value, ciudad: selected ? selected.nombre : '' }));
+                                    }}
                                     className={`${inputClass} pl-9`}
-                                    placeholder="Bogotá, Medellín..."
-                                />
+                                >
+                                    <option value="">-- Seleccionar --</option>
+                                    {municipios.map(m => (
+                                        <option key={m.codigo} value={m.codigo}>{m.nombre}</option>
+                                    ))}
+                                </select>
                             </div>
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className={labelClass}>Régimen Fiscal</label>
+                            <select name="regimen_fiscal" value={formData.regimen_fiscal} onChange={handleChange} className={inputClass}>
+                                {regimenesFiscales.map(r => <option key={r.codigo} value={r.codigo}>{r.nombre}</option>)}
+                            </select>
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className={labelClass}>Responsabilidad Fiscal</label>
+                            <select name="responsabilidad_fiscal" value={formData.responsabilidad_fiscal} onChange={handleChange} className={inputClass}>
+                                {responsabilidadesFiscales.map(r => <option key={r.codigo} value={r.codigo}>{r.nombre}</option>)}
+                            </select>
                         </div>
                     </div>
 

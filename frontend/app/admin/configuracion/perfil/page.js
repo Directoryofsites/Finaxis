@@ -30,6 +30,30 @@ export default function PerfilConfigPage() {
         confirmPassword: ''
     });
 
+    // Estado Template
+    const [templateModalOpen, setTemplateModalOpen] = useState(false);
+    const [newTemplateName, setNewTemplateName] = useState('');
+
+    const handleExtractTemplate = async () => {
+        if (!newTemplateName.trim()) return toast.warning("Ingrese un nombre para la plantilla");
+
+        setIsLoading(true);
+        try {
+            await apiService.post(`/empresas/${user.empresaId}/extract-template`, {
+                name: newTemplateName,
+                category: "PERSONALIZADO"
+            });
+            toast.success("Plantilla creada exitosamente. Ya puede usarla al crear nuevas empresas.");
+            setTemplateModalOpen(false);
+            setNewTemplateName('');
+        } catch (error) {
+            console.error(error);
+            toast.error(error.response?.data?.detail || "Error al crear plantilla");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (user?.empresaId) {
             loadEmpresa();
@@ -207,7 +231,16 @@ export default function PerfilConfigPage() {
                                 </div>
                             </div>
 
-                            <div className="flex justify-end pt-4 border-t">
+                            <div className="flex justify-between pt-4 border-t">
+                                {/* Left Side: Template Action */}
+                                <button
+                                    type="button"
+                                    onClick={() => setTemplateModalOpen(true)}
+                                    className="text-indigo-600 hover:text-indigo-800 font-medium text-sm flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-indigo-50 transition-colors"
+                                >
+                                    <FaBuilding className="text-xs" /> Guardar como Plantilla
+                                </button>
+
                                 <button
                                     type="submit"
                                     disabled={isLoading}
@@ -219,8 +252,49 @@ export default function PerfilConfigPage() {
                         </form>
                     )}
 
+                    {/* Template Name Modal */}
+                    {templateModalOpen && (
+                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 animate-fadeIn">
+                                <h3 className="text-lg font-bold text-gray-800 mb-2">Crear Plantilla Personalizada</h3>
+                                <p className="text-sm text-gray-500 mb-4">
+                                    Se creará una copia de la configuración de esta empresa (PUC, Impuestos, Tipos de Documento) para usarla en futuras creaciones.
+                                </p>
+
+                                <div className="mb-4">
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">Nombre de la Plantilla</label>
+                                    <input
+                                        type="text"
+                                        autoFocus
+                                        value={newTemplateName}
+                                        onChange={(e) => setNewTemplateName(e.target.value)}
+                                        placeholder={`Plantilla de ${empresaData.razon_social}`}
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    />
+                                </div>
+
+                                <div className="flex justify-end gap-3">
+                                    <button
+                                        onClick={() => setTemplateModalOpen(false)}
+                                        className="text-gray-500 hover:text-gray-800 font-medium px-4 py-2"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        onClick={handleExtractTemplate}
+                                        disabled={isLoading}
+                                        className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition-colors"
+                                    >
+                                        {isLoading ? 'Creando...' : 'Crear Plantilla'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {activeTab === 'seguridad' && (
                         <form onSubmit={handleChangePassword} className="space-y-6 max-w-md animate-fadeIn">
+                            {/* ... Content remains same ... */}
                             <h3 className="text-lg font-bold text-gray-800 border-b pb-2">Cambiar Contraseña</h3>
 
                             <div>

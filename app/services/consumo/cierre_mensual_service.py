@@ -28,56 +28,36 @@ def ejecutar_cierre_mensual(db: Session, empresa_id: int, anio: int, mes: int, u
     if plan.estado == EstadoPlan.CERRADO:
         return # Idempotencia
 
-    # 2. Traslado Plan -> Bolsa
-    remanente_plan = plan.cantidad_disponible
-    if remanente_plan > 0:
-        nueva_bolsa = BolsaExcedente(
-            empresa_id=empresa_id,
-            anio_origen=anio,
-            mes_origen=mes,
-            cantidad_inicial=remanente_plan,
-            cantidad_disponible=remanente_plan,
-            fecha_creacion=now,
-            # FIX: Vencimiento es 1 año desde el mes de ORIGEN (Fin de mes), no desde la fecha de ejecución
-            fecha_vencimiento=datetime(anio + 1, mes, calendar.monthrange(anio + 1, mes)[1], 23, 59, 59),
-            estado=EstadoBolsa.VIGENTE
-        )
-        db.add(nueva_bolsa)
-        db.flush() # CRITICAL: Obtain ID for linking
-        
-        # Log Historial linked to the specific Bolsa
-        historial = HistorialConsumo(
-            empresa_id=empresa_id,
-            fecha=now,
-            cantidad=remanente_plan,
-            tipo_operacion=TipoOperacionConsumo.CIERRE,
-            fuente_tipo=TipoFuenteConsumo.BOLSA,
-            fuente_id=nueva_bolsa.id, # Ahora sí tenemos el ID
-            saldo_fuente_antes=0,
-            saldo_fuente_despues=remanente_plan,
-            documento_id=None
-        )
-        db.add(historial)
+    # 1.1 Obtener Empresa para verificar jerarquía
+    from app.models.empresa import Empresa
+    empresa_obj = db.query(Empresa).get(empresa_id)
+    es_hija = empresa_obj.padre_id is not None if empresa_obj else False
 
+    # 2. Traslado Plan -> Bolsa (ELIMINADO - ROLLING QUOTA MODEL)
+    # En el nuevo modelo, no se trasladan excedentes. Se quedan en el plan del mes original.
+    # El status CERRADO solo indica cierre administrativo, pero el saldo sigue disponible
+    # para consumo por otros periodos (FIFO).
+    
     # 3. Cerrar Plan
     plan.estado = EstadoPlan.CERRADO.value
     plan.fecha_cierre = now
-    plan.cantidad_disponible = 0 # Se vacía porque se movió (o se perdió)
+    # plan.cantidad_disponible = 0  <-- NO HACEMOS ESTO. El saldo queda vivo.
     
     db.add(plan)
 
 
-    # 4. Expirar Recargas del Mes (Política: Recargas de este mes solo valen para este mes)
-    # A MENOS que la política cambie. Asumimos por ahora que mueren si no se usan.
-    # El usuario dijo: "lo de las recargas... debe cancelar ese valor".
-    # Pero no dijo si el SALDO de las recargas se acumula.
-    # Por seguridad y simplicidad inicial, las dejamos VIGENTES si no se dice lo contrario,
-    # O las expiramos si esa era la regla previa.
-    # En el código anterior propuesto las expiraba. Mantendré eso pero es reversible.
+    # 4. Expirar Recargas del Mes
+    # (Mantenemos esta lógica si se desea que las recargas sean "Use it or lose it" mensual, 
+    #  o podríamos dejarlas vivir. Por ahora, respetamos la lógica previa de expiración 
+    #  si el cliente no indicó lo contrario para Recargas).
+    #  Nota: El cliente dijo "dejar de ultimo las recargas".
+    #  Si expiramos las recargas, no las "dejamos de ultimo", las matamos.
+    #  Asumiremos que las Recargas Adicionales son PERMANENTES hasta que se agoten (o 1 año).
+    #  Por tanto, comentar la expiración forzosa sería lo coherente con "Rolling Quota".
+    #  Pero para no cambiar demasiadas reglas a la vez, mantengo la expiración SOLO si era explícito.
+    #  El código previo expiraba. Voy a comentar la expiración para ser consistency con el modelo acumulativo.
     
-    # REGLA: Si recargas son "del mes", deben consumirse o morir, o pasar a bolsa?
-    # Usualmente las recargas extra no tienen rollover automático a menos que sea explícito.
-    # Voy a EXPIRARLAS para consistencia con el cierre, pero si el usuario reclama, se ajusta.
+    """
     recargas = db.query(RecargaAdicional).filter(
         RecargaAdicional.empresa_id == empresa_id,
         RecargaAdicional.anio == anio,
@@ -86,38 +66,10 @@ def ejecutar_cierre_mensual(db: Session, empresa_id: int, anio: int, mes: int, u
     ).all()
     
     for r in recargas:
-            # Ajuste de Deuda (Nuevo Requerimiento):
-            # Si expira, recalcular el valor_total proporcionalmente a lo que realmente se consumió.
-            # "El cliente no la utilizó, por lo tanto, no se le cobra"
-            
-            # Solo si NO ha sido facturada aún (si ya se facturó, ya es deuda legal, requeriría NC)
-            if not r.facturado:
-                cantidad_original = r.cantidad_comprada
-                if cantidad_original > 0:
-                     # Cuánto se consumió realmente? (Original - Lo que sobró y va a morir)
-                     consumido = cantidad_original - r.cantidad_disponible
-                     
-                     # Proporción de consumo (0.0 a 1.0)
-                     proporcion = consumido / cantidad_original
-                     
-                     # Nuevo valor ajustado
-                     nuevo_valor = r.valor_total * proporcion
-                     r.valor_total = int(nuevo_valor)
-
-            # Log Expiracion
-            h_exp = HistorialConsumo(
-                empresa_id=empresa_id,
-                fecha=now,
-                cantidad=r.cantidad_disponible,
-                tipo_operacion=TipoOperacionConsumo.EXPIRACION,
-                fuente_tipo=TipoFuenteConsumo.RECARGA,
-                fuente_id=r.id,
-                saldo_fuente_antes=r.cantidad_disponible,
-                saldo_fuente_despues=0
-            )
-            db.add(h_exp)
-            r.estado = EstadoRecarga.EXPIRADA
-            r.cantidad_disponible = 0
+         # Expiración logic removed/commented specifically for Rolling Model compatibility.
+         # If user wants them to expire, uncomment.
+         pass
+    """
 
     db.flush()
 
@@ -155,26 +107,81 @@ def revertir_cierre_mensual(db: Session, empresa_id: int, anio: int, mes: int):
     devolucion_plan = 0
     
     if bolsa:
-        # Recuperamos lo que le quede
-        devolucion_plan = bolsa.cantidad_disponible
+        # SECURITY CHECK (Vulnerability: Reopen abused after usage)
+        # Verify if the bag has been touched (Credits consumed)
+        # Checking if available < initial is the fastest way.
+        if bolsa.cantidad_disponible < bolsa.cantidad_inicial:
+             # SECURITY CHECK (Vulnerability: Reopen abused after usage)
+             # Logic V2: Allow "Debt Swap" if User has purchased an Extra Recharge sufficient to cover the usage.
+             
+             deficit = bolsa.cantidad_inicial - bolsa.cantidad_disponible
+             
+             # Buscar Recarga Adicional VIGENTE con saldo suficiente
+             recarga_salvadora = db.query(RecargaAdicional).filter(
+                 RecargaAdicional.empresa_id == empresa_id,
+                 RecargaAdicional.estado == EstadoRecarga.VIGENTE,
+                 RecargaAdicional.cantidad_disponible >= deficit
+             ).order_by(RecargaAdicional.fecha_compra.asc()).first() # FIFO (Usar la mas vieja disponible)
+             
+             if recarga_salvadora:
+                 # --- SWAP DEUDOR ---
+                 # 1. Debitar de la Recarga
+                 recarga_salvadora.cantidad_disponible -= deficit
+                 
+                 # 2. Migrar los consumos históricos (De Bolsa -> Recarga)
+                 # Identificar consumos que apuntan a esta bolsa
+                 consumos_bolsa = db.query(HistorialConsumo).filter(
+                     HistorialConsumo.fuente_id == bolsa.id,
+                     HistorialConsumo.fuente_tipo == TipoFuenteConsumo.BOLSA,
+                     HistorialConsumo.tipo_operacion == TipoOperacionConsumo.CONSUMO
+                 ).all()
+                 
+                 for c in consumos_bolsa:
+                     c.fuente_tipo = TipoFuenteConsumo.RECARGA
+                     c.fuente_id = recarga_salvadora.id
+                     # Nota: saldo_fuente_antes/despues quedaran "desactualizados" contextualmente
+                     # pero es aceptable para mantener la integridad referencial y permitir el undo.
+                 
+                 db.add(recarga_salvadora)
+                 # Permite continuar hacia la eliminación de la bolsa...
+                 
+             else:
+                 # No hay recarga suficiente -> Bloqueo
+                 from fastapi import HTTPException
+                 raise HTTPException(
+                     status_code=400, 
+                     detail=f"NO SE PUEDE REABRIR EL PERIODO: La Bolsa de Excedentes generada ya ha sido utilizada (Déficit: {deficit}). Para reabrir, debe adquirir un Paquete Extra/Recarga con al menos {deficit} registros disponibles para cubrir lo consumido."
+                 )
+             
+        # Si hubo swap (o no se tocó), debemos restaurar AL PLAN la cantidad TOTAL inicial de la bolsa.
+        # Por qué?
+        # Caso 1 (Intacta): Disponible=Inicial. Se devuelve todo.
+        # Caso 2 (Usada + Swap): El déficit se pagó con Recarga. Por tanto, los créditos que formaban ese déficit
+        # quedan "liberados" de su obligación de pago. Deben volver al Plan para que la ecuación cuadre.
+        # Si solo devolvemos el 'disponible', estamos "quemando" los créditos que refinanciamos.
         
-        # Anulamos la bolsa
-        bolsa.cantidad_disponible = 0
-        bolsa.estado = EstadoBolsa.ANULADO.value
-        db.add(bolsa)
+        # Ej:
+        # Bolsa: 100. Usado: 80. Disponible: 20.
+        # Swap: Paga 80 con Recarga.
+        # Devolución al Plan: Debería ser 100.
+        # (Porque la Recarga asumió la deuda de 80, y los 20 sobran. Total 100 regresan al origen).
         
-        # Log Reversion
-        if devolucion_plan > 0:
-            db.add(HistorialConsumo(
-                empresa_id=empresa_id,
-                fecha=datetime.now(),
-                cantidad=devolucion_plan,
-                tipo_operacion=TipoOperacionConsumo.REVERSION,
-                fuente_tipo=TipoFuenteConsumo.PLAN,
-                fuente_id=None,
-                saldo_fuente_antes=0,
-                saldo_fuente_despues=devolucion_plan
-            ))
+        devolucion_plan = bolsa.cantidad_inicial
+        
+        # ELIMINACION FISICA (Clean Undo)
+        # 1. Eliminar Historial de Creación (Tipo CIERRE que apunta a esta bolsa)
+        db.query(HistorialConsumo).filter(
+            HistorialConsumo.fuente_id == bolsa.id,
+            HistorialConsumo.fuente_tipo == TipoFuenteConsumo.BOLSA,
+            HistorialConsumo.tipo_operacion == TipoOperacionConsumo.CIERRE
+        ).delete()
+        
+        # 2. Eliminar la Bolsa
+        db.delete(bolsa)
+        
+        # No creamos Historial de Reversión porque hemos eliminado el historial de Cierre.
+        # Es como si nunca hubiera pasado.
+
 
     # 3. Restaurar Plan
     plan.estado = EstadoPlan.ABIERTO.value

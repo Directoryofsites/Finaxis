@@ -88,7 +88,7 @@ def seed_database():
                 "papelera:usar",
                 "utilidades:migracion"
             ],
-            "administrador": [
+            "Administrador": [
                 "empresa:gestionar", # Restaurado para acceso
                 "utilidades:migracion", # Restaurado para Maestros
                 "inventario:ver_super_informe", # Restaurado para Super Informe
@@ -220,7 +220,7 @@ def seed_database():
         db.flush()
 
         print("--> Asegurando la existencia de todos los roles...")
-        roles_a_crear = ["soporte", "administrador", "contador", "invitado", "operador_bancario", "clon_restringido"]
+        roles_a_crear = ["soporte", "Administrador", "contador", "invitado", "operador_bancario", "clon_restringido"]
         for nombre_rol in roles_a_crear:
             if not db.query(models_permiso.Rol).filter(models_permiso.Rol.nombre == nombre_rol).first():
                 db.add(models_permiso.Rol(nombre=nombre_rol, descripcion=f"Rol para {nombre_rol}"))
@@ -232,13 +232,14 @@ def seed_database():
         for rol_nombre, lista_permisos in permisos_por_rol.items():
             rol_db = db.query(models_permiso.Rol).filter(models_permiso.Rol.nombre == rol_nombre).one()
             
-            # --- FIX: PROTECCIÓN DE ROL CONTADOR ---
-            # Si el rol es 'contador' y ya tiene permisos asignados, NO los sobrescribimos.
-            # Esto permite al usuario personalizar el rol sin perder cambios en cada reinicio.
-            if rol_nombre == "contador" and rol_db.permisos:
-                 print(f"--> PROTEGIDO: Saltando actualización de permisos para rol '{rol_nombre}' (Personalizado por usuario).")
+            # --- FIX GENERAL: PROTECCIÓN DE PERMISOS DE USUARIO ---
+            # Si el rol ya tiene permisos asignados (proviene de DB con datos),
+            # ASUMIMOS que el usuario pudo haberlos personalizado.
+            # NO sobrescribimos para evitar "desbaratar" la configuración del administrador.
+            if rol_db.permisos:
+                 print(f"--> PROTEGIDO: Saltando actualización de permisos para rol '{rol_nombre}' (Ya configurado/Personalizado).")
                  continue
-            # ---------------------------------------
+            # ------------------------------------------------------
 
             permisos_db = db.query(models_permiso.Permiso).filter(models_permiso.Permiso.nombre.in_(lista_permisos)).all()
             rol_db.permisos = permisos_db
@@ -297,7 +298,7 @@ def seed_database():
 
         usuarios_data = [
             {"email": "soporte@soporte.com", "nombre_completo": "Usuario de Soporte Global", "password": "Jh811880", "rol_nombre": "soporte", "empresa_id": None},
-            {"email": "admin@empresa.com", "nombre_completo": "Admin de Empresa Demo", "password": "admin123", "rol_nombre": "administrador", "empresa_id": empresa_demo.id},
+            {"email": "admin@empresa.com", "nombre_completo": "Admin de Empresa Demo", "password": "admin123", "rol_nombre": "Administrador", "empresa_id": empresa_demo.id},
             # Crear usuario contador de prueba
             {"email": "contador@ejemplo.com", "nombre_completo": "Contador Demo", "password": "conta123", "rol_nombre": "contador", "empresa_id": None} 
         ]

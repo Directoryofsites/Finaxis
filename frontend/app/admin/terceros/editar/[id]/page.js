@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../../../../context/AuthContext';
 import { apiService } from '../../../../../lib/apiService';
 import { getListasPrecio } from '../../../../../lib/listaPrecioService';
+import { municipios } from '../../../../../data/municipios';
 
 // --- ESTILOS REUSABLES (Manual v2.0) ---
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
@@ -48,7 +49,15 @@ export default function EditarTerceroPage() {
         responsabilidad_fiscal: '',
         actividad_economica_ciiu: '',
         es_regimen_simple: false,
-        lista_precio_id: ''
+        email: '',
+        es_cliente: false,
+        es_proveedor: false,
+        es_empleado: false,
+        responsabilidad_fiscal: '',
+        actividad_economica_ciiu: '',
+        es_regimen_simple: false,
+        lista_precio_id: '',
+        municipio_dane: '' // Added for DANE support
     });
 
     const [listasPrecio, setListasPrecio] = useState([]);
@@ -86,7 +95,9 @@ export default function EditarTerceroPage() {
                         responsabilidad_fiscal: terceroData.responsabilidad_fiscal || '',
                         actividad_economica_ciiu: terceroData.actividad_economica_ciiu || '',
                         es_regimen_simple: terceroData.es_regimen_simple || false,
-                        lista_precio_id: terceroData.lista_precio_id ? String(terceroData.lista_precio_id) : ''
+                        es_regimen_simple: terceroData.es_regimen_simple || false,
+                        lista_precio_id: terceroData.lista_precio_id ? String(terceroData.lista_precio_id) : '',
+                        municipio_dane: terceroData.municipio_dane || '' // Load existing code
                     });
 
                     setListasPrecio(listasResponse || []);
@@ -133,7 +144,9 @@ export default function EditarTerceroPage() {
         updatePayload.email = updatePayload.email || null;
         updatePayload.responsabilidad_fiscal = updatePayload.responsabilidad_fiscal || null;
         updatePayload.actividad_economica_ciiu = updatePayload.actividad_economica_ciiu || null;
+        updatePayload.actividad_economica_ciiu = updatePayload.actividad_economica_ciiu || null;
         updatePayload.dv = updatePayload.dv || null;
+        updatePayload.municipio_dane = updatePayload.municipio_dane || null;
 
         try {
             await apiService.put(`/terceros/${id}`, updatePayload);
@@ -247,11 +260,30 @@ export default function EditarTerceroPage() {
                                     </div>
                                 </div>
                                 <div>
-                                    <label htmlFor="ciudad" className={labelClass}>Ciudad / Municipio</label>
+                                    <label htmlFor="municipio_dane" className={labelClass}>Ciudad / Municipio (DANE)</label>
                                     <div className="relative">
-                                        <input type="text" name="ciudad" id="ciudad" value={formData.ciudad} onChange={handleChange} className={inputClass} />
+                                        <select
+                                            name="municipio_dane"
+                                            id="municipio_dane"
+                                            value={formData.municipio_dane}
+                                            onChange={(e) => {
+                                                const selected = municipios.find(m => m.codigo === e.target.value);
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    municipio_dane: e.target.value,
+                                                    ciudad: selected ? selected.nombre : ''
+                                                }));
+                                            }}
+                                            className={selectClass}
+                                        >
+                                            <option value="">-- Seleccione Ciudad --</option>
+                                            {municipios.map(m => (
+                                                <option key={m.codigo} value={m.codigo}>{m.nombre} - {m.departmento}</option>
+                                            ))}
+                                        </select>
                                         <FaCity className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
                                     </div>
+                                    <input type="hidden" name="ciudad" value={formData.ciudad} />
                                 </div>
                                 <div>
                                     <label htmlFor="telefono" className={labelClass}>Teléfono</label>
@@ -279,7 +311,23 @@ export default function EditarTerceroPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label htmlFor="responsabilidad_fiscal" className={labelClass}>Responsabilidad Fiscal</label>
-                                    <input type="text" name="responsabilidad_fiscal" id="responsabilidad_fiscal" placeholder="Ej: R-99-PN" value={formData.responsabilidad_fiscal} onChange={handleChange} className={`${inputClass} pl-4`} />
+                                    <div className="relative">
+                                        <select
+                                            name="responsabilidad_fiscal"
+                                            id="responsabilidad_fiscal"
+                                            value={formData.responsabilidad_fiscal}
+                                            onChange={handleChange}
+                                            className={selectClass}
+                                        >
+                                            <option value="R-99-PN">No Aplica - Otros (R-99-PN)</option>
+                                            {/* Importar lista de municipios si es necesario o hardcodear si import falla */}
+                                            <option value="O-13">Gran Contribuyente</option>
+                                            <option value="O-15">Autorretenedor</option>
+                                            <option value="O-23">Agente de Retención IVA</option>
+                                            <option value="O-47">Régimen Simple de Tributación</option>
+                                        </select>
+                                        <FaTags className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
+                                    </div>
                                 </div>
                                 <div>
                                     <label htmlFor="actividad_economica_ciiu" className={labelClass}>Actividad Económica (CIIU)</label>

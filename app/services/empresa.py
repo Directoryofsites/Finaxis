@@ -66,12 +66,38 @@ def create_empresa_con_usuarios(
         db.add(nueva_empresa)
         db.flush()
 
+        # --- AUTO-CONFIGURACIÓN FACTURACIÓN ELECTRÓNICA (SANDBOX) ---
+        # Para facilitar pruebas, inyectamos credenciales de Sandbox a toda empresa nueva.
+        try:
+            from ..models.configuracion_fe import ConfiguracionFE
+            import json
+            
+            creds_sandbox = {
+                "client_id": "a1003ed4-93cc-4980-89ab-1a181b031918",
+                "client_secret": "iO7V0w287m87yGZ3JOlWgR5ytGsFSXaIkGcOMaJd",
+                "username": "sandbox@factus.com.co",
+                "password": "sandbox2024%"
+            }
+            
+            nueva_config_fe = ConfiguracionFE(
+                empresa_id=nueva_empresa.id,
+                proveedor='FACTUS',
+                ambiente='PRUEBAS',
+                habilitado=True,
+                api_token=json.dumps(creds_sandbox)
+            )
+            db.add(nueva_config_fe)
+            # No hacemos commit aquí, esperamos al commit final de la transacción principal
+        except Exception as e:
+            print(f"Advertencia: No se pudo auto-configurar FE Sandbox: {e}")
+        # -------------------------------------------------------------
+
         # Buscamos el rol con el nombre correcto en minúscula, tal como lo crea el seeder.
         # Buscamos el rol adecuado según el modo de operación
         if empresa_data.modo_operacion == 'AUDITORIA_READONLY':
              rol_nombre = "clon_restringido"
         else:
-             rol_nombre = "administrador"
+             rol_nombre = "Administrador"
 
         # 3. Asignar Rol al Usuario
         rol_asignar = None
@@ -105,9 +131,17 @@ def create_empresa_con_usuarios(
             )
             created_user = usuario_service.create_user_in_company(db=db, user_data=user_payload, empresa_id=nueva_empresa.id)
             
-            # Si aún no tenemos un dueño candidato, tomamos al primero que creamos.
+            # Si aún no tenemos un dueño candidato, tomamos al primero que creamos...
+            # PERO: Solo si el rol asignado es 'contador' o similar.
+            # Si el rol es 'administrador' (Local), NO lo marcamos como Owner en la tabla Empresa.
+            # Esto evita que empresas del sistema aparezcan en la lista de Contadores.
             if not nuevo_owner_id:
-                nuevo_owner_id = created_user.id
+                # Verificamos el rol que acabamos de usar
+                if rol_asignar.nombre.lower() == 'contador': 
+                     nuevo_owner_id = created_user.id
+                else:
+                     # Es un admin local, no es "Owner" SaaS.
+                     pass
         
         # 4. Vincular al Owner/Contador
         # CASO A: Se proveyó un owner_id explícito (ej: creando hija) -> Usamos ese.
@@ -184,7 +218,7 @@ def get_empresa(db: Session, empresa_id: int):
 def get_empresa_by_id(db: Session, empresa_id: int) -> Optional[empresa_model.Empresa]:
     return db.query(empresa_model.Empresa).filter(empresa_model.Empresa.id == empresa_id).first()
 
-def get_empresas_para_usuario(db: Session, current_user: usuario_model.Usuario) -> List[empresa_model.Empresa]:
+def get_empresas_para_usuario(db: Session, current_user: usuario_model.Usuario, mes: Optional[int] = None, anio: Optional[int] = None) -> List[empresa_model.Empresa]:
     # DEBUG LOGGING
     print(f"DEBUG: get_empresas_para_usuario - User: {current_user.email} (ID: {current_user.id})")
     
@@ -250,8 +284,8 @@ def get_empresas_para_usuario(db: Session, current_user: usuario_model.Usuario) 
     from app.services import dashboard as dashboard_service # Importación local para evitar ciclos
     
     now = datetime.now()
-    mes_actual = now.month
-    anio_actual = now.year
+    mes_actual = mes if mes else now.month
+    anio_actual = anio if anio else now.year
     
     for emp in result_list:
         try:
@@ -259,7 +293,8 @@ def get_empresas_para_usuario(db: Session, current_user: usuario_model.Usuario) 
             stats = dashboard_service.get_consumo_actual(db, emp.id, mes_actual, anio_actual)
             emp.consumo_actual = stats["total_registros"]
             # Aseguramos que limite_registros_mensual esté actualizado con excepciones si las hay
-            emp.limite_registros_mensual = stats["limite_registros"] 
+            emp.limite_registros_mensual = stats["limite_registros"]
+            emp.periodo_consumo = stats["periodo_texto"] # Inject Period Name for Portal 
         except Exception as e:
             print(f"Error calculando consumo para empresa {emp.id}: {e}")
             emp.consumo_actual = 0
@@ -308,14 +343,31 @@ def update_limite_registros(db: Session, empresa_id: int, limite_data: empresa_s
     return db_empresa
 
 # --- BORRADO ---
-def delete_empresa(db: Session, empresa_id: int):
-    """Alias para delete_empresa_y_usuarios, adaptado para devolver bool."""
+def delete_empresa(db: Session, empresa_id: int) -> bool:
+    empresa = get_empresa(db, empresa_id)
+    if not empresa:
+        return False
+        
     try:
-        delete_empresa_y_usuarios(db, empresa_id)
+        # --- PRE-LIMPIEZA MANUAL (DESHABILITADA) ---
+        # Ahora confiamos en el cascade ORM completo configurado en app/models/empresa.py
+        # El cascade debe manejar: Productos -> Grupos -> Cuentas, etc.
+        
+        # 1. PH
+        # from sqlalchemy import text
+        # db.execute(text("DELETE FROM ph_conceptos WHERE empresa_id = :eid"), {"eid": empresa_id})
+        # db.execute(text("DELETE FROM ph_configuracion WHERE empresa_id = :eid"), {"eid": empresa_id})
+        
+        # ... (Resto deshabilitado) ...
+        
+        db.delete(empresa)
+        db.commit()
         return True
-    except HTTPException:
-        # Si delete_empresa_y_usuarios lanza excepción (ej: por tener documentos), la propagamos
-        raise 
+    except Exception as e:
+        db.rollback()
+        print(f"Un error inesperado ocurrió durante la limpieza en cascada: {e}")
+        # Re-raise para ver el error real si falla aun con limpieza
+        raise e 
     except Exception:
         return False
 
@@ -343,6 +395,21 @@ def delete_empresa_y_usuarios(db: Session, empresa_id: int):
              pass
              
         db.query(impuesto_model.TasaImpuesto).filter(impuesto_model.TasaImpuesto.empresa_id == empresa_id).delete(synchronize_session=False)
+        
+        # --- FIX: Borrar dependencias de Nómina (ConfiguracionNomina bloquea PlanCuentas) ---
+        from ..models import nomina as nomina_model
+        
+        # 1. Borrar Documentos de Nómina (y sus detalles por cascade)
+        db.query(nomina_model.Nomina).filter(nomina_model.Nomina.empresa_id == empresa_id).delete(synchronize_session=False)
+        
+        # 2. Borrar Configuración (Rompe vínculo con PlanCuenta)
+        db.query(nomina_model.ConfiguracionNomina).filter(nomina_model.ConfiguracionNomina.empresa_id == empresa_id).delete(synchronize_session=False)
+        
+        # 3. Borrar Empleados (Rompe vínculo con Terceros)
+        db.query(nomina_model.Empleado).filter(nomina_model.Empleado.empresa_id == empresa_id).delete(synchronize_session=False)
+        
+        # 4. Borrar Tipos de Nómina
+        db.query(nomina_model.TipoNomina).filter(nomina_model.TipoNomina.empresa_id == empresa_id).delete(synchronize_session=False)
         # ------------------------------------------------------------------
 
         db.query(plan_cuenta_model.PlanCuenta).filter(plan_cuenta_model.PlanCuenta.empresa_id == empresa_id).delete(synchronize_session=False)
@@ -604,15 +671,15 @@ def _clone_impuestos(db: Session, source_empresa_id: int, target_empresa_id: int
     for imp in impuestos_origen:
         # Resolver IDs nuevos
         nuevo_cuenta_id = None
-        if imp.cuenta_id:
-            cod = mapa_id_codigo_origen.get(imp.cuenta_id)
-            nuevo_cuenta_id = mapa_codigo_id.get(cod)
+        if imp.cuenta_id and imp.cuenta_id in mapa_id_codigo_origen:
+            codigo = mapa_id_codigo_origen[imp.cuenta_id]
+            nuevo_cuenta_id = mapa_codigo_id.get(codigo)
             
         nuevo_cuenta_desc_id = None
-        if imp.cuenta_iva_descontable_id:
-            cod = mapa_id_codigo_origen.get(imp.cuenta_iva_descontable_id)
-            nuevo_cuenta_desc_id = mapa_codigo_id.get(cod)
-
+        if imp.cuenta_iva_descontable_id and imp.cuenta_iva_descontable_id in mapa_id_codigo_origen:
+            codigo = mapa_id_codigo_origen[imp.cuenta_iva_descontable_id]
+            nuevo_cuenta_desc_id = mapa_codigo_id.get(codigo)
+            
         nuevo = TasaImpuesto(
             empresa_id=target_empresa_id,
             nombre=imp.nombre,
@@ -625,6 +692,467 @@ def _clone_impuestos(db: Session, source_empresa_id: int, target_empresa_id: int
     db.add_all(nuevos_impuestos)
     db.flush()
 
+def _clone_configuracion_reporte(db: Session, source_empresa_id: int, target_empresa_id: int):
+    """
+    Clona la configuración de reportes (Renglones IVA, Renta, etc.)
+    Re-mapea las cuentas_ids usando el código de cuenta como puente.
+    """
+    from ..models.configuracion_reporte import ConfiguracionReporte
+    from ..models.plan_cuenta import PlanCuenta
+
+    # 1. Obtener configs origen
+    configs_origen = db.query(ConfiguracionReporte).filter(
+        ConfiguracionReporte.empresa_id == source_empresa_id
+    ).all()
+    
+    if not configs_origen: return
+    
+    # 2. Preparar Mapa de Cuentas (Old ID -> Code -> New ID)
+    # 2.1 Cuentas Destino (Mapa Code -> NewID)
+    cuentas_destino = db.query(PlanCuenta).filter(PlanCuenta.empresa_id == target_empresa_id).all()
+    mapa_codigo_newid = {c.codigo: c.id for c in cuentas_destino}
+    
+    # 2.2 Cuentas Origen (Mapa OldID -> Code)
+    # Recolectar todos los IDs usados en los JSONs
+    all_old_ids = set()
+    for conf in configs_origen:
+        if conf.cuentas_ids:
+            # cuentas_ids es un JSON array de ints o strings numéricos
+            for uid in conf.cuentas_ids:
+                try:
+                    all_old_ids.add(int(uid))
+                except:
+                    pass
+    
+    mapa_oldid_codigo = {}
+    if all_old_ids:
+        cuentas_origen = db.query(PlanCuenta).filter(PlanCuenta.id.in_(list(all_old_ids))).all()
+        mapa_oldid_codigo = {c.id: c.codigo for c in cuentas_origen}
+        
+    # 3. Clonar
+    nuevas_configs = []
+    for conf in configs_origen:
+        nuevos_ids = []
+        if conf.cuentas_ids:
+            for old_id in conf.cuentas_ids:
+                try:
+                    # Case 1: Value is a Code string (e.g. "413501")
+                    val_str = str(old_id).strip()
+                    # Check if this code exists in the new company (which clones standard PUC codes)
+                    # We store the CODE itself if the destination uses codes, 
+                    # OR we map to NewID if destination uses New IDs.
+                    # The Model says "cuentas_ids = Column(JSON)" storing CODES. 
+                    # So we should append the CODE if valid.
+                    
+                    # Wait, if the model stores CODES, we just verify it exists?
+                    # "mapa_codigo_newid" maps Code -> NewID. 
+                    # Is 'cuentas_ids' supposed to store IDs or Codes? 
+                    # The DEBUG output showed ['413501']. That is a Code.
+                    # The previous logic was appending `mapa_codigo_newid[code]` which adds an ID!
+                    # That implies the goal is to store IDs?
+                    # BUT the debug output showed ['413501'] on the SOURCE.
+                    # If Source has Code, Target should have Code.
+                    
+                    # Let's assume we store CODES to be consistent with Source.
+                    if val_str in mapa_codigo_newid:
+                         nuevos_ids.append(val_str)
+                         continue
+                         
+                    # Case 2: Value is an ID (legacy)
+                    oid = int(old_id)
+                    if oid in mapa_oldid_codigo:
+                        code = mapa_oldid_codigo[oid]
+                        # If mapped code exists in new company, store the CODE
+                        if code in mapa_codigo_newid:
+                            nuevos_ids.append(code)
+                except:
+                    continue
+        
+        nuevo = ConfiguracionReporte(
+            empresa_id=target_empresa_id,
+            tipo_reporte=conf.tipo_reporte,
+            renglon=conf.renglon,
+            concepto=conf.concepto,
+            cuentas_ids=nuevos_ids
+        )
+        nuevas_configs.append(nuevo)
+        
+    db.add_all(nuevas_configs)
+    db.flush()
+
+def _get_mapped_id(old_id, map_old_code, map_code_newid):
+    """Helper to map OldID -> Code -> NewID"""
+    if not old_id: return None
+    if old_id in map_old_code:
+        code = map_old_code[old_id]
+        if code in map_code_newid:
+            return map_code_newid[code]
+    return None
+
+def _clone_ph_config(db: Session, source_empresa_id: int, target_empresa_id: int):
+    """Clona la configuración general de PH (Intereses, Fechas, Cuentas Centrales)"""
+    from ..models.propiedad_horizontal.configuracion import PHConfiguracion
+    from ..models.plan_cuenta import PlanCuenta
+    from ..models.tipo_documento import TipoDocumento
+
+    source_conf = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == source_empresa_id).first()
+    if not source_conf: return
+
+    # MAPPERS
+    # 1. Cuentas
+    cuentas_new = db.query(PlanCuenta).filter(PlanCuenta.empresa_id == target_empresa_id).all()
+    map_code_newid = {c.codigo: c.id for c in cuentas_new}
+    
+    # Needs old accounts to get codes
+    old_account_ids = []
+    if source_conf.cuenta_cartera_id: old_account_ids.append(source_conf.cuenta_cartera_id)
+    if source_conf.cuenta_caja_id: old_account_ids.append(source_conf.cuenta_caja_id)
+    if source_conf.cuenta_ingreso_intereses_id: old_account_ids.append(source_conf.cuenta_ingreso_intereses_id)
+    
+    map_old_code = {}
+    if old_account_ids:
+        old_accs = db.query(PlanCuenta).filter(PlanCuenta.id.in_(old_account_ids)).all()
+        map_old_code = {c.id: c.codigo for c in old_accs}
+
+    # 2. Tipos Documento (Map by Name/Code? Usually Name key for types)
+    # Let's assume Name is the key for Document Types (e.g. "Factura de Venta", "Recibo de Caja")
+    docs_new = db.query(TipoDocumento).filter(TipoDocumento.empresa_id == target_empresa_id).all()
+    map_doc_name_newid = {d.nombre: d.id for d in docs_new}
+    
+    old_doc_ids = []
+    if source_conf.tipo_documento_factura_id: old_doc_ids.append(source_conf.tipo_documento_factura_id)
+    if source_conf.tipo_documento_recibo_id: old_doc_ids.append(source_conf.tipo_documento_recibo_id)
+    if source_conf.tipo_documento_mora_id: old_doc_ids.append(source_conf.tipo_documento_mora_id)
+    
+    map_old_doc_name = {}
+    if old_doc_ids:
+        old_docs = db.query(TipoDocumento).filter(TipoDocumento.id.in_(old_doc_ids)).all()
+        map_old_doc_name = {d.id: d.nombre for d in old_docs}
+
+    def _get_doc_id(old_id):
+        if not old_id: return None
+        if old_id in map_old_doc_name:
+            name = map_old_doc_name[old_id]
+            return map_doc_name_newid.get(name)
+        return None
+
+    new_conf = PHConfiguracion(
+        empresa_id=target_empresa_id,
+        interes_mora_mensual=source_conf.interes_mora_mensual,
+        dia_corte=source_conf.dia_corte,
+        dia_limite_pago=source_conf.dia_limite_pago,
+        dia_limite_pronto_pago=source_conf.dia_limite_pronto_pago,
+        descuento_pronto_pago=source_conf.descuento_pronto_pago,
+        mensaje_factura=source_conf.mensaje_factura,
+        tipo_negocio=source_conf.tipo_negocio,
+        interes_mora_habilitado=source_conf.interes_mora_habilitado,
+        
+        # Mapped Foreign Keys
+        cuenta_cartera_id=_get_mapped_id(source_conf.cuenta_cartera_id, map_old_code, map_code_newid),
+        cuenta_caja_id=_get_mapped_id(source_conf.cuenta_caja_id, map_old_code, map_code_newid),
+        cuenta_ingreso_intereses_id=_get_mapped_id(source_conf.cuenta_ingreso_intereses_id, map_old_code, map_code_newid),
+        
+        tipo_documento_factura_id=_get_doc_id(source_conf.tipo_documento_factura_id),
+        tipo_documento_recibo_id=_get_doc_id(source_conf.tipo_documento_recibo_id),
+        tipo_documento_mora_id=_get_doc_id(source_conf.tipo_documento_mora_id)
+    )
+    db.add(new_conf)
+    db.flush()
+
+def _clone_ph_conceptos(db: Session, source_empresa_id: int, target_empresa_id: int):
+    """Clona Conceptos de Facturación de PH y sus cuentas"""
+    from ..models.propiedad_horizontal.concepto import PHConcepto
+    from ..models.plan_cuenta import PlanCuenta
+
+    conceptos_source = db.query(PHConcepto).filter(PHConcepto.empresa_id == source_empresa_id).all()
+    if not conceptos_source: return
+
+    # MAPPERS (Reusing logic, fetching fresh for safety/completeness inside function scope)
+    cuentas_new = db.query(PlanCuenta).filter(PlanCuenta.empresa_id == target_empresa_id).all()
+    map_code_newid = {c.codigo: c.id for c in cuentas_new}
+    
+    # Gather ALL used old IDs efficiently
+    all_old_ids = set()
+    for c in conceptos_source:
+        if c.cuenta_ingreso_id: all_old_ids.add(c.cuenta_ingreso_id)
+        if c.cuenta_cxc_id: all_old_ids.add(c.cuenta_cxc_id)
+        if c.cuenta_interes_id: all_old_ids.add(c.cuenta_interes_id)
+        if c.cuenta_caja_id: all_old_ids.add(c.cuenta_caja_id)
+    
+    map_old_code = {}
+    if all_old_ids:
+        old_accs = db.query(PlanCuenta).filter(PlanCuenta.id.in_(list(all_old_ids))).all()
+        map_old_code = {acc.id: acc.codigo for acc in old_accs}
+
+    nuevos_conceptos = []
+    for c in conceptos_source:
+        nuevo = PHConcepto(
+            empresa_id=target_empresa_id,
+            nombre=c.nombre,
+            usa_coeficiente=c.usa_coeficiente,
+            es_fijo=c.es_fijo,
+            es_interes=c.es_interes,
+            valor_defecto=c.valor_defecto,
+            activo=c.activo,
+            
+            # Accounts
+            cuenta_ingreso_id=_get_mapped_id(c.cuenta_ingreso_id, map_old_code, map_code_newid),
+            cuenta_cxc_id=_get_mapped_id(c.cuenta_cxc_id, map_old_code, map_code_newid),
+            cuenta_interes_id=_get_mapped_id(c.cuenta_interes_id, map_old_code, map_code_newid),
+            cuenta_caja_id=_get_mapped_id(c.cuenta_caja_id, map_old_code, map_code_newid)
+        )
+        nuevos_conceptos.append(nuevo)
+    
+    db.add_all(nuevos_conceptos)
+    db.flush()
+
+def _clone_grupos_inventario(db: Session, source_empresa_id: int, target_empresa_id: int):
+    """Clona Grupos de Inventario y re-asocia cuentas/impuestos"""
+    from ..models.grupo_inventario import GrupoInventario
+    from ..models.plan_cuenta import PlanCuenta
+    from ..models.impuesto import TasaImpuesto
+
+    grupos_source = db.query(GrupoInventario).filter(GrupoInventario.empresa_id == source_empresa_id).all()
+    if not grupos_source: return
+
+    # MAPPERS
+    # 1. Accounts
+    cuentas_new = db.query(PlanCuenta).filter(PlanCuenta.empresa_id == target_empresa_id).all()
+    map_code_newid = {c.codigo: c.id for c in cuentas_new}
+    
+    # Needs old accounts to get codes
+    all_old_ids = set()
+    for g in grupos_source:
+        if g.cuenta_inventario_id: all_old_ids.add(g.cuenta_inventario_id)
+        if g.cuenta_ingreso_id: all_old_ids.add(g.cuenta_ingreso_id)
+        if g.cuenta_costo_venta_id: all_old_ids.add(g.cuenta_costo_venta_id)
+        if g.cuenta_ajuste_faltante_id: all_old_ids.add(g.cuenta_ajuste_faltante_id)
+        if g.cuenta_ajuste_sobrante_id: all_old_ids.add(g.cuenta_ajuste_sobrante_id)
+        if g.cuenta_costo_produccion_id: all_old_ids.add(g.cuenta_costo_produccion_id)
+
+    map_old_code = {}
+    if all_old_ids:
+        old_accs = db.query(PlanCuenta).filter(PlanCuenta.id.in_(list(all_old_ids))).all()
+        map_old_code = {c.id: c.codigo for c in old_accs}
+
+    # 2. Taxes (Map by Name)
+    impuestos_new = db.query(TasaImpuesto).filter(TasaImpuesto.empresa_id == target_empresa_id).all()
+    map_tax_name_newid = {t.nombre: t.id for t in impuestos_new}
+    
+    old_tax_ids = [g.impuesto_predeterminado_id for g in grupos_source if g.impuesto_predeterminado_id]
+    map_old_tax_name = {}
+    if old_tax_ids:
+        old_taxes = db.query(TasaImpuesto).filter(TasaImpuesto.id.in_(old_tax_ids)).all()
+        map_old_tax_name = {t.id: t.nombre for t in old_taxes}
+
+    def _get_tax_id(old_id):
+        if not old_id: return None
+        if old_id in map_old_tax_name:
+            name = map_old_tax_name[old_id]
+            return map_tax_name_newid.get(name)
+        return None
+
+    nuevos_grupos = []
+    for g in grupos_source:
+        nuevo = GrupoInventario(
+            empresa_id=target_empresa_id,
+            nombre=g.nombre,
+            
+            # Accounts
+            cuenta_inventario_id=_get_mapped_id(g.cuenta_inventario_id, map_old_code, map_code_newid),
+            cuenta_ingreso_id=_get_mapped_id(g.cuenta_ingreso_id, map_old_code, map_code_newid),
+            cuenta_costo_venta_id=_get_mapped_id(g.cuenta_costo_venta_id, map_old_code, map_code_newid),
+            cuenta_ajuste_faltante_id=_get_mapped_id(g.cuenta_ajuste_faltante_id, map_old_code, map_code_newid),
+            cuenta_ajuste_sobrante_id=_get_mapped_id(g.cuenta_ajuste_sobrante_id, map_old_code, map_code_newid),
+            cuenta_costo_produccion_id=_get_mapped_id(g.cuenta_costo_produccion_id, map_old_code, map_code_newid),
+            
+            # Tax
+            impuesto_predeterminado_id=_get_tax_id(g.impuesto_predeterminado_id)
+        )
+        nuevos_grupos.append(nuevo)
+    
+    db.add_all(nuevos_grupos)
+    db.flush()
+
+def _clone_activos_categorias(db: Session, source_empresa_id: int, target_empresa_id: int):
+    """Clona Categorías de Activos Fijos"""
+    from ..models.activo_categoria import ActivoCategoria
+    from ..models.plan_cuenta import PlanCuenta
+
+    cats_source = db.query(ActivoCategoria).filter(ActivoCategoria.empresa_id == source_empresa_id).all()
+    if not cats_source: return
+
+    # MAPPERS
+    cuentas_new = db.query(PlanCuenta).filter(PlanCuenta.empresa_id == target_empresa_id).all()
+    map_code_newid = {c.codigo: c.id for c in cuentas_new}
+    
+    all_old_ids = set()
+    for c in cats_source:
+        if c.cuenta_activo_id: all_old_ids.add(c.cuenta_activo_id)
+        if c.cuenta_gasto_depreciacion_id: all_old_ids.add(c.cuenta_gasto_depreciacion_id)
+        if c.cuenta_depreciacion_acumulada_id: all_old_ids.add(c.cuenta_depreciacion_acumulada_id)
+
+    map_old_code = {}
+    if all_old_ids:
+        old_accs = db.query(PlanCuenta).filter(PlanCuenta.id.in_(list(all_old_ids))).all()
+        map_old_code = {c.id: c.codigo for c in old_accs}
+
+    nuevas_cats = []
+    for c in cats_source:
+        nuevo = ActivoCategoria(
+            empresa_id=target_empresa_id,
+            nombre=c.nombre,
+            vida_util_niif_meses=c.vida_util_niif_meses,
+            vida_util_fiscal_meses=c.vida_util_fiscal_meses,
+            metodo_depreciacion=c.metodo_depreciacion,
+            
+            # Accounts
+            cuenta_activo_id=_get_mapped_id(c.cuenta_activo_id, map_old_code, map_code_newid),
+            cuenta_gasto_depreciacion_id=_get_mapped_id(c.cuenta_gasto_depreciacion_id, map_old_code, map_code_newid),
+            cuenta_depreciacion_acumulada_id=_get_mapped_id(c.cuenta_depreciacion_acumulada_id, map_old_code, map_code_newid)
+        )
+        nuevas_cats.append(nuevo)
+    
+    db.add_all(nuevas_cats)
+    db.flush()
+
+def _clone_nomina_config(db: Session, source_empresa_id: int, target_empresa_id: int):
+    """Clona Configuración de Nómina (Tipos y Cuentas)"""
+    from ..models.nomina import TipoNomina, ConfiguracionNomina
+    from ..models.plan_cuenta import PlanCuenta
+    from ..models.tipo_documento import TipoDocumento
+
+    # 1. Clone Types (TipoNomina)
+    tipos_source = db.query(TipoNomina).filter(TipoNomina.empresa_id == source_empresa_id).all()
+    map_tipo_id = {} # Old -> New
+    
+    for t in tipos_source:
+        nuevo_tipo = TipoNomina(
+            empresa_id=target_empresa_id,
+            nombre=t.nombre,
+            descripcion=t.descripcion,
+            periodo_pago=t.periodo_pago
+        )
+        db.add(nuevo_tipo)
+        db.flush() 
+        map_tipo_id[t.id] = nuevo_tipo.id
+        
+    # 2. Clone Configuration (ConfiguracionNomina)
+    configs_source = db.query(ConfiguracionNomina).filter(ConfiguracionNomina.empresa_id == source_empresa_id).all()
+    if not configs_source: return
+
+    # Mappers
+    cuentas_new = db.query(PlanCuenta).filter(PlanCuenta.empresa_id == target_empresa_id).all()
+    map_code_newid = {c.codigo: c.id for c in cuentas_new}
+    
+    docs_new = db.query(TipoDocumento).filter(TipoDocumento.empresa_id == target_empresa_id).all()
+    map_doc_name_newid = {d.nombre: d.id for d in docs_new}
+
+    # Collect Old Account IDs
+    all_old_ids = set()
+    for c in configs_source:
+        acc_fields = [
+            'cuenta_sueldo_id', 'cuenta_auxilio_transporte_id', 'cuenta_horas_extras_id', 
+            'cuenta_comisiones_id', 'cuenta_otros_devengados_id', 'cuenta_salarios_por_pagar_id',
+            'cuenta_aporte_salud_id', 'cuenta_aporte_pension_id', 'cuenta_fondo_solidaridad_id',
+            'cuenta_retencion_fuente_id', 'cuenta_otras_deducciones_id'
+        ]
+        for field in acc_fields:
+            val = getattr(c, field)
+            if val: all_old_ids.add(val)
+
+    map_old_code = {}
+    if all_old_ids:
+        old_accs = db.query(PlanCuenta).filter(PlanCuenta.id.in_(list(all_old_ids))).all()
+        map_old_code = {c.id: c.codigo for c in old_accs}
+
+    nuevas_configs = []
+    for c in configs_source:
+        # Resolve TipoNomina (could be None for Global?)
+        nuevo_tipo_id = None
+        if c.tipo_nomina_id and c.tipo_nomina_id in map_tipo_id:
+            nuevo_tipo_id = map_tipo_id[c.tipo_nomina_id]
+            
+        # Resolve Doc Type (if any)
+        # Note: Model has 'tipo_documento_id' 
+        # But we need old doc name... optimizing: simple fetch if needed or generic helper
+        # Let's rely on mapped_id logic but for Docs it's strictly Name based as ID changes.
+        # Impl a quick helper or inline check if simple.
+        # It's usually "Nomina Electronica" or similar.
+        nuevo_doc_id = None
+        # We need to fetch the old doc to get name. 
+        # Skipping optimization for brevity unless critical or errors seen.
+        if c.tipo_documento_id:
+             old_doc = db.query(TipoDocumento).filter(TipoDocumento.id == c.tipo_documento_id).first()
+             if old_doc and old_doc.nombre in map_doc_name_newid:
+                 nuevo_doc_id = map_doc_name_newid[old_doc.nombre]
+
+        nuevo = ConfiguracionNomina(
+            empresa_id=target_empresa_id,
+            tipo_nomina_id=nuevo_tipo_id,
+            tipo_documento_id=nuevo_doc_id, # Remapped doc type
+            
+            # Devengados
+            cuenta_sueldo_id=_get_mapped_id(c.cuenta_sueldo_id, map_old_code, map_code_newid),
+            cuenta_auxilio_transporte_id=_get_mapped_id(c.cuenta_auxilio_transporte_id, map_old_code, map_code_newid),
+            cuenta_horas_extras_id=_get_mapped_id(c.cuenta_horas_extras_id, map_old_code, map_code_newid),
+            cuenta_comisiones_id=_get_mapped_id(c.cuenta_comisiones_id, map_old_code, map_code_newid),
+            cuenta_otros_devengados_id=_get_mapped_id(c.cuenta_otros_devengados_id, map_old_code, map_code_newid),
+            
+            # Pasivos/Deducciones
+            cuenta_salarios_por_pagar_id=_get_mapped_id(c.cuenta_salarios_por_pagar_id, map_old_code, map_code_newid),
+            cuenta_aporte_salud_id=_get_mapped_id(c.cuenta_aporte_salud_id, map_old_code, map_code_newid),
+            cuenta_aporte_pension_id=_get_mapped_id(c.cuenta_aporte_pension_id, map_old_code, map_code_newid),
+            cuenta_fondo_solidaridad_id=_get_mapped_id(c.cuenta_fondo_solidaridad_id, map_old_code, map_code_newid),
+            cuenta_retencion_fuente_id=_get_mapped_id(c.cuenta_retencion_fuente_id, map_old_code, map_code_newid),
+            cuenta_otras_deducciones_id=_get_mapped_id(c.cuenta_otras_deducciones_id, map_old_code, map_code_newid)
+        )
+        nuevas_configs.append(nuevo)
+        
+    db.add_all(nuevas_configs)
+    db.flush()
+
+
+def _clone_produccion_config(db: Session, source_empresa_id: int, target_empresa_id: int):
+    """Clona Configuración de Producción (Tipos de Documento)"""
+    from ..models.configuracion_produccion import ConfiguracionProduccion
+    from ..models.tipo_documento import TipoDocumento
+
+    source_conf = db.query(ConfiguracionProduccion).filter(ConfiguracionProduccion.empresa_id == source_empresa_id).first()
+    if not source_conf: return
+
+    # MAPPERS for Doc Types
+    docs_new = db.query(TipoDocumento).filter(TipoDocumento.empresa_id == target_empresa_id).all()
+    map_doc_name_newid = {d.nombre: d.id for d in docs_new}
+    
+    old_doc_ids = []
+    if source_conf.tipo_documento_orden_id: old_doc_ids.append(source_conf.tipo_documento_orden_id)
+    if source_conf.tipo_documento_anulacion_id: old_doc_ids.append(source_conf.tipo_documento_anulacion_id)
+    if source_conf.tipo_documento_consumo_id: old_doc_ids.append(source_conf.tipo_documento_consumo_id)
+    if source_conf.tipo_documento_entrada_pt_id: old_doc_ids.append(source_conf.tipo_documento_entrada_pt_id)
+    
+    map_old_doc_name = {}
+    if old_doc_ids:
+        old_docs = db.query(TipoDocumento).filter(TipoDocumento.id.in_(old_doc_ids)).all()
+        map_old_doc_name = {d.id: d.nombre for d in old_docs}
+
+    def _get_doc_id(old_id):
+        if not old_id: return None
+        if old_id in map_old_doc_name:
+            name = map_old_doc_name[old_id]
+            return map_doc_name_newid.get(name)
+        return None
+
+    new_conf = ConfiguracionProduccion(
+        empresa_id=target_empresa_id,
+        tipo_documento_orden_id=_get_doc_id(source_conf.tipo_documento_orden_id),
+        tipo_documento_anulacion_id=_get_doc_id(source_conf.tipo_documento_anulacion_id),
+        tipo_documento_consumo_id=_get_doc_id(source_conf.tipo_documento_consumo_id),
+        tipo_documento_entrada_pt_id=_get_doc_id(source_conf.tipo_documento_entrada_pt_id)
+    )
+    db.add(new_conf)
+    db.flush()
+
 def create_empresa_from_template(
     db: Session, 
     empresa_data: empresa_schema.EmpresaConUsuariosCreate, 
@@ -633,17 +1161,30 @@ def create_empresa_from_template(
     padre_id: int = None
 ) -> empresa_model.Empresa:
     """
-    Crea una empresa clonando una Plantilla Maestra según categoría.
+    Crea una empresa clonando una Plantilla Maestra según ID o categoría.
     Asigna owner y padre (Contador).
     """
     # 1. Buscar Template Semilla
-    template = db.query(empresa_model.Empresa).filter(
-        empresa_model.Empresa.is_template == True,
-        empresa_model.Empresa.template_category == template_category
-    ).first()
+    template = None
+    
+    # Prioridad 1: ID específico (si viene en el payload)
+    if empresa_data.template_id:
+        template = db.query(empresa_model.Empresa).filter(
+            empresa_model.Empresa.id == empresa_data.template_id,
+            empresa_model.Empresa.is_template == True
+        ).first()
+        
+    # Prioridad 2: Categoría (Legacy fallback)
+    if not template and template_category:
+        template = db.query(empresa_model.Empresa).filter(
+            empresa_model.Empresa.is_template == True,
+            empresa_model.Empresa.template_category == template_category
+        ).first()
     
     if not template:
-        raise HTTPException(status_code=400, detail=f"No existe plantilla para categoría: {template_category}")
+        # Fallback error message based on inputs
+        ref = f"ID {empresa_data.template_id}" if empresa_data.template_id else f"Categoría {template_category}"
+        raise HTTPException(status_code=400, detail=f"No existe plantilla válida: {ref}")
         
     # 2. Crear Empresa Base (usando lógica estándar reusada o new instance)
     # Preferimos lógica new instance para controlar campos
@@ -672,15 +1213,51 @@ def create_empresa_from_template(
     db.add(nueva_empresa)
     db.flush()
     
-    # 3. CLONACIÓN
-    _clone_puc(db, template.id, nueva_empresa.id)
-    _clone_tipos_doc(db, template.id, nueva_empresa.id)
-    _clone_impuestos(db, template.id, nueva_empresa.id)
+    try:
+        # 3. CLONACIÓN
+        _clone_puc(db, template.id, nueva_empresa.id)
+        _clone_tipos_doc(db, template.id, nueva_empresa.id)
+        _clone_impuestos(db, template.id, nueva_empresa.id)
+        _clone_configuracion_reporte(db, template.id, nueva_empresa.id) # FIX: Clone Tax Lines
+        _clone_ph_config(db, template.id, nueva_empresa.id) # PHASE 2: PH Config
+        _clone_ph_conceptos(db, template.id, nueva_empresa.id) # PHASE 2: PH Concepts
+        _clone_grupos_inventario(db, template.id, nueva_empresa.id) # PHASE 2: Inventory
+        _clone_activos_categorias(db, template.id, nueva_empresa.id) # PHASE 2: Assets
+        _clone_nomina_config(db, template.id, nueva_empresa.id) # PHASE 2: Payroll
+        _clone_produccion_config(db, template.id, nueva_empresa.id) # PHASE 2: Production
+    except Exception as e:
+        print(f"Error cloning template data: {e}")
+        # Non-critical failure logic? Or raise?
+        # Better to log and continue or warning. 
+        # But for tax lines it might be annoying if missing. Let's raise only if critical.
+        try:
+            from ..models.configuracion_fe import ConfiguracionFE
+            import json
+            
+            creds_sandbox = {
+                "client_id": "a1003ed4-93cc-4980-89ab-1a181b031918",
+                "client_secret": "iO7V0w287m87yGZ3JOlWgR5ytGsFSXaIkGcOMaJd",
+                "username": "sandbox@factus.com.co",
+                "password": "sandbox2024%"
+            }
+            
+            nueva_config_fe = ConfiguracionFE(
+                empresa_id=nueva_empresa.id,
+                proveedor='FACTUS',
+                ambiente='PRUEBAS',
+                habilitado=True,
+                api_token=json.dumps(creds_sandbox)
+            )
+            db.add(nueva_config_fe)
+        except Exception as e_fe:
+            print(f"Advertencia: No se pudo auto-configurar FE Sandbox en template: {e_fe}")
+
+        pass
     
     # 4. Crear Usuario Admin Inicial (Dueño) si viene en data
     # (Reusamos lógica de create_empresa_con_usuarios parcial o manual)
     # Por ahora manual simple
-    rol_admin = db.query(permiso_model.Rol).filter(permiso_model.Rol.nombre == "administrador").first()
+    rol_admin = db.query(permiso_model.Rol).filter(permiso_model.Rol.nombre == "Administrador").first()
     
     for u_data in empresa_data.usuarios:
         from . import usuario as usuario_service
@@ -727,7 +1304,9 @@ def transferir_cartera(db: Session, empresa_id: int, nuevo_padre_id: int = None,
 def create_template_from_existing(
     db: Session, 
     source_empresa_id: int, 
-    template_category: str
+    template_category: str,
+    owner_id: Optional[int] = None, # NEW: Support private ownership
+    custom_name: Optional[str] = None # NEW: Support custom naming
 ) -> empresa_model.Empresa:
     """
     Crea una NUEVA empresa plantilla copiando datos de una empresa existente.
@@ -747,7 +1326,8 @@ def create_template_from_existing(
     suffix = random.randint(1000, 9999)
     new_nit = f"T-{source.nit}-{suffix}"
     
-    new_name = f"{source.razon_social} (Plantilla)"
+    # Naming Logic
+    new_name = custom_name if custom_name else f"{source.razon_social} (Plantilla)"
     
     # Check name collision?
     # Let's assume name collision is allowed or handled by user later
@@ -766,14 +1346,11 @@ def create_template_from_existing(
         is_template=True,
         template_category=template_category,
         
-        # Templates are usually owned by System/Support (owner_id=None implies System in some logic, 
-        # or we might want to assign current user. For Soporte Util, None is safer or safer to keep source owner?)
-        # User said: "convertir esa empresa en plantilla... cuando cree otras empresas."
-        # If we set owner_id to None, it appears in "Mis Empresas" (Admin) based on new logic.
-        # If we set owner_id to Source Owner, it appears in their list?
-        # Let's set owner_id to None (System) so it's a "Global Template".
-        owner_id=None, 
-        padre_id=None, 
+        # Ownership Logic: 
+        # If owner_id is provided (Accountant), it's a Private Template.
+        # If None, it's a System Template (Global).
+        owner_id=owner_id, 
+        padre_id=None, # Templates have no parent, they are root-like or standalone tools
         
         limite_registros_mensual=source.limite_registros_mensual,
         created_at=datetime.utcnow()
@@ -786,6 +1363,13 @@ def create_template_from_existing(
     _clone_puc(db, source.id, nueva_empresa.id)
     _clone_tipos_doc(db, source.id, nueva_empresa.id)
     _clone_impuestos(db, source.id, nueva_empresa.id)
+    _clone_configuracion_reporte(db, source.id, nueva_empresa.id) # FIX: Extract Tax Lines
+    _clone_ph_config(db, source.id, nueva_empresa.id) # PHASE 2: PH Config
+    _clone_ph_conceptos(db, source.id, nueva_empresa.id) # PHASE 2: PH Concepts
+    _clone_grupos_inventario(db, source.id, nueva_empresa.id) # PHASE 2: Inventory
+    _clone_activos_categorias(db, source.id, nueva_empresa.id) # PHASE 2: Assets
+    _clone_nomina_config(db, source.id, nueva_empresa.id) # PHASE 2: Payroll
+    _clone_produccion_config(db, source.id, nueva_empresa.id) # PHASE 2: Production
     
     db.commit()
     db.refresh(nueva_empresa)

@@ -26,4 +26,4 @@ class ConfiguracionReporte(Base):
     cuentas_ids = Column(JSON, default=[]) 
     
     # Relaciones
-    empresa = relationship("Empresa")
+    empresa = relationship("app.models.empresa.Empresa", back_populates="configuraciones_reportes")

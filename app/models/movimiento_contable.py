@@ -16,6 +16,11 @@ class MovimientoContable(Base):
     # --- INICIO: NUEVAS COLUMNAS AÑADIDAS ---
     producto_id = Column(Integer, ForeignKey("productos.id"), nullable=True)
     cantidad = Column(Numeric(15, 2), nullable=True)
+    
+    # --- DESCUENTOS POR LÍNEA ---
+    descuento_tasa = Column(Numeric(5, 2), default=0) # Porcentaje 0-100
+    descuento_valor = Column(Numeric(15, 2), default=0) # Valor monetario
+    # ----------------------------
     # --- FIN: NUEVAS COLUMNAS ---
 
     concepto = Column(Text)

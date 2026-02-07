@@ -1,0 +1,8 @@
+Creating Invoice (User Scenario)...
+Invoice Created: 12236
+DB Total Calculated: 84909.00
+Error: unsupported operand type(s) for -: 'decimal.Decimal' and 'float'
+Traceback (most recent call last):
+  File "C:\ContaPY2\tests\test_final_user_scenario.py", line 159, in test_final_scenario
+    if abs(total_factura - 84909.0) < 1.0:
+TypeError: unsupported operand type(s) for -: 'decimal.Decimal' and 'float'

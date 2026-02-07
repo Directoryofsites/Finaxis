@@ -81,21 +81,24 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
     else:
         fecha_factura_dt = factura.fecha
 
-    # Pre-cargar productos
-    productos_ids = [item.producto_id for item in factura.items]
-    productos_db = db.query(models_producto.Producto).options(
-        joinedload(models_producto.Producto.grupo_inventario),
-        joinedload(models_producto.Producto.impuesto_iva)
-    ).filter(
-        models_producto.Producto.id.in_(productos_ids),
-        models_producto.Producto.empresa_id == empresa_id
-    ).all()
-    productos_map = {p.id: p for p in productos_db}
-
     try:
-        # Eliminamos el begin_nested() que causaba conflictos con el commit manual
-        # y simplificamos el manejo de transacciones.
+        # --- LÓGICA DE PRORRATEO (DOBLE PASADA) ---
+        # Paso 1: Calcular Bases y Validar
+        items_procesados = []
+        total_base_para_prorrateo = 0.0
         
+        # Pre-cargar productos
+        productos_ids = [item.producto_id for item in factura.items]
+        productos_db = db.query(models_producto.Producto).options(
+            joinedload(models_producto.Producto.grupo_inventario),
+            joinedload(models_producto.Producto.impuesto_iva)
+        ).filter(
+            models_producto.Producto.id.in_(productos_ids),
+            models_producto.Producto.empresa_id == empresa_id
+        ).all()
+        productos_map = {p.id: p for p in productos_db}
+
+        # INICIO: Loop de Validación y Pre-cálculo
         for item in factura.items:
             producto_db = productos_map.get(item.producto_id)
             if not producto_db:
@@ -107,53 +110,85 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
             if not producto_db.es_servicio:
                 if not producto_db.grupo_inventario.cuenta_costo_venta_id: raise HTTPException(status_code=409, detail=f"Producto '{producto_db.nombre}': Falta cuenta Costo Venta en Grupo.")
                 if not producto_db.grupo_inventario.cuenta_inventario_id: raise HTTPException(status_code=409, detail=f"Producto '{producto_db.nombre}': Falta cuenta Inventario en Grupo.")
-            if producto_db.impuesto_iva and not producto_db.impuesto_iva.cuenta_id: raise HTTPException(status_code=409, detail=f"Impuesto '{producto_db.impuesto_iva.nombre}': Falta cuenta IVA Generado.")
-
-            # Validación de Stock (con bloqueo)
+            
+            # Validación Stock (Reutilizada)
             if tipo_doc.afecta_inventario and bodega_db and not producto_db.es_servicio:
                 stock_bodega_actual = db.query(models_producto.StockBodega).filter(
                     models_producto.StockBodega.producto_id == item.producto_id,
                     models_producto.StockBodega.bodega_id == factura.bodega_id
                 ).with_for_update().first()
-
                 stock_fisico = stock_bodega_actual.stock_actual if stock_bodega_actual else 0.0
                 stock_comprometido = stock_bodega_actual.stock_comprometido if stock_bodega_actual else 0.0
                 
-                # LOGICA DE DISPONIBILIDAD (FIX REMISIONES)
-                # Si NO es una facturación de remisión, debemos respetar el stock comprometido.
-                # Si ES una facturación de remisión, asumimos que estamos consumiendo nuestra propia reserva (validamos contra físico).
                 stock_disponible = stock_fisico
-                if not factura.remision_id:
-                    stock_disponible = stock_fisico - stock_comprometido
-
+                if not factura.remision_id: stock_disponible = stock_fisico - stock_comprometido
                 if stock_disponible < item.cantidad:
-                    msg_stock = f"Stock insuficiente para '{producto_db.nombre}'."
-                    if not factura.remision_id:
-                        msg_stock += f" Físico: {stock_fisico:.2f}, Comprometido: {stock_comprometido:.2f}, Disp: {stock_disponible:.2f}"
-                    else:
-                        msg_stock += f" Físico: {stock_fisico:.2f}"
-                    raise HTTPException(status_code=409, detail=f"{msg_stock}, Req: {item.cantidad:.2f}")
+                    msg = f"Stock insuficiente '{producto_db.nombre}'. Disp: {stock_disponible:.2f}, Req: {item.cantidad:.2f}"
+                    raise HTTPException(status_code=409, detail=msg)
 
-            # Cálculos
-            subtotal_item = item.cantidad * item.precio_unitario
-            valor_iva = 0
+            # Cálculo Base de Línea (Con Descuento por Ítem)
+            precio_base = float(item.precio_unitario)
+            tasa_desc_linea = float(item.descuento_tasa or 0)
+            subtotal_bruto_linea = float(item.cantidad) * precio_base
+            valor_desc_linea = subtotal_bruto_linea * (tasa_desc_linea / 100.0)
+            subtotal_neto_linea = subtotal_bruto_linea - valor_desc_linea
+            
+            total_base_para_prorrateo += subtotal_neto_linea
+            
+            items_procesados.append({
+                "item_input": item,
+                "producto_db": producto_db,
+                "subtotal_neto_linea": subtotal_neto_linea,
+                "valor_desc_linea": valor_desc_linea
+            })
+
+        # Paso 2: Generación, Prorrateo y Asientos
+        desc_global_val = float(factura.descuento_global_valor or 0)
+        cargo_global_val = float(factura.cargos_globales_valor or 0)
+        
+        for procesado in items_procesados:
+            item = procesado["item_input"]
+            producto_db = procesado["producto_db"]
+            subtotal_neto = procesado["subtotal_neto_linea"] # Ya tiene descuento de línea
+            
+            # Prorrateo Global
+            participacion = 0.0
+            if total_base_para_prorrateo > 0:
+                participacion = subtotal_neto / total_base_para_prorrateo
+                
+            dist_desc_global = participacion * desc_global_val
+            dist_cargo_global = participacion * cargo_global_val
+            
+            # Base Contable Final (Neto de todo)
+            base_contable_final = subtotal_neto - dist_desc_global + dist_cargo_global
+            
+            # Total Descuento Acumulado (Para registro en DB)
+            total_descuento_acumulado = procesado["valor_desc_linea"] + dist_desc_global
+            
+            # IVA (Sobre la base final ajustada)
+            valor_iva = 0.0
             if producto_db.impuesto_iva and producto_db.impuesto_iva.tasa > 0:
-                valor_iva = subtotal_item * producto_db.impuesto_iva.tasa
+                valor_iva = base_contable_final * float(producto_db.impuesto_iva.tasa)
                 cuenta_iva_id = producto_db.impuesto_iva.cuenta_id
                 impuestos_generados_por_cuenta[cuenta_iva_id] = impuestos_generados_por_cuenta.get(cuenta_iva_id, 0) + valor_iva
-            total_factura += subtotal_item + valor_iva
-
-            # Asientos Ingreso
+                
+            total_factura += base_contable_final + valor_iva
+            
+            # Asiento Ingreso (Credito) - Usando valores NETOS
             movimientos_contables.append(schemas_doc.MovimientoContableCreate(
                 cuenta_id=producto_db.grupo_inventario.cuenta_ingreso_id,
                 producto_id=item.producto_id,
                 concepto=f"Venta: {producto_db.nombre}",
-                debito=0, credito=subtotal_item
+                debito=0, credito=base_contable_final,
+                cantidad=item.cantidad,
+                # Guardamos la metadata del descuento
+                descuento_tasa=item.descuento_tasa,
+                descuento_valor=total_descuento_acumulado 
             ))
             
-            # Asientos Costo
+            # Asientos Costo (Sin cambios, costo estándar)
             if not producto_db.es_servicio:
-                costo_total_item = item.cantidad * (producto_db.costo_promedio or 0.0)
+                costo_total_item = float(item.cantidad) * (float(producto_db.costo_promedio) or 0.0)
                 if costo_total_item > 0:
                     movimientos_contables.append(schemas_doc.MovimientoContableCreate(
                         cuenta_id=producto_db.grupo_inventario.cuenta_costo_venta_id,
@@ -198,6 +233,12 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
             fecha=factura.fecha,
             fecha_vencimiento=fecha_vencimiento_final, # Guardamos la fecha manual
             centro_costo_id=factura.centro_costo_id,
+            
+            # --- NUEVO: Pasar valores ---
+            descuento_global_valor=factura.descuento_global_valor,
+            cargos_globales_valor=factura.cargos_globales_valor,
+            # ----------------------------
+
             movimientos=movimientos_contables,
             aplicaciones=None
         )
