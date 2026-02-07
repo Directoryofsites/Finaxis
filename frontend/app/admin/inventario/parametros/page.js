@@ -1,24 +1,17 @@
-'use client';
-
 import React from 'react';
-import nextDynamic from 'next/dynamic';
+import ParametrosInventoryWrapper from './ParametrosInventoryWrapper';
 
-// Carga Dinámica TOTAL: Evita que el servidor intente renderizar este componente cliente
-const ParametrosInventarioContent = nextDynamic(
-    // Importación dinámica del componente cliente
-    () => import('./ParametrosInventarioClient'),
-    {
-        // 🛑 CRÍTICO: ssr: false deshabilita el renderizado en servidor.
-        // Esto evita que next build falle por hooks de browser.
-        ssr: false,
-        loading: () => <div className="p-8 text-center text-gray-500">Cargando Configuración...</div>
-    }
-);
+// Server Component (Por defecto en Next.js App Router)
+// Este archivo es estático y seguro para el build.
+// Delega toda la complejidad de "Cliente" al Wrapper.
 
-// Configuraciones de página: Dejamos valores por defecto para evitar conflictos con ssr: false
+export const metadata = {
+    title: 'Parámetros de Inventario | Finaxis',
+    description: 'Configuración de impuestos, retenciones y cuentas para inventario.',
+};
 
 export default function ParametrosInventarioPage() {
     return (
-        <ParametrosInventarioContent />
+        <ParametrosInventoryWrapper />
     );
 }
