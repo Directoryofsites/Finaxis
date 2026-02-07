@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { toast } from 'react-toastify';
 import {
   FaBolt,
   FaSave,
@@ -14,7 +15,8 @@ import {
   FaBook,
   FaCheckCircle,
   FaExclamationTriangle,
-  FaMagic
+  FaMagic,
+  FaPrint
 } from 'react-icons/fa';
 
 // Importaciones
@@ -54,6 +56,25 @@ export default function CapturaRapidaPage() {
   const [conceptoModalError, setConceptoModalError] = useState('');
   const [isSubmittingTercero, setIsSubmittingTercero] = useState(false);
   const [isSubmittingConcepto, setIsSubmittingConcepto] = useState(false);
+
+  const [isSeleccionarConceptoModalOpen, setIsSeleccionarConceptoModalOpen] = useState(false);
+  const [conceptoBusqueda, setConceptoBusqueda] = useState('');
+  const [movimientoIndexSeleccionado, setMovimientoIndexSeleccionado] = useState(null);
+
+  // --- ESTADOS DE FLUJO DE VERIFICACIÓN (NUEVO CENTRO DE CONTROL) ---
+  const [imprimirAlGuardar, setImprimirAlGuardar] = useState(false);
+  const [isMonitorOpen, setIsMonitorOpen] = useState(false);
+  const [monitorData, setMonitorData] = useState([]); // Datos para la tabla de asientos
+  const [monitorLoading, setMonitorLoading] = useState(false);
+  const [monitorFilters, setMonitorFilters] = useState({
+    fechaInicio: new Date(new Date().getFullYear(), new Date().getMonth(), 1), // Primer día del mes
+    fechaFin: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0) // Último día del mes
+  });
+
+  // --- ESTADOS DE REIMPRESIÓN ---
+  const [isReimprimirModalOpen, setIsReimprimirModalOpen] = useState(false);
+  const [reimprimirBusqueda, setReimprimirBusqueda] = useState('');
+  const [documentosRecientes, setDocumentosRecientes] = useState([]);
 
   // --- ESTADOS DEL FORMULARIO PRINCIPAL ---
   const [fecha, setFecha] = useState(new Date());
@@ -188,7 +209,17 @@ export default function CapturaRapidaPage() {
       };
 
       const response = await apiService.post('/documentos/', payload);
-      setMensaje(`✅ Documento #${response.data.numero} guardado exitosamente.`);
+      const docId = response.data.id; // Asumimos que el back devuelve el ID
+      const docNumero = response.data.numero;
+
+      setMensaje(`✅ Documento #${docNumero} guardado exitosamente.`);
+
+      // --- LÓGICA DE IMPRESIÓN AUTOMÁTICA ---
+      if (imprimirAlGuardar && docId) {
+        handleImprimirDocumento(docId);
+        toast.info("Generando PDF de impresión... 🖨️");
+      }
+
       resetFormulario();
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -245,6 +276,111 @@ export default function CapturaRapidaPage() {
   };
 
   // --- EFECTOS ---
+
+  // --- MONITOR CONTABLE & REIMPRESIÓN LOGIC ---
+
+  // 1. Cargar datos del Monitor
+  useEffect(() => {
+    if (isMonitorOpen) {
+      const fetchMonitorData = async () => {
+        setMonitorLoading(true);
+        try {
+          const inicio = monitorFilters.fechaInicio.toISOString().split('T')[0];
+          const fin = monitorFilters.fechaFin.toISOString().split('T')[0];
+
+          const queryParams = new URLSearchParams();
+          queryParams.append('fecha_inicio', inicio);
+          queryParams.append('fecha_fin', fin);
+
+          const res = await apiService.get('/reports/journal', { params: queryParams });
+          // Ordenar por ID descendente para ver lo último arriba
+          const sorted = res.data.sort((a, b) => b.id - a.id);
+          setMonitorData(sorted);
+        } catch (err) {
+          console.error("Error cargando monitor:", err);
+          toast.error("Error al cargar movimientos del mes.");
+        } finally {
+          setMonitorLoading(false);
+        }
+      };
+
+      fetchMonitorData();
+    }
+  }, [isMonitorOpen, monitorFilters]);
+
+  // 2. Búsqueda de Documentos para Reimpresión
+  useEffect(() => {
+    if (isReimprimirModalOpen) {
+      // Cargar últimos 10 al abrir
+      const fetchRecientes = async () => {
+        try {
+          const res = await apiService.get('/documentos/?limit=10&skip=0'); // Ajustar endpoint según API real
+          // Asegurar que sea array
+          setDocumentosRecientes(Array.isArray(res.data) ? res.data : []);
+        } catch (err) {
+          console.error(err);
+          setDocumentosRecientes([]); // Fallback a array vacio
+        }
+      };
+      fetchRecientes();
+    }
+  }, [isReimprimirModalOpen]);
+
+  const handleSearchReimprimir = async (term) => {
+    setReimprimirBusqueda(term);
+    if (!term) {
+      // Recargar recientes si limpia
+      const res = await apiService.get('/documentos/?limit=10&skip=0');
+      setDocumentosRecientes(Array.isArray(res.data) ? res.data : []);
+      return;
+    }
+
+    if (term.length > 2) {
+      try {
+        let queryParams = '';
+
+        // 1. Detección Inteligente
+        if (/^\d+$/.test(term)) {
+          // Es un número -> Buscar por Número de Documento (prioridad) o NIT
+          queryParams = `numero=${term}`;
+        } else {
+          // Es texto -> 
+          // A. Intentar buscar Tercero (Nombre) en memoria local
+          const terceroEncontrado = terceros.find(t =>
+            t.razon_social.toLowerCase().includes(term.toLowerCase()) ||
+            (t.primer_nombre && t.primer_nombre.toLowerCase().includes(term.toLowerCase()))
+          );
+
+          if (terceroEncontrado) {
+            queryParams = `tercero_id=${terceroEncontrado.id}`;
+          } else {
+            // B. Si no es tercero, buscar en Observaciones
+            queryParams = `observaciones=${term}`;
+          }
+        }
+
+        const res = await apiService.get(`/documentos/?${queryParams}`);
+        setDocumentosRecientes(Array.isArray(res.data) ? res.data : []);
+      } catch (err) {
+        console.error("Error buscando documentos:", err);
+        setDocumentosRecientes([]);
+      }
+    }
+  };
+
+  const handleImprimirDocumento = async (id) => {
+    try {
+      const response = await apiService.get(`/documentos/${id}/pdf`, {
+        responseType: 'blob'
+      });
+      const file = new Blob([response.data], { type: 'application/pdf' });
+      const fileURL = URL.createObjectURL(file);
+      window.open(fileURL, '_blank');
+    } catch (error) {
+      console.error("Error al imprimir documento:", error);
+      toast.error("Error al generar el PDF del documento.");
+    }
+  };
 
   // --- STATE FOR AUTO SAVE PERSISTENCE ---
   const [shouldAutoSaveState, setShouldAutoSaveState] = useState(false);
@@ -370,7 +506,7 @@ export default function CapturaRapidaPage() {
           apiService.get('/terceros/'),
           apiService.get('/centros-costo/get-flat?permite_movimiento=true'),
           apiService.get('/plantillas/'),
-          apiService.get('/favoritos/')
+          apiService.get('/conceptos-favoritos/')
         ]);
 
         const aplanarCuentas = (cuentas) => {
@@ -476,6 +612,29 @@ export default function CapturaRapidaPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* BARRA DE HERRAMIENTAS (CENTRO DE CONTROL) */}
+        <div className="flex items-center gap-3 animate-fadeIn mt-4 md:mt-0">
+
+          {/* TOGGLE IMPRIMIR AL GUARDAR */}
+          <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-indigo-100 shadow-sm transition-all hover:shadow-md cursor-pointer" onClick={() => setImprimirAlGuardar(!imprimirAlGuardar)}>
+            <div className={`w-8 h-4 flex items-center bg-gray-300 rounded-full p-1 duration-300 ease-in-out ${imprimirAlGuardar ? 'bg-indigo-600' : ''}`}>
+              <div className={`bg-white w-3 h-3 rounded-full shadow-md transform duration-300 ease-in-out ${imprimirAlGuardar ? 'translate-x-3' : ''}`}></div>
+            </div>
+            <span className="text-sm font-bold text-gray-600 select-none">Imprimir</span>
+          </div>
+
+          {/* BOTÓN VER ASIENTOS (MONITOR EXTERNO) */}
+          <button
+            type="button"
+            onClick={() => window.open('/contabilidad/captura-rapida/monitor', 'MonitorAsientos', 'width=1200,height=800,resizable=yes,scrollbars=yes')}
+            className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white border border-indigo-600 rounded-lg hover:bg-indigo-700 shadow-md transition-all transform hover:scale-105 text-sm font-medium"
+            title="Abrir monitor en ventana independiente"
+          >
+            <FaMagic /> Monitor de Asientos
+          </button>
+
         </div>
 
         {/* NOTIFICACIONES */}
@@ -640,8 +799,23 @@ export default function CapturaRapidaPage() {
                               className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
                               title="Guardar concepto en librería"
                             >
-                              <FaBook />
+                              <FaSave />
                             </button>
+                            {/* BOTÓN BUSCAR CONCEPTO (SOLO PRIMER REGISTRO) */}
+                            {index === 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setMovimientoIndexSeleccionado(index);
+                                  setIsSeleccionarConceptoModalOpen(true);
+                                  setConceptoBusqueda('');
+                                }}
+                                className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                                title="Buscar concepto en librería"
+                              >
+                                <FaBook />
+                              </button>
+                            )}
                           </div>
                         </td>
                         <td className="px-6 py-4 text-right text-sm font-mono font-medium text-gray-700">
@@ -747,6 +921,198 @@ export default function CapturaRapidaPage() {
                 <button onClick={handleCreateConcepto} disabled={isSubmittingConcepto} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md disabled:bg-gray-400">
                   {isSubmittingConcepto ? 'Guardando...' : 'Guardar en Librería'}
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* MODAL SELECCIONAR CONCEPTO */}
+        {isSeleccionarConceptoModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 animate-fadeIn">
+            <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-lg border border-gray-100 flex flex-col max-h-[80vh]">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                  <FaBook className="text-green-500" /> Librería de Conceptos
+                </h2>
+                <button onClick={() => setIsSeleccionarConceptoModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                  ✕
+                </button>
+              </div>
+
+              <input
+                type="text"
+                placeholder="Buscar concepto..."
+                value={conceptoBusqueda}
+                onChange={(e) => setConceptoBusqueda(e.target.value)}
+                className={`${inputClass} mb-4`}
+                autoFocus
+              />
+
+              <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                {conceptos
+                  .filter(c => !conceptoBusqueda || c.descripcion.toLowerCase().includes(conceptoBusqueda.toLowerCase()))
+                  .map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => {
+                        handleConceptoChange(movimientoIndexSeleccionado, c.descripcion);
+                        setIsSeleccionarConceptoModalOpen(false);
+                      }}
+                      className="w-full text-left p-3 rounded-lg hover:bg-indigo-50 border border-gray-100 hover:border-indigo-200 transition-all text-sm text-gray-700 flex justify-between group"
+                    >
+                      <span>{c.descripcion}</span>
+                      <span className="text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity text-xs italic">Seleccionar</span>
+                    </button>
+                  ))}
+                {conceptos.length === 0 && (
+                  <p className="text-center text-gray-400 py-4 italic">No hay conceptos guardados aún.</p>
+                )}
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+                <button onClick={() => setIsSeleccionarConceptoModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* MODAL REIMPRIMIR */}
+        {isReimprimirModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[60] animate-fadeIn">
+            <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-lg border border-gray-100 flex flex-col max-h-[80vh]">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                  <FaPrint className="text-gray-500" /> Reimprimir Documento
+                </h2>
+                <button onClick={() => setIsReimprimirModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+              </div>
+
+              <div className="mb-4">
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="Buscar por número, tercero o valor..."
+                  value={reimprimirBusqueda}
+                  onChange={(e) => handleSearchReimprimir(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-2 p-1 custom-scrollbar bg-gray-50 rounded-lg min-h-[200px]">
+                {!Array.isArray(documentosRecientes) || documentosRecientes.length === 0 ? (
+                  <p className="text-center text-gray-400 py-10 italic">No se encontraron documentos.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {documentosRecientes.map(doc => (
+                      <div key={doc.id} className="bg-white p-3 rounded-lg border border-gray-100 shadow-sm flex justify-between items-center hover:shadow-md transition-shadow">
+                        <div>
+                          <div className="font-bold text-gray-800 text-sm">
+                            {doc.tipo_documento?.codigo || 'DOC'} #{doc.numero}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(doc.fecha).toLocaleDateString()} - {doc.beneficiario?.razon_social || 'Sin Beneficiario'}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleImprimirDocumento(doc.id)}
+                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          title="Imprimir"
+                        >
+                          <FaPrint />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+        {isMonitorOpen && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-end z-[60] animate-fadeIn">
+            <div className="bg-white w-full h-[85vh] rounded-t-2xl shadow-2xl flex flex-col animate-slideUp">
+              {/* HEADER MONITOR */}
+              <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 rounded-t-2xl">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <FaMagic className="text-indigo-600" /> Monitor de Asientos
+                  </h2>
+                  <p className="text-sm text-gray-500">Visualizando movimientos del mes actual en tiempo real.</p>
+                </div>
+                <button
+                  onClick={() => setIsMonitorOpen(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-full transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* BODY MONITOR (TABLA DE DATOS) */}
+              <div className="flex-1 p-6 overflow-y-auto bg-slate-50">
+                {monitorLoading ? (
+                  <div className="flex justify-center items-center h-full">
+                    <FaBolt className="text-4xl text-indigo-300 animate-pulse" />
+                  </div>
+                ) : monitorData.length === 0 ? (
+                  <div className="text-center py-20 opacity-50">
+                    <FaMagic className="text-6xl text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">No hay movimientos registrados en este periodo.</p>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-200 text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left font-bold text-gray-500">Fecha</th>
+                          <th className="px-4 py-3 text-left font-bold text-gray-500">Documento</th>
+                          <th className="px-4 py-3 text-left font-bold text-gray-500">Tercero</th>
+                          <th className="px-4 py-3 text-left font-bold text-gray-500">Detalle</th>
+                          <th className="px-4 py-3 text-right font-bold text-gray-500">Débito</th>
+                          <th className="px-4 py-3 text-right font-bold text-gray-500">Crédito</th>
+                          <th className="px-4 py-3 text-center font-bold text-gray-500">Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {monitorData.map((row, idx) => (
+                          <tr key={idx} className="hover:bg-indigo-50/30 transition-colors">
+                            <td className="px-4 py-2 text-gray-600 whitespace-nowrap">
+                              {new Date(row.fecha).toLocaleDateString('es-CO')}
+                            </td>
+                            <td className="px-4 py-2 font-mono text-indigo-600 font-medium">
+                              {row.tipo_documento_codigo} {row.numero_documento}
+                            </td>
+                            <td className="px-4 py-2 text-gray-700 truncate max-w-xs" title={row.beneficiario_nombre}>
+                              {row.beneficiario_nombre}
+                            </td>
+                            <td className="px-4 py-2 text-gray-500 italic truncate max-w-xs" title={row.concepto}>
+                              {row.concepto}
+                            </td>
+                            <td className="px-4 py-2 text-right font-mono text-gray-700">
+                              {parseFloat(row.debito) > 0 ? parseFloat(row.debito).toLocaleString('es-CO') : '-'}
+                            </td>
+                            <td className="px-4 py-2 text-right font-mono text-gray-700">
+                              {parseFloat(row.credito) > 0 ? parseFloat(row.credito).toLocaleString('es-CO') : '-'}
+                            </td>
+                            <td className="px-4 py-2 text-center">
+                              {/* Usamos el ID del documento si viene en el reporte, o asumimos que podemos construirlo */}
+                              {/* El reporte journal devuelve filas planas, no objetos documento. Necesitamos el ID del documento para imprimir */}
+                              {/* Si el row no tiene document_id, no podemos imprimir directo. Revisar API */}
+                              {row.documento_id && (
+                                <button
+                                  onClick={() => handleImprimirDocumento(row.documento_id)}
+                                  className="text-gray-400 hover:text-indigo-600 transition-colors"
+                                  title="Reimprimir Documento"
+                                >
+                                  <FaPrint />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           </div>

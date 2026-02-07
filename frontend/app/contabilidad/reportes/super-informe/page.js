@@ -310,7 +310,7 @@ export default function SuperInformePage() {
           pagina_actual: data.pagina_actual
         });
         const headersToShow = Object.keys(data.resultados[0]).filter(key =>
-          !['estado', 'anulado', 'documento_id', 'movimiento_id', 'usuario_creador_id', 'usuario_operacion_id', 'producto_codigo', 'producto_nombre', 'cantidad_movimiento'].includes(key)
+          !['estado', 'anulado', 'documento_id', 'movimiento_id', 'usuario_creador_id', 'usuario_operacion_id', 'producto_codigo', 'producto_nombre', 'cantidad_movimiento', 'beneficiario_doc'].includes(key)
         );
         setDynamicHeaders(headersToShow);
       } else {

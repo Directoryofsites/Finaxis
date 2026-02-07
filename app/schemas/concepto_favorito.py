@@ -21,7 +21,7 @@ class ConceptoFavoritoUpdate(ConceptoFavoritoBase):
     descripcion: Optional[str] = Field(None, max_length=255)
     
 # 4. Esquema de Respuesta (Incluye ID y metadata)
-class ConceptoFavorito(ConceptoFavoritoBase):
+class ConceptoFavoritoResponse(ConceptoFavoritoBase):
     id: int
     created_at: datetime
     created_by: int

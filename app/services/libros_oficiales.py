@@ -48,9 +48,11 @@ def get_data_for_libro_diario(
     """
     try:
         query = db.query(
+            models_doc.id.label("documento_id"), # NUEVO
+            models_mov.id.label("movimiento_id"), # NUEVO
             models_doc.fecha,
             models_tipo.nombre.label("tipo_documento"),
-            models_tipo.codigo.label("tipo_documento_codigo"), # NUEVO CAMPO
+            models_tipo.codigo.label("tipo_documento_codigo"), 
             models_doc.numero.label("numero_documento"),
             models_tercero.razon_social.label("beneficiario_nombre"),
             models_tercero.nit.label("beneficiario_nit"),
@@ -83,9 +85,11 @@ def get_data_for_libro_diario(
 
         report_data = [
             {
+                "id": mov.movimiento_id, # Key única para React
+                "documento_id": mov.documento_id, # ID para impresión
                 "fecha": mov.fecha,
-                "tipo_documento": mov.tipo_documento, # Nombre (Compatibilidad)
-                "tipo_documento_codigo": mov.tipo_documento_codigo, # Nuevo: Código
+                "tipo_documento": mov.tipo_documento, 
+                "tipo_documento_codigo": mov.tipo_documento_codigo, 
                 "numero_documento": mov.numero_documento,
                 "beneficiario_nombre": mov.beneficiario_nombre or "N/A",
                 "beneficiario_nit": mov.beneficiario_nit or "N/A",

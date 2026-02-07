@@ -5,21 +5,21 @@
             "hora_ejecucion": "03:00",
             "ruta_local": "C:/Backups_Finaxis",
             "dias_retencion": 30,
-            "last_run": "2026-02-06T10:24:13.551265"
+            "last_run": "2026-02-07T10:15:28.677452"
         },
         "134": {
             "enabled": true,
             "hora_ejecucion": "03:00",
             "ruta_local": "C:/Backups_Finaxis",
             "dias_retencion": 30,
-            "last_run": "2026-02-06T10:24:13.841467"
+            "last_run": "2026-02-07T10:15:28.977908"
         },
         "140": {
             "enabled": true,
             "hora_ejecucion": "03:00",
             "ruta_local": "C:/Backups_Finaxis",
             "dias_retencion": 30,
-            "last_run": "2026-02-06T10:24:13.935973"
+            "last_run": "2026-02-07T10:15:29.097526"
         },
         "181": {
             "enabled": true,
