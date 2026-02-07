@@ -8,7 +8,7 @@ import { getBodegas } from '../../../lib/bodegaService';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
-export default function GestionOrdenesPage() {
+function GestionOrdenesContent() {
     const { user, authLoading } = useAuth(); // Destructuramos authLoading
     const searchParams = useSearchParams(); // Hook para leer URL params
     const [activeTab, setActiveTab] = useState('list'); // 'list' | 'create'
@@ -659,5 +659,13 @@ export default function GestionOrdenesPage() {
                 )
             }
         </div >
+    );
+}
+
+export default function GestionOrdenesPage() {
+    return (
+        <React.Suspense fallback={<div className="p-8 text-center text-gray-500">Cargando Órdenes...</div>}>
+            <GestionOrdenesContent />
+        </React.Suspense>
     );
 }

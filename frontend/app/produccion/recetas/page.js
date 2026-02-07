@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getRecetas, createReceta, updateReceta, deleteReceta, downloadRecetaPDF } from '../../../lib/produccionService';
 import { getProductosByEmpresa as getProductos } from '../../../lib/productosService'; // Necesitamos buscar productos (MP y PT)
 
-export default function GestionRecetasPage() {
+function GestionRecetasContent() {
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const [activeTab, setActiveTab] = useState('list'); // 'list' | 'create'
@@ -647,5 +647,13 @@ export default function GestionRecetasPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function GestionRecetasPage() {
+    return (
+        <React.Suspense fallback={<div className="p-8 text-center text-gray-500">Cargando Recetas...</div>}>
+            <GestionRecetasContent />
+        </React.Suspense>
     );
 }
