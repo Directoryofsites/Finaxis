@@ -159,8 +159,8 @@ const FormModal = ({ isOpen, onClose, onSubmit, centro, setCentro, isLoading, ce
   );
 };
 
-// --- PÁGINA PRINCIPAL ---
-export default function GestionCentrosCostoPage() {
+// --- CONTENIDO PRINCIPAL (Componente Interno) ---
+function GestionCentrosCostoContent() {
   const { user, loading: authLoading } = useAuth();
   const searchParams = useSearchParams();
   const [centros, setCentros] = useState([]);
@@ -414,5 +414,14 @@ export default function GestionCentrosCostoPage() {
         />}
       </div>
     </div>
+  );
+}
+
+// --- default EXPORT WRAPPER ---
+export default function GestionCentrosCostoPage() {
+  return (
+    <React.Suspense fallback={<div className="h-screen flex items-center justify-center text-indigo-500">Cargando...</div>}>
+      <GestionCentrosCostoContent />
+    </React.Suspense>
   );
 }
