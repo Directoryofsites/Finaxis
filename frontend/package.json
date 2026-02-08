@@ -20,7 +20,7 @@
     "jwt-decode": "^4.0.0",
     "lodash": "^4.17.21",
     "lucide-react": "^0.562.0",
-    "next": "15.3.3",
+    "next": "^16.1.6",
     "react": "^19.0.0",
     "react-chartjs-2": "^5.3.1",
     "react-datepicker": "^8.4.0",
@@ -38,7 +38,7 @@
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
-    "eslint-config-next": "15.3.3",
+    "eslint-config-next": "^16.1.6",
     "tailwindcss": "^4"
   }
 }
