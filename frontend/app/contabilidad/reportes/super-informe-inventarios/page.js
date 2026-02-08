@@ -1,12 +1,12 @@
 // frontend/app/contabilidad/reportes/super-informe-inventarios/page.js
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
 
 import Paginacion from '@/app/components/ui/Paginacion';
-import { FaTable, FaFilter, FaSearch, FaEraser, FaFilePdf, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaTable, FaFilter, FaSearch, FaEraser, FaFilePdf, FaChevronDown, FaChevronUp, FaCheckCircle } from 'react-icons/fa';
 import { useAutoReport } from '@/hooks/useAutoReport';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -105,7 +105,7 @@ const vistaOptions = [
     { value: 'MOVIMIENTOS', label: 'Movimientos Detallados' },
 ];
 
-export default function SuperInformeInventariosPage() {
+function SuperInformeInventariosContent() {
     const { user, authLoading } = useAuth();
 
     // --- Estados de Datos ---
@@ -122,12 +122,31 @@ export default function SuperInformeInventariosPage() {
     const [isSearching, setIsSearching] = useState(false);
     const [error, setError] = useState(null);
 
+    const handleExportPDF = useCallback(async () => {
+        if (isSearching) return;
+        toast.info("Generando PDF...", { autoClose: 3000, toastId: 'pdf-pending' });
+
+        const filtrosPDF = { ...filtros, traerTodo: true, pagina_actual: 1, items_por_pagina: 99999 };
+        const payload = {};
+        for (const key in filtrosPDF) {
+            let value = filtrosPDF[key];
+            if (value === null || value === '' || (Array.isArray(value) && value.length === 0)) value = null;
+            if (value === null) continue;
+            if (['tercero_id'].includes(key) && value !== null) value = parseInt(value);
+            if (key === 'fecha_inicio' || key === 'fecha_fin') value = formatDateForAPI(value);
+            if (key === 'traerTodo') payload[key] = true; else payload[key] = value;
+        }
+
+        try {
+            await generarPdfDirectoSuperInforme(payload);
+            toast.success("Descarga iniciada.", { toastId: 'pdf-pending' });
+        } catch (error) {
+            const errorMessage = error.response?.data?.detail || "Error al generar PDF.";
+            toast.error(errorMessage, { toastId: 'pdf-pending' });
+        }
+    }, [filtros, isSearching]);
+
     // --- AUTOMATIZACIÓN (HOOK UNIFICADO) ---
-    // --- AUTOMATIZACIÓN (HOOK UNIFICADO) ---
-    // Este hook maneja la detección de URL (ai_email, ai_accion) y el disparo de acciones
-    // Nota: Pasamos una función anónima a handleExportPDF para evitar problemas de referencia temprana, 
-    // aunque idealmente handleExportPDF debería definirse antes o usar hoisting.
-    // Como handleExportPDF es const (no hoisting), usamos una referencia mutable o un wrapper.
     const { triggerAutoDispatch } = useAutoReport('super_informe_inventarios', () => handleExportPDF());
 
     // Efecto para activar el despacho automático cuando lleguen resultados
@@ -228,10 +247,7 @@ export default function SuperInformeInventariosPage() {
                 }
             }
 
-
-
             setFiltros(newFiltros); // Apply filters
-
 
             // TRIGGER SEARCH UI
             setTimeout(() => {
@@ -240,8 +256,6 @@ export default function SuperInformeInventariosPage() {
             }, 500);
         }
     }, [searchParams, maestros, isLoadingMaestros]);
-
-    // --- AUTO PDF/EMAIL EXECUTION EFFECT ---
 
 
     const handleFiltroChange = (e) => {
@@ -260,7 +274,7 @@ export default function SuperInformeInventariosPage() {
 
     const handleVistaChange = (e) => {
         setFiltros(prev => ({ ...prev, vista_reporte: e.target.value, pagina: 1 }));
-        setResultados([]); setTotales(null); setDynamicHeaders([]);
+        setResultados([]); setResultados([]); setTotales(null); setDynamicHeaders([]);
     };
 
     const handleLimpiarFiltros = () => {
@@ -327,30 +341,6 @@ export default function SuperInformeInventariosPage() {
             setIsSearching(false);
         }
     }, [filtros]);
-
-    const handleExportPDF = useCallback(async () => {
-        if (isSearching) return;
-        toast.info("Generando PDF...", { autoClose: 3000, toastId: 'pdf-pending' });
-
-        const filtrosPDF = { ...filtros, traerTodo: true, pagina_actual: 1, items_por_pagina: 99999 };
-        const payload = {};
-        for (const key in filtrosPDF) {
-            let value = filtrosPDF[key];
-            if (value === null || value === '' || (Array.isArray(value) && value.length === 0)) value = null;
-            if (value === null) continue;
-            if (['tercero_id'].includes(key) && value !== null) value = parseInt(value);
-            if (key === 'fecha_inicio' || key === 'fecha_fin') value = formatDateForAPI(value);
-            if (key === 'traerTodo') payload[key] = true; else payload[key] = value;
-        }
-
-        try {
-            await generarPdfDirectoSuperInforme(payload);
-            toast.success("Descarga iniciada.", { toastId: 'pdf-pending' });
-        } catch (error) {
-            const errorMessage = error.response?.data?.detail || "Error al generar PDF.";
-            toast.error(errorMessage, { toastId: 'pdf-pending' });
-        }
-    }, [filtros, isSearching]);
 
     // --- Renderizado Celdas ---
     const renderCellContent = (item, headerKeyOrIndex) => {
@@ -628,5 +618,17 @@ export default function SuperInformeInventariosPage() {
                 }
             </div >
         </div >
+    );
+}
+
+export default function SuperInformeInventariosPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gray-50 flex justify-center items-center">
+                <span className="loading loading-spinner loading-lg text-indigo-600"></span>
+            </div>
+        }>
+            <SuperInformeInventariosContent />
+        </Suspense>
     );
 }

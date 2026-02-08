@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -33,7 +33,7 @@ const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 trackin
 const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none pl-10";
 const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none bg-white pl-10";
 
-export default function NuevoTrasladoPage() {
+function TrasladoForm() {
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
     const searchParams = useSearchParams(); // Hook para leer parámetros
@@ -214,7 +214,6 @@ export default function NuevoTrasladoPage() {
                 <ToastContainer position="top-right" autoClose={5000} />
 
 
-                {/* ENCABEZADO */}
                 {/* ENCABEZADO */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                     <div>
@@ -413,5 +412,18 @@ export default function NuevoTrasladoPage() {
                 />
             </div>
         </div>
+    );
+}
+
+export default function NuevoTrasladoPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+                <FaTruckMoving className="text-indigo-300 text-6xl mb-4 animate-pulse" />
+                <p className="text-indigo-600 font-semibold text-lg animate-pulse">Cargando logística...</p>
+            </div>
+        }>
+            <TrasladoForm />
+        </Suspense>
     );
 }

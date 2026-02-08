@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -47,7 +47,7 @@ const MultiSelect = ({ options, selected, onChange, labelAll = "-- Todas las Cue
   );
 };
 
-export default function ReporteTerceroCuentaPage() {
+function ReporteTerceroCuentaContent() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const dataFetchedRef = useRef(false);
@@ -886,5 +886,29 @@ export default function ReporteTerceroCuentaPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ReporteTerceroCuentaPage() {
+  const { loading: authLoading } = useAuth();
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+        <FaUserTag className="text-indigo-300 text-6xl mb-4 animate-pulse" />
+        <p className="text-indigo-600 font-semibold text-lg animate-pulse">Cargando Auditoría de Terceros...</p>
+      </div>
+    );
+  }
+
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+        <FaUserTag className="text-indigo-300 text-6xl mb-4 animate-pulse" />
+        <p className="text-indigo-600 font-semibold text-lg animate-pulse">Preparando Auditoría...</p>
+      </div>
+    }>
+      <ReporteTerceroCuentaContent />
+    </Suspense>
   );
 }

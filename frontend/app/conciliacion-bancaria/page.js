@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Upload, 
-  Settings, 
-  GitMerge, 
-  Eye, 
+import {
+  Upload,
+  Settings,
+  GitMerge,
+  Eye,
   BarChart3,
   AlertCircle,
   CheckCircle,
@@ -35,7 +35,7 @@ import InputDiagnostic from './components/InputDiagnostic';
 // Importar estilos específicos
 import './conciliacion-bancaria.css';
 
-export default function ConciliacionBancariaPage() {
+function ConciliacionBancariaContent() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedBankAccount, setSelectedBankAccount] = useState(null);
   const [reconciliationSummary, setReconciliationSummary] = useState(null);
@@ -46,10 +46,10 @@ export default function ConciliacionBancariaPage() {
     console.log('🚀 [PAGE LOAD] Cargando página de conciliación bancaria...');
     console.log('🚀 [PAGE LOAD] URL:', window.location.href);
     console.log('🚀 [PAGE LOAD] User Agent:', navigator.userAgent);
-    
+
     const tabParam = searchParams.get('tab');
     console.log('🚀 [PAGE LOAD] Tab parameter:', tabParam);
-    
+
     if (tabParam) {
       // Validar que el tab existe
       const validTabs = ['dashboard', 'import', 'manual', 'adjustments', 'reports', 'config', 'test'];
@@ -71,7 +71,7 @@ export default function ConciliacionBancariaPage() {
 
   const loadReconciliationSummary = async () => {
     if (!selectedBankAccount) return;
-    
+
     try {
       const response = await fetch(`/api/conciliacion-bancaria/reconcile/summary/${selectedBankAccount.id}`);
       if (response.ok) {
@@ -96,7 +96,7 @@ export default function ConciliacionBancariaPage() {
     <div className="container mx-auto p-6 space-y-6">
       {/* Breadcrumb Navigation */}
       <BreadcrumbNavigation activeTab={activeTab} selectedBankAccount={selectedBankAccount} />
-      
+
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -105,7 +105,7 @@ export default function ConciliacionBancariaPage() {
             Gestión integral de conciliaciones bancarias automatizadas y manuales
           </p>
         </div>
-        
+
         {selectedBankAccount && (
           <div className="text-right">
             <div className="text-sm text-gray-500">Cuenta seleccionada</div>
@@ -166,8 +166,8 @@ export default function ConciliacionBancariaPage() {
                 <GitMerge className="h-5 w-5 text-purple-500" />
                 <div>
                   <div className="text-2xl font-bold text-purple-600">
-                    {(reconciliationSummary.reconciliations?.automatic || 0) + 
-                     (reconciliationSummary.reconciliations?.manual || 0)}
+                    {(reconciliationSummary.reconciliations?.automatic || 0) +
+                      (reconciliationSummary.reconciliations?.manual || 0)}
                   </div>
                   <div className="text-sm text-gray-600">Total conciliaciones</div>
                 </div>
@@ -212,7 +212,7 @@ export default function ConciliacionBancariaPage() {
 
         {/* Dashboard */}
         <TabsContent value="dashboard" className="space-y-6">
-          <ReconciliationDashboard 
+          <ReconciliationDashboard
             selectedBankAccount={selectedBankAccount}
             onBankAccountChange={handleBankAccountChange}
             reconciliationSummary={reconciliationSummary}
@@ -222,7 +222,7 @@ export default function ConciliacionBancariaPage() {
         </TabsContent>
         {/* Importación */}
         <TabsContent value="import" className="space-y-6">
-          <FileImportInterface 
+          <FileImportInterface
             selectedBankAccount={selectedBankAccount}
             onBankAccountChange={handleBankAccountChange}
             onImportComplete={handleReconciliationUpdate}
@@ -232,7 +232,7 @@ export default function ConciliacionBancariaPage() {
         {/* Conciliación Manual */}
         <TabsContent value="manual" className="space-y-6">
           {selectedBankAccount ? (
-            <ManualReconciliationInterface 
+            <ManualReconciliationInterface
               bankAccount={selectedBankAccount}
               onReconciliationUpdate={handleReconciliationUpdate}
             />
@@ -248,7 +248,7 @@ export default function ConciliacionBancariaPage() {
 
         {/* Ajustes Automáticos */}
         <TabsContent value="adjustments" className="space-y-6">
-          <AutomaticAdjustments 
+          <AutomaticAdjustments
             bankAccount={selectedBankAccount}
             onAdjustmentComplete={handleReconciliationUpdate}
           />
@@ -256,7 +256,7 @@ export default function ConciliacionBancariaPage() {
 
         {/* Reportes */}
         <TabsContent value="reports" className="space-y-6">
-          <ReconciliationReports 
+          <ReconciliationReports
             selectedBankAccount={selectedBankAccount}
             onBankAccountChange={handleBankAccountChange}
           />
@@ -267,7 +267,7 @@ export default function ConciliacionBancariaPage() {
           <div className="grid grid-cols-1 gap-6">
             <ImportConfigManager />
             {selectedBankAccount && (
-              <AccountingConfiguration 
+              <AccountingConfiguration
                 bankAccount={selectedBankAccount}
                 onConfigurationSaved={handleReconciliationUpdate}
               />
@@ -287,7 +287,7 @@ export default function ConciliacionBancariaPage() {
           </div>
         </TabsContent>
       </Tabs>
-      
+
       {/* Componentes flotantes */}
       <ContextualHelp activeTab={activeTab} />
       <NotificationCenter />
@@ -295,5 +295,20 @@ export default function ConciliacionBancariaPage() {
       <EventMonitor />
       <InputDiagnostic />
     </div>
+  );
+}
+
+export default function ConciliacionBancariaPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto p-6 space-y-6 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Cargando módulo de conciliación...</p>
+        </div>
+      </div>
+    }>
+      <ConciliacionBancariaContent />
+    </Suspense>
   );
 }

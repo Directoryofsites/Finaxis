@@ -1,7 +1,7 @@
 // frontend/app/contabilidad/reportes/super-informe/page.js
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
@@ -44,7 +44,7 @@ const INITIAL_FILTROS_STATE = {
 const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none bg-white";
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
 
-export default function SuperInformePage() {
+function SuperInformeContent() {
   const { user, authLoading } = useAuth();
   const [maestros, setMaestros] = useState({ tiposDocumento: [], terceros: [], cuentas: [], centrosCosto: [], productos: [] });
   const [filtros, setFiltros] = useState(INITIAL_FILTROS_STATE);
@@ -607,5 +607,18 @@ export default function SuperInformePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function SuperInformePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+        <FaTable className="text-indigo-300 text-6xl mb-4 animate-pulse" />
+        <p className="text-indigo-600 font-semibold text-lg animate-pulse">Cargando Super Informe...</p>
+      </div>
+    }>
+      <SuperInformeContent />
+    </Suspense>
   );
 }

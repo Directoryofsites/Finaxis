@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Script from 'next/script';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -25,7 +25,7 @@ const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 trackin
 const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none pl-10";
 const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none bg-white pl-10";
 
-export default function EstadoCuentaClientePage() {
+function EstadoCuentaClienteContent() {
     const { user, authLoading } = useAuth();
     const router = useRouter();
 
@@ -486,5 +486,18 @@ export default function EstadoCuentaClientePage() {
                 </div>
             </div>
         </>
+    );
+}
+
+export default function EstadoCuentaClientePage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600 font-semibold">Cargando estado de cuenta...</p>
+            </div>
+        }>
+            <EstadoCuentaClienteContent />
+        </Suspense>
     );
 }

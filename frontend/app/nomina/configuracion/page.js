@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -12,7 +12,7 @@ import { getTiposNomina, createTipoNomina, updateTipoNomina, deleteTipoNomina, g
 import { getPlanCuentasFlat } from '../../../lib/planCuentasService';
 import { apiService } from '../../../lib/apiService';
 
-export default function NominaConfiguracion() {
+function NominaConfiguracionContent() {
     // State: Tipos
     const [tipos, setTipos] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -381,5 +381,13 @@ export default function NominaConfiguracion() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function NominaConfiguracion() {
+    return (
+        <Suspense fallback={<div className="text-center py-10 text-gray-400">Cargando...</div>}>
+            <NominaConfiguracionContent />
+        </Suspense>
     );
 }
