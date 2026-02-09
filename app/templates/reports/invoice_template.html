@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <title>{{documento.tipo_nombre}}</title>
@@ -113,14 +114,17 @@
         }
 
         /* TABLA PRODUCTOS */
+        /* CONFIGURACIÓN DE PÁGINA PARA PDF (WeasyPrint) */
+        @page {
+            size: letter;
+            margin: 1cm;
+        }
+
         .products-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 16px;
             font-size: 8px;
-            /* border-radius: 6px; Removed for PDF compatibility */
-            /* overflow: hidden; Removed for PDF compatibility */
-            /* box-shadow: 0 1px 3px rgba(0,0,0,0.1); Removed for PDF compatibility */
         }
 
         .products-table th {
@@ -134,13 +138,23 @@
             letter-spacing: 0.5px;
         }
 
-        .products-table th.text-center { text-align: center; }
-        .products-table th.text-right { text-align: right; }
+        .products-table th.text-center {
+            text-align: center;
+        }
+
+        .products-table th.text-right {
+            text-align: right;
+        }
 
         .products-table td {
             padding: 6px;
             border-bottom: 1px solid #f1f5f9;
             vertical-align: middle;
+        }
+
+        .products-table tr {
+            page-break-inside: avoid;
+            /* Evita que una fila se corte a la mitad */
         }
 
         .products-table tbody tr:nth-child(even) {
@@ -171,7 +185,8 @@
             font-size: 8px;
         }
 
-        .item-price, .item-amount {
+        .item-price,
+        .item-amount {
             text-align: right;
             font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
             font-size: 8px;
@@ -221,7 +236,7 @@
             border: 1px solid #e5e7eb;
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
         .total-line {
@@ -340,13 +355,14 @@
                 Tel: {{empresa.telefono}}{% if empresa.email %} • {{empresa.email}}{% endif %}
             </div>
         </div>
-        
+
         <div class="document-section">
             <div class="doc-type">{{documento.tipo_nombre}}</div>
             <div class="doc-number">N° {{documento.consecutivo}}</div>
             <div class="doc-dates">
                 <span class="date-label">Fecha:</span> {{documento.fecha_emision}}<br>
-                {% if documento.fecha_vencimiento %}<span class="date-label">Vence:</span> {{documento.fecha_vencimiento}}<br>{% endif %}
+                {% if documento.fecha_vencimiento %}<span class="date-label">Vence:</span>
+                {{documento.fecha_vencimiento}}<br>{% endif %}
                 {% if documento.vendedor %}<span class="date-label">Vendedor:</span> {{documento.vendedor}}{% endif %}
             </div>
         </div>
@@ -357,7 +373,8 @@
         <div class="client-header">Cliente / Proveedor</div>
         <div class="client-name">{{tercero.razon_social}}</div>
         <div class="client-info">
-            NIT/CC: {{tercero.nit}}{% if tercero.direccion %} • {{tercero.direccion}}{% endif %}{% if tercero.telefono %} • Tel: {{tercero.telefono}}{% endif %}
+            NIT/CC: {{tercero.nit}}{% if tercero.direccion %} • {{tercero.direccion}}{% endif %}{% if tercero.telefono
+            %} • Tel: {{tercero.telefono}}{% endif %}
         </div>
     </div>
 
@@ -410,7 +427,7 @@
                 <span class="total-label">Subtotal:</span>
                 <span class="total-value">{{totales.subtotal}}</span>
             </div>
-            
+
             <!-- DESCUENTOS -->
             {% if totales.descuentos and totales.descuentos != '0.00' %}
             <div class="total-line">
@@ -418,7 +435,7 @@
                 <span class="total-value">-{{totales.descuentos}}</span>
             </div>
             {% endif %}
-            
+
             <!-- DISCRIMINACIÓN DE BASES GRAVABLES -->
             {% if totales.base_exenta and totales.base_exenta != '0.00' %}
             <div class="total-line base-line">
@@ -426,21 +443,21 @@
                 <span class="total-value">{{totales.base_exenta}}</span>
             </div>
             {% endif %}
-            
+
             {% if totales.base_gravable_5 and totales.base_gravable_5 != '0.00' %}
             <div class="total-line base-line">
                 <span class="total-label">Base Gravable (5%):</span>
                 <span class="total-value">{{totales.base_gravable_5}}</span>
             </div>
             {% endif %}
-            
+
             {% if totales.base_gravable_19 and totales.base_gravable_19 != '0.00' %}
             <div class="total-line base-line">
                 <span class="total-label">Base Gravable (19%):</span>
                 <span class="total-value">{{totales.base_gravable_19}}</span>
             </div>
             {% endif %}
-            
+
             <!-- DISCRIMINACIÓN DE IMPUESTOS -->
             {% if totales.iva_5 and totales.iva_5 != '0.00' %}
             <div class="total-line tax-line">
@@ -448,14 +465,14 @@
                 <span class="total-value">{{totales.iva_5}}</span>
             </div>
             {% endif %}
-            
+
             {% if totales.iva_19 and totales.iva_19 != '0.00' %}
             <div class="total-line tax-line">
                 <span class="total-label">IVA (19%):</span>
                 <span class="total-value">{{totales.iva_19}}</span>
             </div>
             {% endif %}
-            
+
             <!-- RETENCIONES -->
             {% if totales.retencion and totales.retencion != '0.00' %}
             <div class="total-line">
@@ -463,7 +480,7 @@
                 <span class="total-value">-{{totales.retencion}}</span>
             </div>
             {% endif %}
-            
+
             <!-- TOTAL FINAL -->
             <div class="total-line">
                 <span class="total-label">TOTAL A PAGAR:</span>
@@ -475,7 +492,8 @@
     <!-- PIE DE PÁGINA EMPRESARIAL -->
     <div class="footer-area">
         <div class="legal-notice">
-            Esta factura se asimila en todos sus efectos a una letra de cambio de conformidad con el artículo 774 del Código de Comercio. 
+            Esta factura se asimila en todos sus efectos a una letra de cambio de conformidad con el artículo 774 del
+            Código de Comercio.
             Los pagos realizados después del vencimiento causarán intereses de mora según las tasas legales vigentes.
         </div>
 
@@ -499,4 +517,5 @@
         </div>
     </div>
 </body>
+
 </html>

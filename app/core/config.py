@@ -36,7 +36,8 @@ class Settings(BaseSettings):
     
     # --- AÑADIDO PARA LA IMPRESIÓN SEGURA ---
     # Se define la variable que la aplicación espera encontrar.
-    BASE_URL: str = "http://localhost:3000"
+    # Prioridad: ENV VAR > Producción > Localhost (fallback)
+    BASE_URL: str = os.getenv("BASE_URL", "https://www.finaxis.com.co")
 
 
 settings = Settings()
