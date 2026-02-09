@@ -1,5 +1,7 @@
 // frontend/app/contabilidad/explorador/page.js
 'use client';
+// Force Vercel Redeploy - 2026-02-09
+
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
