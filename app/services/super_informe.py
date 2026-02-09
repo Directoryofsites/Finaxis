@@ -40,27 +40,29 @@ def generate_super_informe(db: Session, filtros: schemas_doc.DocumentoGestionFil
     Motor de búsqueda dinámico para el Super Informe, con lógica de paginación completa
     y enriquecido con datos de auditoría mediante una estrategia de dos pasos.
     """
-    # (Esta función no necesita cambios, ya que solo prepara datos)
-    print(f"--- BUSCANDO EN SUPER INFORME CON FILTROS: {filtros.model_dump()} ---")
+    # (Esta función ha sido optimizada para hacer joins directos con Usuario)
+    print(f"--- BUSCANDO EN SUPER INFORME CON FILTROS (OPTIMIZADO): {filtros.model_dump()} ---")
 
     try:
         tipo_entidad = filtros.tipoEntidad
         query = None
 
-        # Alias para tercero de movimiento
+        # Alias para joins
         from sqlalchemy.orm import aliased
         TerceroMov = aliased(models_tercero)
+        UsuarioCreator = aliased(models_usuario)
+        UsuarioOperator = aliased(models_usuario)
 
         if tipo_entidad == 'movimientos':
             if filtros.estadoDocumento in ['activos', 'anulados']:
-                query = db.query(
+                base_query = db.query(
                     models_mov.id.label('movimiento_id'),
                     models_doc.id.label('documento_id'),
                     models_doc.fecha,
                     models_tipo.nombre.label("tipo_documento"),
                     models_doc.numero,
-                    models_tercero.razon_social.label("beneficiario_doc"), # Renamed for clarity, fallback
-                    TerceroMov.razon_social.label("beneficiario"), # Priority: Movimiento Tercero
+                    func.coalesce(models_tercero.razon_social, '').label("beneficiario_doc"),
+                    func.coalesce(TerceroMov.razon_social, '').label("beneficiario_mov"),
                     models_plan.codigo.label("cuenta_codigo"),
                     models_plan.nombre.label("cuenta_nombre"),
                     models_centro_costo.nombre.label("centro_costo"),
@@ -72,11 +74,13 @@ def generate_super_informe(db: Session, filtros: schemas_doc.DocumentoGestionFil
                     models_doc.usuario_creador_id,
                     models_log.razon.label('justificacion'),
                     models_log.usuario_id.label('usuario_operacion_id'),
-                    # --- NUEVAS COLUMNAS DE PRODUCTO ---
+                    # --- NUEVAS COLUMNAS DE USUARIO (Optimize joins) ---
+                    func.coalesce(UsuarioCreator.nombre_completo, UsuarioCreator.email, 'N/A').label('usuario_creador_nombre'),
+                    func.coalesce(UsuarioOperator.nombre_completo, UsuarioOperator.email, 'N/A').label('usuario_operacion_nombre'),
+                    # --- COLUMNAS DE PRODUCTO ---
                     models_producto.codigo.label("producto_codigo"),
                     models_producto.nombre.label("producto_nombre"),
                     models_mov.cantidad.label("cantidad_movimiento")
-                    # -----------------------------------
                 ).join(models_doc, models_mov.documento_id == models_doc.id)\
                 .join(models_plan, models_mov.cuenta_id == models_plan.id)\
                 .join(models_tipo, models_doc.tipo_documento_id == models_tipo.id)\
@@ -88,22 +92,23 @@ def generate_super_informe(db: Session, filtros: schemas_doc.DocumentoGestionFil
                     models_log.tipo_operacion == 'ANULACION',
                     models_log.documento_id_asociado == models_doc.id
                 ))\
+                .outerjoin(UsuarioCreator, models_doc.usuario_creador_id == UsuarioCreator.id)\
+                .outerjoin(UsuarioOperator, models_log.usuario_id == UsuarioOperator.id)\
                 .filter(models_doc.empresa_id == empresa_id)
 
                 if filtros.estadoDocumento == 'activos':
-                    query = query.filter(models_doc.anulado == False, models_doc.estado == 'ACTIVO')
+                    query = base_query.filter(models_doc.anulado == False, models_doc.estado == 'ACTIVO')
                 elif filtros.estadoDocumento == 'anulados':
-                    query = query.filter(models_doc.anulado == True, models_doc.estado == 'ANULADO')
+                    query = base_query.filter(models_doc.anulado == True, models_doc.estado == 'ANULADO')
 
             elif filtros.estadoDocumento == 'eliminados':
-                 # (Mantener lógica original para eliminados, ya que no tienen tercero_id aun)
                  query = db.query(
                     models_mov_elim.id.label('movimiento_id'),
                     models_doc_elim.id.label('documento_id'),
                     models_doc_elim.fecha,
                     models_tipo.nombre.label("tipo_documento"),
                     models_doc_elim.numero,
-                    models_tercero.razon_social.label("beneficiario"), # Solo Header
+                    models_tercero.razon_social.label("beneficiario"),
                     models_plan.codigo.label("cuenta_codigo"),
                     models_plan.nombre.label("cuenta_nombre"),
                     models_centro_costo.nombre.label("centro_costo"),
@@ -114,13 +119,18 @@ def generate_super_informe(db: Session, filtros: schemas_doc.DocumentoGestionFil
                     cast('ELIMINADO', String).label('estado'),
                     models_doc_elim.usuario_creador_id,
                     models_log.razon.label('justificacion'),
-                    models_log.usuario_id.label('usuario_operacion_id')
+                    models_log.usuario_id.label('usuario_operacion_id'),
+                    # --- NUEVAS COLUMNAS DE USUARIO (Optimizadas) ---
+                    func.coalesce(UsuarioCreator.nombre_completo, UsuarioCreator.email, 'N/A').label('usuario_creador_nombre'),
+                    func.coalesce(UsuarioOperator.nombre_completo, UsuarioOperator.email, 'N/A').label('usuario_operacion_nombre')
                 ).join(models_doc_elim, models_mov_elim.documento_eliminado_id == models_doc_elim.id)\
                 .join(models_log, models_doc_elim.log_eliminacion_id == models_log.id)\
                 .join(models_plan, models_mov_elim.cuenta_id == models_plan.id)\
                 .join(models_tipo, models_doc_elim.tipo_documento_id == models_tipo.id)\
                 .outerjoin(models_tercero, models_doc_elim.beneficiario_id == models_tercero.id)\
                 .outerjoin(models_centro_costo, models_mov_elim.centro_costo_id == models_centro_costo.id)\
+                .outerjoin(UsuarioCreator, models_doc_elim.usuario_creador_id == UsuarioCreator.id)\
+                .outerjoin(UsuarioOperator, models_log.usuario_id == UsuarioOperator.id)\
                 .filter(models_doc_elim.empresa_id == empresa_id)
 
             if query:
@@ -133,22 +143,15 @@ def generate_super_informe(db: Session, filtros: schemas_doc.DocumentoGestionFil
 
                 if filtros.numero:
                     try:
-                        # Logic for multi-value filtering (comma separated)
                         raw_nums = str(filtros.numero).replace(' ', '').split(',')
                         
                         if filtros.estadoDocumento == 'eliminados':
-                            # For 'eliminados', numero is treated as string in this logic (though model might store it as int/str)
-                            # Looking at model def, models_doc_elim.numero is usually String or Integer? 
-                            # Previous code cast it to str(). Let's stick to str for 'eliminados' if that was expected.
-                            # But wait, original code: query.filter(table_doc.numero == str(filtros.numero))
                             if len(raw_nums) > 1:
                                 query = query.filter(table_doc.numero.in_(raw_nums))
                             else:
                                 query = query.filter(table_doc.numero == raw_nums[0])
                         else:
-                            # For active/anulados (models_doc.numero is likely Integer)
                             parsed_nums = [int(n) for n in raw_nums if n.isdigit()]
-                            
                             if parsed_nums:
                                 if len(parsed_nums) > 1:
                                     query = query.filter(table_doc.numero.in_(parsed_nums))
@@ -162,24 +165,20 @@ def generate_super_informe(db: Session, filtros: schemas_doc.DocumentoGestionFil
                 if filtros.cuentaIds: query = query.filter(table_mov.cuenta_id.in_(filtros.cuentaIds))
                 if filtros.centroCostoIds: query = query.filter(table_mov.centro_costo_id.in_(filtros.centroCostoIds))
                 
-                # --- NUEVO FILTRO DE PRODUCTOS ---
                 if filtros.productoIds and filtros.estadoDocumento != 'eliminados':
-                     # Solo aplicamos a movimientos activos que tienen la col producto_id
                      query = query.filter(table_mov.producto_id.in_(filtros.productoIds))
-                # ---------------------------------
+                
                 if filtros.conceptoKeyword: query = query.filter(table_mov.concepto.ilike(f"%{filtros.conceptoKeyword}%"))
 
                 if filtros.valorOperador and filtros.valorMonto is not None:
                     monto = filtros.valorMonto
                     if filtros.valorOperador == 'mayor':
                         query = query.filter(or_(table_mov.debito > monto, table_mov.credito > monto))
-
                     elif filtros.valorOperador == 'menor':
                         query = query.filter(or_(
                             and_(table_mov.debito < monto, table_mov.debito > 0),
                             and_(table_mov.credito < monto, table_mov.credito > 0)
                         ))
-
                     elif filtros.valorOperador == 'igual':
                         query = query.filter(or_(table_mov.debito == monto, table_mov.credito == monto))
 
@@ -194,35 +193,20 @@ def generate_super_informe(db: Session, filtros: schemas_doc.DocumentoGestionFil
                     offset = (pagina_actual - 1) * limite
                     resultados_orm = query.order_by(table_doc.fecha.desc(), table_doc.numero.desc()).offset(offset).limit(limite).all()
 
-                user_ids = set()
-                for r in resultados_orm:
-                    if r.usuario_creador_id: user_ids.add(r.usuario_creador_id)
-                    if hasattr(r, 'usuario_operacion_id') and r.usuario_operacion_id: user_ids.add(r.usuario_operacion_id)
-
-                user_map = {}
-                if user_ids:
-                    usuarios_db = db.query(models_usuario.id, models_usuario.nombre_completo, models_usuario.email).filter(models_usuario.id.in_(user_ids)).all()
-                    user_map = {user.id: {'nombre': user.nombre_completo, 'email': user.email} for user in usuarios_db}
-
+                # --- RESULTADOS DIRECTOS SIN BUCLE DE MAPEO ---
                 resultados_finales = []
                 for r in resultados_orm:
                     fila = r._asdict()
 
-                    # Fallback de Beneficiario (Movimiento > Documento)
-                    if not fila.get('beneficiario') and fila.get('beneficiario_doc'):
+                    # Fallback lógica de beneficiario
+                    if fila.get('beneficiario_mov'):
+                        fila['beneficiario'] = fila['beneficiario_mov']
+                    elif fila.get('beneficiario_doc'):
                          fila['beneficiario'] = fila['beneficiario_doc']
 
-                    creador_data = user_map.get(r.usuario_creador_id)
-                    if creador_data:
-                        fila['usuario_creador'] = creador_data['nombre'] if creador_data['nombre'] else creador_data['email']
-                    else:
-                        fila['usuario_creador'] = 'N/A'
-
-                    operacion_data = user_map.get(r.usuario_operacion_id if hasattr(r, 'usuario_operacion_id') else None)
-                    if operacion_data:
-                         fila['usuario_operacion'] = operacion_data['nombre'] if operacion_data['nombre'] else operacion_data['email']
-                    else:
-                        fila['usuario_operacion'] = 'N/A'
+                    # Mapear nombres directos
+                    fila['usuario_creador'] = fila.get('usuario_creador_nombre', 'N/A')
+                    fila['usuario_operacion'] = fila.get('usuario_operacion_nombre', 'N/A')
 
                     resultados_finales.append(fila)
 

@@ -4292,6 +4292,7 @@ TEMPLATES_EMPAQUETADOS = {
         table {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed; /* OPTIMIZATION: Faster PDF rendering */
         }
 
         th,
