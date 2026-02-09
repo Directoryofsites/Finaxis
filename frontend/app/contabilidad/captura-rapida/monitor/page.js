@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -9,12 +10,13 @@ import 'react-datepicker/dist/react-datepicker.css';
 
 // Hooks y Servicios
 import { useAuth } from '../../../context/AuthContext';
-import { apiService } from '../../../../lib/apiService';
+import { apiService, API_URL } from '../../../../lib/apiService';
 import { useMemo } from 'react';
-import { FaPrint, FaSync, FaCalendarAlt, FaFilter, FaSearch, FaBolt, FaHashtag, FaUser, FaBookOpen } from 'react-icons/fa';
+import { FaPrint, FaSync, FaCalendarAlt, FaFilter, FaSearch, FaBolt, FaHashtag, FaUser, FaBookOpen, FaFilePdf, FaEdit } from 'react-icons/fa';
 
 export default function MonitorAsientosPage() {
     const { user } = useAuth();
+    const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [movimientos, setMovimientos] = useState([]);
     const [filtros, setFiltros] = useState({
@@ -124,6 +126,38 @@ export default function MonitorAsientosPage() {
         window.open(url, '_blank');
     };
 
+    const handleExportarReportePDF = async () => {
+        toast.info("Generando reporte PDF... \u23F3", { autoClose: 2000 });
+        try {
+            const inicio = filtros.fechaInicio.toISOString().split('T')[0];
+            const fin = filtros.fechaFin.toISOString().split('T')[0];
+
+            // Obtener IDs de tipos seleccionados (si hay filtro de tipo, es uno solo en este UI actual)
+            // Pero el monitor aplica filtro local, así que mandamos los términos de búsqueda al backend
+            const params = {
+                fecha_inicio: inicio,
+                fecha_fin: fin,
+                numero_documento: filtroNumero || undefined,
+                beneficiario_filtro: filtroBeneficiario || undefined,
+                concepto_filtro: filtroConcepto || undefined
+            };
+
+            const res = await apiService.get('/reports/journal/get-signed-url', { params });
+            const signedToken = res.data.signed_url_token;
+
+            const pdfUrl = `${API_URL}/api/reports/journal/imprimir?signed_token=${signedToken}`;
+            window.open(pdfUrl, '_blank');
+        } catch (error) {
+            console.error("Error exportando PDF:", error);
+            toast.error("No se pudo generar el reporte PDF.");
+        }
+    };
+
+    const handleEditarDocumento = (docId) => {
+        if (!docId) return;
+        router.push(`/contabilidad/documentos/${docId}?edit=true`);
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col font-sans text-gray-800">
             <ToastContainer position="top-right" autoClose={3000} />
@@ -231,6 +265,16 @@ export default function MonitorAsientosPage() {
                     >
                         <FaSync className={loading ? 'animate-spin' : ''} />
                     </button>
+
+                    <button
+                        onClick={handleExportarReportePDF}
+                        disabled={loading || movimientosFiltrados.length === 0}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all shadow-sm ${loading || movimientosFiltrados.length === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'}`}
+                        title="Exportar vista actual a PDF"
+                    >
+                        <FaFilePdf />
+                        <span className="font-bold text-sm">PDF</span>
+                    </button>
                 </div>
             </header>
 
@@ -273,14 +317,23 @@ export default function MonitorAsientosPage() {
                                                 {new Date(mov.fecha).toLocaleDateString()}
                                             </td>
                                             <td className="px-6 py-3 whitespace-nowrap">
-                                                <button
-                                                    onClick={() => handleImprimirDocumento(mov.documento_id)}
-                                                    className="font-bold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-2 group-hover:scale-105 transition-transform"
-                                                    title="Clic para reimprimir PDF"
-                                                >
-                                                    {mov.tipo_documento_codigo || 'DOC'} {mov.numero_documento || mov.documento_numero}
-                                                    <FaPrint className="opacity-0 group-hover:opacity-100 text-xs transition-opacity" />
-                                                </button>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => handleEditarDocumento(mov.documento_id)}
+                                                        className="font-bold text-indigo-600 hover:text-indigo-800 hover:underline transition-colors flex items-center gap-1"
+                                                        title="Ver / Editar Documento"
+                                                    >
+                                                        {mov.tipo_documento_codigo || 'DOC'} {mov.numero_documento || mov.documento_numero}
+                                                        <FaEdit className="text-[10px] opacity-50" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleImprimirDocumento(mov.documento_id)}
+                                                        className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-all"
+                                                        title="Imprimir PDF del documento"
+                                                    >
+                                                        <FaPrint className="text-xs" />
+                                                    </button>
+                                                </div>
                                             </td>
                                             <td className="px-6 py-3 text-gray-700 truncate max-w-xs" title={mov.beneficiario_nombre}>
                                                 {mov.beneficiario_nombre || 'Sin Beneficiario'}

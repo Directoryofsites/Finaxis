@@ -237,6 +237,9 @@ def get_journal_report(
     fecha_fin: date = Query(..., description="Fecha de fin del reporte (YYYY-MM-DD)"),
     tipos_documento_ids: Optional[List[int]] = Query(None, description="Lista de IDs de tipos de documento"),
     cuenta_filtro: Optional[str] = Query(None, description="Filtro por código o nombre de cuenta"),
+    numero_documento: Optional[str] = Query(None, description="Filtro por número de documento"),
+    beneficiario_filtro: Optional[str] = Query(None, description="Filtro por beneficiario (Nombre o NIT)"),
+    concepto_filtro: Optional[str] = Query(None, description="Filtro por concepto"),
     db: Session = Depends(get_db),
     current_user: usuario_schema.User = Depends(get_current_user)
 ):
@@ -250,7 +253,10 @@ def get_journal_report(
         fecha_inicio=fecha_inicio,
         fecha_fin=fecha_fin,
         tipos_documento_ids=tipos_documento_ids,
-        cuenta_filtro=cuenta_filtro
+        cuenta_filtro=cuenta_filtro,
+        numero_documento=numero_documento,
+        beneficiario_filtro=beneficiario_filtro,
+        concepto_filtro=concepto_filtro
     )
     return report_data
 
@@ -260,6 +266,9 @@ def get_signed_journal_report_url(
     fecha_fin: date = Query(..., description="Fecha de fin del reporte (YYYY-MM-DD)"),
     tipos_documento_ids: Optional[List[int]] = Query(None, description="Lista de IDs de tipos de documento"),
     cuenta_filtro: Optional[str] = Query(None, description="Filtro por código o nombre de cuenta"),
+    numero_documento: Optional[str] = Query(None, description="Filtro por número de documento"),
+    beneficiario_filtro: Optional[str] = Query(None, description="Filtro por beneficiario (Nombre o NIT)"),
+    concepto_filtro: Optional[str] = Query(None, description="Filtro por concepto"),
     modo: Optional[str] = Query(None, description="Modo de generación: 'oficial' para cerrar el período"),
     db: Session = Depends(get_db),
     current_user: usuario_schema.User = Depends(get_current_user)
@@ -293,7 +302,10 @@ def get_signed_journal_report_url(
         fecha_fin=fecha_fin.isoformat(),
         empresa_id=current_user.empresa_id,
         tipos_documento_ids=tipos_documento_ids,
-        cuenta_filtro=cuenta_filtro
+        cuenta_filtro=cuenta_filtro,
+        numero_documento=numero_documento,
+        beneficiario_filtro=beneficiario_filtro,
+        concepto_filtro=concepto_filtro
     )
     return {"signed_url_token": signed_token}
 
@@ -321,6 +333,9 @@ def get_journal_report_pdf(
     empresa_id = verified_params["empresa_id"]
     tipos_documento_ids = verified_params.get("tipos_documento_ids") # Use .get() as it might be missing in old tokens (though not relevant here) or None values
     cuenta_filtro = verified_params.get("cuenta_filtro")
+    numero_documento = verified_params.get("numero_documento")
+    beneficiario_filtro = verified_params.get("beneficiario_filtro")
+    concepto_filtro = verified_params.get("concepto_filtro")
 
     # MODIFICACIÓN: Ahora llama a nuestro nuevo servicio centralizado
     pdf_content = libros_oficiales_service.generate_libro_diario_pdf(
@@ -329,7 +344,10 @@ def get_journal_report_pdf(
         fecha_inicio=fecha_inicio,
         fecha_fin=fecha_fin,
         tipos_documento_ids=tipos_documento_ids,
-        cuenta_filtro=cuenta_filtro
+        cuenta_filtro=cuenta_filtro,
+        numero_documento=numero_documento,
+        beneficiario_filtro=beneficiario_filtro,
+        concepto_filtro=concepto_filtro
     )
     from fastapi.responses import Response
     return Response(content=pdf_content, media_type="application/pdf")

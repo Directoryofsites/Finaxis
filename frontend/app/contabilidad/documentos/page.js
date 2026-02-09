@@ -16,6 +16,8 @@ import {
   FaTrash,
   FaPrint,
   FaBook,
+  FaBolt,
+  FaMagic,
   FaCheckCircle,
   FaExclamationTriangle,
   FaList,
@@ -56,6 +58,7 @@ export default function NuevoDocumentoPage() {
   const [error, setError] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [documentoRecienCreadoId, setDocumentoRecienCreadoId] = useState(null);
+  const [imprimirAlGuardar, setImprimirAlGuardar] = useState(false);
 
   // Estados para Cartera y Proveedores
   // Estados para Cartera y Proveedores
@@ -83,6 +86,52 @@ export default function NuevoDocumentoPage() {
     plantillas: [],
     conceptos: [],
   });
+
+  const fetchMaestros = useCallback(async (isBackground = false) => {
+    if (!isBackground) setPageIsLoading(true);
+    setError('');
+    try {
+      const [cuentasRes, tercerosRes, ccostoRes, tiposDocRes, plantillasRes, conceptosRes] = await Promise.all([
+        apiService.get('/plan-cuentas/list-flat/'),
+        apiService.get('/terceros/'),
+        apiService.get('/centros-costo/get-flat'),
+        apiService.get('/tipos-documento/'),
+        apiService.get('/plantillas/'),
+        apiService.get('/conceptos-favoritos/')
+      ]);
+
+      const aplanarCuentas = (cuentas) => {
+        let listaPlana = [];
+        const recorrer = (cuenta) => {
+          if (cuenta.permite_movimiento) {
+            listaPlana.push(cuenta);
+          }
+          if (cuenta.children) {
+            cuenta.children.forEach(recorrer);
+          }
+        };
+        cuentas.forEach(recorrer);
+        return listaPlana;
+      };
+
+      setMaestros({
+        cuentas: aplanarCuentas(cuentasRes.data),
+        terceros: tercerosRes.data,
+        centrosCosto: ccostoRes.data.filter(c => c.permite_movimiento),
+        tiposDocumento: tiposDocRes.data,
+        plantillas: plantillasRes.data,
+        conceptos: conceptosRes.data || [],
+      });
+
+    } catch (err) {
+      console.error("Error en fetchMaestros:", err);
+      if (!isBackground) {
+        setError(err.response?.data?.detail || 'Error fatal al cargar los datos maestros.');
+      }
+    } finally {
+      if (!isBackground) setPageIsLoading(false);
+    }
+  }, [user]);
 
   const addRef = (name, el) => {
     if (el) {
@@ -121,6 +170,12 @@ export default function NuevoDocumentoPage() {
       newMovimientos[index]['debito'] = '';
     }
     newMovimientos[index][field] = value;
+
+    // --- UX: EFECTO ESPEJO PARA CONCEPTOS ---
+    if (field === 'concepto' && index === 0 && newMovimientos.length > 1) {
+      newMovimientos[1].concepto = value;
+    }
+
     setMovimientos(newMovimientos);
   };
 
@@ -551,7 +606,13 @@ export default function NuevoDocumentoPage() {
 
       const response = await apiService.post('/documentos/', payload);
       setMensaje(`¡Éxito! Documento ${response.data.numero} creado.`);
-      setDocumentoRecienCreadoId(response.data.id);
+      const newDocId = response.data.id;
+      setDocumentoRecienCreadoId(newDocId);
+
+      // --- IMPRESIÓN AUTOMÁTICA (Si está habilitada en el Control Center) ---
+      if (imprimirAlGuardar) {
+        handleImprimirDocumento(newDocId);
+      }
 
       // --- CAMBIOS DE PERSISTENCIA (Request Usuario) ---
       // setTipoDocumentoId(''); // MANTENER TIPO DE DOCUMENTO
@@ -847,58 +908,19 @@ export default function NuevoDocumentoPage() {
       return;
     }
 
-    if (maestros.cuentas.length > 0) {
-      setPageIsLoading(false);
-      return;
+    if (maestros.cuentas.length === 0) {
+      fetchMaestros();
     }
 
-    const fetchMaestros = async () => {
-      setPageIsLoading(true);
-      setError('');
-      try {
-        const [cuentasRes, tercerosRes, ccostoRes, tiposDocRes, plantillasRes, conceptosRes] = await Promise.all([
-          apiService.get('/plan-cuentas/list-flat/'),
-          apiService.get('/terceros/'),
-          apiService.get('/centros-costo/get-flat'),
-          apiService.get('/tipos-documento/'),
-          apiService.get('/plantillas/'),
-          apiService.get('/conceptos-favoritos/')
-        ]);
-
-        const aplanarCuentas = (cuentas) => {
-          let listaPlana = [];
-          const recorrer = (cuenta) => {
-            if (cuenta.permite_movimiento) {
-              listaPlana.push(cuenta);
-            }
-            if (cuenta.children) {
-              cuenta.children.forEach(recorrer);
-            }
-          };
-          cuentas.forEach(recorrer);
-          return listaPlana;
-        };
-
-        setMaestros({
-          cuentas: aplanarCuentas(cuentasRes.data),
-          terceros: tercerosRes.data,
-          centrosCosto: ccostoRes.data.filter(c => c.permite_movimiento),
-          tiposDocumento: tiposDocRes.data,
-          plantillas: plantillasRes.data,
-          conceptos: conceptosRes.data || [],
-        });
-
-      } catch (err) {
-        setError(err.response?.data?.detail || 'Error fatal al cargar los datos maestros.');
-        setPageIsLoading(false);
-      } finally {
-        setPageIsLoading(false);
+    // --- SMART SYNC: Actualizar maestros automáticamente al recuperar el foco ---
+    const handleFocus = () => {
+      if (document.visibilityState === 'visible' && maestros.cuentas.length > 0) {
+        fetchMaestros(true);
       }
     };
-    fetchMaestros();
-
-
-  }, [user, authLoading, router, maestros.cuentas.length]);
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user, authLoading, router, maestros.cuentas.length, fetchMaestros]);
 
   if (pageIsLoading || authLoading) {
     return (
@@ -949,6 +971,30 @@ export default function NuevoDocumentoPage() {
                 <p className="text-gray-500 text-sm">Registro manual de asientos, notas y comprobantes.</p>
               </div>
             </div>
+          </div>
+
+          {/* BARRA DE HERRAMIENTAS (CENTRO DE CONTROL) */}
+          <div className="flex items-center gap-3 animate-fadeIn mt-4 md:mt-0">
+            {/* TOGGLE IMPRIMIR AL GUARDAR */}
+            <div
+              className={`flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-indigo-100 shadow-sm transition-all hover:shadow-md cursor-pointer ${imprimirAlGuardar ? 'ring-2 ring-indigo-500' : ''}`}
+              onClick={() => setImprimirAlGuardar(!imprimirAlGuardar)}
+            >
+              <div className={`w-8 h-4 flex items-center bg-gray-300 rounded-full p-1 duration-300 ease-in-out ${imprimirAlGuardar ? 'bg-indigo-600' : ''}`}>
+                <div className={`bg-white w-3 h-3 rounded-full shadow-md transform duration-300 ease-in-out ${imprimirAlGuardar ? 'translate-x-3' : ''}`}></div>
+              </div>
+              <span className="text-sm font-bold text-gray-600 select-none">Imprimir</span>
+            </div>
+
+            {/* BOTÓN VER ASIENTOS (MONITOR EXTERNO) */}
+            <button
+              type="button"
+              onClick={() => window.open('/contabilidad/captura-rapida/monitor', 'MonitorAsientos', 'width=1200,height=800,resizable=yes,scrollbars=yes')}
+              className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white border border-indigo-600 rounded-lg hover:bg-indigo-700 shadow-md transition-all transform hover:scale-105 text-sm font-medium"
+              title="Abrir monitor en ventana independiente"
+            >
+              <FaMagic /> Monitor de Asientos
+            </button>
           </div>
         </div>
 
@@ -1040,7 +1086,15 @@ export default function NuevoDocumentoPage() {
                     className="ml-2 text-indigo-600 hover:text-indigo-800 text-[10px] font-bold bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 transition-colors inline-flex items-center gap-1"
                     title="Crear nuevo tercero rápidamente"
                   >
-                    <FaPlus size={8} /> CREAR
+                    <FaPlus size={8} /> RÁPIDO
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.open('/admin/terceros', '_blank')}
+                    className="ml-2 text-green-600 hover:text-green-800 text-[10px] font-bold bg-green-50 px-2 py-0.5 rounded border border-green-200 transition-colors inline-flex items-center gap-1"
+                    title="Gestión completa en ventana nueva"
+                  >
+                    <FaPlus size={8} /> GESTIÓN
                   </button>
                 </label>
                 <div className="relative">
@@ -1061,7 +1115,17 @@ export default function NuevoDocumentoPage() {
 
               {/* CENTRO DE COSTO */}
               <div>
-                <label htmlFor="centroCosto" className={labelClass}>Centro de Costo</label>
+                <label htmlFor="centroCosto" className={labelClass}>
+                  Centro de Costo
+                  <button
+                    type="button"
+                    onClick={() => window.open('/admin/centros-costo', '_blank')}
+                    className="ml-2 text-indigo-600 hover:text-indigo-800 text-[10px] font-bold bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 transition-colors inline-flex items-center gap-1"
+                    title="Gestión de Centros de Costo"
+                  >
+                    <FaPlus size={8} /> GESTIÓN
+                  </button>
+                </label>
                 <div className="relative">
                   <select
                     id="centroCosto"
@@ -1120,7 +1184,17 @@ export default function NuevoDocumentoPage() {
 
               {/* PLANTILLA */}
               <div>
-                <label htmlFor="plantilla" className={labelClass}>Cargar Plantilla (Opcional)</label>
+                <label htmlFor="plantilla" className={labelClass}>
+                  Cargar Plantilla (Opcional)
+                  <button
+                    type="button"
+                    onClick={() => window.open('/admin/plantillas', '_blank')}
+                    className="ml-2 text-indigo-600 hover:text-indigo-800 text-[10px] font-bold bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 transition-colors inline-flex items-center gap-1"
+                    title="Gestionar Plantillas"
+                  >
+                    <FaPlus size={8} /> GESTIÓN
+                  </button>
+                </label>
                 <select
                   id="plantilla"
                   onChange={e => handlePlantillaChange(e.target.value)}
@@ -1239,7 +1313,17 @@ export default function NuevoDocumentoPage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-slate-100">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/4">Cuenta Contable</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/4">
+                      Cuenta Contable
+                      <button
+                        type="button"
+                        onClick={() => window.open('/admin/plan-de-cuentas', '_blank')}
+                        className="ml-2 text-indigo-600 hover:text-indigo-800 text-[10px] font-bold bg-indigo-50 px-1.5 rounded transition-colors"
+                        title="Ver Plan de Cuentas"
+                      >
+                        <FaPlus size={8} />
+                      </button>
+                    </th>
                     <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/4">Concepto / Detalle</th>
                     <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Saldo</th>
                     <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Débito</th>
@@ -1284,9 +1368,9 @@ export default function NuevoDocumentoPage() {
                           <button
                             type="button"
                             onClick={() => handleAddNewConcept(index)}
-                            className="p-1.5 bg-green-100 text-green-700 rounded hover:bg-green-200 text-xs font-bold border border-green-200 transition-colors"
-                            title="Guardar concepto"
-                          >+</button>
+                            className="p-1.5 bg-green-50 text-green-600 rounded hover:bg-green-100 text-xs font-bold border border-green-100 transition-colors"
+                            title="Guardar concepto en librería"
+                          ><FaSave /></button>
                         </div>
                       </td>
                       <td className="px-4 py-2 text-right">

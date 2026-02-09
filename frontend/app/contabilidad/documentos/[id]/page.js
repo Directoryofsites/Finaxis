@@ -64,6 +64,14 @@ export default function DocumentoDetallePage() {
     fetchAllData();
   }, [fetchAllData]);
 
+  // --- EFECTO PARA MODO EDICIÓN AUTOMÁTICO ---
+  useEffect(() => {
+    if (searchParams.get('edit') === 'true' && documento && !isEditing) {
+      setIsEditing(true);
+      setEditedDocument(JSON.parse(JSON.stringify(documento)));
+    }
+  }, [searchParams, documento, isEditing]);
+
   // --- CÁLCULOS Y VALIDACIONES ---
   const formatCurrency = (value) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(parseFloat(value) || 0);
 
@@ -126,14 +134,9 @@ export default function DocumentoDetallePage() {
     setIsLoading(true);
     setError('');
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/documentos/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editedDocument),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.message || 'Error al actualizar.');
-      alert(result.message);
+      const response = await apiService.put(`/documentos/${id}`, editedDocument);
+      const result = response.data;
+      alert(`Documento ${result.numero} actualizado con éxito.`);
 
       // Volvemos a cargar los datos para reflejar los nombres y no solo los IDs
       await fetchAllData();

@@ -2736,6 +2736,9 @@ TEMPLATES_EMPAQUETADOS = {
         <h2>NIT: {{ empresa_nit }}</h2>
         <p><strong>Libro Diario Detallado</strong></p>
         <p>Desde el {{ fecha_inicio }} hasta el {{ fecha_fin }}</p>
+        {% if filtros_aplicados %}
+        <p style="font-size: 9px; color: #666; margin-top: 5px;"><strong>Filtros aplicados:</strong> {{ filtros_aplicados }}</p>
+        {% endif %}
     </div>
 
     <table>

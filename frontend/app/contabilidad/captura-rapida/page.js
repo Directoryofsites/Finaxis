@@ -83,10 +83,16 @@ function CapturaRapidaContent() {
   const [centroCostoId, setCentroCostoId] = useState('');
   const [movimientos, setMovimientos] = useState([]);
   const [valorUnico, setValorUnico] = useState('');
-  const [totales, setTotales] = useState({ debito: 0, credito: 0 });
 
   // --- CÁLCULOS DERIVADOS ---
   const plantillasValidas = useMemo(() => plantillas || [], [plantillas]);
+
+  const totales = useMemo(() => {
+    return movimientos.reduce((acc, m) => ({
+      debito: acc.debito + (parseFloat(m.debito) || 0),
+      credito: acc.credito + (parseFloat(m.credito) || 0)
+    }), { debito: 0, credito: 0 });
+  }, [movimientos]);
 
   const estaBalanceado = useMemo(() => {
     const diff = Math.abs(totales.debito - totales.credito);
@@ -127,7 +133,6 @@ function CapturaRapidaContent() {
         }));
         setMovimientos(nuevosMovimientos);
         setValorUnico(''); // Resetear valor para obligar recálculo
-        setTotales({ debito: 0, credito: 0 });
       }
     }
   };
@@ -148,7 +153,15 @@ function CapturaRapidaContent() {
     });
 
     setMovimientos(nuevosMovs);
-    setTotales({ debito: monto, credito: monto });
+  };
+
+  const handleValorMovimientoChange = (index, field, val) => {
+    const newMovs = [...movimientos];
+    newMovs[index][field] = val;
+
+    // Si el usuario edita un valor manual, ya no aplica la distribución de "Valor Unico" rígidamente
+    setValorUnico('');
+    setMovimientos(newMovs);
   };
 
   const handleConceptoChange = (index, val) => {
@@ -171,7 +184,6 @@ function CapturaRapidaContent() {
     setCentroCostoId('');
     setMovimientos([]);
     setValorUnico('');
-    setTotales({ debito: 0, credito: 0 });
     setFecha(new Date());
   };
 
@@ -756,7 +768,6 @@ function CapturaRapidaContent() {
                     onChange={e => handleValorUnicoChange(e.target.value)}
                     className="w-full pl-10 px-4 py-3 text-3xl font-mono font-bold text-gray-800 border-2 border-indigo-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-center shadow-inner bg-gray-50"
                     placeholder="0.00"
-                    required
                     autoFocus
                   />
                 </div>
@@ -818,11 +829,23 @@ function CapturaRapidaContent() {
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-right text-sm font-mono font-medium text-gray-700">
-                          {parseFloat(mov.debito) > 0 ? parseFloat(mov.debito).toLocaleString('es-CO', { minimumFractionDigits: 2 }) : '-'}
+                        <td className="px-6 py-4">
+                          <input
+                            type="number"
+                            value={mov.debito || ''}
+                            onChange={(e) => handleValorMovimientoChange(index, 'debito', e.target.value)}
+                            placeholder="0.00"
+                            className="w-full px-3 py-1.5 border border-gray-200 rounded-md text-right font-mono text-sm focus:ring-2 focus:ring-indigo-100 outline-none transition-all placeholder:text-gray-300"
+                          />
                         </td>
-                        <td className="px-6 py-4 text-right text-sm font-mono font-medium text-gray-700">
-                          {parseFloat(mov.credito) > 0 ? parseFloat(mov.credito).toLocaleString('es-CO', { minimumFractionDigits: 2 }) : '-'}
+                        <td className="px-6 py-4">
+                          <input
+                            type="number"
+                            value={mov.credito || ''}
+                            onChange={(e) => handleValorMovimientoChange(index, 'credito', e.target.value)}
+                            placeholder="0.00"
+                            className="w-full px-3 py-1.5 border border-gray-200 rounded-md text-right font-mono text-sm focus:ring-2 focus:ring-indigo-100 outline-none transition-all placeholder:text-gray-300"
+                          />
                         </td>
                       </tr>
                     ))}
@@ -832,11 +855,11 @@ function CapturaRapidaContent() {
                   <tfoot className="bg-slate-50 border-t-2 border-slate-200">
                     <tr>
                       <td colSpan="2" className="px-6 py-4 text-right text-sm font-bold text-gray-600 uppercase">Totales Control</td>
-                      <td className={`px-6 py-4 text-right text-sm font-bold font-mono ${estaBalanceado ? 'text-green-600' : 'text-red-500'}`}>
-                        {totales.debito.toLocaleString('es-CO', { minimumFractionDigits: 2 })}
+                      <td className={`px-6 py-4 text-right text-base font-bold font-mono ${estaBalanceado ? 'text-green-600' : 'text-red-500'}`}>
+                        ${totales.debito.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
-                      <td className={`px-6 py-4 text-right text-sm font-bold font-mono ${estaBalanceado ? 'text-green-600' : 'text-red-500'}`}>
-                        {totales.credito.toLocaleString('es-CO', { minimumFractionDigits: 2 })}
+                      <td className={`px-6 py-4 text-right text-base font-bold font-mono ${estaBalanceado ? 'text-green-600' : 'text-red-500'}`}>
+                        ${totales.credito.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                     </tr>
                   </tfoot>
@@ -844,8 +867,8 @@ function CapturaRapidaContent() {
               </div>
 
               {!estaBalanceado && totales.debito > 0 && (
-                <div className="mt-4 text-center text-sm text-red-500 font-semibold animate-pulse">
-                  ⚠️ El asiento no está balanceado. Revise los valores.
+                <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-lg text-center text-sm text-red-600 font-bold animate-fadeIn">
+                  ⚠️ El asiento no está balanceado. Diferencia: ${(Math.abs(totales.debito - totales.credito)).toLocaleString('es-CO', { minimumFractionDigits: 2 })}
                 </div>
               )}
             </div>

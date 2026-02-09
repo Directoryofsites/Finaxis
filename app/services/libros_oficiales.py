@@ -41,7 +41,10 @@ def get_data_for_libro_diario(
     fecha_inicio: date,
     fecha_fin: date,
     tipos_documento_ids: Optional[List[int]] = None,
-    cuenta_filtro: Optional[str] = None
+    cuenta_filtro: Optional[str] = None,
+    numero_documento: Optional[str] = None,
+    beneficiario_filtro: Optional[str] = None,
+    concepto_filtro: Optional[str] = None
 ) -> List[Dict[str, Any]]:
     """
     Obtiene una lista plana de movimientos contables para la tabla del Libro Diario en el frontend.
@@ -81,6 +84,19 @@ def get_data_for_libro_diario(
                 models_plan.nombre.ilike(filtro)
             ))
 
+        if numero_documento:
+            query = query.filter(models_doc.numero.ilike(f"%{numero_documento}%"))
+
+        if beneficiario_filtro:
+            filtro_ben = f"%{beneficiario_filtro}%"
+            query = query.filter(or_(
+                models_tercero.razon_social.ilike(filtro_ben),
+                models_tercero.nit.ilike(filtro_ben)
+            ))
+
+        if concepto_filtro:
+            query = query.filter(models_mov.concepto.ilike(f"%{concepto_filtro}%"))
+
         movimientos_raw = query.order_by(models_doc.fecha, models_doc.numero, models_mov.id).all()
 
         report_data = [
@@ -115,7 +131,10 @@ def generate_libro_diario_pdf(
     fecha_inicio: date,
     fecha_fin: date,
     tipos_documento_ids: Optional[List[int]] = None,
-    cuenta_filtro: Optional[str] = None
+    cuenta_filtro: Optional[str] = None,
+    numero_documento: Optional[str] = None,
+    beneficiario_filtro: Optional[str] = None,
+    concepto_filtro: Optional[str] = None
 ):
     """
     Genera el archivo PDF para el reporte del Libro Diario, construyendo la estructura
@@ -124,7 +143,10 @@ def generate_libro_diario_pdf(
     movimientos_planos = get_data_for_libro_diario(
         db, empresa_id, fecha_inicio, fecha_fin, 
         tipos_documento_ids=tipos_documento_ids, 
-        cuenta_filtro=cuenta_filtro
+        cuenta_filtro=cuenta_filtro,
+        numero_documento=numero_documento,
+        beneficiario_filtro=beneficiario_filtro,
+        concepto_filtro=concepto_filtro
     )
     
     
@@ -169,6 +191,21 @@ def generate_libro_diario_pdf(
     if not empresa_info:
         raise HTTPException(status_code=404, detail=f"No se encontró la empresa con ID {empresa_id}")
 
+    # Construir descripción de filtros para el encabezado del PDF
+    desc_filtros = []
+    if tipos_documento_ids:
+        desc_filtros.append(f"Tipos Doc: {tipos_documento_ids}")
+    if cuenta_filtro:
+        desc_filtros.append(f"Cuenta: {cuenta_filtro}")
+    if numero_documento:
+        desc_filtros.append(f"Número: {numero_documento}")
+    if beneficiario_filtro:
+        desc_filtros.append(f"Beneficiario: {beneficiario_filtro}")
+    if concepto_filtro:
+        desc_filtros.append(f"Concepto: {concepto_filtro}")
+    
+    filtros_str = " | ".join(desc_filtros) if desc_filtros else None
+
     context = {
         "empresa_nombre": empresa_info.razon_social,
         "empresa_nit": empresa_info.nit,
@@ -176,7 +213,8 @@ def generate_libro_diario_pdf(
         "fecha_fin": fecha_fin.strftime('%d/%m/%Y'),
         "report_data_structured": report_data_structured,
         "total_debito": total_debito,
-        "total_credito": total_credito
+        "total_credito": total_credito,
+        "filtros_aplicados": filtros_str
     }
     
     try:
