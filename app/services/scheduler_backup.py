@@ -237,7 +237,13 @@ def start_scheduler():
         scheduler.start()
         logger.info("[AutoBackup] Scheduler started.")
         
-    # 2. Verificar backups perdidos inmediatamente al arrancar
-    # (Lo hacemos en un hilo separado o dejamos que corra síncrono si es rápido, 
-    # mejor síncrono para asegurar que se hagan pronto)
-    check_missed_backups()
+    # 2. Verificar backups perdidos DE FORMA ASÍNCRONA (Job)
+    # No bloquear el arranque. Programar para dentro de 60 segundos.
+    run_date = datetime.now() + timedelta(seconds=60)
+    scheduler.add_job(
+        check_missed_backups, 
+        'date', 
+        run_date=run_date,
+        id='check_missed_backups_delayed'
+    )
+    logger.info(f"[AutoBackup] Missed backup check scheduled for {run_date}")
