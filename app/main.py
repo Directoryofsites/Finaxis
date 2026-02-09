@@ -42,6 +42,10 @@ from app.api.centros_costo import routes as centros_costo_router
 from app.api.conceptos_favoritos import routes as conceptos_favoritos_router # <--- AÑADIR ESTA LÍNEA
 
 from app.api.documentos import routes as documentos_router
+# ... (imports)
+
+# ... (inside app/main.py router inclusions)
+app.include_router(documentos_router.router, prefix="/api/documentos", tags=["Documentos"])
 from app.api.empresas import routes as empresas_router
 from app.api.formatos_impresion import routes as formatos_impresion_router
 from app.api.papelera import routes as papelera_router

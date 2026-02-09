@@ -132,6 +132,7 @@ export default function ExploradorDocumentosPage() {
         try {
             const response = await apiService.post(`/documentos/${docId}/solicitar-impresion`);
             const { signed_url } = response.data;
+            console.log("URL Firmada recibida:", signed_url); // DEBUG: Verificar la URL generada
             window.open(signed_url, '_blank');
             toast.success("Documento generado.");
         } catch (error) {
