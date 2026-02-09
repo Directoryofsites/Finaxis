@@ -677,7 +677,7 @@ function GestionSoportePanel({ soporteUsers, onDataChange }) {
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {soporteUsers.map(user => (
+                        {(soporteUsers || []).map(user => (
                             <tr key={user.id}>
                                 <td className="px-6 py-4 text-sm">{user.email}</td>
                                 <td className="px-6 py-4 text-sm">{user.nombre_completo || 'N/A'}</td>
