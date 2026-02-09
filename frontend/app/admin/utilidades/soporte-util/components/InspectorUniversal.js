@@ -117,7 +117,7 @@ export default function InspectorUniversal() {
       {results.length > 0 && (
         <div className="mt-6 space-y-4">
           <p className='text-sm font-semibold'>{`Se encontraron ${results.length} coincidencia(s) para el ID ${idToInspect}:`}</p>
-          {results.map((result, index) => (
+          {(results || []).map((result, index) => (
             <ResultCard key={`${result.tabla_origen}-${index}`} result={result} />
           ))}
         </div>

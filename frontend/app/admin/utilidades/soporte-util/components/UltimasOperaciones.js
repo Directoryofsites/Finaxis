@@ -41,8 +41,8 @@ export default function UltimasOperaciones({ todasLasEmpresas }) {
       const payload = {
         limit: parseInt(filtros.limit, 10) || 50,
         orderBy: orderByValue,
-        empresaIds: filtros.selectedEmpresas.length > 0
-          ? filtros.selectedEmpresas.map(id => parseInt(id, 10))
+        empresaIds: (filtros.selectedEmpresas || []).length > 0
+          ? (filtros.selectedEmpresas || []).map(id => parseInt(id, 10))
           : null,
         fecha_creacion_inicio: filtros.fecha_creacion_inicio || null,
         fecha_creacion_fin: filtros.fecha_creacion_fin || null,
@@ -126,7 +126,7 @@ export default function UltimasOperaciones({ todasLasEmpresas }) {
               onChange={handleFiltroChange}
               className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md h-24"
             >
-              {todasLasEmpresas.map(emp => (
+              {(todasLasEmpresas || []).map(emp => (
                 <option key={emp.id} value={emp.id}>{emp.razon_social}</option>
               ))}
             </select>
@@ -179,7 +179,7 @@ export default function UltimasOperaciones({ todasLasEmpresas }) {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {reporteDocs.map((log) => (
+              {(reporteDocs || []).map((log) => (
                 <tr key={`${log.id}-${log.tipo_operacion}`} className="hover:bg-gray-50">
                   <td className="px-4 py-4 text-sm">{log.empresa_razon_social}</td>
                   <td className="px-4 py-4 text-sm">{log.fecha_operacion ? new Date(log.fecha_operacion).toLocaleString('es-CO') : 'N/A'}</td>

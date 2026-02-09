@@ -104,7 +104,7 @@ export default function AuditoriaConsecutivosSoporte({ todasLasEmpresas }) {
             className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md"
           >
             <option value="">-- Seleccione una empresa --</option>
-            {todasLasEmpresas.map(emp => <option key={emp.id} value={emp.id}>{emp.razon_social}</option>)}
+            {(todasLasEmpresas || []).map(emp => <option key={emp.id} value={emp.id}>{emp.razon_social}</option>)}
           </select>
         </div>
         <div className="flex-grow w-full">
@@ -117,7 +117,7 @@ export default function AuditoriaConsecutivosSoporte({ todasLasEmpresas }) {
             disabled={!selectedEmpresa || isLoading}
           >
             <option value="">-- Seleccione un documento --</option>
-            {tiposDocumento.map(td => <option key={td.id} value={td.id}>{td.nombre}</option>)}
+            {(tiposDocumento || []).map(td => <option key={td.id} value={td.id}>{td.nombre}</option>)}
           </select>
         </div>
         <button
@@ -155,7 +155,7 @@ export default function AuditoriaConsecutivosSoporte({ todasLasEmpresas }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {auditResult.resultados.map((row, index) => (
+                {(auditResult.resultados || []).map((row, index) => (
                   <tr key={index} className={getRowClass(row.estado)}>
                     {row.estado === 'HUECO' ? (
                       <td colSpan="6" className="py-2 px-3 text-center">

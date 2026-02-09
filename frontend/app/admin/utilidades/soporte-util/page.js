@@ -876,7 +876,7 @@ function SoporteUtilContent() {
                     {activeTab === 'gestionSoporte' && (
                         <div className="grid grid-cols-1 gap-6">
                             <GestionSoportePanel soporteUsers={dashboardData.usuarios_soporte} onDataChange={fetchDashboardData} />
-                            <UltimasOperaciones limit={5} />
+                            <UltimasOperaciones todasLasEmpresas={dashboardData.empresas || []} limit={5} />
                         </div>
                     )}
 
@@ -911,7 +911,7 @@ function SoporteUtilContent() {
 
                     {activeTab === 'auditoria' && (
                         <div className="space-y-8">
-                            <AuditoriaConsecutivosSoporte />
+                            <AuditoriaConsecutivosSoporte todasLasEmpresas={dashboardData.empresas || []} />
                             <InspectorUniversal />
                         </div>
                     )}

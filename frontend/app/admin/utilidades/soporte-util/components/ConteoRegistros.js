@@ -317,17 +317,17 @@ export default function ConteoRegistros() {
                                 <h4 className="font-bold text-slate-700 text-lg uppercase mb-1">Total Periodo</h4>
                                 <div className="flex gap-4">
                                     <div className="badge badge-lg bg-indigo-100 text-indigo-700 font-bold border-0">
-                                        {recargasGlobales.length} Compras
+                                        {(recargasGlobales || []).length} Compras
                                     </div>
                                     <div className="badge badge-lg bg-amber-100 text-amber-700 font-bold border-0">
-                                        Pendiente: {currency(recargasGlobales.filter(r => !r.facturado).reduce((acc, r) => acc + (r.valor_total || 0), 0))}
+                                        Pendiente: {currency((recargasGlobales || []).filter(r => !r.facturado).reduce((acc, r) => acc + (r.valor_total || 0), 0))}
                                     </div>
                                 </div>
                             </div>
                             <div className="text-right">
                                 <span className="block text-xs uppercase font-bold text-slate-400">Total Facturado + Pendiente</span>
                                 <span className="text-3xl font-black text-slate-900">
-                                    {currency(recargasGlobales.reduce((acc, r) => acc + (r.valor_total || 0), 0))}
+                                    {currency((recargasGlobales || []).reduce((acc, r) => acc + (r.valor_total || 0), 0))}
                                 </span>
                             </div>
                         </div>
@@ -348,14 +348,14 @@ export default function ConteoRegistros() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {recargasGlobales.length === 0 ? (
+                                        {(recargasGlobales || []).length === 0 ? (
                                             <tr>
                                                 <td colSpan="6" className="px-6 py-8 text-center text-slate-400 italic">
                                                     No se encontraron recargas en este periodo global.
                                                 </td>
                                             </tr>
                                         ) : (
-                                            recargasGlobales.map(r => (
+                                            (recargasGlobales || []).map(r => (
                                                 <tr key={r.id} className="hover:bg-slate-50 transition-colors">
                                                     <td className="px-6 py-4 font-bold text-slate-700">
                                                         {new Date(r.fecha_compra).toLocaleDateString()}
@@ -432,7 +432,7 @@ export default function ConteoRegistros() {
 
     // 1. VISTA BUSCADOR (Si no hay empresa seleccionada)
     if (!empresaSelected) {
-        const filtradas = listaEmpresas.filter(e =>
+        const filtradas = (listaEmpresas || []).filter(e =>
             (e.nombre_empresa && e.nombre_empresa.toLowerCase().includes(busqueda.toLowerCase())) ||
             (e.nit && e.nit.includes(busqueda))
         );
@@ -476,7 +476,7 @@ export default function ConteoRegistros() {
                             {filtradas.length === 0 ? (
                                 <div className="p-8 text-center text-slate-400 italic">No se encontraron resultados.</div>
                             ) : (
-                                filtradas.map(empresa => (
+                                (filtradas || []).map(empresa => (
                                     <button
                                         key={empresa.empresa_id}
                                         onClick={() => handleSelectEmpresa(empresa)}
@@ -752,7 +752,7 @@ export default function ConteoRegistros() {
                                         <div className="mt-4 pt-4 border-t border-white/10">
                                             <p className="text-[10px] text-amber-200 uppercase font-bold mb-1">Deuda Pendiente</p>
                                             <p className="text-2xl font-black text-amber-400">
-                                                {currency(recargasData.filter(r => !r.facturado).reduce((acc, r) => acc + (r.valor_total || 0), 0))}
+                                                {currency((recargasData || []).filter(r => !r.facturado).reduce((acc, r) => acc + (r.valor_total || 0), 0))}
                                             </p>
                                         </div>
                                     </div>
@@ -778,7 +778,7 @@ export default function ConteoRegistros() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {recargasData.length === 0 ? (
+                                            {(recargasData || []).length === 0 ? (
                                                 <tr>
                                                     <td colSpan="5" className="px-6 py-8 text-center text-slate-400 italic">
                                                         No hay recargas registradas en este periodo.
@@ -853,7 +853,7 @@ export default function ConteoRegistros() {
                                                 <tr>
                                                     <td colSpan="2" className="text-right px-6 py-4 font-bold text-slate-500 uppercase text-xs">Total Comprado (Mes)</td>
                                                     <td className="px-6 py-4 text-right font-black text-slate-900 border-t border-slate-200">
-                                                        {currency(recargasData.reduce((acc, r) => acc + (r.valor_total || 0), 0))}
+                                                        {currency((recargasData || []).reduce((acc, r) => acc + (r.valor_total || 0), 0))}
                                                     </td>
                                                     <td colSpan="2"></td>
                                                 </tr>
