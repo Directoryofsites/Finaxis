@@ -2618,6 +2618,7 @@ def generate_estado_cuenta_cliente_report(
     tercero_id: int,
     fecha_fin: date
 ) -> Dict[str, Any]:
+    # 1. Obtener Info Cliente
     tercero_info = db.query(
         models_tercero.id,
         models_tercero.razon_social,
@@ -2630,28 +2631,37 @@ def generate_estado_cuenta_cliente_report(
     if not tercero_info:
         raise HTTPException(status_code=404, detail="Cliente no encontrado.")
 
+    # 2. Identificar cuentas CXC
     cuentas_cxc_ids = _get_cuentas_especiales_ids(db, empresa_id, 'cxc')
     if not cuentas_cxc_ids:
         return { "clienteInfo": {}, "facturas": [], "saldoTotal": 0, "edades": {}, "fechaCorte": fecha_fin.isoformat() }
 
+    # 3. OPTIMIZACIÓN: CTE/Subquery eficiente para Valor Original
+    # Solo sumamos débitos en cuentas CXC para cobrar
     sq_valor_original = db.query(
-        models_doc.id.label("documento_id"),
+        models_mov.documento_id,
         func.sum(models_mov.debito).label("valor_original")
-    ).join(models_mov, models_doc.id == models_mov.documento_id)\
+    ).join(models_doc, models_mov.documento_id == models_doc.id)\
      .filter(
+        models_doc.empresa_id == empresa_id, # Filtro temprano por empresa
         models_doc.beneficiario_id == tercero_id, 
         models_doc.anulado == False,
         models_mov.cuenta_id.in_(cuentas_cxc_ids)
-    ).group_by(models_doc.id).subquery()
+    ).group_by(models_mov.documento_id).subquery()
 
+    # 4. OPTIMIZACIÓN: CTE/Subquery eficiente para Abonos
+    # Filtramos por fecha de pago <= fecha_fin para integridad histórica
     sq_abonos = db.query(
         models_aplica.documento_factura_id.label("documento_id"),
         func.sum(models_aplica.valor_aplicado).label("total_abonos")
     ).join(models_doc, models_aplica.documento_pago_id == models_doc.id)\
-     .filter(models_doc.beneficiario_id == tercero_id, models_doc.anulado == False)\
-     .group_by(models_aplica.documento_factura_id).subquery()
+     .filter(
+         models_doc.anulado == False,
+         models_doc.fecha <= fecha_fin # Importante: Corte histórico real
+     ).group_by(models_aplica.documento_factura_id).subquery()
 
-    facturas_con_saldo = db.query(
+    # 5. Consulta Principal (Solo facturas con saldo > 0)
+    facturas_vivas = db.query(
         models_doc.id,
         models_doc.fecha,
         models_doc.fecha_vencimiento,
@@ -2665,51 +2675,56 @@ def generate_estado_cuenta_cliente_report(
      .filter(
         models_doc.empresa_id == empresa_id,
         models_doc.beneficiario_id == tercero_id,
-        models_doc.fecha <= fecha_fin,
+        models_doc.fecha <= fecha_fin, # La factura debe existir a la fecha de corte
         models_doc.anulado == False,
         models_tipo.funcion_especial == FuncionEspecial.CARTERA_CLIENTE,
-        sq_valor_original.c.valor_original > func.coalesce(sq_abonos.c.total_abonos, 0)
+        # Condición HAVING implícita: Saldo > 0 (con tolerancia a float)
+        (sq_valor_original.c.valor_original - func.coalesce(sq_abonos.c.total_abonos, 0)) > 0.01 
     ).order_by(models_doc.fecha_vencimiento).all()
 
+    # 6. Procesamiento en Memoria (Rápido, solo datos finales)
     reporte_facturas = []
-    edades = {
-        "por_vencer": 0, "vencida_1_30": 0, "vencida_31_60": 0,
-        "vencida_61_90": 0, "vencida_mas_90": 0
-    }
+    edades = { k: 0 for k in ["por_vencer", "vencida_1_30", "vencida_31_60", "vencida_61_90", "vencida_mas_90"] }
     saldo_total_cliente = 0
 
-    for f in facturas_con_saldo:
-        valor_original = float(f.valor_original or 0)
-        abonos = float(f.abonos or 0)
-        saldo_pendiente = valor_original - abonos
-        saldo_total_cliente += saldo_pendiente
+    for f in facturas_vivas:
+        val_orig = float(f.valor_original or 0)
+        val_abonos = float(f.abonos or 0)
+        saldo = val_orig - val_abonos
+        
+        saldo_total_cliente += saldo
 
+        # Cálculo de Vencimiento
         dias_mora = 0
         dias_para_vencer = 0
         estado = "POR VENCER"
+        
+        # Fecha base para cálculo: fecha_fin (Corte)
+        fv = f.fecha_vencimiento
+        if fv:
+            if fv < fecha_fin:
+                dias_mora = (fecha_fin - fv).days
+                estado = "VENCIDA"
+            else:
+                dias_para_vencer = (fv - fecha_fin).days
 
-        if f.fecha_vencimiento and f.fecha_vencimiento < fecha_fin:
-            dias_mora = (fecha_fin - f.fecha_vencimiento).days
-            estado = "VENCIDA"
-        elif f.fecha_vencimiento:
-            dias_para_vencer = (f.fecha_vencimiento - fecha_fin).days
-
+        # Clasificación de Edades
         if estado == "VENCIDA":
-            if 1 <= dias_mora <= 30: edades["vencida_1_30"] += saldo_pendiente
-            elif 31 <= dias_mora <= 60: edades["vencida_31_60"] += saldo_pendiente
-            elif 61 <= dias_mora <= 90: edades["vencida_61_90"] += saldo_pendiente
-            else: edades["vencida_mas_90"] += saldo_pendiente
+            if dias_mora <= 30: edades["vencida_1_30"] += saldo
+            elif dias_mora <= 60: edades["vencida_31_60"] += saldo
+            elif dias_mora <= 90: edades["vencida_61_90"] += saldo
+            else: edades["vencida_mas_90"] += saldo
         else:
-            edades["por_vencer"] += saldo_pendiente
+            edades["por_vencer"] += saldo
 
         reporte_facturas.append({
             "id": f.id,
             "tipo_documento": f.tipo_documento,
             "numero": f.numero,
             "fecha": f.fecha.isoformat(),
-            "valor_original": valor_original,
-            "abonos": abonos,
-            "saldo_pendiente": saldo_pendiente,
+            "valor_original": val_orig,
+            "abonos": val_abonos,
+            "saldo_pendiente": saldo,
             "dias_mora": dias_mora,
             "dias_para_vencer": dias_para_vencer,
             "estado": estado
