@@ -4247,155 +4247,59 @@ TEMPLATES_EMPAQUETADOS = {
     'reports/super_informe_report.html': r'''
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <title>Auditoría Contable Avanzada</title>
     <meta charset="UTF-8">
+    <title>Informe</title>
     <style>
-        @page {
-            size: letter landscape;
-            margin: 1.5cm;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 8px;
-            color: #333;
-        }
-
-        .header {
-            text-align: center;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }
-
-        h1,
-        h2 {
-            margin: 0;
-        }
-
-        h1 {
-            font-size: 14px;
-        }
-
-        h2 {
-            font-size: 12px;
-            font-weight: normal;
-        }
-
-        .report-info {
-            margin-bottom: 15px;
-            font-size: 9px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed; /* OPTIMIZATION: Faster PDF rendering */
-        }
-
-        th,
-        td {
-            border: 1px solid #ddd;
-            padding: 4px;
-            text-align: left;
-            word-wrap: break-word;
-        }
-
-        th {
-            background-color: #f2f2f2;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        .text-right {
-            text-align: right;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        /* Estilos para filas basados en el estado pre-procesado */
-        .ANULADO {
-            background-color: #fffbe6;
-        }
-
-        .ELIMINADO {
-            background-color: #ffebee;
-        }
-
-        /* Se eliminó el tachado */
-
-        tfoot td {
-            font-weight: bold;
-            background-color: #f2f2f2;
-        }
+        @page { size: letter landscape; margin: 1cm; }
+        body { font-family: sans-serif; font-size: 7px; }
+        h1 { font-size: 12px; margin: 0; text-align: center; }
+        h2 { font-size: 10px; margin: 2px 0; text-align: center; font-weight: normal; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 10px; }
+        th, td { border: 1px solid #ccc; padding: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        th { background: #eee; font-weight: bold; text-align: center; }
+        .text-right { text-align: right; }
     </style>
 </head>
-
 <body>
-    <div class="header">
-        <h1>{{ empresa.razon_social or 'Nombre de Empresa no Disponible' }}</h1>
-        <h2>NIT: {{ empresa.nit or 'N/A' }}</h2>
-    </div>
-
-    <div class="report-info">
-
-        <h2>{{ report_title }}</h2>
-        <p>Generado el: {{ fecha_generacion }}</p>
-    </div>
+    <h1>{{ empresa.razon_social }} ({{ empresa.nit }})</h1>
+    <h2>{{ report_title }} - Generado: {{ fecha_generacion }}</h2>
 
     <table>
         {% if column_widths %}
         <colgroup>
-            {% for width in column_widths %}
-            <col style="width: {{ width }}">
-            {% endfor %}
+            {% for width in column_widths %}<col style="width:{{ width }}">{% endfor %}
         </colgroup>
         {% endif %}
         <thead>
-            <tr>
-                {% for header in headers %}
-                <th>{{ header }}</th>
-                {% endfor %}
-            </tr>
+            <tr>{% for h in headers %}<th>{{ h }}</th>{% endfor %}</tr>
         </thead>
         <tbody>
-            {% for row_data in processed_rows %}
-            <tr class="{{ row_data.estado }}">
-
-                {% for cell in row_data.cells %}
-
-                <td>{{ cell|default('', true) }}</td>
-                {% endfor %}
-            </tr>
-            {% else %}
+            {% for r in processed_rows %}
             <tr>
-                <td colspan="{{ headers|length }}">No se encontraron resultados que coincidan con los criterios de
-                    búsqueda.</td>
+                {% for c in r.cells %}<td>{{ c }}</td>{% endfor %}
             </tr>
             {% endfor %}
         </tbody>
-
         {% if show_totals %}
         <tfoot>
             <tr>
-                <td colspan="{{ headers|length - 2 }}" class="text-right"><strong>TOTALES:</strong></td>
-                <td class="text-right"><strong>{{ totales.debito }}</strong></td>
-                <td class="text-right"><strong>{{ totales.credito }}</strong></td>
+                <td colspan="{{ headers|length - 2 }}" class="text-right">TOTALES:</td>
+                <td class="text-right">{{ totales.debito }}</td>
+                <td class="text-right">{{ totales.credito }}</td>
+                <td></td>
+                <td></td>
             </tr>
             <tr>
-                <td colspan="{{ headers|length - 2 }}" class="text-right"><strong>DIFERENCIA:</strong></td>
-                <td colspan="2" class="text-center"><strong>{{ totales.diferencia }}</strong></td>
+                <td colspan="{{ headers|length - 2 }}" class="text-right">DIFERENCIA:</td>
+                <td colspan="2" style="text-align:center">{{ totales.diferencia }}</td>
+                <td></td>
+                <td></td>
             </tr>
         </tfoot>
         {% endif %}
-
     </table>
 </body>
-
 </html>
 ''',
 
