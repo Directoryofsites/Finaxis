@@ -2,8 +2,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
-import { menuStructure } from '../lib/menuData';
-import { commandDictionary } from '../lib/commandDictionary';
+import { menuStructure } from '../../lib/menuData';
+import { commandDictionary } from '../../lib/commandDictionary';
 
 export function useSmartSearch() {
     const router = useRouter();
