@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { FaSearch, FaMagic, FaMicrophone, FaArrowRight, FaExternalLinkAlt, FaTerminal, FaBolt, FaStop } from 'react-icons/fa';
 import { useSmartSearch } from '../hooks/useSmartSearch';
-import AssistantOverlay from './VoiceAssistant/AssistantOverlay';
 
 export default function SmartSearchSection() {
     const {
@@ -16,19 +15,24 @@ export default function SmartSearchSection() {
         selectedIndex,
         setSelectedIndex,
         toggleListening,
+        processVoiceCommand,
         handleSelectResult,
         showHistory
     } = useSmartSearch();
 
-    const [showAssistant, setShowAssistant] = useState(false);
+    const [localShowHistory, setLocalShowHistory] = useState(false);
 
     const handleSearch = (e) => {
-        if (e) e.preventDefault();
-        if (results.length > 0 && selectedIndex >= 0) {
+        e.preventDefault();
+        // Ejecución prioritaria si hay resultados (Comando o Búsqueda)
+        if (results.length > 0) {
             handleSelectResult(results[selectedIndex]);
             return;
         }
-        // If it's a direct command or query without results selected, let the hook handle it or do nothing
+        // Si no hay resultados locales, intentamos enviar a AI
+        if (query.trim()) {
+            processVoiceCommand(query);
+        }
     };
 
     const handleHistoryClick = (text) => {
@@ -43,8 +47,6 @@ export default function SmartSearchSection() {
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             setSelectedIndex(prev => Math.max(0, prev - 1));
-        } else if (e.key === 'Enter') {
-            handleSearch(e);
         }
     };
 
@@ -60,13 +62,8 @@ export default function SmartSearchSection() {
                 />
             </div>
 
-            {/* Assistant Overlay Portal */}
-            {showAssistant && (
-                <AssistantOverlay onClose={() => setShowAssistant(false)} />
-            )}
-
             {/* Search Bar Section */}
-            <div className="relative w-full max-w-2xl z-20">
+            <div className="relative w-full max-w-2xl z-50">
                 <form onSubmit={handleSearch} className="relative group">
                     <div className={`absolute -inset-0.5 rounded-full blur opacity-30 group-hover:opacity-75 transition duration-1000 group-hover:duration-200 animate-pulse-slow
                         ${isListening ? 'bg-gradient-to-r from-red-500 to-orange-500 animate-ping' :
@@ -74,7 +71,7 @@ export default function SmartSearchSection() {
                     `}></div>
 
                     <div className={`relative flex items-center bg-white shadow-2xl border transition-all duration-300 transform 
-                        ${showHistory ? 'rounded-t-3xl rounded-b-none' : 'rounded-full group-hover:-translate-y-1'}
+                        ${results.length > 0 || (localShowHistory && !query && commandHistory.length > 0) ? 'rounded-t-3xl rounded-b-none' : 'rounded-full group-hover:-translate-y-1'}
                         ${isCommandMode ? 'border-green-400 ring-2 ring-green-100' : 'border-gray-100'}
                     `}>
                         <div className="pl-6 text-gray-400">
@@ -93,6 +90,8 @@ export default function SmartSearchSection() {
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             onKeyDown={handleKeyDown}
+                            onFocus={() => setLocalShowHistory(true)}
+                            onBlur={() => setTimeout(() => setLocalShowHistory(false), 200)}
                             placeholder={isListening ? "Te escucho..." : (isCommandMode ? "Escribe el comando..." : "Describe qué deseas hacer...")}
                             className={`w-full py-4 px-4 text-lg bg-transparent border-none outline-none font-light transition-colors
                                 ${isCommandMode ? 'text-green-800 placeholder-green-700/50 font-mono' : 'text-gray-700 placeholder-gray-400'}
@@ -101,6 +100,7 @@ export default function SmartSearchSection() {
                             autoComplete="off"
                         />
 
+                        {/* Botones Derecha */}
                         <div className="pr-2 flex items-center gap-2">
                             <button
                                 type="button"
@@ -125,9 +125,10 @@ export default function SmartSearchSection() {
                     </div>
                 </form>
 
-                {/* Results Dropdown */}
-                {showHistory && (
+                {/* Live Search Results Dropdown */}
+                {(results.length > 0 || (localShowHistory && !query && commandHistory.length > 0)) && (
                     <div className="absolute top-full left-0 right-0 bg-white border border-gray-100 rounded-b-3xl shadow-xl max-h-96 overflow-y-auto animate-in fade-in slide-in-from-top-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent z-40">
+                        {/* CASE 1: SEARCH RESULTS */}
                         {results.length > 0 ? (
                             <>
                                 <ul>
@@ -150,6 +151,11 @@ export default function SmartSearchSection() {
                                             <div className="flex-1">
                                                 <div className={`font-medium text-base flex items-center gap-2 ${isCommandMode ? 'text-green-800 font-mono' : 'text-gray-800'}`}>
                                                     {item.name}
+                                                    {item.aliases && item.aliases.length > 0 && (
+                                                        <span className="text-[10px] bg-green-200 text-green-900 border border-green-300 px-1.5 py-0.5 rounded font-bold tracking-wide">
+                                                            :{item.aliases[0].toUpperCase()}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div className="text-xs text-gray-400">{item.category} • {item.description}</div>
                                             </div>
@@ -161,10 +167,11 @@ export default function SmartSearchSection() {
                                     Presiona <strong>Enter</strong> para ejecutar
                                 </div>
                             </>
-                        ) : !query && commandHistory.length > 0 && (
+                        ) : (
+                            /* CASE 2: COMMAND HISTORY */
                             <div className="py-2">
-                                <div className="px-6 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                                    Últimos Comandos
+                                <div className="px-6 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider flex justify-between items-center">
+                                    <span>Últimos Comandos (Historial)</span>
                                 </div>
                                 <ul>
                                     {commandHistory.map((cmd, idx) => (
@@ -177,6 +184,7 @@ export default function SmartSearchSection() {
                                                 <FaMicrophone className="text-xs" />
                                             </div>
                                             <span className="text-gray-600 group-hover:text-purple-700 flex-1 font-medium">{cmd}</span>
+                                            <span className="text-xs text-purple-400 opacity-0 group-hover:opacity-100">Editar</span>
                                         </li>
                                     ))}
                                 </ul>

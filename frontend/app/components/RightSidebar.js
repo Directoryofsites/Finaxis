@@ -5,7 +5,7 @@ import {
     FaRobot, FaCalculator, FaStickyNote, FaBell,
     FaThumbtack, FaTimes, FaExpandAlt, FaMagic, FaPaperPlane,
     FaBackspace, FaTrash, FaMicrophone, FaStop, FaPlus, FaSave, FaList, FaShareSquare, FaHistory, FaClock,
-    FaBuilding, FaChartLine // Added FaChartLine for Indicators
+    FaBuilding, FaChartLine
 } from 'react-icons/fa';
 import { CONTEXT_CONFIG } from '../config/rightSidebarConfig';
 import { toast } from 'react-toastify';
@@ -23,99 +23,57 @@ const formatNumber = (numStr) => {
     return formattedInt + decimalPart;
 };
 
-// --- HOOK: CALCULADORA (STANDARD LOGIC) ---
+// --- HOOK: CALCULADORA ---
 const useCalculator = () => {
     const [display, setDisplay] = useState('0');
-    const [firstOperand, setFirstOperand] = useState(null);
-    const [operator, setOperator] = useState(null);
-    const [waitingForSecondOperand, setWaitingForSecondOperand] = useState(false);
-    const [expression, setExpression] = useState(''); // To show invalidation state or history
-
-    const calculate = (first, second, op) => {
-        const a = parseFloat(first);
-        const b = parseFloat(second);
-        if (isNaN(a) || isNaN(b)) return 0;
-        switch (op) {
-            case '+': return a + b;
-            case '-': return a - b;
-            case '*': return a * b;
-            case '/': return b === 0 ? 'Error' : a / b;
-            default: return second;
-        }
-    };
+    const [expression, setExpression] = useState('');
+    const [waitingForOperand, setWaitingForOperand] = useState(false);
 
     const handleInput = (val) => {
-        try {
-            // RESET
-            if (val === 'C') {
-                setDisplay('0');
-                setFirstOperand(null);
-                setOperator(null);
-                setWaitingForSecondOperand(false);
-                setExpression('');
-                return;
-            }
-
-            // BACKSPACE
-            if (val === 'DEL') {
-                if (waitingForSecondOperand) return;
-                setDisplay(prev => {
-                    if (prev.length > 1) return prev.slice(0, -1);
-                    return '0';
-                });
-                return;
-            }
-
-            // NUMBERS & DOT (Fixed: Accepts string digits for keyboard support)
-            const isDigit = (v) => (typeof v === 'number') || (typeof v === 'string' && /^[0-9]$/.test(v));
-            if (isDigit(val) || val === '.') {
-                if (waitingForSecondOperand) {
-                    setDisplay(String(val));
-                    setWaitingForSecondOperand(false);
-                } else {
-                    if (val === '.') {
-                        if (!display.includes('.')) setDisplay(prev => prev + '.');
-                    } else {
-                        setDisplay(prev => prev === '0' ? String(val) : prev + val);
-                    }
-                }
-                return;
-            }
-
-            // OPERATORS
-            if (['+', '-', '*', '/'].includes(val)) {
-                setExpression(prev => {
-                    if (waitingForSecondOperand) return prev.slice(0, -1) + val;
-                    return prev + display + val;
-                });
-
-                if (firstOperand === null) {
-                    setFirstOperand(display);
-                } else if (operator) {
-                    if (!waitingForSecondOperand) {
-                        const result = calculate(firstOperand, display, operator);
-                        setDisplay(String(result));
-                        setFirstOperand(String(result));
-                    }
-                }
-                setWaitingForSecondOperand(true);
-                setOperator(val);
-                return;
-            }
-
-            // EQUALS
-            if (val === '=') {
-                if (!operator || firstOperand === null) return;
-                const result = calculate(firstOperand, display, operator);
-                setExpression('');
+        if (val === 'C') {
+            setDisplay('0');
+            setExpression('');
+            return;
+        }
+        if (val === 'DEL') {
+            if (waitingForOperand) return;
+            setDisplay(prev => {
+                if (prev === 'Error') return '0';
+                return prev.length > 1 ? prev.slice(0, -1) : '0';
+            });
+            return;
+        }
+        if (val === '=') {
+            try {
+                if (!expression) return;
+                const safeExpr = expression + display;
+                // eslint-disable-next-line
+                const result = new Function('return ' + safeExpr)();
+                if (!isFinite(result)) throw new Error("Math Error");
                 setDisplay(String(result));
-                setFirstOperand(String(result));
-                setOperator(null);
-                setWaitingForSecondOperand(true);
+                setExpression('');
+                setWaitingForOperand(true);
+            } catch (e) {
+                setDisplay('Error');
             }
-        } catch (err) {
-            console.error("Calculator Error:", err);
-            setDisplay('Error');
+            return;
+        }
+        if (['+', '-', '*', '/'].includes(val)) {
+            setExpression(prev => {
+                if (waitingForOperand) {
+                    return prev.slice(0, -1) + val;
+                }
+                return prev + display + val;
+            });
+            setWaitingForOperand(true);
+            return;
+        }
+
+        if (waitingForOperand) {
+            setDisplay(val);
+            setWaitingForOperand(false);
+        } else {
+            setDisplay(display === '0' ? val : display + val);
         }
     };
 
@@ -244,8 +202,6 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
     const pathname = usePathname();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState('ai');
-
-    // --- NUEVO ESTADO PARA INDICADORES ---
     const [showIndicators, setShowIndicators] = useState(false);
 
     // Hooks
@@ -268,12 +224,11 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
     const [showHistory, setShowHistory] = useState(false);
     const [showLibraryTabInModal, setShowLibraryTabInModal] = useState(false);
 
-
     // --- SAVED SEARCHES STATE ---
     const [savedSearches, setSavedSearches] = useState([]);
     const [isSavedSearchesLoading, setIsSavedSearchesLoading] = useState(false);
-    const [editingSearchId, setEditingSearchId] = useState(null); // ID being edited
-    const [editSearchTitle, setEditSearchTitle] = useState('');   // Title being edited
+    const [editingSearchId, setEditingSearchId] = useState(null);
+    const [editSearchTitle, setEditSearchTitle] = useState('');
 
     const fetchSavedSearches = async () => {
         setIsSavedSearchesLoading(true);
@@ -309,7 +264,7 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
             });
             if (res.ok) {
                 toast.success("Búsqueda guardada en Biblioteca");
-                fetchSavedSearches(); // Refresh list
+                fetchSavedSearches();
             } else {
                 toast.error("Error al guardar");
             }
@@ -366,7 +321,19 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
         }
     };
 
-    // Load History & Saved Searches
+    const sendCalcToNote = () => {
+        const val = display === 'Error' ? '0' : display;
+        const line = `\nCálculo: ${formatNumber(val)}`;
+        if (activeNoteId) {
+            setCurrentText(prev => prev + line);
+            toast.success("Agregado a nota activa");
+        } else {
+            createNote(`Nota de Cálculo${line}`);
+            toast.success("Nueva nota creada");
+        }
+        setActiveTab('notes');
+    };
+
     useEffect(() => {
         try {
             const saved = localStorage.getItem('voice_history');
@@ -374,7 +341,6 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                 const parsed = JSON.parse(saved);
                 if (Array.isArray(parsed)) setCommandHistory(parsed);
             }
-            // Fetch saved searches on mount
             fetchSavedSearches();
         } catch (e) {
             console.error("History parse error", e);
@@ -386,7 +352,7 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
         const clean = text.trim();
         setCommandHistory(prev => {
             const filtered = prev.filter(t => t !== clean);
-            const next = [clean, ...filtered].slice(0, 8); // Keep last 8
+            const next = [clean, ...filtered].slice(0, 8);
             localStorage.setItem('voice_history', JSON.stringify(next));
             return next;
         });
@@ -395,32 +361,26 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
     const handleHistoryClick = (cmd) => {
         setAiQuery(cmd);
         setShowHistory(false);
-        // Optional: Auto submit or just fill?
-        // User asked "traerle y cambiarle a algo", so just fill.
     };
 
     const handleSavedSearchClick = (cmd) => {
         setAiQuery(cmd);
-        // Close modal? Maybe not yet, let user hit send
-        // Or auto-send? Let's just fill for now to be safe
     };
 
     useEffect(() => {
         listeningModeRef.current = listeningMode;
     }, [listeningMode]);
 
-    const currentContext = CONTEXT_CONFIG.find(ctx =>
-        ctx.match.some(pathTrigger => pathname.toLowerCase().includes(pathTrigger.toLowerCase()))
-    );
+    const currentContext = CONTEXT_CONFIG ? CONTEXT_CONFIG.find(ctx =>
+        ctx.match.some(pathTrigger => pathname && pathname.toLowerCase().includes(pathTrigger.toLowerCase()))
+    ) : null;
 
-    // --- EXECUTE CLIENT ACTION (Ported from SmartSearchSection) ---
+    // --- EXECUTE CLIENT ACTION ---
     const executeClientAction = async (data) => {
         const actionName = data.name || data.function_name;
+        const queryLower = aiQuery.toLowerCase();
 
         // --- INTERCEPTOR: ESTADO DE CUENTA CARTERA ---
-        // Si el usuario pide "estado de cuenta", "cartera" o "cuanto debe" de un tercero, priorizar el módulo especializado
-        // incluso si la IA clasificó la acción como 'generar_reporte_movimientos' o 'consultar_documento'.
-        const queryLower = aiQuery.toLowerCase();
         const isCarteraIntent = queryLower.includes('estado de cuenta') || queryLower.includes('cartera') || queryLower.includes('cuanto debe') || queryLower.includes('saldo de');
 
         if (isCarteraIntent && (actionName === 'generar_reporte_movimientos' || actionName === 'consultar_documento')) {
@@ -430,10 +390,8 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
             if (terceroIdentified) {
                 const params = new URLSearchParams();
                 params.set('tercero', terceroIdentified);
-                // Usar fecha fin o corte si existe, sino hoy
                 if (p.fecha_corte || p.fecha_fin) params.set('fecha_corte', p.fecha_corte || p.fecha_fin);
 
-                // AUTOMATION PARAMS
                 const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
                 if (wantsPdf) params.set('auto_pdf', 'true');
                 if (p.whatsapp_destino) { params.set('wpp', p.whatsapp_destino); params.set('auto_pdf', 'true'); }
@@ -454,11 +412,8 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
             if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
             if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
 
-            // Product variants
-            console.log("AI INVENTORY DEBUG Params:", p);
             let prod = p.producto || p.producto_nombre || p.nombre_producto || p.articulo || p.referencia || p.search_term_prod || p.concepto || p.descripcion;
 
-            // --- SAFETY NET: BLOCK GENERIC COMMAND PHRASES ---
             const invalidPhrases = [
                 'movimientos detallados de inventario', 'movimientos de inventario',
                 'reporte de inventario', 'informe de inventario',
@@ -466,47 +421,35 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                 'movimientos detallados', 'movimientos'
             ];
             if (prod && invalidPhrases.some(phrase => prod.toLowerCase().trim() === phrase || prod.toLowerCase().includes('movimientos detallados'))) {
-                console.warn("AI hallucinated command name as product. Ignoring:", prod);
                 prod = null;
             }
 
             if (prod) params.set('search_term_prod', prod);
-
             if (p.tercero || p.tercero_nombre || p.ai_tercero) params.set('ai_tercero', p.tercero || p.tercero_nombre || p.ai_tercero);
             if (p.bodega || p.bodega_nombre) params.set('ai_bodega', p.bodega || p.bodega_nombre);
             if (p.grupo || p.grupo_nombre) params.set('ai_grupo', p.grupo || p.grupo_nombre);
 
-            // Document Filtering (New) - Combine into search_term_doc which the page expects
             let docFilter = '';
-
-            // Helper to clean hallucinations
             const cleanDocParam = (val) => {
                 if (!val) return '';
                 const v = val.toString().trim();
                 const forbidden = ['inventario', 'movimientos', 'reporte', 'informe', 'kardex', 'stock', 'detallados', 'filtrar', 'documento', 'ref'];
-                if (forbidden.some(f => v.toLowerCase().includes(f) && v.length < 15)) return ''; // Block typical hallucinations
+                if (forbidden.some(f => v.toLowerCase().includes(f) && v.length < 15)) return '';
                 return v;
             };
 
             const rawTipo = p.tipo_documento || p.tipo || p.ai_tipo_doc;
             const rawNum = p.numero_documento || p.numero;
-
             const cleanTipo = cleanDocParam(rawTipo);
             const cleanNum = cleanDocParam(rawNum);
 
-            // Smart combination to avoid "FV-FV-8"
             if (cleanNum) {
-                // Format normalization: replace spaces/underscores with dashes for better matching
                 const normalizedNum = cleanNum.replace(/[\s_]+/g, '-');
-
-                // If number already contains the type (e.g. "FV-8" includes "FV"), don't prepend type
                 if (cleanTipo && normalizedNum.toLowerCase().startsWith(cleanTipo.toLowerCase())) {
                     docFilter = normalizedNum;
-                }
-                else if (cleanTipo) {
+                } else if (cleanTipo) {
                     docFilter = `${cleanTipo}-${normalizedNum}`;
-                }
-                else {
+                } else {
                     docFilter = normalizedNum;
                 }
             } else if (cleanTipo) {
@@ -514,9 +457,8 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
             }
 
             if (docFilter) params.set('search_term_doc', docFilter);
-
             params.set('trigger', 'ai_search');
-            params.set('requestId', Date.now().toString()); // FORCE EFFECT RE-EXECUTION
+            params.set('requestId', Date.now().toString());
 
             router.push(`/contabilidad/reportes/super-informe-inventarios?${params.toString()}`);
             toast.success('IA: Abriendo Movimientos de Inventario...');
@@ -524,14 +466,13 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
         }
 
         if (actionName === 'navegar_a_pagina') {
-            const modulo = data.parameters.modulo.toLowerCase();
+            const modulo = (data.parameters.modulo || '').toLowerCase();
             if (modulo.includes('contabil')) router.push('/contabilidad/documentos');
             else if (modulo.includes('factur')) router.push('/facturacion/crear');
             else if (modulo.includes('inventar')) router.push('/admin/inventario');
             else if (modulo.includes('nomin')) router.push('/nomina/liquidar');
             else {
                 toast.success(`IA: Navegando a ${data.parameters.modulo}`);
-                // Basic fallback if exact route not found, though backend usually helps
             }
 
         } else if (actionName === 'generar_reporte_movimientos') {
@@ -626,7 +567,6 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
             const p = data.parameters;
             const params = new URLSearchParams();
             params.set('trigger', 'ai_search');
-            // Improved robustness for parameter names
             if (p.tipo_documento || p.tipo || p.ai_tipo_doc) params.set('ai_tipo_doc', p.tipo_documento || p.tipo || p.ai_tipo_doc);
             if (p.numero_documento || p.numero) params.set('numero', p.numero_documento || p.numero);
             if (p.tercero || p.tercero_nombre || p.ai_tercero) params.set('ai_tercero', p.tercero || p.tercero_nombre || p.ai_tercero);
@@ -643,17 +583,12 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
             const params = new URLSearchParams();
             params.set('ai_plantilla', p.plantilla);
             if (p.tercero) params.set('ai_tercero', p.tercero);
-
-            // Extract value
             const val = p.valor || p.monto || p.debito || p.credito || p.importe;
             if (val) params.set('ai_valor', val);
-
-            // --- AUTO-SAVE TRIGGER (VOICE ONLY) ---
             params.set('ai_autosave', 'true');
 
             router.push(`/contabilidad/captura-rapida?${params.toString()}`);
             toast.success('IA: Abriendo Captura Rápida...');
-
 
         } else if (actionName === 'generar_backup') {
             toast.loading('IA: Generando respaldo completo...', { id: 'backup-toast' });
@@ -689,9 +624,7 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
         const commandToRun = forcedQuery || aiQuery;
         if (!commandToRun || !commandToRun.trim()) return;
 
-        // SAVE HISTOY
         addToHistory(commandToRun);
-
         setIsThinking(true);
         setAiResponse(null);
         try {
@@ -703,9 +636,8 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                 body: JSON.stringify({ command: commandToRun })
             });
 
-            // Fallback for demo debug
             if (response.status === 401) {
-                // Try debug endpoint if auth fails
+                // Potential debug fallback
             }
 
             const data = await response.json();
@@ -714,7 +646,6 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                 setAiResponse({ type: 'error', text: data.error });
             } else {
                 setAiResponse({ type: 'success', text: data.message || `Acción procesada con éxito` });
-                // EXECUTE THE ACTION
                 await executeClientAction(data);
             }
 
@@ -802,20 +733,6 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
     // UI Helpers
     const widthClass = (isOpen || isPinned) ? 'w-[350px]' : 'w-12';
     const glassClass = "backdrop-blur-xl bg-white/90 border-l border-gray-200 shadow-2xl";
-    // --- CALCULATOR ACTION ---
-    const sendCalcToNote = () => {
-        const val = formatNumber(display);
-        const line = `\nCálculo: ${val}`;
-        if (activeNoteId) {
-            setCurrentText(prev => prev + line);
-            toast.success("Agregado a nota activa");
-        } else {
-            createNote(`Nota de Cálculo${line}`);
-            toast.success("Nueva nota creada");
-        }
-        setActiveTab('notes');
-    };
-
     const handleTabClick = (tab) => { if (!isOpen && !isPinned) onToggle(true); setActiveTab(tab); };
 
     return (
@@ -902,10 +819,14 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                                         className="flex-1 text-sm bg-transparent border-none focus:ring-0 p-2 resize-none custom-scrollbar"
                                         disabled={isThinking}
                                     />
-                                    <div className="absolute top-2 right-2 flex gap-1">
-                                        <button type="button" onClick={() => { setShowHistory(true); fetchSavedSearches(); }} className="text-gray-400 hover:text-indigo-600 p-1" title="Historial y Biblioteca"><FaHistory /></button>
-                                        <button type="button" onClick={toggleVoice.bind(null, 'ai')} className={`p-2 rounded-full transition-all ${listeningMode === 'ai' ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>{listeningMode === 'ai' ? <FaStop /> : <FaMicrophone />}</button>
-                                        <button type="submit" disabled={isThinking} className="bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700 transition-all disabled:opacity-50"><FaPaperPlane /></button>
+                                    <div className="flex flex-col gap-1 pb-1">
+                                        <button type="button" onClick={() => { setShowHistory(true); fetchSavedSearches(); }} className="text-gray-400 hover:text-indigo-600 p-2" title="Historial y Biblioteca"><FaHistory /></button>
+                                        <button type="button" onClick={() => toggleVoice('ai')} className={`p-2 rounded-full transition-colors ${listeningMode === 'ai' ? 'bg-red-100 text-red-600 animate-pulse' : 'text-gray-400 hover:text-red-500'}`}>
+                                            {listeningMode === 'ai' ? <FaStop /> : <FaMicrophone />}
+                                        </button>
+                                        <button type="submit" className="p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition shadow-md" disabled={isThinking}>
+                                            {isThinking ? <FaMagic className="animate-spin" /> : <FaPaperPlane />}
+                                        </button>
                                     </div>
                                 </div>
                             </form>
@@ -935,10 +856,9 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                                     </div>
 
                                     {/* TABS CONTENT */}
-                                    {!showLibraryTabInModal ? (
-                                        // RECENT HISTORY
-                                        <div className="flex-1 overflow-y-auto p-2">
-                                            {commandHistory.length === 0 ? <p className="text-center text-gray-400 text-xs mt-4">Sin historial reciente.</p> : (
+                                    <div className="flex-1 overflow-y-auto p-2">
+                                        {!showLibraryTabInModal ? (
+                                            commandHistory.length === 0 ? <p className="text-center text-gray-400 text-xs mt-4">Sin historial reciente.</p> : (
                                                 <ul className="space-y-2">
                                                     {commandHistory.map((cmd, i) => (
                                                         <li key={i} className="group p-3 bg-gray-50 rounded-lg hover:bg-indigo-50 transition-colors flex justify-between items-center cursor-pointer">
@@ -956,12 +876,9 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                                                         </li>
                                                     ))}
                                                 </ul>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        // SAVED LIBRARY
-                                        <div className="flex-1 overflow-y-auto p-2">
-                                            {isSavedSearchesLoading ? <p className="text-center text-xs text-gray-400 mt-4">Cargando...</p> :
+                                            )
+                                        ) : (
+                                            isSavedSearchesLoading ? <p className="text-center text-xs text-gray-400 mt-4">Cargando...</p> :
                                                 savedSearches.length === 0 ? <p className="text-center text-gray-400 text-xs mt-4">No hay búsquedas guardadas.</p> : (
                                                     <ul className="space-y-2">
                                                         {savedSearches.map((item) => (
@@ -986,9 +903,7 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                                                                             {item.titulo}
                                                                         </h4>
                                                                     )}
-                                                                    <div className="flex gap-1">
-                                                                        <button onClick={() => deleteSavedSearch(item.id)} className="text-gray-300 hover:text-red-500 p-1"><FaTrash className="text-xs" /></button>
-                                                                    </div>
+                                                                    <button onClick={() => deleteSavedSearch(item.id)} className="text-gray-300 hover:text-red-500 p-1"><FaTrash className="text-xs" /></button>
                                                                 </div>
                                                                 <p className="text-xs text-gray-500 line-clamp-2 italic mb-2">"{item.comando}"</p>
                                                                 <button
@@ -1000,12 +915,11 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                                                             </li>
                                                         ))}
                                                     </ul>
-                                                )}
-                                        </div>
-                                    )}
+                                                )
+                                        )}
+                                    </div>
                                 </div>
                             )}
-
                         </div>
                     )}
 
@@ -1024,7 +938,6 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                                 {[1, 2, 3].map(val => (<button key={val} onClick={() => handleInput(val)} className="aspect-square bg-white text-gray-700 font-bold rounded-lg hover:bg-gray-50 shadow-sm">{val}</button>))}
                                 <button onClick={() => handleInput(0)} className="bg-white text-gray-700 font-bold rounded-lg hover:bg-gray-50 shadow-sm">0</button>
                                 <button onClick={() => handleInput('.')} className="bg-white text-gray-700 font-bold rounded-lg hover:bg-gray-50 shadow-sm">.</button>
-                                {/* NEW BUTTON TO SEND TO NOTES */}
                                 <button onClick={sendCalcToNote} className="col-span-1 bg-yellow-100 text-yellow-700 font-bold rounded-lg hover:bg-yellow-200 shadow-sm flex items-center justify-center" title="Enviar a Notas">
                                     <FaShareSquare />
                                 </button>
@@ -1080,7 +993,6 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
             </div>
 
             {/* INDICATORS PANEL */}
-            {/* Dynamic positioning based on sidebar width */}
             <EconomicIndicatorsPanel
                 isOpen={showIndicators}
                 onClose={() => setShowIndicators(false)}

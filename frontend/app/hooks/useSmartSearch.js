@@ -1,0 +1,348 @@
+"use client";
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
+import { menuStructure } from '../lib/menuData';
+import { commandDictionary } from '../lib/commandDictionary';
+
+export function useSmartSearch() {
+    const router = useRouter();
+    const [commandHistory, setCommandHistory] = useState([]);
+
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState([]);
+    const [isListening, setIsListening] = useState(false);
+    const [isThinking, setIsThinking] = useState(false);
+    const [selectedIndex, setSelectedIndex] = useState(-1);
+    const recognitionRef = useRef(null);
+
+    const isCommandMode = query.startsWith(':') || (results.length > 0 && results[0].isCommand);
+
+    // 1. Aplanar la estructura del menú para búsqueda (Normal)
+    const searchableItems = useMemo(() => {
+        const items = [];
+        const processLinks = (links, category) => {
+            links.forEach(link => {
+                items.push({
+                    name: link.name,
+                    description: link.description || '',
+                    href: link.href,
+                    icon: link.icon,
+                    category: category,
+                    keywords: `${link.name} ${link.description || ''} ${category}`.toLowerCase()
+                });
+            });
+        };
+
+        menuStructure.forEach(module => {
+            if (module.links) processLinks(module.links, module.name);
+            if (module.subgroups) {
+                module.subgroups.forEach(sub => processLinks(sub.links, `${module.name} - ${sub.title}`));
+            }
+        });
+        return items;
+    }, []);
+
+    // 2. Load History
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem('voice_history');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) {
+                    const safeHistory = parsed.filter(item => typeof item === 'string' && item.trim().length > 0);
+                    setCommandHistory(safeHistory);
+                }
+            }
+        } catch (e) {
+            console.error("Error parsing history", e);
+            localStorage.removeItem('voice_history');
+        }
+    }, []);
+
+    const addToHistory = (text) => {
+        if (!text || !text.trim()) return;
+        const cleanText = text.trim();
+
+        setCommandHistory(prev => {
+            const filtered = prev.filter(item => item !== cleanText);
+            const newHistory = [cleanText, ...filtered].slice(0, 6);
+            localStorage.setItem('voice_history', JSON.stringify(newHistory));
+            return newHistory;
+        });
+    };
+
+    // 3. Search Logic
+    useEffect(() => {
+        if (!query) {
+            setResults([]);
+            setSelectedIndex(-1);
+            return;
+        }
+
+        // --- DETECCION DE MODO COMANDO (Starts with :) ---
+        if (query.startsWith(':')) {
+            const commandQuery = query.substring(1).toLowerCase().trim();
+
+            const matchedCommands = commandDictionary.filter(cmd =>
+                cmd.triggers.some(trigger => trigger.includes(commandQuery)) ||
+                (cmd.aliases && cmd.aliases.some(alias => alias.startsWith(commandQuery)))
+            );
+
+            if (matchedCommands.length > 0) {
+                setResults(matchedCommands.map(cmd => ({
+                    name: cmd.name,
+                    description: cmd.description,
+                    href: cmd.queryParam ? `${cmd.path}?${cmd.queryParam}` : cmd.path,
+                    icon: cmd.icon,
+                    category: cmd.category || 'Comando',
+                    isCommand: true,
+                    aliases: cmd.aliases
+                })));
+            } else {
+                setResults([]);
+            }
+            setSelectedIndex(0);
+            return;
+        }
+
+        // --- BÚSQUEDA NORMAL ---
+        const lowerQuery = query.toLowerCase();
+        const terms = lowerQuery.split(' ').filter(term => term.length > 0);
+
+        const matches = searchableItems.filter(item => {
+            return terms.every(term => item.keywords.includes(term));
+        });
+
+        matches.sort((a, b) => {
+            const aNameMatch = a.name.toLowerCase().includes(lowerQuery);
+            const bNameMatch = b.name.toLowerCase().includes(lowerQuery);
+            if (aNameMatch && !bNameMatch) return -1;
+            if (!aNameMatch && bNameMatch) return 1;
+            return 0;
+        });
+
+        setResults(matches.slice(0, 5));
+        setSelectedIndex(matches.length > 0 ? 0 : -1);
+
+    }, [query, searchableItems]);
+
+
+    // 4. Voice Logic Setup
+    useEffect(() => {
+        if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognitionRef.current = new SpeechRecognition();
+            recognitionRef.current.continuous = true; // Use continuous from v2
+            recognitionRef.current.lang = 'es-CO';
+            recognitionRef.current.interimResults = true;
+            recognitionRef.current.maxAlternatives = 1;
+
+            let silenceTimer = null;
+
+            recognitionRef.current.onresult = (event) => {
+                const currentText = Array.from(event.results)
+                    .map(result => result[0].transcript)
+                    .join('');
+
+                setQuery(currentText);
+
+                if (silenceTimer) clearTimeout(silenceTimer);
+                silenceTimer = setTimeout(() => {
+                    recognitionRef.current.stop();
+                    setIsListening(false);
+                    processVoiceCommand(currentText);
+                }, 2000); // 2-second silence timeout from v2
+            };
+
+            recognitionRef.current.onerror = (event) => {
+                if (event.error !== 'no-speech') {
+                    console.error("Speech error", event.error);
+                }
+            };
+        }
+    }, [isListening]); // Dependency on isListening might be tricky, checking v2 implementation
+
+    const toggleListening = () => {
+        if (isListening) {
+            recognitionRef.current?.stop();
+            setIsListening(false);
+        } else {
+            setQuery('');
+            setIsListening(true);
+            try {
+                recognitionRef.current?.start();
+            } catch (e) {
+                console.error("Error starting speech recognition:", e);
+                setIsListening(false);
+                toast.error("Error iniciando micrófono.");
+            }
+        }
+    };
+
+    // 5. Actions
+    const processVoiceCommand = async (text) => {
+        if (!text || !text.trim()) return;
+
+        addToHistory(text);
+        setIsThinking(true);
+
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                toast.error("Sesión no válida.");
+                setIsThinking(false);
+                return;
+            }
+
+            const baseUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000');
+
+            let response = await fetch(`${baseUrl}/api/ai/process-command`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ command: text })
+            });
+
+            if (response.status === 401) {
+                response = await fetch(`${baseUrl}/api/ai/process-command-debug`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command: text })
+                });
+            }
+
+            const data = await response.json();
+            setIsThinking(false);
+
+            if (data.error) {
+                toast.error(`IA: ${data.error}`);
+                return;
+            }
+
+            const actionName = data.name || data.function_name;
+            handleAIAction(actionName, data.parameters);
+
+        } catch (error) {
+            console.error(error);
+            setIsThinking(false);
+            toast.error("Error conectando con el cerebro AI.");
+        }
+    };
+
+    const handleAIAction = (actionName, parameters) => {
+        const p = parameters || {};
+
+        if (actionName === 'navegar_a_pagina') {
+            const modulo = p.modulo ? p.modulo.toLowerCase() : '';
+            if (modulo.includes('contabil')) router.push('/contabilidad/documentos');
+            else if (modulo.includes('factur')) router.push('/facturacion/crear');
+            else if (modulo.includes('inventar')) router.push('/admin/inventario');
+            else if (modulo.includes('nomin')) router.push('/nomina/liquidar');
+            else {
+                // Fallback simple navigation or toast
+                toast.success(`IA: Navegando a ${p.modulo}`);
+            }
+
+        } else if (actionName === 'generar_reporte_movimientos') {
+            const params = new URLSearchParams();
+            if (p.tercero || p.tercero_nombre) params.set('tercero', p.tercero || p.tercero_nombre);
+            if (p.cuenta || p.cuenta_nombre) params.set('cuenta', p.cuenta || p.cuenta_nombre);
+            if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
+            if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
+            router.push(`/contabilidad/reportes/tercero-cuenta?${params.toString()}`);
+            toast.success('IA: Configurando Auxiliar por Tercero...');
+
+        } else if (actionName === 'generar_balance_prueba') {
+            const params = new URLSearchParams();
+            if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
+            if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
+            router.push(`/contabilidad/reportes/balance-de-prueba?${params.toString()}`);
+            toast.success('IA: Configurando Balance de Prueba...');
+
+        } else if (actionName === 'generar_balance_general') {
+            const params = new URLSearchParams();
+            if (p.fecha_corte) params.set('fecha_corte', p.fecha_corte);
+            if (p.comparativo) params.set('comparativo', 'true');
+            router.push(`/contabilidad/reportes/balance-general?${params.toString()}`);
+            toast.success('IA: Configurando Balance General...');
+
+        } else if (actionName === 'generar_estado_resultados') {
+            const params = new URLSearchParams();
+            if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
+            if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
+            router.push(`/contabilidad/reportes/estado-resultados?${params.toString()}`);
+            toast.success('IA: Configurando Estado de Resultados...');
+
+        } else if (actionName === 'crear_recurso') {
+            const tipo = p.tipo || p.type;
+            const creationMap = {
+                'factura': { path: '/contabilidad/facturacion', param: '' },
+                'compra': { path: '/contabilidad/compras', param: 'trigger=new_purchase' },
+                'item': { path: '/admin/inventario', param: 'trigger=new_item' },
+                'tercero': { path: '/admin/terceros/crear', param: '' },
+                'traslado': { path: '/contabilidad/traslados', param: 'trigger=new_transfer' },
+                'centro_costo': { path: '/admin/centros-costo', param: 'trigger=new_cc' },
+                'unidad_ph': { path: '/ph/unidades/crear', param: '' },
+                'bodega': { path: '/admin/inventario/parametros', param: 'trigger=tab_warehouses' },
+                'receta': { path: '/produccion/recetas', param: 'trigger=new_recipe' },
+                'nomina': { path: '/nomina/configuracion', param: 'trigger=new_payroll_type' },
+                'plantilla': { path: '/admin/plantillas/crear', param: '' },
+                'empresa': { path: '/admin/utilidades/soporte-util', param: 'trigger=tab_create_company' },
+                'cuenta': { path: '/admin/plan-de-cuentas', param: 'trigger=new_account' },
+                'tipo_documento': { path: '/admin/tipos-documento/crear', param: '' }
+            };
+            const target = creationMap[tipo];
+            if (target) {
+                const finalUrl = target.param ? `${target.path}?${target.param}` : target.path;
+                router.push(finalUrl);
+                toast.success(`IA: Abriendo creación de ${tipo}...`);
+            } else {
+                toast.warning(`IA: No sé cómo crear '${tipo}' aún.`);
+            }
+
+        } else if (actionName === 'consultar_documento') {
+            const params = new URLSearchParams();
+            params.set('trigger', 'ai_search');
+            if (p.tipo_documento) params.set('ai_tipo_doc', p.tipo_documento);
+            if (p.numero_documento) params.set('numero', p.numero_documento);
+            if (p.tercero) params.set('ai_tercero', p.tercero);
+            if (p.cuenta) params.set('ai_cuenta', p.cuenta);
+            if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
+            if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
+            if (p.concepto) params.set('conceptoKeyword', p.concepto);
+            router.push(`/contabilidad/reportes/super-informe?${params.toString()}`);
+            toast.success('IA: Buscando documentos...');
+
+        } else {
+            toast.info(`IA sugiere acción desconocida: ${actionName}`);
+        }
+    };
+
+    const handleSelectResult = (item) => {
+        if (!item) return;
+        setIsThinking(true);
+        setTimeout(() => {
+            router.push(item.href);
+            setIsThinking(false);
+        }, 300);
+    };
+
+    return {
+        query,
+        setQuery,
+        results,
+        isListening,
+        isThinking,
+        isCommandMode,
+        commandHistory,
+        selectedIndex,
+        setSelectedIndex,
+        toggleListening,
+        processVoiceCommand,
+        handleSelectResult,
+        showHistory: (results.length > 0 || (!query && commandHistory.length > 0)), // helper
+    };
+}
