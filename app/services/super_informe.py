@@ -246,7 +246,7 @@ def generate_super_informe_pdf(db: Session, filtros: schemas_doc.DocumentoGestio
     query = None
     if filtros.estadoDocumento in ['activos', 'anulados']:
         base_query = db.query(
-            models_mov.fecha.label('fecha'),
+            models_doc.fecha.label('fecha'),
             models_doc.numero,
             models_tipo.nombre.label("tipo_documento"),
             models_doc.id.label('documento_id'),
@@ -365,6 +365,9 @@ def generate_super_informe_pdf(db: Session, filtros: schemas_doc.DocumentoGestio
 
 
     # --- 3. Ejecutar Streaming con Generador ---
+    if not query:
+        raise HTTPException(status_code=400, detail="Criterios de búsqueda inválidos o estado de documento no especificado.")
+
     # yield_per es CLAVE para no cargar todo en memoria
     iterator_rows = query.order_by(table_doc.fecha.desc(), table_doc.numero.desc()).yield_per(1000)
 
