@@ -12,23 +12,24 @@ os.environ['GIO_USE_VOLUME_MONITOR'] = 'dummy'
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# --- INICIO: LÓGICA DE AUTO-CREACIÓN DE BASE DE DATOS ---
-from app.core.database import engine, Base
-from app.models import (
-    Usuario, Empresa, Tercero, PlanCuenta, TipoDocumento, CentroCosto,
-    PlantillaMaestra, PlantillaDetalle, ConceptoFavorito, Documento, 
-    DocumentoEliminado, MovimientoContable, MovimientoEliminado,
-    LogOperacion, PeriodoContableCerrado, FormatoImpresion, AplicacionPago,
-    Remision, RemisionDetalle, ConfiguracionReporte, nomina, UsuarioBusqueda,
-    EscenarioPresupuestal, PresupuestoItem # <--- Modelos Presupuesto Avanzado
-)
-Base.metadata.create_all(bind=engine)
+# --- INICIO: LÓGICA DE AUTO-CREACIÓN Y SEMBRADO ---
+# Se recomienda correr esto solo en el primer despliegue o localmente
+if os.getenv("RUN_SEEDS", "true").lower() == "true":
+    from app.core.database import engine, Base
+    from app.models import (
+        Usuario, Empresa, Tercero, PlanCuenta, TipoDocumento, CentroCosto,
+        PlantillaMaestra, PlantillaDetalle, ConceptoFavorito, Documento, 
+        DocumentoEliminado, MovimientoContable, MovimientoEliminado,
+        LogOperacion, PeriodoContableCerrado, FormatoImpresion, AplicacionPago,
+        Remision, RemisionDetalle, ConfiguracionReporte, nomina, UsuarioBusqueda,
+        EscenarioPresupuestal, PresupuestoItem
+    )
+    from app.core.seeder import seed_database
+    
+    # Creamos tablas y sembramos (¡Cuidado! Esto puede ser lento en Vercel)
+    Base.metadata.create_all(bind=engine)
+    seed_database()
 # --- FIN: LÓGICA DE AUTO-CREACIÓN ---
-
-# --- INICIO: LÓGICA DE SEMBRADO AUTOMÁTICO ---
-from app.core.seeder import seed_database
-seed_database()
-# --- FIN: LÓGICA DE SEMBRADO AUTOMÁTICO ---
 
 
 
@@ -107,10 +108,13 @@ app = FastAPI(
 )
 
 # --- INICIO: SCHEDULER DE COPIAS (AUTO-BACKUP) ---
-from app.services.scheduler_backup import start_scheduler
-@app.on_event("startup")
-def startup_event():
-    start_scheduler()
+# En Vercel (serverless) los Background Workers no funcionan bien. 
+# Solo arrancamos si no estamos en Vercel o si se fuerza.
+if os.getenv("VERCEL") != "1":
+    from app.services.scheduler_backup import start_scheduler
+    @app.on_event("startup")
+    def startup_event():
+        start_scheduler()
 # --- FIN: SCHEDULER ---
 
 origins = ["*"]
