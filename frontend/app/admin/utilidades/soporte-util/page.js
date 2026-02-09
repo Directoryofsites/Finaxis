@@ -251,7 +251,7 @@ function PanelGestionUsuarios({ empresa, onDataChange }) {
                 <input type="password" name="password" value={newUser.password} onChange={handleNewUserChange} placeholder={isEditing ? "Dejar en blanco para mantener contraseña" : "Contraseña (mín 6 caracteres)"} required={!isEditing} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
                 <input type="text" name="nombre_completo" value={newUser.nombre_completo} onChange={handleNewUserChange} placeholder="Nombre Completo (Opcional)" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
                 <select name="rolId" value={newUser.rolId} onChange={handleNewUserChange} disabled={isLoadingRoles} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
-                    {isLoadingRoles ? <option>Cargando roles...</option> : roles.map(rol => <option key={rol.id} value={rol.id}>{rol.nombre}</option>)}
+                    {isLoadingRoles ? <option>Cargando roles...</option> : (roles || []).map(rol => <option key={rol.id} value={rol.id}>{rol.nombre}</option>)}
                 </select>
                 <button type="submit" disabled={isProcessing || isLoadingRoles} className={`w-full px-4 py-2 text-sm font-medium text-white rounded-md hover:opacity-90 disabled:bg-gray-400 ${isEditing ? 'bg-indigo-600' : 'bg-green-600'}`}>
                     {isProcessing ? 'Procesando...' : (isEditing ? 'Actualizar Usuario' : 'Crear Usuario')}
@@ -452,7 +452,7 @@ function GestionEmpresasPanel({ onDataChange, onOpenModal }) {
                         >
                             <option value="">Todos los Contadores</option>
                             {isLoadingAccountants ? <option disabled>Cargando...</option> :
-                                accountants.map(acc => (
+                                (accountants || []).map(acc => (
                                     <option key={acc.id} value={acc.id}>
                                         {acc.nombre_completo || acc.email}
                                     </option>
@@ -499,7 +499,7 @@ function GestionEmpresasPanel({ onDataChange, onOpenModal }) {
                         ) : empresas.length === 0 ? (
                             <tr><td colSpan="4" className="text-center py-10 text-gray-500 bg-gray-50">No se encontraron empresas con estos filtros.</td></tr>
                         ) : (
-                            empresas.map((empresa) => (
+                            (empresas || []).map((empresa) => (
                                 <tr key={empresa.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600">{empresa.nit}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-800 flex items-center gap-2">
