@@ -519,7 +519,7 @@ function CapturaRapidaContent() {
       const timer = setTimeout(() => {
         const btn = document.getElementById('btn-guardar-captura');
         if (btn && !btn.disabled) {
-          toast.success("IA: Todo listo. Guardando automÃ¡ticamente... ðŸ’¾");
+          toast.success("IA: Todo listo. Guardando automáticamente... 💾");
           btn.click();
         }
       }, 2000); // 2 segundos para que el usuario vea el resultado antes de guardar
@@ -652,7 +652,7 @@ function CapturaRapidaContent() {
               </div>
               <div>
                 <div className="flex items-center gap-3">
-                  <h1 className="text-3xl font-bold text-gray-800">Captura RÃ¡pida</h1>
+                  <h1 className="text-3xl font-bold text-gray-800">Captura Rápida</h1>
                   <button
                     onClick={() => window.open('/manual/capitulo_25_captura_rapida.html', '_blank')}
                     className="flex items-center gap-2 px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors font-medium shadow-sm"
@@ -661,7 +661,7 @@ function CapturaRapidaContent() {
                     <FaBook /> <span className="hidden md:inline">Manual</span>
                   </button>
                 </div>
-                <p className="text-gray-500 text-sm">ContabilizaciÃ³n acelerada basada en plantillas.</p>
+                <p className="text-gray-500 text-sm">Contabilización acelerada basada en plantillas.</p>
               </div>
             </div>
           </div>
@@ -693,7 +693,7 @@ function CapturaRapidaContent() {
         {/* NOTIFICACIONES */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-lg animate-pulse">
-            <p className="font-bold">AtenciÃ³n</p>
+            <p className="font-bold">Atención</p>
             <p>{error}</p>
           </div>
         )}
@@ -708,7 +708,7 @@ function CapturaRapidaContent() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
 
-          {/* CARD 1: CONFIGURACIÃ“N INICIAL */}
+          {/* CARD 1: CONFIGURACIÓN INICIAL */}
           <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 animate-fadeIn">
             <h3 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
               <span className="bg-indigo-100 text-indigo-600 w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span>
@@ -735,7 +735,7 @@ function CapturaRapidaContent() {
               {/* PLANTILLA (DESTACADO) */}
               <div className="lg:col-span-1">
                 <label htmlFor="plantilla" className="block text-xs font-bold text-indigo-600 uppercase mb-1 tracking-wide">
-                  âš¡ Plantilla (Requerido)
+                  ⚡ Plantilla (Requerido)
                 </label>
                 <div className="relative">
                   <select
@@ -875,17 +875,17 @@ function CapturaRapidaContent() {
                               value={mov.concepto || ''}
                               onChange={(e) => handleConceptoChange(index, e.target.value)}
                               className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-200 outline-none"
-                              placeholder="DescripciÃ³n del movimiento..."
+                              placeholder="Descripción del movimiento..."
                             />
                             <button
                               type="button"
                               onClick={() => { setNuevoConcepto({ descripcion: mov.concepto }); setIsConceptoModalOpen(true); }}
                               className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
-                              title="Guardar concepto en librerÃ­a"
+                              title="Guardar concepto en librería"
                             >
                               <FaSave />
                             </button>
-                            {/* BOTÃ“N BUSCAR CONCEPTO (SOLO PRIMER REGISTRO) */}
+                            {/* BOTÓN BUSCAR CONCEPTO (SOLO PRIMER REGISTRO) */}
                             {index === 0 && (
                               <button
                                 type="button"
