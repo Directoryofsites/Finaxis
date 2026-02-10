@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -16,7 +16,8 @@ import {
   FaCheckCircle,
   FaExclamationTriangle,
   FaMagic,
-  FaPrint
+  FaPrint,
+  FaTrash
 } from 'react-icons/fa';
 
 // Importaciones
@@ -61,17 +62,17 @@ function CapturaRapidaContent() {
   const [conceptoBusqueda, setConceptoBusqueda] = useState('');
   const [movimientoIndexSeleccionado, setMovimientoIndexSeleccionado] = useState(null);
 
-  // --- ESTADOS DE FLUJO DE VERIFICACIÓN (NUEVO CENTRO DE CONTROL) ---
+  // --- ESTADOS DE FLUJO DE VERIFICACIÃ“N (NUEVO CENTRO DE CONTROL) ---
   const [imprimirAlGuardar, setImprimirAlGuardar] = useState(false);
   const [isMonitorOpen, setIsMonitorOpen] = useState(false);
   const [monitorData, setMonitorData] = useState([]); // Datos para la tabla de asientos
   const [monitorLoading, setMonitorLoading] = useState(false);
   const [monitorFilters, setMonitorFilters] = useState({
-    fechaInicio: new Date(new Date().getFullYear(), new Date().getMonth(), 1), // Primer día del mes
-    fechaFin: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0) // Último día del mes
+    fechaInicio: new Date(new Date().getFullYear(), new Date().getMonth(), 1), // Primer dÃ­a del mes
+    fechaFin: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0) // Ãšltimo dÃ­a del mes
   });
 
-  // --- ESTADOS DE REIMPRESIÓN ---
+  // --- ESTADOS DE REIMPRESIÃ“N ---
   const [isReimprimirModalOpen, setIsReimprimirModalOpen] = useState(false);
   const [reimprimirBusqueda, setReimprimirBusqueda] = useState('');
   const [documentosRecientes, setDocumentosRecientes] = useState([]);
@@ -84,7 +85,7 @@ function CapturaRapidaContent() {
   const [movimientos, setMovimientos] = useState([]);
   const [valorUnico, setValorUnico] = useState('');
 
-  // --- CÁLCULOS DERIVADOS ---
+  // --- CÃLCULOS DERIVADOS ---
   const plantillasValidas = useMemo(() => plantillas || [], [plantillas]);
 
   const totales = useMemo(() => {
@@ -99,7 +100,7 @@ function CapturaRapidaContent() {
     return totales.debito > 0 && diff < 0.01;
   }, [totales]);
 
-  // --- FUNCIONES DE LÓGICA ---
+  // --- FUNCIONES DE LÃ“GICA ---
 
   // 1. Manejo de Plantillas
   const handlePlantillaChange = (id) => {
@@ -129,15 +130,15 @@ function CapturaRapidaContent() {
           debito: 0,  // Se calculan al meter el valor
           credito: 0,
           naturaleza: d.debito > 0 ? 'D' : 'C', // Detectar naturaleza base
-          base_calculo: d.debito || d.credito || 0 // Guardar proporción si existe
+          base_calculo: d.debito || d.credito || 0 // Guardar proporciÃ³n si existe
         }));
         setMovimientos(nuevosMovimientos);
-        setValorUnico(''); // Resetear valor para obligar recálculo
+        setValorUnico(''); // Resetear valor para obligar recÃ¡lculo
       }
     }
   };
 
-  // 2. Distribución del Valor Único (La Magia de Captura Rápida)
+  // 2. DistribuciÃ³n del Valor Ãšnico (La Magia de Captura RÃ¡pida)
   const handleValorUnicoChange = (val) => {
     setValorUnico(val);
     const monto = parseFloat(val) || 0;
@@ -159,7 +160,7 @@ function CapturaRapidaContent() {
     const newMovs = [...movimientos];
     newMovs[index][field] = val;
 
-    // Si el usuario edita un valor manual, ya no aplica la distribución de "Valor Unico" rígidamente
+    // Si el usuario edita un valor manual, ya no aplica la distribuciÃ³n de "Valor Unico" rÃ­gidamente
     setValorUnico('');
     setMovimientos(newMovs);
   };
@@ -168,16 +169,41 @@ function CapturaRapidaContent() {
     const newMovs = [...movimientos];
     newMovs[index].concepto = val;
 
-    // --- CORRECCIÓN UX: EFECTO ESPEJO ---
-    // Si escribo en la primera línea (index 0), replicar automáticamente a la segunda (index 1)
-    // Esto agiliza la digitación en asientos simples.
+    // --- CORRECCIÃ“N UX: EFECTO ESPEJO ---
+    // Si escribo en la primera lÃ­nea (index 0), replicar automÃ¡ticamente a la segunda (index 1)
+    // Esto agiliza la digitaciÃ³n en asientos simples.
     if (index === 0 && newMovs.length > 1) {
       newMovs[1].concepto = val;
     }
 
     setMovimientos(newMovs);
   };
+  const handleAgregarFila = () => {
+    const nuevaFila = {
+      cuenta_id: null,
+      centro_costo_id: centroCostoId ? parseInt(centroCostoId) : null,
+      concepto: movimientos.length > 0 ? movimientos[movimientos.length - 1].concepto : '',
+      debito: 0,
+      credito: 0,
+      naturaleza: 'D',
+      base_calculo: 0
+    };
+    setMovimientos([...movimientos, nuevaFila]);
+    setValorUnico('');
+  };
 
+  const handleEliminarFila = (index) => {
+    const newMovs = movimientos.filter((_, i) => i !== index);
+    setMovimientos(newMovs);
+    setValorUnico('');
+  };
+
+  const handleLimpiarAsientos = () => {
+    if (window.confirm('¿Está seguro de eliminar todos los registros del asiento?')) {
+      setMovimientos([]);
+      setValorUnico('');
+    }
+  };
   const resetFormulario = () => {
     setPlantillaId('');
     setBeneficiarioId('');
@@ -187,14 +213,14 @@ function CapturaRapidaContent() {
     setFecha(new Date());
   };
 
-  // --- MANEJO DE ENVÍO ---
+  // --- MANEJO DE ENVÃO ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setMensaje('');
 
     if (!plantillaId || !estaBalanceado) {
-      setError('Seleccione una plantilla válida y asegúrese de que el asiento esté balanceado.');
+      setError('Seleccione una plantilla vÃ¡lida y asegÃºrese de que el asiento estÃ© balanceado.');
       return;
     }
 
@@ -224,12 +250,12 @@ function CapturaRapidaContent() {
       const docId = response.data.id; // Asumimos que el back devuelve el ID
       const docNumero = response.data.numero;
 
-      setMensaje(`✅ Documento #${docNumero} guardado exitosamente.`);
+      setMensaje(`âœ… Documento #${docNumero} guardado exitosamente.`);
 
-      // --- LÓGICA DE IMPRESIÓN AUTOMÁTICA ---
+      // --- LÃ“GICA DE IMPRESIÃ“N AUTOMÃTICA ---
       if (imprimirAlGuardar && docId) {
         handleImprimirDocumento(docId);
-        toast.info("Generando PDF de impresión... 🖨️");
+        toast.info("Generando PDF de impresiÃ³n... ðŸ–¨ï¸");
       }
 
       resetFormulario();
@@ -244,7 +270,7 @@ function CapturaRapidaContent() {
     }
   };
 
-  // --- CREACIÓN AUXILIARES ---
+  // --- CREACIÃ“N AUXILIARES ---
   const handleCreateTercero = async () => {
     setTerceroModalError('');
     if (!nuevoTercero.nit || !nuevoTercero.razon_social) {
@@ -275,13 +301,13 @@ function CapturaRapidaContent() {
     setIsSubmittingConcepto(true);
     try {
       const payload = { ...nuevoConcepto, empresa_id: user.empresaId };
-      // --- CORRECCIÓN API: Ruta correcta basada en estructura backend ---
+      // --- CORRECCIÃ“N API: Ruta correcta basada en estructura backend ---
       await apiService.post('/conceptos-favoritos/', payload);
       setIsConceptoModalOpen(false);
-      setMensaje("Concepto guardado en librería.");
+      setMensaje("Concepto guardado en librerÃ­a.");
     } catch (err) {
       console.error("Error creando concepto:", err);
-      setConceptoModalError("Error al guardar concepto. Verifique conexión.");
+      setConceptoModalError("Error al guardar concepto. Verifique conexiÃ³n.");
     } finally {
       setIsSubmittingConcepto(false);
     }
@@ -289,7 +315,7 @@ function CapturaRapidaContent() {
 
   // --- EFECTOS ---
 
-  // --- MONITOR CONTABLE & REIMPRESIÓN LOGIC ---
+  // --- MONITOR CONTABLE & REIMPRESIÃ“N LOGIC ---
 
   // 1. Cargar datos del Monitor
   useEffect(() => {
@@ -305,7 +331,7 @@ function CapturaRapidaContent() {
           queryParams.append('fecha_fin', fin);
 
           const res = await apiService.get('/reports/journal', { params: queryParams });
-          // Ordenar por ID descendente para ver lo último arriba
+          // Ordenar por ID descendente para ver lo Ãºltimo arriba
           const sorted = res.data.sort((a, b) => b.id - a.id);
           setMonitorData(sorted);
         } catch (err) {
@@ -320,13 +346,13 @@ function CapturaRapidaContent() {
     }
   }, [isMonitorOpen, monitorFilters]);
 
-  // 2. Búsqueda de Documentos para Reimpresión
+  // 2. BÃºsqueda de Documentos para ReimpresiÃ³n
   useEffect(() => {
     if (isReimprimirModalOpen) {
-      // Cargar últimos 10 al abrir
+      // Cargar Ãºltimos 10 al abrir
       const fetchRecientes = async () => {
         try {
-          const res = await apiService.get('/documentos/?limit=10&skip=0'); // Ajustar endpoint según API real
+          const res = await apiService.get('/documentos/?limit=10&skip=0'); // Ajustar endpoint segÃºn API real
           // Asegurar que sea array
           setDocumentosRecientes(Array.isArray(res.data) ? res.data : []);
         } catch (err) {
@@ -351,9 +377,9 @@ function CapturaRapidaContent() {
       try {
         let queryParams = '';
 
-        // 1. Detección Inteligente
+        // 1. DetecciÃ³n Inteligente
         if (/^\d+$/.test(term)) {
-          // Es un número -> Buscar por Número de Documento (prioridad) o NIT
+          // Es un nÃºmero -> Buscar por NÃºmero de Documento (prioridad) o NIT
           queryParams = `numero=${term}`;
         } else {
           // Es texto -> 
@@ -409,7 +435,7 @@ function CapturaRapidaContent() {
   useEffect(() => {
     // Stage 1: Solo si hay parametros y maestros, pero NO hemos asignado plantilla aun
     if (pageIsLoading || plantillas.length === 0 || terceros.length === 0) return;
-    if (plantillaId) return; // Ya se asignó plantilla, evitar re-run
+    if (plantillaId) return; // Ya se asignÃ³ plantilla, evitar re-run
 
     const aiPlantilla = searchParams.get('ai_plantilla');
     if (aiPlantilla) {
@@ -478,7 +504,7 @@ function CapturaRapidaContent() {
       const timer = setTimeout(() => {
         const btn = document.getElementById('btn-guardar-captura');
         if (btn && !btn.disabled) {
-          toast.success("IA: Todo listo. Guardando automáticamente... 💾");
+          toast.success("IA: Todo listo. Guardando automÃ¡ticamente... ðŸ’¾");
           btn.click();
         }
       }, 2000); // 2 segundos para que el usuario vea el resultado antes de guardar
@@ -512,7 +538,7 @@ function CapturaRapidaContent() {
       setPageIsLoading(true);
       setError('');
       try {
-        // Se asume que las rutas GET funcionan (ya que no reportaste error aquí)
+        // Se asume que las rutas GET funcionan (ya que no reportaste error aquÃ­)
         const [cuentasRes, tercerosRes, ccostoRes, plantillasRes, conceptosRes] = await Promise.all([
           apiService.get('/plan-cuentas/'),
           apiService.get('/terceros/'),
@@ -568,24 +594,24 @@ function CapturaRapidaContent() {
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Error de Carga</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <div className="flex justify-center">
-            {/* Botón de regreso eliminado */}
+            {/* BotÃ³n de regreso eliminado */}
           </div>
         </div>
       </div>
     );
   }
 
-  // --- BLINDAJE AUDITORÍA/CLON ---
+  // --- BLINDAJE AUDITORÃA/CLON ---
   if (user?.empresa?.modo_operacion === 'AUDITORIA_READONLY') {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
         <div className="bg-white p-8 rounded-xl shadow-lg border border-yellow-200 max-w-lg">
           <FaExclamationTriangle className="text-5xl text-yellow-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Restricción de Auditoría</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">RestricciÃ³n de AuditorÃ­a</h2>
           <p className="text-gray-600 mb-6">
-            Esta empresa está en <strong>Modo Auditoría / Clon</strong>.
-            La función de <strong>Captura Rápida</strong> está deshabilitada para prevenir la creación manual de registros nuevos.
-            Solo se permite la importación y consulta de datos.
+            Esta empresa estÃ¡ en <strong>Modo AuditorÃ­a / Clon</strong>.
+            La funciÃ³n de <strong>Captura RÃ¡pida</strong> estÃ¡ deshabilitada para prevenir la creaciÃ³n manual de registros nuevos.
+            Solo se permite la importaciÃ³n y consulta de datos.
           </p>
           <button
             onClick={() => router.push('/contabilidad/documentos')}
@@ -611,7 +637,7 @@ function CapturaRapidaContent() {
               </div>
               <div>
                 <div className="flex items-center gap-3">
-                  <h1 className="text-3xl font-bold text-gray-800">Captura Rápida</h1>
+                  <h1 className="text-3xl font-bold text-gray-800">Captura RÃ¡pida</h1>
                   <button
                     onClick={() => window.open('/manual/capitulo_25_captura_rapida.html', '_blank')}
                     className="flex items-center gap-2 px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors font-medium shadow-sm"
@@ -620,7 +646,7 @@ function CapturaRapidaContent() {
                     <FaBook /> <span className="hidden md:inline">Manual</span>
                   </button>
                 </div>
-                <p className="text-gray-500 text-sm">Contabilización acelerada basada en plantillas.</p>
+                <p className="text-gray-500 text-sm">ContabilizaciÃ³n acelerada basada en plantillas.</p>
               </div>
             </div>
           </div>
@@ -637,7 +663,7 @@ function CapturaRapidaContent() {
             <span className="text-sm font-bold text-gray-600 select-none">Imprimir</span>
           </div>
 
-          {/* BOTÓN VER ASIENTOS (MONITOR EXTERNO) */}
+          {/* BOTÃ“N VER ASIENTOS (MONITOR EXTERNO) */}
           <button
             type="button"
             onClick={() => window.open('/contabilidad/captura-rapida/monitor', 'MonitorAsientos', 'width=1200,height=800,resizable=yes,scrollbars=yes')}
@@ -652,7 +678,7 @@ function CapturaRapidaContent() {
         {/* NOTIFICACIONES */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-lg animate-pulse">
-            <p className="font-bold">Atención</p>
+            <p className="font-bold">AtenciÃ³n</p>
             <p>{error}</p>
           </div>
         )}
@@ -667,7 +693,7 @@ function CapturaRapidaContent() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
 
-          {/* CARD 1: CONFIGURACIÓN INICIAL */}
+          {/* CARD 1: CONFIGURACIÃ“N INICIAL */}
           <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 animate-fadeIn">
             <h3 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
               <span className="bg-indigo-100 text-indigo-600 w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span>
@@ -694,7 +720,7 @@ function CapturaRapidaContent() {
               {/* PLANTILLA (DESTACADO) */}
               <div className="lg:col-span-1">
                 <label htmlFor="plantilla" className="block text-xs font-bold text-indigo-600 uppercase mb-1 tracking-wide">
-                  ⚡ Plantilla (Requerido)
+                  âš¡ Plantilla (Requerido)
                 </label>
                 <div className="relative">
                   <select
@@ -749,10 +775,28 @@ function CapturaRapidaContent() {
           {/* CARD 2: DETALLES (SOLO SI HAY PLANTILLA) */}
           {plantillaId && (
             <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 animate-slideDown">
-              <h3 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
-                <span className="bg-indigo-100 text-indigo-600 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span>
-                Valores y Conceptos
-              </h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-gray-700 flex items-center gap-2">
+                  <span className="bg-indigo-100 text-indigo-600 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span>
+                  Detalle Contable
+                </h3>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleLimpiarAsientos}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 border border-red-100 rounded-lg hover:bg-red-100 transition-all text-sm font-medium"
+                  >
+                    <FaTrash className="text-xs" /> Limpiar Asientos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAgregarFila}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-lg hover:bg-indigo-100 transition-all text-sm font-medium"
+                  >
+                    <FaPlus className="text-xs" /> Agregar Fila
+                  </button>
+                </div>
+              </div>
 
               {/* INPUT DE VALOR GIGANTE */}
               <div className="mb-8 max-w-md mx-auto text-center">
@@ -778,10 +822,16 @@ function CapturaRapidaContent() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-slate-100">
                     <tr>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Cuenta Contable</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                        Cuenta Contable
+                        <button type="button" onClick={handleAgregarFila} className="text-indigo-500 hover:text-indigo-700" title="Agregar Fila">
+                          <FaPlus className="text-[10px]" />
+                        </button>
+                      </th>
                       <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-1/3">Concepto / Detalle</th>
                       <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Débito</th>
                       <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Crédito</th>
+                      <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider w-10"></th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-100">
@@ -802,17 +852,17 @@ function CapturaRapidaContent() {
                               value={mov.concepto || ''}
                               onChange={(e) => handleConceptoChange(index, e.target.value)}
                               className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-200 outline-none"
-                              placeholder="Descripción del movimiento..."
+                              placeholder="DescripciÃ³n del movimiento..."
                             />
                             <button
                               type="button"
                               onClick={() => { setNuevoConcepto({ descripcion: mov.concepto }); setIsConceptoModalOpen(true); }}
                               className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
-                              title="Guardar concepto en librería"
+                              title="Guardar concepto en librerÃ­a"
                             >
                               <FaSave />
                             </button>
-                            {/* BOTÓN BUSCAR CONCEPTO (SOLO PRIMER REGISTRO) */}
+                            {/* BOTÃ“N BUSCAR CONCEPTO (SOLO PRIMER REGISTRO) */}
                             {index === 0 && (
                               <button
                                 type="button"
@@ -822,7 +872,7 @@ function CapturaRapidaContent() {
                                   setConceptoBusqueda('');
                                 }}
                                 className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
-                                title="Buscar concepto en librería"
+                                title="Buscar concepto en librerÃ­a"
                               >
                                 <FaBook />
                               </button>
@@ -847,6 +897,16 @@ function CapturaRapidaContent() {
                             className="w-full px-3 py-1.5 border border-gray-200 rounded-md text-right font-mono text-sm focus:ring-2 focus:ring-indigo-100 outline-none transition-all placeholder:text-gray-300"
                           />
                         </td>
+                        <td className="px-6 py-4 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleEliminarFila(index)}
+                            className="text-gray-300 hover:text-red-500 transition-colors p-1"
+                            title="Eliminar registro"
+                          >
+                            <FaTrash className="text-sm" />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -868,13 +928,13 @@ function CapturaRapidaContent() {
 
               {!estaBalanceado && totales.debito > 0 && (
                 <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-lg text-center text-sm text-red-600 font-bold animate-fadeIn">
-                  ⚠️ El asiento no está balanceado. Diferencia: ${(Math.abs(totales.debito - totales.credito)).toLocaleString('es-CO', { minimumFractionDigits: 2 })}
+                  âš ï¸ El asiento no estÃ¡ balanceado. Diferencia: ${(Math.abs(totales.debito - totales.credito)).toLocaleString('es-CO', { minimumFractionDigits: 2 })}
                 </div>
               )}
             </div>
           )}
 
-          {/* BOTÓN DE GUARDADO FINAL */}
+          {/* BOTÃ“N DE GUARDADO FINAL */}
           <div className="mt-8 flex justify-end">
             <button
               type="submit"
@@ -903,16 +963,16 @@ function CapturaRapidaContent() {
         {isTerceroModalOpen && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 animate-fadeIn">
             <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-100">
-              <h2 className="text-2xl font-bold mb-6 text-gray-800">Nuevo Tercero (Rápido)</h2>
+              <h2 className="text-2xl font-bold mb-6 text-gray-800">Nuevo Tercero (RÃ¡pido)</h2>
               {terceroModalError && <div className="p-3 mb-4 rounded-lg bg-red-50 text-red-600 border border-red-100 text-sm">{terceroModalError}</div>}
 
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="nuevoTerceroNit" className={labelClass}>NIT / Identificación</label>
+                  <label htmlFor="nuevoTerceroNit" className={labelClass}>NIT / IdentificaciÃ³n</label>
                   <input type="text" id="nuevoTerceroNit" value={nuevoTercero.nit} onChange={(e) => setNuevoTercero({ ...nuevoTercero, nit: e.target.value })} className={inputClass} autoFocus />
                 </div>
                 <div>
-                  <label htmlFor="nuevoTerceroNombre" className={labelClass}>Nombre o Razón Social</label>
+                  <label htmlFor="nuevoTerceroNombre" className={labelClass}>Nombre o RazÃ³n Social</label>
                   <input type="text" id="nuevoTerceroNombre" value={nuevoTercero.razon_social} onChange={(e) => setNuevoTercero({ ...nuevoTercero, razon_social: e.target.value })} className={inputClass} />
                 </div>
               </div>
@@ -936,13 +996,13 @@ function CapturaRapidaContent() {
               </h2>
               {conceptoModalError && <div className="p-3 mb-4 rounded-lg bg-red-50 text-red-600 border border-red-100 text-sm">{conceptoModalError}</div>}
 
-              <label className={labelClass}>Descripción del Concepto</label>
+              <label className={labelClass}>DescripciÃ³n del Concepto</label>
               <input type="text" value={nuevoConcepto.descripcion || ''} onChange={(e) => setNuevoConcepto({ descripcion: e.target.value })} className={inputClass} autoFocus />
 
               <div className="mt-8 flex justify-end gap-3">
                 <button onClick={() => setIsConceptoModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancelar</button>
                 <button onClick={handleCreateConcepto} disabled={isSubmittingConcepto} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md disabled:bg-gray-400">
-                  {isSubmittingConcepto ? 'Guardando...' : 'Guardar en Librería'}
+                  {isSubmittingConcepto ? 'Guardando...' : 'Guardar en LibrerÃ­a'}
                 </button>
               </div>
             </div>
@@ -954,10 +1014,10 @@ function CapturaRapidaContent() {
             <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-lg border border-gray-100 flex flex-col max-h-[80vh]">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                  <FaBook className="text-green-500" /> Librería de Conceptos
+                  <FaBook className="text-green-500" /> LibrerÃ­a de Conceptos
                 </h2>
                 <button onClick={() => setIsSeleccionarConceptoModalOpen(false)} className="text-gray-400 hover:text-gray-600">
-                  ✕
+                  âœ•
                 </button>
               </div>
 
@@ -987,7 +1047,7 @@ function CapturaRapidaContent() {
                     </button>
                   ))}
                 {conceptos.length === 0 && (
-                  <p className="text-center text-gray-400 py-4 italic">No hay conceptos guardados aún.</p>
+                  <p className="text-center text-gray-400 py-4 italic">No hay conceptos guardados aÃºn.</p>
                 )}
               </div>
 
@@ -1007,14 +1067,14 @@ function CapturaRapidaContent() {
                 <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                   <FaPrint className="text-gray-500" /> Reimprimir Documento
                 </h2>
-                <button onClick={() => setIsReimprimirModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                <button onClick={() => setIsReimprimirModalOpen(false)} className="text-gray-400 hover:text-gray-600">âœ•</button>
               </div>
 
               <div className="mb-4">
                 <input
                   type="text"
                   className={inputClass}
-                  placeholder="Buscar por número, tercero o valor..."
+                  placeholder="Buscar por nÃºmero, tercero o valor..."
                   value={reimprimirBusqueda}
                   onChange={(e) => handleSearchReimprimir(e.target.value)}
                   autoFocus
@@ -1066,7 +1126,7 @@ function CapturaRapidaContent() {
                   onClick={() => setIsMonitorOpen(false)}
                   className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-full transition-colors"
                 >
-                  ✕
+                  âœ•
                 </button>
               </div>
 
@@ -1090,9 +1150,9 @@ function CapturaRapidaContent() {
                           <th className="px-4 py-3 text-left font-bold text-gray-500">Documento</th>
                           <th className="px-4 py-3 text-left font-bold text-gray-500">Tercero</th>
                           <th className="px-4 py-3 text-left font-bold text-gray-500">Detalle</th>
-                          <th className="px-4 py-3 text-right font-bold text-gray-500">Débito</th>
-                          <th className="px-4 py-3 text-right font-bold text-gray-500">Crédito</th>
-                          <th className="px-4 py-3 text-center font-bold text-gray-500">Acción</th>
+                          <th className="px-4 py-3 text-right font-bold text-gray-500">DÃ©bito</th>
+                          <th className="px-4 py-3 text-right font-bold text-gray-500">CrÃ©dito</th>
+                          <th className="px-4 py-3 text-center font-bold text-gray-500">AcciÃ³n</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
@@ -1147,7 +1207,7 @@ function CapturaRapidaContent() {
 
 export default function CapturaRapidaPage() {
   return (
-    <React.Suspense fallback={<div className="h-screen flex items-center justify-center text-indigo-500">Cargando Captura Rápida...</div>}>
+    <React.Suspense fallback={<div className="h-screen flex items-center justify-center text-indigo-500">Cargando Captura RÃ¡pida...</div>}>
       <CapturaRapidaContent />
     </React.Suspense>
   );
