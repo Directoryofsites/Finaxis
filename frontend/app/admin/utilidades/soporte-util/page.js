@@ -842,11 +842,12 @@ function SoporteUtilContent() {
                 {/* Tabs de Navegación */}
                 <div className="mb-8 border-b border-gray-200">
                     <nav className="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
-                        {['gestionSoporte', 'gestionEmpresas', 'crearEmpresa', 'roles', 'auditoria', 'utilidades', 'erradicador', 'maestros'].map((tab) => {
+                        {['gestionSoporte', 'gestionEmpresas', 'crearEmpresa', 'conteo', 'roles', 'auditoria', 'utilidades', 'erradicador', 'maestros'].map((tab) => {
                             const labels = {
                                 gestionSoporte: 'Usuarios Soporte',
                                 gestionEmpresas: 'Gestión Empresas',
                                 crearEmpresa: 'Crear Empresa',
+                                conteo: 'Conteo Registros 📊',
                                 roles: 'Roles Globales',
                                 auditoria: 'Auditoría',
                                 utilidades: 'Utilidades',
@@ -899,6 +900,10 @@ function SoporteUtilContent() {
                         />
                     )}
 
+                    {activeTab === 'conteo' && (
+                        <ConteoRegistros />
+                    )}
+
                     {activeTab === 'roles' && (
                         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
                             <div className="flex justify-between items-center mb-6">
@@ -919,7 +924,6 @@ function SoporteUtilContent() {
                     {activeTab === 'utilidades' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <ResetConsumoPanel />
-                            <ConteoRegistros />
                             <BuscadorPorLlaveNatural />
                         </div>
                     )}
