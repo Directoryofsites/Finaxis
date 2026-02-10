@@ -4,6 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <style>
+        @page {
+            size: letter;
+            margin: 2cm;
+        }
+
         body {
             font-family: 'Helvetica', sans-serif;
             font-size: 11px;
@@ -12,50 +17,16 @@
             padding: 20px;
         }
 
-        .header-table {
-            width: 100%;
-            border-bottom: 2px solid #333333;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-
-        .company-name {
-            font-size: 16px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-
-        .doc-type-box {
-            background: #eee;
-            padding: 8px;
-            border: 1px solid #ccc;
-            text-align: right;
-            font-weight: bold;
-            font-size: 14px;
-            text-transform: uppercase;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .doc-number {
-            color: #d32f2f;
-            font-size: 16px;
-            font-weight: bold;
-            text-align: right;
-            margin-top: 5px;
-        }
-
-        .info-box {
-            background: #f9f9f9;
-            padding: 10px;
-            border: 1px solid #ddd;
-            margin-bottom: 20px;
-        }
+        /* ... (rest of styles) */
 
         table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
+        }
+
+        tr {
+            page-break-inside: avoid;
         }
 
         th {

@@ -81,12 +81,12 @@ export const AuthProvider = ({ children }) => {
     const init = async () => {
       const token = localStorage.getItem(TOKEN_KEY);
       if (token) {
-        let success = initializeAuth(token);
+        let success = await initializeAuth(token);
         if (!success) {
           // RETRY STRATEGY: Wait 300ms and try again. 
           // This handles rare race conditions in new tabs where hydration/decoding might glitch.
           await new Promise(r => setTimeout(r, 300));
-          success = initializeAuth(token);
+          success = await initializeAuth(token);
         }
       }
       setAuthLoading(false);

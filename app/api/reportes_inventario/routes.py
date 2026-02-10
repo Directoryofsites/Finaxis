@@ -251,9 +251,11 @@ def generar_pdf_super_informe_directo_route(
     current_user: models_usuario.Usuario = Depends(security.get_current_user)
 ):
     """
-    Ruta que genera el PDF del Super Informe. Faltaba y causaba el 404 en el botón de descarga.
+    Ruta que genera el PDF del Super Informe. 
+    [OPTIMIZACIÓN] Se ha cambiado el motor a ReportLab para permitir reportes de alto volumen (500+ páginas).
     """
-    pdf_bytes, filename = service_reportes.generar_pdf_super_informe(
+    # Usamos la nueva versión optimizada
+    pdf_bytes, filename = service_reportes.generar_pdf_super_informe_reportlab(
         db=db,
         empresa_id=current_user.empresa_id,
         filtros=filtros

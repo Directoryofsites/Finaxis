@@ -291,11 +291,17 @@ async def procesar_comando_natural(texto_usuario: str, contexto: dict = None):
     # Lista ampliada con modelos disponibles detectados
     # para encontrar uno con cuota disponible (evitar el alias 'latest' que apunta a 2.5)
     models_to_try = [
-        'gemini-2.0-flash',           # Tier Free Generoso
-        'gemini-2.0-flash-lite-001',  # Alternativa ligera
-        'gemini-1.5-flash',           # Fallback estable anterior
-        'gemini-2.5-flash',           # Nueva versión flash (si la anterior falla)
-        'gemini-2.0-flash-001'
+        'gemini-2.5-flash-lite',      # Nueva generacion Lite (probablemente con cuota separada)
+        'gemini-2.5-pro',             # Pro (Cuota distinta a Flash)
+        'gemini-2.0-flash',           
+        'gemini-2.0-flash-lite-001',  
+        'gemini-flash-latest',        
+        'gemini-flash-lite-latest',   
+        'gemini-exp-1206',            
+        'gemini-1.5-flash',           
+        'gemini-2.5-flash',           
+        'gemini-2.0-flash-001',
+        'gemini-2.5-flash-preview-09-2025' 
     ]
 
     last_error = None
@@ -338,10 +344,16 @@ async def procesar_comando_natural(texto_usuario: str, contexto: dict = None):
             respuesta_json = json.loads(response_text)
             print(f"--- DEBUG AI RAW RESPONSE: {respuesta_json} ---")
             return respuesta_json
-
+            
         except Exception as e:
             print(f"Fallo modelo {model_name}: {str(e)}")
             last_error = e
+            
+            # Si es error de cuota (429), esperamos un poco antes de probar el siguiente modelo
+            if "429" in str(e):
+                import time
+                time.sleep(4) # Aumentamos tiempo de espera
+                
             continue
     
     # Si todos fallan, intentamos listar los disponibles para debug

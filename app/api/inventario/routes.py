@@ -310,12 +310,18 @@ def recalcular_saldos_masivo_route(db: Session = Depends(get_db), current_user: 
 )
 def solicitar_url_pdf_productos(
     filtros: schemas.ProductoFiltros,
-    # Inyectamos user para saber quién pide el PDF
-    current_user: models_usuario.Usuario = Depends(has_permission("inventario:ver_productos")) 
+    current_user: models_usuario.Usuario = Depends(get_current_user) 
 ):
     print(f"\n>>> [RUTA] SOLICITUD DE TOKEN PDF recibida por Usuario ID: {current_user.id}, Empresa ID: {current_user.empresa_id}")
     try:
-        token_payload_str = filtros.model_dump_json()
+        # FIX CRÍTICO: Empaquetamos filtros + empresa_id para garantizar contexto correcto
+        payload_data = {
+            "filtros": filtros.model_dump(),
+            "empresa_id": current_user.empresa_id
+        }
+        import json
+        token_payload_str = json.dumps(payload_data)
+        
         token = create_signed_token(token_payload_str, salt='pdf-lista-productos', max_age=600) 
         print(f">>> [RUTA] Token generado exitosamente.")
         return {"token": token}
@@ -331,7 +337,7 @@ def solicitar_url_pdf_productos(
 )
 def imprimir_pdf_productos(token: str, db: Session = Depends(get_db)):
     """
-    Genera el PDF. Ahora con SONDA DE RASTREO y CORRECCIÓN DE ID EMPRESA.
+    Genera el PDF. Ahora con RECUPERACIÓN SEGURA DE EMPRESA desde el token.
     """
     print(f"\n>>> [RUTA] GET /imprimir/{token[:10]}... DETECTADO. Iniciando proceso...")
 
@@ -343,23 +349,41 @@ def imprimir_pdf_productos(token: str, db: Session = Depends(get_db)):
     
     print(f">>> [RUTA] Token validado. Payload recuperado.")
 
-    # 2. Deserializar Filtros
-    try:
-        filtros = schemas.ProductoFiltros.model_validate_json(payload_str)
-    except Exception as e:
-         print(f">>> [RUTA FALLO] Error deserializando filtros: {e}")
-         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Filtros inválidos.")
-
-    # 3. RECUPERACIÓN INTELIGENTE DE EMPRESA (SOLUCIÓN A RULETA RUSA)
+    # 2. Deserializar Payload (Nueva Estructura o Legacy Fallback)
+    import json
     empresa_id_objetivo = None
+    filtros = None
     
-    # Estrategia: Buscamos la empresa asociada a alguna de las bodegas del filtro
-    if filtros.bodega_ids and len(filtros.bodega_ids) > 0:
-        # Consultamos directamente la bodega para obtener su empresa_id
-        bodega = db.query(models_bodega.Bodega).filter(models_bodega.Bodega.id == filtros.bodega_ids[0]).first()
-        if bodega: 
-            empresa_id_objetivo = bodega.empresa_id
-            print(f">>> [RUTA] Empresa deducida por Bodega ID {bodega.id}: {empresa_id_objetivo}")
+    try:
+        data = json.loads(payload_str)
+        
+        # Detección de versión de token
+        if "empresa_id" in data and "filtros" in data:
+            # Versión V2 (Corregida)
+            empresa_id_objetivo = data["empresa_id"]
+            filtros = schemas.ProductoFiltros(**data["filtros"])
+            print(f">>> [RUTA] Token V2 detectado. Empresa ID explícito: {empresa_id_objetivo}")
+        else:
+            # Versión V1 (Legacy - Solo filtros)
+            print(">>> [RUTA WARN] Token V1 detectado (Legacy). Intentando deducción...")
+            filtros = schemas.ProductoFiltros.model_validate_json(payload_str)
+    except Exception as e:
+        # Intento final por si es V1 puro
+        try:
+             filtros = schemas.ProductoFiltros.model_validate_json(payload_str)
+        except:
+             print(f">>> [RUTA FALLO] Error deserializando payload: {e}")
+             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Filtros inválidos.")
+
+    # 3. RECUPERACIÓN INTELIGENTE DE EMPRESA (Retrocompatibilidad)
+    if not empresa_id_objetivo:
+        # Estrategia: Buscamos la empresa asociada a alguna de las bodegas del filtro
+        if filtros.bodega_ids and len(filtros.bodega_ids) > 0:
+            # Consultamos directamente la bodega para obtener su empresa_id
+            bodega = db.query(models_bodega.Bodega).filter(models_bodega.Bodega.id == filtros.bodega_ids[0]).first()
+            if bodega: 
+                empresa_id_objetivo = bodega.empresa_id
+                print(f">>> [RUTA] Empresa deducida por Bodega ID {bodega.id}: {empresa_id_objetivo}")
     
     if not empresa_id_objetivo:
         # FALLBACK DE EMERGENCIA: Para tu caso de depuración (Empresa 4)

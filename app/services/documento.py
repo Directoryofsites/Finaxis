@@ -2969,7 +2969,15 @@ def generar_url_firmada_impresion(db: Session, documento_id: int, empresa_id: in
 
     # Construimos la URL completa que el frontend abrirá.
     # Usamos la nueva ruta pública que crearemos en el siguiente paso.
-    signed_url = f"{settings.BASE_URL}/api/documentos/imprimir-firmado?token={token}"
+    
+    # FIX PUERTO 8002: Ajuste dinámico para desarrollo local
+    base_url = settings.BASE_URL
+    if "localhost" in base_url and "8000" in base_url:
+        base_url = base_url.replace("8000", "8002")
+    elif "localhost" in base_url and ":8002" not in base_url:
+         base_url = "http://localhost:8002"
+
+    signed_url = f"{base_url}/api/documentos/imprimir-firmado?token={token}"
     
     return signed_url
 
@@ -3113,8 +3121,16 @@ def generar_url_firmada_rentabilidad(db: Session, documento_id: int, empresa_id:
     token = create_print_token(documento_id=documento_id, empresa_id=empresa_id)
     
     # --- LA CORRECCIÓN CLAVE ---
-    # Ahora construimos la URL absoluta, apuntando directamente al servidor del backend.
-    signed_url = f"{settings.BASE_URL}/api/documentos/imprimir-rentabilidad-firmado?token={token}"
+    # Ahora construimos la URL absoluta, apuntando directamente al servidor del backend (Puerto 8002).
+    # Si settings.BASE_URL tiene el puerto incorrecto (ej. 8000), lo corregimos aquí.
+    base_url = settings.BASE_URL
+    if "localhost" in base_url and "8000" in base_url:
+        base_url = base_url.replace("8000", "8002")
+    elif "localhost" in base_url and ":8002" not in base_url:
+         # Si es localhost sin puerto o puerto incorrecto, forzamos 8002
+         base_url = "http://localhost:8002"
+
+    signed_url = f"{base_url}/api/documentos/imprimir-rentabilidad-firmado?token={token}"
     
     return signed_url
 # --- FIN: NUEVA FUNCIÓN PARA URL FIRMADA ---

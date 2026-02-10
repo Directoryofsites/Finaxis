@@ -27,7 +27,7 @@ export const getKardexPorProducto = async (productoId, fecha_inicio, fecha_fin, 
     try {
         const params = { fecha_inicio, fecha_fin };
         if (bodegaId !== null && bodegaId !== '') {
-            params.bodega = bodegaId; 
+            params.bodega = bodegaId;
         }
 
         const response = await apiService.get(`/reportes-inventario/kardex/${productoId}`, { params });
@@ -50,7 +50,7 @@ export const generarPdfDirectoSuperInforme = async (filtros) => {
             }
         );
 
-        const filename = response.headers['content-disposition'] 
+        const filename = response.headers['content-disposition']
             ? response.headers['content-disposition'].split('filename=')[1].replace(/"/g, '')
             : `SuperInforme_${new Date().toISOString().slice(0, 10)}.pdf`;
 
@@ -62,7 +62,7 @@ export const generarPdfDirectoSuperInforme = async (filtros) => {
         link.click();
         link.remove();
         window.URL.revokeObjectURL(url);
-        
+
         return { success: true, message: `PDF generado y descargado como ${filename}` };
 
     } catch (error) {
@@ -78,11 +78,11 @@ export const generarPdfDirectoSuperInforme = async (filtros) => {
 export const generarPdfMovimientoAnalitico = async (filtros) => {
     try {
         const response = await apiService.post(
-            '/reportes-inventario/movimiento-analitico/pdf', 
-            filtros, 
+            '/reportes-inventario/movimiento-analitico/pdf',
+            filtros,
             { responseType: 'blob' }
         );
-        
+
         const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
         const link = document.createElement('a');
         link.href = url;
@@ -91,7 +91,7 @@ export const generarPdfMovimientoAnalitico = async (filtros) => {
         link.click();
         link.parentNode.removeChild(link);
         window.URL.revokeObjectURL(url);
-        
+
         return true;
     } catch (error) {
         console.error("Error al generar PDF Analítico:", error);
@@ -109,7 +109,7 @@ export const generarPdfKardex = async (filtros) => {
 
         if (!token) throw new Error("El Backend no devolvió un token de descarga.");
 
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://finaxis.com.co';
         const urlDescarga = `${backendUrl}/api/reportes-inventario/kardex/pdf/${token}`;
 
         const newTab = window.open(urlDescarga, '_blank');
@@ -148,9 +148,9 @@ export const crearTokenTopesPDF = async (filtros) => {
 
 export const generarPdfTopes = async (filtros) => {
     try {
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://finaxis.com.co';
         const urlDescarga = `${backendUrl}/api/reportes-inventario/topes/pdf?fecha_corte=${filtros.fecha_corte}&tipo_alerta=${filtros.tipo_alerta}&bodega_ids=${filtros.bodega_ids ? filtros.bodega_ids.join(',') : ''}&grupo_ids=${filtros.grupo_ids ? filtros.grupo_ids.join(',') : ''}`;
-        
+
         const newTab = window.open(urlDescarga, '_blank');
         if (!newTab) throw new Error("El navegador bloqueó la apertura.");
         return { success: true, message: "PDF solicitado." };

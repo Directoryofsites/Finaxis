@@ -21,7 +21,26 @@ from app.models import (
     Producto as models_producto # Importamos modelo Producto
 )
 from app.schemas import documento as schemas_doc
+# ReportLab Imports
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import landscape, letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, LongTable
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
+from io import BytesIO
+import time as time_module
+from datetime import datetime
 from weasyprint import HTML
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import landscape, letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, LongTable
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
+from io import BytesIO
+import time as time_module
+from datetime import datetime
 
 # --- INICIO: ARQUITECTURA DE PLANTILLAS REFACTORIZADA ---
 # 1. Importamos el nuevo diccionario con las plantillas pre-compiladas.
@@ -228,7 +247,8 @@ def generate_super_informe(db: Session, filtros: schemas_doc.DocumentoGestionFil
 
 def generate_super_informe_pdf(db: Session, filtros: schemas_doc.DocumentoGestionFiltros, empresa_id: int):
     """
-    Genera el PDF del Super Informe usando streaming (yield_per) para evitar OOM.
+    Genera el PDF del Super Informe usando REPORTLAB (Optimizado).
+    Reemplaza la version anterior de WeasyPrint.
     """
     filtros.traerTodo = True
 
@@ -241,6 +261,9 @@ def generate_super_informe_pdf(db: Session, filtros: schemas_doc.DocumentoGestio
     TerceroMov = aliased(models_tercero)
     UsuarioCreator = aliased(models_usuario)
     UsuarioOperator = aliased(models_usuario)
+
+    print("--- [ReportLab] Iniciando generacion Super Informe (Contable) ---")
+    start_time = time_module.time()
 
     # --- 1. Construir QUERY BASE (Sin ejecutar) ---
     query = None
@@ -349,87 +372,125 @@ def generate_super_informe_pdf(db: Session, filtros: schemas_doc.DocumentoGestio
             elif filtros.valorOperador == 'igual': query = query.filter(or_(table_mov.debito == monto, table_mov.credito == monto))
 
 
-    # --- 2. Calcular TOTALES (Agregacion SQL) ---
-    totales = {"debito": 0.0, "credito": 0.0}
-    if query:
-        totales_query = query.with_entities(
-            func.sum(table_mov.debito).label('total_debito'),
-            func.sum(table_mov.credito).label('total_credito')
-        )
-        # Ejecutar agregacion rapida
-        res_totales = totales_query.first()
-        if res_totales:
-            totales["debito"] = float(res_totales.total_debito or 0)
-            totales["credito"] = float(res_totales.total_credito or 0)
-            totales["diferencia"] = totales["debito"] - totales["credito"]
-
-
-    # --- 3. Ejecutar Streaming con Generador ---
+    # --- 2. Ejecutar Query ---
     if not query:
         raise HTTPException(status_code=400, detail="Criterios de búsqueda inválidos o estado de documento no especificado.")
 
-    # yield_per es CLAVE para no cargar todo en memoria
-    iterator_rows = query.order_by(table_doc.fecha.desc(), table_doc.numero.desc()).yield_per(1000)
+    print("--- [ReportLab] Ejecutando Query con .all()... ---")
+    t_query_start = time_module.time()
+    # Usamos .all() para evitar latencia de streaming en conexiones lentas
+    resultados = query.order_by(table_doc.fecha.desc(), table_doc.numero.desc()).all()
+    print(f"--- [ReportLab] Query Ejecutado en {time_module.time() - t_query_start:.4f}s. Registros obtenidos: {len(resultados)} ---")
 
-    def _row_generator():
-        for r in iterator_rows:
-            item = r._asdict()
-            yield {
-                'cells': [
-                    item.get('fecha').strftime('%d/%m/%Y') if item.get('fecha') else 'N/A',
-                    (item.get('tipo_documento') or '').strip() or f"Doc {item.get('documento_id') or 'N/A'}",
-                    item.get('numero') or 'N/A',
-                    item.get('beneficiario') or 'N/A',
-                    f"{item.get('cuenta_codigo', '')} - {item.get('cuenta_nombre', '')}",
-                    item.get('centro_costo') or 'N/A',
-                    item.get('concepto') or '',
-                    f"${float(item.get('debito') or 0):,.0f}",
-                    f"${float(item.get('credito') or 0):,.0f}",
-                    item.get('usuario_creador') or 'N/A',
-                    item.get('justificacion') or 'N/A',
-                    item.get('usuario_operacion') or 'N/A'
-                ], 
-                'estado': item.get('estado')
-            }
+    # --- 3. Generar PDF con ReportLab ---
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, 
+        pagesize=landscape(letter),
+        rightMargin=0.5*inch, leftMargin=0.5*inch, 
+        topMargin=0.5*inch, bottomMargin=0.5*inch
+    )
+    
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Estilos Personalizados
+    styles.add(ParagraphStyle(name='TituloReporte', parent=styles['Heading1'], alignment=TA_CENTER, fontSize=12, spaceAfter=10))
+    styles.add(ParagraphStyle(name='Subtitulo', parent=styles['Normal'], alignment=TA_CENTER, fontSize=10))
+    styles.add(ParagraphStyle(name='CeldaHeader', parent=styles['Normal'], fontSize=7, fontName='Helvetica-Bold', alignment=TA_CENTER, textColor=colors.black))
+    styles.add(ParagraphStyle(name='CeldaBody', parent=styles['Normal'], fontSize=7, fontName='Helvetica', alignment=TA_LEFT))
+    styles.add(ParagraphStyle(name='CeldaNumero', parent=styles['Normal'], fontSize=7, fontName='Helvetica', alignment=TA_RIGHT))
 
-    # Headers y Anchos
-    headers = ["Fecha", "Documento", "Num", "Beneficiario", "Cuenta", "C. Costo", "Concepto", "Débito", "Crédito", "Usuario Creador", "Justificación", "Usuario Op."]
-    column_widths = ["6%", "6%", "4%", "10%", "10%", "7%", "23%", "9%", "9%", "6%", "5%", "5%"]
-
-    empresa_info = db.query(models_empresa).filter(models_empresa.id == empresa_id).first()
+    # Encabezado Empresa
+    empresa = db.query(models_empresa).filter(models_empresa.id == empresa_id).first()
+    razon_social = getattr(empresa, 'razon_social', 'Empresa Desconocida')
+    nit = getattr(empresa, 'nit', 'N/A')
+    
+    elements.append(Paragraph(f"{razon_social}", styles['TituloReporte']))
+    elements.append(Paragraph(f"NIT: {nit}", styles['Subtitulo']))
     
     title_parts = [f"Informe de {filtros.tipoEntidad.replace('_', ' ').title()}"]
     if filtros.fechaInicio and filtros.fechaFin:
-        fecha_str = f"del {filtros.fechaInicio.strftime('%d/%m/%Y')} al {filtros.fechaFin.strftime('%d/%m/%Y')}"
-    else: fecha_str = "de todo el período"
-    title_parts.append(fecha_str)
-    report_title = " ".join(title_parts)
+        fecha_str = f"Del {filtros.fechaInicio.strftime('%d/%m/%Y')} al {filtros.fechaFin.strftime('%d/%m/%Y')}"
+    else: fecha_str = "Todo el período"
+    elements.append(Paragraph(f"{title_parts[0]} - {fecha_str}", styles['Subtitulo']))
+    elements.append(Spacer(1, 0.2*inch))
 
-    context = {
-        "empresa": empresa_info,
-        "report_title": report_title,
-        "fecha_generacion": date.today().strftime('%d/%m/%Y'),
-        "headers": headers,
-        "column_widths": column_widths,
-        # Pasamos el GENERADOR
-        "processed_rows": _row_generator(), 
-        "totales": {
-            "debito": f"${totales['debito']:,.0f}",
-            "credito": f"${totales['credito']:,.0f}",
-            "diferencia": f"${(totales['debito'] - totales['credito']):,.0f}"
-        },
-        "show_totals": True
-    }
+    # Tabla
+    headers = ["Fecha", "Doc", "Num", "Beneficiario", "Cuenta", "C. Costo", "Concepto", "Débito", "Crédito", "Creador", "Just.", "Oper."]
+    # Anchos ajustados para letter landscape (~10 inch usable)
+    col_widths = [0.7*inch, 0.7*inch, 0.5*inch, 1.2*inch, 1.2*inch, 0.8*inch, 2.0*inch, 0.8*inch, 0.8*inch, 0.6*inch, 0.6*inch, 0.6*inch]
 
-    try:
-        print("[PDF] Usando motor con STREAMING generator (v2)")
-        template_string = TEMPLATES_EMPAQUETADOS['reports/super_informe_report.html']
-        template = GLOBAL_JINJA_ENV.from_string(template_string)
-        # Renderizado final
-        html_string = template.render(context)
-        return HTML(string=html_string).write_pdf()
-    except KeyError:
-        raise HTTPException(status_code=500, detail="La plantilla 'reports/super_informe_report.html' no fue encontrada en el paquete.")
-    except Exception as e:
-        print(f"ERROR AL RENDERIZAR PLANTILLA: {e}")
-        raise HTTPException(status_code=500, detail=f"Error al generar el PDF: {e}")
+    data = []
+    # Header Row
+    header_row = [Paragraph(h, styles['CeldaHeader']) for h in headers]
+    data.append(header_row)
+
+    total_debito = 0.0
+    total_credito = 0.0
+
+    print("--- [ReportLab] Procesando filas... ---")
+    for row in resultados:
+        r = row._asdict()
+        
+        deb = float(r.get('debito') or 0)
+        cred = float(r.get('credito') or 0)
+        total_debito += deb
+        total_credito += cred
+
+        fecha_fmt = r.get('fecha').strftime('%d/%m/%Y') if r.get('fecha') else 'N/A'
+        tipo_doc_fmt = (r.get('tipo_documento') or '').strip() or str(r.get('documento_id') or '')
+        tipo_doc_short = (tipo_doc_fmt[:10] + '..') if len(tipo_doc_fmt) > 10 else tipo_doc_fmt
+        
+        cuenta_fmt = f"{r.get('cuenta_codigo', '')} - {r.get('cuenta_nombre', '')}"
+        
+        row_data = [
+            Paragraph(fecha_fmt, styles['CeldaBody']),
+            Paragraph(tipo_doc_short, styles['CeldaBody']),
+            Paragraph(str(r.get('numero') or ''), styles['CeldaBody']),
+            Paragraph(str(r.get('beneficiario') or 'N/A')[:25], styles['CeldaBody']),
+            Paragraph(cuenta_fmt, styles['CeldaBody']),
+            Paragraph(str(r.get('centro_costo') or '')[:15], styles['CeldaBody']),
+            Paragraph(str(r.get('concepto') or '')[:50], styles['CeldaBody']),
+            Paragraph(f"{deb:,.0f}", styles['CeldaNumero']),
+            Paragraph(f"{cred:,.0f}", styles['CeldaNumero']),
+            Paragraph(str(r.get('usuario_creador') or 'N/A')[:10], styles['CeldaBody']),
+            Paragraph(str(r.get('justificacion') or 'N/A')[:10], styles['CeldaBody']),
+            Paragraph(str(r.get('usuario_operacion') or 'N/A')[:10], styles['CeldaBody']),
+        ]
+        data.append(row_data)
+
+    # Fila de Totales
+    total_row = [
+        "", "", "", "", "", "TOTALES:", "",
+        Paragraph(f"{total_debito:,.0f}", styles['CeldaNumero']),
+        Paragraph(f"{total_credito:,.0f}", styles['CeldaNumero']),
+        "", "", ""
+    ]
+    data.append(total_row)
+
+    # Estilo Tabla
+    t = LongTable(data, colWidths=col_widths, repeatRows=1)
+    t.setStyle(TableStyle([
+        # Header Style (Match original #eee background, black text)
+        ('BACKGROUND', (0, 0), (-1, 0), colors.Color(0.93, 0.93, 0.93)), # #eee
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.Color(0.8, 0.8, 0.8)), # #ccc
+        ('fontName', (0, 0), (-1, -1), 'Helvetica'),
+        ('fontSize', (0, 0), (-1, -1), 7),
+        # Totales Style
+        ('BACKGROUND', (0, -1), (-1, -1), colors.Color(0.93, 0.93, 0.93)), # #eee
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+    ]))
+    
+    elements.append(t)
+    
+    print("--- [ReportLab] Renderizando PDF final... ---")
+    doc.build(elements)
+    pdf_bytes = buffer.getvalue()
+    buffer.close()
+    
+    print(f"--- [ReportLab] Tiempo Total: {time_module.time() - start_time:.4f}s ---")
+    return pdf_bytes

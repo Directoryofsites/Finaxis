@@ -94,6 +94,23 @@ class FactusProvider:
                     "dian_status": "ACEPTADO", # Factus valida sincrónicamente en Sandbox
                     "provider_response": resp_json
                 }
+            elif resp.status_code == 409 or "pendiente" in str(resp_json.get('message', '')).lower():
+                # CASO ESPECIAL: Factura ya está en proceso o fue enviada
+                # ESTRATEGIA DE RECUPERACIÓN: Consultar si la factura ya existe en Factus
+                print(f"⚠️ Advertencia Factus (409/Pendiente): {resp_json}")
+                
+                # Intentamos obtener el 'number' o confirmacion de la respuesta, si existe
+                # Si no, deberíamos intentar buscar la factura por referencia (si Factus lo permite)
+                # Por ahora, devolvemos un error más amigable pero indicando que NO se pudo confirmar
+                
+                return {
+                    "success": False, 
+                    # CAMBIO CLAVE: Usamos un código de error específico que el frontend pueda entender
+                    "error_code": "INVOICE_PENDING_DIAN",
+                    "error": "La factura está siendo procesada por la DIAN. No intente enviarla de nuevo inmediatamente.",
+                    "details": resp_json,
+                    "message": "Consulte 'Estado Documentos' en unos minutos." 
+                }
             else:
                 return {
                     "success": False,

@@ -41,6 +41,15 @@ from ..models import lista_precio as models_lista_precio
 from ..models import regla_precio_grupo as models_regla_precio
 from ..models import empresa as models_empresa 
 
+# --- REPORTLAB OPTIMIZATION ---
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, LongTable
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch, cm
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
+# ------------------------------ 
+
 # Schemas
 from ..schemas import reportes_inventario as schemas_reportes
 from ..schemas import reporte_rentabilidad as schemas_rentabilidad
@@ -1235,6 +1244,233 @@ def generar_pdf_super_informe(
     # 7. Definir nombre del archivo
     filename = f"Super_Informe_Inventario_{vista}.pdf"
     
+    return pdf_bytes, filename
+
+# ==============================================================================
+# === [OPTIMIZACIÓN] GENERADOR PDF SUPER INFORME (REPORTLAB) ===
+# ==============================================================================
+
+def generar_pdf_super_informe_reportlab(
+    db: Session,
+    empresa_id: int,
+    filtros: schemas_reportes.SuperInformeFiltros
+) -> tuple[bytes, str]:
+    """
+    Genera el PDF del Super Informe usando ReportLab para alto rendimiento.
+    [OPTIMIZADO]: Usa consulta directa (SQLAlchemy Core/Tuples) para evitar overhead de Pydantic
+    y un bucle eficiente para generación de tablas de alto volumen (500-1000+ páginas).
+    """
+    print(f"--- [ReportLab] Iniciando generación optimizada para vista: {filtros.vista_reporte.value} ---")
+    import time as time_module
+    start_time = time_module.time()
+    
+    # ==========================================================================
+    # 1. DATA FETCHING OPTIMIZADO (Direct Query, No Pydantic)
+    # ==========================================================================
+    
+    # Reconstruimos la consulta para evitar la sobrecarga de get_super_informe_inventarios
+    
+    query = db.query(
+        models_producto.MovimientoInventario,
+        models_producto.Producto,
+        models_bodega.Bodega,
+        models_doc.Documento,
+        models_tipo_doc.TipoDocumento,
+        models_tercero.Tercero
+    ).select_from(models_producto.MovimientoInventario)\
+     .join(models_producto.Producto, models_producto.MovimientoInventario.producto_id == models_producto.Producto.id)\
+     .outerjoin(models_bodega.Bodega, models_producto.MovimientoInventario.bodega_id == models_bodega.Bodega.id)\
+     .outerjoin(models_doc.Documento, models_producto.MovimientoInventario.documento_id == models_doc.Documento.id)\
+     .outerjoin(models_tipo_doc.TipoDocumento, models_doc.Documento.tipo_documento_id == models_tipo_doc.TipoDocumento.id)\
+     .outerjoin(models_tercero.Tercero, models_doc.Documento.beneficiario_id == models_tercero.Tercero.id)
+
+    conditions = [
+        models_producto.Producto.empresa_id == empresa_id,
+        or_(models_doc.Documento.anulado == False, models_doc.Documento.id == None) 
+    ]
+
+    # Fechas
+    fecha_inicio_dt_base = datetime.combine(filtros.fecha_inicio or date(1900, 1, 1), time.min)
+    fecha_fin_dt_base = datetime.combine(filtros.fecha_fin or date.today(), time.max)
+    
+    if filtros.vista_reporte == schemas_reportes.VistaSuperInformeEnum.MOVIMIENTOS:
+        if filtros.fecha_inicio and filtros.fecha_fin:
+             conditions.append(models_producto.MovimientoInventario.fecha.between(fecha_inicio_dt_base, fecha_fin_dt_base))
+    else:
+        conditions.append(models_producto.MovimientoInventario.fecha <= fecha_fin_dt_base)
+
+    if filtros.bodega_ids:
+        conditions.append(models_producto.MovimientoInventario.bodega_id.in_(filtros.bodega_ids))
+    
+    if filtros.producto_ids:
+        conditions.append(models_producto.MovimientoInventario.producto_id.in_(filtros.producto_ids))
+    elif filtros.search_term_prod:
+        search_like = f"%{filtros.search_term_prod}%"
+        conditions.append(or_(
+             models_producto.Producto.codigo.ilike(search_like),
+             models_producto.Producto.nombre.ilike(search_like)
+        ))
+
+    if filtros.grupo_ids:
+        conditions.append(models_producto.Producto.grupo_id.in_(filtros.grupo_ids))
+
+    if conditions:
+        query = query.filter(and_(*conditions))
+
+    # Seleccionamos campos específicos
+    select_query = query.with_entities(
+        models_producto.MovimientoInventario.fecha,
+        models_tipo_doc.TipoDocumento.codigo.label("tdoc"),
+        models_doc.Documento.numero,
+        models_tercero.Tercero.razon_social.label("tercero"),
+        models_bodega.Bodega.nombre.label("bodega"),
+        models_producto.Producto.codigo.label("prod_cod"),
+        models_producto.Producto.nombre.label("prod_nom"),
+        models_producto.MovimientoInventario.tipo_movimiento,
+        models_producto.MovimientoInventario.cantidad,
+        models_producto.MovimientoInventario.costo_unitario,
+        models_producto.MovimientoInventario.costo_total
+    ).order_by(models_producto.MovimientoInventario.fecha.desc(), models_producto.MovimientoInventario.id)
+
+    # EJECUCIÓN NORMAL (Sin Streaming) - Revertido por performance en Producción
+    print("--- [ReportLab] Ejecutando Query con .all()... ---")
+    t_query_start = time_module.time()
+    # Usamos .all() porque yield_per causó lentitud excesiva en producción (Posible latencia DB)
+    resultados_iterator = select_query.all()
+    print(f"--- [ReportLab] Query Ejecutado en {time_module.time() - t_query_start:.4f}s. Registros obtenidos: {len(resultados_iterator)} ---")
+    
+    # ==========================================================================
+    # 2. Configuración del Documento
+    # ==========================================================================
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, 
+        pagesize=landscape(letter),
+        rightMargin=0.5*inch, leftMargin=0.5*inch, 
+        topMargin=0.5*inch, bottomMargin=0.5*inch
+    )
+    
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Estilos Personalizados
+    styles.add(ParagraphStyle(name='TituloReporte', parent=styles['Heading1'], alignment=TA_CENTER, fontSize=14, spaceAfter=10))
+    styles.add(ParagraphStyle(name='Subtitulo', parent=styles['Normal'], alignment=TA_CENTER, fontSize=10))
+    styles.add(ParagraphStyle(name='Filtros', parent=styles['Normal'], fontSize=8, textColor=colors.grey))
+    styles.add(ParagraphStyle(name='CeldaHeader', parent=styles['Normal'], fontSize=7, fontName='Helvetica-Bold', alignment=TA_CENTER, textColor=colors.white))
+    styles.add(ParagraphStyle(name='CeldaBody', parent=styles['Normal'], fontSize=7, fontName='Helvetica', alignment=TA_LEFT))
+    styles.add(ParagraphStyle(name='CeldaNumero', parent=styles['Normal'], fontSize=7, fontName='Helvetica', alignment=TA_RIGHT))
+
+    # 3. Encabezado de Empresa
+    empresa = db.query(models_empresa.Empresa).filter(models_empresa.Empresa.id == empresa_id).first()
+    razon_social = getattr(empresa, 'razon_social', 'Empresa Desconocida')
+    nit = getattr(empresa, 'nit', 'N/A')
+    
+    elements.append(Paragraph(f"{razon_social}", styles['TituloReporte']))
+    elements.append(Paragraph(f"NIT: {nit}", styles['Subtitulo']))
+    elements.append(Spacer(1, 0.2*inch))
+    
+    titulo_reporte = f"SUPER INFORME: {filtros.vista_reporte.value.replace('_', ' ')}"
+    elements.append(Paragraph(titulo_reporte, styles['TituloReporte']))
+    
+    fecha_gen = datetime.now().strftime("%d/%m/%Y %H:%M")
+    elements.append(Paragraph(f"Generado el: {fecha_gen}", styles['Subtitulo']))
+    elements.append(Spacer(1, 0.3*inch))
+
+    # 4. Procesamiento de Datos según Vista
+    data_table = []
+    col_widths = []
+    
+    total_cant_global = Decimal(0)
+    total_costo_global = Decimal(0)
+
+    # Vista MOVIMIENTOS (Default y Principal)
+    headers = ['Fecha', 'Documento', 'Tercero', 'Bodega', 'Producto', 'Tipo', 'Cant.', 'Costo Unit.', 'Total']
+    data_table.append([Paragraph(h, styles['CeldaHeader']) for h in headers])
+    col_widths = [2.2*cm, 3.0*cm, 4.0*cm, 3.0*cm, 5.0*cm, 2.0*cm, 1.8*cm, 2.2*cm, 2.5*cm]
+    
+    # Filas (Iteramos sobre el cursor yield_per)
+    t_loop_start = time_module.time()
+    count_regs = 0
+    for row in resultados_iterator:
+        if count_regs == 0:
+            print(f"--- [ReportLab] TIEMPO A PRIMER ROW (TTFB DB): {time_module.time() - t_loop_start:.4f}s ---")
+        count_regs += 1
+        try:
+            # Extracción segura de valores
+            fecha = row.fecha.strftime("%d/%m/%Y") if row.fecha else "N/A"
+            pref = "" # row.prefijo no existe en modelo Documento
+            num = str(row.numero or "")
+            doc_ref = f"{row.tdoc}-{pref}{num}"
+            tercero = row.tercero or "N/A"
+            bodega = row.bodega or "N/A"
+            producto = f"{row.prod_cod} - {row.prod_nom}"[:40] if row.prod_nom else "N/A"
+            tipo = row.tipo_movimiento or "N/A"
+            
+            # Acumuladores - Ensure Decimal compatibility
+            cant_val = Decimal(str(row.cantidad)) if row.cantidad is not None else Decimal(0)
+            costo_val = Decimal(str(row.costo_total)) if row.costo_total is not None else Decimal(0)
+            unit_val = Decimal(str(row.costo_unitario)) if row.costo_unitario is not None else Decimal(0)
+            
+            total_cant_global += cant_val
+            total_costo_global += costo_val
+
+            cant = format_miles(cant_val)
+            unit = format_miles(unit_val)
+            total = format_miles(costo_val)
+            
+            row_cells = [
+                Paragraph(fecha, styles['CeldaBody']),
+                Paragraph(doc_ref, styles['CeldaBody']),
+                Paragraph(tercero, styles['CeldaBody']),
+                Paragraph(bodega, styles['CeldaBody']),
+                Paragraph(producto, styles['CeldaBody']),
+                Paragraph(tipo, styles['CeldaBody']),
+                Paragraph(cant, styles['CeldaNumero']),
+                Paragraph(unit, styles['CeldaNumero']),
+                Paragraph(total, styles['CeldaNumero'])
+            ]
+            data_table.append(row_cells)
+        except Exception as e:
+            print(f"Error procesando fila ReportLab: {e}")
+            continue
+
+    t_loop_end = time_module.time()
+    print(f"--- [ReportLab] Iteración finalizada. Total registros procesados: {count_regs}. Tiempo Loop: {t_loop_end - t_loop_start:.4f}s ---")
+
+    # 5. Construir Tabla (Usamos LongTable)
+    print("--- [ReportLab] Construyendo Tabla PDF (LongTable)... ---")
+    if len(data_table) > 1:
+        # LongTable es más eficiente para tablas largas que Table
+        t = LongTable(data_table, colWidths=col_widths, repeatRows=1)
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.Color(0.2, 0.4, 0.6)), # Azul corporativo
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.white]),
+        ]))
+        elements.append(t)
+    else:
+        elements.append(Paragraph("No se encontraron registros para los filtros seleccionados.", styles['Normal']))
+
+    # 6. Totales
+    elements.append(Spacer(1, 0.5*inch))
+    totales_text = []
+    totales_text.append(f"Total Cantidad: {format_miles(total_cant_global)}")
+    totales_text.append(f"Total Costo: {format_miles(total_costo_global)}")
+        
+    elements.append(Paragraph(" | ".join(totales_text), styles['TituloReporte']))
+
+    # 7. Generar PDF
+    print("--- [ReportLab] Renderizando PDF final... ---")
+    doc.build(elements)
+    pdf_bytes = buffer.getvalue()
+    buffer.close()
+    
+    print(f"--- [ReportLab] Tiempo Total: {time_module.time() - start_time:.4f}s ---")
+    filename = f"SuperInforme_{filtros.vista_reporte.value}_Optimizado_{datetime.now().strftime('%Y%m%d')}.pdf"
     return pdf_bytes, filename
 
 # ==============================================================================

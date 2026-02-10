@@ -43,7 +43,8 @@ def iniciar_reseteo_password(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No se encontró un usuario con ese correo electrónico.")
     
     password_reset_token = security.create_password_reset_token(email=usuario.email)
-    reset_url = f"http://localhost:3000/reset-password?token={password_reset_token}"
+    from app.core.config import settings
+    reset_url = f"{settings.BASE_URL}/reset-password?token={password_reset_token}"
     
     return {
         "msg": "Proceso de reseteo iniciado. Copie el siguiente token o URL para continuar.",

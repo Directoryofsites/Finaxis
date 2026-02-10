@@ -154,8 +154,11 @@ def generar_url_firmada_reporte_gestion_ventas(db: Session, empresa_id: int, use
         # 2. Generar el token firmado de corta duración (TTL: 600 segundos = 10 minutos)
         token = create_signed_token(token_payload_str, salt='pdf-gestion-ventas-v1', max_age=600)
 
-        # 3. Construir la URL pública de descarga (usando os.environ.get)
-        backend_base_url = os.environ.get('NEXT_PUBLIC_API_URL', 'http://localhost:8000') 
+        # 3. Construir la URL pública de descarga (usando os.environ.get o config)
+        from app.core.config import settings
+        backend_base_url = settings.BASE_URL # Usa la configuración centralizada que ya arreglamos
+        if backend_base_url.endswith('/'):
+            backend_base_url = backend_base_url[:-1] # Remove trailing slash if present 
         download_url = f"{backend_base_url}/api/gestion-ventas/pdf-descarga/{token}"
         
         return download_url

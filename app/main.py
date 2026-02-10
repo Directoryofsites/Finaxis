@@ -45,7 +45,6 @@ from app.api.documentos import routes as documentos_router
 # ... (imports)
 
 # ... (inside app/main.py router inclusions)
-app.include_router(documentos_router.router, prefix="/api/documentos", tags=["Documentos"])
 from app.api.empresas import routes as empresas_router
 from app.api.formatos_impresion import routes as formatos_impresion_router
 from app.api.papelera import routes as papelera_router
@@ -121,7 +120,17 @@ if os.getenv("VERCEL") != "1":
         start_scheduler()
 # --- FIN: SCHEDULER ---
 
-origins = ["*"]
+origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:8000",
+    "http://localhost:8002",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8002",
+    "https://finaxis.com.co",
+    "https://www.finaxis.com.co",
+    "https://contapy-frontend.vercel.app"
+]
 
 app.add_middleware(
     CORSMiddleware,
