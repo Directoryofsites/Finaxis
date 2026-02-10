@@ -23,6 +23,7 @@ import {
 // Importaciones
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../../lib/apiService';
+import AutocompleteInput from '../../components/AutocompleteInput';
 
 
 // Estilos reusables
@@ -162,6 +163,20 @@ function CapturaRapidaContent() {
 
     // Si el usuario edita un valor manual, ya no aplica la distribuciÃ³n de "Valor Unico" rÃ­gidamente
     setValorUnico('');
+    setMovimientos(newMovs);
+  };
+
+  const handleCuentaChange = (index, cuenta) => {
+    const newMovs = [...movimientos];
+    if (!cuenta) {
+      newMovs[index].cuenta_id = null;
+    } else {
+      newMovs[index].cuenta_id = cuenta.id;
+      // Ajustar naturaleza por defecto si la tiene
+      if (cuenta.naturaleza) {
+        newMovs[index].naturaleza = cuenta.naturaleza;
+      }
+    }
     setMovimientos(newMovs);
   };
 
@@ -837,13 +852,21 @@ function CapturaRapidaContent() {
                   <tbody className="bg-white divide-y divide-gray-100">
                     {movimientos.map((mov, index) => (
                       <tr key={index} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 text-sm text-gray-700">
-                          <div className="font-mono font-bold text-indigo-900">
-                            {cuentas.find(c => c.id === mov.cuenta_id)?.codigo}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {cuentas.find(c => c.id === mov.cuenta_id)?.nombre}
-                          </div>
+                        <td className="px-6 py-4 text-sm text-gray-700 min-w-[200px]">
+                          <AutocompleteInput
+                            items={cuentas}
+                            value={cuentas.find(c => c.id === mov.cuenta_id)?.codigo || ''}
+                            placeholder="Buscar cuenta..."
+                            searchKey="codigo"
+                            displayKey="codigo"
+                            onChange={(cuenta) => handleCuentaChange(index, cuenta)}
+                            renderOption={(cuenta) => (
+                              <div className="flex flex-col">
+                                <span className="font-bold text-indigo-900">{cuenta.codigo}</span>
+                                <span className="text-xs text-gray-500">{cuenta.nombre}</span>
+                              </div>
+                            )}
+                          />
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">

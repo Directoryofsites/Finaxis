@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaChevronDown, FaTimes } from 'react-icons/fa';
 
-export default function AutocompleteInput({ items, value, onChange, placeholder, searchKey, displayKey }) {
+export default function AutocompleteInput({ items, value, onChange, placeholder, searchKey, displayKey, renderOption }) {
     const [inputValue, setInputValue] = useState('');
     const [filteredItems, setFilteredItems] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
@@ -101,7 +101,7 @@ export default function AutocompleteInput({ items, value, onChange, placeholder,
                                 className="p-2 hover:bg-blue-50 cursor-pointer text-gray-900 text-sm border-b border-gray-50 last:border-0"
                                 onClick={() => handleSelectItem(item)}
                             >
-                                {item[displayKey]}
+                                {renderOption ? renderOption(item) : item[displayKey]}
                             </li>
                         ))
                     ) : (
@@ -112,7 +112,7 @@ export default function AutocompleteInput({ items, value, onChange, placeholder,
                                     className="p-2 hover:bg-blue-50 cursor-pointer text-gray-900 text-sm border-b border-gray-50 last:border-0"
                                     onClick={() => handleSelectItem(item)}
                                 >
-                                    {item[displayKey]}
+                                    {renderOption ? renderOption(item) : item[displayKey]}
                                 </li>
                             ))
                         ) : (
