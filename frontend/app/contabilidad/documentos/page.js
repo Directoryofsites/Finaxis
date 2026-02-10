@@ -494,7 +494,10 @@ export default function NuevoDocumentoPage() {
       const { signed_url } = response.data;
 
       if (signed_url) {
-        window.open(signed_url, '_blank');
+        // Soporte para URLs relativas del backend
+        const absoluteUrl = signed_url.startsWith('http') ? signed_url : `${API_URL}${signed_url}`;
+        console.log("Abriendo URL de impresión:", absoluteUrl);
+        window.open(absoluteUrl, '_blank');
         setMensaje("Documento listo para imprimir.");
       } else {
         setError("No se recibió una URL de impresión válida.");

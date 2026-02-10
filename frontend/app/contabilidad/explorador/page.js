@@ -132,8 +132,10 @@ export default function ExploradorDocumentosPage() {
         try {
             const response = await apiService.post(`/documentos/${docId}/solicitar-impresion`);
             const { signed_url } = response.data;
-            console.log("URL Firmada recibida:", signed_url); // DEBUG: Verificar la URL generada
-            window.open(signed_url, '_blank');
+            // Si la URL es relativa, le anteponemos el BASE_URL de la API
+            const absoluteUrl = signed_url.startsWith('http') ? signed_url : `${API_URL}${signed_url}`;
+            console.log("URL de impresión final:", absoluteUrl);
+            window.open(absoluteUrl, '_blank');
             toast.success("Documento generado.");
         } catch (error) {
             console.error(error);

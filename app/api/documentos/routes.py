@@ -334,49 +334,49 @@ def solicitar_url_impresion(
 # Estas rutas NO tienen 'Depends(get_current_user)' porque el navegador 
 # no envía credenciales al abrir el PDF en una pestaña nueva.
 
-@router.get("/imprimir-firmado")
-def imprimir_documento_firmado(
-    token: str,
-    db: Session = Depends(get_db)
-):
-    # 1. Validamos el token temporal que viene en la URL
-    # Si el token es falso o expiró, decode_print_token lanzará error 401 aquí.
-    payload = decode_print_token(token)
-    
-    if not payload:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token de impresión inválido o expirado."
-        )
-
-    documento_id = payload.get("doc_id")
-    empresa_id = payload.get("emp_id")
-
-    # 2. Generamos el PDF usando el servicio
-    try:
-        # Llamamos a la función que crea los bytes del PDF
-        pdf_bytes, file_name = service.generar_pdf_documento(
-            db=db,
-            documento_id=documento_id,
-            empresa_id=empresa_id
-        )
-        
-        # 3. Devolvemos el archivo al navegador
-        pdf_stream = io.BytesIO(pdf_bytes)
-        return StreamingResponse(
-            pdf_stream,
-            media_type="application/pdf",
-            headers={"Content-Disposition": f"inline; filename={file_name}"}
-        )
-    except HTTPException as http_exc:
-        raise http_exc
-    except Exception as e:
-        # Capturamos cualquier error técnico al generar el PDF
-        print(f"Error generando PDF: {str(e)}") # Log interno para depuración
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno al generar el archivo PDF."
-        )
+# @router.get("/imprimir-firmado")
+# def imprimir_documento_firmado(
+#     token: str,
+#     db: Session = Depends(get_db)
+# ):
+#     # 1. Validamos el token temporal que viene en la URL
+#     # Si el token es falso o expiró, decode_print_token lanzará error 401 aquí.
+#     payload = decode_print_token(token)
+#     
+#     if not payload:
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="Token de impresión inválido o expirado."
+#         )
+# 
+#     documento_id = payload.get("doc_id")
+#     empresa_id = payload.get("emp_id")
+# 
+#     # 2. Generamos el PDF usando el servicio
+#     try:
+#         # Llamamos a la función que crea los bytes del PDF
+#         pdf_bytes, file_name = service.generar_pdf_documento(
+#             db=db,
+#             documento_id=documento_id,
+#             empresa_id=empresa_id
+#         )
+#         
+#         # 3. Devolvemos el archivo al navegador
+#         pdf_stream = io.BytesIO(pdf_bytes)
+#         return StreamingResponse(
+#             pdf_stream,
+#             media_type="application/pdf",
+#             headers={"Content-Disposition": f"inline; filename={file_name}"}
+#         )
+#     except HTTPException as http_exc:
+#         raise http_exc
+#     except Exception as e:
+#         # Capturamos cualquier error técnico al generar el PDF
+#         print(f"Error generando PDF: {str(e)}") # Log interno para depuración
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail="Error interno al generar el archivo PDF."
+#         )
 
 @router.post(
     "/{documento_id}/crear-plantilla",
