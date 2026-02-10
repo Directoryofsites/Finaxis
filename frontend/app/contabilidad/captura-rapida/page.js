@@ -228,14 +228,14 @@ function CapturaRapidaContent() {
     setFecha(new Date());
   };
 
-  // --- MANEJO DE ENVÃO ---
+  // --- MANEJO DE ENVÍO ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setMensaje('');
 
     if (!plantillaId || !estaBalanceado) {
-      setError('Seleccione una plantilla vÃ¡lida y asegÃºrese de que el asiento estÃ© balanceado.');
+      setError('Seleccione una plantilla válida y asegúrese de que el asiento esté balanceado.');
       return;
     }
 
@@ -247,17 +247,23 @@ function CapturaRapidaContent() {
       const tipoDocId = plantillaSeleccionada.tipo_documento_id_sugerido;
       if (!tipoDocId) throw new Error("La plantilla no tiene un Tipo de Documento asociado.");
 
+      // VALIDACIÓN PREVIA DE MOVIMIENTOS
+      const movsValidos = movimientos.every(m => m.cuenta_id !== null);
+      if (!movsValidos) {
+        throw new Error("Todos los movimientos deben tener una cuenta contable seleccionada.");
+      }
+
       const payload = {
         fecha: fecha.toISOString().split('T')[0],
         tipo_documento_id: tipoDocId,
         beneficiario_id: beneficiarioId ? parseInt(beneficiarioId) : null,
         centro_costo_id: centroCostoId ? parseInt(centroCostoId) : null,
         movimientos: movimientos.map(m => ({
-          cuenta_id: m.cuenta_id,
-          centro_costo_id: centroCostoId ? parseInt(centroCostoId) : (m.centro_costo_id || null),
-          concepto: m.concepto,
-          debito: m.debito,
-          credito: m.credito,
+          cuenta_id: parseInt(m.cuenta_id),
+          centro_costo_id: centroCostoId ? parseInt(centroCostoId) : (m.centro_costo_id ? parseInt(m.centro_costo_id) : null),
+          concepto: m.concepto || '',
+          debito: parseFloat(m.debito) || 0,
+          credito: parseFloat(m.credito) || 0,
         }))
       };
 
@@ -265,19 +271,25 @@ function CapturaRapidaContent() {
       const docId = response.data.id; // Asumimos que el back devuelve el ID
       const docNumero = response.data.numero;
 
-      setMensaje(`âœ… Documento #${docNumero} guardado exitosamente.`);
+      setMensaje(`✅ Documento #${docNumero} guardado exitosamente.`);
 
-      // --- LÃ“GICA DE IMPRESIÃ“N AUTOMÃTICA ---
+      // --- LÓGICA DE IMPRESIÓN AUTOMÁTICA ---
       if (imprimirAlGuardar && docId) {
         handleImprimirDocumento(docId);
-        toast.info("Generando PDF de impresiÃ³n... ðŸ–¨ï¸");
+        toast.info("Generando PDF de impresión... 🖨️");
       }
 
       resetFormulario();
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch (err) {
-      const errorMsg = err.response?.data?.detail || err.message || 'Error al guardar el documento.';
+      let errorMsg = 'Error al guardar el documento.';
+      if (err.response?.data?.detail) {
+        const detail = err.response.data.detail;
+        errorMsg = typeof detail === 'string' ? detail : JSON.stringify(detail);
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
       console.error("Error en handleSubmit:", err);
       setError(errorMsg);
     } finally {
@@ -578,7 +590,11 @@ function CapturaRapidaContent() {
         setPlantillas(plantillasRes.data);
         setConceptos(conceptosRes.data);
       } catch (err) {
-        const errorMsg = err.response?.data?.detail || 'Error fatal al cargar los datos maestros.';
+        let errorMsg = 'Error fatal al cargar los datos maestros.';
+        if (err.response?.data?.detail) {
+          const detail = err.response.data.detail;
+          errorMsg = typeof detail === 'string' ? detail : JSON.stringify(detail);
+        }
         console.error("Error en fetchMaestros:", err);
         setError(errorMsg);
       } finally {
