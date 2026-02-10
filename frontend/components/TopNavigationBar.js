@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useRef, useContext } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { FaUserCircle, FaSignOutAlt, FaSearch, FaTimes, FaKeyboard, FaArrowRight, FaCog, FaBuilding } from 'react-icons/fa';
+import { FaUserCircle, FaSignOutAlt, FaSearch, FaTimes, FaKeyboard, FaArrowRight, FaCog, FaBuilding, FaBars } from 'react-icons/fa';
 import { menuStructure } from '../lib/menuData';
 import { useAuth } from '../app/context/AuthContext';
 
@@ -29,6 +29,7 @@ export default function TopNavigationBar() {
     const [altPressed, setAltPressed] = useState(false);
     const [focusedLinkIndex, setFocusedLinkIndex] = useState(-1);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     // Efecto para controlar la visibilidad basada en el modo
     useEffect(() => {
@@ -69,6 +70,7 @@ export default function TopNavigationBar() {
             setIsVisible(false);
         }
         setFocusedLinkIndex(-1);
+        setIsMobileMenuOpen(false);
     };
 
     // --- HOVER LOGIC ---
@@ -330,15 +332,23 @@ export default function TopNavigationBar() {
             )}
 
             <header
-                className={`fixed top-0 left-0 right-0 z-[99999] bg-[#f5f5f5] text-gray-800 shadow-xl h-9 flex items-center justify-between px-2 select-none transition-transform duration-200 ease-out border-b border-gray-300
+                className={`fixed top-0 left-0 right-0 z-[99999] bg-[#f5f5f5] text-gray-800 shadow-xl h-10 md:h-9 flex items-center justify-between px-2 select-none transition-transform duration-200 ease-out border-b border-gray-300
                     ${isVisible ? 'translate-y-0' : '-translate-y-full'}
                 `}
-            // REMOVED HOVER HANDLERS
             >
                 <nav className="flex items-center space-x-1 h-full overflow-visible pl-1 relative">
+                    {/* Hamburguesa para Móvil */}
+                    <button
+                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        className="md:hidden p-2 text-gray-600 hover:bg-gray-200 rounded-sm transition-colors text-xl"
+                        title="Menú"
+                    >
+                        {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
+                    </button>
+
                     <button
                         onClick={() => router.push('/')}
-                        className="px-3 py-1 text-gray-600 hover:bg-gray-200 rounded-sm transition-colors mr-2 text-lg"
+                        className="hidden md:flex px-3 py-1 text-gray-600 hover:bg-gray-200 rounded-sm transition-colors mr-2 text-lg"
                         title="Ir al Inicio"
                     >
                         🏠
@@ -346,35 +356,36 @@ export default function TopNavigationBar() {
 
                     {/* BLINDAJE VISUAL: Si es contador y NO ha seleccionado empresa, no mostramos menús rotos */}
                     {user?.roles?.some(r => r.nombre === 'contador') && !user?.empresaId ? (
-                        <div className="flex items-center px-4 bg-yellow-100 text-yellow-800 text-sm font-bold border-l-4 border-yellow-500 h-full">
-                            ⚠️ Modo Global: Seleccione una empresa para operar
+                        <div className="hidden md:flex items-center px-4 bg-yellow-100 text-yellow-800 text-sm font-bold border-l-4 border-yellow-500 h-full">
+                            ⚠️ Seleccione Empresa
                         </div>
                     ) : (
-                        menuStructure.map((module) => {
-                            // VERIFICACIÓN DE PERMISOS (MÓDULO)
-                            if (module.permission) {
-                                const userPermissions = user?.roles?.flatMap(r => r.permisos?.map(p => p.nombre)) || [];
-                                if (!userPermissions.includes(module.permission)) return null;
-                            }
+                        <div className="hidden md:flex items-center space-x-1 h-full">
+                            {menuStructure.map((module) => {
+                                // VERIFICACIÓN DE PERMISOS (MÓDULO)
+                                if (module.permission) {
+                                    const userPermissions = user?.roles?.flatMap(r => r.permisos?.map(p => p.nombre)) || [];
+                                    if (!userPermissions.includes(module.permission)) return null;
+                                }
 
-                            const isOpen = isMenuOpen === module.id;
-                            const mnemonicKey = module.mnemonic;
+                                const isOpen = isMenuOpen === module.id;
+                                const mnemonicKey = module.mnemonic;
 
-                            return (
-                                <div key={module.id} className="relative h-full flex items-center group">
-                                    <button
-                                        ref={el => buttonsRef.current[module.id] = el}
-                                        className={`px-3 py-0.5 rounded-sm text-sm font-medium transition-colors whitespace-nowrap border border-transparent select-none relative z-[100001]
-                                            ${isOpen ? 'bg-white border-b-0 border-gray-300 rounded-b-none shadow-none font-bold' : 'text-gray-700 hover:bg-gray-200'}
-                                        `}
-                                        onClick={(e) => handleModuleClick(e, module)}
-                                    // Removed onMouseEnter
-                                    >
-                                        {renderMnemonic(module.name, mnemonicKey)}
-                                    </button>
-                                </div>
-                            );
-                        })
+                                return (
+                                    <div key={module.id} className="relative h-full flex items-center group">
+                                        <button
+                                            ref={el => buttonsRef.current[module.id] = el}
+                                            className={`px-3 py-0.5 rounded-sm text-sm font-medium transition-colors whitespace-nowrap border border-transparent select-none relative z-[100001]
+                                                ${isOpen ? 'bg-white border-b-0 border-gray-300 rounded-b-none shadow-none font-bold' : 'text-gray-700 hover:bg-gray-200'}
+                                            `}
+                                            onClick={(e) => handleModuleClick(e, module)}
+                                        >
+                                            {renderMnemonic(module.name, mnemonicKey)}
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     )}
                 </nav>
 
@@ -520,6 +531,87 @@ export default function TopNavigationBar() {
                                 </div>
                             );
                         })}
+                    </div>
+                </div>
+            )}
+            {/* MENÚ MÓVIL (DRAWER) */}
+            {isMobileMenuOpen && (
+                <div className="fixed inset-0 bg-black/50 z-[100005] md:hidden">
+                    <div className="w-4/5 max-w-sm bg-white h-full shadow-2xl overflow-y-auto animate-in slide-in-from-left duration-300">
+                        <div className="p-4 bg-blue-600 text-white flex justify-between items-center shadow-lg">
+                            <h2 className="font-bold flex items-center">
+                                <span className="mr-2">🏠</span> Finaxis Móvil
+                            </h2>
+                            <button onClick={() => setIsMobileMenuOpen(false)} className="text-xl">
+                                <FaTimes />
+                            </button>
+                        </div>
+
+                        <div className="p-2 space-y-1">
+                            <button
+                                onClick={() => { router.push('/'); setIsMobileMenuOpen(false); }}
+                                className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 flex items-center border-b border-gray-50"
+                            >
+                                <span className="mr-3">🚩</span> Inicio
+                            </button>
+
+                            {menuStructure.map(module => {
+                                // Verificación Permisos Módulo
+                                if (module.permission) {
+                                    const userPermissions = user?.roles?.flatMap(r => r.permisos?.map(p => p.nombre)) || [];
+                                    if (!userPermissions.includes(module.permission)) return null;
+                                }
+
+                                return (
+                                    <div key={module.id} className="border-b border-gray-50 pb-1">
+                                        <div className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50/50">
+                                            {module.name}
+                                        </div>
+                                        <div className="pl-2">
+                                            {/* Links directos del módulo */}
+                                            {module.links?.map(link => (
+                                                <Link
+                                                    key={link.href}
+                                                    href={link.href}
+                                                    onClick={() => setIsMobileMenuOpen(false)}
+                                                    className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 rounded-md"
+                                                >
+                                                    <span className="w-6 mr-1 text-blue-500/70">
+                                                        {link.icon && <link.icon size={14} />}
+                                                    </span>
+                                                    {link.name}
+                                                </Link>
+                                            ))}
+                                            {/* Subgrupos */}
+                                            {module.subgroups?.map(sub => (
+                                                <div key={sub.title}>
+                                                    <div className="px-4 py-1 text-[9px] text-gray-300 font-semibold">{sub.title}</div>
+                                                    {sub.links.map(link => (
+                                                        <Link
+                                                            key={link.href}
+                                                            href={link.href}
+                                                            onClick={() => setIsMobileMenuOpen(false)}
+                                                            className="flex items-center px-6 py-2 text-sm text-gray-600 hover:bg-blue-50 rounded-md"
+                                                        >
+                                                            {link.name}
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="p-4 mt-4 border-t border-gray-100 bg-gray-50">
+                            <button
+                                onClick={() => { logout(); setIsMobileMenuOpen(false); }}
+                                className="w-full py-2 bg-red-50 text-red-600 rounded-lg text-sm font-bold flex items-center justify-center border border-red-100 shadow-sm"
+                            >
+                                <FaSignOutAlt className="mr-2" /> Cerrar Sesión
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

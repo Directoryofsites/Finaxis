@@ -42,22 +42,25 @@ export default function SmartLayout({ children }) {
         setRightState('closed');
     };
 
+    // Detectar si es móvil (para evitar márgenes fijos)
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
     // Calculamos margenes
-    // El sidebar izquierdo es fixed w-2 -> hover w-64. No empuja contenido (es overlay o pequeño).
-    // El sidebar derecho SI queremos que empuje cuando es PINNED.
-
-    // Ancho del Sidebar Derecho cuando está pinned
-    const rightSidebarWidth = 350; // Debe coincidir con el w-[350px] de tailwind
-
-    // Estilo para el contenedor principal
+    const rightSidebarWidth = 350;
     const isPortal = pathname?.startsWith('/portal');
 
     const mainContentStyle = {
-        transition: 'margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        // FIX: Empujar contenido siempre que esté visible (Open o Pinned) para evitar solapamiento
-        // En portal no hay sidebar derecho ni izquierdo ocupando espacio
-        marginRight: (!isPortal && (rightState === 'pinned' || rightState === 'open')) ? `${rightSidebarWidth}px` : (!isPortal ? '48px' : '0px'),
-        marginLeft: isPortal ? '0px' : '48px' // Ajuste para el sidebar izquierdo
+        transition: 'margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.3s',
+        // En móvil, NUNCA empujamos contenido (los sidebars son overlays)
+        marginRight: (!isPortal && !isMobile && (rightState === 'pinned' || rightState === 'open')) ? `${rightSidebarWidth}px` : (!isPortal && !isMobile ? '48px' : '0px'),
+        marginLeft: (isPortal || isMobile) ? '0px' : '48px'
     };
 
     return (
