@@ -37,6 +37,12 @@ export default function DetalleDocumentoPage() {
   const [error, setError] = useState('');
   const [mensaje, setMensaje] = useState('');
 
+  // --- ESTADOS PARA CREACIÓN DE TERCEROS ---
+  const [isTerceroModalOpen, setIsTerceroModalOpen] = useState(false);
+  const [nuevoTercero, setNuevoTercero] = useState({ nit: '', razon_social: '' });
+  const [terceroModalError, setTerceroModalError] = useState('');
+  const [isSubmittingTercero, setIsSubmittingTercero] = useState(false);
+
   // --- INICIO: IMPLEMENTACIÓN DEL PATRÓN GUARDIÁN ---
   const dataFetchedRef = useRef(false);
   // --- FIN: IMPLEMENTACIÓN DEL PATRÓN GUARDIÁN ---
@@ -159,6 +165,36 @@ export default function DetalleDocumentoPage() {
       newMovimientos[index]['cuentaId'] = null;
       // Keep input text so user can fix it, but ID is null
       setMovimientos(newMovimientos);
+    }
+  };
+
+  const handleCreateTercero = async () => {
+    setTerceroModalError('');
+    if (!nuevoTercero.nit || !nuevoTercero.razon_social) {
+      setTerceroModalError('El NIT y el Nombre son obligatorios.');
+      return;
+    }
+    setIsSubmittingTercero(true);
+    try {
+      const payload = { ...nuevoTercero, empresa_id: user.empresaId };
+      const response = await apiService.post('/terceros/', payload);
+      const terceroCreado = response.data;
+
+      // Actualizar lista local
+      setTerceros(prev => [...prev, terceroCreado].sort((a, b) => a.razon_social.localeCompare(b.razon_social)));
+
+      // Seleccionar el nuevo tercero
+      setBeneficiarioId(String(terceroCreado.id));
+
+      // Cerrar modal y limpiar
+      setIsTerceroModalOpen(false);
+      setNuevoTercero({ nit: '', razon_social: '' });
+      setMensaje(`Tercero "${terceroCreado.razon_social}" creado y seleccionado.`);
+    } catch (err) {
+      const errorMsg = err.response?.data?.detail || 'Error al crear el tercero.';
+      setTerceroModalError(errorMsg);
+    } finally {
+      setIsSubmittingTercero(false);
     }
   };
 
@@ -293,16 +329,28 @@ export default function DetalleDocumentoPage() {
           </div>
           <div>
             <label htmlFor="beneficiario" className="block text-sm font-medium text-gray-700">Beneficiario</label>
-            <select
-              id="beneficiario"
-              value={beneficiarioId}
-              onChange={e => setBeneficiarioId(e.target.value)}
-              className="mt-1 block w-full py-2 border-gray-300 rounded-md"
-              disabled={isReadOnly}
-            >
-              <option value="">Seleccione...</option>
-              {terceros.map(t => <option key={t.id} value={t.id}>{t.razon_social}</option>)}
-            </select>
+            <div className="flex gap-2">
+              <select
+                id="beneficiario"
+                value={beneficiarioId}
+                onChange={e => setBeneficiarioId(e.target.value)}
+                className="mt-1 block w-full py-2 border-gray-300 rounded-md shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                disabled={isReadOnly}
+              >
+                <option value="">Seleccione...</option>
+                {terceros.map(t => <option key={t.id} value={t.id}>{t.razon_social}</option>)}
+              </select>
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  onClick={() => setIsTerceroModalOpen(true)}
+                  className="mt-1 px-3 bg-indigo-100 text-indigo-600 rounded-md hover:bg-indigo-200 transition-colors"
+                  title="Crear nuevo tercero"
+                >
+                  +
+                </button>
+              )}
+            </div>
           </div>
           <div>
             <label htmlFor="centroCosto" className="block text-sm font-medium text-gray-700">Centro de Costo</label>
@@ -453,6 +501,61 @@ export default function DetalleDocumentoPage() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL TERCERO RÁPIDO */}
+      {isTerceroModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 animate-fadeIn">
+          <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm border border-gray-100">
+            <h2 className="text-xl font-bold mb-4 text-gray-800">Nuevo Tercero</h2>
+            {terceroModalError && (
+              <div className="p-3 mb-4 rounded-lg bg-red-50 text-red-600 border border-red-100 text-xs font-medium">
+                {terceroModalError}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="modalNit" className="block text-xs font-bold text-gray-500 uppercase mb-1">NIT / ID</label>
+                <input
+                  type="text"
+                  id="modalNit"
+                  value={nuevoTercero.nit}
+                  onChange={(e) => setNuevoTercero({ ...nuevoTercero, nit: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label htmlFor="modalNombre" className="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre / Razón Social</label>
+                <input
+                  type="text"
+                  id="modalNombre"
+                  value={nuevoTercero.razon_social}
+                  onChange={(e) => setNuevoTercero({ ...nuevoTercero, razon_social: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setIsTerceroModalOpen(false)}
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
+                disabled={isSubmittingTercero}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateTercero}
+                disabled={isSubmittingTercero}
+                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-md disabled:bg-gray-400 text-sm font-bold"
+              >
+                {isSubmittingTercero ? 'Guardando...' : 'Crear y Seleccionar'}
+              </button>
+            </div>
           </div>
         </div>
       )}

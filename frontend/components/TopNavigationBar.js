@@ -453,8 +453,9 @@ export default function TopNavigationBar() {
                                 if (!userPermissions.includes(link.permission)) return null;
                             }
 
-                            // RESTRICTION: onlySoporte (Hardcoded for security as requested)
-                            if (link.onlySoporte && user?.email !== 'soporte@soporte.com') return null;
+                            // RESTRICTION: onlySoporte (Reinforced with Role check)
+                            const isSoporteUser = user?.roles?.some(r => r.nombre === 'soporte');
+                            if (link.onlySoporte && !isSoporteUser) return null;
 
                             // --- BLINDAJE AUDITORÍA/CLON ---
                             const restrictedSafeHrefs = [
@@ -492,7 +493,8 @@ export default function TopNavigationBar() {
                             // Filter links based on permissions
                             const visibleLinks = sub.links.filter(link => {
                                 // RESTRICTION: onlySoporte
-                                if (link.onlySoporte && user?.email !== 'soporte@soporte.com') return false;
+                                const isSoporteUser = user?.roles?.some(r => r.nombre === 'soporte');
+                                if (link.onlySoporte && !isSoporteUser) return false;
 
                                 // --- BLINDAJE AUDITORÍA/CLON ---
                                 const restrictedSafeHrefs = [
@@ -568,8 +570,19 @@ export default function TopNavigationBar() {
                                             {module.name}
                                         </div>
                                         <div className="pl-2">
-                                            {/* Links directos del módulo */}
-                                            {module.links?.map(link => (
+                                            {/* Links directos del módulo con FILTRADO DE SEGURIDAD */}
+                                            {module.links?.filter(link => {
+                                                const userPermissions = user?.roles?.flatMap(r => r.permisos?.map(p => p.nombre)) || [];
+                                                if (link.permission && !userPermissions.includes(link.permission)) return false;
+
+                                                const isSoporteUser = user?.roles?.some(r => r.nombre === 'soporte');
+                                                if (link.onlySoporte && !isSoporteUser) return false;
+
+                                                const restrictedSafeHrefs = ['/contabilidad/documentos', '/contabilidad/captura-rapida', '/contabilidad/facturacion', '/contabilidad/compras', '/contabilidad/traslados'];
+                                                if (user?.empresa?.modo_operacion === 'AUDITORIA_READONLY' && restrictedSafeHrefs.includes(link.href)) return false;
+
+                                                return true;
+                                            }).map(link => (
                                                 <Link
                                                     key={link.href}
                                                     href={link.href}
@@ -582,22 +595,39 @@ export default function TopNavigationBar() {
                                                     {link.name}
                                                 </Link>
                                             ))}
-                                            {/* Subgrupos */}
-                                            {module.subgroups?.map(sub => (
-                                                <div key={sub.title}>
-                                                    <div className="px-4 py-1 text-[9px] text-gray-300 font-semibold">{sub.title}</div>
-                                                    {sub.links.map(link => (
-                                                        <Link
-                                                            key={link.href}
-                                                            href={link.href}
-                                                            onClick={() => setIsMobileMenuOpen(false)}
-                                                            className="flex items-center px-6 py-2 text-sm text-gray-600 hover:bg-blue-50 rounded-md"
-                                                        >
-                                                            {link.name}
-                                                        </Link>
-                                                    ))}
-                                                </div>
-                                            ))}
+                                            {/* Subgrupos con FILTRADO DE SEGURIDAD */}
+                                            {module.subgroups?.map(sub => {
+                                                const visibleLinks = sub.links.filter(link => {
+                                                    const userPermissions = user?.roles?.flatMap(r => r.permisos?.map(p => p.nombre)) || [];
+                                                    if (link.permission && !userPermissions.includes(link.permission)) return false;
+
+                                                    const isSoporteUser = user?.roles?.some(r => r.nombre === 'soporte');
+                                                    if (link.onlySoporte && !isSoporteUser) return false;
+
+                                                    const restrictedSafeHrefs = ['/contabilidad/documentos', '/contabilidad/captura-rapida', '/contabilidad/facturacion', '/contabilidad/compras', '/contabilidad/traslados'];
+                                                    if (user?.empresa?.modo_operacion === 'AUDITORIA_READONLY' && restrictedSafeHrefs.includes(link.href)) return false;
+
+                                                    return true;
+                                                });
+
+                                                if (visibleLinks.length === 0) return null;
+
+                                                return (
+                                                    <div key={sub.title}>
+                                                        <div className="px-4 py-1 text-[9px] text-gray-300 font-semibold">{sub.title}</div>
+                                                        {visibleLinks.map(link => (
+                                                            <Link
+                                                                key={link.href}
+                                                                href={link.href}
+                                                                onClick={() => setIsMobileMenuOpen(false)}
+                                                                className="flex items-center px-6 py-2 text-sm text-gray-600 hover:bg-blue-50 rounded-md"
+                                                            >
+                                                                {link.name}
+                                                            </Link>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 );

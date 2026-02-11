@@ -63,6 +63,12 @@ function CapturaRapidaContent() {
   const [conceptoBusqueda, setConceptoBusqueda] = useState('');
   const [movimientoIndexSeleccionado, setMovimientoIndexSeleccionado] = useState(null);
 
+  // --- ESTADOS PARA CREACIÓN DE PLANTILLAS ---
+  const [isPlantillaModalOpen, setIsPlantillaModalOpen] = useState(false);
+  const [nuevaPlantillaNombre, setNuevaPlantillaNombre] = useState('');
+  const [isSubmittingPlantilla, setIsSubmittingPlantilla] = useState(false);
+  const [plantillaModalError, setPlantillaModalError] = useState('');
+
   // --- ESTADOS DE FLUJO DE VERIFICACIÃ“N (NUEVO CENTRO DE CONTROL) ---
   const [imprimirAlGuardar, setImprimirAlGuardar] = useState(false);
   const [isMonitorOpen, setIsMonitorOpen] = useState(false);
@@ -225,7 +231,7 @@ function CapturaRapidaContent() {
     setCentroCostoId('');
     setMovimientos([]);
     setValorUnico('');
-    setFecha(new Date());
+    // setFecha(new Date()); // COMENTADO: Persistir fecha del último documento según requerimiento
   };
 
   // --- MANEJO DE ENVÍO ---
@@ -337,6 +343,60 @@ function CapturaRapidaContent() {
       setConceptoModalError("Error al guardar concepto. Verifique conexiÃ³n.");
     } finally {
       setIsSubmittingConcepto(false);
+    }
+  };
+
+  const handleCreatePlantilla = async () => {
+    setPlantillaModalError('');
+    if (!nuevaPlantillaNombre) {
+      setPlantillaModalError('El nombre de la plantilla es obligatorio.');
+      return;
+    }
+
+    if (movimientos.length === 0) {
+      setPlantillaModalError('Debe haber movimientos para crear una plantilla.');
+      return;
+    }
+
+    // El tipo de documento sugerido lo tomamos de la plantilla actual si existe, 
+    // o pedimos que se seleccione una antes de guardar como nueva.
+    const plantillaActual = plantillas.find(p => p.id === parseInt(plantillaId));
+    const tipoDocId = plantillaActual?.tipo_documento_id_sugerido;
+
+    if (!tipoDocId) {
+      setPlantillaModalError('No se pudo identificar el tipo de documento. Cargue una plantilla base primero.');
+      return;
+    }
+
+    setIsSubmittingPlantilla(true);
+    try {
+      const payload = {
+        nombre_plantilla: nuevaPlantillaNombre,
+        tipo_documento_id_sugerido: tipoDocId,
+        beneficiario_id_sugerido: beneficiarioId ? parseInt(beneficiarioId) : null,
+        centro_costo_id_sugerido: centroCostoId ? parseInt(centroCostoId) : null,
+        detalles: movimientos.map(m => ({
+          cuenta_id: parseInt(m.cuenta_id),
+          centro_costo_id: m.centro_costo_id ? parseInt(m.centro_costo_id) : null,
+          concepto: m.concepto || '',
+          debito: parseFloat(m.debito) > 0 ? 1 : 0,
+          credito: parseFloat(m.credito) > 0 ? 1 : 0,
+          naturaleza: m.naturaleza || (parseFloat(m.debito) > 0 ? 'D' : 'C')
+        }))
+      };
+
+      const response = await apiService.post('/plantillas/', payload);
+      setPlantillas(prev => [...prev, response.data].sort((a, b) => a.nombre_plantilla.localeCompare(b.nombre_plantilla)));
+      setPlantillaId(String(response.data.id));
+      setIsPlantillaModalOpen(false);
+      setNuevaPlantillaNombre('');
+      setMensaje(`Plantilla "${nuevaPlantillaNombre}" creada exitosamente.`);
+      toast.success("Nueva plantilla guardada correctamente.");
+    } catch (err) {
+      const errorMsg = err.response?.data?.detail || 'Error al crear la plantilla.';
+      setPlantillaModalError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+    } finally {
+      setIsSubmittingPlantilla(false);
     }
   };
 
@@ -814,6 +874,17 @@ function CapturaRapidaContent() {
                 <div className="flex gap-2">
                   <button
                     type="button"
+                    onClick={() => {
+                      setNuevaPlantillaNombre(plantillas.find(p => p.id === parseInt(plantillaId))?.nombre_plantilla + " (Copia)" || "");
+                      setIsPlantillaModalOpen(true);
+                    }}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-600 border border-amber-100 rounded-lg hover:bg-amber-100 transition-all text-sm font-medium"
+                    title="Exportar configuración actual a una nueva plantilla"
+                  >
+                    <FaMagic className="text-xs" /> Guardar como Plantilla
+                  </button>
+                  <button
+                    type="button"
                     onClick={handleLimpiarAsientos}
                     className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 border border-red-100 rounded-lg hover:bg-red-100 transition-all text-sm font-medium"
                   >
@@ -1026,7 +1097,52 @@ function CapturaRapidaContent() {
           </div>
         )}
 
-        {/* MODAL CONCEPTO */}
+        {/* MODAL PLANTILLA */}
+        {isPlantillaModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 animate-fadeIn">
+            <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-100">
+              <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+                <FaMagic className="text-amber-500" /> Crear Nueva Plantilla
+              </h2>
+              {plantillaModalError && <div className="p-3 mb-4 rounded-lg bg-red-50 text-red-600 border border-red-100 text-sm">{plantillaModalError}</div>}
+
+              <div className="space-y-4">
+                <p className="text-sm text-gray-500 italic">
+                  Esto guardará la estructura actual de cuentas y conceptos como una nueva plantilla reutilizable.
+                </p>
+                <div>
+                  <label htmlFor="nuevaPlantillaNombre" className={labelClass}>Nombre de la Plantilla</label>
+                  <input
+                    type="text"
+                    id="nuevaPlantillaNombre"
+                    value={nuevaPlantillaNombre}
+                    onChange={(e) => setNuevaPlantillaNombre(e.target.value)}
+                    className={inputClass}
+                    placeholder="Ej: Pago de Arriendo Especial"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <div className="mt-8 flex justify-end gap-3">
+                <button
+                  onClick={() => setIsPlantillaModalOpen(false)}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  disabled={isSubmittingPlantilla}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleCreatePlantilla}
+                  disabled={isSubmittingPlantilla}
+                  className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 shadow-md disabled:bg-gray-400"
+                >
+                  {isSubmittingPlantilla ? 'Guardando...' : 'Crear Plantilla'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         {isConceptoModalOpen && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 animate-fadeIn">
             <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-100">

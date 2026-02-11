@@ -274,7 +274,23 @@ export default function DocumentoDetallePage() {
           <div className="bg-white p-6 rounded-lg shadow-md grid grid-cols-2 md:grid-cols-4 gap-4">
             <div><label className="text-sm font-medium text-gray-500">Tipo Documento</label><select name="tipo_documento_id" value={editedDocument.tipo_documento_id || ''} onChange={handleFormChange} className="mt-1 block w-full border-gray-300 rounded-md"><option value="">Seleccione...</option>{tiposDocumento.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}</select></div>
             <div><label className="text-sm font-medium text-gray-500">Número</label><input type="text" name="numero" value={editedDocument.numero} onChange={handleFormChange} className="mt-1 block w-full border-gray-300 rounded-md bg-gray-100" readOnly /></div>
-            <div><label className="text-sm font-medium text-gray-500">Fecha</label><input type="date" name="fecha" value={new Date(editedDocument.fecha).toISOString().split('T')[0]} onChange={handleFormChange} className="mt-1 block w-full border-gray-300 rounded-md" /></div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">Fecha</label>
+              <input
+                type="date"
+                name="fecha"
+                value={(() => {
+                  try {
+                    const d = new Date(editedDocument.fecha);
+                    return !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : '';
+                  } catch (e) {
+                    return '';
+                  }
+                })()}
+                onChange={handleFormChange}
+                className="mt-1 block w-full border-gray-300 rounded-md"
+              />
+            </div>
             <div><label className="text-sm font-medium text-gray-500">Tercero</label><select name="beneficiario_id" value={editedDocument.beneficiario_id || ''} onChange={handleFormChange} className="mt-1 block w-full border-gray-300 rounded-md"><option value="">Seleccione...</option>{terceros.map(t => <option key={t.id} value={t.id}>{t.razon_social}</option>)}</select></div>
             <div><label className="text-sm font-medium text-gray-500">Centro de Costo</label><select name="centro_costo_id" value={editedDocument.centro_costo_id || ''} onChange={handleFormChange} className="mt-1 block w-full border-gray-300 rounded-md"><option value="">Seleccione...</option>{centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</select></div>
           </div>

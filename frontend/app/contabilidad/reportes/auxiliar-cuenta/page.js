@@ -498,18 +498,27 @@ function AuxiliarPorCuentaContent() {
 
                                 {/* Saldo Final */}
                                 {/* Saldo Final y Totales */}
-                                <tfoot className="bg-slate-800 text-white border-t-4 border-indigo-500">
-                                    <tr>
-                                        <td colSpan="4" className="px-4 py-4 text-right text-sm font-bold uppercase tracking-wider">
-                                            TOTALES PERIODO Y SALDO FINAL:
+                                <tfoot className="border-t-4 border-slate-500">
+                                    <tr className="bg-slate-50 text-slate-700">
+                                        <td colSpan="4" className="px-4 py-3 text-right text-sm font-bold uppercase tracking-wider">
+                                            TOTALES MOVIMIENTOS DEL PERIODO:
                                         </td>
-                                        <td className="px-4 py-4 text-right text-sm font-mono font-bold text-green-300">
+                                        <td className="px-4 py-3 text-right text-sm font-mono font-bold text-green-700">
                                             {formatCurrency(reportData.movimientos.reduce((acc, m) => acc + parseFloat(m.debito || 0), 0))}
                                         </td>
-                                        <td className="px-4 py-4 text-right text-sm font-mono font-bold text-red-300">
+                                        <td className="px-4 py-3 text-right text-sm font-mono font-bold text-red-700">
                                             {formatCurrency(reportData.movimientos.reduce((acc, m) => acc + parseFloat(m.credito || 0), 0))}
                                         </td>
-                                        <td className="px-4 py-4 text-right text-lg font-mono font-bold text-white bg-slate-700 border-l border-slate-600">
+                                        <td className="bg-slate-200/50"></td>
+                                    </tr>
+                                    <tr className="bg-slate-800 text-white">
+                                        <td colSpan="6" className="px-4 py-4 text-right text-sm font-bold uppercase tracking-wider">
+                                            SALDO FINAL ACUMULADO AL {(() => {
+                                                const d = new Date(endDate + 'T00:00:00');
+                                                return !isNaN(d.getTime()) ? d.toLocaleDateString('es-CO') : endDate;
+                                            })()}:
+                                        </td>
+                                        <td className="px-4 py-4 text-right text-lg font-mono font-bold text-white bg-slate-900 border-l border-slate-700">
                                             {(reportData.movimientos.length > 0
                                                 ? formatCurrency(reportData.movimientos[reportData.movimientos.length - 1].saldo_parcial)
                                                 : formatCurrency(reportData.saldoAnterior)

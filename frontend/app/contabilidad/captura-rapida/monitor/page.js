@@ -36,10 +36,16 @@ export default function MonitorAsientosPage() {
     }, [filtros.fechaInicio, filtros.fechaFin]);
 
     const fetchMonitorData = async () => {
+        if (!filtros.fechaInicio || !filtros.fechaFin) return;
+
         setLoading(true);
         try {
-            const inicio = filtros.fechaInicio.toISOString().split('T')[0];
-            const fin = filtros.fechaFin.toISOString().split('T')[0];
+            const inicio = filtros.fechaInicio instanceof Date && !isNaN(filtros.fechaInicio)
+                ? filtros.fechaInicio.toISOString().split('T')[0]
+                : new Date().toISOString().split('T')[0];
+            const fin = filtros.fechaFin instanceof Date && !isNaN(filtros.fechaFin)
+                ? filtros.fechaFin.toISOString().split('T')[0]
+                : new Date().toISOString().split('T')[0];
 
             const queryParams = new URLSearchParams();
             queryParams.append('fecha_inicio', inicio);
