@@ -3,530 +3,64 @@
 # No editar este archivo manualmente. Ejecutar precompile_templates.py para actualizar.
 
 TEMPLATES_EMPAQUETADOS = {
-    'reports/detalle_facturacion_report.html': r'''
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Detalle de Facturación PH</title>
-    <style>
-        body { font-family: Arial, sans-serif; font-size: 10px; }
-        .header { text-align: center; margin-bottom: 20px; }
-        .header h1 { font-size: 16px; margin: 0; }
-        .header h2 { font-size: 12px; font-weight: normal; margin: 5px 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
-        th { background-color: #f2f2f2; font-weight: bold; }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        .total-row td { background-color: #e6f3ff; font-weight: bold; }
-        .badge { padding: 2px 5px; border-radius: 3px; font-size: 9px; color: white; }
-        .bg-green { background-color: #2da44e; }
-        .bg-gray { background-color: #6e7781; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
-        <h2>NIT: {{ empresa.nit }}</h2>
-        {% if empresa.direccion or empresa.telefono %}
-        <p style="margin: 2px 0; font-size: 9px; color: #555;">{{ empresa.direccion }} | Tel: {{ empresa.telefono }}</p>
-        {% endif %}
-        <h3>Detalle de Facturación - Periodo {{ periodo }}</h3>
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th style="width: 10%">Factura</th>
-                <th style="width: 10%">Fecha</th>
-                <th style="width: 25%">Tercero / Propietario</th>
-                <th style="width: 25%">Concepto / {{ labels.entidad_secundaria_short }}</th>
-                <th style="width: 15%" class="text-right">Total</th>
-                <th style="width: 10%" class="text-center">Estado</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in items %}
-            <tr>
-                <td>{{ item.consecutivo }}</td>
-                <td>{{ item.fecha }}</td>
-                <td>
-                    <strong>{{ item.tercero_nombre }}</strong><br>
-                    <span style="color: #666; font-size: 9px">{{ item.tercero_nit }}</span>
-                </td>
-                <td>{{ item.detalle }}
-                    {% if item.sub_items %}
-                        <div style="margin-top: 4px; padding-left: 10px; font-size: 8px; color: #555;">
-                            {% for sub in item.sub_items %}
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-                                <span>{{ sub.nombre }}</span>
-                                <span style="font-family: monospace;">${{ "{:,.0f}".format(sub.valor) }}</span>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </td>
-                <td class="text-right">${{ "{:,.0f}".format(item.total) }}</td>
-                <td class="text-center">
-                    {% if item.anulado %}
-                        <span class="badge bg-gray">ANULADA</span>
-                    {% else %}
-                        <span class="badge bg-green">ACTIVA</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-        <tfoot>
-            <tr class="total-row">
-                <td colspan="4" class="text-right">TOTAL PERIODO</td>
-                <td class="text-right">${{ "{:,.0f}".format(total_periodo) }}</td>
-                <td></td>
-            </tr>
-        </tfoot>
-    </table>
-    
-    <div style="margin-top: 20px; text-align: center; color: #888; font-size: 9px;">
-        Generado automáticamente por el Sistema Finaxis
-    </div>
-</body>
-</html>
-    ''',
-    'reports/estado_cuenta_ph_historico_report.html': r'''
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Estado de Cuenta Histórico</title>
-    <style>
-        body { font-family: 'Helvetica', Arial, sans-serif; font-size: 10px; color: #333; }
-        .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #004085; padding-bottom: 10px; }
-        .header h1 { font-size: 18px; margin: 0; color: #004085; text-transform: uppercase; }
-        .header h2 { font-size: 12px; font-weight: normal; margin: 5px 0; color: #555; }
-        .company-data { font-size: 9px; color: #777; margin-top: 3px; }
-        
-        .client-info { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px; margin-bottom: 20px; }
-        .client-info table { width: 100%; border: none; margin: 0; }
-        .client-info td { border: none; padding: 2px; }
-        .label { font-weight: bold; color: #004085; width: 120px; }
-
-        .main-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .main-table th, .main-table td { border: 1px solid #dee2e6; padding: 8px; text-align: left; }
-        .main-table th { background-color: #004085; color: white; font-weight: bold; text-align: center; text-transform: uppercase; font-size: 9px; }
-        
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        .text-green { color: #28a745; }
-        
-        .sub-items { margin-top: 5px; padding: 5px; background-color: #fdfdfe; border-left: 2px solid #17a2b8; font-size: 9px; color: #555; }
-        .sub-row { display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 2px 0; }
-        .sub-row:last-child { border-bottom: none; }
-
-        .total-row td { background-color: #e9ecef; font-weight: bold; font-size: 11px; }
-        .balance-final { font-size: 14px; color: #004085; }
-
-        .footer { margin-top: 30px; text-align: center; font-size: 8px; color: #999; border-top: 1px solid #eee; padding-top: 5px; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
-        <h2>NIT: {{ empresa.nit }}</h2>
-        {% if empresa.direccion or empresa.telefono %}
-        <div class="company-data">{{ empresa.direccion }} | Tel: {{ empresa.telefono }}</div>
-        {% endif %}
-        <h3 style="margin: 10px 0 0 0; font-size: 14px; color: #333;">{{ labels.titulo_reporte_historico }}</h3>
-    </div>
-
-    <div class="client-info">
-        <table>
-            <tr>
-                <td class="label">{{ labels.entidad_principal }}:</td>
-                <td>{{ propietario.nombre }}</td>
-                <td class="label">IDENTIFICACIÓN:</td>
-                <td>{{ propietario.documento }}</td>
-            </tr>
-            <tr>
-                <td class="label">{{ labels.entidad_secundaria }}:</td>
-                <td><strong>{{ unidad_codigo }}</strong></td>
-                <td class="label">FECHA IMPRESIÓN:</td>
-                <td>{{ fecha_impresion }}</td>
-            </tr>
-            <tr>
-                <td class="label">PERIODO:</td>
-                <td colspan="3">Del {{ fecha_inicio }} al {{ fecha_fin }}</td>
-            </tr>
-        </table>
-    </div>
-
-    <table class="main-table">
-        <thead>
-            <tr>
-                <th style="width: 12%">Fecha</th>
-                <th style="width: 15%">Documento</th>
-                <th style="width: 35%">Detalle / Conceptos</th>
-                <th style="width: 12%">Cargos</th>
-                <th style="width: 12%">Pagos/Abonos</th>
-                <th style="width: 14%">Saldo</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Saldo Anterior -->
-             <tr style="background-color: #f2f2f2; font-weight: bold; border-bottom: 2px solid #ddd;">
-                <td colspan="5" class="text-right" style="vertical-align: top; padding-top: 8px;">
-                    <div style="font-size: 12px; margin-bottom: 4px;">SALDO ANTERIOR AL PERIODO</div>
-                    {% if saldo_anterior_detalle %}
-                        <div style="font-weight: normal; font-size: 9px; color: #444; margin-top: 4px;">
-                            {% for sub in saldo_anterior_detalle %}
-                            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 2px;">
-                                <span style="font-style: italic;">{{ sub.concepto }}</span>
-                                <span>${{ "{:,.0f}".format(sub.valor|default(0)) }}</span>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </td>
-                <td class="text-right" style="vertical-align: top; padding-top: 8px;">${{ "{:,.0f}".format(saldo_anterior|default(0)) }}</td>
-            </tr>
-
-            {% for item in transacciones %}
-            <tr>
-                <td>{{ item.fecha }}</td>
-                <td class="text-center" style="font-weight: bold; font-family: monospace;">{{ item.documento }}</td>
-                <td>
-                    {% if item.unidad_codigo %}
-                      <div style="font-size: 9px; color: #0056b3; font-weight: bold; margin-bottom: 2px;">
-                          [{{ labels.entidad_secundaria_short }}: {{ item.unidad_codigo }}]
-                      </div>
-                    {% endif %}
-                    <div style="font-weight: bold; color: #333;">{{ item.observacion_header }}</div>
-                    {% if item.sub_items %}
-                        <div class="sub-items">
-                            {% for sub in item.sub_items %}
-                            <div class="sub-row">
-                                <span>{{ sub.concepto }}</span>
-                                <span>${{ "{:,.0f}".format(sub.valor|default(0)) }}</span>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </td>
-                <td class="text-right">
-                    {% if item.debito > 0 %}
-                        ${{ "{:,.0f}".format(item.debito|default(0)) }}
-                    {% else %} - {% endif %}
-                </td>
-                <td class="text-right text-green">
-                    {% if item.credito > 0 %}
-                        ${{ "{:,.0f}".format(item.credito|default(0)) }}
-                    {% else %} - {% endif %}
-                </td>
-                <td class="text-right" style="font-weight: bold; background-color: #fafafa;">
-                    ${{ "{:,.0f}".format(item.saldo_acumulado|default(0)) }}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-        <tfoot>
-            <tr class="total-row">
-                <td colspan="5" class="text-right">SALDO FINAL A LA FECHA</td>
-                <td class="text-right balance-final">${{ "{:,.0f}".format(saldo_final|default(0)) }}</td>
-            </tr>
-        </tfoot>
-    </table>
-
-    <div class="footer">
-        Este documento es un extracto informativo y no constituye un paz y salvo definitivo sin sello de tesorería.<br>
-        Generado el {{ fecha_impresion }} por Finaxis.
-    </div>
-</body>
-</html>
-    ''',
-    'reports/estado_cuenta_ph_pendientes_report.html': r'''
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Relación de Cobro</title>
-    <style>
-        body { font-family: 'Helvetica', Arial, sans-serif; font-size: 11px; color: #333; }
-        .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #dc3545; padding-bottom: 15px; }
-        .header h1 { font-size: 20px; margin: 0; color: #dc3545; text-transform: uppercase; }
-        .header h2 { font-size: 12px; margin: 5px 0; color: #555; }
-        
-        .summary-box { 
-            background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; 
-            padding: 15px; text-align: center; margin: 20px auto; width: 60%; 
-            border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        .summary-total { font-size: 24px; font-weight: bold; margin-top: 5px; color: #dc3545; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background-color: #343a40; color: white; font-weight: bold; text-align: center; }
-        .text-right { text-align: right; }
-        
-        .client-info { margin-bottom: 20px; font-size: 12px; }
-        .client-info span { font-weight: bold; display: inline-block; width: 100px; }
-
-        .footer { margin-top: 40px; text-align: center; font-size: 9px; color: #777; border-top: 1px solid #eee; padding-top: 10px; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
-        <h2>NIT: {{ empresa.nit }}</h2>
-        <h3 style="margin-top: 15px; color: #333;">{{ labels.titulo_reporte_cobro }}</h3>
-    </div>
-
-    <div class="client-info">
-        <div><span>{{ labels.entidad_principal }}:</span> {{ propietario.nombre }}</div>
-        <div><span>IDENTIFICACIÓN:</span> {{ propietario.documento }}</div>
-        <div><span>{{ labels.entidad_secundaria_short }}:</span> <strong>{{ unidad_codigo }}</strong></div>
-        <div><span>FECHA CORTE:</span> {{ fecha_impresion }}</div>
-    </div>
-
-    <div class="summary-box">
-        <div>TOTAL A PAGAR A LA FECHA</div>
-        <div class="summary-total">${{ "{:,.0f}".format(total_pendiente) }}</div>
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Fecha Emisión</th>
-                <th>Documento</th>
-                <th>Concepto / {{ labels.entidad_secundaria_short }}</th>
-                <th>Valor Original</th>
-                <th>Saldo Pendiente</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in items %}
-            <tr>
-                <td style="text-align: center;">{{ item.fecha_fmt }}</td>
-                <td style="text-align: center; font-weight: bold;">{{ item.numero }}</td>
-                <td>{{ item.unidad_codigo }} ({{ item.tipo }})</td>
-                <td class="text-right" style="color: #777;">${{ "{:,.0f}".format(item.valor_total) }}</td>
-                <td class="text-right" style="font-weight: bold; color: #dc3545;">
-                    ${{ "{:,.0f}".format(item.saldo_pendiente) }}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-        <tfoot>
-            <tr style="background-color: #f8f9fa; font-weight: bold;">
-                <td colspan="4" class="text-right">TOTAL CARTERA PENDIENTE</td>
-                <td class="text-right" style="font-size: 14px;">${{ "{:,.0f}".format(total_pendiente) }}</td>
-            </tr>
-        </tfoot>
-    </table>
-
-    <div class="footer">
-        Por favor realizar el pago antes de la fecha límite para evitar intereses de mora.<br>
-        {{ empresa.direccion }} | {{ empresa.telefono }}
-    </div>
-</body>
-</html>
-    ''',
-    'reports/ventas_cliente_report.html': r'''
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Análisis Integral de Ventas por Cliente</title>
-    <style>
-        @page { size: letter landscape; margin: 1cm; }
-        body { font-family: Arial, sans-serif; font-size: 11px; color: #333; }
-        
-        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .header h1 { margin: 0 0 5px 0; font-size: 18px; color: #2c3e50; }
-        .header h2 { margin: 0; font-size: 14px; font-weight: normal; color: #7f8c8d; }
-        .header p { margin: 5px 0 0 0; font-size: 12px; }
-
-        /* KPI Box similar a pantalla */
-        .kpi-container {
-            display: table; width: 100%; margin-bottom: 20px; border-collapse: separate; border-spacing: 10px;
-        }
-        .kpi-box {
-            display: table-cell; width: 25%; background-color: #f8f9fa; 
-            padding: 10px; border: 1px solid #e9ecef; text-align: center; vertical-align: middle;
-        }
-        .kpi-label { font-size: 10px; color: #7f8c8d; text-transform: uppercase; margin-bottom: 5px; font-weight: bold; }
-        .kpi-value { font-size: 16px; font-weight: bold; color: #2c3e50; }
-
-        /* Tabla Principal */
-        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-        th, td { padding: 8px 6px; border-bottom: 1px solid #eee; }
-        
-        th { 
-            background-color: #f1f1f1; color: #555; font-weight: bold; text-transform: uppercase; font-size: 10px;
-            border-bottom: 2px solid #ddd;
-        }
-        
-        /* Alineaciones */
-        .text-left { text-align: left; }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-
-        /* Colores */
-        .positive { color: #27ae60; font-weight: bold; }
-        .negative { color: #c0392b; font-weight: bold; }
-        
-        tr:nth-child(even) { background-color: #f9f9f9; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
-        <h2>NIT: {{ empresa.nit }}</h2>
-        <p><strong>ANÁLISIS INTEGRAL DE VENTAS POR CLIENTE</strong></p>
-        <p>Periodo: {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
-    </div>
-
-    <!-- RESUMEN EJECUTIVO KPI (Igual a Pantalla) -->
-    <div class="kpi-container">
-        <div class="kpi-box">
-            <div class="kpi-label">Ventas Totales</div>
-            <div class="kpi-value">${{ data.gran_total_venta|format_decimal(0) }}</div>
-        </div>
-        <div class="kpi-box">
-            <div class="kpi-label">Costo Total</div>
-            <div class="kpi-value">${{ data.gran_total_costo|format_decimal(0) }}</div>
-        </div>
-        <div class="kpi-box">
-            <div class="kpi-label">Utilidad Global</div>
-            <div class="kpi-value {{ 'negative' if data.gran_total_utilidad < 0 else 'positive' }}">
-                ${{ data.gran_total_utilidad|format_decimal(0) }}
-            </div>
-        </div>
-        <div class="kpi-box">
-            <div class="kpi-label">Margen Global</div>
-            <div class="kpi-value {{ 'negative' if data.margen_global_porcentaje < 0 else 'positive' }}">
-                {{ "%.2f"|format(data.margen_global_porcentaje) }}%
-            </div>
-        </div>
-    </div>
-
-    <!-- TABLA DE RESULTADOS POR CLIENTE -->
-    <h3 style="margin-bottom: 5px; font-size: 12px; color: #555;">Resultados por Cliente ({{ data.items|length }})</h3>
-    <table>
-        <thead>
-            <tr>
-                <th class="text-left">Cliente</th>
-                <th class="text-right">Venta</th>
-                <th class="text-right">Costo</th>
-                <th class="text-right">Utilidad</th>
-                <th class="text-right">Margen %</th>
-                <th class="text-center">Docs</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for cliente in data.items %}
-            <tr>
-                <td class="text-left">
-                    <div style="font-weight: bold; font-size: 11px;">{{ cliente.tercero_nombre }}</div>
-                    <div style="font-size: 9px; color: #7f8c8d;">{{ cliente.tercero_identificacion }}</div>
-                </td>
-                <td class="text-right">${{ cliente.total_venta|format_decimal(0) }}</td>
-                <td class="text-right">${{ cliente.total_costo|format_decimal(0) }}</td>
-                <td class="text-right {{ 'negative' if cliente.total_utilidad < 0 else 'positive' }}">
-                    ${{ cliente.total_utilidad|format_decimal(0) }}
-                </td>
-                <td class="text-right {{ 'negative' if cliente.margen_porcentaje < 0 else 'positive' }}">
-                    {{ "%.2f"|format(cliente.margen_porcentaje) }}%
-                </td>
-                <td class="text-center">
-                    <span style="background-color: #eee; padding: 2px 6px; border-radius: 4px; font-size: 9px;">
-                        {{ cliente.conteo_documentos }}
-                    </span>
-                </td>
-            </tr>
-            
-            <!-- DETALLE EXPANDIDO (WYSIWYG) -->
-            {% if filtros.clientes_expandidos and cliente.tercero_id in filtros.clientes_expandidos %}
-            <tr>
-                <td colspan="6" style="background-color: #fcfcfc; padding: 10px;">
-                    <!-- Productos -->
-                    <div style="margin-bottom: 15px;">
-                        <h4 style="margin: 0 0 5px 0; font-size: 10px; color: #555; border-bottom: 1px solid #ddd; padding-bottom: 3px;">TOP PRODUCTOS COMPRADOS</h4>
-                        <table style="margin-top: 0;">
-                            <tr>
-                                <th class="text-left" style="background-color: #fff; font-size: 9px;">Producto</th>
-                                <th class="text-center" style="background-color: #fff; font-size: 9px;">Cant.</th>
-                                <th class="text-center" style="background-color: #fff; font-size: 9px;">Venta</th>
-                                <th class="text-center" style="background-color: #fff; font-size: 9px;">Utilidad</th>
-                            </tr>
-                            {% for prod in cliente.detalle_productos %}
-                            <tr>
-                                <td class="text-left" style="font-size: 9px;">
-                                    {{ prod.producto_nombre }} <span style="color: #999;">({{ prod.producto_codigo }})</span>
-                                </td>
-                                <td class="text-center" style="font-size: 9px;">{{ prod.cantidad|format_decimal(0) }}</td>
-                                <td class="text-center" style="font-size: 9px;">${{ prod.total_venta|format_decimal(0) }}</td>
-                                <td class="text-center {{ 'negative' if prod.utilidad < 0 else 'positive' }}" style="font-size: 9px;">
-                                    ${{ prod.utilidad|format_decimal(0) }}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </table>
-                    </div>
-
-                    <!-- Facturas -->
-                    <div>
-                        <h4 style="margin: 0 0 5px 0; font-size: 10px; color: #555; border-bottom: 1px solid #ddd; padding-bottom: 3px;">HISTORIAL DE FACTURAS</h4>
-                        <table style="margin-top: 0;">
-                            <tr>
-                                <th class="text-left" style="background-color: #fff; font-size: 9px;">Ref</th>
-                                <th class="text-center" style="background-color: #fff; font-size: 9px;">Fecha</th>
-                                <th class="text-center" style="background-color: #fff; font-size: 9px;">Venta</th>
-                                <th class="text-center" style="background-color: #fff; font-size: 9px;">Utilidad</th>
-                            </tr>
-                            {% for doc in cliente.detalle_documentos %}
-                            <tr>
-                                <td class="text-left" style="font-size: 9px; color: #0066cc;">{{ doc.documento_ref }}</td>
-                                <td class="text-center" style="font-size: 9px;">{{ doc.fecha }}</td>
-                                <td class="text-center" style="font-size: 9px;">${{ doc.total_venta|format_decimal(0) }}</td>
-                                <td class="text-center {{ 'negative' if doc.utilidad < 0 else 'positive' }}" style="font-size: 9px;">
-                                    ${{ doc.utilidad|format_decimal(0) }}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </table>
-                    </div>
-                </td>
-            </tr>
-            {% endif %}
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #aaa; border-top: 1px solid #eee; padding-top: 10px;">
-        Generado automáticamente por el Sistema Contable
-    </div>
-</body>
-</html>
-    ''',
     'reports/account_ledger_report.html': r'''
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-g">
     <title>Auxiliar por Cuenta</title>
     <style>
-        body { font-family: sans-serif; font-size: 10px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ccc; padding: 4px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .header { text-align: center; margin-bottom: 20px; }
-        .header h1 { margin: 0; }
-        .header h2 { margin: 0; font-weight: normal; }
-        .report-info { margin-bottom: 15px; }
-        .text-right { text-align: right; }
-        .total-row td { font-weight: bold; background-color: #f8f8f8; }
+        body {
+            font-family: sans-serif;
+            font-size: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 4px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            margin: 0;
+        }
+
+        .header h2 {
+            margin: 0;
+            font-weight: normal;
+        }
+
+        .report-info {
+            margin-bottom: 15px;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .total-row td {
+            font-weight: bold;
+            background-color: #f8f8f8;
+        }
     </style>
 </head>
+
 <body>
     <div class="header">
         <h1>{{ empresa_nombre }}</h1>
@@ -574,14 +108,22 @@ TEMPLATES_EMPAQUETADOS = {
                 <td class="text-right">{{ "{:,.2f}".format(mov.saldo_parcial) }}</td>
             </tr>
             {% endfor %}
-            <tr class="total-row">
-                <td colspan="{{ 5 if has_cost_centers else 4 }}"><strong>SALDO FINAL</strong></td>
+            <tr class="total-row" style="background-color: #f1f5f9;">
+                <td colspan="{{ 5 if has_cost_centers else 4 }}"><strong>TOTALES MOVIMIENTOS DEL PERIODO</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(total_debito_periodo) }}</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(total_credito_periodo) }}</strong></td>
+                <td></td>
+            </tr>
+            <tr class="total-row" style="background-color: #1e293b; color: white;">
+                <td colspan="{{ 5 if has_cost_centers else 4 }}"><strong>SALDO FINAL ACUMULADO AL {{ fecha_fin
+                        }}</strong></td>
                 {% set saldo_final = movimientos[-1].saldo_parcial if movimientos else saldo_anterior %}
                 <td colspan="3" class="text-right"><strong>{{ "{:,.2f}".format(saldo_final) }}</strong></td>
             </tr>
         </tbody>
     </table>
 </body>
+
 </html>
 ''',
 
@@ -760,7 +302,7 @@ TEMPLATES_EMPAQUETADOS = {
 </head>
 <body>
     <div class="company-info">
-        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
+        <h1>{{ empresa.razon_social }}</h1>
         <h2>NIT: {{ empresa.nit }}</h2>
     </div>
     <div class="report-info">
@@ -935,7 +477,7 @@ TEMPLATES_EMPAQUETADOS = {
     </style>
 </head>
 <body>
-    <div class="company-info"><h1>{{ empresa.razon_social or 'Consorcio' }}</h1><h2>NIT: {{ empresa.nit }}</h2></div>
+    <div class="company-info"><h1>{{ empresa.razon_social }}</h1><h2>NIT: {{ empresa.nit }}</h2></div>
     <div class="report-info">
         <h2>Auxiliar de Cartera por Facturas</h2>
         <p><strong>Cliente:</strong> {{ tercero.razon_social }} (NIT: {{ tercero.nit }})</p>
@@ -1004,7 +546,7 @@ TEMPLATES_EMPAQUETADOS = {
     </style>
 </head>
 <body>
-    <div class="company-info"><h1>{{ empresa.razon_social or 'Consorcio' }}</h1><h2>NIT: {{ empresa.nit }}</h2></div>
+    <div class="company-info"><h1>{{ empresa.razon_social }}</h1><h2>NIT: {{ empresa.nit }}</h2></div>
     <div class="report-info">
         <h2>Auxiliar de Cartera por Recibos de Caja</h2>
         <p><strong>Cliente:</strong> {{ tercero.razon_social }} (NIT: {{ tercero.nit }})</p>
@@ -1067,7 +609,7 @@ TEMPLATES_EMPAQUETADOS = {
     </style>
 </head>
 <body>
-    <div class="company-info"><h1>{{ empresa.razon_social or 'Consorcio' }}</h1><h2>NIT: {{ empresa.nit }}</h2></div>
+    <div class="company-info"><h1>{{ empresa.razon_social }}</h1><h2>NIT: {{ empresa.nit }}</h2></div>
     <div class="report-info">
         <h2>Auxiliar de Proveedores por Facturas de Compra</h2>
         <p><strong>Proveedor:</strong> {{ tercero.razon_social }} (NIT: {{ tercero.nit }})</p>
@@ -1136,7 +678,7 @@ TEMPLATES_EMPAQUETADOS = {
     </style>
 </head>
 <body>
-    <div class="company-info"><h1>{{ empresa.razon_social or 'Consorcio' }}</h1><h2>NIT: {{ empresa.nit }}</h2></div>
+    <div class="company-info"><h1>{{ empresa.razon_social }}</h1><h2>NIT: {{ empresa.nit }}</h2></div>
     <div class="report-info">
         <h2>Auxiliar de Proveedores por Comprobantes de Egreso</h2>
         <p><strong>Proveedor:</strong> {{ tercero.razon_social }} (NIT: {{ tercero.nit }})</p>
@@ -1200,7 +742,7 @@ TEMPLATES_EMPAQUETADOS = {
 </head>
 <body>
     <div class="company-info">
-        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
+        <h1>{{ empresa.razon_social }}</h1>
         <h2>NIT: {{ empresa.nit }}</h2>
     </div>
     <div class="report-info">
@@ -1816,6 +1358,258 @@ TEMPLATES_EMPAQUETADOS = {
 </html>
 ''',
 
+    'reports/comprobante_egreso_template.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Comprobante de Egreso</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 2cm;
+        }
+
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 10pt;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 10px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 18pt;
+            text-transform: uppercase;
+            color: #000;
+        }
+
+        .header h2 {
+            margin: 5px 0 0;
+            font-size: 12pt;
+            font-weight: normal;
+        }
+
+        .header p {
+            margin: 2px 0;
+            font-size: 10pt;
+            color: #666;
+        }
+
+        .doc-title {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+
+        .doc-title h3 {
+            margin: 0;
+            font-size: 14pt;
+            color: #444;
+            text-transform: uppercase;
+            background-color: #f9f9f9;
+            display: inline-block;
+            padding: 5px 15px;
+            border: 1px solid #ddd;
+        }
+
+        .info-grid {
+            display: table;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .info-row {
+            display: table-row;
+        }
+
+        .info-cell {
+            display: table-cell;
+            padding: 4px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .label {
+            font-weight: bold;
+            color: #555;
+            width: 120px;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        .items-table tr {
+            page-break-inside: avoid;
+        }
+
+        .items-table th {
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 8px;
+            font-weight: bold;
+            text-align: left;
+            font-size: 9pt;
+        }
+
+        .items-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            font-size: 9pt;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .totals-section {
+            width: 40%;
+            margin-left: auto;
+            margin-bottom: 30px;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .total-row.final {
+            font-weight: bold;
+            font-size: 11pt;
+            border-bottom: 2px solid #000;
+            border-top: 1px solid #000;
+            margin-top: 5px;
+            padding-top: 5px;
+        }
+
+        .footer {
+            margin-top: 50px;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+            font-size: 8pt;
+            color: #888;
+            text-align: center;
+        }
+
+        .signatures {
+            margin-top: 60px;
+            display: table;
+            width: 100%;
+        }
+
+        .sig-box {
+            display: table-cell;
+            width: 33%;
+            text-align: center;
+            vertical-align: bottom;
+            height: 60px;
+        }
+
+        .sig-line {
+            border-top: 1px solid #000;
+            margin: 0 20px;
+            padding-top: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <h2>NIT: {{ empresa.nit }}</h2>
+        <p>{{ empresa.direccion }} - {{ empresa.telefono }}</p>
+    </div>
+
+    <div class="doc-title">
+        <h3>{{ documento.tipo_nombre }} N° {{ documento.consecutivo }}</h3>
+    </div>
+
+    <div class="info-grid">
+        <div class="info-row">
+            <div class="info-cell label">Fecha:</div>
+            <div class="info-cell">{{ documento.fecha_emision }}</div>
+            <div class="info-cell label">Ciudad:</div>
+            <div class="info-cell">Bogotá D.C.</div> <!-- Placeholder city -->
+        </div>
+        <div class="info-row">
+            <div class="info-cell label">Pagado a:</div>
+            <div class="info-cell"><strong>{{ tercero.razon_social }}</strong></div>
+            <div class="info-cell label">NIT/CC:</div>
+            <div class="info-cell">{{ tercero.nit }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-cell label">Concepto:</div>
+            <div class="info-cell" colspan="3">{{ documento.observaciones }}</div>
+        </div>
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th style="width: 15%;">Código</th>
+                <th style="width: 45%;">Descripción</th>
+                <th style="width: 20%;" class="text-right">Débito</th>
+                <th style="width: 20%;" class="text-right">Crédito</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.producto_codigo }}</td>
+                <td>{{ item.producto_nombre }}</td>
+                <td class="text-right">{{ item.debito_fmt }}</td>
+                <td class="text-right">{{ item.credito_fmt }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="totals-section">
+        <div class="total-row final">
+            <span>TOTAL PAGADO</span>
+            <span>{{ totales.total }}</span>
+        </div>
+        <div style="font-size: 9pt; font-style: italic; margin-top: 5px; text-align: right;">
+            Son: {{ totales.valor_letras }}
+        </div>
+    </div>
+
+    <div class="signatures">
+        <div class="sig-box">
+            <div class="sig-line">Elaboró</div>
+        </div>
+        <div class="sig-box">
+            <div class="sig-line">Aprobó</div>
+        </div>
+        <div class="sig-box">
+            <div class="sig-line">Recibí Conforme</div>
+            <div style="font-size: 8pt;">C.C.</div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Generado automáticamente por Finaxis Cloud
+    </div>
+</body>
+
+</html>
+''',
+
     'reports/estado_cuenta_cliente_report.html': r'''
 <!DOCTYPE html>
 <html>
@@ -1843,7 +1637,7 @@ TEMPLATES_EMPAQUETADOS = {
 </head>
 <body>
     <div class="company-info">
-        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
+        <h1>{{ empresa.razon_social }}</h1>
         <h2>NIT: {{ empresa.nit }}</h2>
     </div>
     <div class="report-info">
@@ -1928,7 +1722,7 @@ TEMPLATES_EMPAQUETADOS = {
 </head>
 <body>
     <div class="company-info">
-        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
+        <h1>{{ empresa.razon_social }}</h1>
         <h2>NIT: {{ empresa.nit }}</h2>
     </div>
     <div class="report-info">
@@ -2219,7 +2013,7 @@ TEMPLATES_EMPAQUETADOS = {
 
 <body>
     <div class="header">
-        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
+        <h1>{{ empresa.razon_social }}</h1>
         <p>NIT: {{ empresa.nit }}</p>
         <p><strong>ESTADO DE FUENTES Y USOS (CAPITAL DE TRABAJO)</strong></p>
         <p>Periodo: {{ fecha_inicio }} al {{ fecha_fin }}</p>
@@ -2301,6 +2095,495 @@ TEMPLATES_EMPAQUETADOS = {
             Pasivos (ej. financiación proveedores).<br>
             - <strong>USOS:</strong> Dinero utilizado para aumentar Activos (ej. compra inventario) o disminuir Pasivos
             (ej. pago deudas).</p>
+    </div>
+</body>
+
+</html>
+''',
+
+    'reports/generic_document_template.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: letter;
+            margin: 2cm;
+        }
+
+        body {
+            font-family: 'Helvetica', sans-serif;
+            font-size: 11px;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* ... (rest of styles) */
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        tr {
+            page-break-inside: avoid;
+        }
+
+        th {
+            background: #333333;
+            color: white;
+            padding: 5px;
+            text-align: left;
+            font-size: 10px;
+        }
+
+        td {
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .font-mono {
+            font-family: 'Courier New', monospace;
+        }
+
+        .footer-totals {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+
+        .footer-totals td {
+            border-top: 2px solid #333;
+        }
+
+        .letras-row td {
+            background: #fff;
+            padding-top: 10px;
+            font-style: italic;
+            border: none;
+        }
+
+        .signatures {
+            margin-top: 50px;
+            width: 100%;
+            display: table;
+        }
+
+        .sig-col {
+            display: table-cell;
+            width: 25%;
+            text-align: center;
+            vertical-align: bottom;
+            height: 40px;
+        }
+
+        .sig-line {
+            border-top: 1px solid #333;
+            margin: 0 10px;
+            padding-top: 5px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <table class="header-table">
+        <tr>
+            <td width="60%" valign="top">
+                {% if empresa.logo_url %}
+                <img src="{{empresa.logo_url}}" style="max-height: 60px; margin-bottom: 5px;"><br>
+                {% endif %}
+                <div class="company-name">{{empresa.razon_social}}</div>
+                <div>NIT: {{empresa.nit}}</div>
+                <div>{{empresa.direccion}}</div>
+                <div>{{empresa.telefono}}</div>
+            </td>
+            <td width="40%" valign="top" align="right">
+                <div class="doc-type-box">{{documento.tipo_nombre}}</div>
+                <div class="doc-number">N° {{documento.consecutivo}}</div>
+                <div style="text-align: right; margin-top: 5px;">Fecha: <strong>{{documento.fecha_emision}}</strong>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="info-box">
+        <table style="width: 100%; margin: 0;">
+            <tr>
+                <td width="15%"><strong>Tercero:</strong></td>
+                <td width="45%">{{tercero.razon_social}}</td>
+                <td width="15%"><strong>NIT/CC:</strong></td>
+                <td width="25%">{{tercero.nit}}</td>
+            </tr>
+            {% if documento.observaciones %}
+            <tr>
+                <td colspan="4" style="border-top: 1px dashed #ccc; padding-top: 5px;">
+                    <strong>Notas:</strong> {{documento.observaciones}}
+                </td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th width="15%">Cuenta</th>
+                <th width="45%">Descripción</th>
+                <th width="20%" class="text-right">Débito</th>
+                <th width="20%" class="text-right">Crédito</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="font-mono">{{item.producto_codigo}}</td>
+                <td>{{item.producto_nombre}}</td>
+                <td class="text-right font-mono">{{item.debito_fmt}}</td>
+                <td class="text-right font-mono">{{item.credito_fmt}}</td>
+            </tr>
+            {% endfor %}
+            <tr class="footer-totals">
+                <td colspan="2" class="text-right">SUMAS IGUALES:</td>
+                <td class="text-right font-mono">{{totales.total_debito}}</td>
+                <td class="text-right font-mono">{{totales.total_credito}}</td>
+            </tr>
+            <tr class="letras-row">
+                <td colspan="4"><strong>SON:</strong> {{totales.valor_letras}}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="signatures">
+        <div class="sig-col">
+            <div class="sig-line">Elaboró</div>
+        </div>
+        <div class="sig-col">
+            <div class="sig-line">Revisó</div>
+        </div>
+        <div class="sig-col">
+            <div class="sig-line">Aprobó</div>
+        </div>
+        <div class="sig-col">
+            <div class="sig-line">Contabilizó</div>
+        </div>
+    </div>
+
+    <div style="text-align: center; font-size: 9px; color: #aaa; margin-top: 20px;">
+        Gracias por su confianza.
+    </div>
+</body>
+
+</html>
+''',
+
+    'reports/historial_consumo_report.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Historial de Consumo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header {
+            margin-bottom: 20px;
+            border-bottom: 2px solid #555;
+            padding-bottom: 10px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #2c3e50;
+        }
+
+        .header h2 {
+            margin: 5px 0 0;
+            font-size: 16px;
+            color: #666;
+            font-weight: normal;
+        }
+
+        .meta-info {
+            margin-bottom: 20px;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .filters-info {
+            background: #f0f4f8;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border: 1px solid #dce4ec;
+        }
+
+        .filters-info strong {
+            color: #2c3e50;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            /* Asegurar que la cabecera se repita en cada página */
+            display: table;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        tfoot {
+            display: table-footer-group;
+        }
+
+        tr {
+            page-break-inside: avoid;
+        }
+
+        th,
+        td {
+            border-bottom: 1px solid #eee;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            color: #495057;
+            font-weight: bold;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        tr:nth-child(even) {
+            background-color: #fdfdfd;
+        }
+
+        .impact-positive {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .impact-negative {
+            color: #c0392b;
+            font-weight: bold;
+        }
+
+        .footer {
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+            text-align: center;
+            color: #999;
+            font-size: 10px;
+        }
+
+        .tag {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        .tag-consumo {
+            background: #e0e7ff;
+            color: #4338ca;
+        }
+
+        .tag-compra {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .tag-reversion {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .tag-cierre {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .summary-box {
+            margin-top: 30px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #f8fafc;
+        }
+
+        .summary-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #cbd5e1;
+            padding-bottom: 5px;
+        }
+
+        .summary-row {
+            display: table;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+
+        .summary-label {
+            display: table-cell;
+            color: #64748b;
+            font-size: 11px;
+            padding-right: 10px;
+        }
+
+        .summary-value {
+            display: table-cell;
+            text-align: right;
+            font-weight: bold;
+            color: #0f172a;
+            font-size: 11px;
+        }
+
+        .summary-total {
+            margin-top: 10px;
+            border-top: 1px solid #cbd5e1;
+            padding-top: 5px;
+        }
+
+        .summary-total .summary-label {
+            font-size: 12px;
+            color: #334155;
+            font-weight: bold;
+        }
+
+        .summary-total .summary-value {
+            font-size: 14px;
+            color: #2563eb;
+            /* Blue for emphasis */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <h2>Reporte de Historial de Consumo</h2>
+        <div class="meta-info">NIT: {{ empresa.nit }} | Generado el: {{ fecha_generacion }}</div>
+    </div>
+
+    <div class="filters-info">
+        <strong>Filtros Aplicados:</strong><br>
+        Rango de Fechas: {{ filtros.fecha_inicio or 'Inicio' }} - {{ filtros.fecha_fin or 'Actualidad' }} <br>
+        Tipo de Operación: {{ filtros.tipo_operacion or 'TODOS' }} <br>
+        <strong>Registros Exportados: {{ items|length }} (Max: 5000)</strong>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th width="15%">Fecha</th>
+                <th width="15%">Operación</th>
+                <th width="20%">Empresa</th>
+                <th width="25%">Detalle / Documento</th>
+                <th width="15%">Origen/Bolsa</th>
+                <th width="10%" style="text-align: right">Impacto</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.fecha.strftime('%d/%m/%Y') }} <br> <span style="font-size: 9px; color:#999">{{
+                        item.fecha.strftime('%H:%M') }}</span></td>
+                <td>
+                    {% if item.tipo_operacion == 'CONSUMO' %} <span class="tag tag-consumo">CONSUMO</span>
+                    {% elif item.tipo_operacion == 'COMPRA' %} <span class="tag tag-compra">COMPRA RECARGA</span>
+                    {% elif item.tipo_operacion == 'REVERSION' %} <span class="tag tag-reversion">REVERSIÓN</span>
+                    {% elif item.tipo_operacion == 'CIERRE' %} <span class="tag tag-cierre">CIERRE MENSUAL</span>
+                    {% else %} {{ item.tipo_operacion }} {% endif %}
+                </td>
+                <td>
+                    <span style="font-weight:bold; color:#444; font-size:10px;">
+                        {{ item.empresa_generadora or '-' }}
+                    </span>
+                </td>
+                <td>
+                    {% if item.documento_numero %}
+                    <strong>{{ item.documento_tipo_codigo or 'Doc' }} #{{ item.documento_numero }}</strong>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if item.bolsa_origen %}
+                    {{ item.bolsa_origen }}
+                    {% else %}
+                    {{ item.fuente_tipo or '-' }}
+                    {% endif %}
+                </td>
+                <td style="text-align: right">
+                    {% if item.tipo_operacion in ['REVERSION', 'COMPRA'] %}
+                    <span class="impact-positive">+{{ item.cantidad }}</span>
+                    {% else %}
+                    <span class="impact-negative">-{{ item.cantidad }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+    </table>
+
+    <!-- SECTION DE RESUMEN -->
+    {% if stats %}
+    <div class="summary-box">
+        <div class="summary-title">RESUMEN DE CONSUMO DEL PERIODO</div>
+
+        <div class="summary-row">
+            <div class="summary-label">Consumo Plan Mensual:</div>
+            <div class="summary-value">{{ stats.consumo_plan }}</div>
+        </div>
+        {% if stats.consumo_anterior > 0 %}
+        <div class="summary-row">
+            <div class="summary-label">Consumo Periodos Anteriores (Diferido):</div>
+            <div class="summary-value">{{ stats.consumo_anterior }}</div>
+        </div>
+        {% endif %}
+        <!-- <div class="summary-row">
+            <div class="summary-label">Consumo Bolsas Excedentes:</div>
+            <div class="summary-value">{{ stats.consumo_bolsa }}</div>
+        </div> -->
+        <div class="summary-row">
+            <div class="summary-label">Consumo Recargas Adicionales:</div>
+            <div class="summary-value">{{ stats.consumo_recarga }}</div>
+        </div>
+
+        <div class="summary-row summary-total">
+            <div class="summary-label">TOTAL GENERAL CONSUMIDO:</div>
+            <div class="summary-value">{{ stats.consumo_total_bruto }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        Este reporte fue generado automáticamente por el sistema FINAXIS.
     </div>
 </body>
 
@@ -2495,6 +2778,511 @@ TEMPLATES_EMPAQUETADOS = {
 </html>
 ''',
 
+    'reports/inventario_document_template.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{{documento.tipo_nombre}}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #1f2937;
+            font-size: 9px;
+            margin: 0;
+            padding: 12px;
+            line-height: 1.3;
+            background: #ffffff;
+        }
+
+        /* ENCABEZADO EMPRESARIAL */
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .company-section {
+            width: 58%;
+        }
+
+        .company-logo {
+            max-height: 42px;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .company-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: #111827;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            letter-spacing: 0.3px;
+        }
+
+        .company-details {
+            color: #6b7280;
+            font-size: 8px;
+            line-height: 1.4;
+        }
+
+        .document-section {
+            width: 38%;
+            text-align: right;
+        }
+
+        .doc-type {
+            font-size: 16px;
+            font-weight: 800;
+            color: #1d4ed8;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            letter-spacing: -0.2px;
+        }
+
+        .doc-number {
+            font-size: 14px;
+            color: #dc2626;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .doc-dates {
+            font-size: 8px;
+            color: #6b7280;
+            line-height: 1.4;
+        }
+
+        .date-label {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        /* INFORMACIÓN CLIENTE */
+        .client-section {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 16px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .client-header {
+            font-size: 7px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .client-name {
+            font-size: 11px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 3px;
+        }
+
+        .client-info {
+            color: #64748b;
+            font-size: 8px;
+            line-height: 1.4;
+        }
+
+        /* TABLA PRODUCTOS */
+        .products-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            font-size: 8px;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .products-table th {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: #ffffff;
+            padding: 8px 6px;
+            font-size: 7px;
+            text-transform: uppercase;
+            font-weight: 600;
+            text-align: left;
+            letter-spacing: 0.5px;
+        }
+
+        .products-table th.text-center { text-align: center; }
+        .products-table th.text-right { text-align: right; }
+
+        .products-table td {
+            padding: 6px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+
+        .products-table tbody tr:nth-child(even) {
+            background-color: #fafbfc;
+        }
+
+        .products-table tbody tr:hover {
+            background-color: #f0f9ff;
+        }
+
+        .item-code {
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+            font-size: 7px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .item-description {
+            font-size: 8px;
+            color: #1e293b;
+            font-weight: 500;
+        }
+
+        .item-quantity {
+            text-align: center;
+            font-weight: 700;
+            color: #1d4ed8;
+            font-size: 8px;
+        }
+
+        .item-price, .item-amount {
+            text-align: right;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+            font-size: 8px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        /* SECCIÓN TOTALES PROFESIONAL */
+        .totals-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .notes-area {
+            width: 52%;
+        }
+
+        .amount-words {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            color: #991b1b;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 7px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            border-left: 4px solid #dc2626;
+            letter-spacing: 0.3px;
+        }
+
+        .observations {
+            background: #fffbeb;
+            border: 1px solid #f59e0b;
+            border-left: 4px solid #d97706;
+            padding: 8px;
+            border-radius: 4px;
+            color: #92400e;
+            font-size: 7px;
+            line-height: 1.4;
+        }
+
+        .totals-panel {
+            width: 45%;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .total-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 12px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 8px;
+        }
+
+        .total-line:last-child {
+            border-bottom: none;
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 10px;
+        }
+
+        .total-line.subtotal-line {
+            background: #f8fafc;
+            font-weight: 600;
+        }
+
+        .total-line.tax-line {
+            background: #fef7ff;
+            color: #7c2d12;
+        }
+
+        .total-line.base-line {
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .total-label {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .total-line:last-child .total-label {
+            color: #ffffff;
+        }
+
+        .total-line.tax-line .total-label,
+        .total-line.base-line .total-label {
+            font-weight: 700;
+        }
+
+        .total-value {
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+            font-weight: 700;
+            text-align: right;
+            min-width: 85px;
+        }
+
+        /* PIE DE PÁGINA EMPRESARIAL */
+        .footer-area {
+            margin-top: 28px;
+            padding-top: 16px;
+            border-top: 2px solid #f1f5f9;
+        }
+
+        .legal-notice {
+            background: #f8fafc;
+            padding: 8px 10px;
+            border-radius: 4px;
+            color: #64748b;
+            font-size: 7px;
+            line-height: 1.4;
+            margin-bottom: 12px;
+            text-align: justify;
+        }
+
+        .signature-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 16px;
+        }
+
+        .signature-field {
+            text-align: center;
+            padding-top: 28px;
+        }
+
+        .signature-line {
+            border-top: 1.5px solid #64748b;
+            padding-top: 4px;
+            font-size: 7px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .footer-brand {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 7px;
+            font-style: italic;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- ENCABEZADO EMPRESARIAL -->
+    <div class="header-container">
+        <div class="company-section">
+            {% if empresa.logo_url %}
+            <img src="{{empresa.logo_url}}" class="company-logo" alt="Logo Empresa">
+            {% endif %}
+            <div class="company-name">{{empresa.razon_social}}</div>
+            <div class="company-details">
+                NIT: {{empresa.nit}} • {{empresa.direccion}}<br>
+                Tel: {{empresa.telefono}}{% if empresa.email %} • {{empresa.email}}{% endif %}
+            </div>
+        </div>
+        
+        <div class="document-section">
+            <div class="doc-type">{{documento.tipo_nombre}}</div>
+            <div class="doc-number">N° {{documento.consecutivo}}</div>
+            <div class="doc-dates">
+                <span class="date-label">Fecha:</span> {{documento.fecha_emision}}<br>
+                {% if documento.fecha_vencimiento %}<span class="date-label">Vence:</span> {{documento.fecha_vencimiento}}<br>{% endif %}
+                {% if documento.vendedor %}<span class="date-label">Vendedor:</span> {{documento.vendedor}}{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- INFORMACIÓN DEL CLIENTE -->
+    <div class="client-section">
+        <div class="client-header">Cliente / Proveedor</div>
+        <div class="client-name">{{tercero.razon_social}}</div>
+        <div class="client-info">
+            NIT/CC: {{tercero.nit}}{% if tercero.direccion %} • {{tercero.direccion}}{% endif %}{% if tercero.telefono %} • Tel: {{tercero.telefono}}{% endif %}
+        </div>
+    </div>
+
+    <!-- TABLA DE PRODUCTOS -->
+    <table class="products-table">
+        <thead>
+            <tr>
+                <th width="10%">Código</th>
+                <th width="40%">Descripción del Producto/Servicio</th>
+                <th width="8%" class="text-center">Cant.</th>
+                <th width="12%" class="text-right">Precio Unit.</th>
+                <th width="10%" class="text-right">Descuento</th>
+                <th width="20%" class="text-right">Valor Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="item-code">{{item.producto_codigo}}</td>
+                <td class="item-description">{{item.producto_nombre}}</td>
+                <td class="item-quantity">{{item.cantidad}}</td>
+                <td class="item-price">{{item.precio_unitario}}</td>
+                <td class="item-price">{{item.descuento|default('0.00')}}</td>
+                <td class="item-amount">{{item.subtotal}}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- TOTALES Y DISCRIMINACIÓN FISCAL -->
+    <div class="totals-container">
+        <div class="notes-area">
+            {% if totales.valor_letras %}
+            <div class="amount-words">
+                SON: {{totales.valor_letras}}
+            </div>
+            {% endif %}
+
+            {% if documento.observaciones %}
+            <div class="observations">
+                <strong>Observaciones:</strong><br>
+                {{documento.observaciones}}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="totals-panel">
+            <!-- SUBTOTAL -->
+            <div class="total-line subtotal-line">
+                <span class="total-label">Subtotal:</span>
+                <span class="total-value">{{totales.subtotal}}</span>
+            </div>
+            
+            <!-- DESCUENTOS -->
+            {% if totales.descuentos and totales.descuentos != '0.00' %}
+            <div class="total-line">
+                <span class="total-label">Descuentos:</span>
+                <span class="total-value">-{{totales.descuentos}}</span>
+            </div>
+            {% endif %}
+            
+            <!-- DISCRIMINACIÓN DE BASES GRAVABLES -->
+            {% if totales.base_exenta and totales.base_exenta != '0.00' %}
+            <div class="total-line base-line">
+                <span class="total-label">Base Exenta (0%):</span>
+                <span class="total-value">{{totales.base_exenta}}</span>
+            </div>
+            {% endif %}
+            
+            {% if totales.base_gravable_5 and totales.base_gravable_5 != '0.00' %}
+            <div class="total-line base-line">
+                <span class="total-label">Base Gravable (5%):</span>
+                <span class="total-value">{{totales.base_gravable_5}}</span>
+            </div>
+            {% endif %}
+            
+            {% if totales.base_gravable_19 and totales.base_gravable_19 != '0.00' %}
+            <div class="total-line base-line">
+                <span class="total-label">Base Gravable (19%):</span>
+                <span class="total-value">{{totales.base_gravable_19}}</span>
+            </div>
+            {% endif %}
+            
+            <!-- DISCRIMINACIÓN DE IMPUESTOS -->
+            {% if totales.iva_5 and totales.iva_5 != '0.00' %}
+            <div class="total-line tax-line">
+                <span class="total-label">IVA (5%):</span>
+                <span class="total-value">{{totales.iva_5}}</span>
+            </div>
+            {% endif %}
+            
+            {% if totales.iva_19 and totales.iva_19 != '0.00' %}
+            <div class="total-line tax-line">
+                <span class="total-label">IVA (19%):</span>
+                <span class="total-value">{{totales.iva_19}}</span>
+            </div>
+            {% endif %}
+            
+            <!-- RETENCIONES -->
+            {% if totales.retencion and totales.retencion != '0.00' %}
+            <div class="total-line">
+                <span class="total-label">Retención:</span>
+                <span class="total-value">-{{totales.retencion}}</span>
+            </div>
+            {% endif %}
+            
+            <!-- TOTAL FINAL -->
+            <div class="total-line">
+                <span class="total-label">TOTAL A PAGAR:</span>
+                <span class="total-value">{{totales.total}}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- PIE DE PÁGINA EMPRESARIAL -->
+    <div class="footer-area">
+        <div class="legal-notice">
+            Esta factura se asimila en todos sus efectos a una letra de cambio de conformidad con el artículo 774 del Código de Comercio. 
+            Los pagos realizados después del vencimiento causarán intereses de mora según las tasas legales vigentes.
+        </div>
+
+        <div class="signature-grid">
+            <div class="signature-field">
+                <div class="signature-line">Elaboró</div>
+            </div>
+            <div class="signature-field">
+                <div class="signature-line">Revisó</div>
+            </div>
+            <div class="signature-field">
+                <div class="signature-line">Aprobó</div>
+            </div>
+            <div class="signature-field">
+                <div class="signature-line">Recibí Conforme</div>
+            </div>
+        </div>
+
+        <div class="footer-brand">
+            Gracias por su confianza • Powered by ContaPY Enterprise
+        </div>
+    </div>
+</body>
+</html>
+''',
+
     'reports/inventarios_y_balances_report.html': r'''
 <!DOCTYPE html>
 <html lang="es">
@@ -2560,7 +3348,7 @@ TEMPLATES_EMPAQUETADOS = {
 <body>
 
     <div class="header">
-        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
+        <h1>{{ empresa.razon_social }}</h1>
         <h2>NIT: {{ empresa.nit }}</h2>
         <p><strong>Libro de Inventarios y Balances (Estado de Situación Financiera)</strong></p>
         <p>Con corte al {{ fecha_corte.strftime('%d de %B de %Y') }}</p>
@@ -2620,6 +3408,530 @@ TEMPLATES_EMPAQUETADOS = {
     </table>
 
 </body>
+</html>
+''',
+
+    'reports/invoice_template.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{{documento.tipo_nombre}}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #1f2937;
+            font-size: 9px;
+            margin: 0;
+            padding: 12px;
+            line-height: 1.3;
+            background: #ffffff;
+        }
+
+        /* ENCABEZADO EMPRESARIAL */
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .company-section {
+            width: 58%;
+        }
+
+        .company-logo {
+            max-height: 42px;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .company-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: #111827;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            letter-spacing: 0.3px;
+        }
+
+        .company-details {
+            color: #6b7280;
+            font-size: 8px;
+            line-height: 1.4;
+        }
+
+        .document-section {
+            width: 38%;
+            text-align: right;
+        }
+
+        .doc-type {
+            font-size: 16px;
+            font-weight: 800;
+            color: #1d4ed8;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            letter-spacing: -0.2px;
+        }
+
+        .doc-number {
+            font-size: 14px;
+            color: #dc2626;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .doc-dates {
+            font-size: 8px;
+            color: #6b7280;
+            line-height: 1.4;
+        }
+
+        .date-label {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        /* INFORMACIÓN CLIENTE */
+        .client-section {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 16px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .client-header {
+            font-size: 7px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .client-name {
+            font-size: 11px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 3px;
+        }
+
+        .client-info {
+            color: #64748b;
+            font-size: 8px;
+            line-height: 1.4;
+        }
+
+        /* TABLA PRODUCTOS */
+        /* CONFIGURACIÓN DE PÁGINA PARA PDF (WeasyPrint) */
+        @page {
+            size: letter;
+            margin: 1cm;
+        }
+
+        .products-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            font-size: 8px;
+        }
+
+        .products-table th {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: #ffffff;
+            padding: 8px 6px;
+            font-size: 7px;
+            text-transform: uppercase;
+            font-weight: 600;
+            text-align: left;
+            letter-spacing: 0.5px;
+        }
+
+        .products-table th.text-center {
+            text-align: center;
+        }
+
+        .products-table th.text-right {
+            text-align: right;
+        }
+
+        .products-table td {
+            padding: 6px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+
+        .products-table tr {
+            page-break-inside: avoid;
+            /* Evita que una fila se corte a la mitad */
+        }
+
+        .products-table tbody tr:nth-child(even) {
+            background-color: #fafbfc;
+        }
+
+        .products-table tbody tr:hover {
+            background-color: #f0f9ff;
+        }
+
+        .item-code {
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+            font-size: 7px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .item-description {
+            font-size: 8px;
+            color: #1e293b;
+            font-weight: 500;
+        }
+
+        .item-quantity {
+            text-align: center;
+            font-weight: 700;
+            color: #1d4ed8;
+            font-size: 8px;
+        }
+
+        .item-price,
+        .item-amount {
+            text-align: right;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+            font-size: 8px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        /* SECCIÓN TOTALES PROFESIONAL */
+        .totals-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .notes-area {
+            width: 52%;
+        }
+
+        .amount-words {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            color: #991b1b;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 7px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            border-left: 4px solid #dc2626;
+            letter-spacing: 0.3px;
+        }
+
+        .observations {
+            background: #fffbeb;
+            border: 1px solid #f59e0b;
+            border-left: 4px solid #d97706;
+            padding: 8px;
+            border-radius: 4px;
+            color: #92400e;
+            font-size: 7px;
+            line-height: 1.4;
+        }
+
+        .totals-panel {
+            width: 45%;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .total-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 12px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 8px;
+        }
+
+        .total-line:last-child {
+            border-bottom: none;
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 10px;
+        }
+
+        .total-line.subtotal-line {
+            background: #f8fafc;
+            font-weight: 600;
+        }
+
+        .total-line.tax-line {
+            background: #fef7ff;
+            color: #7c2d12;
+        }
+
+        .total-line.base-line {
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .total-label {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .total-line:last-child .total-label {
+            color: #ffffff;
+        }
+
+        .total-line.tax-line .total-label,
+        .total-line.base-line .total-label {
+            font-weight: 700;
+        }
+
+        .total-value {
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+            font-weight: 700;
+            text-align: right;
+            min-width: 85px;
+        }
+
+        /* PIE DE PÁGINA EMPRESARIAL */
+        .footer-area {
+            margin-top: 28px;
+            padding-top: 16px;
+            border-top: 2px solid #f1f5f9;
+        }
+
+        .legal-notice {
+            background: #f8fafc;
+            padding: 8px 10px;
+            border-radius: 4px;
+            color: #64748b;
+            font-size: 7px;
+            line-height: 1.4;
+            margin-bottom: 12px;
+            text-align: justify;
+        }
+
+        .signature-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 16px;
+        }
+
+        .signature-field {
+            text-align: center;
+            padding-top: 28px;
+        }
+
+        .signature-line {
+            border-top: 1.5px solid #64748b;
+            padding-top: 4px;
+            font-size: 7px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .footer-brand {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 7px;
+            font-style: italic;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- ENCABEZADO EMPRESARIAL -->
+    <div class="header-container">
+        <div class="company-section">
+            {% if empresa.logo_url %}
+            <img src="{{empresa.logo_url}}" class="company-logo" alt="Logo Empresa">
+            {% endif %}
+            <div class="company-name">{{empresa.razon_social}}</div>
+            <div class="company-details">
+                NIT: {{empresa.nit}} • {{empresa.direccion}}<br>
+                Tel: {{empresa.telefono}}{% if empresa.email %} • {{empresa.email}}{% endif %}
+            </div>
+        </div>
+
+        <div class="document-section">
+            <div class="doc-type">{{documento.tipo_nombre}}</div>
+            <div class="doc-number">N° {{documento.consecutivo}}</div>
+            <div class="doc-dates">
+                <span class="date-label">Fecha:</span> {{documento.fecha_emision}}<br>
+                {% if documento.fecha_vencimiento %}<span class="date-label">Vence:</span>
+                {{documento.fecha_vencimiento}}<br>{% endif %}
+                {% if documento.vendedor %}<span class="date-label">Vendedor:</span> {{documento.vendedor}}{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- INFORMACIÓN DEL CLIENTE -->
+    <div class="client-section">
+        <div class="client-header">Cliente / Proveedor</div>
+        <div class="client-name">{{tercero.razon_social}}</div>
+        <div class="client-info">
+            NIT/CC: {{tercero.nit}}{% if tercero.direccion %} • {{tercero.direccion}}{% endif %}{% if tercero.telefono
+            %} • Tel: {{tercero.telefono}}{% endif %}
+        </div>
+    </div>
+
+    <!-- TABLA DE PRODUCTOS -->
+    <table class="products-table">
+        <thead>
+            <tr>
+                <th width="10%">Código</th>
+                <th width="40%">Descripción del Producto/Servicio</th>
+                <th width="8%" class="text-center">Cant.</th>
+                <th width="12%" class="text-right">Precio Unit.</th>
+                <th width="10%" class="text-right">Descuento</th>
+                <th width="20%" class="text-right">Valor Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="item-code">{{item.producto_codigo}}</td>
+                <td class="item-description">{{item.producto_nombre}}</td>
+                <td class="item-quantity">{{item.cantidad}}</td>
+                <td class="item-price">{{item.precio_unitario}}</td>
+                <td class="item-price">{{item.descuento|default('0.00')}}</td>
+                <td class="item-amount">{{item.subtotal}}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- TOTALES Y DISCRIMINACIÓN FISCAL -->
+    <div class="totals-container">
+        <div class="notes-area">
+            {% if totales.valor_letras %}
+            <div class="amount-words">
+                SON: {{totales.valor_letras}}
+            </div>
+            {% endif %}
+
+            {% if documento.observaciones %}
+            <div class="observations">
+                <strong>Observaciones:</strong><br>
+                {{documento.observaciones}}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="totals-panel">
+            <!-- SUBTOTAL -->
+            <div class="total-line subtotal-line">
+                <span class="total-label">Subtotal:</span>
+                <span class="total-value">{{totales.subtotal}}</span>
+            </div>
+
+            <!-- DESCUENTOS -->
+            {% if totales.descuentos and totales.descuentos != '0.00' %}
+            <div class="total-line">
+                <span class="total-label">Descuentos:</span>
+                <span class="total-value">-{{totales.descuentos}}</span>
+            </div>
+            {% endif %}
+
+            <!-- DISCRIMINACIÓN DE BASES GRAVABLES -->
+            {% if totales.base_exenta and totales.base_exenta != '0.00' %}
+            <div class="total-line base-line">
+                <span class="total-label">Base Exenta (0%):</span>
+                <span class="total-value">{{totales.base_exenta}}</span>
+            </div>
+            {% endif %}
+
+            {% if totales.base_gravable_5 and totales.base_gravable_5 != '0.00' %}
+            <div class="total-line base-line">
+                <span class="total-label">Base Gravable (5%):</span>
+                <span class="total-value">{{totales.base_gravable_5}}</span>
+            </div>
+            {% endif %}
+
+            {% if totales.base_gravable_19 and totales.base_gravable_19 != '0.00' %}
+            <div class="total-line base-line">
+                <span class="total-label">Base Gravable (19%):</span>
+                <span class="total-value">{{totales.base_gravable_19}}</span>
+            </div>
+            {% endif %}
+
+            <!-- DISCRIMINACIÓN DE IMPUESTOS -->
+            {% if totales.iva_5 and totales.iva_5 != '0.00' %}
+            <div class="total-line tax-line">
+                <span class="total-label">IVA (5%):</span>
+                <span class="total-value">{{totales.iva_5}}</span>
+            </div>
+            {% endif %}
+
+            {% if totales.iva_19 and totales.iva_19 != '0.00' %}
+            <div class="total-line tax-line">
+                <span class="total-label">IVA (19%):</span>
+                <span class="total-value">{{totales.iva_19}}</span>
+            </div>
+            {% endif %}
+
+            <!-- RETENCIONES -->
+            {% if totales.retencion and totales.retencion != '0.00' %}
+            <div class="total-line">
+                <span class="total-label">Retención:</span>
+                <span class="total-value">-{{totales.retencion}}</span>
+            </div>
+            {% endif %}
+
+            <!-- TOTAL FINAL -->
+            <div class="total-line">
+                <span class="total-label">TOTAL A PAGAR:</span>
+                <span class="total-value">{{totales.total}}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- PIE DE PÁGINA EMPRESARIAL -->
+    <div class="footer-area">
+        <div class="legal-notice">
+            Esta factura se asimila en todos sus efectos a una letra de cambio de conformidad con el artículo 774 del
+            Código de Comercio.
+            Los pagos realizados después del vencimiento causarán intereses de mora según las tasas legales vigentes.
+        </div>
+
+        <div class="signature-grid">
+            <div class="signature-field">
+                <div class="signature-line">Elaboró</div>
+            </div>
+            <div class="signature-field">
+                <div class="signature-line">Revisó</div>
+            </div>
+            <div class="signature-field">
+                <div class="signature-line">Aprobó</div>
+            </div>
+            <div class="signature-field">
+                <div class="signature-line">Recibí Conforme</div>
+            </div>
+        </div>
+
+        <div class="footer-brand">
+            Gracias por su confianza • Powered by ContaPY Enterprise
+        </div>
+    </div>
+</body>
+
 </html>
 ''',
 
@@ -2736,29 +4048,20 @@ TEMPLATES_EMPAQUETADOS = {
         <h2>NIT: {{ empresa_nit }}</h2>
         <p><strong>Libro Diario Detallado</strong></p>
         <p>Desde el {{ fecha_inicio }} hasta el {{ fecha_fin }}</p>
-        {% if filtros_aplicados %}
-        <p style="font-size: 9px; color: #666; margin-top: 5px;"><strong>Filtros aplicados:</strong> {{ filtros_aplicados }}</p>
-        {% endif %}
     </div>
 
     <table>
         <colgroup>
+            <col style="width: 12%"> <!-- Documento -->
+            <col style="width: 20%"> <!-- Beneficiario -->
+            <col style="width: 20%"> <!-- Cuenta -->
+            <col style="width: 28%"> <!-- Concepto -->
             {% if has_cost_centers %}
-                <col style="width: 11%"> <!-- Documento -->
-                <col style="width: 15%"> <!-- Beneficiario -->
-                <col style="width: 15%"> <!-- Cuenta -->
-                <col style="width: 21%"> <!-- Concepto -->
-                <col style="width: 8%">  <!-- C. Costo -->
-                <col style="width: 15%"> <!-- Debito -->
-                <col style="width: 15%"> <!-- Credito -->
-            {% else %}
-                <col style="width: 12%"> <!-- Documento -->
-                <col style="width: 20%"> <!-- Beneficiario -->
-                <col style="width: 20%"> <!-- Cuenta -->
-                <col style="width: 20%"> <!-- Concepto -->
-                <col style="width: 14%"> <!-- Debito -->
-                <col style="width: 14%"> <!-- Credito -->
+            <col style="width: 20%"> <!-- Reduced Concepto if CC exists? -->
+            <col style="width: 8%"> <!-- CC -->
             {% endif %}
+            <col style="width: 10%"> <!-- Debito -->
+            <col style="width: 10%"> <!-- Credito -->
         </colgroup>
         <thead>
             <tr>
@@ -3272,26 +4575,84 @@ TEMPLATES_EMPAQUETADOS = {
     'reports/movimiento_analitico_report.html': r'''
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <title>Reporte Analítico de Movimientos</title>
     <style>
-        body { font-family: sans-serif; font-size: 10px; }
-        .header { text-align: center; margin-bottom: 20px; }
-        .header h1 { margin: 0; font-size: 16px; }
-        .header h2 { margin: 0; font-size: 12px; font-weight: normal; }
-        .filters { margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
-        .filters p { margin: 2px 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ddd; padding: 4px; text-align: left; }
-        th { background-color: #f2f2f2; font-weight: bold; }
-        .text-right { text-align: right; }
-        .number { font-family: monospace; } /* Para alinear números */
-        .total-row { font-weight: bold; background-color: #e8e8e8; }
-        .positive { color: green; }
-        .negative { color: red; }
+        body {
+            font-family: sans-serif;
+            font-size: 10px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .header h2 {
+            margin: 0;
+            font-size: 12px;
+            font-weight: normal;
+        }
+
+        .filters {
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+        }
+
+        .filters p {
+            margin: 2px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 4px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .number {
+            font-family: monospace;
+        }
+
+        /* Para alinear números */
+        .total-row {
+            font-weight: bold;
+            background-color: #e8e8e8;
+        }
+
+        .positive {
+            color: green;
+        }
+
+        .negative {
+            color: red;
+        }
     </style>
 </head>
+
 <body>
     <div class="header">
         <h1>{{ empresa_nombre }}</h1>
@@ -3318,30 +4679,79 @@ TEMPLATES_EMPAQUETADOS = {
             </tr>
         </thead>
         <tbody>
-            {% if data.items %}
-                {% for item in data.items %}
-                <tr>
-                    <td>({{ item.producto_codigo }}) {{ item.producto_nombre }}</td>
-                    <td class="text-right number">{{ item.saldo_inicial | format_value(filtros.vista_por_valor) }}</td>
-                    <td class="text-right number positive">{{ item.total_entradas | format_value(filtros.vista_por_valor) }}</td>
-                    <td class="text-right number negative">{{ item.total_salidas | format_value(filtros.vista_por_valor) }}</td>
-                    <td class="text-right number">{{ item.saldo_final | format_value(filtros.vista_por_valor) }}</td>
-                </tr>
-                {% endfor %}
+            {% if data['items'] %}
+            {% for item in data['items'] %}
+            <tr>
+                <td>({{ item.producto_codigo }}) {{ item.producto_nombre }}</td>
+                <td class="text-right number">
+                    {% if filtros.vista_por_valor %}
+                    {{ item.saldo_inicial_valor | format_value(true) }}
+                    {% else %}
+                    {{ item.saldo_inicial_cantidad | format_value(false) }}
+                    {% endif %}
+                </td>
+                <td class="text-right number positive">
+                    {% if filtros.vista_por_valor %}
+                    {{ item.total_entradas_valor | format_value(true) }}
+                    {% else %}
+                    {{ item.total_entradas_cantidad | format_value(false) }}
+                    {% endif %}
+                </td>
+                <td class="text-right number negative">
+                    {% if filtros.vista_por_valor %}
+                    {{ item.total_salidas_valor | format_value(true) }}
+                    {% else %}
+                    {{ item.total_salidas_cantidad | format_value(false) }}
+                    {% endif %}
+                </td>
+                <td class="text-right number">
+                    {% if filtros.vista_por_valor %}
+                    {{ item.saldo_final_valor | format_value(true) }}
+                    {% else %}
+                    {{ item.saldo_final_cantidad | format_value(false) }}
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
             {% else %}
-                <tr>
-                    <td colspan="5" style="text-align: center; font-style: italic;">No se encontraron resultados para los filtros seleccionados.</td>
-                </tr>
+            <tr>
+                <td colspan="5" style="text-align: center; font-style: italic;">No se encontraron resultados para los
+                    filtros seleccionados.</td>
+            </tr>
             {% endif %}
         </tbody>
-        {% if data.items %}
+        {% if data['items'] %}
         <tfoot class="total-row">
             <tr>
                 <td>TOTALES GENERALES ({{ 'Valor' if filtros.vista_por_valor else 'Cantidad' }})</td>
-                <td class="text-right number">{{ data.totales.saldo_inicial | format_value(filtros.vista_por_valor) }}</td>
-                <td class="text-right number positive">{{ data.totales.total_entradas | format_value(filtros.vista_por_valor) }}</td>
-                <td class="text-right number negative">{{ data.totales.total_salidas | format_value(filtros.vista_por_valor) }}</td>
-                <td class="text-right number">{{ data.totales.saldo_final | format_value(filtros.vista_por_valor) }}</td>
+                <td class="text-right number">
+                    {% if filtros.vista_por_valor %}
+                    {{ data.totales.saldo_inicial_valor | format_value(true) }}
+                    {% else %}
+                    {{ data.totales.saldo_inicial_cantidad | format_value(false) }}
+                    {% endif %}
+                </td>
+                <td class="text-right number positive">
+                    {% if filtros.vista_por_valor %}
+                    {{ data.totales.total_entradas_valor | format_value(true) }}
+                    {% else %}
+                    {{ data.totales.total_entradas_cantidad | format_value(false) }}
+                    {% endif %}
+                </td>
+                <td class="text-right number negative">
+                    {% if filtros.vista_por_valor %}
+                    {{ data.totales.total_salidas_valor | format_value(true) }}
+                    {% else %}
+                    {{ data.totales.total_salidas_cantidad | format_value(false) }}
+                    {% endif %}
+                </td>
+                <td class="text-right number">
+                    {% if filtros.vista_por_valor %}
+                    {{ data.totales.saldo_final_valor | format_value(true) }}
+                    {% else %}
+                    {{ data.totales.saldo_final_cantidad | format_value(false) }}
+                    {% endif %}
+                </td>
             </tr>
         </tfoot>
         {% endif %}
@@ -3349,13 +4759,14 @@ TEMPLATES_EMPAQUETADOS = {
 
     {# Filtro personalizado de Jinja2 para formatear números/moneda #}
     {% macro format_value(num, is_currency) %}
-        {% if is_currency %}
-            {{ "$ {:,.0f}".format(num | float) }}
-        {% else %}
-            {{ "{:,.2f}".format(num | float) }}
-        {% endif %}
+    {% if is_currency %}
+    {{ "$ {:,.0f}".format(num | float) }}
+    {% else %}
+    {{ "{:,.2f}".format(num | float) }}
+    {% endif %}
     {% endmacro %}
 </body>
+
 </html>
 ''',
 
@@ -3366,10 +4777,6 @@ TEMPLATES_EMPAQUETADOS = {
     <meta charset="UTF-8">
     <title>Rentabilidad por Documento</title>
     <style>
-        @page {
-            size: letter landscape;
-            margin: 1cm;
-        }
         body { font-family: Arial, sans-serif; font-size: 10pt; }
         .header { text-align: center; margin-bottom: 20px; }
         .header h1 { font-size: 16pt; margin-bottom: 5px; }
@@ -3388,9 +4795,9 @@ TEMPLATES_EMPAQUETADOS = {
 </head>
 <body>
     <div class="header">
-        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
+        <h1>{{ empresa.razon_social }}</h1>
         <p>NIT: {{ empresa.nit }}</p>
-        <p>Reporte Generado: {{ now()|date("%d/%m/%Y %H:%M") }}</p>
+        <p>Reporte Generado: {{ now()|date("d/m/Y H:i") }}</p>
     </div>
 
     <div class="header-section">
@@ -3400,7 +4807,7 @@ TEMPLATES_EMPAQUETADOS = {
     <div class="info-box">
         <p><strong>Documento Auditado:</strong> {{ data.documento_ref }}</p>
         <p><strong>Tercero:</strong> {{ data.tercero_nombre }}</p>
-        <p><strong>Fecha de Documento:</strong> {{ data.fecha|date("%d/%m/%Y") }}</p>
+        <p><strong>Fecha de Documento:</strong> {{ data.fecha|date("d/m/Y") }}</p>
         <p><strong>Filtro Usado:</strong> Código {{ filtros.tipo_documento_codigo|default('N/A') }} y Número {{ filtros.numero_documento|default('N/A') }}</p>
     </div>
 
@@ -3856,7 +5263,7 @@ TEMPLATES_EMPAQUETADOS = {
 </head>
 <body>
     <div class="header">
-        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
+        <h1>{{ empresa.razon_social }}</h1>
         <h3>NIT: {{ empresa.nit }}</h3>
         <h2>Explorador de Transacciones de {{ filtros.tipo_reporte.capitalize() }}</h2>
         <p>Período del {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
@@ -4250,121 +5657,242 @@ TEMPLATES_EMPAQUETADOS = {
     'reports/super_informe_report.html': r'''
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Informe</title>
-    <style>
-        @page { size: letter landscape; margin: 1cm; }
-        body { font-family: sans-serif; font-size: 7px; }
-        h1 { font-size: 12px; margin: 0; text-align: center; }
-        h2 { font-size: 10px; margin: 2px 0; text-align: center; font-weight: normal; }
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 10px; }
-        th, td { border: 1px solid #ccc; padding: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-        th { background: #eee; font-weight: bold; text-align: center; }
-        .text-right { text-align: right; }
-    </style>
-</head>
-<body>
-    <h1>{{ empresa.razon_social }} ({{ empresa.nit }})</h1>
-    <h2>{{ report_title }} - Generado: {{ fecha_generacion }}</h2>
 
-    <table>
-        {% if column_widths %}
-        <colgroup>
-            {% for width in column_widths %}<col style="width:{{ width }}">{% endfor %}
-        </colgroup>
-        {% endif %}
-        <thead>
-            <tr>{% for h in headers %}<th>{{ h }}</th>{% endfor %}</tr>
-        </thead>
-        <tbody>
-            {% for r in processed_rows %}
-            <tr>
-                {% for c in r.cells %}<td>{{ c }}</td>{% endfor %}
-            </tr>
-            {% endfor %}
-        </tbody>
-        {% if show_totals %}
-        <tfoot>
-            <tr>
-                <td colspan="{{ headers|length - 2 }}" class="text-right">TOTALES:</td>
-                <td class="text-right">{{ totales.debito }}</td>
-                <td class="text-right">{{ totales.credito }}</td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td colspan="{{ headers|length - 2 }}" class="text-right">DIFERENCIA:</td>
-                <td colspan="2" style="text-align:center">{{ totales.diferencia }}</td>
-                <td></td>
-                <td></td>
-            </tr>
-        </tfoot>
-        {% endif %}
-    </table>
-</body>
-</html>
-''',
-
-    'reports/tercero_account_ledger_report.html': r'''
-<!DOCTYPE html>
-<html lang="es">
 <head>
+    <title>Auditoría Contable Avanzada</title>
     <meta charset="UTF-8">
-    <title>Auxiliar por Tercero y Cuenta</title>
     <style>
-        @page { 
-            size: letter landscape; 
-            margin: 1.5cm; 
+        @page {
+            size: letter landscape;
+            margin: 1.5cm;
         }
-        body { 
-            font-family: Arial, sans-serif; 
+
+        body {
+            font-family: Arial, sans-serif;
             font-size: 8px;
             color: #333;
         }
+
         .header {
             text-align: center;
             border-bottom: 1px solid #ccc;
             padding-bottom: 10px;
             margin-bottom: 15px;
         }
-        h1, h2 { 
+
+        h1,
+        h2 {
             margin: 0;
         }
-        h1 { font-size: 14px; }
-        h2 { font-size: 12px; font-weight: normal; }
+
+        h1 {
+            font-size: 14px;
+        }
+
+        h2 {
+            font-size: 12px;
+            font-weight: normal;
+        }
+
         .report-info {
             margin-bottom: 15px;
             font-size: 9px;
         }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
         }
-        th, td { 
-            border: 1px solid #ddd; 
-            padding: 4px; 
-            text-align: left; 
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 4px;
+            text-align: left;
             word-wrap: break-word;
         }
-        th { 
-            background-color: #f2f2f2; 
+
+        th {
+            background-color: #f2f2f2;
             text-align: center;
             font-weight: bold;
         }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        /* Estilos para filas basados en el estado pre-procesado */
+        .ANULADO {
+            background-color: #fffbe6;
+        }
+
+        .ELIMINADO {
+            background-color: #ffebee;
+        }
+
+        /* Se eliminó el tachado */
+
+        tfoot td {
+            font-weight: bold;
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social or 'Nombre de Empresa no Disponible' }}</h1>
+        <h2>NIT: {{ empresa.nit or 'N/A' }}</h2>
+    </div>
+
+    <div class="report-info">
+
+        <h2>{{ report_title }}</h2>
+        <p>Generado el: {{ fecha_generacion }}</p>
+    </div>
+
+    <table>
+        {% if column_widths %}
+        <colgroup>
+            {% for width in column_widths %}
+            <col style="width: {{ width }}">
+            {% endfor %}
+        </colgroup>
+        {% endif %}
+        <thead>
+            <tr>
+                {% for header in headers %}
+                <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row_data in processed_rows %}
+            <tr class="{{ row_data.estado }}">
+
+                {% for cell in row_data.cells %}
+
+                <td>{{ cell|default('', true) }}</td>
+                {% endfor %}
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="{{ headers|length }}">No se encontraron resultados que coincidan con los criterios de
+                    búsqueda.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+        {% if show_totals %}
+        <tfoot>
+            <tr>
+                <td colspan="{{ headers|length - 2 }}" class="text-right"><strong>TOTALES:</strong></td>
+                <td class="text-right"><strong>{{ totales.debito }}</strong></td>
+                <td class="text-right"><strong>{{ totales.credito }}</strong></td>
+            </tr>
+            <tr>
+                <td colspan="{{ headers|length - 2 }}" class="text-right"><strong>DIFERENCIA:</strong></td>
+                <td colspan="2" class="text-center"><strong>{{ totales.diferencia }}</strong></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+
+    </table>
+</body>
+
+</html>
+''',
+
+    'reports/tercero_account_ledger_report.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Auxiliar por Tercero y Cuenta</title>
+    <style>
+        @page {
+            size: letter landscape;
+            margin: 1.5cm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 8px;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        h1,
+        h2 {
+            margin: 0;
+        }
+
+        h1 {
+            font-size: 14px;
+        }
+
+        h2 {
+            font-size: 12px;
+            font-weight: normal;
+        }
+
+        .report-info {
+            margin-bottom: 15px;
+            font-size: 9px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 4px;
+            text-align: left;
+            word-wrap: break-word;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
         .total-global-row td {
             font-weight: bold;
             background-color: #e0e0e0;
             border-top: 2px solid #333;
         }
+
         .cuenta-header-row td {
             font-weight: bold;
             background-color: #f2f2f2;
         }
     </style>
 </head>
+
 <body>
     <div class="header">
         <h1>{{ empresa_nombre }}</h1>
@@ -4400,43 +5928,52 @@ TEMPLATES_EMPAQUETADOS = {
             </tr>
 
             {% for cuenta_id, grupo_movimientos in movimientos | groupby('cuenta_id') %}
-                {% set movimientos_lista = list(grupo_movimientos) %}
-                {% set primer_mov = movimientos_lista[0] %}
-                <tr class="cuenta-header-row">
-                    <td colspan="{{ 7 if has_cost_centers else 6 }}">
-                        <strong>Cuenta: {{ primer_mov.cuenta_codigo }} - {{ primer_mov.cuenta_nombre }}</strong>
-                    </td>
-                </tr>
-                <tr style="background-color: #fafafa;">
-                    <td colspan="{{ 6 if has_cost_centers else 5 }}"><i>Saldo Anterior de la Cuenta</i></td>
-                    <td class="text-right">
-                        <i>{{ "{:,.2f}".format(saldos_iniciales_por_cuenta.get(cuenta_id | string, 0)) }}</i>
-                    </td>
-                </tr>
+            {% set movimientos_lista = list(grupo_movimientos) %}
+            {% set primer_mov = movimientos_lista[0] %}
+            <tr class="cuenta-header-row">
+                <td colspan="{{ 7 if has_cost_centers else 6 }}">
+                    <strong>Cuenta: {{ primer_mov.cuenta_codigo }} - {{ primer_mov.cuenta_nombre }}</strong>
+                </td>
+            </tr>
+            <tr style="background-color: #fafafa;">
+                <td colspan="{{ 6 if has_cost_centers else 5 }}"><i>Saldo Anterior de la Cuenta</i></td>
+                <td class="text-right">
+                    <i>{{ "{:,.2f}".format(saldos_iniciales_por_cuenta.get(cuenta_id | string, 0)) }}</i>
+                </td>
+            </tr>
 
-                {% for mov in movimientos_lista %}
-                <tr>
-                    <td>{{ mov.fecha.strftime('%Y-%m-%d') if mov.fecha else '' }}</td>
-                    <td>{{ mov.tipo_documento }}-{{ mov.numero_documento }}</td>
-                    <td>{{ mov.concepto }}</td>
-                    {% if has_cost_centers %}
-                    <td>{{ mov.centro_costo_codigo or '' }}</td>
-                    {% endif %}
-                    <td class="text-right">{{ "{:,.2f}".format(mov.debito) }}</td>
-                    <td class="text-right">{{ "{:,.2f}".format(mov.credito) }}</td>
-                    <td class="text-right">{{ "{:,.2f}".format(mov.saldo_parcial) }}</td>
-                </tr>
-                {% endfor %}
+            {% for mov in movimientos_lista %}
+            <tr>
+                <td>{{ mov.fecha.strftime('%Y-%m-%d') if mov.fecha else '' }}</td>
+                <td>{{ mov.tipo_documento }}-{{ mov.numero_documento }}</td>
+                <td>{{ mov.concepto }}</td>
+                {% if has_cost_centers %}
+                <td>{{ mov.centro_costo_codigo or '' }}</td>
+                {% endif %}
+                <td class="text-right">{{ "{:,.2f}".format(mov.debito) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(mov.credito) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(mov.saldo_parcial) }}</td>
+            </tr>
+            {% endfor %}
             {% endfor %}
 
-            <tr class="total-global-row">
-                <td colspan="{{ 6 if has_cost_centers else 5 }}"><strong>SALDO FINAL GLOBAL</strong></td>
+            <tr class="total-global-row" style="background-color: #f1f5f9;">
+                <td colspan="{{ 4 if has_cost_centers else 3 }}"><strong>TOTALES MOVIMIENTOS DEL PERIODO</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(total_debito_global) }}</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(total_credito_global) }}</strong></td>
+                <td></td>
+            </tr>
+
+            <tr class="total-global-row" style="background-color: #1e293b; color: white;">
+                <td colspan="{{ 6 if has_cost_centers else 5 }}"><strong>SALDO FINAL GLOBAL AL {{ fecha_fin }}</strong>
+                </td>
                 {% set saldo_final_global = (movimientos[-1].saldo_parcial if movimientos else saldo_anterior_global) %}
                 <td class="text-right"><strong>{{ "{:,.2f}".format(saldo_final_global) }}</strong></td>
             </tr>
         </tbody>
     </table>
 </body>
+
 </html>
 ''',
 
@@ -4520,126 +6057,6 @@ TEMPLATES_EMPAQUETADOS = {
     
     <h2>Total Artículos en Alerta: {{ data | length }}</h2>
 
-</body>
-</html>
-''',
-    
-    'reports/comprobante_egreso_template.html': r'''
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Comprobante de Egreso</title>
-    <style>
-        @page { size: letter; margin: 2cm; }
-        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10pt; color: #333; }
-        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #ccc; padding-bottom: 10px; }
-        .header h1 { margin: 0; font-size: 18pt; text-transform: uppercase; color: #000; }
-        .header h2 { margin: 5px 0 0; font-size: 12pt; font-weight: normal; }
-        .header p { margin: 2px 0; font-size: 10pt; color: #666; }
-        
-        .doc-title { text-align: right; margin-bottom: 20px; }
-        .doc-title h3 { margin: 0; font-size: 14pt; color: #444; text-transform: uppercase; background-color: #f9f9f9; display: inline-block; padding: 5px 15px; border: 1px solid #ddd; }
-        
-        .info-grid { display: table; width: 100%; margin-bottom: 20px; }
-        .info-row { display: table-row; }
-        .info-cell { display: table-cell; padding: 4px; border-bottom: 1px solid #eee; }
-        .label { font-weight: bold; color: #555; width: 120px; }
-        
-        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-        .items-table th { background-color: #f0f0f0; border: 1px solid #ccc; padding: 8px; font-weight: bold; text-align: left; font-size: 9pt; }
-        .items-table td { border: 1px solid #ddd; padding: 8px; font-size: 9pt; }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        
-        .totals-section { width: 40%; margin-left: auto; margin-bottom: 30px; }
-        .total-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; }
-        .total-row.final { font-weight: bold; font-size: 11pt; border-bottom: 2px solid #000; border-top: 1px solid #000; margin-top: 5px; padding-top: 5px; }
-        
-        .footer { margin-top: 50px; border-top: 1px solid #ccc; padding-top: 10px; font-size: 8pt; color: #888; text-align: center; }
-        
-        .signatures { margin-top: 60px; display: table; width: 100%; }
-        .sig-box { display: table-cell; width: 33%; text-align: center; vertical-align: bottom; height: 60px; }
-        .sig-line { border-top: 1px solid #000; margin: 0 20px; padding-top: 5px; font-weight: bold; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>{{ empresa.razon_social or 'Consorcio' }}</h1>
-        <h2>NIT: {{ empresa.nit }}</h2>
-        <p>{{ empresa.direccion }} - {{ empresa.telefono }}</p>
-    </div>
-
-    <div class="doc-title">
-        <h3>{{ documento.tipo_nombre }} N° {{ documento.consecutivo }}</h3>
-    </div>
-
-    <div class="info-grid">
-        <div class="info-row">
-            <div class="info-cell label">Fecha:</div>
-            <div class="info-cell">{{ documento.fecha_emision }}</div>
-            <div class="info-cell label">Ciudad:</div>
-            <div class="info-cell">Bogotá D.C.</div>
-        </div>
-        <div class="info-row">
-            <div class="info-cell label">Pagado a:</div>
-            <div class="info-cell"><strong>{{ tercero.razon_social }}</strong></div>
-            <div class="info-cell label">NIT/CC:</div>
-            <div class="info-cell">{{ tercero.nit }}</div>
-        </div>
-        <div class="info-row">
-            <div class="info-cell label">Concepto:</div>
-            <div class="info-cell" colspan="3">{{ documento.observaciones }}</div>
-        </div>
-    </div>
-
-    <table class="items-table">
-        <thead>
-            <tr>
-                <th style="width: 15%;">Código</th>
-                <th style="width: 45%;">Descripción</th>
-                <th style="width: 20%;" class="text-right">Débito</th>
-                <th style="width: 20%;" class="text-right">Crédito</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in items %}
-            <tr>
-                <td>{{ item.producto_codigo }}</td>
-                <td>{{ item.producto_nombre }}</td>
-                <td class="text-right">{{ item.debito_fmt }}</td>
-                <td class="text-right">{{ item.credito_fmt }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <div class="totals-section">
-        <div class="total-row final">
-            <span>TOTAL PAGADO</span>
-            <span>{{ totales.total }}</span>
-        </div>
-        <div style="font-size: 9pt; font-style: italic; margin-top: 5px; text-align: right;">
-            Son: {{ totales.valor_letras }}
-        </div>
-    </div>
-
-    <div class="signatures">
-        <div class="sig-box">
-            <div class="sig-line">Elaboró</div>
-        </div>
-        <div class="sig-box">
-            <div class="sig-line">Aprobó</div>
-        </div>
-        <div class="sig-box">
-            <div class="sig-line">Recibí Conforme</div>
-            <div style="font-size: 8pt;">C.C.</div>
-        </div>
-    </div>
-
-    <div class="footer">
-        Generado automáticamente por Finaxis Cloud
-    </div>
 </body>
 </html>
 ''',

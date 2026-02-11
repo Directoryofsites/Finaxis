@@ -1302,9 +1302,14 @@ def generate_tercero_account_ledger_report(
         }
         final_formatted_movimientos.append(formatted_mov)
 
+    total_debito_global = sum(mov['debito'] for mov in final_formatted_movimientos)
+    total_credito_global = sum(mov['credito'] for mov in final_formatted_movimientos)
+
     return {
         "tercero_info": { "id": tercero_info.id, "nit": tercero_info.nit, "razon_social": tercero_info.razon_social },
         "saldoAnterior": saldo_anterior_global,
+        "totalDebitoGlobal": total_debito_global,
+        "totalCreditoGlobal": total_credito_global,
         "saldos_iniciales_por_cuenta": {str(k): float(v) for k, v in saldos_iniciales_por_cuenta.items()},
         "movimientos": final_formatted_movimientos
     }
@@ -1340,6 +1345,8 @@ def generate_tercero_account_ledger_report_pdf(
         "fecha_inicio": formatted_fecha_inicio,
         "fecha_fin": formatted_fecha_fin,
         "saldo_anterior_global": saldo_anterior_global,
+        "total_debito_global": report_data.get('totalDebitoGlobal', 0),
+        "total_credito_global": report_data.get('totalCreditoGlobal', 0),
         "saldos_iniciales_por_cuenta": saldos_iniciales_por_cuenta, 
         "movimientos": movimientos,
         "has_cost_centers": has_cost_centers
