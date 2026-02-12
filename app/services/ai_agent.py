@@ -6,8 +6,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-api_key = os.getenv("GEMINI_API_KEY")
+api_key = os.getenv("GEMINI_API_KEY", "").strip()
 if api_key:
+    # Debug: Mostrar parte de la llave para verificar que es la NUEVA (Finaxis 2)
+    masked_key = f"{api_key[:10]}...{api_key[-4:]}" if len(api_key) > 15 else "INVALID"
+    print(f"AI_DEBUG: Usando API Key: {masked_key}")
     genai.configure(api_key=api_key)
 
 # --- CARGA DE REGLAS DE ENTRENAMIENTO ---
@@ -189,6 +192,7 @@ async def procesar_comando_natural(texto_usuario: str, contexto: dict | None = N
         'gemini-1.5-pro-002',
         'gemini-1.5-pro-001',
         'gemini-1.5-pro',
+        'gemini-pro',            # Último recurso (Modelo 1.0 legado)
     ]
 
     print(f"AI_DEBUG: google-generativeai version: {genai.__version__}")
