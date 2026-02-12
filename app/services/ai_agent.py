@@ -187,6 +187,8 @@ async def procesar_comando_natural(texto_usuario: str, contexto: dict | None = N
         'gemini-1.5-pro',
     ]
 
+    print(f"AI_DEBUG: google-generativeai version: {genai.__version__}")
+    
     last_error = None
     for model_name in models_to_try:
         try:
@@ -214,6 +216,16 @@ async def procesar_comando_natural(texto_usuario: str, contexto: dict | None = N
             
         except Exception as e:
             print(f"AI_DEBUG: Falló modelo {model_name}. Error: {e}")
+            if "404" in str(e):
+                print("AI_DEBUG: --- LISTANDO MODELOS DISPONIBLES PARA ESTA KEY ---")
+                try:
+                    for m in genai.list_models():
+                        if 'generateContent' in m.supported_generation_methods:
+                            print(f"AI_DEBUG: Disponible: {m.name}")
+                except Exception as list_err:
+                    print(f"AI_DEBUG: Error al listar modelos: {list_err}")
+                print("AI_DEBUG: ------------------------------------------------")
+            
             last_error = e
             continue
 
