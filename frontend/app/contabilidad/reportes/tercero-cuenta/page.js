@@ -538,7 +538,7 @@ function ReporteTerceroCuentaContent() {
         }
         const res = await apiService.get('/reports/tercero-cuenta/get-signed-url', { params });
         const token = res.data.signed_url_token;
-        const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/reports/tercero-cuenta/imprimir?signed_token=${token}`;
+        const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL || ''}/api/reports/tercero-cuenta/imprimir?signed_token=${token}`;
         window.open(pdfUrl, '_blank');
       } else {
         // MODO INVERSO
@@ -553,7 +553,7 @@ function ReporteTerceroCuentaContent() {
 
         const res = await apiService.get('/reports/auxiliar-inverso/get-signed-url', { params });
         const token = res.data.signed_url_token;
-        const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/reports/auxiliar-inverso/imprimir?signed_token=${token}`;
+        const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL || ''}/api/reports/auxiliar-inverso/imprimir?signed_token=${token}`;
         window.open(pdfUrl, '_blank');
       }
 

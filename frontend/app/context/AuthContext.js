@@ -71,8 +71,13 @@ export const AuthProvider = ({ children }) => {
       return true;
     } catch (error) {
       console.error("Fallo de autenticación (initializeAuth):", error.message);
-      setUser(null);
-      setAuthToken(null);
+      // Solo forzamos logout si estamos en el cliente y hay un error real (evita loops en SSR)
+      if (typeof window !== 'undefined') {
+        logout();
+      } else {
+        setUser(null);
+        setAuthToken(null);
+      }
       return false;
     }
   }, []);

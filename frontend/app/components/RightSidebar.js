@@ -232,25 +232,18 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
     const fetchMonitorData = async () => {
         setMonitorLoading(true);
         try {
-            const token = localStorage.getItem('authToken');
             const inicio = monitorFilters.fechaInicio.toISOString().split('T')[0];
             const fin = monitorFilters.fechaFin.toISOString().split('T')[0];
 
-            const params = new URLSearchParams({
-                fecha_inicio: inicio,
-                fecha_fin: fin
+            const res = await apiService.get('/reports/journal', {
+                params: {
+                    fecha_inicio: inicio,
+                    fecha_fin: fin
+                }
             });
 
-            const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const res = await fetch(`${baseUrl}/api/reports/journal?${params.toString()}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                const sorted = Array.isArray(data) ? data.sort((a, b) => b.id - a.id) : [];
-                setMonitorData(sorted);
-            }
+            const sorted = Array.isArray(res.data) ? res.data.sort((a, b) => b.id - a.id) : [];
+            setMonitorData(sorted);
         } catch (err) {
             console.error("Error fetching monitor data", err);
         } finally {
@@ -296,24 +289,25 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
         try {
             const inicio = monitorFilters.fechaInicio.toISOString().split('T')[0];
             const fin = monitorFilters.fechaFin.toISOString().split('T')[0];
-            const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-            const params = new URLSearchParams({
-                fecha_inicio: inicio,
-                fecha_fin: fin,
-                numero_documento: monitorFilters.numero || '',
-                beneficiario_filtro: monitorFilters.beneficiario || '',
-                concepto_filtro: monitorFilters.concepto || ''
+            const res = await apiService.get('/reports/journal/get-signed-url', {
+                params: {
+                    fecha_inicio: inicio,
+                    fecha_fin: fin,
+                    numero_documento: monitorFilters.numero || '',
+                    beneficiario_filtro: monitorFilters.beneficiario || '',
+                    concepto_filtro: monitorFilters.concepto || ''
+                }
             });
 
-            const res = await fetch(`${baseUrl}/api/reports/journal/get-signed-url?${params.toString()}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
-            });
-            const data = await res.json();
+            const data = res.data;
             if (data.signed_url_token) {
+                // Obtenemos la URL de la API desde la configuración global o fallback
+                const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
                 window.open(`${baseUrl}/api/reports/journal/imprimir?signed_token=${data.signed_url_token}`, '_blank');
             }
         } catch (error) {
+            console.error("Error al exportar monitor:", error);
             toast.error("Error al exportar monitor");
         }
     };

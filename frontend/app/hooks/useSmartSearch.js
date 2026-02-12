@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 import { menuStructure } from '../../lib/menuData';
 import { commandDictionary } from '../../lib/commandDictionary';
+import { apiService } from '../../lib/apiService';
 
 export function useSmartSearch() {
     const router = useRouter();
@@ -63,14 +64,8 @@ export function useSmartSearch() {
     const loadLibraryData = async () => {
         setIsLibraryLoading(true);
         try {
-            const token = localStorage.getItem('authToken');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/usuarios/busquedas/`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setLibrary(data);
-            }
+            const res = await apiService.get('/usuarios/busquedas/');
+            setLibrary(res.data);
         } catch (err) {
             console.error("Error fetching library", err);
         } finally {
@@ -95,73 +90,47 @@ export function useSmartSearch() {
         if (!title) return;
 
         try {
-            const token = localStorage.getItem('authToken');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/usuarios/busquedas/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ titulo: title, comando: cmd })
+            await apiService.post('/usuarios/busquedas/', {
+                titulo: title,
+                comando: cmd
             });
-            if (res.ok) {
-                toast.success("Comando guardado en Biblioteca");
-                loadLibraryData();
-                // Notificar a otros componentes (como la barra lateral)
-                window.dispatchEvent(new CustomEvent('show-ai-library'));
-            } else {
-                toast.error("Error al guardar en biblioteca");
-            }
+            toast.success("Guardado en biblioteca");
+            loadLibraryData();
+            // Notificar a otros componentes (como la barra lateral)
+            window.dispatchEvent(new CustomEvent('show-ai-library'));
         } catch (err) {
             console.error(err);
-            toast.error("Error de conexión");
+            toast.error("Error al guardar en biblioteca");
         }
     };
 
     const deleteFromLibrary = async (id) => {
         if (!confirm("¿Eliminar de la biblioteca?")) return;
         try {
-            const token = localStorage.getItem('authToken');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/usuarios/busquedas/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                toast.success("Eliminado de la biblioteca");
-                loadLibraryData();
-            } else {
-                toast.error("Error al eliminar");
-            }
+            await apiService.delete(`/usuarios/busquedas/${id}`);
+            toast.success("Eliminado de la biblioteca");
+            loadLibraryData();
         } catch (err) {
             console.error(err);
-            toast.error("Error de conexión");
+            toast.error("Error al eliminar");
         }
     };
 
     const updateLibraryTitle = async (id, newTitle) => {
         if (!newTitle || !newTitle.trim()) return;
         try {
-            const token = localStorage.getItem('authToken');
             const search = library.find(s => s.id === id);
             if (!search) return;
 
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/usuarios/busquedas/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ titulo: newTitle, comando: search.comando })
+            await apiService.put(`/usuarios/busquedas/${id}`, {
+                titulo: newTitle,
+                comando: search.comando
             });
-            if (res.ok) {
-                toast.success("Nombre actualizado");
-                loadLibraryData();
-            } else {
-                toast.error("Error al actualizar");
-            }
+            toast.success("Nombre actualizado");
+            loadLibraryData();
         } catch (err) {
             console.error(err);
-            toast.error("Error de conexión");
+            toast.error("Error al actualizar");
         }
     };
 
@@ -263,30 +232,10 @@ export function useSmartSearch() {
         addToHistory(text);
         setIsThinking(true);
         try {
-            const token = localStorage.getItem('authToken');
-            if (!token) {
-                toast.error("Sesión no válida.");
-                setIsThinking(false);
-                return;
-            }
-            const baseUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `http://${window.location.hostname}:8000` : 'http://localhost:8000');
             const cleanCommand = text.startsWith(':') ? text.substring(1).trim() : text;
 
-            let response = await fetch(`${baseUrl}/api/ai/process-command`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ command: cleanCommand })
-            });
-
-            if (response.status === 401) {
-                response = await fetch(`${baseUrl}/api/ai/process-command-debug`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ command: cleanCommand })
-                });
-            }
-
-            const data = await response.json();
+            const response = await apiService.post('/ai/process-command', { command: cleanCommand });
+            const data = response.data;
             setIsThinking(false);
 
             if (data.error) {
@@ -495,25 +444,22 @@ export function useSmartSearch() {
         } else if (actionName === 'generar_backup') {
             toast.loading('IA: Generando respaldo completo...', { id: 'backup-toast' });
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/utilidades/backup-rapido`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                const response = await apiService.post('/utilidades/backup-rapido', {}, {
+                    responseType: 'blob'
                 });
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement("a");
-                    link.href = url;
-                    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-                    link.download = `backup_completo_finaxis_${timestamp}.json`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    toast.success("¡Respaldo descargado!", { id: 'backup-toast' });
-                } else throw new Error("Failed to backup");
+
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement("a");
+                link.href = url;
+                const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+                link.download = `backup_completo_finaxis_${timestamp}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                toast.success('Respaldo generado con éxito', { id: 'backup-toast' });
             } catch (err) {
                 console.error(err);
-                toast.error("Error generando el respaldo.", { id: 'backup-toast' });
+                toast.error('Error al generar respaldo', { id: 'backup-toast' });
             }
         } else toast.info(`IA sugiere acción desconocida o sin interceptor: ${actionName}`);
     };

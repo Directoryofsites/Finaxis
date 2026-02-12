@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { FaCalendarAlt, FaSearch, FaFilePdf, FaFileCsv, FaInfoCircle, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
 import { formatCurrency } from '../../../utils/format';
-import Link from 'next/link';
 import { useAuth } from '../../context/AuthContext';
+import { apiService } from '../../../lib/apiService';
+import { toast } from 'react-toastify';
 
 export default function FlujoEfectivoPage() {
     const { user, authLoading } = useAuth();
@@ -23,20 +24,23 @@ export default function FlujoEfectivoPage() {
 
     const fetchReport = async () => {
         if (!user || !user.empresaId) {
-            alert("Usuario no autenticado o sin empresa asignada.");
+            toast.error("Usuario no autenticado o sin empresa asignada.");
             return;
         }
 
         setLoading(true);
         try {
-            // Usar user.empresaId en lugar de state local
-            const res = await fetch(`http://localhost:8000/api/analisis/flujo-efectivo?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}&empresa_id=${user.empresaId}`);
-            if (!res.ok) throw new Error("Error al consultar el reporte");
-            const data = await res.json();
-            setReportData(data);
+            const res = await apiService.get('/analisis/flujo-efectivo', {
+                params: {
+                    fecha_inicio: fechaInicio,
+                    fecha_fin: fechaFin,
+                    empresa_id: user.empresaId
+                }
+            });
+            setReportData(res.data);
         } catch (error) {
             console.error(error);
-            alert("No se pudo cargar el reporte.");
+            toast.error("No se pudo cargar el reporte.");
         } finally {
             setLoading(false);
         }
@@ -45,25 +49,30 @@ export default function FlujoEfectivoPage() {
 
     const handleExportPDF = async () => {
         if (!user || !user.empresaId || !fechaInicio || !fechaFin) {
-            alert("Faltan parámetros para generar el PDF.");
+            toast.warning("Faltan parámetros para generar el PDF.");
             return;
         }
 
         try {
             // 1. Obtener URL Firmada
-            const signRes = await fetch(`http://localhost:8000/api/analisis/flujo-efectivo/get-signed-url?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}&empresa_id=${user.empresaId}`);
-            if (!signRes.ok) throw new Error("Error obteniendo permiso de descarga.");
+            const signRes = await apiService.get('/analisis/flujo-efectivo/get-signed-url', {
+                params: {
+                    fecha_inicio: fechaInicio,
+                    fecha_fin: fechaFin,
+                    empresa_id: user.empresaId
+                }
+            });
 
-            const signData = await signRes.json();
-            const token = signData.signed_url_token;
+            const token = signRes.data.signed_url_token;
 
             // 2. Abrir en nueva pestaña
-            const pdfUrl = `http://localhost:8000/api/analisis/flujo-efectivo/imprimir?signed_token=${token}`;
+            const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+            const pdfUrl = `${baseUrl}/api/analisis/flujo-efectivo/imprimir?signed_token=${token}`;
             window.open(pdfUrl, '_blank');
 
         } catch (error) {
             console.error("Error Export PDF:", error);
-            alert("No se pudo iniciar la descarga del PDF.");
+            toast.error("No se pudo iniciar la descarga del PDF.");
         }
     };
 
