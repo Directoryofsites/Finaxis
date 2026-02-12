@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import { FaSearch, FaMagic, FaMicrophone, FaArrowRight, FaExternalLinkAlt, FaTerminal, FaBolt, FaStop } from 'react-icons/fa';
+import { FaSearch, FaMagic, FaMicrophone, FaArrowRight, FaExternalLinkAlt, FaTerminal, FaBolt, FaStop, FaSave, FaTrash, FaHistory, FaClock, FaStar } from 'react-icons/fa';
 import { useSmartSearch } from '../hooks/useSmartSearch';
 import AssistantOverlay from './VoiceAssistant/AssistantOverlay';
 
@@ -13,27 +13,45 @@ export default function SmartSearchSection() {
         isThinking,
         isCommandMode,
         commandHistory,
+        library,
+        isLibraryLoading,
         selectedIndex,
         setSelectedIndex,
         toggleListening,
+        processVoiceCommand,
         handleSelectResult,
+        addToLibrary,
+        deleteFromLibrary,
         showHistory
     } = useSmartSearch();
 
     const [showAssistant, setShowAssistant] = useState(false);
+    const [isFocused, setIsFocused] = useState(false);
 
     const handleSearch = (e) => {
         if (e) e.preventDefault();
+
+        // Si hay resultados de menú y uno seleccionado, navegar a él
         if (results.length > 0 && selectedIndex >= 0) {
             handleSelectResult(results[selectedIndex]);
             return;
         }
-        // If it's a direct command or query without results selected, let the hook handle it or do nothing
+
+        // Si no hay resultado de menú, enviar a la IA (Cerebro)
+        if (query.trim()) {
+            processVoiceCommand(query);
+            setIsFocused(false);
+            document.getElementById('smart-search-input')?.blur();
+        }
     };
 
-    const handleHistoryClick = (text) => {
+    const handleCommandClick = (text, execute = false) => {
         setQuery(text);
-        document.getElementById('smart-search-input')?.focus();
+        if (execute) {
+            processVoiceCommand(text);
+        } else {
+            document.getElementById('smart-search-input')?.focus();
+        }
     };
 
     const handleKeyDown = (e) => {
@@ -99,6 +117,8 @@ export default function SmartSearchSection() {
                             `}
                             autoFocus
                             autoComplete="off"
+                            onFocus={() => setIsFocused(true)}
+                            onBlur={() => setTimeout(() => setIsFocused(false), 200)}
                         />
 
                         <div className="pr-2 flex items-center gap-2">
@@ -112,21 +132,31 @@ export default function SmartSearchSection() {
                             </button>
 
                             {query.trim() && (
-                                <button
-                                    type="submit"
-                                    className={`p-2 text-white rounded-full hover:shadow-lg transform transition hover:scale-105 active:scale-95
-                                        ${isCommandMode ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gradient-to-r from-blue-600 to-purple-600'}
-                                    `}
-                                >
-                                    {isCommandMode ? <FaBolt /> : <FaArrowRight />}
-                                </button>
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={() => addToLibrary(query)}
+                                        className="p-3 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all duration-300"
+                                        title="Guardar en Biblioteca"
+                                    >
+                                        <FaSave />
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className={`p-2 text-white rounded-full hover:shadow-lg transform transition hover:scale-105 active:scale-95
+                                            ${isCommandMode ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gradient-to-r from-blue-600 to-purple-600'}
+                                        `}
+                                    >
+                                        {isCommandMode ? <FaBolt /> : <FaArrowRight />}
+                                    </button>
+                                </>
                             )}
                         </div>
                     </div>
                 </form>
 
                 {/* Results Dropdown */}
-                {showHistory && (
+                {showHistory && isFocused && (
                     <div className="absolute top-full left-0 right-0 bg-white border border-gray-100 rounded-b-3xl shadow-xl max-h-96 overflow-y-auto animate-in fade-in slide-in-from-top-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent z-40">
                         {results.length > 0 ? (
                             <>
@@ -134,7 +164,10 @@ export default function SmartSearchSection() {
                                     {results.map((item, index) => (
                                         <li
                                             key={index}
-                                            onClick={() => handleSelectResult(item)}
+                                            onClick={() => {
+                                                handleSelectResult(item);
+                                                setIsFocused(false);
+                                            }}
                                             className={`px-6 py-3 cursor-pointer border-b border-gray-50 last:border-0 flex items-center gap-3 transition-colors
                                                 ${index === selectedIndex ? (isCommandMode ? 'bg-green-50' : 'bg-blue-50') : 'hover:bg-gray-50'}
                                             `}
@@ -161,25 +194,67 @@ export default function SmartSearchSection() {
                                     Presiona <strong>Enter</strong> para ejecutar
                                 </div>
                             </>
-                        ) : !query && commandHistory.length > 0 && (
+                        ) : !query && (commandHistory.length > 0 || library.length > 0) && (
                             <div className="py-2">
-                                <div className="px-6 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                                    Últimos Comandos
-                                </div>
-                                <ul>
-                                    {commandHistory.map((cmd, idx) => (
-                                        <li
-                                            key={idx}
-                                            onClick={() => handleHistoryClick(cmd)}
-                                            className="px-6 py-3 cursor-pointer hover:bg-purple-50 flex items-center gap-3 group transition-colors border-b border-gray-50 last:border-0"
-                                        >
-                                            <div className="p-2 bg-purple-100 text-purple-600 rounded-full group-hover:bg-purple-200 transition-colors">
-                                                <FaMicrophone className="text-xs" />
-                                            </div>
-                                            <span className="text-gray-600 group-hover:text-purple-700 flex-1 font-medium">{cmd}</span>
-                                        </li>
-                                    ))}
-                                </ul>
+                                {library.length > 0 && (
+                                    <>
+                                        <div className="px-6 py-2 text-xs font-bold text-indigo-500 uppercase tracking-wider flex items-center gap-2">
+                                            <FaStar className="text-[10px]" /> Mi Biblioteca
+                                        </div>
+                                        <ul>
+                                            {library.map((item) => (
+                                                <li
+                                                    key={item.id}
+                                                    className="px-6 py-3 cursor-pointer hover:bg-indigo-50 flex items-center gap-3 group transition-colors border-b border-gray-50 last:border-0"
+                                                >
+                                                    <div className="p-2 bg-indigo-100 text-indigo-600 rounded-full group-hover:bg-indigo-200 transition-colors" onClick={() => handleCommandClick(item.comando)}>
+                                                        <FaBolt className="text-xs" />
+                                                    </div>
+                                                    <div className="flex-1" onClick={() => handleCommandClick(item.comando)}>
+                                                        <span className="text-gray-700 group-hover:text-indigo-800 font-semibold block">{item.titulo}</span>
+                                                        <span className="text-[10px] text-gray-400 italic line-clamp-1">{item.comando}</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); deleteFromLibrary(item.id); }}
+                                                        className="p-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        title="Eliminar de biblioteca"
+                                                    >
+                                                        <FaTrash className="text-xs" />
+                                                    </button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        <div className="h-4 bg-gray-50/50"></div>
+                                    </>
+                                )}
+
+                                {commandHistory.length > 0 && (
+                                    <>
+                                        <div className="px-6 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                            <FaHistory className="text-[10px]" /> Últimos Comandos
+                                        </div>
+                                        <ul>
+                                            {commandHistory.map((cmd, idx) => (
+                                                <li
+                                                    key={idx}
+                                                    className="px-6 py-3 cursor-pointer hover:bg-purple-50 flex items-center gap-3 group transition-colors border-b border-gray-50 last:border-0"
+                                                >
+                                                    <div className="p-2 bg-purple-100 text-purple-600 rounded-full group-hover:bg-purple-200 transition-colors" onClick={() => { handleCommandClick(cmd); setIsFocused(false); }}>
+                                                        <FaMicrophone className="text-xs" />
+                                                    </div>
+                                                    <span className="text-gray-600 group-hover:text-purple-700 flex-1 font-medium" onClick={() => { handleCommandClick(cmd); setIsFocused(false); }}>{cmd}</span>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); addToLibrary(cmd); }}
+                                                        className="p-2 text-gray-300 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        title="Guardar en biblioteca"
+                                                    >
+                                                        <FaSave className="text-xs" />
+                                                    </button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>

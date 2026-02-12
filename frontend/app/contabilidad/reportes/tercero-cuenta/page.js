@@ -235,23 +235,39 @@ function ReporteTerceroCuentaContent() {
               const codigoNorm = normalize(c.codigo);
               const nombreNorm = normalize(c.nombre);
 
-              // Coincidencia exacta (agresivamente normalizada)
-              if (codigoNorm.includes(searchNormalized) || nombreNorm.includes(searchNormalized)) {
-                score += 100;
+              // 1. COINCIDENCIA EXACTA TOTAL (AGRESIVA) -> MÁXIMA PRIORIDAD
+              if (codigoNorm === searchNormalized || nombreNorm === searchNormalized) {
+                score += 1000;
               }
 
-              // Coincidencia por palabras
+              // 2. COINCIDENCIA PARCIAL (INCLUYE EL TÉRMINO COMPLETO)
+              if (codigoNorm.includes(searchNormalized) || nombreNorm.includes(searchNormalized)) {
+                score += 500;
+              }
+
+              // 3. COINCIDENCIA POR PALABRAS INDIVIDUALES
               searchWords.forEach(word => {
                 if (codigoNorm.includes(word) || nombreNorm.includes(word)) {
-                  score += 10;
+                  score += 100;
                 }
               });
+
+              // 4. BOOST: Priorizar cuentas de movimiento (nivel detalle)
+              // Esto es crucial para que el reporte sea útil
+              if (c.es_auxiliar || c.permite_movimiento || c.codigo.length > 6) {
+                score += 150;
+              } else if (c.codigo.length <= 4) {
+                score -= 100; // Penalizar cuentas de grupo/clase si hay auxiliar
+              }
 
               return { ...c, score };
             });
 
-            // Filtrar las que tengan algún match y ordenar por puntaje
-            const bestMatches = scoredCuentas.filter(c => c.score > 0).sort((a, b) => b.score - a.score);
+            // Filtrar las que tengan algún match y ordenar por puntaje + longitud (detalle)
+            const bestMatches = scoredCuentas.filter(c => c.score > 0).sort((a, b) => {
+              if (b.score !== a.score) return b.score - a.score;
+              return b.nombre.length - a.nombre.length;
+            });
 
             if (bestMatches.length > 0) {
               // Tomar las mejores (ej: las que tengan el puntaje máximo o cercano)
@@ -523,7 +539,7 @@ function ReporteTerceroCuentaContent() {
         const res = await apiService.get('/reports/tercero-cuenta/get-signed-url', { params });
         const token = res.data.signed_url_token;
         const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/reports/tercero-cuenta/imprimir?signed_token=${token}`;
-        window.location.href = pdfUrl;
+        window.open(pdfUrl, '_blank');
       } else {
         // MODO INVERSO
         const params = {
@@ -538,7 +554,7 @@ function ReporteTerceroCuentaContent() {
         const res = await apiService.get('/reports/auxiliar-inverso/get-signed-url', { params });
         const token = res.data.signed_url_token;
         const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/reports/auxiliar-inverso/imprimir?signed_token=${token}`;
-        window.location.href = pdfUrl;
+        window.open(pdfUrl, '_blank');
       }
 
     } catch (err) {

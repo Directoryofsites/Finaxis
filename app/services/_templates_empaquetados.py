@@ -5817,40 +5817,35 @@ TEMPLATES_EMPAQUETADOS = {
     <title>Auxiliar por Tercero y Cuenta</title>
     <style>
         @page {
-            size: letter landscape;
+            size: letter;
             margin: 1.5cm;
         }
 
         body {
-            font-family: Arial, sans-serif;
-            font-size: 8px;
+            font-family: sans-serif;
+            font-size: 10px;
             color: #333;
         }
 
         .header {
             text-align: center;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
-        h1,
-        h2 {
+        .header h1 {
             margin: 0;
+            font-size: 16px;
         }
 
-        h1 {
-            font-size: 14px;
-        }
-
-        h2 {
+        .header h2 {
+            margin: 0;
             font-size: 12px;
             font-weight: normal;
         }
 
         .report-info {
             margin-bottom: 15px;
-            font-size: 9px;
+            font-size: 10px;
         }
 
         table {
@@ -5860,7 +5855,7 @@ TEMPLATES_EMPAQUETADOS = {
 
         th,
         td {
-            border: 1px solid #ddd;
+            border: 1px solid #ccc;
             padding: 4px;
             text-align: left;
             word-wrap: break-word;
@@ -5868,7 +5863,6 @@ TEMPLATES_EMPAQUETADOS = {
 
         th {
             background-color: #f2f2f2;
-            text-align: center;
             font-weight: bold;
         }
 
@@ -5876,19 +5870,25 @@ TEMPLATES_EMPAQUETADOS = {
             text-align: right;
         }
 
-        .text-center {
-            text-align: center;
-        }
-
         .total-global-row td {
             font-weight: bold;
-            background-color: #e0e0e0;
-            border-top: 2px solid #333;
+            background-color: #f8f8f8;
+            border-top: 1.5px solid #999;
         }
 
         .cuenta-header-row td {
             font-weight: bold;
             background-color: #f2f2f2;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            border-top: 2px solid #666;
+        }
+
+        .saldo-cuenta-row td {
+            background-color: #fafafa;
+            font-style: italic;
+            font-size: 9px;
+            color: #666;
         }
     </style>
 </head>
@@ -5897,34 +5897,32 @@ TEMPLATES_EMPAQUETADOS = {
     <div class="header">
         <h1>{{ empresa_nombre }}</h1>
         <h2>NIT: {{ empresa_nit }}</h2>
+        <h2>Auxiliar por Tercero y Cuenta</h2>
     </div>
 
     <div class="report-info">
-        <h2>Auxiliar por Tercero y Cuenta</h2>
-        <p>
-            <strong>Tercero:</strong> {{ tercero_info.nit }} - {{ tercero_info.razon_social }}<br>
-            <strong>Periodo:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}
-        </p>
+        <strong>Tercero:</strong> {{ tercero_info.nit }} - {{ tercero_info.razon_social }}<br>
+        <strong>Periodo:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}
     </div>
 
     <table>
         <thead>
             <tr>
-                <th>Fecha</th>
-                <th>Documento</th>
+                <th width="10%">Fecha</th>
+                <th width="15%">Documento</th>
                 <th>Concepto</th>
                 {% if has_cost_centers %}
-                <th>C. Costo</th>
+                <th width="10%">C. Costo</th>
                 {% endif %}
-                <th class="text-right">Débito</th>
-                <th class="text-right">Crédito</th>
-                <th class="text-right">Saldo Parcial</th>
+                <th width="12%" class="text-right">Débito</th>
+                <th width="12%" class="text-right">Crédito</th>
+                <th width="15%" class="text-right">Saldo Parcial</th>
             </tr>
         </thead>
         <tbody>
             <tr class="total-global-row">
-                <td colspan="{{ 6 if has_cost_centers else 5 }}"><strong>SALDO ANTERIOR GLOBAL</strong></td>
-                <td class="text-right"><strong>{{ "{:,.2f}".format(saldo_anterior_global) }}</strong></td>
+                <td colspan="{{ 4 if has_cost_centers else 3 }}"><strong>SALDO ANTERIOR GLOBAL</strong></td>
+                <td colspan="3" class="text-right"><strong>{{ "{:,.2f}".format(saldo_anterior_global) }}</strong></td>
             </tr>
 
             {% for cuenta_id, grupo_movimientos in movimientos | groupby('cuenta_id') %}
@@ -5932,13 +5930,13 @@ TEMPLATES_EMPAQUETADOS = {
             {% set primer_mov = movimientos_lista[0] %}
             <tr class="cuenta-header-row">
                 <td colspan="{{ 7 if has_cost_centers else 6 }}">
-                    <strong>Cuenta: {{ primer_mov.cuenta_codigo }} - {{ primer_mov.cuenta_nombre }}</strong>
+                    Cuenta: {{ primer_mov.cuenta_codigo }} - {{ primer_mov.cuenta_nombre }}
                 </td>
             </tr>
-            <tr style="background-color: #fafafa;">
-                <td colspan="{{ 6 if has_cost_centers else 5 }}"><i>Saldo Anterior de la Cuenta</i></td>
+            <tr class="saldo-cuenta-row">
+                <td colspan="{{ 6 if has_cost_centers else 5 }}">Saldo Anterior de la Cuenta</td>
                 <td class="text-right">
-                    <i>{{ "{:,.2f}".format(saldos_iniciales_por_cuenta.get(cuenta_id | string, 0)) }}</i>
+                    {{ "{:,.2f}".format(saldos_iniciales_por_cuenta.get(cuenta_id | string, 0)) }}
                 </td>
             </tr>
 
@@ -5957,7 +5955,7 @@ TEMPLATES_EMPAQUETADOS = {
             {% endfor %}
             {% endfor %}
 
-            <tr class="total-global-row" style="background-color: #f1f5f9;">
+            <tr class="total-global-row" style="background-color: #f1f5f9; border-top: 2px solid #333;">
                 <td colspan="{{ 4 if has_cost_centers else 3 }}"><strong>TOTALES MOVIMIENTOS DEL PERIODO</strong></td>
                 <td class="text-right"><strong>{{ "{:,.2f}".format(total_debito_global) }}</strong></td>
                 <td class="text-right"><strong>{{ "{:,.2f}".format(total_credito_global) }}</strong></td>

@@ -15,13 +15,22 @@ export default function SmartLayout({ children }) {
     const [rightState, setRightState] = useState('closed'); // 'closed', 'open', 'pinned'
     const pathname = usePathname();
 
-    // Resetear a closed o open (unpin) al navegar? 
-    // UX Decision: Si es 'pinned', se mantiene pinned. Si es 'open' (flotante), se cierra al navegar.
     useEffect(() => {
         if (rightState === 'open') {
             setRightState('closed');
         }
     }, [pathname]);
+
+    // Escuchar evento de guardado en biblioteca para abrir sidebar
+    useEffect(() => {
+        const handleShowLibrary = () => {
+            if (rightState === 'closed') {
+                setRightState('open');
+            }
+        };
+        window.addEventListener('show-ai-library', handleShowLibrary);
+        return () => window.removeEventListener('show-ai-library', handleShowLibrary);
+    }, [rightState]);
 
 
     // Handlers

@@ -146,9 +146,12 @@ const CheckboxMultiSelect = ({ options, selected, onChange, placeholder = "Selec
     );
 };
 
+import { useSearchParams } from 'next/navigation';
+
 export default function RelacionSaldosPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     // Estados de Filtros
     const [cuentas, setCuentas] = useState([]);
@@ -158,8 +161,8 @@ export default function RelacionSaldosPage() {
     const [selectedTerceros, setSelectedTerceros] = useState(['all']);
 
     const [fechas, setFechas] = useState({
-        inicio: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
-        fin: new Date().toISOString().split('T')[0]
+        inicio: searchParams.get('fecha_inicio') || new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
+        fin: searchParams.get('fecha_fin') || new Date().toISOString().split('T')[0]
     });
 
     // Estados de UI
@@ -188,17 +191,77 @@ export default function RelacionSaldosPage() {
             ]);
             setCuentas(resCuentas.data);
             setTerceros(resTerceros.data);
+
+            // LOGICA AI: Resolver nombres/códigos desde la URL a IDs
+            const urlCuenta = searchParams.get('cuenta');
+            const urlTercero = searchParams.get('tercero');
+
+            if (urlCuenta || urlTercero) {
+                let resolveCuentas = ['all'];
+                let resolveTerceros = ['all'];
+
+                if (urlCuenta) {
+                    const term = urlCuenta.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    const matched = resCuentas.data.find(c =>
+                        c.codigo === urlCuenta ||
+                        c.nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(term)
+                    );
+                    if (matched) resolveCuentas = [matched.id];
+                }
+
+                if (urlTercero) {
+                    const term = urlTercero.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    const terms = term.split(' ').filter(t => t.length > 2);
+
+                    const matched = resTerceros.data.find(t => {
+                        const nitVal = (t.nit || '').toLowerCase();
+                        const razon = (t.razon_social || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                        const comercial = (t.nombre_comercial || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                        const fullText = `${nitVal} ${razon} ${comercial}`;
+
+                        if (nitVal === term) return true;
+                        if (terms.length > 0 && terms.every(word => fullText.includes(word))) return true;
+                        const matchesCount = terms.filter(word => fullText.includes(word)).length;
+                        return matchesCount >= 2;
+                    });
+                    if (matched) resolveTerceros = [matched.id];
+                }
+
+                setSelectedCuentas(resolveCuentas);
+                setSelectedTerceros(resolveTerceros);
+
+                // DISPARAR EJECUCIÓN INMEDIATA CON FILTROS REALES
+                const isAuto = searchParams.get('trigger') === 'ai';
+                const isAutoPdf = searchParams.get('auto_pdf') === 'true';
+
+                if (isAuto || urlCuenta || urlTercero) {
+                    setTimeout(() => {
+                        handleGenerateReport(resolveCuentas, resolveTerceros).then(success => {
+                            if (success && isAutoPdf) {
+                                handleExportPDF(resolveCuentas, resolveTerceros);
+                            }
+                        });
+                    }, 300);
+                }
+            }
+
         } catch (err) {
             console.error(err);
             setError("Error cargando maestros.");
         }
     };
 
+    // Ya no necesitamos este efecto duplicado, la lógica está en fetchMaestros
+
     // --- GENERACIÓN DE REPORTE ---
-    const handleGenerateReport = async () => {
+    const handleGenerateReport = async (overrideCuentas = null, overrideTerceros = null) => {
+        // Corrección de Evento: Si el primer argumento es un evento de React, ignoramos overrides
+        const actualCuentas = (Array.isArray(overrideCuentas)) ? overrideCuentas : selectedCuentas;
+        const actualTerceros = (Array.isArray(overrideTerceros)) ? overrideTerceros : selectedTerceros;
+
         if (!fechas.inicio || !fechas.fin) {
             setError("Por favor seleccione un rango de fechas.");
-            return;
+            return false;
         }
 
         setIsLoading(true);
@@ -210,40 +273,43 @@ export default function RelacionSaldosPage() {
             fecha_fin: fechas.fin,
         };
 
-        if (selectedCuentas.length > 0 && !selectedCuentas.includes('all')) {
-            params.cuenta_ids = selectedCuentas.join(',');
+        if (actualCuentas.length > 0 && !actualCuentas.includes('all')) {
+            params.cuenta_ids = actualCuentas.join(',');
         }
-        if (selectedTerceros.length > 0 && !selectedTerceros.includes('all')) {
-            params.tercero_ids = selectedTerceros.join(',');
+        if (actualTerceros.length > 0 && !actualTerceros.includes('all')) {
+            params.tercero_ids = actualTerceros.join(',');
         }
 
         try {
             const res = await apiService.get('/reports/relacion-saldos', { params });
             setReportData(res.data);
+            return true;
         } catch (err) {
             setError(err.response?.data?.detail || "Error generando el reporte.");
+            return false;
         } finally {
             setIsLoading(false);
         }
     };
 
     // --- EXPORTACIÓN ---
-    const handleExportPDF = async () => {
-        if (!reportData) return alert("Primero genere el reporte en pantalla.");
-
+    const handleExportPDF = async (overrideCuentas = null, overrideTerceros = null) => {
         setIsLoading(true);
         setError(null);
         try {
+            const actualCuentas = (Array.isArray(overrideCuentas)) ? overrideCuentas : selectedCuentas;
+            const actualTerceros = (Array.isArray(overrideTerceros)) ? overrideTerceros : selectedTerceros;
+
             const params = {
                 fecha_inicio: fechas.inicio,
                 fecha_fin: fechas.fin,
             };
 
-            if (selectedCuentas.length > 0 && !selectedCuentas.includes('all')) {
-                params.cuenta_ids = selectedCuentas.join(',');
+            if (actualCuentas.length > 0 && !actualCuentas.includes('all')) {
+                params.cuenta_ids = actualCuentas.join(',');
             }
-            if (selectedTerceros.length > 0 && !selectedTerceros.includes('all')) {
-                params.tercero_ids = selectedTerceros.join(',');
+            if (actualTerceros.length > 0 && !actualTerceros.includes('all')) {
+                params.tercero_ids = actualTerceros.join(',');
             }
 
             const res = await apiService.get('/reports/relacion-saldos/get-signed-url', { params });

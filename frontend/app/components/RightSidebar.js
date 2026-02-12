@@ -14,6 +14,7 @@ import { useAuth } from '@/app/context/AuthContext';
 import EconomicIndicatorsPanel from './EconomicIndicatorsPanel';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { useSmartSearch } from '@/app/hooks/useSmartSearch';
 
 // --- HELPER: FORMAT NUMBERS ---
 const formatNumber = (numStr) => {
@@ -206,6 +207,16 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
     const [activeTab, setActiveTab] = useState('ai');
     const [showIndicators, setShowIndicators] = useState(false);
 
+    // Escuchar evento para mostrar biblioteca
+    useEffect(() => {
+        const handleShowLibrary = () => {
+            setActiveTab('ai');
+            setShowLibraryTabInModal(true);
+        };
+        window.addEventListener('show-ai-library', handleShowLibrary);
+        return () => window.removeEventListener('show-ai-library', handleShowLibrary);
+    }, []);
+
     // --- MONITOR STATE ---
     const [monitorData, setMonitorData] = useState([]);
     const [monitorLoading, setMonitorLoading] = useState(false);
@@ -332,117 +343,36 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
     const { notes, activeNoteId, currentText, setCurrentText, createNote, deleteNote, selectNote } = useNotesManager();
     const [showNoteList, setShowNoteList] = useState(false);
 
-    // AI & Voice State
-    const [aiQuery, setAiQuery] = useState('');
+    // --- AI & Voice Logic (Unified via hook) ---
+    const {
+        query: aiQuery,
+        setQuery: setAiQuery,
+        isThinking,
+        toggleListening,
+        processVoiceCommand,
+        commandHistory,
+        library: savedSearches,
+        isLibraryLoading: isSavedSearchesLoading,
+        addToLibrary: saveSearch,
+        deleteFromLibrary: deleteSavedSearch,
+        updateLibraryTitle: updateSavedSearch,
+        loadLibraryData: fetchLibrary,
+        loadCommandHistory: fetchSavedSearches,
+        isListening
+    } = useSmartSearch();
+
     const [aiResponse, setAiResponse] = useState(null);
-    const [isThinking, setIsThinking] = useState(false);
-
-    // Voice Control
-    const [listeningMode, setListeningMode] = useState(null);
-    const listeningModeRef = useRef(null);
+    const [listeningMode, setListeningMode] = useState(null); // 'ai' or 'notes'
     const recognitionRef = useRef(null);
+    const listeningModeRef = useRef(null);
 
-    // HISTORY STATE
-    const [commandHistory, setCommandHistory] = useState([]);
     const [showHistory, setShowHistory] = useState(false);
     const [showLibraryTabInModal, setShowLibraryTabInModal] = useState(false);
 
-    // --- SAVED SEARCHES STATE ---
-    const [savedSearches, setSavedSearches] = useState([]);
-    const [isSavedSearchesLoading, setIsSavedSearchesLoading] = useState(false);
+    // --- SAVED SEARCHES STATE HANDLED BY HOOK ---
+
     const [editingSearchId, setEditingSearchId] = useState(null);
     const [editSearchTitle, setEditSearchTitle] = useState('');
-
-    const fetchSavedSearches = async () => {
-        setIsSavedSearchesLoading(true);
-        try {
-            const token = localStorage.getItem('authToken');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/usuarios/busquedas/`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setSavedSearches(data);
-            }
-        } catch (err) {
-            console.error("Error fetching saved searches", err);
-        } finally {
-            setIsSavedSearchesLoading(false);
-        }
-    };
-
-    const saveSearch = async (cmd) => {
-        const title = prompt("Nombre para esta búsqueda:", cmd.substring(0, 30));
-        if (!title) return;
-
-        try {
-            const token = localStorage.getItem('authToken');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/usuarios/busquedas/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ titulo: title, comando: cmd })
-            });
-            if (res.ok) {
-                toast.success("Búsqueda guardada en Biblioteca");
-                fetchSavedSearches();
-            } else {
-                toast.error("Error al guardar");
-            }
-        } catch (err) {
-            console.error(err);
-            toast.error("Error de conexión");
-        }
-    };
-
-    const deleteSavedSearch = async (id) => {
-        if (!confirm("¿Eliminar de la biblioteca?")) return;
-        try {
-            const token = localStorage.getItem('authToken');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/usuarios/busquedas/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                toast.success("Eliminado");
-                fetchSavedSearches();
-            } else {
-                toast.error("Error al eliminar");
-            }
-        } catch (err) {
-            console.error(err);
-            toast.error("Error de conexión");
-        }
-    };
-
-    const updateSavedSearch = async (id, newTitle) => {
-        try {
-            const token = localStorage.getItem('authToken');
-            const search = savedSearches.find(s => s.id === id);
-            if (!search) return;
-
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/usuarios/busquedas/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ titulo: newTitle, comando: search.comando })
-            });
-            if (res.ok) {
-                toast.success("Actualizado");
-                setEditingSearchId(null);
-                fetchSavedSearches();
-            } else {
-                toast.error("Error al actualizar");
-            }
-        } catch (err) {
-            console.error(err);
-            toast.error("Error de conexión");
-        }
-    };
 
     const sendCalcToNote = () => {
         const val = display === 'Error' ? '0' : display;
@@ -457,28 +387,10 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
         setActiveTab('notes');
     };
 
-    useEffect(() => {
-        try {
-            const saved = localStorage.getItem('voice_history');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                if (Array.isArray(parsed)) setCommandHistory(parsed);
-            }
-            fetchSavedSearches();
-        } catch (e) {
-            console.error("History parse error", e);
-        }
-    }, []);
+    // History handled by hook
 
     const addToHistory = (text) => {
-        if (!text || !text.trim()) return;
-        const clean = text.trim();
-        setCommandHistory(prev => {
-            const filtered = prev.filter(t => t !== clean);
-            const next = [clean, ...filtered].slice(0, 8);
-            localStorage.setItem('voice_history', JSON.stringify(next));
-            return next;
-        });
+        // Handled by hook
     };
 
     const handleHistoryClick = (cmd) => {
@@ -486,301 +398,11 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
         setShowHistory(false);
     };
 
-    const handleSavedSearchClick = (cmd) => {
-        setAiQuery(cmd);
-    };
-
+    // --- VOICE SETUP (SHARED/LOCAL) ---
     useEffect(() => {
         listeningModeRef.current = listeningMode;
     }, [listeningMode]);
 
-    const currentContext = CONTEXT_CONFIG ? CONTEXT_CONFIG.find(ctx =>
-        ctx.match.some(pathTrigger => pathname && pathname.toLowerCase().includes(pathTrigger.toLowerCase()))
-    ) : null;
-
-    // --- EXECUTE CLIENT ACTION ---
-    const executeClientAction = async (data) => {
-        const actionName = data.name || data.function_name;
-        const queryLower = aiQuery.toLowerCase();
-
-        // --- INTERCEPTOR: ESTADO DE CUENTA CARTERA ---
-        const isCarteraIntent = queryLower.includes('estado de cuenta') || queryLower.includes('cartera') || queryLower.includes('cuanto debe') || queryLower.includes('saldo de');
-
-        if (isCarteraIntent && (actionName === 'generar_reporte_movimientos' || actionName === 'consultar_documento')) {
-            const p = data.parameters;
-            const terceroIdentified = p.tercero || p.tercero_nombre || p.ai_tercero;
-
-            if (terceroIdentified) {
-                const params = new URLSearchParams();
-                params.set('tercero', terceroIdentified);
-                if (p.fecha_corte || p.fecha_fin) params.set('fecha_corte', p.fecha_corte || p.fecha_fin);
-
-                const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
-                if (wantsPdf) params.set('auto_pdf', 'true');
-                if (p.whatsapp_destino) { params.set('wpp', p.whatsapp_destino); params.set('auto_pdf', 'true'); }
-                if (p.email_destino) { params.set('email', p.email_destino); params.set('auto_pdf', 'true'); }
-
-                router.push(`/contabilidad/reportes/estado-cuenta-cliente?${params.toString()}`);
-                toast.success('IA: Abriendo Estado de Cuenta (Cartera)...');
-                return;
-            }
-        }
-
-        // --- INTERCEPTOR: MOVIMIENTOS INVENTARIO ---
-        const isInventarioIntent = queryLower.includes('inventario') || queryLower.includes('kardex') || queryLower.includes('stock') || queryLower.includes('existencias');
-
-        if (isInventarioIntent && (actionName === 'generar_reporte_movimientos' || actionName === 'consultar_documento')) {
-            const p = data.parameters;
-            const params = new URLSearchParams();
-            if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
-            if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
-
-            let prod = p.producto || p.producto_nombre || p.nombre_producto || p.articulo || p.referencia || p.search_term_prod || p.concepto || p.descripcion;
-
-            const invalidPhrases = [
-                'movimientos detallados de inventario', 'movimientos de inventario',
-                'reporte de inventario', 'informe de inventario',
-                'inventario', 'kardex', 'stock', 'existencias',
-                'movimientos detallados', 'movimientos'
-            ];
-            if (prod && invalidPhrases.some(phrase => prod.toLowerCase().trim() === phrase || prod.toLowerCase().includes('movimientos detallados'))) {
-                prod = null;
-            }
-
-            if (prod) params.set('search_term_prod', prod);
-            if (p.tercero || p.tercero_nombre || p.ai_tercero) params.set('ai_tercero', p.tercero || p.tercero_nombre || p.ai_tercero);
-            if (p.bodega || p.bodega_nombre) params.set('ai_bodega', p.bodega || p.bodega_nombre);
-            if (p.grupo || p.grupo_nombre) params.set('ai_grupo', p.grupo || p.grupo_nombre);
-
-            let docFilter = '';
-            const cleanDocParam = (val) => {
-                if (!val) return '';
-                const v = val.toString().trim();
-                const forbidden = ['inventario', 'movimientos', 'reporte', 'informe', 'kardex', 'stock', 'detallados', 'filtrar', 'documento', 'ref'];
-                if (forbidden.some(f => v.toLowerCase().includes(f) && v.length < 15)) return '';
-                return v;
-            };
-
-            const rawTipo = p.tipo_documento || p.tipo || p.ai_tipo_doc;
-            const rawNum = p.numero_documento || p.numero;
-            const cleanTipo = cleanDocParam(rawTipo);
-            const cleanNum = cleanDocParam(rawNum);
-
-            if (cleanNum) {
-                const normalizedNum = cleanNum.replace(/[\s_]+/g, '-');
-                if (cleanTipo && normalizedNum.toLowerCase().startsWith(cleanTipo.toLowerCase())) {
-                    docFilter = normalizedNum;
-                } else if (cleanTipo) {
-                    docFilter = `${cleanTipo}-${normalizedNum}`;
-                } else {
-                    docFilter = normalizedNum;
-                }
-            } else if (cleanTipo) {
-                docFilter = cleanTipo;
-            }
-
-            if (docFilter) params.set('search_term_doc', docFilter);
-            params.set('trigger', 'ai_search');
-            params.set('requestId', Date.now().toString());
-
-            router.push(`/contabilidad/reportes/super-informe-inventarios?${params.toString()}`);
-            toast.success('IA: Abriendo Movimientos de Inventario...');
-            return;
-        }
-
-        if (actionName === 'navegar_a_pagina') {
-            const modulo = (data.parameters.modulo || '').toLowerCase();
-            if (modulo.includes('contabil')) router.push('/contabilidad/documentos');
-            else if (modulo.includes('factur')) router.push('/facturacion/crear');
-            else if (modulo.includes('inventar')) router.push('/admin/inventario');
-            else if (modulo.includes('nomin')) router.push('/nomina/liquidar');
-            else {
-                toast.success(`IA: Navegando a ${data.parameters.modulo}`);
-            }
-
-        } else if (actionName === 'generar_reporte_movimientos') {
-            const params = new URLSearchParams();
-            const p = data.parameters;
-            if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
-            if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
-            if (p.cuenta || p.cuenta_nombre) params.set('cuenta', p.cuenta || p.cuenta_nombre);
-
-            const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
-            if (wantsPdf) params.set('auto_pdf', 'true');
-            if (p.whatsapp_destino) { params.set('wpp', p.whatsapp_destino); params.set('auto_pdf', 'true'); }
-            if (p.email_destino) { params.set('email', p.email_destino); params.set('auto_pdf', 'true'); }
-
-            if (p.tercero || p.tercero_nombre) {
-                params.set('tercero', p.tercero || p.tercero_nombre);
-                router.push(`/contabilidad/reportes/tercero-cuenta?${params.toString()}`);
-                toast.success('IA: Procesando Auxiliar por Tercero...');
-            } else {
-                router.push(`/contabilidad/reportes/auxiliar-cuenta?${params.toString()}`);
-                toast.success('IA: Procesando Auxiliar por Cuenta...');
-            }
-
-        } else if (actionName === 'generar_balance_prueba') {
-            const params = new URLSearchParams();
-            const p = data.parameters;
-            if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
-            if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
-            if (p.nivel) params.set('nivel', p.nivel);
-
-            const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
-            if (wantsPdf) params.set('auto_pdf', 'true');
-            if (p.whatsapp_destino) { params.set('wpp', p.whatsapp_destino); params.set('auto_pdf', 'true'); }
-
-            router.push(`/contabilidad/reportes/balance-de-prueba?${params.toString()}`);
-            toast.success('IA: Configurando Balance de Prueba...');
-
-        } else if (actionName === 'generar_balance_general') {
-            const params = new URLSearchParams();
-            const p = data.parameters;
-            if (p.fecha_corte) params.set('fecha_corte', p.fecha_corte);
-            if (p.comparativo) params.set('comparativo', 'true');
-
-            const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
-            if (wantsPdf) params.set('auto_pdf', 'true');
-            if (p.whatsapp_destino) { params.set('wpp', p.whatsapp_destino); params.set('auto_pdf', 'true'); }
-
-            router.push(`/contabilidad/reportes/balance-general?${params.toString()}`);
-            toast.success('IA: Configurando Balance General...');
-
-        } else if (actionName === 'generar_estado_resultados') {
-            const params = new URLSearchParams();
-            const p = data.parameters;
-            if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
-            if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
-
-            const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
-            if (wantsPdf) params.set('auto_pdf', 'true');
-            if (p.whatsapp_destino) { params.set('wpp', p.whatsapp_destino); params.set('auto_pdf', 'true'); }
-
-            router.push(`/contabilidad/reportes/estado-resultados?${params.toString()}`);
-            toast.success('IA: Configurando Estado de Resultados...');
-
-        } else if (actionName === 'crear_recurso') {
-            const tipo = data.parameters.tipo || data.parameters.type;
-            const creationMap = {
-                'factura': { path: '/contabilidad/facturacion', param: '' },
-                'compra': { path: '/contabilidad/compras', param: 'trigger=new_purchase' },
-                'item': { path: '/admin/inventario', param: 'trigger=new_item' },
-                'tercero': { path: '/admin/terceros/crear', param: '' },
-                'traslado': { path: '/contabilidad/traslados', param: 'trigger=new_transfer' },
-                'centro_costo': { path: '/admin/centros-costo', param: 'trigger=new_cc' },
-                'unidad_ph': { path: '/ph/unidades/crear', param: '' },
-                'bodega': { path: '/admin/inventario/parametros', param: 'trigger=tab_warehouses' },
-                'receta': { path: '/produccion/recetas', param: 'trigger=new_recipe' },
-                'nomina': { path: '/nomina/configuracion', param: 'trigger=new_payroll_type' },
-                'plantilla': { path: '/admin/plantillas/crear', param: '' },
-                'empresa': { path: '/admin/utilidades/soporte-util', param: 'trigger=tab_create_company' },
-                'cuenta': { path: '/admin/plan-de-cuentas', param: 'trigger=new_account' },
-                'tipo_documento': { path: '/admin/tipos-documento/crear', param: '' }
-            };
-            const target = creationMap[tipo];
-            if (target) {
-                const finalUrl = target.param ? `${target.path}?${target.param}` : target.path;
-                router.push(finalUrl);
-                toast.success(`IA: Abriendo creación de ${tipo}...`);
-            } else {
-                toast.warning(`IA: No sé cómo crear '${tipo}' aún.`);
-            }
-
-        } else if (actionName === 'consultar_documento') {
-            const p = data.parameters;
-            const params = new URLSearchParams();
-            params.set('trigger', 'ai_search');
-            if (p.tipo_documento || p.tipo || p.ai_tipo_doc) params.set('ai_tipo_doc', p.tipo_documento || p.tipo || p.ai_tipo_doc);
-            if (p.numero_documento || p.numero) params.set('numero', p.numero_documento || p.numero);
-            if (p.tercero || p.tercero_nombre || p.ai_tercero) params.set('ai_tercero', p.tercero || p.tercero_nombre || p.ai_tercero);
-            if (p.cuenta || p.cuenta_nombre || p.ai_cuenta) params.set('ai_cuenta', p.cuenta || p.cuenta_nombre || p.ai_cuenta);
-            if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
-            if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
-            if (p.concepto || p.conceptoKeyword) params.set('conceptoKeyword', p.concepto || p.conceptoKeyword);
-
-            router.push(`/contabilidad/reportes/super-informe?${params.toString()}`);
-            toast.success('IA: Buscando documentos...');
-
-        } else if (actionName === 'extraer_datos_documento' && data.parameters.plantilla) {
-            const p = data.parameters;
-            const params = new URLSearchParams();
-            params.set('ai_plantilla', p.plantilla);
-            if (p.tercero) params.set('ai_tercero', p.tercero);
-            const val = p.valor || p.monto || p.debito || p.credito || p.importe;
-            if (val) params.set('ai_valor', val);
-            params.set('ai_autosave', 'true');
-
-            router.push(`/contabilidad/captura-rapida?${params.toString()}`);
-            toast.success('IA: Abriendo Captura Rápida...');
-
-        } else if (actionName === 'generar_backup') {
-            toast.loading('IA: Generando respaldo completo...', { id: 'backup-toast' });
-            try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/utilidades/backup-rapido`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
-                });
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement("a");
-                    link.href = url;
-                    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-                    link.download = `backup_completo_finaxis_${timestamp}.json`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    toast.success("¡Respaldo descargado!", { id: 'backup-toast' });
-                } else {
-                    throw new Error("Failed to backup");
-                }
-            } catch (err) {
-                console.error(err);
-                toast.error("Error generando el respaldo.", { id: 'backup-toast' });
-            }
-        }
-    };
-
-    // --- SUBMIT LOGIC ---
-    const handleAiSubmit = async (e, forcedQuery = null) => {
-        if (e) e.preventDefault();
-        const commandToRun = forcedQuery || aiQuery;
-        if (!commandToRun || !commandToRun.trim()) return;
-
-        addToHistory(commandToRun);
-        setIsThinking(true);
-        setAiResponse(null);
-        try {
-            const token = localStorage.getItem('authToken');
-            const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const response = await fetch(`${baseUrl}/api/ai/process-command`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ command: commandToRun })
-            });
-
-            if (response.status === 401) {
-                // Potential debug fallback
-            }
-
-            const data = await response.json();
-
-            if (data.error) {
-                setAiResponse({ type: 'error', text: data.error });
-            } else {
-                setAiResponse({ type: 'success', text: data.message || `Acción procesada con éxito` });
-                await executeClientAction(data);
-            }
-
-        } catch (error) {
-            setAiResponse({ type: 'error', text: 'Error conectando con el cerebro.' });
-        } finally {
-            setIsThinking(false);
-            if (!forcedQuery) setAiQuery('');
-        }
-    };
-
-    // --- VOICE SETUP ---
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -808,33 +430,63 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                 };
 
                 recognition.onerror = (e) => {
-                    console.error("Speech error", e);
                     setListeningMode(null);
-                    if (e.error !== 'no-speech') toast.error("Error de microfono.");
+                    if (e.error !== 'no-speech') toast.error("Error de micrófono.");
                 };
 
                 recognitionRef.current = recognition;
             }
         }
-        return () => { if (recognitionRef.current) recognitionRef.current.abort(); };
     }, []);
 
     const toggleVoice = (mode) => {
+        if (mode === 'ai') {
+            toggleListening();
+            setListeningMode(prev => prev === 'ai' ? null : 'ai');
+            return;
+        }
+
+        // Local handling for notes
         if (!recognitionRef.current) { toast.warning("Usa Chrome para voz."); return; }
         if (listeningMode === mode) {
             recognitionRef.current.stop();
-            if (mode === 'ai' && aiQuery.trim()) {
-                handleAiSubmit(null, aiQuery);
-            }
             setListeningMode(null);
         } else {
             if (listeningMode) recognitionRef.current.abort();
             setListeningMode(mode);
             try {
                 recognitionRef.current.start();
-                toast.info(mode === 'ai' ? "Escuchando comando..." : "Dictando nota...");
+                toast.info("Dictando nota...");
             } catch (e) { console.error(e); }
         }
+    };
+
+    // Sync hook state with local listeningMode for AI
+    useEffect(() => {
+        if (isListening) setListeningMode('ai');
+        else if (listeningMode === 'ai') setListeningMode(null);
+    }, [isListening]);
+
+    const handleSavedSearchClick = (cmd) => {
+        setAiQuery(cmd);
+    };
+
+    const currentContext = CONTEXT_CONFIG ? CONTEXT_CONFIG.find(ctx =>
+        ctx.match.some(pathTrigger => pathname && pathname.toLowerCase().includes(pathTrigger.toLowerCase()))
+    ) : null;
+
+
+    // AI action execution is now handled by the useSmartSearch hook
+
+    // --- SUBMIT LOGIC ---
+    const handleAiSubmit = async (e, forcedQuery = null) => {
+        if (e) e.preventDefault();
+        const commandToRun = forcedQuery || aiQuery;
+        if (!commandToRun || !commandToRun.trim()) return;
+
+        setAiResponse(null);
+        await processVoiceCommand(commandToRun);
+        if (!forcedQuery) setAiQuery('');
     };
 
     // Keyboard support

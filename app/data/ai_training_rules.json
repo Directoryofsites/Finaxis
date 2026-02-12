@@ -1,0 +1,23 @@
+{
+    "alias_cuentas": {
+        "caja": "110505",
+        "bancos": "111005",
+        "caja general": "110505",
+        "caja menor": "110510",
+        "ingresos": "4",
+        "gastos": "5",
+        "costos": "6",
+        "cafeteria": "511020"
+    },
+    "prioridades": {
+        "reportes_auxiliares": "nivel_auxiliar",
+        "busqueda_cuentas": "permite_movimiento"
+    },
+    "instrucciones_especificas": [
+        "Si el usuario pide 'saldo' de una CUENTA específica filtrado por un TERCERO (o viceversa), utiliza la función 'generar_relacion_saldos'.",
+        "Para reportes de SALDOS o AUXILIARES, prioriza SIEMPRE cuentas de nivel detalle/auxiliar que permitan movimiento (6 o más dígitos).",
+        "Si el usuario pide los ingresos, gastos o costos sin pedir 'movimientos', usa 'generar_estado_resultados'.",
+        "VALOR POR DEFECTO PARA FORMATO: Si no se especifica, usa 'PDF'.",
+        "INTERPRETACIÓN DE FECHAS: Si no se especifica periodo, asume desde el inicio de la operación (desde 2020-01-01 o antes si es 'toda la historia') hasta hoy."
+    ]
+}

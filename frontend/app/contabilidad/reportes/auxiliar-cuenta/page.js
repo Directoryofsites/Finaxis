@@ -101,18 +101,24 @@ function AuxiliarPorCuentaContent() {
                     searchWords.forEach(word => {
                         // Match simple
                         if (nombreNorm.includes(word) || codigoNorm.includes(word)) {
-                            score += 10;
+                            score += 15;
                         } else {
                             // Match singular/plural (muy básico: quitar 's' final)
                             const wordNoS = word.endsWith('s') ? word.slice(0, -1) : word;
                             if (wordNoS.length > 3 && (nombreNorm.includes(wordNoS) || codigoNorm.includes(wordNoS))) {
-                                score += 8; // Un poco menos que match exacto
+                                score += 10;
                             }
                         }
                     });
 
                     // 4. Boost para Cuentas Auxiliares (Hojas) -> Priorizar el detalle sobre el grupo
-                    if (c.es_auxiliar) score += 25;
+                    // MEGA REFUERZO: Si es auxiliar, ganarle a cualquier cuenta mayor por goleada
+                    if (c.es_auxiliar) {
+                        score += 150;
+                    } else {
+                        // Penalizar si es cuenta de nivel 2 o 1 (cabeza de grupo)
+                        if (c.codigo.length <= 4) score -= 50;
+                    }
 
                     return { ...c, score };
                 });
@@ -120,7 +126,7 @@ function AuxiliarPorCuentaContent() {
                 // Ordenar por score descendente, Y LUEGO POR LONGITUD DE NOMBRE (Más largo = Más específico)
                 const bestMatches = scoredCuentas.filter(c => c.score > 0).sort((a, b) => {
                     if (b.score !== a.score) return b.score - a.score;
-                    return b.nombre.length - a.nombre.length; // Tie-breaker: Preferir nombre más largo
+                    return b.nombre.length - a.nombre.length; // Tie-breaker: Preferir nombre más largo (más específico)
                 });
                 const matched = bestMatches.length > 0 ? bestMatches[0] : null;
 
