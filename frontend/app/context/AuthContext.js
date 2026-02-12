@@ -2,8 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 // FIX: Robust import ensuring compatibility with different build environments
-import * as jwtDecodeLib from 'jwt-decode';
-const jwtDecode = jwtDecodeLib.jwtDecode || jwtDecodeLib.default || jwtDecodeLib;
+import { jwtDecode } from 'jwt-decode';
 
 import { apiService, setAuthToken } from '../../lib/apiService';
 

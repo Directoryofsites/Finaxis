@@ -6,6 +6,7 @@ import { formatCurrency } from '../../../utils/format';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../../lib/apiService';
 import { toast } from 'react-toastify';
+import Link from 'next/link';
 
 export default function FlujoEfectivoPage() {
     const { user, authLoading } = useAuth();
