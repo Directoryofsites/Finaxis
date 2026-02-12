@@ -1,17 +1,21 @@
 import os
-import google.generativeai as genai
 import json
 from datetime import datetime
 from dotenv import load_dotenv
+from openai import AsyncOpenAI
 
 load_dotenv()
 
-api_key = os.getenv("GEMINI_API_KEY", "").strip()
+api_key = os.getenv("OPENAI_API_KEY", "").strip()
+client = None
+
 if api_key:
-    # Debug: Mostrar parte de la llave para verificar que es la NUEVA (Finaxis 2)
+    # Debug: Mostrar parte de la llave para verificar
     masked_key = f"{api_key[:10]}...{api_key[-4:]}" if len(api_key) > 15 else "INVALID"
-    print(f"AI_DEBUG: Usando API Key: {masked_key}")
-    genai.configure(api_key=api_key)
+    print(f"AI_DEBUG: Usando OpenAI API Key: {masked_key}")
+    client = AsyncOpenAI(api_key=api_key)
+else:
+    print("AI_DEBUG: OPENAI_API_KEY no configurada.")
 
 # --- CARGA DE REGLAS DE ENTRENAMIENTO ---
 TRAINING_RULES_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "ai_training_rules.json")
@@ -22,102 +26,9 @@ def load_training_rules():
             with open(TRAINING_RULES_PATH, 'r', encoding='utf-8') as f:
                 return json.load(f)
     except Exception as e:
-        print(f"Error cargando reglas de IA: {e}")
+        print(f"Error cargando reglas de entrenamiento: {e}")
     return {}
 
-# Definición de herramientas (Tools) disponibles para la IA
-TOOLS_SCHEMA = [
-    {
-        "name": "generar_reporte_movimientos",
-        "description": "Genera una consulta de movimientos contables (auxiliar) filtrado por cuenta, tercero o fechas. Úsalo cuando pidan 'auxiliar', 'tercero', 'cuenta específica' o 'auditoría'.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "tercero": { "type": "string" },
-                "cuenta": { "type": "string" },
-                "fecha_inicio": { "type": "string", "format": "date" },
-                "fecha_fin": { "type": "string", "format": "date" },
-                "formato": { "type": "string", "enum": ["PDF", "EXCEL", "PANTALLA"] },
-                "whatsapp_destino": { "type": "string" },
-                "email_destino": { "type": "string" },
-                "producto": { "type": "string" },
-                "tipo_documento": { "type": "string" },
-                "numero_documento": { "type": "string" },
-                "accion": { "type": "string" }
-            },
-            "required": ["fecha_inicio", "fecha_fin"]
-        }
-    },
-    {
-        "name": "generar_balance_prueba",
-        "description": "Genera el reporte de Balance de Prueba (Saldos).",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "fecha_inicio": { "type": "string", "format": "date" },
-                "fecha_fin": { "type": "string", "format": "date" },
-                "nivel": { "type": "integer" },
-                "formato": { "type": "string", "enum": ["PDF", "EXCEL", "PANTALLA"] },
-                "whatsapp_destino": { "type": "string" }
-            },
-            "required": ["fecha_inicio", "fecha_fin"]
-        }
-    },
-    {
-        "name": "generar_estado_resultados",
-        "description": "Genera el Estado de Resultados (P&L / Ganancias y Pérdidas). Ingresos, Costos y Gastos.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "fecha_inicio": { "type": "string", "format": "date" },
-                "fecha_fin": { "type": "string", "format": "date" },
-                "formato": { "type": "string", "enum": ["PDF", "EXCEL", "PANTALLA"] },
-                "whatsapp_destino": { "type": "string" }
-            },
-            "required": ["fecha_inicio", "fecha_fin"]
-        }
-    },
-    {
-        "name": "generar_balance_general",
-        "description": "Genera el Balance General (Estado de Situación Financiera).",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "fecha_corte": { "type": "string", "format": "date" },
-                "comparativo": { "type": "boolean" },
-                "formato": { "type": "string", "enum": ["PDF", "EXCEL", "PANTALLA"] }
-            },
-            "required": ["fecha_corte"]
-        }
-    },
-    {
-        "name": "generar_relacion_saldos",
-        "description": "Genera el reporte de 'Relación de Saldos' (Cuenta vs Tercero). Úsalo cuando pidan el 'saldo' de una cuenta filtrado por un tercero específico, o viceversa.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "tercero": { "type": "string" },
-                "cuenta": { "type": "string" },
-                "fecha_inicio": { "type": "string", "format": "date" },
-                "fecha_fin": { "type": "string", "format": "date" },
-                "formato": { "type": "string", "enum": ["PDF", "EXCEL", "PANTALLA"] }
-            }
-        }
-    },
-    {
-        "name": "crear_recurso",
-        "description": "Abre el formulario para CREAR un nuevo registro.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "tipo": { "type": "string", "enum": ["factura", "compra", "tercero", "item", "traslado", "cuenta"] }
-            },
-            "required": ["tipo"]
-        }
-    },
-    {
-        "name": "navegar_a_pagina",
-        "description": "Redirige a un módulo específico.",
 def get_system_prompt():
     rules = load_training_rules()
     today = datetime.now().strftime("%Y-%m-%d")
@@ -197,7 +108,7 @@ async def procesar_comando_natural(texto_usuario: str, contexto: dict | None = N
         # Formatear el input para el modelo
         full_input = f"Contexto: {json.dumps(contexto or {})} \nUsuario: {texto_usuario}"
         
-        completion = client.chat.completions.create(
+        completion = await client.chat.completions.create(
             model=model_name,
             messages=[
                 {"role": "system", "content": prompt},
