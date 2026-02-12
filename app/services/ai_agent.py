@@ -183,8 +183,8 @@ async def procesar_comando_natural(texto_usuario: str, contexto: dict | None = N
         return {"error": "API Key de Gemini no configurada."}
 
     models_to_try = [
-        'gemini-1.5-flash',
-        'gemini-1.5-pro',
+        'gemini-2.0-flash',
+        'gemini-flash-latest',
     ]
 
     last_error = None
