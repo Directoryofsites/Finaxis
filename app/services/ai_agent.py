@@ -118,57 +118,60 @@ TOOLS_SCHEMA = [
     {
         "name": "navegar_a_pagina",
         "description": "Redirige a un módulo específico.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "modulo": { "type": "string" },
-                "accion": { "type": "string" }
-            },
-            "required": ["modulo"]
-        }
-    },
-    {
-        "name": "extraer_datos_documento",
-        "description": "Extrae datos para capturar un documento contable.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "tipo_documento": { "type": "string" },
-                "tercero": { "type": "string" },
-                "valor": { "type": "number" },
-                "accion": { "type": "string", "enum": ["DEFINIR_CABECERA", "FINALIZAR", "CANCELAR"] }
-            }
-        }
-    }
-]
-
 def get_system_prompt():
     rules = load_training_rules()
-    today = datetime.now().strftime('%Y-%m-%d')
-    current_year = datetime.now().year
+    today = datetime.now().strftime("%Y-%m-%d")
     
     prompt = f"""
-Eres Finaxis AI, asistente contable inteligente. Interpreta la intención y mapea a una función.
-Hoy es: {today}
+ERES UN ASISTENTE CONTABLE EXPERTO EN EL SISTEMA "FINAXIS".
+TU OBJETIVO ES INTERPRETAR LAS INTENCIONES DEL USUARIO Y MAPEARLAS A FUNCIONES DEL SISTEMA.
 
-Reglas:
-1. Responde SIEMPRE con un JSON: {{ "name": "funcion", "parameters": {{ ... }} }}
-2. INFORMES:
-   - "Saldo" + "Cuenta" + "Tercero" -> 'generar_relacion_saldos'.
-   - "Ingresos", "Gastos", "Costos" (SIN 'movimientos' o 'detalle') -> 'generar_estado_resultados'.
-   - "Auxiliar", "Movimientos", "Detalle" -> 'generar_reporte_movimientos'.
-   - "Balance General" -> 'generar_balance_general'.
-   - "Balance de Prueba" -> 'generar_balance_prueba'.
+FECHA ACTUAL: {today}
 
-3. FORMATO POR DEFECTO:
-   - Si no especifican, usa "formato": "PDF".
-   - SOLO usa "PANTALLA" si dicen explícitamente "pantalla".
+1. REGLAS GENERALES:
+   - NO inventes información.
+   - Si falta información crítica, pide confirmación (pero intenta inferir lo obvio).
+   - Responde SIEMPRE en formato JSON estricto.
 
-4. FECHAS (CRÍTICO):
-   - Si el usuario NO especifica periodo (ej: "Saldo de caja" o "Ingresos"), usa SIEMPRE desde el inicio de la historia hasta hoy: "fecha_inicio": "2024-01-01", "fecha_fin": "{today}".
-   - "año en curso": 2024-01-01 a {today}
-   - "periodo en curso": {datetime.now().strftime('%Y-%m')}-01 a {today}
-   - "toda la historia" o "desde siempre": 2000-01-01 a {today}
+2. FORMATO DE RESPUESTA (JSON):
+   {{
+     "name": "nombre_de_la_funcion",
+     "parameters": {{
+       "param1": "valor1",
+       "param2": "valor2"
+     }}
+   }}
+
+3. FUNCIONES DISPONIBLES:
+   - generar_auxiliar_cuenta(cuenta: str, fecha_inicio: str, fecha_fin: str, formato: str)
+     * "Quiero un auxiliar de la 1105"
+     * "Dame el auxiliar de caja de enero"
+   
+   - generar_balance_prueba(nivel: int, fecha_inicio: str, fecha_fin: str, formato: str)
+     * "Genera un balance de prueba"
+   
+   - generar_estado_situacion_financiera(fecha_inicio: str, fecha_fin: str, formato: str)
+     * "Necesito un balance general"
+     * "Estado de situación financiera"
+     
+   - generar_estado_resultados(fecha_inicio: str, fecha_fin: str, formato: str)
+     * "PyG de este mes"
+     * "Estado de resultados"
+     
+   - generar_certificado_retencion(tercero: str, fecha_inicio: str, fecha_fin: str, formato: str)
+     * "Certificado de retención para Pedro Pérez"
+     
+   - generar_relacion_saldos(cuenta: str, tercero: str, fecha_inicio: str, fecha_fin: str, formato: str)
+     * "Relación de saldos de proveedores"
+     * "Saldo de la 1305"
+     
+   - generar_estado_cuenta_proveedor(tercero: str, fecha_corte: str, formato: str)
+     * "Estado de cuenta de Juanito"
+
+4. EXTTRACCIÓN DE ENTIDADES:
+   - Fechas: Si no se especifica, asume el mes actual o el año actual según contexto.
+   - Formatos: Por defecto "PDF" si no dice "Excel".
+   - Cuentas: Intenta identificar el código o nombre (e.g., "Caja" -> "1105").
 
 5. ALIAS Y ENTRENAMIENTO:
    - Alias cargados: {json.dumps(rules.get('alias_cuentas', {}))}
@@ -182,59 +185,38 @@ EJEMPLOS:
     return prompt
 
 async def procesar_comando_natural(texto_usuario: str, contexto: dict | None = None):
-    if not api_key:
-        return {"error": "API Key de Gemini no configurada."}
+    if not client:
+        return {"error": "API Key de OpenAI no configurada."}
 
-    models_to_try = [
-        'gemini-1.5-flash-002',  # Versión específica nueva
-        'gemini-1.5-flash-001',  # Versión específica anterior
-        'gemini-1.5-flash',      # Alias genérico
-        'gemini-1.5-pro-002',
-        'gemini-1.5-pro-001',
-        'gemini-1.5-pro',
-        'gemini-pro',            # Último recurso (Modelo 1.0 legado)
-    ]
-
-    print(f"AI_DEBUG: google-generativeai version: {genai.__version__}")
+    model_name = "gpt-4o-mini"
     
-    last_error = None
-    for model_name in models_to_try:
-        try:
-            print(f"AI_DEBUG: Intentando usar modelo: {model_name}")
-            prompt = get_system_prompt()
-            model = genai.GenerativeModel(model_name, system_instruction=prompt)
-            
-            # Formatear el input para el modelo
-            full_input = f"Contexto: {json.dumps(contexto or {})} \nUsuario: {texto_usuario}"
-            
-            completion = await model.generate_content_async(
-                full_input,
-                generation_config={"temperature": 0.1}
-            )
-            
-            response_text = completion.text.strip()
-            # Limpiar posibles bloques de código markdown
-            if "```json" in response_text:
-                response_text = response_text.split("```json")[1].split("```")[0].strip()
-            elif "```" in response_text:
-                response_text = response_text.split("```")[1].split("```")[0].strip()
-            
-            print(f"AI_DEBUG: Éxito con modelo {model_name}")
-            return json.loads(response_text)
-            
-        except Exception as e:
-            print(f"AI_DEBUG: Falló modelo {model_name}. Error: {e}")
-            if "404" in str(e):
-                print("AI_DEBUG: --- LISTANDO MODELOS DISPONIBLES PARA ESTA KEY ---")
-                try:
-                    for m in genai.list_models():
-                        if 'generateContent' in m.supported_generation_methods:
-                            print(f"AI_DEBUG: Disponible: {m.name}")
-                except Exception as list_err:
-                    print(f"AI_DEBUG: Error al listar modelos: {list_err}")
-                print("AI_DEBUG: ------------------------------------------------")
-            
-            last_error = e
-            continue
-
-    return {"error": f"Error procesando comando: {str(last_error)}"}
+    try:
+        print(f"AI_DEBUG: Intentando usar modelo: {model_name}")
+        prompt = get_system_prompt()
+        
+        # Formatear el input para el modelo
+        full_input = f"Contexto: {json.dumps(contexto or {})} \nUsuario: {texto_usuario}"
+        
+        completion = client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": full_input}
+            ],
+            temperature=0.1
+        )
+        
+        response_text = completion.choices[0].message.content.strip()
+        
+        # Limpiar posibles bloques de código markdown
+        if "```json" in response_text:
+            response_text = response_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in response_text:
+            response_text = response_text.split("```")[1].split("```")[0].strip()
+        
+        print(f"AI_DEBUG: Éxito con modelo {model_name}")
+        return json.loads(response_text)
+        
+    except Exception as e:
+        print(f"AI_DEBUG: Falló modelo {model_name}. Error: {e}")
+        return {"error": f"Error procesando comando: {str(e)}"}
