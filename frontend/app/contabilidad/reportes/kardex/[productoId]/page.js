@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import {
     FaCube,
@@ -30,7 +30,7 @@ const formatNumber = (val) => {
     return val.toFixed(2);
 };
 
-const KardexPage = () => {
+const KardexContent = () => {
     const params = useParams();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -365,4 +365,15 @@ const KardexPage = () => {
     );
 };
 
-export default KardexPage;
+export default function KardexPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+                <FaCube className="text-indigo-300 text-6xl mb-4 animate-pulse" />
+                <p className="text-indigo-600 font-semibold text-lg animate-pulse">Preparando Kardex...</p>
+            </div>
+        }>
+            <KardexContent />
+        </Suspense>
+    );
+}
