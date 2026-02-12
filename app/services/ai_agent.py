@@ -191,6 +191,7 @@ async def procesar_comando_natural(texto_usuario: str, contexto: dict | None = N
     last_error = None
     for model_name in models_to_try:
         try:
+            print(f"AI_DEBUG: Intentando usar modelo: {model_name}")
             prompt = get_system_prompt()
             model = genai.GenerativeModel(model_name, system_instruction=prompt)
             
@@ -208,11 +209,12 @@ async def procesar_comando_natural(texto_usuario: str, contexto: dict | None = N
                 response_text = response_text.split("```json")[1].split("```")[0].strip()
             elif "```" in response_text:
                 response_text = response_text.split("```")[1].split("```")[0].strip()
-                
+            
+            print(f"AI_DEBUG: Éxito con modelo {model_name}")
             return json.loads(response_text)
             
         except Exception as e:
-            print(f"Error con modelo {model_name}: {e}")
+            print(f"AI_DEBUG: Falló modelo {model_name}. Error: {e}")
             last_error = e
             continue
 
