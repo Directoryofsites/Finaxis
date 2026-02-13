@@ -373,7 +373,7 @@ export function useSmartSearch() {
 
             router.push(`/contabilidad/reportes/relacion-saldos?${params.toString()}`);
             toast.success('IA: Consultando Relación de Saldos...');
-        } else if (actionName === 'generar_balance_general') {
+        } else if (actionName === 'generar_balance_general' || actionName === 'generar_estado_situacion_financiera') {
             const params = new URLSearchParams();
             if (p.fecha_corte) params.set('fecha_corte', p.fecha_corte);
             if (p.comparativo) params.set('comparativo', 'true');
