@@ -321,7 +321,7 @@ export function useSmartSearch() {
             else if (modulo.includes('inventar')) router.push('/admin/inventario');
             else if (modulo.includes('nomin')) router.push('/nomina/liquidar');
             else toast.success(`IA: Navegando a ${p.modulo}`);
-        } else if (actionName === 'generar_reporte_movimientos') {
+        } else if (actionName === 'generar_reporte_movimientos' || actionName === 'generar_auxiliar_cuenta') {
             const params = new URLSearchParams();
             if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
             if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
