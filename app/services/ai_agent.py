@@ -61,6 +61,7 @@ FECHA ACTUAL: {today}
    - generar_balance_prueba(nivel: int, fecha_inicio: str, fecha_fin: str, formato: str)
      * "Genera un balance de prueba"
      * INSTRUCCIÓN: Por defecto nivel=7 (máximo detalle).
+     * CRÍTICO: Por defecto nivel=7 (máximo detalle). SIEMPRE usa 7 a menos que pidan otro nivel.
    
    - generar_estado_situacion_financiera(fecha_corte: str, formato: str)
      * "Necesito un balance general"
@@ -79,6 +80,13 @@ FECHA ACTUAL: {today}
      
    - generar_estado_cuenta_proveedor(tercero: str, fecha_corte: str, formato: str)
      * "Estado de cuenta de Juanito"
+
+   - buscar_recurso_o_reporte(termino_busqueda: str, fecha_inicio: str, fecha_fin: str, fecha_corte: str, filtros: dict)
+     * USA ESTA FUNCIÓN PARA CUALQUIER OTRO REPORTE O PÁGINA QUE EL USUARIO PIDA.
+     * "Dame el informe de ventas por cliente" -> termino_busqueda="Ventas por cliente"
+     * "Kardex de Coca Cola" -> termino_busqueda="Kardex", filtros={{"producto": "Coca Cola"}}
+     * "Rentabilidad de este mes" -> termino_busqueda="Rentabilidad"
+     * "Reporte de IVA de enero" -> termino_busqueda="IVA", fecha_inicio="2026-01-01", fecha_fin="2026-01-31"
 
 4. EXTTRACCIÓN DE ENTIDADES:
    - Fechas: Si no se especifica, asume el mes actual o el año actual según contexto.

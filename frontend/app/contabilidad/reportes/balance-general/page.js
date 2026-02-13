@@ -18,6 +18,7 @@ import {
 import { toast } from 'react-toastify';
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
+import { useAIAutomation } from '../../../hooks/useAIAutomation';
 
 // Estilos Reusables (Manual v2.0)
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
@@ -30,8 +31,10 @@ export default function BalanceGeneralPage() {
     const [reporte, setReporte] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const [fechaCorte, setFechaCorte] = useState(new Date().toISOString().split('T')[0]);
-    const [presentationMode, setPresentationMode] = useState('auxiliar'); // 'auxiliar', 'mayor', 'clasificado'
+    const [filtros, setFiltros] = useState({
+        fecha_corte: new Date().toISOString().split('T')[0],
+        nivel: 'auxiliar' // 'auxiliar', 'mayor', 'clasificado'
+    });
     const [isPageReady, setPageReady] = useState(false);
 
     // Automation State
@@ -62,49 +65,33 @@ export default function BalanceGeneralPage() {
         }
     }, [user, authLoading, router]);
 
-    // --- AUTO-CONFIGURACION (IA) ---
-    const [autoExecute, setAutoExecute] = useState(false);
+    // --- AUTOMATIZACION UNIVERSAL (IA) ---
+    useAIAutomation(isPageReady, filtros, setFiltros, handleGenerateReport);
 
+    // Efecto para triggers especiales (WhatsApp / Email / PDF)
     useEffect(() => {
-        if (isPageReady) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const aiFechaCorte = urlParams.get('fecha_corte');
-            const aiPresentation = urlParams.get('nivel') || 'auxiliar'; // Support 'nivel' param if AI sends it
+        const urlParams = new URLSearchParams(window.location.search);
+        const pAutoPdf = urlParams.get('auto_pdf');
+        const pWpp = urlParams.get('wpp');
+        const pEmail = urlParams.get('email');
 
-            const pAutoPdf = urlParams.get('auto_pdf');
-            const pWpp = urlParams.get('wpp');
-            const pEmail = urlParams.get('email');
+        if (reporte && !isLoading) {
+            if (pAutoPdf === 'true') handleExportPDF();
 
-            if (aiFechaCorte) {
-                const currentSignature = `${aiFechaCorte}-${pAutoPdf}-${pWpp}-${pEmail}`;
-                if (lastProcessedParams.current === currentSignature) return;
-                lastProcessedParams.current = currentSignature;
+            if (pWpp) {
+                const message = `Hola, adjunto el Balance General de ${user.nombre_empresa} con corte a ${filtros.fecha_corte}.`;
+                const wppUrl = `https://wa.me/${pWpp}?text=${encodeURIComponent(message)}`;
+                setTimeout(() => window.open(wppUrl, '_blank'), 1500);
+            }
 
-                setFechaCorte(aiFechaCorte);
-                setPresentationMode(aiPresentation); // Set presentation mode if provided
-
-                if (pAutoPdf === 'true') setAutoPdfTrigger(true);
-                if (pWpp) setWppNumber(pWpp);
-                if (pEmail) setEmailAddress(pEmail);
-
-                // Activar bandera de ejecución automática
-                setAutoExecute(true);
+            if (pEmail) {
+                handleSendEmail();
             }
         }
-    }, [isPageReady]);
-
-    // EFECTO: Ejecutar reporte automáticamente cuando la bandera cambie
-    useEffect(() => {
-        if (autoExecute && fechaCorte) {
-            handleGenerateReport();
-            setAutoExecute(false); // Resetear bandera
-            // Limpiar URL para no re-ejecutar al recargar
-            window.history.replaceState(null, '', window.location.pathname);
-        }
-    }, [autoExecute, fechaCorte]);
+    }, [reporte, isLoading]);
 
     const handleGenerateReport = async () => {
-        if (!fechaCorte) {
+        if (!filtros.fecha_corte) {
             setError("Por favor, seleccione una fecha de corte.");
             return;
         }
@@ -113,7 +100,7 @@ export default function BalanceGeneralPage() {
         setReporte(null);
         try {
             const data = await apiService.get('/reports/balance-sheet', {
-                params: { fecha_corte: fechaCorte, nivel: presentationMode }
+                params: { fecha_corte: filtros.fecha_corte, nivel: filtros.nivel }
             });
             setReporte(data.data);
         } catch (err) {
@@ -125,13 +112,15 @@ export default function BalanceGeneralPage() {
 
     // HANDLE: Enviar por Correo
     const handleSendEmail = async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const emailAddress = urlParams.get('email');
         if (!reporte || !emailAddress) return;
         toast.info(`📤 Enviando reporte a ${emailAddress}...`);
         try {
             await apiService.post('/reports/dispatch-email', {
                 report_type: 'balance_general',
                 email_to: emailAddress,
-                filtros: { fecha_corte: fechaCorte }
+                filtros: { fecha_corte: filtros.fecha_corte }
             });
             toast.success(`✅ Correo enviado a ${emailAddress}`);
         } catch (err) {
@@ -139,25 +128,6 @@ export default function BalanceGeneralPage() {
             toast.error("❌ Falló el envío del correo.");
         }
     };
-
-    // EFECTO: Automatización
-    useEffect(() => {
-        if (autoPdfTrigger && reporte && !isLoading) {
-            handleExportPDF();
-
-            if (wppNumber) {
-                const message = `Hola, adjunto el Balance General de ${user.nombre_empresa} con corte a ${fechaCorte}.`;
-                const wppUrl = `https://wa.me/${wppNumber}?text=${encodeURIComponent(message)}`;
-                setTimeout(() => window.open(wppUrl, '_blank'), 1500);
-            }
-
-            if (emailAddress) handleSendEmail();
-
-            setAutoPdfTrigger(false);
-            setWppNumber(null);
-            setEmailAddress(null);
-        }
-    }, [reporte, autoPdfTrigger, isLoading, wppNumber, emailAddress]);
 
     const handleExportPDF = async () => {
         if (!reporte) {

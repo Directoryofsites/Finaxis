@@ -350,9 +350,9 @@ export function useSmartSearch() {
             if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
             if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
 
-            // Forzar Nivel 7 por defecto para IA si no viene especificado
-            params.set('nivel', p.nivel || '7');
-
+            // JUEZ: Divorcio del Nivel 1. Si no viene nivel o si es 1, forzamos a 7.
+            const forcedNivel = (p.nivel && parseInt(p.nivel) > 1) ? p.nivel : '7';
+            params.set('nivel', forcedNivel);
             const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
             if (wantsPdf) params.set('auto_pdf', 'true');
             if (p.whatsapp_destino) { params.set('wpp', p.whatsapp_destino); params.set('auto_pdf', 'true'); }
@@ -443,6 +443,50 @@ export function useSmartSearch() {
 
             router.push(`/contabilidad/reportes/super-informe?${params.toString()}`);
             toast.success('IA: Buscando documentos...');
+        } else if (actionName === 'buscar_recurso_o_reporte') {
+            const termino = p.termino_busqueda;
+            if (!termino) {
+                toast.error("IA: No se proporcionó un reporte específico.");
+                return;
+            }
+
+            // Fuzzy resolution: Busca en el menú el nombre más parecido
+            const match = searchableItems
+                .map(item => {
+                    const lowName = item.name.toLowerCase();
+                    const lowTerm = termino.toLowerCase();
+                    let score = 0;
+                    if (lowName === lowTerm) score = 100;
+                    else if (lowName.startsWith(lowTerm)) score = 50;
+                    else if (lowName.includes(lowTerm)) score = 30;
+                    return { item, score };
+                })
+                .filter(m => m.score > 0)
+                .sort((a, b) => b.score - a.score)[0]?.item;
+
+            if (match) {
+                const params = new URLSearchParams();
+                // Parámetros universales
+                if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
+                if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
+                if (p.fecha_corte) params.set('fecha_corte', p.fecha_corte);
+                if (p.nivel) params.set('nivel', p.nivel);
+
+                // Otros filtros específicos
+                if (p.filtros && typeof p.filtros === 'object') {
+                    Object.entries(p.filtros).forEach(([k, v]) => params.set(k, v));
+                }
+
+                // PDF Automation
+                const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
+                if (wantsPdf) params.set('auto_pdf', 'true');
+
+                const connector = match.href.includes('?') ? '&' : '?';
+                router.push(`${match.href}${connector}${params.toString()}`);
+                toast.success(`IA: Navegando a '${match.name}'...`);
+            } else {
+                toast.warning(`IA: No encontré ningún reporte que coincida con '${termino}'.`);
+            }
         } else if (actionName === 'extraer_datos_documento' && p.plantilla) {
             const params = new URLSearchParams();
             params.set('ai_plantilla', p.plantilla);

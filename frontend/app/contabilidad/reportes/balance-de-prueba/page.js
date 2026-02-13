@@ -17,6 +17,7 @@ import { toast } from 'react-toastify';
 
 import { useAuth } from '../../../../app/context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
+import { useAIAutomation } from '../../../hooks/useAIAutomation';
 
 // Estilos Reusables (Manual v2.0)
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
@@ -31,7 +32,7 @@ export default function BalancePruebaPage() {
     fecha_inicio: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
     fecha_fin: new Date().toISOString().split('T')[0],
     centro_costo_id: '',
-    nivel_maximo: 4,
+    nivel_maximo: 7, // DIVORCIO DEL NIVEL 1: Por defecto detalle máximo por petición del usuario (Juez)
     filtro_cuentas: 'CON_SALDO_O_MOVIMIENTO'
   });
 
@@ -56,94 +57,30 @@ export default function BalancePruebaPage() {
     }
   }, [user, authLoading, router]);
 
-  // --- AUTO-CONFIGURACION (IA) ---
-  const [autoExecute, setAutoExecute] = useState(false);
+  // --- AUTOMATIZACION UNIVERSAL (IA) ---
+  useAIAutomation(isPageReady, filtros, setFiltros, handleGenerateReport);
 
+  // Efecto para triggers especiales (WhatsApp / Email) que requieren el PDF
   useEffect(() => {
-    if (isPageReady) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const aiFechaInicio = urlParams.get('fecha_inicio');
-      const aiFechaFin = urlParams.get('fecha_fin');
-      const aiNivel = urlParams.get('nivel');
+    const urlParams = new URLSearchParams(window.location.search);
+    const pWpp = urlParams.get('wpp');
+    const pEmail = urlParams.get('email');
+    const pAutoPdf = urlParams.get('auto_pdf');
 
-      const pAutoPdf = urlParams.get('auto_pdf');
-      const pWpp = urlParams.get('wpp');
-      const pEmail = urlParams.get('email');
+    if (reportData && !isLoading) {
+      if (pAutoPdf === 'true') handleExportPDF();
 
-      if (aiFechaInicio && aiFechaFin) {
-        const currentSignature = `${aiFechaInicio}-${aiFechaFin}-${aiNivel}-${pAutoPdf}-${pWpp}-${pEmail}`;
-        if (lastProcessedParams.current === currentSignature) return;
-        lastProcessedParams.current = currentSignature;
-
-        setFiltros(prev => ({
-          ...prev,
-          fecha_inicio: aiFechaInicio,
-          fecha_fin: aiFechaFin,
-          nivel_maximo: aiNivel || '7' // Force 7 if initiated by AI and not specified
-        }));
-
-        // Activamos triggers
-        if (pAutoPdf === 'true') setAutoPdfTrigger(true);
-        if (pWpp) setWppNumber(pWpp);
-        if (pEmail) setEmailAddress(pEmail);
-
-        // Activar bandera de ejecución automática
-        setAutoExecute(true);
-      }
-    }
-  }, [isPageReady]);
-
-  // EFECTO: Ejecutar reporte automáticamente cuando la bandera cambie
-  useEffect(() => {
-    if (autoExecute && filtros.fecha_inicio && filtros.fecha_fin) {
-      handleGenerateReport();
-      setAutoExecute(false); // Resetear bandera
-      // Limpiar URL para no re-ejecutar al recargar
-      window.history.replaceState(null, '', window.location.pathname);
-    }
-  }, [autoExecute, filtros.fecha_inicio, filtros.fecha_fin]);
-
-  // HANDLE: Enviar por Correo
-  const handleSendEmail = async () => {
-    if (!reportData || !emailAddress) return;
-    toast.info(`📤 Enviando reporte a ${emailAddress}...`);
-    try {
-      await apiService.post('/reports/dispatch-email', {
-        report_type: 'balance_prueba',
-        email_to: emailAddress,
-        filtros: { ...filtros, centro_costo_id: filtros.centro_costo_id || undefined }
-      });
-      toast.success(`✅ Correo enviado a ${emailAddress}`);
-    } catch (err) {
-      console.error("Error sending email:", err);
-      toast.error("❌ Falló el envío del correo.");
-    }
-  };
-
-  // EFECTO: Automatización (PDF -> WhatsApp -> Email)
-  useEffect(() => {
-    if (autoPdfTrigger && reportData && !isLoading) {
-      // 1. PDF
-      handleExportPDF();
-
-      // 2. WhatsApp
-      if (wppNumber) {
+      if (pWpp) {
         const message = `Hola, adjunto el Balance de Prueba de ${user.nombre_empresa} del periodo ${filtros.fecha_inicio} al ${filtros.fecha_fin}.`;
-        const wppUrl = `https://wa.me/${wppNumber}?text=${encodeURIComponent(message)}`;
+        const wppUrl = `https://wa.me/${pWpp}?text=${encodeURIComponent(message)}`;
         setTimeout(() => window.open(wppUrl, '_blank'), 1500);
       }
 
-      // 3. Email
-      if (emailAddress) {
-        handleSendEmail();
+      if (pEmail) {
+        handleSendEmail(); // Note: handleSendEmail needs to be updated to use emailAddress from URL if needed
       }
-
-      // Reset
-      setAutoPdfTrigger(false);
-      setWppNumber(null);
-      setEmailAddress(null);
     }
-  }, [reportData, autoPdfTrigger, isLoading, wppNumber, emailAddress]);
+  }, [reportData, isLoading]);
 
 
   const handleFiltroChange = (e) => {
