@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   FaBalanceScale,
   FaCalendarAlt,
@@ -25,8 +25,22 @@ const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm
 const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none bg-white pl-10";
 
 export default function BalancePruebaPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+        <FaBalanceScale className="text-indigo-300 text-6xl mb-4 animate-pulse" />
+        <p className="text-indigo-600 font-semibold text-lg animate-pulse">Iniciando Reporte...</p>
+      </div>
+    }>
+      <BalancePruebaContent />
+    </Suspense>
+  );
+}
+
+function BalancePruebaContent() {
   const { user, authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [filtros, setFiltros] = useState({
     fecha_inicio: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
@@ -62,10 +76,10 @@ export default function BalancePruebaPage() {
 
   // Efecto para triggers especiales (WhatsApp / Email) que requieren el PDF
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const pWpp = urlParams.get('wpp');
-    const pEmail = urlParams.get('email');
-    const pAutoPdf = urlParams.get('auto_pdf');
+    if (!searchParams) return;
+    const pWpp = searchParams.get('wpp');
+    const pEmail = searchParams.get('email');
+    const pAutoPdf = searchParams.get('auto_pdf');
 
     if (reportData && !isLoading) {
       if (pAutoPdf === 'true') handleExportPDF();

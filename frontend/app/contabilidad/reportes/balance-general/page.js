@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
     FaBalanceScale,
     FaCalendarAlt,
@@ -25,8 +25,22 @@ const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 trackin
 const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none pl-10";
 
 export default function BalanceGeneralPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+                <FaBalanceScale className="text-indigo-300 text-6xl mb-4 animate-pulse" />
+                <p className="text-indigo-600 font-semibold text-lg animate-pulse">Iniciando Reporte...</p>
+            </div>
+        }>
+            <BalanceGeneralContent />
+        </Suspense>
+    );
+}
+
+function BalanceGeneralContent() {
     const { user, authLoading } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     const [reporte, setReporte] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -70,10 +84,10 @@ export default function BalanceGeneralPage() {
 
     // Efecto para triggers especiales (WhatsApp / Email / PDF)
     useEffect(() => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const pAutoPdf = urlParams.get('auto_pdf');
-        const pWpp = urlParams.get('wpp');
-        const pEmail = urlParams.get('email');
+        if (!searchParams) return;
+        const pAutoPdf = searchParams.get('auto_pdf');
+        const pWpp = searchParams.get('wpp');
+        const pEmail = searchParams.get('email');
 
         if (reporte && !isLoading) {
             if (pAutoPdf === 'true') handleExportPDF();
@@ -112,8 +126,8 @@ export default function BalanceGeneralPage() {
 
     // HANDLE: Enviar por Correo
     const handleSendEmail = async () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const emailAddress = urlParams.get('email');
+        if (!searchParams) return;
+        const emailAddress = searchParams.get('email');
         if (!reporte || !emailAddress) return;
         toast.info(`📤 Enviando reporte a ${emailAddress}...`);
         try {
@@ -138,7 +152,7 @@ export default function BalanceGeneralPage() {
         setError('');
         try {
             const signedUrlResponse = await apiService.get('/reports/balance-sheet/get-signed-url', {
-                params: { fecha_corte: fechaCorte, nivel: presentationMode }
+                params: { fecha_corte: filtros.fecha_corte, nivel: filtros.nivel }
             });
 
             const signedToken = signedUrlResponse.data.signed_url_token;
@@ -232,9 +246,9 @@ export default function BalanceGeneralPage() {
                             <div className="relative">
                                 <input
                                     type="date"
-                                    id="fechaCorte"
-                                    value={fechaCorte}
-                                    onChange={(e) => setFechaCorte(e.target.value)}
+                                    id="fecha_corte"
+                                    value={filtros.fecha_corte}
+                                    onChange={(e) => setFiltros(prev => ({ ...prev, fecha_corte: e.target.value }))}
                                     className={inputClass}
                                 />
                                 <FaCalendarAlt className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
@@ -244,9 +258,9 @@ export default function BalanceGeneralPage() {
                         <div className="md:col-span-1">
                             <label htmlFor="presentationMode" className={labelClass}>Presentación</label>
                             <select
-                                id="presentationMode"
-                                value={presentationMode}
-                                onChange={(e) => setPresentationMode(e.target.value)}
+                                id="nivel"
+                                value={filtros.nivel}
+                                onChange={(e) => setFiltros(prev => ({ ...prev, nivel: e.target.value }))}
                                 className={inputClass}
                             >
                                 <option value="auxiliar">Detallado (Auxiliar)</option>
@@ -307,7 +321,7 @@ export default function BalanceGeneralPage() {
                             </h3>
 
                             <p className="text-gray-600 font-serif italic mt-4">
-                                Corte al {new Date(fechaCorte).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                Corte al {new Date(filtros.fecha_corte).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}
                             </p>
                             <p className="text-xs text-gray-400 mt-1">(Cifras expresadas en Pesos Colombianos)</p>
                         </div>

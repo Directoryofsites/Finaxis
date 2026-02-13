@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 /**
  * useAIAutomation
@@ -11,20 +12,19 @@ import { useEffect, useState, useRef } from 'react';
  * @param {Function} onExecute - Función que genera el reporte (handleGenerate).
  */
 export function useAIAutomation(isPageReady, filtros, setFiltros, onExecute) {
+    const searchParams = useSearchParams();
     const [shouldRun, setShouldRun] = useState(false);
     const lastSignature = useRef('');
 
     useEffect(() => {
-        if (!isPageReady) return;
-
-        const urlParams = new URLSearchParams(window.location.search);
+        if (!isPageReady || !searchParams) return;
 
         // Si es una búsqueda de la IA, debe tener al menos trigger=ai o algún parámetro de fecha
-        const isAI = urlParams.get('trigger') === 'ai_search' || urlParams.get('trigger') === 'ai' || urlParams.get('fecha_inicio') || urlParams.get('fecha_corte');
+        const isAI = searchParams.get('trigger') === 'ai_search' || searchParams.get('trigger') === 'ai' || searchParams.get('fecha_inicio') || searchParams.get('fecha_corte');
         if (!isAI) return;
 
         // Crear una firma de los parámetros para evitar ejecuciones duplicadas por re-renders
-        const paramsString = urlParams.toString();
+        const paramsString = searchParams.toString();
         if (lastSignature.current === paramsString) return;
         lastSignature.current = paramsString;
 
@@ -32,7 +32,7 @@ export function useAIAutomation(isPageReady, filtros, setFiltros, onExecute) {
         setFiltros(prev => {
             const nuevos = { ...prev };
 
-            urlParams.forEach((value, key) => {
+            searchParams.forEach((value, key) => {
                 // Mapeos inteligentes de alias comunes
                 if (key === 'nivel') {
                     if ('nivel_maximo' in prev) nuevos.nivel_maximo = value;
@@ -56,7 +56,7 @@ export function useAIAutomation(isPageReady, filtros, setFiltros, onExecute) {
 
         // 2. Dar una pequeña espera para que React actualice el estado de los filtros antes de ejecutar
         setShouldRun(true);
-    }, [isPageReady]);
+    }, [isPageReady, searchParams]);
 
     useEffect(() => {
         if (shouldRun) {
@@ -66,7 +66,9 @@ export function useAIAutomation(isPageReady, filtros, setFiltros, onExecute) {
             setShouldRun(false);
 
             // Limpiar la URL para no re-ejecutar en F5
-            window.history.replaceState(null, '', window.location.pathname);
+            if (typeof window !== 'undefined') {
+                window.history.replaceState(null, '', window.location.pathname);
+            }
         }
     }, [shouldRun]);
 }
