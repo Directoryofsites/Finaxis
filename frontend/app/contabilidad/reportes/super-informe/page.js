@@ -234,6 +234,17 @@ function SuperInformeContent() {
           if (params.get('fecha_fin')) { nuevosFiltros.fechaFin = params.get('fecha_fin'); changed = true; }
           if (params.get('conceptoKeyword')) { nuevosFiltros.conceptoKeyword = params.get('conceptoKeyword'); changed = true; }
 
+          // 5. Filtros de Valor (IA)
+          const aiValor = params.get('ai_valor');
+          if (aiValor) {
+            nuevosFiltros.valorMonto = aiValor;
+            // Si viene operador, úsalo, si no, asume "mayor" por defecto para búsquedas de este estilo, o "igual"
+            const aiOp = params.get('ai_operador'); // mayor, menor, igual
+            if (aiOp && ['mayor', 'menor', 'igual'].includes(aiOp)) nuevosFiltros.valorOperador = aiOp;
+            else nuevosFiltros.valorOperador = 'igual'; // Default safer
+            changed = true;
+          }
+
           window.history.replaceState({}, '', window.location.pathname);
 
           if (changed) {

@@ -63,10 +63,13 @@ export default function BalanceGeneralPage() {
     }, [user, authLoading, router]);
 
     // --- AUTO-CONFIGURACION (IA) ---
+    const [autoExecute, setAutoExecute] = useState(false);
+
     useEffect(() => {
         if (isPageReady) {
             const urlParams = new URLSearchParams(window.location.search);
             const aiFechaCorte = urlParams.get('fecha_corte');
+            const aiPresentation = urlParams.get('nivel') || 'auxiliar'; // Support 'nivel' param if AI sends it
 
             const pAutoPdf = urlParams.get('auto_pdf');
             const pWpp = urlParams.get('wpp');
@@ -78,19 +81,27 @@ export default function BalanceGeneralPage() {
                 lastProcessedParams.current = currentSignature;
 
                 setFechaCorte(aiFechaCorte);
+                setPresentationMode(aiPresentation); // Set presentation mode if provided
 
                 if (pAutoPdf === 'true') setAutoPdfTrigger(true);
                 if (pWpp) setWppNumber(pWpp);
                 if (pEmail) setEmailAddress(pEmail);
 
-                // Auto-ejecutar reporte si hay fecha
-                setTimeout(() => {
-                    document.getElementById('btn-generar-balance')?.click();
-                    window.history.replaceState(null, '', window.location.pathname);
-                }, 500);
+                // Activar bandera de ejecución automática
+                setAutoExecute(true);
             }
         }
     }, [isPageReady]);
+
+    // EFECTO: Ejecutar reporte automáticamente cuando la bandera cambie
+    useEffect(() => {
+        if (autoExecute && fechaCorte) {
+            handleGenerateReport();
+            setAutoExecute(false); // Resetear bandera
+            // Limpiar URL para no re-ejecutar al recargar
+            window.history.replaceState(null, '', window.location.pathname);
+        }
+    }, [autoExecute, fechaCorte]);
 
     const handleGenerateReport = async () => {
         if (!fechaCorte) {

@@ -349,7 +349,7 @@ export function useSmartSearch() {
             const params = new URLSearchParams();
             if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
             if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
-            if (p.nivel) params.set('nivel', p.nivel);
+            params.set('nivel', p.nivel || '7'); // Default to max level (7) per user request
             const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
             if (wantsPdf) params.set('auto_pdf', 'true');
             if (p.whatsapp_destino) { params.set('wpp', p.whatsapp_destino); params.set('auto_pdf', 'true'); }
@@ -415,7 +415,7 @@ export function useSmartSearch() {
                 router.push(finalUrl);
                 toast.success(`IA: Abriendo creación de ${tipo}...`);
             } else toast.warning(`IA: No sé cómo crear '${tipo}' aún.`);
-        } else if (actionName === 'consultar_documento') {
+        } else if (actionName === 'consultar_documento' || actionName === 'consultar_comprobante_diario') {
             const params = new URLSearchParams();
             params.set('trigger', 'ai_search');
             if (p.tipo_documento || p.tipo || p.ai_tipo_doc) params.set('ai_tipo_doc', p.tipo_documento || p.tipo || p.ai_tipo_doc);
@@ -430,6 +430,11 @@ export function useSmartSearch() {
             if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
             if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
             if (p.concepto || p.conceptoKeyword) params.set('conceptoKeyword', p.concepto || p.conceptoKeyword);
+
+            // Filtro por valor/monto
+            const val = p.valor || p.monto || p.importe || p.total;
+            if (val) params.set('ai_valor', val);
+
             router.push(`/contabilidad/reportes/super-informe?${params.toString()}`);
             toast.success('IA: Buscando documentos...');
         } else if (actionName === 'extraer_datos_documento' && p.plantilla) {
