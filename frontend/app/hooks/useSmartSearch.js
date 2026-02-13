@@ -349,7 +349,10 @@ export function useSmartSearch() {
             const params = new URLSearchParams();
             if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
             if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
-            params.set('nivel', p.nivel || '7'); // Default to max level (7) per user request
+
+            // Forzar Nivel 7 por defecto para IA si no viene especificado
+            params.set('nivel', p.nivel || '7');
+
             const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
             if (wantsPdf) params.set('auto_pdf', 'true');
             if (p.whatsapp_destino) { params.set('wpp', p.whatsapp_destino); params.set('auto_pdf', 'true'); }
@@ -375,7 +378,10 @@ export function useSmartSearch() {
             toast.success('IA: Consultando Relación de Saldos...');
         } else if (actionName === 'generar_balance_general' || actionName === 'generar_estado_situacion_financiera') {
             const params = new URLSearchParams();
-            if (p.fecha_corte) params.set('fecha_corte', p.fecha_corte);
+            // Fallback: Si no viene fecha_corte, intenta usar fecha_fin o fecha_inicio (o hoy)
+            const fCorte = p.fecha_corte || p.fecha_fin || p.fecha_inicio || new Date().toISOString().split('T')[0];
+            params.set('fecha_corte', fCorte);
+
             if (p.comparativo) params.set('comparativo', 'true');
             const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
             if (wantsPdf) params.set('auto_pdf', 'true');

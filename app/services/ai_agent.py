@@ -60,8 +60,9 @@ FECHA ACTUAL: {today}
    
    - generar_balance_prueba(nivel: int, fecha_inicio: str, fecha_fin: str, formato: str)
      * "Genera un balance de prueba"
+     * INSTRUCCIÓN: Por defecto nivel=7 (máximo detalle).
    
-   - generar_estado_situacion_financiera(fecha_inicio: str, fecha_fin: str, formato: str)
+   - generar_estado_situacion_financiera(fecha_corte: str, formato: str)
      * "Necesito un balance general"
      * "Estado de situación financiera"
      

@@ -57,6 +57,8 @@ export default function BalancePruebaPage() {
   }, [user, authLoading, router]);
 
   // --- AUTO-CONFIGURACION (IA) ---
+  const [autoExecute, setAutoExecute] = useState(false);
+
   useEffect(() => {
     if (isPageReady) {
       const urlParams = new URLSearchParams(window.location.search);
@@ -77,7 +79,7 @@ export default function BalancePruebaPage() {
           ...prev,
           fecha_inicio: aiFechaInicio,
           fecha_fin: aiFechaFin,
-          nivel_maximo: aiNivel || prev.nivel_maximo
+          nivel_maximo: aiNivel || '7' // Force 7 if initiated by AI and not specified
         }));
 
         // Activamos triggers
@@ -85,15 +87,21 @@ export default function BalancePruebaPage() {
         if (pWpp) setWppNumber(pWpp);
         if (pEmail) setEmailAddress(pEmail);
 
-        // Auto-ejecutar con pequeño delay para asegurar estado
-        setTimeout(() => {
-          document.getElementById('btn-generar-bal-prueba')?.click();
-          // Limpieza silenciosa URL
-          window.history.replaceState(null, '', window.location.pathname);
-        }, 500);
+        // Activar bandera de ejecución automática
+        setAutoExecute(true);
       }
     }
   }, [isPageReady]);
+
+  // EFECTO: Ejecutar reporte automáticamente cuando la bandera cambie
+  useEffect(() => {
+    if (autoExecute && filtros.fecha_inicio && filtros.fecha_fin) {
+      handleGenerateReport();
+      setAutoExecute(false); // Resetear bandera
+      // Limpiar URL para no re-ejecutar al recargar
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, [autoExecute, filtros.fecha_inicio, filtros.fecha_fin]);
 
   // HANDLE: Enviar por Correo
   const handleSendEmail = async () => {
