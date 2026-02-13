@@ -79,9 +79,6 @@ function BalanceGeneralContent() {
         }
     }, [user, authLoading, router]);
 
-    // --- AUTOMATIZACION UNIVERSAL (IA) ---
-    useAIAutomation(isPageReady, filtros, setFiltros, handleGenerateReport);
-
     // Efecto para triggers especiales (WhatsApp / Email / PDF)
     useEffect(() => {
         if (!searchParams) return;
@@ -104,7 +101,7 @@ function BalanceGeneralContent() {
         }
     }, [reporte, isLoading]);
 
-    const handleGenerateReport = async () => {
+    async function handleGenerateReport() {
         if (!filtros.fecha_corte) {
             setError("Por favor, seleccione una fecha de corte.");
             return;
@@ -122,10 +119,9 @@ function BalanceGeneralContent() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }
 
-    // HANDLE: Enviar por Correo
-    const handleSendEmail = async () => {
+    async function handleSendEmail() {
         if (!searchParams) return;
         const emailAddress = searchParams.get('email');
         if (!reporte || !emailAddress) return;
@@ -141,9 +137,9 @@ function BalanceGeneralContent() {
             console.error("Error sending email:", err);
             toast.error("❌ Falló el envío del correo.");
         }
-    };
+    }
 
-    const handleExportPDF = async () => {
+    async function handleExportPDF() {
         if (!reporte) {
             setError("Primero debe generar un reporte para poder exportarlo.");
             return;
@@ -156,22 +152,17 @@ function BalanceGeneralContent() {
             });
 
             const signedToken = signedUrlResponse.data.signed_url_token;
-            // Usamos la URL absoluta definida en el entorno o construida dinámicamente
             const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
             const pdfDownloadUrl = `${baseUrl}/api/reports/balance-sheet/imprimir?signed_token=${signedToken}`;
-
-            // Técnica de descarga directa (Link Fantasma) para evitar bloqueo de popups
-            // window.location.href = pdfDownloadUrl; // ANTES: Misma ventana
-            window.open(pdfDownloadUrl, '_blank'); // AHORA: Nueva pestaña
-
+            window.open(pdfDownloadUrl, '_blank');
         } catch (err) {
             setError(err.response?.data?.detail || "Error al generar el PDF del reporte.");
         } finally {
             setIsLoading(false);
         }
-    };
+    }
 
-    const formatCurrency = (value) => {
+    function formatCurrency(value) {
         const num = parseFloat(value);
         if (isNaN(num)) return '$ 0.00';
         return new Intl.NumberFormat('es-CO', {
@@ -180,7 +171,11 @@ function BalanceGeneralContent() {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         }).format(num);
-    };
+    }
+
+    // --- AUTOMATIZACION UNIVERSAL (IA) ---
+    // Se deja al FINAL de la lógica para evitar errores de inicialización (TDZ)
+    useAIAutomation(isPageReady, filtros, setFiltros, handleGenerateReport);
 
     if (!isPageReady) {
         return (

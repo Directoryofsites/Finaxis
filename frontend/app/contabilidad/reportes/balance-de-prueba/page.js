@@ -71,9 +71,6 @@ function BalancePruebaContent() {
     }
   }, [user, authLoading, router]);
 
-  // --- AUTOMATIZACION UNIVERSAL (IA) ---
-  useAIAutomation(isPageReady, filtros, setFiltros, handleGenerateReport);
-
   // Efecto para triggers especiales (WhatsApp / Email) que requieren el PDF
   useEffect(() => {
     if (!searchParams) return;
@@ -91,18 +88,17 @@ function BalancePruebaContent() {
       }
 
       if (pEmail) {
-        handleSendEmail(); // Note: handleSendEmail needs to be updated to use emailAddress from URL if needed
+        handleSendEmail();
       }
     }
   }, [reportData, isLoading]);
 
-
-  const handleFiltroChange = (e) => {
+  function handleFiltroChange(e) {
     const { name, value } = e.target;
     setFiltros(prev => ({ ...prev, [name]: value }));
-  };
+  }
 
-  const handleGenerateReport = async () => {
+  async function handleGenerateReport() {
     if (!filtros.fecha_inicio || !filtros.fecha_fin) {
       setError("Por favor, seleccione una fecha de inicio y fin.");
       return;
@@ -112,7 +108,6 @@ function BalancePruebaContent() {
     setReportData(null);
 
     try {
-      // Limpiamos filtros vacíos
       const params = { ...filtros };
       if (!params.centro_costo_id) delete params.centro_costo_id;
 
@@ -123,9 +118,9 @@ function BalancePruebaContent() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
-  const handleExportPDF = async () => {
+  async function handleExportPDF() {
     if (!reportData) {
       setError("Primero debe generar un reporte para poder exportarlo.");
       return;
@@ -138,42 +133,57 @@ function BalancePruebaContent() {
 
       const res = await apiService.post('/reports/balance-de-prueba/get-signed-url', params);
       const token = res.data.signed_url_token;
-
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const pdfUrl = `${baseUrl}/api/reports/balance-de-prueba/imprimir?signed_token=${token}`;
-
-      // Descarga segura (Nueva Pestaña)
       window.open(pdfUrl, '_blank');
-
     } catch (err) {
       setError(err.response?.data?.detail || 'Error al generar el PDF.');
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
-  const formatCurrency = (value) => {
+  async function handleSendEmail() {
+    const emailTo = searchParams.get('email');
+    if (!reportData || !emailTo) return;
+    toast.info(`📤 Enviando reporte a ${emailTo}...`);
+    try {
+      await apiService.post('/reports/dispatch-email', {
+        report_type: 'balance_prueba',
+        email_to: emailTo,
+        filtros: filtros
+      });
+      toast.success(`✅ Correo enviado a ${emailTo}`);
+    } catch (err) {
+      toast.error("❌ Falló el envío del correo.");
+    }
+  }
+
+  function formatCurrency(value) {
     return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2 }).format(value || 0);
-  };
+  }
 
-  // Estilos jerárquicos para la tabla
-  const getNivelClass = (nivel) => {
+  function getNivelClass(nivel) {
     switch (nivel) {
       case 1: return 'bg-indigo-50 font-bold text-indigo-900';
       case 2: return 'bg-slate-50 font-semibold text-slate-800';
       case 3: return 'text-gray-700 font-medium';
-      default: return 'text-gray-600'; // Nivel 4+ (Auxiliares)
+      default: return 'text-gray-600';
     }
-  };
+  }
 
-  const getPaddingClass = (nivel) => {
+  function getPaddingClass(nivel) {
     switch (nivel) {
       case 1: return '';
       case 2: return 'pl-6';
       case 3: return 'pl-10';
       default: return 'pl-14 border-l-2 border-indigo-100';
     }
-  };
+  }
+
+  // --- AUTOMATIZACION UNIVERSAL (IA) ---
+  // Se deja al FINAL de la lógica para evitar errores de inicialización (TDZ)
+  useAIAutomation(isPageReady, filtros, setFiltros, handleGenerateReport);
 
   if (!isPageReady) {
     return (
