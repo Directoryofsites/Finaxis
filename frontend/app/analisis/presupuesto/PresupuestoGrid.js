@@ -63,7 +63,7 @@ export default function PresupuestoGrid({ escenario, onBack }) {
             const token = res.data.token;
 
             // 2. Construir URL
-            const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8002';
+            const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002';
             const url = `${API_BASE}/api/presupuesto/escenarios/${escenario.id}/pdf?token=${token}`;
 
             // 3. Abrir

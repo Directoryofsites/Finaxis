@@ -28,21 +28,115 @@ const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm
 const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none bg-white pl-10 text-gray-900";
 const multiSelectClass = "w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none bg-white h-32";
 
-const MultiSelect = ({ options, selected, onChange, labelAll = "-- Todas las Cuentas --" }) => {
-  const handleSelect = (e) => {
-    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-    onChange(selectedOptions);
+const CheckboxMultiSelect = ({ options, selected, onChange, placeholder = "Seleccionar..." }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredOptions = options.filter(opt =>
+    (opt.label || opt.nombre || opt.razon_social || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (opt.codigo || "").toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const isAllSelected = selected.includes('all');
+
+  let displayLabel = placeholder;
+  if (isAllSelected) {
+    displayLabel = "Todos Seleccionados";
+  } else if (selected.length > 0) {
+    displayLabel = `${selected.length} Seleccionado(s)`;
+  }
+
+  const toggleOption = (value) => {
+    if (value === 'all') {
+      onChange(isAllSelected ? [] : ['all']);
+    } else {
+      let newSelected = [...selected];
+      if (isAllSelected) {
+        newSelected = [value];
+      } else {
+        if (newSelected.includes(value)) {
+          newSelected = newSelected.filter(id => id !== value);
+        } else {
+          newSelected.push(value);
+        }
+      }
+      onChange(newSelected);
+    }
   };
+
   return (
-    <div className="relative">
-      <select multiple={true} value={selected} onChange={handleSelect} className={multiSelectClass}>
-        <option value="all">{labelAll}</option>
-        {options.map(option => (
-          <option key={option.id} value={option.id}>
-            {option.codigo ? `${option.codigo} - ` : ''}{option.nombre || option.razon_social}
-          </option>
-        ))}
-      </select>
+    <div className="relative" ref={dropdownRef}>
+      <div
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm bg-white text-sm cursor-pointer flex justify-between items-center"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <div className="flex flex-col items-start overflow-hidden">
+          <span className={`truncate font-bold ${selected.length === 0 ? 'text-gray-400' : 'text-indigo-700'}`}>
+            {displayLabel}
+          </span>
+          {isAllSelected && <span className="text-xs text-gray-500 font-normal">Se incluirán todos los registros</span>}
+        </div>
+        <span className="text-gray-400">▼</span>
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-60 flex flex-col">
+          <div className="p-2 border-b border-gray-100">
+            <input
+              type="text"
+              className="w-full px-2 py-1 border border-gray-200 rounded text-xs focus:outline-none focus:border-indigo-500"
+              placeholder="Buscar..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <div className="overflow-y-auto flex-1 p-2 space-y-1">
+            <label className="flex items-center gap-2 px-2 py-1.5 hover:bg-indigo-50 rounded cursor-pointer border-b border-gray-100 mb-1">
+              <input
+                type="checkbox"
+                className="rounded text-indigo-600 focus:ring-indigo-500 transform scale-110"
+                checked={isAllSelected}
+                onChange={() => toggleOption('all')}
+              />
+              <span className="text-sm font-bold text-gray-800">-- TODOS --</span>
+            </label>
+            {filteredOptions.map(option => {
+              const isSelected = selected.includes(option.id);
+              return (
+                <label key={option.id} className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${isSelected ? 'bg-indigo-50' : 'hover:bg-gray-50'}`}>
+                  <input
+                    type="checkbox"
+                    className="rounded text-indigo-600 focus:ring-indigo-500"
+                    checked={isSelected}
+                    onChange={() => toggleOption(option.id)}
+                  />
+                  <div className="flex flex-col overflow-hidden">
+                    <span className="text-sm text-gray-700 font-medium truncate">
+                      {option.codigo ? `${option.codigo} - ` : ''}{option.label || option.nombre || option.razon_social}
+                    </span>
+                    {option.nit && <span className="text-xs text-gray-400">NIT: {option.nit}</span>}
+                  </div>
+                </label>
+              );
+            })}
+            {filteredOptions.length === 0 && (
+              <div className="text-center text-xs text-gray-400 py-2">No hay resultados</div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -133,17 +227,30 @@ function ReporteTerceroCuentaContent() {
   useEffect(() => {
     if (!authLoading && user && terceros.length > 0 && searchParams.size > 0) {
       const aiTercero = searchParams.get('tercero');
+      const aiCuenta = searchParams.get('cuenta');
+      const aiMode = searchParams.get('mode');
       const aiFechaInicio = searchParams.get('fecha_inicio');
       const aiFechaFin = searchParams.get('fecha_fin');
       const pAutoPdf = searchParams.get('auto_pdf');
       const pWpp = searchParams.get('wpp');
       const pEmail = searchParams.get('email');
 
-      const currentSignature = `${aiTercero}-${aiFechaInicio}-${aiFechaFin}-${pAutoPdf}-${pWpp}-${pEmail}`;
+      const currentSignature = `${aiTercero}-${aiCuenta}-${aiMode}-${aiFechaInicio}-${aiFechaFin}-${pAutoPdf}-${pWpp}-${pEmail}`;
 
       if (lastProcessedParams.current === currentSignature) return;
 
-      if (aiTercero) {
+      // 0. Configurar MODO
+      if (aiMode === 'cuenta_first' && reportMode !== 'cuenta_first') {
+        setReportMode('cuenta_first');
+        toast.info("🔄 Cambiando a vista por cuenta...");
+      }
+
+      // 1. Configurar Fechas
+      if (aiFechaInicio) setFechas(prev => ({ ...prev, inicio: aiFechaInicio }));
+      if (aiFechaFin) setFechas(prev => ({ ...prev, fin: aiFechaFin }));
+
+      // 2. BUSQUEDA DE TERCERO (MODO NORMAL)
+      if (aiTercero && aiMode !== 'cuenta_first') {
         const normalize = (str) => {
           if (!str) return "";
           return str.toLowerCase()
@@ -175,18 +282,55 @@ function ReporteTerceroCuentaContent() {
 
         if (found) {
           setSelectedTercero(found.id);
-          if (aiFechaInicio) setFechas(prev => ({ ...prev, inicio: aiFechaInicio }));
-          if (aiFechaFin) setFechas(prev => ({ ...prev, fin: aiFechaFin }));
-
-          if (pAutoPdf === 'true') setAutoPdfTrigger(true);
-          if (pWpp) setWppNumber(pWpp);
-          if (pEmail) setEmailAddress(pEmail);
-
-          lastProcessedParams.current = currentSignature;
         }
       }
+
+      // 3. BUSQUEDA DE CUENTA (MODO INVERSO)
+      if (aiCuenta && aiMode === 'cuenta_first') {
+        if (cuentasAll.length === 0) {
+          toast.info("⏳ Cargando catálogo de cuentas...");
+          return;
+        }
+
+        toast.info(`🔍 Buscando cuenta: ${aiCuenta}...`);
+        const normalize = (str) => {
+          if (!str) return "";
+          return str.toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/v/g, "b")
+            .replace(/z/g, "s")
+            .replace(/c/g, "s")
+            .replace(/[^a-z0-9\s]/g, "");
+        };
+
+        const searchNormalized = normalize(aiCuenta);
+        const scoredCuentas = cuentasAll.map(c => {
+          let score = 0;
+          const codigoNorm = normalize(c.codigo);
+          const nombreNorm = normalize(c.nombre);
+          if (codigoNorm === searchNormalized || nombreNorm === searchNormalized) score += 1000;
+          if (codigoNorm.includes(searchNormalized) || nombreNorm.includes(searchNormalized)) score += 500;
+          if (c.codigo.length > 6) score += 100;
+          return { ...c, score };
+        });
+        const best = scoredCuentas.filter(c => c.score > 0).sort((a, b) => b.score - a.score);
+        if (best.length > 0) {
+          toast.success(`✅ Cuenta encontrada: ${best[0].codigo}`);
+          setSelectedCuentaPrincipal(best[0].id);
+          setSelectedTercerosMulti(['all']); // Seleccionar todos por defecto como pide el usuario
+          setShouldAutoRun(true); // Usar el estado de auto-run seguro
+        } else {
+          toast.warn(`⚠️ No encontramos la cuenta "${aiCuenta}"`);
+        }
+      }
+
+      if (pAutoPdf === 'true') setAutoPdfTrigger(true);
+      if (pWpp) setWppNumber(pWpp);
+      if (pEmail) setEmailAddress(pEmail);
+
+      lastProcessedParams.current = currentSignature;
     }
-  }, [terceros, searchParams, user, authLoading]);
+  }, [terceros, cuentasAll, searchParams, user, authLoading]);
 
   // Carga de Cuentas al seleccionar Tercero
   useEffect(() => {
@@ -226,6 +370,25 @@ function ReporteTerceroCuentaContent() {
 
             const searchNormalized = normalize(aiCuenta);
             const searchWords = searchNormalized.split(" ").filter(w => w.length > 2);
+
+            // LOGICA DE CLASE: Si es un dígito (1-9), marcar todas las que empiecen por ahí
+            if (/^[1-9]$/.test(aiCuenta)) {
+              const matchedIds = cuentas
+                .filter(c => c.codigo.startsWith(aiCuenta))
+                .map(c => c.id);
+
+              if (matchedIds.length > 0) {
+                setSelectedCuentas(matchedIds);
+                if (aiFechaInicio && aiFechaFin) {
+                  setTimeout(() => {
+                    toast.success(`⚡ Consultando movimientos de Clase ${aiCuenta}...`);
+                    document.getElementById('btn-consultar-reporte')?.click();
+                    setTimeout(() => window.history.replaceState(null, '', window.location.pathname), 2000);
+                  }, 1500);
+                }
+                return; // Detener aquí si es match de clase
+              }
+            }
 
             console.warn("IA Debug - Search:", searchNormalized, "Words:", searchWords);
 
@@ -377,14 +540,22 @@ function ReporteTerceroCuentaContent() {
 
   // EFFECT PARA AUTO-EJECUCION SEGURA
   useEffect(() => {
-    if (shouldAutoRun && selectedTercero && fechas.inicio && fechas.fin && !isLoading) {
+    if (!shouldAutoRun || isLoading) return;
+
+    const hasDates = fechas.inicio && fechas.fin;
+    const isTerceroReady = reportMode === 'tercero_first' && selectedTercero;
+    const isCuentaReady = reportMode === 'cuenta_first' && selectedCuentaPrincipal;
+
+    if (shouldAutoRun && hasDates && (isTerceroReady || isCuentaReady)) {
       toast.success("⚡ Consultando movimientos automáticamente...");
       handleGenerateReport();
       setShouldAutoRun(false);
       // Limpieza URL
-      window.history.replaceState(null, '', window.location.pathname);
+      setTimeout(() => {
+        window.history.replaceState(null, '', window.location.pathname);
+      }, 1000);
     }
-  }, [shouldAutoRun, selectedTercero, fechas, isLoading, selectedCuentas]);
+  }, [shouldAutoRun, reportMode, selectedTercero, selectedCuentaPrincipal, fechas, isLoading]);
 
   const handleGenerateReport = async () => {
     if (!fechas.inicio || !fechas.fin) {
@@ -694,13 +865,13 @@ function ReporteTerceroCuentaContent() {
             {reportMode === 'tercero_first' && (
               <div className="md:col-span-4">
                 <label className={labelClass}>Filtrar Cuentas (Opcional)</label>
-                <MultiSelect
+                <CheckboxMultiSelect
                   options={cuentasDelTercero}
                   selected={selectedCuentas}
                   onChange={setSelectedCuentas}
-                  labelAll="-- Todas las Cuentas --"
+                  placeholder="Seleccionar Cuentas..."
                 />
-                <p className="text-xs text-gray-400 mt-1">Mantenga presionado Ctrl (Windows) o Cmd (Mac) para seleccionar varias.</p>
+                <p className="text-xs text-gray-400 mt-1">Seleccione una o varias cuentas para filtrar los resultados.</p>
               </div>
             )}
 
@@ -708,13 +879,13 @@ function ReporteTerceroCuentaContent() {
             {reportMode === 'cuenta_first' && (
               <div className="md:col-span-4">
                 <label className={labelClass}>Filtrar Terceros (Opcional)</label>
-                <MultiSelect
-                  options={terceros.map(t => ({ id: t.id, codigo: t.numero_identificacion, nombre: t.razon_social }))}
+                <CheckboxMultiSelect
+                  options={terceros.map(t => ({ id: t.id, codigo: t.numero_identificacion, label: t.razon_social }))}
                   selected={selectedTercerosMulti}
                   onChange={setSelectedTercerosMulti}
-                  labelAll="-- Todos los Terceros --"
+                  placeholder="Seleccionar Terceros..."
                 />
-                <p className="text-xs text-gray-400 mt-1">Seleccione '-- Todos los Terceros --' para ver reporte completo.</p>
+                <p className="text-xs text-gray-400 mt-1">Busque por nombre o NIT. Seleccione '-- TODOS --' para el reporte completo.</p>
               </div>
             )}
           </div>

@@ -19,6 +19,7 @@ const funcionesDocumento = [
     { value: 'cartera_cliente', label: 'Factura de Venta (Activa CxC)' },
     { value: 'rc_cliente', label: 'Recibo de Caja (Activa CxC)' },
     { value: 'cxp_proveedor', label: 'Factura de Compra (Activa CxP)' },
+    { value: 'documento_soporte', label: 'Documento Soporte Electrónico' },
     { value: 'pago_proveedor', label: 'Comprobante de Egreso (Activa CxP)' },
     { value: 'EGRESO_BANCARIO', label: 'Egreso Bancario (Pide # Cheque)' },
     { value: 'NOTA_CREDITO', label: 'Nota de Crédito' },

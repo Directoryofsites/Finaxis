@@ -4,7 +4,7 @@ import axios from 'axios';
 
 // --- CIRUGÍA ARQUITECTÓNICA ---
 // Se exporta como una constante nombrada y se simplifica la baseURL.
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8002';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002';
 
 export const apiService = axios.create({
     baseURL: `${API_URL}/api`,

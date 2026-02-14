@@ -16,7 +16,8 @@ import {
     FaTrash,
     FaListOl,
     FaFileInvoice,
-    FaBook
+    FaBook,
+    FaSatelliteDish
 } from 'react-icons/fa';
 
 import { useAuth } from '../../context/AuthContext';
@@ -30,6 +31,7 @@ import { getTerceros } from '../../../lib/terceroService';
 import { getTiposDocumento } from '../../../lib/tiposDocumentoService';
 import { getCentrosCosto } from '../../../lib/centrosCostoService';
 import comprasService from '../../../lib/comprasService';
+import { apiService } from '../../../lib/apiService'; // MODIFIED: Named Import
 
 // --- Componentes ---
 
@@ -62,6 +64,7 @@ export default function NuevaCompraPage() {
 
     // --- NUEVO: Descuentos y Cargos Globales ---
     const [descuentoGlobal, setDescuentoGlobal] = useState(0);
+    const [tipoDescuentoGlobal, setTipoDescuentoGlobal] = useState('$'); // '$' o '%'
     const [cargoGlobal, setCargoGlobal] = useState(0);
     // ------------------------------------------
 
@@ -71,8 +74,8 @@ export default function NuevaCompraPage() {
         centrosCosto: [],
     });
 
-    // Cálculo Memoizado
-    const { subtotalGeneral, ivaGeneral, totalGeneral, totalDescuentoLineas } = useMemo(() => {
+    // Cálculo Memoizado (Premium Version)
+    const { subtotalGeneral, ivaGeneral, totalGeneral, totalDescuentoLineas, descuentoGlobalCalculado } = useMemo(() => {
         const result = items.reduce((acc, item) => {
             const cantidad = parseFloat(item.cantidad) || 0;
             const costo = parseFloat(item.costo_unitario) || 0;
@@ -89,16 +92,38 @@ export default function NuevaCompraPage() {
             return acc;
         }, { subtotal: 0, iva: 0, descuentoLineas: 0 });
 
-        const descGlobalVal = parseFloat(descuentoGlobal) || 0;
+        let descGlobalVal = parseFloat(descuentoGlobal) || 0;
+
+        // --- LÓGICA DE PORCENTAJE ---
+        if (tipoDescuentoGlobal === '%') {
+            descGlobalVal = result.subtotal * (descGlobalVal / 100.0);
+        }
+
+        // --- NUEVO: RECALCULO DE IVA VISUAL (PROPORCIONAL) ---
+        // Si hay descuento global, la base gravable baja, por ende el IVA baja.
+        let ratioBase = 1.0;
+        if (result.subtotal > 0) {
+            ratioBase = (result.subtotal - descGlobalVal) / result.subtotal;
+            if (ratioBase < 0) ratioBase = 0;
+        }
+
+        const ivaAjustado = result.iva * ratioBase;
         const cargoGlobalVal = parseFloat(cargoGlobal) || 0;
 
         return {
             subtotalGeneral: result.subtotal,
-            ivaGeneral: result.iva,
+            ivaGeneral: ivaAjustado,
             totalDescuentoLineas: result.descuentoLineas,
-            totalGeneral: result.subtotal + result.iva - descGlobalVal + cargoGlobalVal
+            descuentoGlobalCalculado: descGlobalVal,
+            totalGeneral: result.subtotal + ivaAjustado - descGlobalVal + cargoGlobalVal
         };
-    }, [items, descuentoGlobal, cargoGlobal]);
+    }, [items, descuentoGlobal, tipoDescuentoGlobal, cargoGlobal]);
+
+    // Identificar si el tipo de documento seleccionado es Documento Soporte
+    const isDS = useMemo(() => {
+        const td = maestros.tiposDocumento.find(t => String(t.id) === tipoDocumentoId);
+        return td?.funcion_especial === 'documento_soporte';
+    }, [tipoDocumentoId, maestros.tiposDocumento]);
 
     // Carga de Datos Maestros
     useEffect(() => {
@@ -120,7 +145,7 @@ export default function NuevaCompraPage() {
 
                 setMaestros({
                     terceros: tercerosRes.filter(t => t.es_proveedor),
-                    tiposDocumento: tiposDocRes.filter(td => td.funcion_especial === 'cxp_proveedor'),
+                    tiposDocumento: tiposDocRes.filter(td => td.funcion_especial === 'cxp_proveedor' || td.funcion_especial === 'documento_soporte'),
                     centrosCosto: centrosCostoFiltrados,
                 });
 
@@ -230,26 +255,103 @@ export default function NuevaCompraPage() {
             numero: esManual ? numeroManual.trim() : null,
             centro_costo_id: centroCostoId ? parseInt(centroCostoId) : null,
             bodega_id: parseInt(selectedBodegaId),
-            descuento_global_valor: parseFloat(descuentoGlobal) || 0,
+            descuento_global_valor: parseFloat(descuentoGlobalCalculado) || 0,
             cargos_globales_valor: parseFloat(cargoGlobal) || 0,
             items: itemsValidados
+        };
+
+        // Función interna para emitir si se solicita
+        const emitir = async (docId) => {
+            try {
+                toast.info("Transmitiendo Documento Soporte a la DIAN...");
+                const res = await apiService.post(`/fe/emitir/${docId}`);
+                toast.success("¡Documento Soporte emitido con éxito!");
+                return res.data;
+            } catch (err) {
+                console.error("Error al emitir DS:", err);
+                toast.error(`Error de emisión: ${err.response?.data?.detail || "Error desconocido"}`);
+                return null;
+            }
         };
 
         try {
             const response = await comprasService.createCompra(payload);
             toast.success(`¡Éxito! Compra #${response.numero} creada correctamente.`);
-            setItems([]);
-            setBeneficiarioId('');
-            setNumeroManual('');
-            setCentroCostoId('');
-            setFechaVencimiento(null);
+
+            // Si es DS y el usuario solicitó emitir (pasaremos un flag o usamos el botón específico)
+            // Para simplicidad, agregamos un segundo argumento a handleSubmit o detectamos el botón.
+            // Aquí, si isDS es true y fue llamado desde el botón de emitir, lanzamos la emisión.
+            // Pero haremos que handleSubmit reciba un flag 'emitirDS'
+
+            // Nota: He modificado la firma de handleSubmit para aceptar emitirDS
+            return response; // Devolver response para el flujo de emisión
         } catch (err) {
             console.error("Error al guardar compra:", err);
             const errorMsg = err.response?.data?.detail || "Ocurrió un error inesperado al guardar la compra.";
             toast.error(`Error: ${errorMsg}`);
+            throw err; // Propagar error para detener flujo
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleSaveAndEmit = async () => {
+        setIsSubmitting(true);
+        try {
+            // 1. Guardar Compra (handleSubmit maneja su propio loading/error para la creación)
+            // Pero como handleSubmit retorna el objeto creado, lo capturamos.
+            const doc = await handleSubmit();
+
+            if (doc && doc.id) {
+                // 2. Emitir DS
+                toast.info("Iniciando emisión a DIAN...");
+                try {
+                    const res = await apiService.post(`/fe/emitir/${doc.id}`);
+                    const emitJson = res.data;
+
+                    if (emitJson.success) {
+                        toast.success(`¡Documento Soporte emitido con éxito! CUFE: ${emitJson.cufe}`);
+                        // Limpiar formulario completo SOLO si todo fue éxito
+                        setItems([]);
+                        setBeneficiarioId('');
+                        setNumeroManual('');
+                        setCentroCostoId('');
+                        setFechaVencimiento(null);
+                        setDescuentoGlobal(0);
+                        setCargoGlobal(0);
+                        setTipoDescuentoGlobal('$');
+                    } else {
+                        console.error("Error FE:", emitJson);
+                        toast.error(`Guardado OK, pero error al emitir: ${emitJson.error || "Error desconocido"}`);
+                    }
+                } catch (emitError) {
+                    console.error("Error al emitir request:", emitError);
+                    toast.error(`Error de conexión al emitir: ${emitError.message || "Sin respuesta del servidor"}`);
+                }
+            }
+        } catch (e) {
+            // Error ya manejado en handleSubmit (toast.error)
+            console.error("Error en flujo Save/Emit:", e);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleSimpleSave = async () => {
+        try {
+            const doc = await handleSubmit();
+            if (doc) {
+                // Limpiar formulario completo
+                setItems([]);
+                setBeneficiarioId('');
+                setNumeroManual('');
+                setCentroCostoId('');
+                setFechaVencimiento(null);
+                setDescuentoGlobal(0);
+                setCargoGlobal(0);
+                setTipoDescuentoGlobal('$');
+            }
+        } catch (e) { }
     };
 
     if (pageIsLoading || authLoading) {
@@ -468,65 +570,92 @@ export default function NuevaCompraPage() {
                             </tbody>
                             {items.length > 0 && (
                                 <tfoot className="bg-slate-50 border-t-2 border-slate-200">
-                                    {/* Subtotal */}
+                                    {/* 1. SUBTOTAL BRUTO */}
                                     <tr>
-                                        <td colSpan="5" className="px-4 py-2 text-right text-sm font-bold text-gray-500 uppercase">Subtotal (Base):</td>
-                                        <td className="px-4 py-2 text-right text-sm font-mono text-gray-700">
-                                            ${subtotalGeneral.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                                        </td>
-                                        <td></td>
-                                    </tr>
-                                    {/* IVA */}
-                                    <tr>
-                                        <td colSpan="5" className="px-4 py-2 text-right text-sm font-bold text-gray-500 uppercase">IVA:</td>
-                                        <td className="px-4 py-2 text-right text-sm font-mono text-gray-700">
-                                            ${ivaGeneral.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                        <td colSpan="5" className="px-4 py-2 text-right text-sm font-normal text-gray-500 uppercase">Subtotal Bruto:</td>
+                                        <td className="px-4 py-2 text-right text-lg font-normal text-gray-700">
+                                            ${(items.reduce((acc, item) => acc + (parseFloat(item.cantidad) || 0) * (parseFloat(item.costo_unitario) || 0), 0)).toLocaleString('es-CO')}
                                         </td>
                                         <td></td>
                                     </tr>
 
-                                    {/* Global Discount Input */}
+                                    {/* 2. DESCUENTOS */}
                                     <tr>
-                                        <td colSpan="5" className="px-4 py-2 text-right text-sm font-bold text-gray-500 uppercase flex justify-end items-center gap-2">
-                                            <span>Descuento Global $:</span>
-                                            <input
-                                                type="number"
-                                                value={descuentoGlobal}
-                                                onChange={e => setDescuentoGlobal(e.target.value)}
-                                                className="w-32 px-2 py-1 border border-gray-300 rounded text-right focus:ring-1 focus:ring-green-300 outline-none text-sm"
-                                                min="0"
-                                            />
+                                        <td colSpan="5" className="px-4 py-2 text-right text-sm font-normal text-gray-500 uppercase align-middle">
+                                            <div className="flex justify-end items-center gap-2">
+                                                <span>Desc. Global:</span>
+                                                <div className="flex border rounded-md overflow-hidden bg-white shadow-sm">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setTipoDescuentoGlobal('$')}
+                                                        className={`px-3 py-1 text-sm font-bold ${tipoDescuentoGlobal === '$' ? 'bg-green-600 text-white' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`}
+                                                    >
+                                                        $
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setTipoDescuentoGlobal('%')}
+                                                        className={`px-3 py-1 text-sm font-bold ${tipoDescuentoGlobal === '%' ? 'bg-green-600 text-white' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`}
+                                                    >
+                                                        %
+                                                    </button>
+                                                </div>
+                                                <input
+                                                    type="number"
+                                                    value={descuentoGlobal}
+                                                    onChange={e => setDescuentoGlobal(parseFloat(e.target.value) || 0)}
+                                                    className="w-24 px-2 py-1 text-right border border-gray-300 rounded focus:ring-2 focus:ring-green-100 outline-none font-bold text-gray-700"
+                                                    placeholder="0"
+                                                    min="0"
+                                                />
+                                            </div>
                                         </td>
-                                        <td className="px-4 py-2 text-right text-base font-medium text-red-600">
-                                            -${(parseFloat(descuentoGlobal) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                                        </td>
-                                        <td></td>
-                                    </tr>
-                                    {/* Global Charges Input */}
-                                    <tr>
-                                        <td colSpan="5" className="px-4 py-2 text-right text-sm font-bold text-gray-500 uppercase flex justify-end items-center gap-2">
-                                            <span>Otros Cargos $:</span>
-                                            <input
-                                                type="number"
-                                                value={cargoGlobal}
-                                                onChange={e => setCargoGlobal(e.target.value)}
-                                                className="w-32 px-2 py-1 border border-gray-300 rounded text-right focus:ring-1 focus:ring-green-300 outline-none text-sm"
-                                                min="0"
-                                            />
-                                        </td>
-                                        <td className="px-4 py-2 text-right text-base font-medium text-green-600">
-                                            +${(parseFloat(cargoGlobal) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                        <td className="px-4 py-2 text-right text-lg font-normal text-red-600 align-middle">
+                                            -${(totalDescuentoLineas + (tipoDescuentoGlobal === '$' ? (parseFloat(descuentoGlobal) || 0) : (subtotalGeneral * (parseFloat(descuentoGlobal) || 0) / 100))).toLocaleString('es-CO')}
                                         </td>
                                         <td></td>
                                     </tr>
 
-                                    {/* Total Total */}
-                                    <tr className="bg-green-50 border-t border-green-100">
-                                        <td colSpan="5" className="px-4 py-3 text-right text-base font-bold text-gray-700 uppercase">TOTAL COMPRA:</td>
-                                        <td className="px-4 py-3 text-right text-xl font-bold font-mono text-blue-700">
-                                            ${totalGeneral.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                    {/* 3. OTROS CARGOS */}
+                                    <tr>
+                                        <td colSpan="5" className="px-4 py-2 text-right text-sm font-normal text-gray-500 uppercase align-middle">
+                                            <div className="flex justify-end items-center gap-2">
+                                                <span>Otros Cargos $:</span>
+                                                <input
+                                                    type="number"
+                                                    value={cargoGlobal}
+                                                    onChange={e => setCargoGlobal(parseFloat(e.target.value) || 0)}
+                                                    className="w-32 px-2 py-1 text-right border border-gray-300 rounded focus:ring-2 focus:ring-green-100 outline-none font-bold text-gray-700"
+                                                    placeholder="0"
+                                                    min="0"
+                                                />
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-2 text-right text-lg font-normal text-green-600 align-middle">
+                                            +${(parseFloat(cargoGlobal) || 0).toLocaleString('es-CO')}
                                         </td>
                                         <td></td>
+                                    </tr>
+                                    <tr className="bg-green-50/50">
+                                        <td colSpan="5" className="px-4 py-2 text-right text-xs font-normal text-green-800 uppercase italic">Base Factura:</td>
+                                        <td className="px-4 py-2 text-right text-lg font-normal text-green-900 border-y border-green-200">
+                                            ${(subtotalGeneral - (descuentoGlobalCalculado || 0) + (parseFloat(cargoGlobal) || 0)).toLocaleString('es-CO')}
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td colSpan="5" className="px-4 py-2 text-right text-sm font-normal text-gray-500 uppercase">IVA Total:</td>
+                                        <td className="px-4 py-2 text-right text-lg font-normal text-gray-700">
+                                            ${ivaGeneral.toLocaleString('es-CO')}
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                    <tr className="bg-slate-200">
+                                        <td colSpan="5" className="px-4 py-4 text-right text-sm font-normal text-slate-700 uppercase italic">Total Compra:</td>
+                                        <td className="px-4 py-4 text-right text-lg font-normal text-blue-700">
+                                            {totalGeneral.toLocaleString('es-CO')}
+                                        </td>
+                                        <td className="bg-slate-200"></td>
                                     </tr>
                                 </tfoot>
                             )}
@@ -534,24 +663,44 @@ export default function NuevaCompraPage() {
                     </div>
                 </div>
 
-                <div className="flex justify-end mt-8">
+                <div className="flex justify-end mt-8 gap-4">
                     <button
                         type="button"
-                        onClick={handleSubmit}
+                        onClick={handleSimpleSave}
                         disabled={isSubmitting || items.length === 0 || !beneficiarioId || !tipoDocumentoId || !selectedBodegaId}
                         className={`
-                    px-10 py-4 rounded-xl shadow-lg font-bold text-white text-lg transition-all transform hover:-translate-y-1 flex items-center gap-3
-                    ${isSubmitting || items.length === 0
+                            px-8 py-4 rounded-xl shadow-lg font-bold text-white text-lg transition-all transform hover:-translate-y-1 flex items-center gap-3
+                            ${isSubmitting || items.length === 0
                                 ? 'bg-gray-400 cursor-not-allowed'
-                                : 'bg-green-600 hover:bg-green-700 hover:shadow-green-200'}
-                `}
+                                : 'bg-slate-600 hover:bg-slate-700 hover:shadow-slate-200'}
+                        `}
                     >
                         {isSubmitting ? (
-                            <> <span className="loading loading-spinner"></span> Guardando... </>
+                            <> <span className="loading loading-spinner"></span> Procesando... </>
                         ) : (
                             <> <FaSave className="text-xl" /> Guardar Compra </>
                         )}
                     </button>
+
+                    {isDS && (
+                        <button
+                            type="button"
+                            onClick={handleSaveAndEmit}
+                            disabled={isSubmitting || items.length === 0 || !beneficiarioId || !tipoDocumentoId || !selectedBodegaId}
+                            className={`
+                                px-8 py-4 rounded-xl shadow-lg font-bold text-white text-lg transition-all transform hover:-translate-y-1 flex items-center gap-3
+                                ${isSubmitting || items.length === 0
+                                    ? 'bg-gray-400 cursor-not-allowed'
+                                    : 'bg-green-600 hover:bg-green-700 hover:shadow-green-200'}
+                            `}
+                        >
+                            {isSubmitting ? (
+                                <> <span className="loading loading-spinner"></span> Emitiendo... </>
+                            ) : (
+                                <> <FaSatelliteDish className="text-xl" /> Guardar y Emitir DS </>
+                            )}
+                        </button>
+                    )}
                 </div>
 
                 <ProductSelectionModal

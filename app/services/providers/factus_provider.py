@@ -112,9 +112,25 @@ class FactusProvider:
                     "message": "Consulte 'Estado Documentos' en unos minutos." 
                 }
             else:
+                error_msg = str(resp_json.get('message', 'Error desconocido en Factus'))
+                
+                # Intentar extraer detalles de validación
+                try:
+                    data = resp_json.get('data', {})
+                    if isinstance(data, dict):
+                        errors = data.get('errors')
+                        if errors:
+                            if isinstance(errors, list):
+                                error_msg += ": " + "; ".join([str(e) for e in errors])
+                            elif isinstance(errors, dict):
+                                error_msg += ": " + "; ".join([f"{k}: {v}" for k, v in errors.items()])
+                except:
+                    pass
+                
+                print(f"❌ Error Factus ({resp.status_code}): {error_msg}")
                 return {
                     "success": False,
-                    "error": str(resp_json.get('message', 'Error desconocido en Factus')),
+                    "error": error_msg,
                     "details": resp_json
                 }
                 

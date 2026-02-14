@@ -16,6 +16,7 @@ const funcionesDocumento = [
     { value: 'FACTURA_VENTA', label: 'Factura de Venta (Activa CxC)' },
     { value: 'RECIBO_CAJA', label: 'Recibo de Caja (Activa CxC)' },
     { value: 'FACTURA_COMPRA', label: 'Factura de Compra (Activa CxP)' },
+    { value: 'documento_soporte', label: 'Documento Soporte Electrónico' },
     { value: 'NOTA_CREDITO', label: 'Nota de Crédito' },
     { value: 'CIERRE_ANUAL', label: 'Cierre Anual (Proceso automático)' },
 ];

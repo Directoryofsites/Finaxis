@@ -17,8 +17,9 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { useSmartSearch } from '@/app/hooks/useSmartSearch';
 
 // --- HELPER: FORMAT NUMBERS ---
-const formatNumber = (numStr) => {
-    if (!numStr || numStr === 'Error') return numStr;
+const formatNumber = (val) => {
+    if (!val || val === 'Error') return val;
+    const numStr = String(val);
     const parts = numStr.split('.');
     const integerPart = parts[0];
     const decimalPart = parts.length > 1 ? '.' + parts[1] : '';
@@ -33,50 +34,81 @@ const useCalculator = () => {
     const [waitingForOperand, setWaitingForOperand] = useState(false);
 
     const handleInput = (val) => {
-        if (val === 'C') {
+        const valStr = String(val);
+
+        if (valStr === 'C') {
             setDisplay('0');
             setExpression('');
+            setWaitingForOperand(false);
             return;
         }
-        if (val === 'DEL') {
+        if (valStr === 'DEL') {
             if (waitingForOperand) return;
             setDisplay(prev => {
-                if (prev === 'Error') return '0';
-                return prev.length > 1 ? prev.slice(0, -1) : '0';
+                const s = String(prev);
+                if (s === 'Error' || s === 'Infinity' || s === 'NaN') return '0';
+                return s.length > 1 ? s.slice(0, -1) : '0';
             });
             return;
         }
-        if (val === '=') {
+        if (valStr === '=') {
             try {
-                if (!expression) return;
+                if (!expression && !waitingForOperand) return;
                 const safeExpr = expression + display;
                 // eslint-disable-next-line
                 const result = new Function('return ' + safeExpr)();
                 if (!isFinite(result)) throw new Error("Math Error");
-                setDisplay(String(result));
+
+                const finalResult = String(result);
+                setDisplay(finalResult);
                 setExpression('');
                 setWaitingForOperand(true);
             } catch (e) {
                 setDisplay('Error');
+                setExpression('');
+                setWaitingForOperand(true);
             }
             return;
         }
-        if (['+', '-', '*', '/'].includes(val)) {
+        if (['+', '-', '*', '/'].includes(valStr)) {
+            if (display === 'Error') return;
+
             setExpression(prev => {
-                if (waitingForOperand) {
-                    return prev.slice(0, -1) + val;
+                if (waitingForOperand && !prev) {
+                    // Si acabamos de dar igual, usamos el display actual como base del nuevo cálculo
+                    return display + valStr;
                 }
-                return prev + display + val;
+                if (waitingForOperand && prev) {
+                    // Cambiar el operador si ya estábamos esperando un operando
+                    return prev.slice(0, -1) + valStr;
+                }
+                return prev + display + valStr;
             });
             setWaitingForOperand(true);
             return;
         }
 
+        if (valStr === '.') {
+            if (waitingForOperand) {
+                setDisplay('0.');
+                setWaitingForOperand(false);
+                return;
+            }
+            if (!String(display).includes('.')) {
+                setDisplay(prev => String(prev) + '.');
+            }
+            return;
+        }
+
+        // Números
         if (waitingForOperand) {
-            setDisplay(val);
+            setDisplay(valStr);
             setWaitingForOperand(false);
         } else {
-            setDisplay(display === '0' ? val : display + val);
+            setDisplay(prev => {
+                const s = String(prev);
+                return s === '0' ? valStr : s + valStr;
+            });
         }
     };
 

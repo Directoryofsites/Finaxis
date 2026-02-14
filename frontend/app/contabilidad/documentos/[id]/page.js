@@ -5,6 +5,8 @@ import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
+import ModalCrearTercero from '../../../../components/terceros/ModalCrearTercero';
+import { FaPlus } from 'react-icons/fa';
 
 export default function DocumentoDetallePage() {
   const { user } = useAuth();
@@ -23,6 +25,7 @@ export default function DocumentoDetallePage() {
   const [tiposDocumento, setTiposDocumento] = useState([]); // Añadido para tener todos los maestros
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showModalTercero, setShowModalTercero] = useState(false);
 
   // --- CARGA DE DATOS ---
   const fetchAllData = useCallback(async () => {
@@ -93,6 +96,15 @@ export default function DocumentoDetallePage() {
     }, { debito: 0, credito: 0 });
   }, [editedDocument, isEditing]);
 
+  const isDS = useMemo(() => {
+    if (!documento || !tiposDocumento.length) return false;
+    const typeObj = tiposDocumento.find(t =>
+      t.id === documento.tipo_documento_id ||
+      t.nombre === documento.tipo_documento
+    );
+    return typeObj?.funcion_especial === 'documento_soporte';
+  }, [documento, tiposDocumento]);
+
   const isEditFormBalanced = useMemo(() => {
     const difference = Math.abs(editTotals.debito - editTotals.credito);
     return difference < 0.01 && editTotals.debito !== 0; // Tolerancia para decimales
@@ -148,6 +160,17 @@ export default function DocumentoDetallePage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleTerceroSuccess = (newTercero) => {
+    // 1. Añadirlo a la lista local para que aparezca en el select
+    setTerceros(prev => [...prev, newTercero]);
+
+    // 2. Seleccionarlo automáticamente en el documento que estamos editando
+    setEditedDocument(prev => ({
+      ...prev,
+      beneficiario_id: newTercero.id
+    }));
   };
 
   // --- FACTURACIÓN ELECTRÓNICA ---
@@ -242,9 +265,9 @@ export default function DocumentoDetallePage() {
                 <button
                   onClick={handleEmitirDIAN}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold shadow-sm flex items-center gap-2"
-                  title="Enviar a la DIAN (Facturación Electrónica)"
+                  title={isDS ? "Enviar a la DIAN (Documento Soporte Electrónico)" : "Enviar a la DIAN (Facturación Electrónica)"}
                 >
-                  📡 Emitir a DIAN
+                  📡 {isDS ? 'Emitir Doc. Soporte' : 'Emitir a DIAN'}
                 </button>
               )}
 
@@ -291,8 +314,29 @@ export default function DocumentoDetallePage() {
                 className="mt-1 block w-full border-gray-300 rounded-md"
               />
             </div>
-            <div><label className="text-sm font-medium text-gray-500">Tercero</label><select name="beneficiario_id" value={editedDocument.beneficiario_id || ''} onChange={handleFormChange} className="mt-1 block w-full border-gray-300 rounded-md"><option value="">Seleccione...</option>{terceros.map(t => <option key={t.id} value={t.id}>{t.razon_social}</option>)}</select></div>
             <div><label className="text-sm font-medium text-gray-500">Centro de Costo</label><select name="centro_costo_id" value={editedDocument.centro_costo_id || ''} onChange={handleFormChange} className="mt-1 block w-full border-gray-300 rounded-md"><option value="">Seleccione...</option>{centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</select></div>
+            <div className="md:col-span-2">
+              <label className="text-sm font-medium text-gray-500">Tercero</label>
+              <div className="flex gap-2">
+                <select
+                  name="beneficiario_id"
+                  value={editedDocument.beneficiario_id || ''}
+                  onChange={handleFormChange}
+                  className="mt-1 block w-full border-gray-300 rounded-md"
+                >
+                  <option value="">Seleccione...</option>
+                  {terceros.map(t => <option key={t.id} value={t.id}>{t.razon_social}</option>)}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setShowModalTercero(true)}
+                  className="mt-1 px-3 py-1 bg-green-100 text-green-700 rounded-md border border-green-300 hover:bg-green-200 font-bold transition-colors flex items-center justify-center"
+                  title="Crear Tercero Nuevo"
+                >
+                  <FaPlus className="text-sm" />
+                </button>
+              </div>
+            </div>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-semibold mb-4">Editar Movimientos</h2>
@@ -328,7 +372,9 @@ export default function DocumentoDetallePage() {
               <div><p className="text-sm font-medium text-gray-500">C. Costo</p><p>{documento.centro_costo || 'N/A'}</p></div>
               {documento.dian_cufe && (
                 <div className="col-span-2 mt-2 p-2 bg-gray-50 border rounded text-xs break-all">
-                  <p className="font-bold text-gray-700">CUFE (Código Único Factura Electrónica):</p>
+                  <p className="font-bold text-gray-700">
+                    {isDS ? 'CUDO (Código Único Documento Soporte):' : 'CUFE (Código Único Factura Electrónica):'}
+                  </p>
                   <p className="font-mono text-gray-600">{documento.dian_cufe}</p>
                 </div>
               )}
@@ -348,6 +394,13 @@ export default function DocumentoDetallePage() {
           </div>
         </div>
       )}
+
+      {/* MODAL CREAR TERCERO */}
+      <ModalCrearTercero
+        isOpen={showModalTercero}
+        onClose={() => setShowModalTercero(false)}
+        onSuccess={handleTerceroSuccess}
+      />
     </div>
   );
 }

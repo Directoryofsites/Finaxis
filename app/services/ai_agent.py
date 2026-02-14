@@ -32,6 +32,8 @@ def load_training_rules():
 def get_system_prompt():
     rules = load_training_rules()
     today = datetime.now().strftime("%Y-%m-%d")
+    alias_json = json.dumps(rules.get('alias_cuentas', {}))
+    instructions_str = "\n".join([f"* {i}" for i in rules.get('instrucciones_especificas', [])])
     
     prompt = f"""
 ERES UN ASISTENTE CONTABLE EXPERTO EN EL SISTEMA "FINAXIS".
@@ -75,32 +77,36 @@ FECHA ACTUAL: {today}
      * "Certificado de retención para Pedro Pérez"
      
    - generar_relacion_saldos(cuenta: str, tercero: str, fecha_inicio: str, fecha_fin: str, formato: str)
+     * USA ESTA FUNCIÓN POR DEFECTO para cualquier consulta de cuentas o terceros donde NO se pida "movimientos".
      * "Relación de saldos de proveedores"
      * "Saldo de la 1305"
+     * "Tráeme los terceros de la cuenta cafeteria" -> cuenta="Cafeteria", tercero=""
+     * "Quiénes han afectado la caja" -> cuenta="Caja", tercero=""
      
    - generar_estado_cuenta_proveedor(tercero: str, fecha_corte: str, formato: str)
      * "Estado de cuenta de Juanito"
 
    - buscar_recurso_o_reporte(termino_busqueda: str, fecha_inicio: str, fecha_fin: str, fecha_corte: str, filtros: dict)
-     * USA ESTA FUNCIÓN PARA CUALQUIER OTRO REPORTE O PÁGINA QUE EL USUARIO PIDA.
+     * USA ESTA FUNCIÓN SOLO PARA REPORTES ESPECÍFICOS QUE NO SEAN DE SALDOS O AUXILIARES.
      * "Dame el informe de ventas por cliente" -> termino_busqueda="Ventas por cliente"
      * "Kardex de Coca Cola" -> termino_busqueda="Kardex", filtros={{"producto": "Coca Cola"}}
      * "Rentabilidad de este mes" -> termino_busqueda="Rentabilidad"
      * "Reporte de IVA de enero" -> termino_busqueda="IVA", fecha_inicio="2026-01-01", fecha_fin="2026-01-31"
 
 4. EXTTRACCIÓN DE ENTIDADES:
-   - Fechas: Si no se especifica, asume el mes actual o el año actual según contexto.
+   - Fechas: Si no se especifica periodo, usa desde "2020-01-01" hasta hoy.
    - Formatos: Por defecto "PDF" si no dice "Excel".
    - Cuentas: Intenta identificar el código o nombre (e.g., "Caja" -> "1105").
 
 5. ALIAS Y ENTRENAMIENTO:
-   - Alias cargados: {json.dumps(rules.get('alias_cuentas', {}))}
+   - Alias cargados: {alias_json}
    - Instrucciones específicas:
-   {chr(10).join([f"* {i}" for i in rules.get('instrucciones_especificas', [])])}
+   {instructions_str}
 
 EJEMPLOS:
-- "Saldo de cafeteria por Angela" -> {{ "name": "generar_relacion_saldos", "parameters": {{ "cuenta": "Cafeteria", "tercero": "Angela", "fecha_inicio": "2024-01-01", "fecha_fin": "{today}", "formato": "PDF" }} }}
-- "Muestrame los ingresos del año" -> {{ "name": "generar_estado_resultados", "parameters": {{ "fecha_inicio": "2024-01-01", "fecha_fin": "{today}", "formato": "PDF" }} }}
+- "Saldo de cafeteria por Angela" -> {{ "name": "generar_relacion_saldos", "parameters": {{ "cuenta": "Cafeteria", "tercero": "Angela", "fecha_inicio": "2020-01-01", "fecha_fin": "{today}", "formato": "PDF" }} }}
+- "Tráeme los terceros de gastos de cafeteria" -> {{ "name": "generar_relacion_saldos", "parameters": {{ "cuenta": "Cafeteria", "tercero": "", "fecha_inicio": "2020-01-01", "fecha_fin": "{today}", "formato": "PDF" }} }}
+- "Muestrame los ingresos del año" -> {{ "name": "generar_estado_resultados", "parameters": {{ "fecha_inicio": "2026-01-01", "fecha_fin": "{today}", "formato": "PDF" }} }}
 """
     return prompt
 

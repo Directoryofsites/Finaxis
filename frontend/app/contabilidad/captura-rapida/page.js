@@ -17,7 +17,8 @@ import {
   FaExclamationTriangle,
   FaMagic,
   FaPrint,
-  FaTrash
+  FaTrash,
+  FaSatelliteDish
 } from 'react-icons/fa';
 
 // Importaciones
@@ -48,6 +49,7 @@ function CapturaRapidaContent() {
   const [error, setError] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [isSubmittingDoc, setIsSubmittingDoc] = useState(false);
+  const [tiposDocumento, setTiposDocumento] = useState([]);
 
   // Estados de Modales y Formularios Auxiliares
   const [isTerceroModalOpen, setIsTerceroModalOpen] = useState(false);
@@ -71,6 +73,7 @@ function CapturaRapidaContent() {
 
   // --- ESTADOS DE FLUJO DE VERIFICACIÃ“N (NUEVO CENTRO DE CONTROL) ---
   const [imprimirAlGuardar, setImprimirAlGuardar] = useState(false);
+  const [emitirAlGuardar, setEmitirAlGuardar] = useState(false);
   const [isMonitorOpen, setIsMonitorOpen] = useState(false);
   const [monitorData, setMonitorData] = useState([]); // Datos para la tabla de asientos
   const [monitorLoading, setMonitorLoading] = useState(false);
@@ -144,6 +147,14 @@ function CapturaRapidaContent() {
       }
     }
   };
+
+  // Identificar si la plantilla seleccionada tiene un tipo de documento DS
+  const isDS = useMemo(() => {
+    const p = plantillas.find(p => p.id === parseInt(plantillaId));
+    if (!p) return false;
+    const td = tiposDocumento.find(t => t.id === p.tipo_documento_id_sugerido);
+    return td?.funcion_especial === 'documento_soporte';
+  }, [plantillaId, plantillas, tiposDocumento]);
 
   // 2. DistribuciÃ³n del Valor Ãšnico (La Magia de Captura RÃ¡pida)
   const handleValorUnicoChange = (val) => {
@@ -278,15 +289,36 @@ function CapturaRapidaContent() {
       const docNumero = response.data.numero;
 
       setMensaje(`✅ Documento #${docNumero} guardado exitosamente.`);
+      let emisionExitosa = true;
 
-      // --- LÓGICA DE IMPRESIÓN AUTOMÁTICA ---
-      if (imprimirAlGuardar && docId) {
-        handleImprimirDocumento(docId);
-        toast.info("Generando PDF de impresión... 🖨️");
+      // --- LÓGICA DE EMISIÓN AUTOMÁTICA ---
+      if (emitirAlGuardar && docId) {
+        const plantillaSeleccionada = plantillas.find(p => p.id === parseInt(plantillaId));
+        const tipoDoc = tiposDocumento.find(t => t.id === plantillaSeleccionada?.tipo_documento_id_sugerido);
+        if (tipoDoc?.funcion_especial === 'documento_soporte') {
+          toast.info("Transmitiendo DS a la DIAN...");
+          try {
+            const resEmit = await apiService.post(`/fe/emitir/${docId}`);
+            if (resEmit.data.success) {
+              setMensaje(`✅ Documento #${docNumero} guardado y emitido con éxito. CUFE: ${resEmit.data.cufe}`);
+              toast.success("DS emitido con éxito.");
+            } else {
+              setError(`Guardado OK, pero error al emitir: ${resEmit.data.error || "Error desconocido"}`);
+              toast.error("Error al emitir DS.");
+              emisionExitosa = false;
+            }
+          } catch (e) {
+            setError("Guardado OK, pero error técnico al emitir.");
+            toast.error("Error técnico al emitir DS.");
+            emisionExitosa = false;
+          }
+        }
       }
 
-      resetFormulario();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (emisionExitosa) {
+        resetFormulario();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
 
     } catch (err) {
       let errorMsg = 'Error al guardar el documento.';
@@ -626,12 +658,13 @@ function CapturaRapidaContent() {
       setError('');
       try {
         // Se asume que las rutas GET funcionan (ya que no reportaste error aquÃ­)
-        const [cuentasRes, tercerosRes, ccostoRes, plantillasRes, conceptosRes] = await Promise.all([
+        const [cuentasRes, tercerosRes, ccostoRes, plantillasRes, conceptosRes, tiposDocRes] = await Promise.all([
           apiService.get('/plan-cuentas/'),
           apiService.get('/terceros/'),
           apiService.get('/centros-costo/get-flat?permite_movimiento=true'),
           apiService.get('/plantillas/'),
-          apiService.get('/conceptos-favoritos/')
+          apiService.get('/conceptos-favoritos/'),
+          apiService.get('/tipos-documento/')
         ]);
 
         const aplanarCuentas = (cuentas) => {
@@ -649,6 +682,7 @@ function CapturaRapidaContent() {
         setCentrosCosto(ccostoRes.data);
         setPlantillas(plantillasRes.data);
         setConceptos(conceptosRes.data);
+        setTiposDocumento(tiposDocRes.data);
       } catch (err) {
         let errorMsg = 'Error fatal al cargar los datos maestros.';
         if (err.response?.data?.detail) {
@@ -753,6 +787,16 @@ function CapturaRapidaContent() {
             </div>
             <span className="text-sm font-bold text-gray-600 select-none">Imprimir</span>
           </div>
+
+          {/* TOGGLE EMITIR DS AL GUARDAR (SOLO SI ES DS) */}
+          {isDS && (
+            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-green-100 shadow-sm transition-all hover:shadow-md cursor-pointer" onClick={() => setEmitirAlGuardar(!emitirAlGuardar)}>
+              <div className={`w-8 h-4 flex items-center bg-gray-300 rounded-full p-1 duration-300 ease-in-out ${emitirAlGuardar ? 'bg-green-600' : ''}`}>
+                <div className={`bg-white w-3 h-3 rounded-full shadow-md transform duration-300 ease-in-out ${emitirAlGuardar ? 'translate-x-3' : ''}`}></div>
+              </div>
+              <span className="text-sm font-bold text-green-700 select-none">Emitir DS</span>
+            </div>
+          )}
 
           {/* BOTÃ“N VER ASIENTOS (MONITOR EXTERNO) */}
           <button

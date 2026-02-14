@@ -184,31 +184,59 @@ export function useSmartSearch() {
         setSelectedIndex(matches.length > 0 ? 0 : -1);
     }, [query, searchableItems]);
 
+    const queryRef = useRef('');
+
     useEffect(() => {
         if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognitionRef.current = new SpeechRecognition();
-            recognitionRef.current.continuous = true;
+            recognitionRef.current.continuous = false;
             recognitionRef.current.lang = 'es-CO';
             recognitionRef.current.interimResults = true;
-            recognitionRef.current.maxAlternatives = 1;
 
-            let silenceTimer = null;
             recognitionRef.current.onresult = (event) => {
-                const currentText = Array.from(event.results).map(result => result[0].transcript).join('');
-                setQuery(currentText);
-                if (silenceTimer) clearTimeout(silenceTimer);
-                silenceTimer = setTimeout(() => {
-                    recognitionRef.current.stop();
-                    setIsListening(false);
-                    processVoiceCommand(currentText);
-                }, 2000);
+                let finalTranscript = '';
+                let interimTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+
+                const currentText = finalTranscript || interimTranscript;
+                if (currentText) {
+                    setQuery(currentText);
+                    queryRef.current = currentText;
+                }
             };
+
+            recognitionRef.current.onend = () => {
+                setIsListening(false);
+                const finalQuery = queryRef.current;
+                if (finalQuery && finalQuery.trim().length > 2) {
+                    processVoiceCommand(finalQuery);
+                }
+                queryRef.current = '';
+            };
+
             recognitionRef.current.onerror = (event) => {
-                if (event.error !== 'no-speech') console.error("Speech error", event.error);
+                if (event.error !== 'no-speech') {
+                    console.error("Speech error", event.error);
+                    toast.error("Error de micrófono: " + event.error);
+                }
+                setIsListening(false);
             };
         }
-    }, [isListening]);
+
+        return () => {
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
+        };
+    }, []);
 
     const toggleListening = () => {
         if (isListening) {
@@ -216,6 +244,7 @@ export function useSmartSearch() {
             setIsListening(false);
         } else {
             setQuery('');
+            queryRef.current = '';
             setIsListening(true);
             try {
                 recognitionRef.current?.start();
@@ -244,7 +273,7 @@ export function useSmartSearch() {
             }
 
             console.log("--- IA RAW RESULT ---", data);
-            await handleAIAction(data);
+            await handleAIAction(data, text); // Pasar text para contexto extra
         } catch (error) {
             console.error(error);
             setIsThinking(false);
@@ -252,27 +281,43 @@ export function useSmartSearch() {
         }
     };
 
-    const handleAIAction = async (data) => {
+    const handleAIAction = async (data, text = null) => {
         const actionName = data.name || data.function_name;
         const p = data.parameters || {};
-        const queryLower = (query || '').toLowerCase();
+        const queryLower = (text || query || '').toLowerCase();
 
-        // --- INTERCEPTOR: ESTADO DE CUENTA CARTERA ---
-        const isCarteraIntent = queryLower.includes('estado de cuenta') || queryLower.includes('cartera') || queryLower.includes('cuanto debe') || queryLower.includes('saldo de');
-        if (isCarteraIntent && (actionName === 'generar_reporte_movimientos' || actionName === 'consultar_documento')) {
-            const terceroIdentified = p.tercero || p.tercero_nombre || p.ai_tercero;
-            if (terceroIdentified) {
-                const params = new URLSearchParams();
-                params.set('tercero', terceroIdentified);
-                if (p.fecha_corte || p.fecha_fin) params.set('fecha_corte', p.fecha_corte || p.fecha_fin);
-                const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
-                if (wantsPdf) params.set('auto_pdf', 'true');
-                if (p.whatsapp_destino) { params.set('wpp', p.whatsapp_destino); params.set('auto_pdf', 'true'); }
-                if (p.email_destino) { params.set('email', p.email_destino); params.set('auto_pdf', 'true'); }
-                router.push(`/contabilidad/reportes/estado-cuenta-cliente?${params.toString()}`);
-                toast.success('IA: Abriendo Estado de Cuenta (Cartera)...');
-                return;
+        // --- INTELLIGENCE: GASTOS / INGRESOS ---
+        const isGastos = queryLower.includes('gasto') || queryLower.includes('egreso') || queryLower.includes('pago a');
+        const isIngresos = queryLower.includes('ingreso') || queryLower.includes('venta') || queryLower.includes('recuperacion');
+
+        // --- INTERCEPTOR: ESTADO DE CUENTA CARTERA / SALDOS ---
+        const isSaldosIntent = queryLower.includes('saldo') || queryLower.includes('cuanto debe') || queryLower.includes('deuda') || isGastos || isIngresos;
+        const isMovimientosIntent = queryLower.includes('movimiento') || queryLower.includes('detalle') || queryLower.includes('auxiliar');
+
+        if ((isSaldosIntent || isMovimientosIntent) && (actionName === 'generar_reporte_movimientos' || actionName === 'consultar_documento' || actionName === 'generar_relacion_saldos')) {
+            const terceroIdentified = p.tercero || p.tercero_nombre || p.ai_tercero || p.nombre_tercero;
+            const params = new URLSearchParams();
+
+            if (terceroIdentified) params.set('tercero', terceroIdentified);
+            if (isGastos) params.set('cuenta', '5');
+            else if (isIngresos) params.set('cuenta', '4');
+            else if (p.cuenta || p.ai_cuenta) params.set('cuenta', p.cuenta || p.ai_cuenta);
+
+            if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
+            if (p.fecha_fin || p.fecha_corte) params.set('fecha_fin', p.fecha_fin || p.fecha_corte);
+
+            params.set('trigger', 'ai');
+            const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
+            if (wantsPdf) params.set('auto_pdf', 'true');
+
+            if (isMovimientosIntent) {
+                router.push(`/contabilidad/reportes/tercero-cuenta?${params.toString()}`);
+                toast.success(`IA: Consultando Movimientos (${isGastos ? 'Gastos' : isIngresos ? 'Ingresos' : 'Detallados'})...`);
+            } else {
+                router.push(`/contabilidad/reportes/relacion-saldos?${params.toString()}`);
+                toast.success(`IA: Consultando Saldos (${isGastos ? 'Gastos' : isIngresos ? 'Ingresos' : 'General'})...`);
             }
+            return;
         }
 
         // --- INTERCEPTOR: MOVIMIENTOS INVENTARIO ---
@@ -337,8 +382,16 @@ export function useSmartSearch() {
 
             // Extracción robusta de TERCERO
             const terceroVal = p.tercero || p.tercero_nombre || p.ai_tercero || p.nombre_tercero;
-            if (terceroVal) {
-                params.set('tercero', terceroVal);
+            const includesTerceroIntent = queryLower.includes('tercero');
+
+            if (terceroVal || includesTerceroIntent) {
+                if (terceroVal) params.set('tercero', terceroVal);
+
+                // Si tenemos cuenta pero no un tercero específico, es probable que quiera "Por Cuenta (Inverso)"
+                if ((p.cuenta || p.ai_cuenta) && !terceroVal) {
+                    params.set('mode', 'cuenta_first');
+                }
+
                 router.push(`/contabilidad/reportes/tercero-cuenta?${params.toString()}`);
                 toast.success('IA: Procesando Auxiliar por Tercero...');
             } else {

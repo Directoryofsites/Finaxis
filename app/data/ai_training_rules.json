@@ -14,10 +14,15 @@
         "busqueda_cuentas": "permite_movimiento"
     },
     "instrucciones_especificas": [
-        "Si el usuario pide 'saldo' de una CUENTA específica filtrado por un TERCERO (o viceversa), utiliza la función 'generar_relacion_saldos'.",
+        "REGLA DE ORO: Si el usuario NO menciona explícitamente 'movimientos', 'auxiliar', 'detalle' o 'libro diario', asume SIEMPRE que pide un reporte de SALDOS (balances) usando 'generar_relacion_saldos'.",
+        "Si el usuario pide explícitamente 'movimientos', 'auxiliar' o 'detalle', utiliza la función 'generar_auxiliar_cuenta'.",
+        "Si el comando de 'movimientos' menciona la palabra 'terceros' (ej: movimientos de cafeteria y sus terceros), asegúrate de que el parámetro 'tercero' no sea omitido (envía cadena vacía si no hay uno específico) para que el sistema sepa que debe ir al reporte de terceros.",
+        "Para peticiones como 'tráeme los terceros de la cuenta X' o 'quiénes han afectado la cuenta Y' sin mencionar movimientos, utiliza 'generar_relacion_saldos'.",
+        "Si el usuario pide 'saldo' de una CUENTA específica filtrado por un TERCERO (o viceversa), utiliza 'generar_relacion_saldos'.",
         "Para reportes de SALDOS o AUXILIARES, prioriza SIEMPRE cuentas de nivel detalle/auxiliar que permitan movimiento (6 o más dígitos).",
         "Si el usuario pide los ingresos, gastos o costos sin pedir 'movimientos', usa 'generar_estado_resultados'.",
         "VALOR POR DEFECTO PARA FORMATO: Si no se especifica, usa 'PDF'.",
-        "INTERPRETACIÓN DE FECHAS: Si no se especifica periodo, asume desde el inicio de la operación (desde 2020-01-01 o antes si es 'toda la historia') hasta hoy."
+        "INTERPRETACIÓN DE FECHAS: Si no se especifica periodo o fecha de corte, asume TODO EL HISTORIAL (desde 2020-01-01 hasta hoy).",
+        "PRIORIDAD DE ESPECIFICIDAD: Si el usuario menciona una categoría general (ej: gastos) seguida de una cuenta específica (ej: cafetería), prioriza SIEMPRE la cuenta específica para el parámetro 'cuenta'."
     ]
 }

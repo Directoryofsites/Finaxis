@@ -192,11 +192,20 @@ export default function RelacionSaldosClient() {
 
                 if (urlCuenta) {
                     const term = urlCuenta.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                    const matched = resCuentas.data.find(c =>
-                        c.codigo === urlCuenta ||
-                        c.nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(term)
-                    );
-                    if (matched) resolveCuentas = [matched.id];
+
+                    // Si es un dígito de clase (1-9), marcamos todas las auxiliares que empiecen por ahí
+                    if (/^[1-9]$/.test(urlCuenta)) {
+                        const matchedIds = resCuentas.data
+                            .filter(c => c.codigo.startsWith(urlCuenta))
+                            .map(c => c.id);
+                        if (matchedIds.length > 0) resolveCuentas = matchedIds;
+                    } else {
+                        const matched = resCuentas.data.find(c =>
+                            c.codigo === urlCuenta ||
+                            c.nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(term)
+                        );
+                        if (matched) resolveCuentas = [matched.id];
+                    }
                 }
 
                 if (urlTercero) {

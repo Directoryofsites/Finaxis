@@ -320,9 +320,25 @@ function SuperInformeContent() {
           total_paginas: data.total_paginas,
           pagina_actual: data.pagina_actual
         });
-        const headersToShow = Object.keys(data.resultados[0]).filter(key =>
-          !['estado', 'anulado', 'documento_id', 'movimiento_id', 'usuario_creador_id', 'usuario_operacion_id', 'producto_codigo', 'producto_nombre', 'cantidad_movimiento', 'beneficiario_doc'].includes(key)
+        const rawHeaders = Object.keys(data.resultados[0]).filter(key =>
+          ![
+            'estado', 'anulado', 'documento_id', 'movimiento_id', 'usuario_creador_id', 'usuario_operacion_id',
+            'producto_codigo', 'producto_nombre', 'cantidad_movimiento', 'beneficiario_doc', 'beneficiario_mov',
+            'usuario_creador_nombre', 'usuario_operacion_nombre'
+          ].includes(key)
         );
+
+        // Reordenar: Mover beneficiario justo después de cuenta_nombre
+        const headersToShow = [...rawHeaders];
+        const beneIdx = headersToShow.indexOf('beneficiario');
+        const accountNameIdx = headersToShow.indexOf('cuenta_nombre');
+
+        if (beneIdx > -1 && accountNameIdx > -1) {
+          headersToShow.splice(beneIdx, 1); // Quitar de su posición original
+          const newIdx = headersToShow.indexOf('cuenta_nombre') + 1;
+          headersToShow.splice(newIdx, 0, 'beneficiario'); // Insertar después de cuenta_nombre
+        }
+
         setDynamicHeaders(headersToShow);
       } else {
         setResultados([]);

@@ -21,10 +21,13 @@ import {
   FaCheckCircle,
   FaExclamationTriangle,
   FaList,
-  FaEraser
+  FaEraser,
+  FaSatelliteDish
 } from 'react-icons/fa';
 
 // Importaciones de dependencias
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../../lib/apiService';
 import { FuncionEspecial } from '../../../lib/constants';
@@ -161,6 +164,12 @@ export default function NuevoDocumentoPage() {
   const totalAbono = useMemo(() => {
     return parseFloat(valorAAbonar) || 0;
   }, [valorAAbonar]);
+
+  // Identificar si el tipo de documento seleccionado es Documento Soporte
+  const isDS = useMemo(() => {
+    const td = maestros.tiposDocumento.find(t => t.id === parseInt(tipoDocumentoId));
+    return td?.funcion_especial === 'documento_soporte';
+  }, [tipoDocumentoId, maestros.tiposDocumento]);
 
   const handleMovimientoChange = (index, field, value) => {
     const newMovimientos = [...movimientos];
@@ -608,9 +617,15 @@ export default function NuevoDocumentoPage() {
       };
 
       const response = await apiService.post('/documentos/', payload);
-      setMensaje(`¡Éxito! Documento ${response.data.numero} creado.`);
       const newDocId = response.data.id;
+      setMensaje(`¡Éxito! Documento ${response.data.numero} creado.`);
       setDocumentoRecienCreadoId(newDocId);
+
+      // Si fue una llamada de "Guardar y Emitir", procedemos
+      // Pero para no romper la firma del botón simple, usaremos un truco o flag.
+      // Alternativa: El botón "Guardar y Emitir" llama a una función que envuelve a handleSubmit.
+
+      return response.data; // RETORNAR DATA PARA FLUJOS COMPUESTOS
 
       // --- IMPRESIÓN AUTOMÁTICA (Si está habilitada en el Control Center) ---
       if (imprimirAlGuardar) {
@@ -666,6 +681,49 @@ export default function NuevoDocumentoPage() {
       } else {
         setError('Ocurrió un error desconocido al guardar.');
       }
+      throw err; // Propagar para detener flujo si es necesario (ej: Save and Emit)
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSaveAndEmit = async () => {
+    setError('');
+    setMensaje('');
+    setIsSubmitting(true);
+    try {
+      const doc = await handleSubmit();
+      if (doc && doc.id) {
+        setMensaje("Documento guardado. Transmitiendo a la DIAN...");
+        try {
+          const resEmit = await apiService.post(`/fe/emitir/${doc.id}`);
+          const emitJson = resEmit.data;
+
+          if (emitJson.success) {
+            setMensaje(`¡Éxito! Documento ${doc.numero} emitido correctamente. CUFE: ${emitJson.cufe}`);
+            toast.success("Documento emitido con éxito.");
+
+            // LIMPIEZA TOTAL POST-EMISIÓN EXITOSA
+            setMovimientos([
+              { rowId: Date.now(), cuentaId: '', concepto: '', debito: '', credito: '', cuentaInput: '' },
+              { rowId: Date.now() + 1, cuentaId: '', concepto: '', debito: '', credito: '', cuentaInput: '' },
+            ]);
+            setBeneficiarioId('');
+            setNumero('');
+            setCentroCostoId('');
+            setFechaVencimiento(null);
+          } else {
+            setError(`Guardado OK, pero error al emitir: ${emitJson.error || "Error desconocido"}`);
+            toast.error("Error al emitir a la DIAN.");
+          }
+        } catch (emitErr) {
+          console.error("Error al emitir:", emitErr);
+          setError(`Guardado OK, pero error técnico al emitir.`);
+          toast.error("Error técnico al emitir.");
+        }
+      }
+    } catch (e) {
+      console.error("Error en flujo compuesto:", e);
     } finally {
       setIsSubmitting(false);
     }
@@ -952,7 +1010,7 @@ export default function NuevoDocumentoPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6 font-sans pb-20">
       <div className="max-w-7xl mx-auto">
-
+        <ToastContainer position="top-right" autoClose={5000} />
         {/* ENCABEZADO */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
@@ -1452,13 +1510,29 @@ export default function NuevoDocumentoPage() {
                     w-full md:w-auto px-8 py-3 rounded-xl shadow-lg font-bold text-white text-lg transition-all transform hover:-translate-y-1 flex items-center gap-2
                     ${isSubmitting || !estaBalanceado
                   ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-green-600 hover:bg-green-700 hover:shadow-green-200'}
+                  : 'bg-slate-600 hover:bg-slate-700 hover:shadow-slate-200'}
                 `}
               ref={(el) => addRef('guardar-doc', el)}
               onKeyDown={(e) => handleKeyDown(e, 'guardar-doc')}
             >
               {isSubmitting ? 'Guardando...' : <><FaSave /> Guardar Documento</>}
             </button>
+
+            {isDS && (
+              <button
+                type="button"
+                onClick={handleSaveAndEmit}
+                disabled={isSubmitting || !estaBalanceado || movimientos.filter(m => m.cuentaId).length === 0}
+                className={`
+                      w-full md:w-auto px-8 py-3 rounded-xl shadow-lg font-bold text-white text-lg transition-all transform hover:-translate-y-1 flex items-center gap-2
+                      ${isSubmitting || !estaBalanceado
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700 hover:shadow-green-200'}
+                  `}
+              >
+                {isSubmitting ? 'Emitiendo...' : <><FaSatelliteDish /> Guardar y Emitir DS</>}
+              </button>
+            )}
 
             <button
               type="button"
