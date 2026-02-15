@@ -90,8 +90,11 @@ export function useSmartSearch() {
         if (!title) return;
 
         try {
+            // Truncate title to avoid DB errors (max 255)
+            const safeTitle = title.substring(0, 250);
+
             await apiService.post('/usuarios/busquedas/', {
-                titulo: title,
+                titulo: safeTitle,
                 comando: cmd
             });
             toast.success("Guardado en biblioteca");

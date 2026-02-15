@@ -74,7 +74,7 @@ def guardar_busqueda(
     
     nueva_busqueda = UsuarioBusqueda(
         usuario_id=current_user.id,
-        titulo=busqueda.titulo,
+        titulo=busqueda.titulo[:255], # Truncate to match DB limit
         comando=busqueda.comando,
         parametros=busqueda.parametros
     )
