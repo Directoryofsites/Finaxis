@@ -315,8 +315,23 @@ function ReporteTerceroCuentaContent() {
         });
         const best = scoredCuentas.filter(c => c.score > 0).sort((a, b) => b.score - a.score);
         if (best.length > 0) {
-          toast.success(`✅ Cuenta encontrada: ${best[0].codigo}`);
-          setSelectedCuentaPrincipal(best[0].id);
+          let selectedAccount = best[0];
+
+          // SMART ADJUSTMENT INVERSE MODE:
+          if (!selectedAccount.es_auxiliar) {
+            const childAux = cuentasAll.find(c =>
+              c.codigo.startsWith(selectedAccount.codigo) &&
+              c.es_auxiliar &&
+              c.id !== selectedAccount.id
+            );
+            if (childAux) {
+              toast.info(`IA: Ajustando a auxiliar "${childAux.nombre}"`, { autoClose: 3000 });
+              selectedAccount = childAux;
+            }
+          }
+
+          toast.success(`✅ Cuenta encontrada: ${selectedAccount.codigo}`);
+          setSelectedCuentaPrincipal(selectedAccount.id);
           setSelectedTercerosMulti(['all']); // Seleccionar todos por defecto como pide el usuario
           setShouldAutoRun(true); // Usar el estado de auto-run seguro
         } else {
@@ -439,6 +454,24 @@ function ReporteTerceroCuentaContent() {
               const topCandidates = bestMatches.filter(c => c.score >= maxScore);
 
               const ids = topCandidates.map(c => c.id);
+
+              // SMART ADJUSTMENT V2: Si la mejor candidata es MAYOR, buscar HIJA AUXILIAR
+              // Esto evita que "Caja" (1105) se seleccione y no muestre nada.
+              if (ids.length === 1) {
+                const best = cuentas.find(c => c.id === ids[0]);
+                if (best && !best.es_auxiliar) {
+                  const childAux = cuentas.find(c =>
+                    c.codigo.startsWith(best.codigo) &&
+                    c.es_auxiliar &&
+                    c.id !== best.id
+                  );
+                  if (childAux) {
+                    toast.info(`IA: Ajustando a auxiliar "${childAux.nombre}"`, { autoClose: 3000 });
+                    ids[0] = childAux.id;
+                  }
+                }
+              }
+
               setSelectedCuentas(ids);
 
               // Auto-ejecutar AHORA que tenemos tercero, fechas y cuentas

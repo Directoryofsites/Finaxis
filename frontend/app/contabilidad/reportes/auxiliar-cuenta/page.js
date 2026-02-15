@@ -128,12 +128,45 @@ function AuxiliarPorCuentaContent() {
                     if (b.score !== a.score) return b.score - a.score;
                     return b.nombre.length - a.nombre.length; // Tie-breaker: Preferir nombre más largo (más específico)
                 });
-                const matched = bestMatches.length > 0 ? bestMatches[0] : null;
+                let matched = bestMatches.length > 0 ? bestMatches[0] : null;
 
                 // DEBUG VISUAL PARA EL USUARIO
                 if (bestMatches.length > 0) {
                     const top3 = bestMatches.slice(0, 3).map(c => `${c.nombre} (${c.score})`).join(' | ');
                     toast.info(`IA Matches: ${top3}`, { autoClose: 5000 });
+                }
+
+                // SMART ADJUSTMENT: Si la IA seleccionó una cuenta MAYOR (no auxiliar)
+                // Buscamos automáticamente su primer hijo AUXILIAR
+                // SMART ADJUSTMENT V2: Force check for Length 4 (Major) or Not Auxiliary
+                // Logs for debugging
+                console.log("IA Account Check:", matched?.codigo, "Auxiliar?", matched?.es_auxiliar);
+
+                if (matched && (!matched.es_auxiliar || matched.codigo.length <= 4)) {
+                    console.log("IA: Searching for children of", matched.codigo);
+
+                    // Prioridad 1: Hijos auxiliares directos
+                    let bestChild = cuentas.find(c =>
+                        c.codigo.startsWith(matched.codigo) &&
+                        c.es_auxiliar &&
+                        c.id !== matched.id
+                    );
+
+                    // Prioridad 2: Si no hay auxiliares, cualquier hijo (fallback)
+                    if (!bestChild) {
+                        bestChild = cuentas.find(c =>
+                            c.codigo.startsWith(matched.codigo) &&
+                            c.id !== matched.id
+                        );
+                    }
+
+                    if (bestChild) {
+                        toast.info(`IA: Ajustando a cuenta detalle "${bestChild.nombre}" (${bestChild.codigo})`);
+                        console.log("IA: Switched to child", bestChild.codigo);
+                        matched = bestChild;
+                    } else {
+                        console.log("IA: No children found for", matched.codigo);
+                    }
                 }
 
                 if (matched) {
@@ -150,7 +183,7 @@ function AuxiliarPorCuentaContent() {
 
                         // Delay para asegurar render
                         setTimeout(() => {
-                            fetchReport(matched.id, pInicio, pFin);
+                            fetchReport(matched.id, pInicio, pFin); // Usar matched.id actualizado
                             window.history.replaceState(null, '', pathname); // Limpieza diferida
                         }, 500);
                     } else {

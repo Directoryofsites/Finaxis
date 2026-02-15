@@ -17,6 +17,9 @@ import {
 
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
+// NEW IMPORTS
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
 // --- ESTILOS REUSABLES (Manual v2.0) ---
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
@@ -167,8 +170,10 @@ const VistaPorComprobantes = ({ reporte }) => {
   );
 };
 
-export default function AuxiliarProveedoresPage() {
+function AuxiliarProveedoresContent() {
   const { user, authLoading } = useAuth();
+  const searchParams = useSearchParams();
+
   const [terceros, setTerceros] = useState([]);
   const [filtros, setFiltros] = useState({
     terceroId: '',
@@ -181,33 +186,83 @@ export default function AuxiliarProveedoresPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isPageReady, setPageReady] = useState(false);
+  const [autoPdfTrigger, setAutoPdfTrigger] = useState(false); // NEW STATE
 
   // Autenticación
   useEffect(() => {
     if (!authLoading) {
       if (user && user.empresaId) {
         setPageReady(true);
-      } else {
-        // Redirección o manejo de no-auth
       }
     }
   }, [user, authLoading]);
 
-  // Carga inicial de proveedores
+  // Carga inicial de proveedores y Lógica IA
   useEffect(() => {
     if (user?.empresaId) {
-      const fetchTerceros = async () => {
+      const fetchTercerosAndConfig = async () => {
         try {
+          // 1. Cargar Terceros (ES_PROVEEDOR = TRUE)
           const response = await apiService.get('/terceros', { params: { es_proveedor: true } });
-          setTerceros(response.data || []);
+          const tercerosLoaded = response.data || [];
+          setTerceros(tercerosLoaded);
+
+          // 2. Lógica IA / URL Params
+          const aiTercero = searchParams.get('ai_tercero');
+          const aiFechaInicio = searchParams.get('fecha_inicio');
+          const aiFechaFin = searchParams.get('fecha_fin');
+          const aiPerspective = searchParams.get('perspective');
+          const aiAutoPdf = searchParams.get('auto_pdf');
+
+          let foundTerceroId = '';
+
+          // A. Resolver Tercero
+          if (aiTercero && tercerosLoaded.length > 0) {
+            const normalize = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const searchNorm = normalize(aiTercero);
+
+            // Prioridad 1: Match Exacto
+            const exact = tercerosLoaded.find(t => normalize(t.razon_social) === searchNorm || t.nit === searchNorm);
+            if (exact) foundTerceroId = exact.id;
+            else {
+              // Prioridad 2: Contains
+              const match = tercerosLoaded.find(t => normalize(t.razon_social).includes(searchNorm));
+              if (match) foundTerceroId = match.id;
+            }
+          }
+
+          // B. Configurar Filtros
+          setFiltros(prev => {
+            const next = { ...prev };
+            if (foundTerceroId) next.terceroId = foundTerceroId;
+
+            // Fechas
+            if (aiFechaInicio) next.fechaInicio = aiFechaInicio;
+            else if (searchParams.get('trigger') === 'ai_search') next.fechaInicio = '2020-01-01'; // DEFAULT IA
+
+            if (aiFechaFin) next.fechaFin = aiFechaFin;
+
+            if (aiPerspective) next.perspective = aiPerspective;
+            return next;
+          });
+
+          // C. Trigger Auto Search
+          if (foundTerceroId) {
+            setTimeout(() => document.getElementById('btn-generar-reporte')?.click(), 500);
+          }
+
+          // D. Trigger Auto PDF
+          if (aiAutoPdf === 'true') {
+            setAutoPdfTrigger(true);
+          }
+
         } catch (err) {
-          setError("Error al cargar la lista de proveedores.");
-          setTerceros([]);
+          setError("Error cargando configuración inicial.");
         }
       };
-      fetchTerceros();
+      fetchTercerosAndConfig();
     }
-  }, [user]);
+  }, [user, searchParams]);
 
   const handleFiltroChange = (e) => {
     const { name, value } = e.target;
@@ -277,10 +332,9 @@ export default function AuxiliarProveedoresPage() {
     document.body.removeChild(link);
   };
 
-  const handleExportPDF = async () => {
+  const handleExportPDF = React.useCallback(async () => {
     if (!reportData) return alert("Genere el reporte primero.");
-    setIsLoading(true);
-    setError('');
+    // setIsLoading(true);
     try {
       const response = await apiService.get('/reports/auxiliar-proveedores/get-signed-url', {
         params: {
@@ -293,19 +347,23 @@ export default function AuxiliarProveedoresPage() {
       const signedToken = response.data.signed_url_token;
       const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/reports/auxiliar-proveedores/imprimir?signed_token=${signedToken}`;
 
-      const link = document.createElement('a');
-      link.href = pdfUrl;
-      link.setAttribute('download', `Auxiliar_Proveedores_${filtros.perspective}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // ABRIR EN NUEVA PESTAÑA (Corrected per User Request)
+      window.open(pdfUrl, '_blank');
+
+      if (autoPdfTrigger) setAutoPdfTrigger(false); // Reset trigger
 
     } catch (err) {
       setError(err.response?.data?.detail || "Error PDF.");
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [reportData, filtros, autoPdfTrigger]);
+
+  // AUTO PDF TRIGGER EFFECT
+  useEffect(() => {
+    if (autoPdfTrigger && reportData && !isLoading) {
+      console.log("IA: Ejecutando Auto-PDF...");
+      handleExportPDF();
+    }
+  }, [autoPdfTrigger, reportData, isLoading, handleExportPDF]);
 
   if (!isPageReady) {
     return (
@@ -419,6 +477,7 @@ export default function AuxiliarProveedoresPage() {
 
             <div className="flex justify-end mt-6">
               <button
+                id="btn-generar-reporte"
                 onClick={handleGenerateReport}
                 disabled={isLoading}
                 className={`
@@ -468,5 +527,18 @@ export default function AuxiliarProveedoresPage() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function AuxiliarProveedoresPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+        <FaTruck className="text-indigo-300 text-6xl mb-4 animate-pulse" />
+        <p className="text-indigo-600 font-semibold text-lg animate-pulse">Cargando...</p>
+      </div>
+    }>
+      <AuxiliarProveedoresContent />
+    </Suspense>
   );
 }

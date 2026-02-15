@@ -93,6 +93,27 @@ FECHA ACTUAL: {today}
      * "Rentabilidad de este mes" -> termino_busqueda="Rentabilidad"
      * "Reporte de IVA de enero" -> termino_busqueda="IVA", fecha_inicio="2026-01-01", fecha_fin="2026-01-31"
 
+   - generar_auditoria_avanzada(tercero: str, valor_monto: str, valor_operador: str, concepto: str, cuenta: str, centro_costo: str, producto: str, filtro_tipo_doc: str, numero: str, fecha_inicio: str, fecha_fin: str)
+     * "Todos los pagos a Alberto Céspedes mayores a 1 millón" -> {{ "tercero": "Alberto Cespedes", "valor_monto": "1000000", "valor_operador": "mayor", "filtro_tipo_doc": "Pagos" }}
+     * "Auditoría de compras de insumos por más de 500k" -> {{ "filtro_tipo_doc": "Compras", "concepto": "insumos", "valor_monto": "500000", "valor_operador": "mayor" }}
+     * "Movimientos de la cuenta caja menores a 10000" -> {{ "cuenta": "Caja", "valor_monto": "10000", "valor_operador": "menor" }}
+     * "Por super informe muestra el documento soporte no. 29" -> {{ "filtro_tipo_doc": "Documento Soporte", "numero": "29" }}
+     * "Consultar factura de venta número 93" -> {{ "filtro_tipo_doc": "Factura de Venta", "numero": "93" }}
+     * "Ver comprobante de egreso 45" -> {{ "filtro_tipo_doc": "Comprobante de Egreso", "numero": "45" }}
+     * "Búscame la nota crédito 10" -> {{ "filtro_tipo_doc": "Nota Crédito", "numero": "10" }}
+     * "Movimientos de IVA generado del 19% de Alberto Cespedes" -> {{ "cuenta": "IVA Generado 19%", "tercero": "Alberto Cespedes" }}
+     * "Auditoría de cuenta retefuente por compras de Pedro Pérez" -> {{ "cuenta": "Retefuente por compras", "tercero": "Pedro Perez" }}
+
+   - generar_auxiliar_cartera(tercero: str, vista: str, fecha_inicio: str, fecha_fin: str)
+     * "Auxiliar de cartera de Salomé Naranjo" -> {{ "tercero": "Salome Naranjo" }}
+     * "Cartera de pagos de Juan Perez" -> {{ "tercero": "Juan Perez", "vista": "recibos" }}
+     * "Auxiliar de cartera facturas de Maria" -> {{ "tercero": "Maria", "vista": "facturas" }}
+
+   - generar_auxiliar_proveedores(tercero: str, vista: str, fecha_inicio: str, fecha_fin: str)
+     * "Auxiliar de proveedores de Distri-Todo" -> {{ "tercero": "Distri-Todo" }}
+     * "Pagos a proveedores de Makro" -> {{ "tercero": "Makro", "vista": "recibos" }}
+     * "Estado de cuenta proveedor Claro" -> {{ "tercero": "Claro", "vista": "facturas" }}
+
 4. EXTTRACCIÓN DE ENTIDADES:
    - Fechas: Si no se especifica periodo, usa desde "2020-01-01" hasta hoy.
    - Formatos: Por defecto "PDF" si no dice "Excel".

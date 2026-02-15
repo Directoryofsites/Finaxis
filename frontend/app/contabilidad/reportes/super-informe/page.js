@@ -52,6 +52,7 @@ function SuperInformeContent() {
 
   // NEW STATE
   const [viewMode, setViewMode] = useState('table'); // 'table' | 'cards'
+  const [autoPdfTrigger, setAutoPdfTrigger] = useState(false); // NEW: Auto PDF Trigger
 
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
@@ -228,6 +229,36 @@ function SuperInformeContent() {
             }
           }
 
+          // 4. SCORING CENTROS DE COSTO (NUEVO)
+          const aiCentroCosto = params.get('ai_centro_costo');
+          if (aiCentroCosto) {
+            const searchNormalized = normalize(aiCentroCosto);
+            const foundCC = maestros.centrosCosto.find(cc => {
+              const nombreNorm = normalize(cc.nombre);
+              return nombreNorm.includes(searchNormalized);
+            });
+            if (foundCC) {
+              nuevosFiltros.centroCostoIds = [foundCC.id];
+              changed = true;
+            }
+          }
+
+          // 5. SCORING PRODUCTOS (NUEVO)
+          const aiProducto = params.get('ai_producto');
+          if (aiProducto) {
+            const searchNormalized = normalize(aiProducto);
+            // Búsqueda simple por inclusión
+            const foundProd = maestros.productos.find(p => {
+              const nombreNorm = normalize(p.nombre);
+              const codigoNorm = normalize(p.codigo);
+              return nombreNorm.includes(searchNormalized) || codigoNorm.includes(searchNormalized);
+            });
+            if (foundProd) {
+              nuevosFiltros.productoIds = [foundProd.id];
+              changed = true;
+            }
+          }
+
           // 4. Otros Campos Directos
           if (params.get('numero')) { nuevosFiltros.numero = params.get('numero'); changed = true; }
           if (params.get('fecha_inicio')) { nuevosFiltros.fechaInicio = params.get('fecha_inicio'); changed = true; }
@@ -243,6 +274,12 @@ function SuperInformeContent() {
             if (aiOp && ['mayor', 'menor', 'igual'].includes(aiOp)) nuevosFiltros.valorOperador = aiOp;
             else nuevosFiltros.valorOperador = 'igual'; // Default safer
             changed = true;
+          }
+
+          // 6. AUTO PDF TRIGGER
+          if (params.get('auto_pdf') === 'true') {
+            console.log("IA: Auto-PDF solicitado.");
+            setAutoPdfTrigger(true);
           }
 
           window.history.replaceState({}, '', window.location.pathname);
@@ -356,7 +393,7 @@ function SuperInformeContent() {
     handleBuscar(newPage);
   };
 
-  const handleExportPDF = async () => {
+  const handleExportPDF = useCallback(async () => {
     if (resultados.length === 0) return alert("No hay datos para generar el PDF.");
     setIsSearching(true);
     setError(null);
@@ -379,7 +416,16 @@ function SuperInformeContent() {
     } finally {
       setIsSearching(false);
     }
-  };
+  }, [resultados, filtros]);
+
+  // AUTO PDF TRIGGER EFFECT
+  useEffect(() => {
+    if (autoPdfTrigger && !isSearching && resultados.length > 0) {
+      console.log("IA: Ejecutando Auto-PDF...");
+      handleExportPDF();
+      setAutoPdfTrigger(false);
+    }
+  }, [autoPdfTrigger, isSearching, resultados, handleExportPDF]);
 
   if (authLoading || isLoadingMaestros) {
     return (

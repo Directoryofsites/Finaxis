@@ -270,13 +270,10 @@ class FacturaElectronicaService:
             
             formatted_date = doc_date.strftime("%Y-%m-%d %H:%M:%S")
 
-            # --- PARCHE SANDBOX FACTUS 2025 ---
-            # El rango de pruebas (ID 148) venció el 31-Dic-2025.
-            # Para que funcione hoy, Forzamos la fecha a ese único día válido.
-            if str(range_id) == "148":
-                print(f"⚠️ APLICANDO PARCHE FECHA SANDBOX PARA RANGO 148")
-                formatted_date = "2025-12-31 12:00:00"
-            # ----------------------------------
+            # --- PARCHE REMOVED: SANDBOX 2025 ---
+            # Se ha eliminado el forzado de fecha a 2025-12-31
+            # ya que Factus actualizó el rango a 2026.
+            # ------------------------------------
 
             # Payload Final
             factus_payload = {
@@ -323,26 +320,11 @@ class FacturaElectronicaService:
             print(json.dumps(factus_payload, indent=2))
             response = provider.emit(factus_payload)
             
-            # --- FALLBACK AUTOMÁTICO SANDBOX VENCIDO ---
-            # Si Faceus rechaza el rango por fecha/vencimiento (común en Sandbox anual),
-            # simular éxito para no bloquear flujo de usuario.
-            if not response.get("success") and config.ambiente == 'PRUEBAS':
-                err_msg = str(response.get("error", "")).lower()
-                is_range_error = "numbering_range_id" in err_msg or "rango" in err_msg
-                
-                if is_range_error:
-                    print(f"⚠️ HANDLED SANDBOX RANGE ERROR: Simulando éxito para continuar flujo.")
-                    fake_cufe = f"SANDBOX-SIMULATED-{uuid.uuid4().hex}"
-                    response = {
-                        "success": True,
-                        "message": "Emitido (Simulado: Rango Sandbox Vencido)",
-                        "cufe": fake_cufe,
-                        "xml_url": "http://localhost/mock/xml",
-                        "status": "ENVIADO",
-                        "dian_status": "ACEPTADO",
-                        "provider_response": {"simulation": True, "original_error": response}
-                    }
-            # -------------------------------------------
+            
+            
+            # --- SIMULATION REMOVED (User Request) ---
+            # El usuario solicita probar contra la respuesta REAL de Factus.
+            # ---------------------------------------------
             
             # 5. Actualizar Documento
             if response.get("success"):

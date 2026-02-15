@@ -354,6 +354,10 @@ export function useSmartSearch() {
             if (docFilter) params.set('search_term_doc', docFilter);
             params.set('trigger', 'ai_search');
             params.set('requestId', Date.now().toString());
+
+            // AUTO PDF ENFORCED
+            params.set('auto_pdf', 'true');
+
             router.push(`/contabilidad/reportes/super-informe-inventarios?${params.toString()}`);
             toast.success('IA: Abriendo Movimientos de Inventario...');
             return;
@@ -375,10 +379,10 @@ export function useSmartSearch() {
             const cuentaVal = p.cuenta || p.cuenta_nombre || p.ai_cuenta || p.concepto || p.cuenta_codigo;
             if (cuentaVal) params.set('cuenta', cuentaVal);
 
-            const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
+            const wantsPdf = true; // ALWAYS PDF
             if (wantsPdf) params.set('auto_pdf', 'true');
-            if (p.whatsapp_destino) { params.set('wpp', p.whatsapp_destino); params.set('auto_pdf', 'true'); }
-            if (p.email_destino) { params.set('email', p.email_destino); params.set('auto_pdf', 'true'); }
+            if (p.whatsapp_destino) { params.set('wpp', p.whatsapp_destino); }
+            if (p.email_destino) { params.set('email', p.email_destino); }
 
             // Extracción robusta de TERCERO
             const terceroVal = p.tercero || p.tercero_nombre || p.ai_tercero || p.nombre_tercero;
@@ -406,9 +410,9 @@ export function useSmartSearch() {
             // JUEZ: Divorcio del Nivel 1. Si no viene nivel o si es 1, forzamos a 7.
             const forcedNivel = (p.nivel && parseInt(p.nivel) > 1) ? p.nivel : '7';
             params.set('nivel', forcedNivel);
-            const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
+            const wantsPdf = true; // ALWAYS PDF
             if (wantsPdf) params.set('auto_pdf', 'true');
-            if (p.whatsapp_destino) { params.set('wpp', p.whatsapp_destino); params.set('auto_pdf', 'true'); }
+            if (p.whatsapp_destino) { params.set('wpp', p.whatsapp_destino); }
             router.push(`/contabilidad/reportes/balance-de-prueba?${params.toString()}`);
             toast.success('IA: Configurando Balance de Prueba...');
         } else if (actionName === 'generar_relacion_saldos') {
@@ -424,7 +428,7 @@ export function useSmartSearch() {
 
             params.set('trigger', 'ai');
 
-            const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
+            const wantsPdf = true; // ALWAYS PDF
             if (wantsPdf) params.set('auto_pdf', 'true');
 
             router.push(`/contabilidad/reportes/relacion-saldos?${params.toString()}`);
@@ -436,18 +440,18 @@ export function useSmartSearch() {
             params.set('fecha_corte', fCorte);
 
             if (p.comparativo) params.set('comparativo', 'true');
-            const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
+            const wantsPdf = true; // ALWAYS PDF
             if (wantsPdf) params.set('auto_pdf', 'true');
-            if (p.whatsapp_destino) { params.set('wpp', p.whatsapp_destino); params.set('auto_pdf', 'true'); }
+            if (p.whatsapp_destino) { params.set('wpp', p.whatsapp_destino); }
             router.push(`/contabilidad/reportes/balance-general?${params.toString()}`);
             toast.success('IA: Configurando Balance General...');
         } else if (actionName === 'generar_estado_resultados') {
             const params = new URLSearchParams();
             if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
             if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
-            const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
+            const wantsPdf = true; // ALWAYS PDF
             if (wantsPdf) params.set('auto_pdf', 'true');
-            if (p.whatsapp_destino) { params.set('wpp', p.whatsapp_destino); params.set('auto_pdf', 'true'); }
+            if (p.whatsapp_destino) { params.set('wpp', p.whatsapp_destino); }
             router.push(`/contabilidad/reportes/estado-resultados?${params.toString()}`);
             toast.success('IA: Configurando Estado de Resultados...');
         } else if (actionName === 'crear_recurso') {
@@ -474,6 +478,75 @@ export function useSmartSearch() {
                 router.push(finalUrl);
                 toast.success(`IA: Abriendo creación de ${tipo}...`);
             } else toast.warning(`IA: No sé cómo crear '${tipo}' aún.`);
+        } else if (actionName === 'generar_auxiliar_proveedores') {
+            const params = new URLSearchParams();
+            params.set('trigger', 'ai_search');
+
+            if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
+            if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
+
+            const terceroVal = p.tercero || p.tercero_nombre || p.ai_tercero || p.nombre_tercero;
+            if (terceroVal) params.set('ai_tercero', terceroVal);
+
+            // Vista: 'facturas' (Default, CP) vs 'recibos' (Egresos)
+            if (p.vista) params.set('perspective', p.vista.includes('recibo') || p.vista.includes('pago') || p.vista.includes('egreso') ? 'recibos' : 'facturas');
+
+            // AUTO PDF ENFORCED
+            params.set('auto_pdf', 'true');
+
+            router.push(`/contabilidad/reportes/auxiliar-proveedores?${params.toString()}`);
+            toast.success('IA: Consultando Auxiliar de Proveedores...');
+
+        } else if (actionName === 'generar_auxiliar_cartera') {
+            const params = new URLSearchParams();
+            params.set('trigger', 'ai_search');
+
+            // Fechas (Default 2020-01-01 -> Today handled by page if missing, but pass if present)
+            if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
+            if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
+
+            // Tercero
+            const terceroVal = p.tercero || p.tercero_nombre || p.ai_tercero || p.nombre_tercero;
+            if (terceroVal) params.set('ai_tercero', terceroVal);
+
+            // Vista (Facturas vs Recibos)
+            if (p.vista) params.set('perspective', p.vista.includes('recibo') || p.vista.includes('pago') ? 'recibos' : 'facturas');
+
+            // AUTO PDF ENFORCED
+            params.set('auto_pdf', 'true');
+
+            router.push(`/contabilidad/reportes/auxiliar-cartera?${params.toString()}`);
+            toast.success('IA: Consultando Auxiliar de Cartera...');
+
+        } else if (actionName === 'generar_auditoria_avanzada') {
+            const params = new URLSearchParams();
+            params.set('trigger', 'ai_search');
+
+            // Filtros Básicos
+            if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
+            if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
+            if (p.filtro_tipo_doc) params.set('ai_tipo_doc', p.filtro_tipo_doc);
+            if (p.numero) params.set('numero', p.numero);
+
+            // Filtros Contables
+            if (p.tercero) params.set('ai_tercero', p.tercero);
+            if (p.cuenta) params.set('ai_cuenta', p.cuenta);
+            if (p.centro_costo) params.set('ai_centro_costo', p.centro_costo);
+            if (p.producto) params.set('ai_producto', p.producto);
+
+            // Filtros de Detalle
+            if (p.concepto) params.set('conceptoKeyword', p.concepto);
+
+            // Filtros de Valor
+            if (p.valor_monto) params.set('ai_valor', p.valor_monto);
+            if (p.valor_operador) params.set('ai_operador', p.valor_operador);
+
+            // AUTO PDF ENFORCED
+            params.set('auto_pdf', 'true');
+
+            router.push(`/contabilidad/reportes/super-informe?${params.toString()}`);
+            toast.success('IA: Configurando Auditoría Avanzada...');
+
         } else if (actionName === 'consultar_documento' || actionName === 'consultar_comprobante_diario') {
             const params = new URLSearchParams();
             params.set('trigger', 'ai_search');
@@ -493,6 +566,9 @@ export function useSmartSearch() {
             // Filtro por valor/monto
             const val = p.valor || p.monto || p.importe || p.total;
             if (val) params.set('ai_valor', val);
+
+            // AUTO PDF ENFORCED
+            params.set('auto_pdf', 'true');
 
             router.push(`/contabilidad/reportes/super-informe?${params.toString()}`);
             toast.success('IA: Buscando documentos...');
@@ -531,7 +607,7 @@ export function useSmartSearch() {
                 }
 
                 // PDF Automation
-                const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
+                const wantsPdf = true; // ALWAYS PDF
                 if (wantsPdf) params.set('auto_pdf', 'true');
 
                 const connector = match.href.includes('?') ? '&' : '?';

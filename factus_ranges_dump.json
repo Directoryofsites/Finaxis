@@ -60,7 +60,7 @@
         "prefix": "SETP",
         "from": 990000000,
         "to": 995000000,
-        "current": 990022141,
+        "current": 990022146,
         "resolution_number": "18760000001",
         "start_date": "2030-01-19",
         "end_date": "2030-01-19",
@@ -69,7 +69,7 @@
         "is_active": 1,
         "deleted_at": null,
         "created_at": "2024-05-01T13:43:12Z",
-        "updated_at": "2026-02-13T21:37:31Z"
+        "updated_at": "2026-02-14T12:05:36Z"
       },
       {
         "id": 148,
@@ -77,16 +77,16 @@
         "prefix": "SEDS",
         "from": 984000000,
         "to": 985000000,
-        "current": 984000181,
-        "resolution_number": "18760000003",
-        "start_date": "2025-12-31",
-        "end_date": "2025-12-31",
+        "current": 984000182,
+        "resolution_number": "18760000006",
+        "start_date": "2026-12-31",
+        "end_date": "2026-12-31",
         "technical_key": null,
-        "is_expired": true,
+        "is_expired": false,
         "is_active": 1,
         "deleted_at": null,
         "created_at": "2025-02-11T16:37:10Z",
-        "updated_at": "2025-12-30T20:16:41Z"
+        "updated_at": "2026-02-14T11:50:20Z"
       }
     ],
     "pagination": {

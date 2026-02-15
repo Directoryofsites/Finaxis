@@ -10,7 +10,7 @@ class UsuarioBusqueda(Base):
     usuario_id = Column(Integer, ForeignKey('usuarios.id'), nullable=False)
     
     # El título que el usuario le da (ej: "Reporte Mensual Jefe")
-    titulo = Column(String(100), nullable=False)
+    titulo = Column(String(255), nullable=False)
     
     # El comando completo (ej: "Movimientos detallados de inventario...")
     comando = Column(Text, nullable=False)
