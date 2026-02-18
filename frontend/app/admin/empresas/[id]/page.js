@@ -28,6 +28,9 @@ export default function DetalleEmpresaPage() {
     const [feConfig, setFeConfig] = useState({
         ambiente: 'PRUEBAS',
         factura_rango_id: '',
+        nc_rango_id: '',
+        nd_rango_id: '',
+        ds_rango_id: '',
         api_token: '',
         habilitado: false
     });
@@ -74,6 +77,9 @@ export default function DetalleEmpresaPage() {
                         setFeConfig({
                             ambiente: resFE.data.ambiente || 'PRUEBAS',
                             factura_rango_id: resFE.data.factura_rango_id || '',
+                            nc_rango_id: resFE.data.nc_rango_id || '',
+                            nd_rango_id: resFE.data.nd_rango_id || '',
+                            ds_rango_id: resFE.data.ds_rango_id || '',
                             api_token: resFE.data.api_token || '',
                             habilitado: resFE.data.habilitado || false
                         });
@@ -117,7 +123,10 @@ export default function DetalleEmpresaPage() {
             // Enviamos PUT para la configuración de FE (si se editó algo)
             await apiService.put(`/fe/config/${id}`, {
                 ...feConfig,
-                factura_rango_id: feConfig.factura_rango_id ? parseInt(feConfig.factura_rango_id) : null
+                factura_rango_id: feConfig.factura_rango_id ? parseInt(feConfig.factura_rango_id) : null,
+                nc_rango_id: feConfig.nc_rango_id ? parseInt(feConfig.nc_rango_id) : null,
+                nd_rango_id: feConfig.nd_rango_id ? parseInt(feConfig.nd_rango_id) : null,
+                ds_rango_id: feConfig.ds_rango_id ? parseInt(feConfig.ds_rango_id) : null
             });
 
             setSuccess('¡Datos de la empresa y configuración de FE actualizados correctamente!');
@@ -212,7 +221,42 @@ export default function DetalleEmpresaPage() {
                                 className="input input-bordered w-full"
                                 placeholder="Ej: 8 para Sandbox"
                             />
-                            <p className="text-[10px] text-gray-400 mt-1">Este es el `numbering_range_id` que te asigna Factus.</p>
+                            <p className="text-[10px] text-gray-400 mt-1">Este es el `numbering_range_id` para Factura de Venta.</p>
+                        </div>
+
+                        {/* RANGOS ADICIONALES (NC, ND, DS) */}
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Rango Nota Crédito (NC)</label>
+                            <input
+                                type="number"
+                                name="nc_rango_id"
+                                value={feConfig.nc_rango_id || ''}
+                                onChange={handleFEInputChange}
+                                className="input input-bordered w-full"
+                                placeholder="Ej: 9 para Sandbox"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Rango Nota Débito (ND)</label>
+                            <input
+                                type="number"
+                                name="nd_rango_id"
+                                value={feConfig.nd_rango_id || ''}
+                                onChange={handleFEInputChange}
+                                className="input input-bordered w-full"
+                                placeholder="Ej: 10 para Sandbox"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Rango Doc. Soporte (DS)</label>
+                            <input
+                                type="number"
+                                name="ds_rango_id"
+                                value={feConfig.ds_rango_id || ''}
+                                onChange={handleFEInputChange}
+                                className="input input-bordered w-full"
+                                placeholder="Ej: 148 para Sandbox"
+                            />
                         </div>
                         <div className="md:col-span-2">
                             <label className="block text-xs font-bold text-gray-500 uppercase mb-1">API Token / Credenciales (JSON)</label>
