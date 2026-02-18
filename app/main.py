@@ -30,8 +30,11 @@ if os.getenv("RUN_SEEDS", "true").lower() == "true":
     Base.metadata.create_all(bind=engine)
     
     # NUEVO: Auto-migraciones simples
-    from app.core.auto_migrate import run_auto_migrations
-    run_auto_migrations()
+    try:
+        from app.core.auto_migrate import run_auto_migrations
+        run_auto_migrations()
+    except Exception as e:
+        print(f"ERROR CRÍTICO en auto-migraciones: {e}")
 
     seed_database()
 # --- FIN: LÓGICA DE AUTO-CREACIÓN ---
