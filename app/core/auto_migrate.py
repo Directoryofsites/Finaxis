@@ -9,66 +9,60 @@ logger = logging.getLogger(__name__)
 def run_auto_migrations():
     """
     Ejecuta migraciones automáticas simples al iniciar la aplicación.
-    Específicamente verifica y añade columnas faltantes en tablas clave.
+    Verifica y añade columnas faltantes en tablas clave (empresas y configuracion_fe).
     """
     logger.info("Iniciando auto-migraciones de esquema...")
     
     try:
-        with engine.begin() as connection:
-            # MIGRACIÓN 1: Añadir factura_rango_id a configuracion_fe
-            try:
-                # Verificar si la columna existe
-                # Consulta compatible con PostgreSQL y SQLite (aunque la tabla schema es de PG)
-                check_sql = text("SELECT column_name FROM information_schema.columns WHERE table_name='configuracion_fe' AND column_name='factura_rango_id';")
-                
-                # Intentamos ejecutar, si falla (ej: SQLite no tiene info_schema), intentamos fallback o ignoramos
+        # Usamos una conexión limpia para inspeccionar
+        with engine.connect() as connection:
+            
+            # 1. Obtener todas las columnas existentes en las tablas objetivo
+            # Esto evita errores de 'transaction aborted' al intentar SELECTs de columnas inexistentes
+            def get_existing_columns(table_name):
+                sql = text("SELECT column_name FROM information_schema.columns WHERE table_name = :t")
                 try:
-                    result = connection.execute(check_sql).fetchone()
-                    column_exists = result is not None
+                    res = connection.execute(sql, {"t": table_name}).fetchall()
+                    return {row[0].lower() for row in res}
                 except Exception:
-                    # Fallback simple para SQLite o si falla la anterior
-                    logger.warning("No se pudo verificar vía information_schema, intentando método alternativo.")
-                    column_exists = False
-                    # Podríamos hacer un query de prueba 'SELECT factura_rango_id FROM configuracion_fe LIMIT 0'
-                    try:
-                        connection.execute(text("SELECT factura_rango_id FROM configuracion_fe LIMIT 0"))
-                        column_exists = True
-                    except Exception:
-                        column_exists = False
+                    # Fallback para SQLite o si fallara info_schema
+                    return set()
+
+            cols_config_fe = get_existing_columns('configuracion_fe')
+            cols_empresas = get_existing_columns('empresas')
+            
+            # 2. Definir migraciones pendientes
+            migrations = []
+            
+            # configuracion_fe
+            if 'factura_rango_id' not in cols_config_fe:
+                migrations.append(('configuracion_fe', 'factura_rango_id', 'INTEGER'))
                 
-                if not column_exists:
-                    logger.info("Columna 'factura_rango_id' no encontrada. Creándola...")
-                    add_column_sql = text("ALTER TABLE configuracion_fe ADD COLUMN factura_rango_id INTEGER;")
-                    connection.execute(add_column_sql)
-                    logger.info("Columna 'factura_rango_id' añadida exitosamente.")
-                else:
-                    logger.info("Columna 'factura_rango_id' ya existe o fue detectada.")
+            # empresas (is_lite_mode and friends)
+            empresa_lite_cols = [
+                ("is_lite_mode", "BOOLEAN DEFAULT FALSE"),
+                ("saldo_facturas_venta", "INTEGER DEFAULT 0"),
+                ("saldo_documentos_soporte", "INTEGER DEFAULT 0"),
+                ("saldo_notas_credito", "INTEGER DEFAULT 0"),
+                ("fecha_vencimiento_plan", "DATE")
+            ]
+            
+            for col, col_type in empresa_lite_cols:
+                if col not in cols_empresas:
+                    migrations.append(('empresas', col, col_type))
 
-                # MIGRACIÓN 2: Columnas de Lite Mode en empresas
-                columns_to_add = [
-                    ("is_lite_mode", "BOOLEAN DEFAULT FALSE"),
-                    ("saldo_facturas_venta", "INTEGER DEFAULT 0"),
-                    ("saldo_documentos_soporte", "INTEGER DEFAULT 0"),
-                    ("saldo_notas_credito", "INTEGER DEFAULT 0"),
-                    ("fecha_vencimiento_plan", "DATE")
-                ]
-
-                for col_name, col_type in columns_to_add:
-                    try:
-                        # Verificación rápida
-                        connection.execute(text(f"SELECT {col_name} FROM empresas LIMIT 0"))
-                    except Exception:
-                        logger.info(f"Columna '{col_name}' no encontrada en 'empresas'. Creándola...")
-                        # NOTA: En Postgres, Boolean se añade así. Si es SQLite (local), también.
-                        # Para evitar errores de nullable sin default en columnas existentes:
-                        cmd = f"ALTER TABLE empresas ADD COLUMN {col_name} {col_type};"
-                        connection.execute(text(cmd))
-                        logger.info(f"Columna '{col_name}' añadida exitosamente.")
-                    
-            except Exception as e:
-                logger.error(f"Error específico en migraciones: {e}")
+            # 3. Ejecutar migraciones en un bloque BEGIN/COMMIT
+            if migrations:
+                # Usamos begin() para que todo se guarde o se revierta junto
+                with engine.begin() as trans_conn:
+                    for table, col, col_type in migrations:
+                        logger.info(f"Migrando: Añadiendo {col} a {table}...")
+                        trans_conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))
+                        logger.info(f"Columna {col} añadida con éxito.")
+            else:
+                logger.info("No se requieren migraciones de esquema pendientes.")
                 
     except Exception as e:
-        logger.error(f"CRÍTICO: Error al conectar para auto-migraciones: {e}")
+        logger.error(f"Error crítico en auto-migraciones: {e}")
             
     logger.info("Auto-migraciones finalizadas.")
