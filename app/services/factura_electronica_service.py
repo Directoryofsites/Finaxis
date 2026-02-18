@@ -138,17 +138,21 @@ class FacturaElectronicaService:
         doc_type_name = "Documento"
         if is_ds:
             range_id = config.ds_rango_id
+            if not range_id and config.ambiente == 'PRUEBAS':
+                 range_id = 148 # Fallback Sandbox SEDS
             doc_type_name = "Documento Soporte"
         elif is_nc:
             range_id = config.nc_rango_id
+            if not range_id and config.ambiente == 'PRUEBAS':
+                 range_id = 9 # Fallback Sandbox NC
             doc_type_name = "Nota Crédito"
         elif is_nd:
             range_id = config.nd_rango_id or config.nc_rango_id
+            if not range_id and config.ambiente == 'PRUEBAS':
+                 range_id = 10 # Fallback Sandbox ND
             doc_type_name = "Nota Débito"
         else:
             # Factura Venta
-            # Si no hay campo explicit, usar 8 (Sandbox por defecto) o derivar
-            # TODO: Agregar campo factura_rango_id a ConfiguracionFE -> DONE
             range_id = config.factura_rango_id
             if not range_id and config.ambiente == 'PRUEBAS':
                  range_id = 8 # Hardcoded for Sandbox fallback

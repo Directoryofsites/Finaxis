@@ -147,6 +147,32 @@ def run_auto_migrations():
                             logger.error(f"Error añadiendo {col} a {table}: {e}")
             else:
                 logger.info("No se requieren migraciones de esquema pendientes.")
+
+            # 4. Auto-configuración de Rangos Sandbox (Self-healing)
+            # Si estamos en PRUEBAS y los rangos son NULL, poner los defaults conocidos
+            logger.info("Verificando consistencia de rangos en ambiente PRUEBAS...")
+            with engine.begin() as trans_conn:
+                # Factura (8), NC (9), ND (10), DS (148)
+                trans_conn.execute(text("""
+                    UPDATE configuracion_fe 
+                    SET factura_rango_id = 8 
+                    WHERE ambiente = 'PRUEBAS' AND factura_rango_id IS NULL
+                """))
+                trans_conn.execute(text("""
+                    UPDATE configuracion_fe 
+                    SET nc_rango_id = 9 
+                    WHERE ambiente = 'PRUEBAS' AND nc_rango_id IS NULL
+                """))
+                trans_conn.execute(text("""
+                    UPDATE configuracion_fe 
+                    SET nd_rango_id = 10 
+                    WHERE ambiente = 'PRUEBAS' AND nd_rango_id IS NULL
+                """))
+                trans_conn.execute(text("""
+                    UPDATE configuracion_fe 
+                    SET ds_rango_id = 148 
+                    WHERE ambiente = 'PRUEBAS' AND ds_rango_id IS NULL
+                """))
                 
     except Exception as e:
         logger.error(f"Error crítico en auto-migraciones: {e}")
