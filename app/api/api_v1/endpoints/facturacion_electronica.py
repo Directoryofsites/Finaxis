@@ -55,7 +55,7 @@ def emitir_factura_electronica(
              if not config.nc_rango_id: 
                  config.nc_rango_id = 9; updated = True
              if not config.nd_rango_id: 
-                 config.nd_rango_id = 10; updated = True
+                 config.nd_rango_id = 9; updated = True
              if not config.ds_rango_id: 
                  config.ds_rango_id = 148; updated = True
              if not config.factura_rango_id:
