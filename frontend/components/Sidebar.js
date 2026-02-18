@@ -44,6 +44,27 @@ export default function Sidebar({
                         }
                     }
 
+                    // --- MODO EXPRESS / LITE FILTERING ---
+                    // Hardcoded list allowed for Lite Mode
+                    if (user?.empresa?.is_lite_mode) {
+                        const allowedLiteModules = ['facturacion', 'terceros', 'configuracion']; // Ajustar IDs según menuData
+                        // Ajuste IDs reales: 'facturacion', 'terceros', 'administracion' (pero admin recortado es complejo)
+                        // Mejor estrategia: Permitir IDs específicos
+                        const LITE_ALLOWED_IDS = ['facturacion', 'terceros', 'favoritos'];
+
+                        // Excepción para Admin: Permitiremos ver Admin pero sus subitems estarán filtrados? 
+                        // O mejor: Crear un módulo 'ajustes_lite' separado? 
+                        // Por ahora: Filtrado estricto de nivel superior.
+                        // Si se necesita 'Configuración', agregar 'administracion' a LITE_ALLOWED_IDS 
+                        // y filtrar dentro de administracion si es necesario (pero eso requiere editar menuData o Sidebar deep logic).
+
+                        // Decisión: En MVP Lite, solo Facturación y Terceros. Configuración es "Auto/Hidden".
+                        if (!LITE_ALLOWED_IDS.includes(module.id)) {
+                            return null;
+                        }
+                    }
+                    // -------------------------------------
+
                     return (
                         <button
                             key={module.id}

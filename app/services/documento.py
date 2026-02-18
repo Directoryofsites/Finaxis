@@ -154,12 +154,14 @@ def create_documento(db: Session, documento: schemas_doc.DocumentoCreate, user_i
         # Esto mejora la UX al fallar rápido, aunque la validación real estricta será al final.
         # Validación de "Simulación" rápida antes de iniciar todo el proceso pesado
         # Esto mejora la UX al fallar rápido.
-        if not consumo_service.verificar_disponibilidad(db, documento.empresa_id, cantidad_registros_consumo):
-             deficit = consumo_service.calcular_deficit(db, documento.empresa_id, cantidad_registros_consumo)
-             raise HTTPException(
-                 status_code=409, 
-                 detail=f"⛔ Saldo insuficiente. Necesita {deficit} registros adicionales para completar este documento."
-             )
+        # BYPASS PARA MODO LITE/EXPRESS (Ellos tienen su propia bolsa de facturas)
+        if not empresa_info.is_lite_mode:
+            if not consumo_service.verificar_disponibilidad(db, documento.empresa_id, cantidad_registros_consumo):
+                 deficit = consumo_service.calcular_deficit(db, documento.empresa_id, cantidad_registros_consumo)
+                 raise HTTPException(
+                     status_code=409, 
+                     detail=f"⛔ Saldo insuficiente. Necesita {deficit} registros adicionales para completar este documento."
+                 )
 
         # ==============================================================================
 
@@ -201,8 +203,13 @@ def create_documento(db: Session, documento: schemas_doc.DocumentoCreate, user_i
             
             # --- NUEVOS CAMPOS ---
             descuento_global_valor=documento.descuento_global_valor,
-            cargos_globales_valor=documento.cargos_globales_valor
+            cargos_globales_valor=documento.cargos_globales_valor,
             # ---------------------
+            
+            # --- NOTAS ---
+            documento_referencia_id=documento.documento_referencia_id,
+            observaciones=documento.observaciones,
+            # -------------
         )
 
         for mov_in in documento.movimientos:
@@ -228,13 +235,15 @@ def create_documento(db: Session, documento: schemas_doc.DocumentoCreate, user_i
         #    Si esto falla (SaldoInsuficiente), la excepción subirá, el bloque 'except' general
         #    hará 'db.rollback()', y el documento NUNCA existirá en la BD.
         #    Esto elimina la posibilidad de "Documentos Zombis" sin historial.
-        consumo_service.registrar_consumo(
-            db=db,
-            empresa_id=db_documento.empresa_id,
-            cantidad=len(db_documento.movimientos),
-            documento_id=db_documento.id,
-            fecha_doc=db_documento.fecha
-        )
+        # FIX: Solo registramos consumo detallado si NO es Lite Mode.
+        if not empresa_info.is_lite_mode:
+            consumo_service.registrar_consumo(
+                db=db,
+                empresa_id=db_documento.empresa_id,
+                cantidad=len(db_documento.movimientos),
+                documento_id=db_documento.id,
+                fecha_doc=db_documento.fecha
+            )
             
         # 4. Si todo salió bien hasta aquí, y se pidió commit, confirmamos TODO junto.
         if commit:
@@ -985,7 +994,10 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
             "consecutivo": db_doc.numero,
             "fecha_emision": db_doc.fecha.strftime('%d/%m/%Y'),
             "fecha_vencimiento": db_doc.fecha_vencimiento.strftime('%d/%m/%Y') if getattr(db_doc, 'fecha_vencimiento', None) else "",
-            "observaciones": getattr(db_doc, 'observaciones', "") or ""
+            "observaciones": getattr(db_doc, 'observaciones', "") or "",
+            "dian_cufe": getattr(db_doc, 'dian_cufe', "") or "",
+            "dian_estado": getattr(db_doc, 'dian_estado', "") or "",
+            "dian_xml_url": getattr(db_doc, 'dian_xml_url', "") or ""
         },
         "tercero": {
             "razon_social": getattr(beneficiario, 'razon_social', "Varios") if beneficiario else "Varios",

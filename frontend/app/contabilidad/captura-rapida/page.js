@@ -148,12 +148,14 @@ function CapturaRapidaContent() {
     }
   };
 
-  // Identificar si la plantilla seleccionada tiene un tipo de documento DS
-  const isDS = useMemo(() => {
+  // Identificar si la plantilla seleccionada tiene un tipo de documento electrónico (DS o FE)
+  const isDocElectronico = useMemo(() => {
     const p = plantillas.find(p => p.id === parseInt(plantillaId));
     if (!p) return false;
     const td = tiposDocumento.find(t => t.id === p.tipo_documento_id_sugerido);
-    return td?.funcion_especial === 'documento_soporte';
+    if (!td) return false;
+    const fe = td.funcion_especial;
+    return fe === 'documento_soporte' || fe === 'cartera_cliente' || fe === 'FACTURA_VENTA' || fe === 'factura_electronica';
   }, [plantillaId, plantillas, tiposDocumento]);
 
   // 2. DistribuciÃ³n del Valor Ãšnico (La Magia de Captura RÃ¡pida)
@@ -295,21 +297,23 @@ function CapturaRapidaContent() {
       if (emitirAlGuardar && docId) {
         const plantillaSeleccionada = plantillas.find(p => p.id === parseInt(plantillaId));
         const tipoDoc = tiposDocumento.find(t => t.id === plantillaSeleccionada?.tipo_documento_id_sugerido);
-        if (tipoDoc?.funcion_especial === 'documento_soporte') {
-          toast.info("Transmitiendo DS a la DIAN...");
+        if (isDocElectronico) {
+          const td = tiposDocumento.find(t => t.id === tipoDocId);
+          const esDS = td?.funcion_especial === 'documento_soporte';
+          toast.info(esDS ? "Transmitiendo DS a la DIAN..." : "Transmitiendo Factura a la DIAN...");
           try {
             const resEmit = await apiService.post(`/fe/emitir/${docId}`);
             if (resEmit.data.success) {
               setMensaje(`✅ Documento #${docNumero} guardado y emitido con éxito. CUFE: ${resEmit.data.cufe}`);
-              toast.success("DS emitido con éxito.");
+              toast.success(esDS ? "DS emitido con éxito." : "Factura emitida con éxito.");
             } else {
               setError(`Guardado OK, pero error al emitir: ${resEmit.data.error || "Error desconocido"}`);
-              toast.error("Error al emitir DS.");
+              toast.error(esDS ? "Error al emitir DS." : "Error al emitir Factura.");
               emisionExitosa = false;
             }
           } catch (e) {
             setError("Guardado OK, pero error técnico al emitir.");
-            toast.error("Error técnico al emitir DS.");
+            toast.error(esDS ? "Error técnico al emitir DS." : "Error técnico al emitir Factura.");
             emisionExitosa = false;
           }
         }
@@ -788,13 +792,19 @@ function CapturaRapidaContent() {
             <span className="text-sm font-bold text-gray-600 select-none">Imprimir</span>
           </div>
 
-          {/* TOGGLE EMITIR DS AL GUARDAR (SOLO SI ES DS) */}
-          {isDS && (
+          {/* TOGGLE EMITIR AL GUARDAR (SOLO SI ES ELECTRÓNICO) */}
+          {isDocElectronico && (
             <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-green-100 shadow-sm transition-all hover:shadow-md cursor-pointer" onClick={() => setEmitirAlGuardar(!emitirAlGuardar)}>
               <div className={`w-8 h-4 flex items-center bg-gray-300 rounded-full p-1 duration-300 ease-in-out ${emitirAlGuardar ? 'bg-green-600' : ''}`}>
                 <div className={`bg-white w-3 h-3 rounded-full shadow-md transform duration-300 ease-in-out ${emitirAlGuardar ? 'translate-x-3' : ''}`}></div>
               </div>
-              <span className="text-sm font-bold text-green-700 select-none">Emitir DS</span>
+              <span className="text-sm font-bold text-green-700 select-none">
+                {(() => {
+                  const p = plantillas.find(p => p.id === parseInt(plantillaId));
+                  const td = tiposDocumento.find(t => t.id === p?.tipo_documento_id_sugerido);
+                  return td?.funcion_especial === 'documento_soporte' ? 'Emitir DS' : 'Enviar a la DIAN';
+                })()}
+              </span>
             </div>
           )}
 

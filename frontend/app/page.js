@@ -1025,7 +1025,11 @@ function HomePageContent() {
                    Si hay módulo activo -> Muestra ExplorerView (Contenido).
                 */}
                 {!activeModuleId ? (
-                    <SmartSearchSection />
+                    user?.empresa?.is_lite_mode ? (
+                        <CleanHomePage user={user} />
+                    ) : (
+                        <SmartSearchSection />
+                    )
                 ) : (
                     <div className="h-full overflow-y-auto bg-gray-50 animate-in fade-in duration-300">
                         {/* Header Local del Módulo (Opcional, ya que la barra dice dónde estás) */}

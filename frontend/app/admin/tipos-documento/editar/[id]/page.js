@@ -23,6 +23,7 @@ const funcionesDocumento = [
     { value: 'pago_proveedor', label: 'Comprobante de Egreso (Activa CxP)' },
     { value: 'EGRESO_BANCARIO', label: 'Egreso Bancario (Pide # Cheque)' },
     { value: 'NOTA_CREDITO', label: 'Nota de Crédito' },
+    { value: 'NOTA_DEBITO', label: 'Nota de Débito' },
     { value: 'CIERRE_ANUAL', label: 'Cierre Anual (Proceso automático)' },
 ];
 

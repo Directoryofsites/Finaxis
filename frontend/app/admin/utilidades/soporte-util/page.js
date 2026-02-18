@@ -39,7 +39,11 @@ function FormularioEditarEmpresa({ empresa, onFinished, onCancel }) {
     const [formData, setFormData] = useState({
         razon_social: '',
         nit: '',
-        fecha_inicio_operaciones: ''
+        fecha_inicio_operaciones: '',
+        is_lite_mode: false,
+        saldo_facturas_venta: 0,
+        saldo_documentos_soporte: 0,
+        saldo_notas_credito: 0
     });
     const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
     const [isProcessing, setIsProcessing] = useState(false);
@@ -52,14 +56,21 @@ function FormularioEditarEmpresa({ empresa, onFinished, onCancel }) {
             setFormData({
                 razon_social: empresa.razon_social || '',
                 nit: empresa.nit || '',
-                fecha_inicio_operaciones: fechaFormateada
+                fecha_inicio_operaciones: fechaFormateada,
+                is_lite_mode: empresa.is_lite_mode || false,
+                saldo_facturas_venta: empresa.saldo_facturas_venta || 0,
+                saldo_documentos_soporte: empresa.saldo_documentos_soporte || 0,
+                saldo_notas_credito: empresa.saldo_notas_credito || 0
             });
         }
     }, [empresa]);
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
     };
 
     const handleSubmit = async (e) => {
@@ -81,19 +92,55 @@ function FormularioEditarEmpresa({ empresa, onFinished, onCancel }) {
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             {mensaje.texto && <p className={`p-2 rounded-md text-sm ${mensaje.tipo === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{mensaje.texto}</p>}
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Razón Social</label>
-                <input type="text" name="razon_social" value={formData.razon_social} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">Razón Social</label>
+                    <input type="text" name="razon_social" value={formData.razon_social} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">NIT</label>
+                    <input type="text" name="nit" value={formData.nit} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">Fecha Inicio Ops</label>
+                    <input type="date" name="fecha_inicio_operaciones" value={formData.fecha_inicio_operaciones} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
+                </div>
             </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700">NIT</label>
-                <input type="text" name="nit" value={formData.nit} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
+
+            {/* --- SECCIÓN MODO LITE / PAQUETES --- */}
+            <div className="bg-blue-50 p-4 rounded-md border border-blue-100">
+                <h4 className="text-sm font-bold text-blue-800 mb-3 border-b border-blue-200 pb-1">Configuración Modo Lite (Paquetes)</h4>
+
+                <div className="flex items-center mb-4">
+                    <input
+                        type="checkbox"
+                        name="is_lite_mode"
+                        checked={formData.is_lite_mode}
+                        onChange={handleChange}
+                        id="is_lite_mode"
+                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="is_lite_mode" className="ml-2 block text-sm text-gray-900 font-medium">Activar Modo Lite (Interfaz Simplificada)</label>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 uppercase">Saldo Facturas</label>
+                        <input type="number" name="saldo_facturas_venta" value={formData.saldo_facturas_venta} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-blue-300 rounded-md shadow-sm bg-white" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 uppercase">Saldo Doc. Soporte</label>
+                        <input type="number" name="saldo_documentos_soporte" value={formData.saldo_documentos_soporte} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-blue-300 rounded-md shadow-sm bg-white" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 uppercase">Saldo Notas Crédito</label>
+                        <input type="number" name="saldo_notas_credito" value={formData.saldo_notas_credito} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-blue-300 rounded-md shadow-sm bg-white" />
+                    </div>
+                </div>
             </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Fecha Inicio de Operaciones</label>
-                <input type="date" name="fecha_inicio_operaciones" value={formData.fecha_inicio_operaciones} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
-            </div>
-            <div className="flex justify-end space-x-2">
+
+            <div className="flex justify-end space-x-2 pt-4 border-t">
                 <button type="button" onClick={onCancel} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">Cancelar</button>
                 <button type="submit" disabled={isProcessing} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:bg-gray-400">
                     {isProcessing ? 'Guardando...' : 'Guardar Cambios'}

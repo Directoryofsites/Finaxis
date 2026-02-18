@@ -165,10 +165,12 @@ export default function NuevoDocumentoPage() {
     return parseFloat(valorAAbonar) || 0;
   }, [valorAAbonar]);
 
-  // Identificar si el tipo de documento seleccionado es Documento Soporte
-  const isDS = useMemo(() => {
+  // Identificar si el tipo de documento seleccionado es electrónico (DS o FE)
+  const isDocElectronico = useMemo(() => {
     const td = maestros.tiposDocumento.find(t => t.id === parseInt(tipoDocumentoId));
-    return td?.funcion_especial === 'documento_soporte';
+    if (!td) return false;
+    const fe = td.funcion_especial;
+    return fe === 'documento_soporte' || fe === 'cartera_cliente' || fe === 'FACTURA_VENTA' || fe === 'factura_electronica';
   }, [tipoDocumentoId, maestros.tiposDocumento]);
 
   const handleMovimientoChange = (index, field, value) => {
@@ -1518,7 +1520,7 @@ export default function NuevoDocumentoPage() {
               {isSubmitting ? 'Guardando...' : <><FaSave /> Guardar Documento</>}
             </button>
 
-            {isDS && (
+            {isDocElectronico && (
               <button
                 type="button"
                 onClick={handleSaveAndEmit}
@@ -1530,7 +1532,15 @@ export default function NuevoDocumentoPage() {
                     : 'bg-green-600 hover:bg-green-700 hover:shadow-green-200'}
                   `}
               >
-                {isSubmitting ? 'Emitiendo...' : <><FaSatelliteDish /> Guardar y Emitir DS</>}
+                {isSubmitting ? 'Emitiendo...' : (
+                  <>
+                    <FaSatelliteDish />
+                    {(() => {
+                      const td = maestros.tiposDocumento.find(t => t.id === parseInt(tipoDocumentoId));
+                      return td?.funcion_especial === 'documento_soporte' ? 'Guardar y Emitir DS' : 'Guardar y Emitir DIAN';
+                    })()}
+                  </>
+                )}
               </button>
             )}
 

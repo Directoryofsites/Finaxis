@@ -63,6 +63,14 @@ class Empresa(Base):
     is_template = Column(Boolean, default=False)
     template_category = Column(String(50), nullable=True) # 'RETAIL', 'SERVICIOS', 'PH'
 
+    # --- MODO EXPRESS / LITE (FACTURACIÓN POR PAQUETES) ---
+    is_lite_mode = Column(Boolean, default=False, nullable=False)
+    saldo_facturas_venta = Column(Integer, default=0, nullable=False)
+    saldo_documentos_soporte = Column(Integer, default=0, nullable=False)
+    saldo_notas_credito = Column(Integer, default=0, nullable=False)
+    fecha_vencimiento_plan = Column(Date, nullable=True)
+    # ------------------------------------------------------
+
     # Propiedad y Desacople
     owner_id = Column(Integer, ForeignKey('usuarios.id'), nullable=True)
     owner = relationship("Usuario", foreign_keys=[owner_id], backref="empresas_propiedad")

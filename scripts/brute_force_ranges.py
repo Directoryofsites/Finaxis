@@ -8,10 +8,10 @@ sys.path.append('c:\\ContaPY2')
 from app.core.database import SessionLocal
 from app.models.configuracion_fe import ConfiguracionFE
 
-def find_range_id():
+def brute_force_ranges():
     session = SessionLocal()
     try:
-        empresa_id = 218
+        empresa_id = 134 # Verduras la 21
         config = session.query(ConfiguracionFE).filter_by(empresa_id=empresa_id).first()
         if not config or not config.api_token:
             print("No hay configuración o token")
@@ -36,31 +36,28 @@ def find_range_id():
             print(f"Error login: {resp.text}")
             return
         
-        print(f"Searching ranges for Token: {token[:10]}...")
         headers = {
             "Authorization": f"Bearer {token}",
             "Accept": "application/json"
         }
 
-        # Intentar consultar la lista completa primero sin ID específico pero con paginación
-        query_url = "https://api-sandbox.factus.com.co/v1/numbering-ranges"
-        resp = requests.get(query_url, headers=headers)
-        if resp.status_code == 200:
-            data_items = resp.json().get('data', {}).get('items', [])
-            print(f"LISTA COMPLETA - Rangos encontrados: {len(data_items)}")
-            for item in data_items:
-                print(f"ID: {item.get('id')} | Prefix: {item.get('prefix')} | Current: {item.get('current')}")
-
-        # Probar IDs individuales si la lista falló
-        print("\nProbando IDs individuales del 1 al 20...")
-        for rid in range(1, 21):
-            query_url = f"https://api-sandbox.factus.com.co/v1/numbering-ranges?id={rid}"
+        print("Searching ranges 1 to 200...")
+        found = []
+        for rid in range(1, 201):
+            query_url = f"https://api-sandbox.factus.com.co/v1/numbering-ranges/{rid}"
             resp = requests.get(query_url, headers=headers)
             if resp.status_code == 200:
-                data_items = resp.json().get('data', {}).get('items', [])
-                for item in data_items:
-                    if item.get('prefix') == 'SETP':
-                        print(f"¡ID {rid} es para SETP! | Prefix: {item.get('prefix')} | Current: {item.get('current')}")
+                data = resp.json().get('data', {})
+                if data:
+                    prefix = data.get('prefix')
+                    expired = data.get('is_expired')
+                    end = data.get('end_date')
+                    doc = data.get('document')
+                    print(f"ID: {rid} | Prefix: {prefix} | Doc: {doc} | Expired: {expired} | End: {end}")
+                    found.append(rid)
+        
+        if not found:
+            print("No individual ranges found by ID.")
             
     except Exception as e:
         print(f"Error: {e}")
@@ -68,4 +65,4 @@ def find_range_id():
         session.close()
 
 if __name__ == "__main__":
-    find_range_id()
+    brute_force_ranges()

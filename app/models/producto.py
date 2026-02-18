@@ -16,6 +16,7 @@ class Producto(Base):
     codigo = Column(String(50), nullable=False, index=True)
     nombre = Column(String(255), nullable=False, index=True)
     es_servicio = Column(Boolean, nullable=False, default=False)
+    controlar_inventario = Column(Boolean, nullable=False, default=True) # Nuevo: False = No valida stock ni genera kardex estricto
     metodo_costeo = Column(String(50), nullable=False, default='promedio_ponderado') # Se mantiene
     costo_promedio = Column(Float, nullable=False, default=0.0) # Se mantiene como base
     # --- CAMBIO: Precio venta base se elimina, usamos precio_base_manual ---

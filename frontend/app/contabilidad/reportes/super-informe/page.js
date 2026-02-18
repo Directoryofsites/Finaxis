@@ -30,6 +30,7 @@ const INITIAL_FILTROS_STATE = {
   conceptoKeyword: '',
   valorOperador: 'mayor',
   valorMonto: '',
+  valorMontoFin: '',
   traerTodo: false,
   terceroKeyword: '',
   esCliente: null,
@@ -305,6 +306,9 @@ function SuperInformeContent() {
     if (payload.valorMonto) {
       payload.valorMonto = parseFloat(payload.valorMonto);
     }
+    if (payload.valorMontoFin) {
+      payload.valorMontoFin = parseFloat(payload.valorMontoFin);
+    }
     return payload;
   };
 
@@ -571,9 +575,14 @@ function SuperInformeContent() {
 
                   <div className="space-y-3 md:col-span-1">
                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Filtros de Valor</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div><label className={labelClass}>Condición</label><select name="valorOperador" value={filtros.valorOperador} onChange={handleFiltroChange} className={inputClass}><option value="mayor">Mayor que</option><option value="menor">Menor que</option><option value="igual">Igual a</option></select></div>
-                      <div><label className={labelClass}>Monto</label><input type="number" name="valorMonto" placeholder="0" value={filtros.valorMonto} onChange={handleFiltroChange} className={inputClass} /></div>
+                    <div className={filtros.valorOperador === 'entre' ? "grid grid-cols-1 gap-2" : "grid grid-cols-2 gap-2"}>
+                      <div><label className={labelClass}>Condición</label><select name="valorOperador" value={filtros.valorOperador} onChange={handleFiltroChange} className={inputClass}><option value="mayor">Mayor que</option><option value="menor">Menor que</option><option value="igual">Igual a</option><option value="entre">Entre</option></select></div>
+                      <div className={filtros.valorOperador === 'entre' ? "grid grid-cols-2 gap-2" : ""}>
+                        <div><label className={labelClass}>{filtros.valorOperador === 'entre' ? 'Desde' : 'Monto'}</label><input type="number" name="valorMonto" placeholder="0" value={filtros.valorMonto} onChange={handleFiltroChange} className={inputClass} /></div>
+                        {filtros.valorOperador === 'entre' && (
+                          <div><label className={labelClass}>Hasta</label><input type="number" name="valorMontoFin" placeholder="0" value={filtros.valorMontoFin} onChange={handleFiltroChange} className={inputClass} /></div>
+                        )}
+                      </div>
                     </div>
                     <div className="space-y-3 mt-4 md:mt-0">
                       <h4 className="text-xs font-bold text-indigo-500 uppercase tracking-wider">Filtros de Inventario (NUEVO)</h4>

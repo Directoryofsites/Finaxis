@@ -65,9 +65,17 @@ class EmpresaUpdate(BaseModel):
     # --- PLANTILLAS ---
     is_template: Optional[bool] = None
     template_category: Optional[str] = None
+    
+    # --- MODO EXPRESS / LITE ---
+    is_lite_mode: Optional[bool] = None
+    saldo_facturas_venta: Optional[int] = None
+    saldo_documentos_soporte: Optional[int] = None
+    saldo_notas_credito: Optional[int] = None
 
 class EmpresaLimiteUpdate(BaseModel):
     limite_registros: Optional[int] = Field(None, ge=0)
+    saldo_facturas_venta: Optional[int] = None
+    saldo_documentos_soporte: Optional[int] = None
 
 # --- ESQUEMAS DE RESPUESTA ---
 class EmpresaBase(BaseModel):
@@ -87,6 +95,18 @@ class EmpresaBase(BaseModel):
     # --- PLANTILLAS ---
     is_template: Optional[bool] = None
     template_category: Optional[str] = None
+
+    # --- MODO EXPRESS ---
+    is_lite_mode: Optional[bool] = False
+    saldo_facturas_venta: Optional[int] = 0
+    saldo_documentos_soporte: Optional[int] = 0
+    is_lite_mode: Optional[bool] = False
+    saldo_facturas_venta: Optional[int] = 0
+    saldo_documentos_soporte: Optional[int] = 0
+    fecha_vencimiento_plan: Optional[date] = None
+
+    class Config:
+        from_attributes = True
 
 class Empresa(EmpresaBase):
     id: int

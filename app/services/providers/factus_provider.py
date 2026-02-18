@@ -73,24 +73,46 @@ class FactusProvider:
         
         # LOGICA DE REINTENTO SIMPLE 401
         try:
-            resp = requests.post(self.validate_url, json=invoice_payload, headers=headers)
+            # Determinamos endpoint según tipo de documento
+            endpoint = self.validate_url
+            bill_type = invoice_payload.get('bill_type')
+            
+            if bill_type == 'SupportDocument':
+                endpoint = f"{self.base_url}/v1/support-documents/validate"
+            elif bill_type == 'CreditNote':
+                endpoint = f"{self.base_url}/v1/credit-notes/validate"
+            elif bill_type == 'DebitNote':
+                endpoint = f"{self.base_url}/v1/credit-notes/validate"
+
+            resp = requests.post(endpoint, json=invoice_payload, headers=headers)
             if resp.status_code == 401:
                 # Token vencido, reintentar una vez
                 print("Token vencido, renovando...")
                 self.login()
                 headers = self._get_headers()
-                resp = requests.post(self.validate_url, json=invoice_payload, headers=headers)
+                resp = requests.post(endpoint, json=invoice_payload, headers=headers)
             
             resp_json = resp.json()
 
             # Factus devuelve 'Created', 'ok' o success dependiendo del endpoint
             if resp.status_code in [200, 201] and resp_json.get('status') in ['ok', 'Created', 'Success']:
-                data_bill = resp_json.get('data', {}).get('bill', {})
+                data_obj = resp_json.get('data', {})
+                # Puede venir 'bill', 'support_document', 'credit_note', 'debit_note'
+                bill_data = (data_obj.get('bill') or 
+                             data_obj.get('support_document') or 
+                             data_obj.get('credit_note') or 
+                             data_obj.get('debit_note') or {})
+                
+                # Extraer CUFE, CUDS o CUDE
+                cufe = bill_data.get('cufe') or bill_data.get('cuds') or bill_data.get('cude')
+                provider_id = bill_data.get('id') or bill_data.get('public_id')
+
                 return {
                     "success": True,
-                    "message": "Factura emitida exitosamente",
-                    "cufe": data_bill.get('cufe'),
-                    "xml_url": data_bill.get('public_url'), # URL pública de Factus
+                    "message": "Documento emitido exitosamente",
+                    "cufe": cufe,
+                    "provider_id": provider_id, # Retornamos ID interno
+                    "xml_url": bill_data.get('public_url'), # URL pública de Factus
                     "dian_status": "ACEPTADO", # Factus valida sincrónicamente en Sandbox
                     "provider_response": resp_json
                 }
@@ -127,7 +149,7 @@ class FactusProvider:
                 except:
                     pass
                 
-                print(f"❌ Error Factus ({resp.status_code}): {error_msg}")
+                print(f"Error Factus ({resp.status_code}): {error_msg}")
                 return {
                     "success": False,
                     "error": error_msg,

@@ -51,6 +51,34 @@ export default function ReporteFacturasElectronicas() {
         alert("CUFE copiado al portapapeles");
     };
 
+    // Función para descargar PDF Interno (Fallback para Sandbox)
+    const handleDownloadPdf = async (docId) => {
+        try {
+            // FIX: Forzar responseType: 'blob' en la llamada axios.
+            // Nota: apiService envuelve axios, pero debemos asegurar que pase la config.
+            const response = await apiService.get(`/documentos/${docId}/pdf`, {
+                responseType: 'blob',
+                headers: {
+                    'Accept': 'application/pdf'
+                }
+            });
+
+            // Crear Blob explícitamente como PDF
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+
+            // Abrir en nueva pestaña
+            window.open(url, '_blank');
+
+            // Limpieza opcional (aunque window.open es asíncrono, el GC suele manejarlo)
+            // setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+
+        } catch (error) {
+            console.error("Error descargando PDF:", error);
+            alert("Error descargando PDF interno. Ver consola.");
+        }
+    };
+
     const getStatusBadge = (estado) => {
         if (!estado) return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">PENDIENTE</span>;
 
@@ -142,17 +170,34 @@ export default function ReporteFacturasElectronicas() {
                                             ) : '-'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-center flex justify-center gap-2">
-                                            {doc.dian_xml_url && (
+                                            {/* Lógica de Visualización: Prioridad URL XML (Factus) > PDF Interno (Fallback para Sandbox/DS) */}
+                                            {doc.dian_xml_url ? (
                                                 <>
-                                                    <a href={doc.dian_xml_url} target="_blank" rel="noopener noreferrer" className="p-1 text-green-600 hover:bg-green-50 rounded border border-green-200" title="Ver Factura">
+                                                    <a
+                                                        href={doc.dian_xml_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="p-1 rounded border text-green-600 hover:bg-green-50 border-green-200"
+                                                        title="Ver Factura (Proveedor)"
+                                                    >
                                                         🔗
                                                     </a>
+
                                                     <a href={`https://wa.me/?text=${encodeURIComponent(`Hola, aquí tienes tu factura electrónica: ${doc.dian_xml_url}`)}`} target="_blank" rel="noopener noreferrer" className="p-1 text-white bg-green-500 hover:bg-green-600 rounded shadow" title="Enviar WhatsApp">
                                                         📱
                                                     </a>
                                                 </>
-                                            )}
-                                            {!doc.dian_xml_url && doc.dian_estado !== 'ACEPTADO' && (
+                                            ) : (doc.dian_cufe && doc.dian_estado === 'ACEPTADO') ? (
+                                                <button
+                                                    onClick={() => handleDownloadPdf(doc.id)}
+                                                    className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+                                                    title="Descargar PDF (Interno)"
+                                                >
+                                                    <i className="mdi mdi-file-document-outline text-lg"></i>
+                                                </button>
+                                            ) : null}
+
+                                            {!doc.dian_xml_url && (!doc.dian_cufe || doc.dian_estado !== 'ACEPTADO') && (
                                                 <span className="text-xs text-gray-400 italic">No disponible</span>
                                             )}
                                         </td>
@@ -161,8 +206,9 @@ export default function ReporteFacturasElectronicas() {
                             </tbody>
                         </table>
                     </div>
-                )}
-            </div>
-        </div>
+                )
+                }
+            </div >
+        </div >
     );
 }

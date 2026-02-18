@@ -6,6 +6,7 @@ import { apiService } from '../../../../lib/apiService';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import ModalCrearTercero from '../../../../components/terceros/ModalCrearTercero';
+import NoteModal from '../../../components/Facturacion/NoteModal';
 import { FaPlus } from 'react-icons/fa';
 
 export default function DocumentoDetallePage() {
@@ -26,6 +27,8 @@ export default function DocumentoDetallePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [showModalTercero, setShowModalTercero] = useState(false);
+  const [showNoteModal, setShowNoteModal] = useState(false); // NEW
+  const [noteType, setNoteType] = useState('credit'); // NEW
 
   // --- CARGA DE DATOS ---
   const fetchAllData = useCallback(async () => {
@@ -103,6 +106,13 @@ export default function DocumentoDetallePage() {
       t.nombre === documento.tipo_documento
     );
     return typeObj?.funcion_especial === 'documento_soporte';
+  }, [documento, tiposDocumento]);
+
+  // NEW: Detectar si es Factura de Venta para mostrar botones de notas
+  const isInvoice = useMemo(() => {
+    if (!documento || !tiposDocumento.length) return false;
+    const typeObj = tiposDocumento.find(t => t.id === documento.tipo_documento_id);
+    return typeObj?.funcion_especial === 'FACTURA_VENTA' || typeObj?.codigo === 'FV';
   }, [documento, tiposDocumento]);
 
   const isEditFormBalanced = useMemo(() => {
@@ -274,6 +284,26 @@ export default function DocumentoDetallePage() {
               {!documento.anulado && (
                 <button onClick={() => { setIsEditing(true); setEditedDocument(JSON.parse(JSON.stringify(documento))); }} className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Editar</button>
               )}
+
+              {/* BOTONES DE NOTAS CRÉDITO/DÉBITO */}
+              {!isEditing && isInvoice && !documento.anulado && (
+                <>
+                  <button
+                    onClick={() => { setNoteType('credit'); setShowNoteModal(true); }}
+                    className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 font-semibold shadow-sm flex items-center gap-1"
+                    title="Generar Nota Crédito Electrónica"
+                  >
+                    Nota Crédito
+                  </button>
+                  <button
+                    onClick={() => { setNoteType('debit'); setShowNoteModal(true); }}
+                    className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 font-semibold shadow-sm flex items-center gap-1"
+                    title="Generar Nota Débito Electrónica"
+                  >
+                    Nota Débito
+                  </button>
+                </>
+              )}
             </>
           ) : (
             <>
@@ -400,6 +430,19 @@ export default function DocumentoDetallePage() {
         isOpen={showModalTercero}
         onClose={() => setShowModalTercero(false)}
         onSuccess={handleTerceroSuccess}
+      />
+
+      {/* MODAL DE NOTAS */}
+      <NoteModal
+        isOpen={showNoteModal}
+        onClose={() => setShowNoteModal(false)}
+        type={noteType}
+        sourceDocument={documento}
+        onSuccess={(newNote) => {
+          alert(`Nota ${noteType === 'credit' ? 'Crédito' : 'Débito'} creada con éxito: ${newNote.numero}`);
+          // Redirigir a la nota creada
+          window.location.href = `/contabilidad/documentos/${newNote.id}`;
+        }}
       />
     </div>
   );

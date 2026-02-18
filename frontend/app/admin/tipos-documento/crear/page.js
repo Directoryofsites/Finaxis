@@ -9,6 +9,7 @@ import { apiService } from '../../../../lib/apiService';
 
 // --- Iconos Estándar v2.0 ---
 import { FaFileInvoice, FaSave, FaBarcode, FaTag, FaCogs, FaExclamationCircle } from 'react-icons/fa';
+import BuscadorCuentas from '../../../../components/BuscadorCuentas';
 
 const funcionesDocumento = [
     { value: '', label: 'Ninguna (Documento estándar)' },
@@ -18,6 +19,7 @@ const funcionesDocumento = [
     { value: 'FACTURA_COMPRA', label: 'Factura de Compra (Activa CxP)' },
     { value: 'documento_soporte', label: 'Documento Soporte Electrónico' },
     { value: 'NOTA_CREDITO', label: 'Nota de Crédito' },
+    { value: 'NOTA_DEBITO', label: 'Nota de Débito' },
     { value: 'CIERRE_ANUAL', label: 'Cierre Anual (Proceso automático)' },
 ];
 
@@ -198,6 +200,46 @@ export default function CrearTipoDocumentoPage() {
                                     <span className="text-xs text-gray-500">Habilita movimientos de entrada/salida de stock.</span>
                                 </div>
                             </label>
+                        </div>
+
+                        {/* Sección Contable: Cuentas Asociadas */}
+                        <div className="mb-8 border-t border-gray-100 pt-6">
+                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <FaCogs className="text-indigo-500" /> Configuración Contable
+                            </h3>
+                            <p className="text-sm text-gray-500 mb-4">Defina las cuentas contables automáticas para este tipo de documento.</p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Cuenta Caja / Contado */}
+                                <div>
+                                    <label className={labelClass}>Cuenta Caja (Pagos de Contado)</label>
+                                    <BuscadorCuentas
+                                        onSelect={(cuenta) => setFormData(prev => ({ ...prev, cuenta_caja_id: cuenta.id }))}
+                                        initialId={formData.cuenta_caja_id}
+                                    />
+                                    <p className="text-xs text-gray-400 mt-1">Se debita/acredita en ventas de contado.</p>
+                                </div>
+
+                                {/* Cuenta CxC Debito */}
+                                <div>
+                                    <label className={labelClass}>Cuenta CxC (Débito - Ventas Crédito)</label>
+                                    <BuscadorCuentas
+                                        onSelect={(cuenta) => setFormData(prev => ({ ...prev, cuenta_debito_cxc_id: cuenta.id }))}
+                                        initialId={formData.cuenta_debito_cxc_id}
+                                    />
+                                    <p className="text-xs text-gray-400 mt-1">Cuenta por Cobrar (Clientes Nacionales).</p>
+                                </div>
+
+                                {/* Cuenta CxC Credito */}
+                                <div>
+                                    <label className={labelClass}>Cuenta CxC (Crédito - Pagos Recibidos)</label>
+                                    <BuscadorCuentas
+                                        onSelect={(cuenta) => setFormData(prev => ({ ...prev, cuenta_credito_cxc_id: cuenta.id }))}
+                                        initialId={formData.cuenta_credito_cxc_id}
+                                    />
+                                    <p className="text-xs text-gray-400 mt-1">Usada en Recibos de Caja para disminuir deuda.</p>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Mensajes de Error */}

@@ -200,6 +200,12 @@ def generate_super_informe(db: Session, filtros: schemas_doc.DocumentoGestionFil
                         ))
                     elif filtros.valorOperador == 'igual':
                         query = query.filter(or_(table_mov.debito == monto, table_mov.credito == monto))
+                    elif filtros.valorOperador == 'entre' and filtros.valorMontoFin is not None:
+                        monto_fin = filtros.valorMontoFin
+                        query = query.filter(or_(
+                            and_(table_mov.debito >= monto, table_mov.debito <= monto_fin),
+                            and_(table_mov.credito >= monto, table_mov.credito <= monto_fin)
+                        ))
 
                 total_count_query = query.with_entities(func.count(table_mov.id))
                 total_registros = total_count_query.scalar() or 0
@@ -370,6 +376,12 @@ def generate_super_informe_pdf(db: Session, filtros: schemas_doc.DocumentoGestio
             elif filtros.valorOperador == 'menor':
                 query = query.filter(or_(and_(table_mov.debito < monto, table_mov.debito > 0), and_(table_mov.credito < monto, table_mov.credito > 0)))
             elif filtros.valorOperador == 'igual': query = query.filter(or_(table_mov.debito == monto, table_mov.credito == monto))
+            elif filtros.valorOperador == 'entre' and filtros.valorMontoFin is not None:
+                monto_fin = filtros.valorMontoFin
+                query = query.filter(or_(
+                    and_(table_mov.debito >= monto, table_mov.debito <= monto_fin),
+                    and_(table_mov.credito >= monto, table_mov.credito <= monto_fin)
+                ))
 
 
     # --- 2. Ejecutar Query ---

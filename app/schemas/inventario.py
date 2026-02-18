@@ -169,6 +169,11 @@ class ProductoBase(BaseModel):
     precio_base_manual: Optional[float] = Field(None, ge=0)
     stock_minimo: Optional[float] = Field(0.0, ge=0)
     stock_maximo: Optional[float] = Field(0.0, ge=0)
+    
+    # --- MODO EXPRESS / LITE ---
+    controlar_inventario: bool = True 
+    # ---------------------------
+
     # >>> FIX CRÍTICO 1/2: Añadir metodo_costeo al schema para garantizar que se envíe
     metodo_costeo: str = Field('promedio_ponderado', max_length=50)
     # <<< FIN FIX CRÍTICO
@@ -189,6 +194,7 @@ class ProductoUpdate(ProductoBase):
     precio_base_manual: Optional[float] = Field(None, ge=0)
     stock_minimo: Optional[float] = Field(None, ge=0)
     stock_maximo: Optional[float] = Field(None, ge=0)
+    controlar_inventario: Optional[bool] = None
     valores_caracteristicas: Optional[List[CaracteristicaValorProductoCreate]] = None
 
 # --- Schema para Stock por Bodega ---

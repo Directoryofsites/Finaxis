@@ -29,8 +29,8 @@ def create_plantilla(
 @router.get("/", response_model=List[schemas.PlantillaMaestra])
 def read_plantillas(
     db: Session = Depends(get_db),
-    # --- TIPO DE DATO CORREGIDO ---
-    current_user: models_usuario = Depends(has_permission("contabilidad:configuracion_plantillas"))
+    # --- FIX: Permitir lectura a cualquier usuario autenticado ---
+    current_user: models_usuario = Depends(get_current_user)
 ):
     # Usamos el empresa_id del usuario autenticado.
     return service.get_plantillas_by_empresa(db, empresa_id=current_user.empresa_id)
@@ -39,8 +39,8 @@ def read_plantillas(
 def read_plantilla(
     plantilla_id: int,
     db: Session = Depends(get_db),
-    # --- TIPO DE DATO CORREGIDO ---
-    current_user: models_usuario = Depends(has_permission("contabilidad:configuracion_plantillas"))
+    # --- FIX: Permitir lectura a cualquier usuario autenticado ---
+    current_user: models_usuario = Depends(get_current_user)
 ):
     db_plantilla = service.get_plantilla(db, plantilla_id=plantilla_id)
     if db_plantilla is None:

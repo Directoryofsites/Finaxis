@@ -70,6 +70,13 @@ class DocumentoBase(BaseModel):
     cargos_globales_valor: Optional[Decimal] = Field(default=0)
     # ---------------------------------
 
+    # --- NOTAS CREDITO / DEBITO ---
+    documento_referencia_id: Optional[int] = None
+    observaciones: Optional[str] = None
+    discrepancy_response_code: Optional[int] = None
+    discrepancy_response_description: Optional[str] = None
+    # ------------------------------
+
 class DocumentoCreate(DocumentoBase):
     empresa_id: Optional[int] = None
     movimientos: List[MovimientoContableCreate]
@@ -148,6 +155,7 @@ class DocumentoGestionFiltros(BaseModel):
     conceptoKeyword: Optional[str] = None
     valorOperador: Optional[str] = None
     valorMonto: Optional[Decimal] = None
+    valorMontoFin: Optional[Decimal] = None # NUEVO: Límite superior para rango "entre"
     traerTodo: bool = False
     terceroKeyword: Optional[str] = None
     esCliente: Optional[bool] = None

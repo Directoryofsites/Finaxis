@@ -30,6 +30,10 @@ class ConfiguracionFE(Base):
     ds_resolucion_numero = Column(String(50), nullable=True)
     ds_rango_id = Column(Integer, nullable=True)
     
+    # Numeración Notas (Factus Range IDs)
+    nc_rango_id = Column(Integer, nullable=True)
+    nd_rango_id = Column(Integer, nullable=True)
+    
     # Estado (Habilitado para Facturar)
     habilitado = Column(Boolean, default=False)
     

@@ -173,6 +173,20 @@
         </div>
     </div>
 
+    {% if documento.dian_cufe %}
+    <div style="margin-top: 30px; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 9px; color: #555;">
+        <strong>Información Fiscal (DIAN/Proveedor):</strong><br>
+        <strong>{% if 'SOPORTE' in documento.tipo_nombre.upper() %}CUDS{% else %}CUFE{% endif %}:</strong> <span
+            style="font-family: monospace;">{{documento.dian_cufe}}</span><br>
+        <strong>Estado DIAN:</strong> {{documento.dian_estado}}<br>
+        {% if not documento.dian_xml_url %}
+        <br>
+        <em>Nota: Documento generado en entorno de Pruebas/Habilitación (Sin URL pública directa). Este documento es
+            válido como soporte interno.</em>
+        {% endif %}
+    </div>
+    {% endif %}
+
     <div style="text-align: center; font-size: 9px; color: #aaa; margin-top: 20px;">
         Gracias por su confianza.
     </div>

@@ -38,11 +38,16 @@ class Documento(Base):
     dian_cufe = Column(String(255), nullable=True)
     dian_xml_url = Column(String(500), nullable=True)
     dian_error = Column(Text, nullable=True)
+    provider_id = Column(String(255), nullable=True) # ID interno del proveedor (Factus bill_id)
     # -------------------------------
     
     # --- CONCILIACION BANCARIA: NUEVA COLUMNA ---
     reconciliation_reference = Column(String(255), nullable=True)
     # --- FIN CONCILIACION BANCARIA ---
+
+    # --- NOTAS CREDITO / DEBITO ---
+    documento_referencia_id = Column(Integer, ForeignKey("documentos.id"), nullable=True)
+    # ------------------------------
 
     # --- DESCUENTOS Y RECARGOS GLOBALES ---
     descuento_global_valor = Column(Numeric(15, 2), default=0)
@@ -56,6 +61,10 @@ class Documento(Base):
     centro_costo = relationship("CentroCosto", back_populates="documentos")
     unidad_ph = relationship("app.models.propiedad_horizontal.unidad.PHUnidad")
     usuario_creador = relationship("Usuario")
+    
+    # Relación de Auto-Referencia (Nota -> Factura)
+    documento_referencia = relationship("Documento", remote_side=[id], backref="notas_asociadas")
+    
     movimientos = relationship("MovimientoContable", back_populates="documento", cascade="all, delete-orphan")
 
     logs_operacion = relationship("LogOperacion", back_populates="documento_asociado")
