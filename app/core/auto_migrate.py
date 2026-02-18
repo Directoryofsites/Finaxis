@@ -43,9 +43,30 @@ def run_auto_migrations():
                     logger.info("Columna 'factura_rango_id' añadida exitosamente.")
                 else:
                     logger.info("Columna 'factura_rango_id' ya existe o fue detectada.")
+
+                # MIGRACIÓN 2: Columnas de Lite Mode en empresas
+                columns_to_add = [
+                    ("is_lite_mode", "BOOLEAN DEFAULT FALSE"),
+                    ("saldo_facturas_venta", "INTEGER DEFAULT 0"),
+                    ("saldo_documentos_soporte", "INTEGER DEFAULT 0"),
+                    ("saldo_notas_credito", "INTEGER DEFAULT 0"),
+                    ("fecha_vencimiento_plan", "DATE")
+                ]
+
+                for col_name, col_type in columns_to_add:
+                    try:
+                        # Verificación rápida
+                        connection.execute(text(f"SELECT {col_name} FROM empresas LIMIT 0"))
+                    except Exception:
+                        logger.info(f"Columna '{col_name}' no encontrada en 'empresas'. Creándola...")
+                        # NOTA: En Postgres, Boolean se añade así. Si es SQLite (local), también.
+                        # Para evitar errores de nullable sin default en columnas existentes:
+                        cmd = f"ALTER TABLE empresas ADD COLUMN {col_name} {col_type};"
+                        connection.execute(text(cmd))
+                        logger.info(f"Columna '{col_name}' añadida exitosamente.")
                     
             except Exception as e:
-                logger.error(f"Error específico en migración de factura_rango_id: {e}")
+                logger.error(f"Error específico en migraciones: {e}")
                 
     except Exception as e:
         logger.error(f"CRÍTICO: Error al conectar para auto-migraciones: {e}")
