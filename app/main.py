@@ -129,7 +129,8 @@ origins = [
     "http://127.0.0.1:8002",
     "https://finaxis.com.co",
     "https://www.finaxis.com.co",
-    "https://contapy-frontend.vercel.app"
+    "https://contapy-frontend.vercel.app",
+    "https://finaxis.onrender.com"
 ]
 
 app.add_middleware(

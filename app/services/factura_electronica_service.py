@@ -148,8 +148,11 @@ class FacturaElectronicaService:
         else:
             # Factura Venta
             # Si no hay campo explicit, usar 8 (Sandbox por defecto) o derivar
-            # TODO: Agregar campo factura_rango_id a ConfiguracionFE
-            range_id = 8 # Hardcoded for Sandbox based on test_factus_charge.py
+            # TODO: Agregar campo factura_rango_id a ConfiguracionFE -> DONE
+            range_id = config.factura_rango_id
+            if not range_id and config.ambiente == 'PRUEBAS':
+                 range_id = 8 # Hardcoded for Sandbox fallback
+            
             doc_type_name = "Factura de Venta"
             
         if not range_id:

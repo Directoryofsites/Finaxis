@@ -24,6 +24,9 @@ class ConfiguracionFE(Base):
     resolucion_fecha = Column(Date, nullable=True)
     rango_desde = Column(Integer, nullable=True)
     rango_hasta = Column(Integer, nullable=True)
+    
+    # Range ID para Factura de Venta (Factus)
+    factura_rango_id = Column(Integer, nullable=True)
 
     # Numeración DIAN (Documento Soporte)
     ds_prefijo = Column(String(10), nullable=True)
