@@ -71,8 +71,20 @@ export default function NoteModal({
                     const res = await apiService.get('/tipos-documento', { params: { empresa_id: sourceDocument.empresa_id } });
                     const allTypes = res.data;
                     const filtered = allTypes.filter(t => {
-                        if (isCredit) return t.funcion_especial === 'nota_credito' || t.codigo === 'NC' || t.nombre?.toLowerCase().includes('nota cré') || t.nombre?.toLowerCase().includes('nota cre');
-                        return t.funcion_especial === 'nota_debito' || t.codigo === 'ND' || t.nombre?.toLowerCase().includes('nota dé') || t.nombre?.toLowerCase().includes('nota de');
+                        const fe = t.funcion_especial ? t.funcion_especial.toLowerCase() : '';
+                        const nombre = t.nombre ? t.nombre.toLowerCase() : '';
+                        const codigo = t.codigo ? t.codigo.toUpperCase() : '';
+
+                        if (isCredit) {
+                            return fe === 'nota_credito' || fe === 'nota credito' ||
+                                codigo === 'NC' || codigo === 'NCRE' || codigo.startsWith('NC') ||
+                                nombre.includes('nota cré') || nombre.includes('nota cre');
+                        } else {
+                            // Nota Débito
+                            return fe === 'nota_debito' || fe === 'nota debito' ||
+                                codigo === 'ND' || codigo === 'NDEB' || codigo.startsWith('ND') ||
+                                nombre.includes('nota dé') || nombre.includes('nota de');
+                        }
                     });
                     setAvailableTypes(filtered);
                     if (filtered.length > 0) setSelectedTipoDocId(filtered[0].id);
