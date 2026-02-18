@@ -141,7 +141,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Bypassear temporalmente para diagnóstico en emergencia
+    allow_origins=origins, # Restaurado lista explícita para compatibilidad con allow_credentials=True
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

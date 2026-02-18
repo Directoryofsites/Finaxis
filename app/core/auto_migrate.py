@@ -30,6 +30,10 @@ def run_auto_migrations():
 
             cols_config_fe = get_existing_columns('configuracion_fe')
             cols_empresas = get_existing_columns('empresas')
+            cols_productos = get_existing_columns('productos')
+            cols_stock_bodegas = get_existing_columns('stock_bodegas')
+            cols_grupos = get_existing_columns('grupos_inventario')
+            cols_tasas = get_existing_columns('tasas_impuesto')
             
             # 2. Definir migraciones pendientes
             migrations = []
@@ -46,14 +50,44 @@ def run_auto_migrations():
                 ("saldo_notas_credito", "INTEGER DEFAULT 0"),
                 ("fecha_vencimiento_plan", "DATE")
             ]
-            
             for col, col_type in empresa_lite_cols:
                 if col not in cols_empresas:
                     migrations.append(('empresas', col, col_type))
 
+            # productos
+            producto_cols = [
+                ("controlar_inventario", "BOOLEAN DEFAULT TRUE"),
+                ("precio_base_manual", "FLOAT"),
+                ("impuesto_iva_id", "INTEGER")
+            ]
+            for col, col_type in producto_cols:
+                if col not in cols_productos:
+                    migrations.append(('productos', col, col_type))
+
+            # stock_bodegas
+            if 'stock_comprometido' not in cols_stock_bodegas:
+                migrations.append(('stock_bodegas', 'stock_comprometido', 'FLOAT DEFAULT 0.0'))
+
+            # grupos_inventario
+            grupo_cols = [
+                ("cuenta_costo_produccion_id", "INTEGER"),
+                ("impuesto_predeterminado_id", "INTEGER")
+            ]
+            for col, col_type in grupo_cols:
+                if col not in cols_grupos:
+                    migrations.append(('grupos_inventario', col, col_type))
+
+            # tasas_impuesto
+            tasa_cols = [
+                ("cuenta_id", "INTEGER"),
+                ("cuenta_iva_descontable_id", "INTEGER")
+            ]
+            for col, col_type in tasa_cols:
+                if col not in cols_tasas:
+                    migrations.append(('tasas_impuesto', col, col_type))
+
             # 3. Ejecutar migraciones en un bloque BEGIN/COMMIT
             if migrations:
-                # Usamos begin() para que todo se guarde o se revierta junto
                 with engine.begin() as trans_conn:
                     for table, col, col_type in migrations:
                         logger.info(f"Migrando: Añadiendo {col} a {table}...")
