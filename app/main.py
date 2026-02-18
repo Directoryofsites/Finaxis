@@ -28,6 +28,11 @@ if os.getenv("RUN_SEEDS", "true").lower() == "true":
     
     # Creamos tablas y sembramos (¡Cuidado! Esto puede ser lento en Vercel)
     Base.metadata.create_all(bind=engine)
+    
+    # NUEVO: Auto-migraciones simples
+    from app.core.auto_migrate import run_auto_migrations
+    run_auto_migrations()
+
     seed_database()
 # --- FIN: LÓGICA DE AUTO-CREACIÓN ---
 
