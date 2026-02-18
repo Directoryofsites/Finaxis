@@ -41,9 +41,24 @@ def run_auto_migrations():
             # 2. Definir migraciones pendientes
             migrations = []
             
-            # configuracion_fe
-            if 'factura_rango_id' not in cols_config_fe:
-                migrations.append(('configuracion_fe', 'factura_rango_id', 'INTEGER'))
+            # configuracion_fe (FACTURACIÓN ELECTRÓNICA, DS, NOTAS)
+            config_fe_cols = [
+                ("factura_rango_id", "INTEGER"),
+                ("ds_prefijo", "VARCHAR(10)"),
+                ("ds_resolucion_numero", "VARCHAR(50)"),
+                ("ds_rango_id", "INTEGER"),
+                ("nc_rango_id", "INTEGER"),
+                ("nd_rango_id", "INTEGER"),
+                ("habilitado", "BOOLEAN DEFAULT FALSE"),
+                ("proveedor", "VARCHAR(50) DEFAULT 'FACTUS'"),
+                ("ambiente", "VARCHAR(20) DEFAULT 'PRUEBAS'"),
+                ("api_token", "TEXT"),
+                ("api_url", "VARCHAR(255)"),
+                ("email_registro", "VARCHAR(255)")
+            ]
+            for col, col_type in config_fe_cols:
+                if col not in cols_config_fe:
+                    migrations.append(('configuracion_fe', col, col_type))
                 
             # empresas (is_lite_mode and friends)
             empresa_lite_cols = [
