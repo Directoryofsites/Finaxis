@@ -47,6 +47,28 @@ def emitir_factura_electronica(
         }
 
     # Ejecutar Servicio
+    # --- HOTFIX: Asegurar que los rangos existan para Sandbox si faltan ---
+    try:
+        config = db.query(ConfiguracionFE).filter_by(empresa_id=doc.empresa_id).first()
+        if config and config.ambiente == 'PRUEBAS':
+             updated = False
+             if not config.nc_rango_id: 
+                 config.nc_rango_id = 9; updated = True
+             if not config.nd_rango_id: 
+                 config.nd_rango_id = 10; updated = True
+             if not config.ds_rango_id: 
+                 config.ds_rango_id = 148; updated = True
+             if not config.factura_rango_id:
+                 config.factura_rango_id = 8; updated = True
+                 
+             if updated:
+                 db.commit()
+                 db.refresh(config)
+                 print(f"HOTFIX: Rangos actualizados automáticamente para empresa {doc.empresa_id}")
+    except Exception as e:
+        print(f"Advertencia en Hotfix Rangos: {e}")
+    # -----------------------------------------------------------------------
+
     resultado = factura_electronica_service.emitir_factura(db, documento_id, current_user.id)
     
     return resultado
