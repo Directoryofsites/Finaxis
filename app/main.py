@@ -13,30 +13,27 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # --- INICIO: LÓGICA DE AUTO-CREACIÓN Y SEMBRADO ---
-# Se recomienda correr esto solo en el primer despliegue o localmente
-if os.getenv("RUN_SEEDS", "true").lower() == "true":
-    from app.core.database import engine, Base
-    from app.models import (
-        Usuario, Empresa, Tercero, PlanCuenta, TipoDocumento, CentroCosto,
-        PlantillaMaestra, PlantillaDetalle, ConceptoFavorito, Documento, 
-        DocumentoEliminado, MovimientoContable, MovimientoEliminado,
-        LogOperacion, PeriodoContableCerrado, FormatoImpresion, AplicacionPago,
-        Remision, RemisionDetalle, ConfiguracionReporte, nomina, UsuarioBusqueda,
-        EscenarioPresupuestal, PresupuestoItem
-    )
-    from app.core.seeder import seed_database
-    
-    # Creamos tablas y sembramos (¡Cuidado! Esto puede ser lento en Vercel)
-    Base.metadata.create_all(bind=engine)
-    
-    # NUEVO: Auto-migraciones simples
-    try:
-        from app.core.auto_migrate import run_auto_migrations
-        run_auto_migrations()
-    except Exception as e:
-        print(f"ERROR CRÍTICO en auto-migraciones: {e}")
+# Se movió al evento de startup para evitar bloqueos en el arranque del worker
+async def run_startup_tasks():
+    if os.getenv("RUN_SEEDS", "true").lower() == "true":
+        print("Ejecutando tareas de mantenimiento de DB (Startup)...")
+        from app.core.database import engine, Base
+        from app.core.seeder import seed_database
+        
+        try:
+            # Crear tablas faltantes
+            Base.metadata.create_all(bind=engine)
+            
+            # NUEVO: Auto-migraciones simples
+            try:
+                from app.core.auto_migrate import run_auto_migrations
+                run_auto_migrations()
+            except Exception as e:
+                print(f"ERROR CRÍTICO en auto-migraciones: {e}")
 
-    seed_database()
+            seed_database()
+        except Exception as e:
+            print(f"Error en tareas de startup (Mantenimiento DB): {e}")
 # --- FIN: LÓGICA DE AUTO-CREACIÓN ---
 
 
@@ -124,7 +121,8 @@ app = FastAPI(
 if os.getenv("VERCEL") != "1":
     from app.services.scheduler_backup import start_scheduler
     @app.on_event("startup")
-    def startup_event():
+    async def startup_event():
+        await run_startup_tasks() # Ejecutar migraciones y seeds de forma segura
         start_scheduler()
 # --- FIN: SCHEDULER ---
 
@@ -143,7 +141,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"], # Bypassear temporalmente para diagnóstico en emergencia
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
