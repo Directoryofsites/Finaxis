@@ -6,6 +6,8 @@ from app.core.security import get_current_user
 from app.models.usuario import Usuario
 from app.services.factura_electronica_service import factura_electronica_service
 from app.models.documento import Documento
+from app.schemas.configuracion_fe import ConfiguracionFEResponse, ConfiguracionFEUpdate
+from app.models.configuracion_fe import ConfiguracionFE
 from pydantic import BaseModel
 from typing import Optional
 
@@ -65,3 +67,43 @@ def consultar_estado_dian(
         "xml_url": doc.dian_xml_url,
         "error": doc.dian_error
     }
+
+@router.get("/config/{empresa_id}", response_model=ConfiguracionFEResponse)
+def get_fe_config(
+    empresa_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    # Validación de permiso simple (mismo que emitir)
+    if current_user.empresa_id != empresa_id and not any(r.nombre == 'soporte' for r in current_user.roles):
+        raise HTTPException(status_code=403, detail="No tienes permisos para ver esta configuración")
+
+    config = db.query(ConfiguracionFE).filter(ConfiguracionFE.empresa_id == empresa_id).first()
+    if not config:
+        # Si no existe, devolvemos una vacía o 404. 
+        # Dado que el seeder la crea, debería existir.
+        raise HTTPException(status_code=404, detail="Configuración FE no encontrada para esta empresa")
+    
+    return config
+
+@router.put("/config/{empresa_id}", response_model=ConfiguracionFEResponse)
+def update_fe_config(
+    empresa_id: int,
+    config_in: ConfiguracionFEUpdate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    if current_user.empresa_id != empresa_id and not any(r.nombre == 'soporte' for r in current_user.roles):
+        raise HTTPException(status_code=403, detail="No tienes permisos para modificar esta configuración")
+
+    config = db.query(ConfiguracionFE).filter(ConfiguracionFE.empresa_id == empresa_id).first()
+    if not config:
+        config = ConfiguracionFE(empresa_id=empresa_id)
+        db.add(config)
+
+    for field, value in config_in.model_dump(exclude_unset=True).items():
+        setattr(config, field, value)
+
+    db.commit()
+    db.refresh(config)
+    return config

@@ -24,6 +24,14 @@ export default function DetalleEmpresaPage() {
         limite_registros: 0
     });
 
+    // NUEVO: Estado para la configuración de FE
+    const [feConfig, setFeConfig] = useState({
+        ambiente: 'PRUEBAS',
+        factura_rango_id: '',
+        api_token: '',
+        habilitado: false
+    });
+
     const [usuarios, setUsuarios] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -60,6 +68,19 @@ export default function DetalleEmpresaPage() {
                         setErrorUsuarios("No tienes permisos para ver o gestionar los usuarios de esta empresa.");
                     }
 
+                    // 3. Cargar Configuración FE
+                    try {
+                        const resFE = await apiService.get(`/fe/config/${id}`);
+                        setFeConfig({
+                            ambiente: resFE.data.ambiente || 'PRUEBAS',
+                            factura_rango_id: resFE.data.factura_rango_id || '',
+                            api_token: resFE.data.api_token || '',
+                            habilitado: resFE.data.habilitado || false
+                        });
+                    } catch (errFE) {
+                        console.warn("No se pudo cargar config FE:", errFE);
+                    }
+
                 } catch (err) {
                     setError(err.response?.data?.detail || 'Error cargando la empresa.');
                 } finally {
@@ -75,6 +96,14 @@ export default function DetalleEmpresaPage() {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const handleFEInputChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setFeConfig(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
+    };
+
     const handleUpdateEmpresa = async (e) => {
         e.preventDefault();
         setIsSaving(true);
@@ -84,7 +113,14 @@ export default function DetalleEmpresaPage() {
         try {
             // Enviamos PUT para actualizar
             await apiService.put(`/empresas/${id}`, formData);
-            setSuccess('¡Datos de la empresa actualizados correctamente! El PDF ahora tomará estos cambios.');
+
+            // Enviamos PUT para la configuración de FE (si se editó algo)
+            await apiService.put(`/fe/config/${id}`, {
+                ...feConfig,
+                factura_rango_id: feConfig.factura_rango_id ? parseInt(feConfig.factura_rango_id) : null
+            });
+
+            setSuccess('¡Datos de la empresa y configuración de FE actualizados correctamente!');
         } catch (err) {
             setError(err.response?.data?.detail || 'Error al guardar los cambios.');
         } finally {
@@ -141,6 +177,68 @@ export default function DetalleEmpresaPage() {
                     <div className="flex justify-end">
                         <button type="submit" disabled={isSaving} className="btn btn-primary bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
                             {isSaving ? <span className="loading loading-spinner loading-xs"></span> : <FaSave />} Guardar Datos
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            {/* SECCIÓN NUEVA: CONFIGURACIÓN FACTURACIÓN ELECTRÓNICA */}
+            <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 mb-8">
+                <h2 className="text-lg font-bold text-gray-700 mb-4 border-b pb-2 flex items-center gap-2">
+                    <FaBuilding className="text-emerald-600" /> Configuración Facturación Electrónica (Factus)
+                </h2>
+
+                <form onSubmit={handleUpdateEmpresa}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Ambiente</label>
+                            <select
+                                name="ambiente"
+                                value={feConfig.ambiente}
+                                onChange={handleFEInputChange}
+                                className="select select-bordered w-full"
+                            >
+                                <option value="PRUEBAS">PRUEBAS (Sandbox)</option>
+                                <option value="PRODUCCION">PRODUCCIÓN</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">ID de Rango DIAN (Factus)</label>
+                            <input
+                                type="number"
+                                name="factura_rango_id"
+                                value={feConfig.factura_rango_id}
+                                onChange={handleFEInputChange}
+                                className="input input-bordered w-full"
+                                placeholder="Ej: 8 para Sandbox"
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1">Este es el `numbering_range_id` que te asigna Factus.</p>
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">API Token / Credenciales (JSON)</label>
+                            <textarea
+                                name="api_token"
+                                value={feConfig.api_token}
+                                onChange={handleFEInputChange}
+                                className="textarea textarea-bordered w-full h-24 font-mono text-sm"
+                                placeholder='{"client_id": "...", "client_secret": "..."}'
+                            ></textarea>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                name="habilitado"
+                                checked={feConfig.habilitado}
+                                onChange={handleFEInputChange}
+                                className="checkbox checkbox-primary"
+                            />
+                            <span className="text-sm font-medium text-gray-700">¿Habilitar emisión electrónica para esta empresa?</span>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                        <button type="submit" disabled={isSaving} className="btn btn-success bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
+                            {isSaving ? <span className="loading loading-spinner loading-xs"></span> : <FaSave />} Guardar Configuración FE
                         </button>
                     </div>
                 </form>
