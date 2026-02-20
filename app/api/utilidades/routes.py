@@ -581,6 +581,34 @@ def set_precio_registro(
     db.commit()
     return {"msg": "Precio actualizado correctamente", "precio": int(nuevo_precio)}
 
-
-    db.commit()
-    return {"msg": "Precio actualizado correctamente", "precio": int(nuevo_precio)}
+@router.get("/migracion-busquedas-emergencia")
+def migrar_busquedas_emergencia(db: Session = Depends(get_db)):
+    """
+    ENDPOINT DE EMERGENCIA: Ejecuta la migración de la tabla usuarios_busquedas_guardadas
+    para agregar la columna 'empresa_id' si no existe.
+    """
+    from sqlalchemy import text
+    try:
+        # 1. Verificar si la columna existe
+        check_sql = text("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name='usuarios_busquedas_guardadas' AND column_name='empresa_id';
+        """)
+        result = db.execute(check_sql).fetchone()
+        
+        if not result:
+            # 2. Si no existe, crearla
+            alter_sql = text("""
+                ALTER TABLE usuarios_busquedas_guardadas 
+                ADD COLUMN empresa_id INTEGER REFERENCES empresas(id);
+            """)
+            db.execute(alter_sql)
+            db.commit()
+            return {"msg": "MIGRACIÓN EXITOSA: Columna 'empresa_id' creada correctamente."}
+        else:
+            return {"msg": "SISTEMA OK: La columna 'empresa_id' ya existía."}
+            
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error crítico en migración: {str(e)}")
