@@ -243,7 +243,7 @@ export default function CleanHomePage({ user }) {
                 <img
                     src="/logo_finaxis_real.png"
                     alt="Finaxis ERP"
-                    className="w-auto h-48 object-contain mb-8"
+                    className="w-auto h-48 object-contain mb-8 mix-blend-multiply contrast-[1.2] brightness-[1.1]"
                 />
             </div>
 

@@ -10,7 +10,7 @@ export default function SmartSearchSection() {
                 <img
                     src="/logo_finaxis_real.png"
                     alt="Finaxis ERP"
-                    className="relative h-28 object-contain drop-shadow-[0_10px_25px_rgba(0,0,0,0.15)] transform transition-transform duration-700 hover:scale-105"
+                    className="relative h-28 object-contain mix-blend-multiply contrast-[1.2] brightness-[1.1] transform transition-transform duration-700 hover:scale-105"
                 />
             </div>
         </div>
