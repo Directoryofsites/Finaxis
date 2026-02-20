@@ -671,60 +671,72 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
     if not db_doc:
         raise HTTPException(status_code=404, detail="Documento no encontrado.")
 
-    # 2. Plantilla
-    print(f"--- DEBUG PDF: Buscando plantilla para Documento {documento_id} --")
-    print(f"   -> Empresa ID: {empresa_id}")
-    print(f"   -> Tipo Documento ID: {db_doc.tipo_documento_id}")
-
-    plantilla = db.query(models_formato).filter(
-        models_formato.empresa_id == empresa_id, 
-        models_formato.tipo_documento_id == db_doc.tipo_documento_id
-    ).first()
+    # 2. SELECCIÓN DE PLANTILLA
+    tipo_codigo = db_doc.tipo_documento.codigo.lower() if db_doc.tipo_documento else "unknown"
     
-    if plantilla:
-        print(f"   -> PLANTILLA ENCONTRADA: ID {plantilla.id} - {plantilla.nombre}")
-        html_content = plantilla.contenido_html
-    else:
-        print("   -> PLANTILLA BD NO ENCONTRADA. Buscando en paquete local...")
-        
-        # Intentamos buscar por código de tipo de documento
-        # Ej: "CE" -> "reports/ce_template.html" (convención)
-        # O también "reports/comprobante_egreso_template.html" (nombre largo)
-        
-        tipo_codigo = db_doc.tipo_documento.codigo.lower() if db_doc.tipo_documento else "unknown"
-        # Mapeo manual de códigos comunes a plantillas conocidas
-        # Mapeo manual de códigos comunes a plantillas conocidas
-        mapa_plantillas = {
-            'ce': 'reports/comprobante_egreso_template.html',
-            'rc': 'reports/auxiliar_por_recibos_report.html',
-            # 'fv': 'reports/rentabilidad_factura_report.html' # <--- CAUSANTE DEL ERROR (Usaba 'doc' en vez de 'documento')
-            'fv': 'reports/invoice_template.html',  # FIXED: Nueva plantilla moderna
-        }
-        
-        plantilla_key = mapa_plantillas.get(tipo_codigo)
-        
-        # FIX: Prioridad de carga para la nueva plantilla de factura
-        if tipo_codigo == 'fv' or (plantilla_key and 'invoice_template.html' in plantilla_key):
-             try:
-                 print(f"   -> USANDO PLANTILLA FACTURA MODERNA: app/templates/reports/invoice_template.html")
-                 with open('app/templates/reports/invoice_template.html', 'r', encoding='utf-8') as f:
-                     html_content = f.read()
-             except Exception as e:
-                 print(f"Error cargando plantilla factura: {e}")
-                 html_content = "Error loading invoice template"
+    es_factura_venta = (tipo_codigo == 'fv' or 
+                        (db_doc.tipo_documento and db_doc.tipo_documento.funcion_especial in ['FACTURA_VENTA']))
 
-        elif plantilla_key and plantilla_key in TEMPLATES_EMPAQUETADOS:
-             print(f"   -> PLANTILLA LOCAL ENCONTRADA: {plantilla_key}")
-             html_content = TEMPLATES_EMPAQUETADOS[plantilla_key]
+    print(f"================ DEPURACIÓN PDF ==================")
+    print(f"DOC_ID: {db_doc.id} | NUMERO: {db_doc.numero} | TIPO: {tipo_codigo} | FUNCION: {db_doc.tipo_documento.funcion_especial if db_doc.tipo_documento else 'N/A'}")
+    print(f"DIAN_CUFE: '{db_doc.dian_cufe}' | ESTADO DIAN: '{db_doc.dian_estado}'")
+    print(f"==================================================")
+
+    # PRIORIDAD 1: SI ES FACTURA DE VENTA Y TIENE CUFE, USAR PREMIUM FE SIEMPRE
+    if es_factura_venta and db_doc.dian_cufe:
+        print(f"🟢 [PDF] -> TIENE CUFE. Abriendo: premium_fe_template.html (Prioridad Máxima)")
+        try:
+            with open('app/templates/reports/premium_fe_template.html', 'r', encoding='utf-8') as f:
+                html_content = f.read()
+        except Exception as e:
+            print(f"🔴 [PDF ERROR FATAL] falló lectura de HTML: {e}")
+            html_content = "<html><body><h1>Error de Sistema</h1><p>No se pudo leer la plantilla HTML Premium FE.</p></body></html>"
+    else:
+        # PRIORIDAD 2: PLANTILLA EN BASE DE DATOS PARA EL TIPO DE DOCUMENTO
+        print(f"--- DEBUG PDF: Buscando plantilla en BD para Documento {documento_id} --")
+        plantilla = db.query(models_formato).filter(
+            models_formato.empresa_id == empresa_id, 
+            models_formato.tipo_documento_id == db_doc.tipo_documento_id
+        ).first()
+        
+        if plantilla:
+            print(f"   -> PLANTILLA BD ENCONTRADA: ID {plantilla.id} - {plantilla.nombre}")
+            html_content = plantilla.contenido_html
         else:
-             print("   -> NO SE ENCONTRO NINGUNA PLANTILLA ESPECÍFICA. Usando plantila GENÉRICA de base.")
-             # Usamos la plantilla genérica nueva
-             try:
-                 with open('app/templates/reports/generic_document_template.html', 'r', encoding='utf-8') as f:
-                     html_content = f.read()
-             except Exception as e:
-                 print(f"Error cargando plantilla genérica: {e}")
-                 html_content = "<html><body><h1>Error de Plantilla</h1><p>No se encontró la plantilla genérica base.</p></body></html>"
+            print("   -> PLANTILLA BD NO ENCONTRADA. Buscando fallback local...")
+            
+            # Intentamos buscar por código de tipo de documento
+            tipo_codigo = db_doc.tipo_documento.codigo.lower() if db_doc.tipo_documento else "unknown"
+            mapa_plantillas = {
+                'ce': 'reports/comprobante_egreso_template.html',
+                'rc': 'reports/auxiliar_por_recibos_report.html',
+                'fv': 'reports/invoice_template.html',  # FIXED: Nueva plantilla moderna
+            }
+            
+            plantilla_key = mapa_plantillas.get(tipo_codigo)
+            
+            # PRIORIDAD 3: FALLBACK A PLANTILLAS LOCALES ESPECÍFICAS
+            if es_factura_venta:
+                 # Si es factura de venta pero NO TIENE CUFE, usa la moderna genérica
+                 try:
+                     print(f"🟡 [PDF] -> NO TIENE CUFE. Abriendo: invoice_template.html")
+                     with open('app/templates/reports/invoice_template.html', 'r', encoding='utf-8') as f:
+                         html_content = f.read()
+                 except Exception as e:
+                     print(f"🔴 [PDF ERROR FATAL] falló lectura de HTML fallback: {e}")
+                     html_content = "<html><body><h1>Error de Sistema</h1><p>No se pudo leer la plantilla invoice_template.html.</p></body></html>"
+            elif plantilla_key and plantilla_key in TEMPLATES_EMPAQUETADOS:
+                 print(f"   -> PLANTILLA LOCAL ENCONTRADA: {plantilla_key}")
+                 html_content = TEMPLATES_EMPAQUETADOS[plantilla_key]
+            else:
+                 print("   -> NO SE ENCONTRO NINGUNA PLANTILLA ESPECÍFICA. Usando plantilla GENÉRICA de base.")
+                 # Usamos la plantilla genérica nueva
+                 try:
+                     with open('app/templates/reports/generic_document_template.html', 'r', encoding='utf-8') as f:
+                         html_content = f.read()
+                 except Exception as e:
+                     print(f"Error cargando plantilla genérica: {e}")
+                     html_content = "<html><body><h1>Error de Plantilla</h1><p>No se encontró la plantilla genérica base.</p></body></html>"
     
     # 3. Empresa
     empresa = db.query(models_empresa).filter(models_empresa.id == empresa_id).first()
@@ -997,7 +1009,13 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
             "observaciones": getattr(db_doc, 'observaciones', "") or "",
             "dian_cufe": getattr(db_doc, 'dian_cufe', "") or "",
             "dian_estado": getattr(db_doc, 'dian_estado', "") or "",
-            "dian_xml_url": getattr(db_doc, 'dian_xml_url', "") or ""
+            "dian_xml_url": getattr(db_doc, 'dian_xml_url', "") or "",
+            # Nuevos datos de la resolución DIAN desde ConfiguracionFE (usando la relación empresa.configuracion_fe)
+            "resolucion_numero": getattr(empresa.configuracion_fe[0], 'resolucion_numero', '') or 'N/A' if getattr(empresa, 'configuracion_fe', None) and len(empresa.configuracion_fe) > 0 else 'N/A',
+            "resolucion_fecha": getattr(empresa.configuracion_fe[0], 'resolucion_fecha').strftime('%d/%m/%Y') if getattr(empresa, 'configuracion_fe', None) and len(empresa.configuracion_fe) > 0 and getattr(empresa.configuracion_fe[0], 'resolucion_fecha', None) else 'N/A',
+            "resolucion_prefijo": getattr(empresa.configuracion_fe[0], 'prefijo', '') or 'FV' if getattr(empresa, 'configuracion_fe', None) and len(empresa.configuracion_fe) > 0 else 'FV',
+            "resolucion_rango_desde": getattr(empresa.configuracion_fe[0], 'rango_desde', '') or '0' if getattr(empresa, 'configuracion_fe', None) and len(empresa.configuracion_fe) > 0 else '0',
+            "resolucion_rango_hasta": getattr(empresa.configuracion_fe[0], 'rango_hasta', '') or '0' if getattr(empresa, 'configuracion_fe', None) and len(empresa.configuracion_fe) > 0 else '0'
         },
         "tercero": {
             "razon_social": getattr(beneficiario, 'razon_social', "Varios") if beneficiario else "Varios",

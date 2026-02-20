@@ -183,7 +183,7 @@ export default function DocumentoDetallePage() {
     }));
   };
 
-  // --- FACTURACIÓN ELECTRÓNICA ---
+  // --- FACTURACIÓN ELECTRÓNICA Y PDF ---
   const handleEmitirDIAN = async () => {
     if (!confirm("¿Estás seguro de emitir esta factura a la DIAN? Esta acción no se puede deshacer.")) return;
 
@@ -202,6 +202,21 @@ export default function DocumentoDetallePage() {
 
     } catch (err) {
       alert(`ERROR DIAN: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerPDF = async () => {
+    setIsLoading(true);
+    try {
+      // Pedimos el PDF como BLOB para poder abrirlo/descargarlo. Añadimos timestamp para evitar caché agresivo del navegador.
+      const response = await apiService.get(`/documentos/${id}/pdf?t=${Date.now()}`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      window.open(url, '_blank');
+    } catch (err) {
+      console.error(err);
+      alert("Error al generar el PDF del documento.");
     } finally {
       setIsLoading(false);
     }
@@ -232,27 +247,27 @@ export default function DocumentoDetallePage() {
 
           {!isEditing && (
             <>
-              {documento && documento.dian_xml_url && (
+              {documento && (documento.dian_cufe || documento.dian_estado === 'ACEPTADO') && (
                 <>
-                  <a
-                    href={documento.dian_xml_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={handleVerPDF}
                     className="px-2 py-1 text-green-600 hover:bg-green-50 rounded-md font-bold flex items-center gap-2 border border-green-200"
-                    title="Ver Factura en sistema DIAN/Proveedor"
+                    title="Ver Factura PDF (Finaxis)"
                   >
-                    <span className="text-lg">🔗</span> <span className="hidden md:inline">Ver Factura DIAN</span>
-                  </a>
+                    <span className="text-lg">📄</span> <span className="hidden md:inline">Ver PDF Factura</span>
+                  </button>
 
-                  <a
-                    href={`https://wa.me/?text=${encodeURIComponent(`Hola, aquí tienes tu factura electrónica: ${documento.dian_xml_url}`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-2 py-1 text-white bg-green-500 hover:bg-green-600 rounded-md font-bold flex items-center gap-2 shadow-sm"
-                    title="Enviar por WhatsApp"
-                  >
-                    <span className="text-lg">📱</span> <span className="hidden md:inline">WhatsApp</span>
-                  </a>
+                  {documento.dian_xml_url && (
+                    <a
+                      href={`https://wa.me/?text=${encodeURIComponent(`Hola, aquí tienes tu factura electrónica: ${documento.dian_xml_url}`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2 py-1 text-white bg-green-500 hover:bg-green-600 rounded-md font-bold flex items-center gap-2 shadow-sm"
+                      title="Enviar por WhatsApp"
+                    >
+                      <span className="text-lg">📱</span> <span className="hidden md:inline">WhatsApp</span>
+                    </a>
+                  )}
                 </>
               )}
 
