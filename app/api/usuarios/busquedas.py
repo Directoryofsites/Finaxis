@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
-from typing import List, Optional # <--- Added Optional
+from sqlalchemy import or_
+from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -15,13 +16,14 @@ router = APIRouter(prefix="/busquedas", tags=["Usuarios - Búsquedas Guardadas"]
 class BusquedaCreate(BaseModel):
     titulo: str
     comando: str
-    parametros: Optional[str] = None # <--- Fixed
+    parametros: Optional[str] = None 
 
 class BusquedaResponse(BaseModel):
     id: int
     titulo: str
     comando: str
-    parametros: Optional[str] = None # <--- Fixed
+    parametros: Optional[str] = None 
+    empresa_id: Optional[int] = None
     fecha_creacion: datetime
 
     class Config:
@@ -53,12 +55,22 @@ async def obtener_busquedas_guardadas(
     current_user: Optional[Usuario] = Depends(get_user_silent)
 ):
     """
-    Obtiene todas las búsquedas guardadas. Retorna lista vacía si no hay usuario válido.
+    Obtiene todas las búsquedas guardadas filtradas por la empresa del usuario (según token).
     """
     if not current_user:
         return []
+    
+    query = db.query(UsuarioBusqueda).filter(UsuarioBusqueda.usuario_id == current_user.id)
+    
+    # Filter by company from token context
+    if current_user.empresa_id:
+        # Show commands for this company OR global/legacy commands (NULL)
+        query = query.filter(or_(
+            UsuarioBusqueda.empresa_id == current_user.empresa_id,
+            UsuarioBusqueda.empresa_id == None
+        ))
         
-    return db.query(UsuarioBusqueda).filter(UsuarioBusqueda.usuario_id == current_user.id).order_by(UsuarioBusqueda.fecha_creacion.desc()).all()
+    return query.order_by(UsuarioBusqueda.fecha_creacion.desc()).all()
 
 @router.post("/", response_model=BusquedaResponse)
 def guardar_busqueda(
@@ -67,14 +79,15 @@ def guardar_busqueda(
     current_user: Usuario = Depends(get_current_user)
 ):
     """
-    Guarda una nueva búsqueda en la biblioteca del usuario.
+    Guarda una nueva búsqueda en la biblioteca del usuario, asociada a la empresa actual (según token).
     """
-    # Verificar límite opcional (por ahora ilimitado, pero bueno tenerlo en mente)
+    # Verify limit optional
     # count = db.query(UsuarioBusqueda).filter(UsuarioBusqueda.usuario_id == current_user.id).count()
     
     nueva_busqueda = UsuarioBusqueda(
         usuario_id=current_user.id,
-        titulo=busqueda.titulo[:255], # Truncate to match DB limit
+        empresa_id=current_user.empresa_id, # Use context from token
+        titulo=busqueda.titulo[:255], 
         comando=busqueda.comando,
         parametros=busqueda.parametros
     )

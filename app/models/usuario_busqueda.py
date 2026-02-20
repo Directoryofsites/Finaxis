@@ -8,6 +8,7 @@ class UsuarioBusqueda(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     usuario_id = Column(Integer, ForeignKey('usuarios.id'), nullable=False)
+    empresa_id = Column(Integer, ForeignKey('empresas.id'), nullable=True) # New field for isolation
     
     # El título que el usuario le da (ej: "Reporte Mensual Jefe")
     titulo = Column(String(255), nullable=False)

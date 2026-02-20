@@ -382,6 +382,17 @@ export default function NoteModal({
                         <span className="text-gray-500 text-sm mr-2">Total Estimado Nota:</span>
                         <span className="text-2xl font-bold text-gray-800">${calculateTotal.toLocaleString('es-CO')}</span>
                     </div>
+                    {/* MENSAJE DE ADVERTENCIA PARA NOTA DÉBITO */}
+                    {!isCredit && (
+                        <div className="mb-4 p-3 bg-yellow-100 border border-yellow-300 text-yellow-800 rounded-lg text-sm font-medium flex items-center gap-2">
+                            <FaExclamationTriangle className="text-xl" />
+                            <div>
+                                <p className="font-bold">Funcionalidad Restringida por el Proveedor</p>
+                                <p>Factus informa que la emisión de Notas Débito vía API aún no está disponible públicamente. Por favor, realice este proceso directamente desde el portal de Factus/Halltec.</p>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="flex gap-3">
                         <button
                             onClick={onClose}
@@ -392,8 +403,9 @@ export default function NoteModal({
                         </button>
                         <button
                             onClick={handleSubmit}
-                            className={`px-6 py-2 text-white rounded-lg font-bold shadow-lg transition-transform active:scale-95 flex items-center gap-2 ${isCredit ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'}`}
-                            disabled={isLoading}
+                            className={`px-6 py-2 text-white rounded-lg font-bold shadow-lg transition-transform active:scale-95 flex items-center gap-2 ${isCredit ? 'bg-orange-600 hover:bg-orange-700' : 'bg-gray-400 cursor-not-allowed'}`}
+                            disabled={isLoading || !isCredit}
+                            title={!isCredit ? "Inhabilitado por restricción del proveedor API" : ""}
                         >
                             {isLoading ? 'Procesando...' : (
                                 <>

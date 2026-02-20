@@ -5,7 +5,7 @@ import {
     FaRobot, FaCalculator, FaStickyNote, FaBell,
     FaThumbtack, FaTimes, FaExpandAlt, FaMagic, FaPaperPlane,
     FaBackspace, FaTrash, FaMicrophone, FaStop, FaPlus, FaSave, FaList, FaShareSquare, FaHistory, FaClock,
-    FaBuilding, FaChartLine, FaBolt, FaSync, FaFilePdf, FaEdit, FaSearch, FaPrint
+    FaBuilding, FaChartLine, FaBolt, FaSync, FaFilePdf, FaEdit, FaSearch, FaPrint, FaBook
 } from 'react-icons/fa';
 import { CONTEXT_CONFIG } from '../config/rightSidebarConfig';
 import { toast } from 'react-toastify';
@@ -384,7 +384,8 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
         updateLibraryTitle: updateSavedSearch,
         loadLibraryData: fetchLibrary,
         loadCommandHistory: fetchSavedSearches,
-        isListening
+        isListening,
+        updateLibraryCommand
     } = useSmartSearch();
 
     const [aiResponse, setAiResponse] = useState(null);
@@ -399,6 +400,10 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
 
     const [editingSearchId, setEditingSearchId] = useState(null);
     const [editSearchTitle, setEditSearchTitle] = useState('');
+
+    // Nueva funcionalidad para editar el comando/instrucción
+    const [editingCommandId, setEditingCommandId] = useState(null);
+    const [editCommandText, setEditCommandText] = useState('');
 
     const sendCalcToNote = () => {
         const val = display === 'Error' ? '0' : display;
@@ -541,6 +546,20 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
             {/* ICONS */}
             <div className="w-12 flex flex-col items-center py-4 bg-gray-50/50 border-r border-gray-200 h-full flex-shrink-0">
                 <button onClick={() => handleTabClick('ai')} className={`nav-item mb-2 p-2 rounded-xl transition-all ${activeTab === 'ai' && (isOpen || isPinned) ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:text-indigo-500 hover:bg-indigo-50'}`}><FaRobot className="text-xl" /></button>
+
+                {/* BOTÓN BIBLIOTECA (NUEVO) */}
+                <button
+                    onClick={() => {
+                        handleTabClick('ai');
+                        setShowHistory(true);
+                        setShowLibraryTabInModal(true);
+                        fetchLibrary();
+                    }}
+                    className={`nav-item mb-2 p-2 rounded-xl transition-all ${showHistory && showLibraryTabInModal && (isOpen || isPinned) ? 'bg-indigo-200 text-indigo-700' : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50'}`}
+                    title="Biblioteca de Comandos"
+                >
+                    <FaBook className="text-xl" />
+                </button>
                 <button onClick={() => handleTabClick('monitor')} className={`nav-item mb-6 p-2 rounded-xl transition-all ${activeTab === 'monitor' && (isOpen || isPinned) ? 'bg-purple-100 text-purple-600' : 'text-gray-400 hover:text-purple-500 hover:bg-purple-50'}`} title="Monitor de Asientos"><FaBolt className="text-xl" /></button>
                 <div className="w-6 h-[1px] bg-gray-200 mb-4"></div>
                 <button onClick={() => handleTabClick('calc')} className={`nav-item p-2 mb-2 rounded-lg ${activeTab === 'calc' && (isOpen || isPinned) ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:bg-blue-50'}`}><FaCalculator /></button>
@@ -708,7 +727,47 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                                                                     )}
                                                                     <button onClick={() => deleteSavedSearch(item.id)} className="text-gray-300 hover:text-red-500 p-1"><FaTrash className="text-xs" /></button>
                                                                 </div>
-                                                                <p className="text-xs text-gray-500 line-clamp-2 italic mb-2">"{item.comando}"</p>
+                                                                {editingCommandId === item.id ? (
+                                                                    <div className="flex items-center gap-1 mb-2 bg-gray-50 p-1 rounded">
+                                                                        <input
+                                                                            type="text"
+                                                                            className="flex-1 text-xs border-b border-indigo-300 outline-none italic text-gray-600 bg-transparent w-full"
+                                                                            autoFocus
+                                                                            value={editCommandText}
+                                                                            onChange={(e) => setEditCommandText(e.target.value)}
+                                                                            onBlur={() => {
+                                                                                // Small timeout to allow button click to register
+                                                                                setTimeout(() => {
+                                                                                    if (editingCommandId) {
+                                                                                        updateLibraryCommand(item.id, editCommandText);
+                                                                                        setEditingCommandId(null);
+                                                                                    }
+                                                                                }, 200);
+                                                                            }}
+                                                                            onKeyDown={(e) => {
+                                                                                if (e.key === 'Enter') {
+                                                                                    updateLibraryCommand(item.id, editCommandText);
+                                                                                    setEditingCommandId(null);
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="group/cmd relative mb-2">
+                                                                        <p className="text-xs text-gray-500 line-clamp-2 italic pr-6 group-hover/cmd:text-gray-700 transition-colors">"{item.comando}"</p>
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setEditingCommandId(item.id);
+                                                                                setEditCommandText(item.comando);
+                                                                            }}
+                                                                            className="absolute top-0 right-0 text-gray-300 hover:text-blue-500 p-1 opacity-0 group-hover/cmd:opacity-100 transition-opacity"
+                                                                            title="Editar instrucción (Prompt)"
+                                                                        >
+                                                                            <FaEdit className="text-[10px]" />
+                                                                        </button>
+                                                                    </div>
+                                                                )}
                                                                 <button
                                                                     onClick={() => { handleSavedSearchClick(item.comando); setShowHistory(false); }}
                                                                     className="w-full py-1.5 bg-indigo-50 text-indigo-600 text-xs font-bold rounded hover:bg-indigo-100 flex items-center justify-center gap-2"

@@ -2,11 +2,13 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
+import { useAuth } from '../context/AuthContext';
 import { menuStructure } from '../../lib/menuData';
 import { commandDictionary } from '../../lib/commandDictionary';
 import { apiService } from '../../lib/apiService';
 
 export function useSmartSearch() {
+    const { user } = useAuth();
     const router = useRouter();
     const [commandHistory, setCommandHistory] = useState([]);
     const [library, setLibrary] = useState([]);
@@ -64,6 +66,7 @@ export function useSmartSearch() {
     const loadLibraryData = async () => {
         setIsLibraryLoading(true);
         try {
+            // Backend now filters by current_user.empresa_id from token
             const res = await apiService.get('/usuarios/busquedas/');
             setLibrary(res.data);
         } catch (err) {
@@ -137,9 +140,17 @@ export function useSmartSearch() {
         }
     };
 
+    // --- REFRESH LOGIC ---
     useEffect(() => {
+        if (user?.empresaId) {
+            // Reload library when company changes
+            loadLibraryData();
+        }
+    }, [user?.empresaId]);
+
+    useEffect(() => {
+        // Initial load of history (library loaded by auth effect above)
         loadCommandHistory();
-        loadLibraryData();
     }, []);
 
     useEffect(() => {
@@ -660,9 +671,27 @@ export function useSmartSearch() {
         }, 300);
     };
 
+    const updateLibraryCommand = async (id, newCommand) => {
+        if (!newCommand || !newCommand.trim()) return;
+        try {
+            const search = library.find(s => s.id === id);
+            if (!search) return;
+
+            await apiService.put(`/usuarios/busquedas/${id}`, {
+                titulo: search.titulo,
+                comando: newCommand
+            });
+            toast.success("Instrucción actualizada");
+            loadLibraryData();
+        } catch (err) {
+            console.error(err);
+            toast.error("Error al actualizar comando");
+        }
+    };
+
     return {
         query, setQuery, results, isListening, isThinking, isCommandMode, commandHistory, library, isLibraryLoading, selectedIndex, setSelectedIndex,
-        toggleListening, processVoiceCommand, handleSelectResult, addToLibrary, deleteFromLibrary, updateLibraryTitle,
+        toggleListening, processVoiceCommand, handleSelectResult, addToLibrary, deleteFromLibrary, updateLibraryTitle, updateLibraryCommand,
         loadLibraryData, loadCommandHistory, addToHistory,
         showHistory: (results.length > 0 || (!query && (commandHistory.length > 0 || library.length > 0))),
     };
