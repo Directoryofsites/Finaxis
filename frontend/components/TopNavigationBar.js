@@ -304,7 +304,7 @@ export default function TopNavigationBar() {
                         {isWaffleOpen && (
                             <>
                                 {/* VENTANA PRINCIPAL DEL WAFFLE (SIEMPRE VISIBLE EN DESKTOP, OCULTA EN MOBILE SI HAY SUBMODULO) */}
-                                <div className={`absolute top-[48px] -right-2 md:right-0 w-[95vw] sm:w-[420px] max-h-[85vh] bg-[#fdfdfd] border border-gray-200/60 shadow-[0_12px_40px_rgba(0,0,0,0.15)] rounded-3xl z-[100010] flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-4 duration-200 transition-all ${waffleActiveModule ? 'max-md:hidden md:opacity-95' : 'opacity-100'}`}>
+                                <div className={`absolute top-[48px] -right-10 sm:-right-2 md:right-0 w-[320px] max-w-[85vw] sm:w-[420px] max-h-[85vh] bg-[#fdfdfd] border border-gray-200/60 shadow-[0_12px_40px_rgba(0,0,0,0.15)] rounded-3xl z-[100010] flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-4 duration-200 transition-all ${waffleActiveModule ? 'max-md:hidden md:opacity-95' : 'opacity-100'}`}>
                                     {/* Header del Waffle */}
                                     <div className="px-4 h-14 border-b border-gray-100 flex items-center bg-white sticky top-0 z-10 justify-center">
                                         <div className="flex flex-col items-center select-none pt-1">
@@ -351,7 +351,7 @@ export default function TopNavigationBar() {
 
                                 {/* VENTANA ALTERNATIVA FLOTANTE (SUBMÓDULO) */}
                                 {waffleActiveModule && (
-                                    <div className="absolute top-[48px] -right-2 md:right-[435px] w-[95vw] sm:w-[420px] md:w-[500px] max-h-[85vh] bg-[#fdfdfd] border border-gray-200/60 shadow-[0_12px_40px_rgba(0,0,0,0.15)] md:shadow-[-12px_12px_40px_rgba(0,0,0,0.12)] rounded-3xl z-[100020] flex flex-col overflow-hidden animate-in slide-in-from-right-4 fade-in duration-200">
+                                    <div className="absolute top-[48px] -right-10 sm:-right-2 md:right-[435px] w-[320px] max-w-[85vw] sm:w-[420px] md:w-[500px] max-h-[85vh] bg-[#fdfdfd] border border-gray-200/60 shadow-[0_12px_40px_rgba(0,0,0,0.15)] md:shadow-[-12px_12px_40px_rgba(0,0,0,0.12)] rounded-3xl z-[100020] flex flex-col overflow-hidden animate-in slide-in-from-right-4 fade-in duration-200">
                                         <div className="px-5 h-14 border-b border-gray-100 flex items-center bg-white sticky top-0 z-10 justify-between shadow-sm">
                                             <div className="flex items-center">
                                                 <div className={`w-8 h-8 rounded-lg border flex items-center justify-center mr-3 ${MODULE_COLORS[waffleActiveModule.id]?.replace(/group-hover:[^\s]+/g, '') || MODULE_COLORS['default'].replace(/group-hover:[^\s]+/g, '')}`}>
