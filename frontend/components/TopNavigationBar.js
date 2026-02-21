@@ -372,6 +372,10 @@ export default function TopNavigationBar() {
                                                         const restrictedSafeHrefs = ['/contabilidad/documentos', '/contabilidad/captura-rapida', '/contabilidad/facturacion', '/contabilidad/compras', '/contabilidad/traslados'];
                                                         if (user?.empresa?.modo_operacion === 'AUDITORIA_READONLY' && restrictedSafeHrefs.includes(link.href)) return null;
 
+                                                        // Validar botón de Soporte God-Mode
+                                                        const userRoles = user?.roles?.map(r => r.nombre) || [];
+                                                        if (link.onlySoporte && !userRoles.includes('soporte')) return null;
+
                                                         const itemColor = MODULE_COLORS[waffleActiveModule.id] || MODULE_COLORS['default'];
 
                                                         return (
@@ -397,6 +401,10 @@ export default function TopNavigationBar() {
                                                     <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-4 px-2">{sub.title}</h4>
                                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-4">
                                                         {sub.links.map((link, lIdx) => {
+                                                            // Validar botón de Soporte God-Mode en subgrupos
+                                                            const userRoles = user?.roles?.map(r => r.nombre) || [];
+                                                            if (link.onlySoporte && !userRoles.includes('soporte')) return null;
+
                                                             const cIdx = (waffleActiveModule.links?.length || 0) + (sIdx * 3) + lIdx;
                                                             const itemColor = MODULE_COLORS[waffleActiveModule.id] || MODULE_COLORS['default'];
 

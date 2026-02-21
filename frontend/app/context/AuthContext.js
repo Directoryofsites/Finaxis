@@ -18,6 +18,7 @@ export const AuthProvider = ({ children }) => {
     setAuthToken(null);
     if (typeof window !== 'undefined') {
       localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem('soporteAuthToken'); // <--- FIX VULNERABILIDAD CRÍTICA
       window.location.href = '/login';
     }
   }, []);
