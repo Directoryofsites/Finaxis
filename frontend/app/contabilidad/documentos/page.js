@@ -1288,7 +1288,7 @@ export default function NuevoDocumentoPage() {
                 )}
 
                 {!isCarteraLoading && facturasPendientes.length > 0 && (
-                  <div className="overflow-hidden rounded-lg border border-gray-200">
+                  <div className="overflow-x-auto rounded-lg border border-gray-200">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-slate-100">
                         <tr>
@@ -1372,7 +1372,7 @@ export default function NuevoDocumentoPage() {
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-lg border border-gray-200">
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-slate-100">
                   <tr>

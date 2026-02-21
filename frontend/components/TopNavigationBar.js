@@ -12,22 +12,33 @@ import { useAuth } from '../app/context/AuthContext';
 import { useSmartSearch } from '../app/hooks/useSmartSearch';
 import AssistantOverlay from '../app/components/VoiceAssistant/AssistantOverlay';
 
-// Mapa de colores vibrantes inspirados en Google Workspace (Docs = Azul, Sheets = Verde, YouTube = Rojo, etc.)
+// NUEVO SISTEMA SEMÁNTICO (Corporate Clean) 
+// Azul Corporativo (Core), Verde Esmeralda (Flujos), Naranja Ámbar (Fiscal), Violeta (Entidades), Teal (Inventarios)
+const SEMANTIC_BASE_COLORS = {
+    'blue': 'text-blue-700 bg-slate-50 border-slate-100 group-hover:bg-blue-50 group-hover:border-blue-200 group-hover:shadow-md group-hover:shadow-blue-100/50',
+    'emerald': 'text-emerald-700 bg-slate-50 border-slate-100 group-hover:bg-emerald-50 group-hover:border-emerald-200 group-hover:shadow-md group-hover:shadow-emerald-100/50',
+    'amber': 'text-amber-700 bg-slate-50 border-slate-100 group-hover:bg-amber-50 group-hover:border-amber-200 group-hover:shadow-md group-hover:shadow-amber-100/50',
+    'purple': 'text-purple-700 bg-slate-50 border-slate-100 group-hover:bg-purple-50 group-hover:border-purple-200 group-hover:shadow-md group-hover:shadow-purple-100/50',
+    'teal': 'text-teal-700 bg-slate-50 border-slate-100 group-hover:bg-teal-50 group-hover:border-teal-200 group-hover:shadow-md group-hover:shadow-teal-100/50',
+    'slate': 'text-slate-700 bg-slate-50 border-slate-100 group-hover:bg-slate-50 group-hover:border-slate-200 group-hover:shadow-md group-hover:shadow-slate-100/50'
+};
+
 const MODULE_COLORS = {
-    'contabilidad': 'bg-blue-50 text-blue-600 border-blue-100 group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-blue-300',
-    'nomina': 'bg-red-50 text-red-600 border-red-100 group-hover:bg-red-600 group-hover:text-white group-hover:shadow-red-300',
-    'facturacion': 'bg-green-50 text-green-600 border-green-100 group-hover:bg-green-600 group-hover:text-white group-hover:shadow-green-300',
-    'inventarios': 'bg-yellow-50 text-yellow-600 border-yellow-100 group-hover:bg-yellow-500 group-hover:text-white group-hover:shadow-yellow-300',
-    'terceros': 'bg-purple-50 text-purple-600 border-purple-100 group-hover:bg-purple-600 group-hover:text-white group-hover:shadow-purple-300',
-    'analisis_financiero': 'bg-cyan-50 text-cyan-600 border-cyan-100 group-hover:bg-cyan-600 group-hover:text-white group-hover:shadow-cyan-300',
-    'centros_costo': 'bg-indigo-50 text-indigo-600 border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white group-hover:shadow-indigo-300',
-    'impuestos': 'bg-pink-50 text-pink-600 border-pink-100 group-hover:bg-pink-600 group-hover:text-white group-hover:shadow-pink-300',
-    'activos': 'bg-slate-50 text-slate-600 border-slate-100 group-hover:bg-slate-600 group-hover:text-white group-hover:shadow-slate-300',
-    'ph': 'bg-teal-50 text-teal-600 border-teal-100 group-hover:bg-teal-600 group-hover:text-white group-hover:shadow-teal-300',
-    'produccion': 'bg-orange-50 text-orange-600 border-orange-100 group-hover:bg-orange-600 group-hover:text-white group-hover:shadow-orange-300',
-    'conciliacion_bancaria': 'bg-emerald-50 text-emerald-600 border-emerald-100 group-hover:bg-emerald-600 group-hover:text-white group-hover:shadow-emerald-300',
-    'administracion': 'bg-gray-50 text-gray-600 border-gray-100 group-hover:bg-gray-600 group-hover:text-white group-hover:shadow-gray-300',
-    'default': 'bg-indigo-50 text-indigo-600 border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white group-hover:shadow-indigo-300'
+    'contabilidad': SEMANTIC_BASE_COLORS['blue'],
+    'analisis_financiero': SEMANTIC_BASE_COLORS['blue'],
+    'centros_costo': SEMANTIC_BASE_COLORS['blue'],
+    'facturacion': SEMANTIC_BASE_COLORS['emerald'],
+    'recaudos': SEMANTIC_BASE_COLORS['emerald'],
+    'conciliacion_bancaria': SEMANTIC_BASE_COLORS['emerald'],
+    'impuestos': SEMANTIC_BASE_COLORS['amber'],
+    'activos': SEMANTIC_BASE_COLORS['amber'],
+    'terceros': SEMANTIC_BASE_COLORS['purple'],
+    'nomina': SEMANTIC_BASE_COLORS['purple'],
+    'administracion': SEMANTIC_BASE_COLORS['purple'],
+    'inventarios': SEMANTIC_BASE_COLORS['teal'],
+    'produccion': SEMANTIC_BASE_COLORS['teal'],
+    'ph': SEMANTIC_BASE_COLORS['teal'],
+    'default': SEMANTIC_BASE_COLORS['slate']
 };
 
 /**
@@ -289,40 +300,28 @@ export default function TopNavigationBar() {
                             <FaTh size={20} className={isWaffleOpen ? "scale-105 transition-transform" : ""} />
                         </button>
 
-                        {/* EL POPOVER DEL WAFFLE (APP LAUNCHER) */}
+                        {/* EL POPOVER DEL WAFFLE (APP LAUNCHER) Y SUB-POPOVER */}
                         {isWaffleOpen && (
-                            <div className="absolute top-[48px] right-0 w-[420px] max-h-[85vh] bg-[#fdfdfd] border border-gray-200/60 shadow-[0_12px_40px_rgba(0,0,0,0.15)] rounded-3xl z-[100010] flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-4 duration-200">
-
-                                {/* Header del Waffle */}
-                                <div className={`px-4 h-14 border-b border-gray-100 flex items-center bg-white sticky top-0 z-10 transition-all ${waffleActiveModule ? 'justify-between' : 'justify-center'}`}>
-                                    {waffleActiveModule ? (
-                                        <button
-                                            onClick={() => setWaffleActiveModule(null)}
-                                            className="flex items-center text-sm font-semibold text-gray-500 hover:text-blue-600 transition-colors group px-2 py-1 rounded-lg hover:bg-blue-50"
-                                        >
-                                            <FaArrowLeft className="mr-2 group-hover:-translate-x-1 transition-transform" />
-                                            Atrás
-                                        </button>
-                                    ) : (
+                            <>
+                                {/* VENTANA PRINCIPAL DEL WAFFLE (SIEMPRE VISIBLE EN DESKTOP, OCULTA EN MOBILE SI HAY SUBMODULO) */}
+                                <div className={`absolute top-[48px] -right-2 md:right-0 w-[95vw] sm:w-[420px] max-h-[85vh] bg-[#fdfdfd] border border-gray-200/60 shadow-[0_12px_40px_rgba(0,0,0,0.15)] rounded-3xl z-[100010] flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-4 duration-200 transition-all ${waffleActiveModule ? 'max-md:hidden md:opacity-95' : 'opacity-100'}`}>
+                                    {/* Header del Waffle */}
+                                    <div className="px-4 h-14 border-b border-gray-100 flex items-center bg-white sticky top-0 z-10 justify-center">
                                         <div className="flex flex-col items-center select-none pt-1">
                                             <span className="font-extrabold text-gray-800 text-base">Finaxis Apps Suite</span>
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
 
-                                {/* Contenido del Waffle (Scrollable) */}
-                                <div className="p-5 overflow-y-auto scrollbar-hide flex-1 bg-[#fcfcfc]">
-                                    {!waffleActiveModule ? (
-                                        // VISTA 1: GRID DE APLICACIONES PRINCIPALES (Iconos VIBRANTES)
+                                    {/* Contenido (Grid de Aplicaciones) */}
+                                    <div className="p-5 overflow-y-auto scrollbar-hide flex-1 bg-[#fcfcfc]">
                                         <div className="grid grid-cols-3 gap-y-7 gap-x-2">
                                             {menuStructure.map((module) => {
                                                 if (module.permission) {
                                                     const userPermissions = user?.roles?.flatMap(r => r.permisos?.map(p => p.nombre)) || [];
                                                     if (!userPermissions.includes(module.permission)) return null;
                                                 }
-
-                                                // Asignar color temático al botón (tipo Google)
                                                 const colorClasses = MODULE_COLORS[module.id] || MODULE_COLORS['default'];
+                                                const isActive = waffleActiveModule?.id === module.id;
 
                                                 return (
                                                     <div
@@ -335,85 +334,93 @@ export default function TopNavigationBar() {
                                                                 setWaffleActiveModule(module);
                                                             }
                                                         }}
-                                                        className="flex flex-col items-center justify-start cursor-pointer group p-2 rounded-2xl hover:bg-white hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-transparent transition-all duration-300"
+                                                        className={`flex flex-col items-center justify-start cursor-pointer group p-2 rounded-2xl border transition-all duration-300 ${isActive ? 'bg-white shadow-md border-indigo-200 ring-2 ring-indigo-500/50 scale-[0.98]' : 'hover:bg-white hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] border-transparent'}`}
                                                     >
-                                                        {/* CONTENEDOR DE ICONO MÁS GRANDE Y COLORIDO */}
-                                                        <div className={`w-[72px] h-[72px] rounded-[1.3rem] border flex items-center justify-center transition-all duration-300 group-hover:scale-[1.08] group-hover:shadow-lg ${colorClasses}`}>
-                                                            {module.icon && <module.icon size={36} />}
+                                                        <div className={`w-[60px] h-[60px] rounded-2xl border flex items-center justify-center transition-all duration-300 ${isActive ? '' : 'group-hover:-translate-y-1'} ${colorClasses}`}>
+                                                            {module.icon && <module.icon size={30} />}
                                                         </div>
-                                                        <span className="mt-3 text-[13px] font-bold text-gray-700 group-hover:text-black text-center leading-tight">
+                                                        <span className={`mt-3 text-[13px] font-bold leading-tight text-center ${isActive ? 'text-indigo-700' : 'text-gray-700 group-hover:text-black'}`}>
                                                             {module.name}
                                                         </span>
                                                     </div>
                                                 );
                                             })}
                                         </div>
-                                    ) : (
-                                        // VISTA 2: ENLACES DENTRO DEL MÓDULO SELECCIONADO
-                                        <div className="flex flex-col space-y-2 animate-in slide-in-from-right-8 fade-in duration-300">
+                                    </div>
+                                </div>
 
-                                            <div className="flex items-center mb-4 select-none pb-2 border-b border-gray-100">
-                                                <div className={`w-12 h-12 rounded-xl border flex items-center justify-center mr-4 ${MODULE_COLORS[waffleActiveModule.id]?.replace(/group-hover:[^\s]+/g, '') || MODULE_COLORS['default'].replace(/group-hover:[^\s]+/g, '')}`}>
-                                                    {waffleActiveModule.icon && <waffleActiveModule.icon size={26} />}
+                                {/* VENTANA ALTERNATIVA FLOTANTE (SUBMÓDULO) */}
+                                {waffleActiveModule && (
+                                    <div className="absolute top-[48px] -right-2 md:right-[435px] w-[95vw] sm:w-[420px] md:w-[500px] max-h-[85vh] bg-[#fdfdfd] border border-gray-200/60 shadow-[0_12px_40px_rgba(0,0,0,0.15)] md:shadow-[-12px_12px_40px_rgba(0,0,0,0.12)] rounded-3xl z-[100020] flex flex-col overflow-hidden animate-in slide-in-from-right-4 fade-in duration-200">
+                                        <div className="px-5 h-14 border-b border-gray-100 flex items-center bg-white sticky top-0 z-10 justify-between shadow-sm">
+                                            <div className="flex items-center">
+                                                <div className={`w-8 h-8 rounded-lg border flex items-center justify-center mr-3 ${MODULE_COLORS[waffleActiveModule.id]?.replace(/group-hover:[^\s]+/g, '') || MODULE_COLORS['default'].replace(/group-hover:[^\s]+/g, '')}`}>
+                                                    {waffleActiveModule.icon && <waffleActiveModule.icon size={16} />}
                                                 </div>
-                                                <div className="flex flex-col">
-                                                    <h3 className="font-extrabold text-gray-800 text-[1.35rem] tracking-tight leading-none">{waffleActiveModule.name}</h3>
-                                                    <span className="text-[11px] text-gray-400 font-medium mt-1 uppercase tracking-wider">Módulo Activo</span>
-                                                </div>
+                                                <h3 className="font-extrabold text-gray-800 text-[1.1rem] tracking-tight">{waffleActiveModule.name}</h3>
                                             </div>
+                                            <button onClick={() => setWaffleActiveModule(null)} className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors" title="Cerrar panel">
+                                                <FaTimes size={16} />
+                                            </button>
+                                        </div>
 
-                                            <div className="space-y-1">
-                                                {waffleActiveModule.links?.map(link => {
-                                                    const restrictedSafeHrefs = ['/contabilidad/documentos', '/contabilidad/captura-rapida', '/contabilidad/facturacion', '/contabilidad/compras', '/contabilidad/traslados'];
-                                                    if (user?.empresa?.modo_operacion === 'AUDITORIA_READONLY' && restrictedSafeHrefs.includes(link.href)) return null;
+                                        <div className="p-6 overflow-y-auto scrollbar-hide flex-1 bg-[#fcfcfc] space-y-8">
+                                            {/* Links directos del módulo */}
+                                            {waffleActiveModule.links?.length > 0 && (
+                                                <div className="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-4 border-b border-gray-100 pb-6 mb-6">
+                                                    {waffleActiveModule.links.map((link, index) => {
+                                                        const restrictedSafeHrefs = ['/contabilidad/documentos', '/contabilidad/captura-rapida', '/contabilidad/facturacion', '/contabilidad/compras', '/contabilidad/traslados'];
+                                                        if (user?.empresa?.modo_operacion === 'AUDITORIA_READONLY' && restrictedSafeHrefs.includes(link.href)) return null;
 
-                                                    return (
-                                                        <Link
-                                                            key={link.href}
-                                                            href={link.href}
-                                                            onClick={closeAll}
-                                                            className="flex flex-col p-3 rounded-2xl hover:bg-gray-50 hover:shadow-sm border border-transparent hover:border-gray-200 transition-all group"
-                                                        >
-                                                            <div className="flex items-center">
-                                                                <span className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center mr-3 group-hover:bg-blue-500 group-hover:text-white transition-all duration-300">
-                                                                    {link.icon && <link.icon size={14} />}
-                                                                </span>
-                                                                <span className="text-[14px] font-bold text-gray-700 group-hover:text-blue-700 transition-colors">{link.name}</span>
-                                                            </div>
-                                                            {link.description && (
-                                                                <p className="text-[12px] text-gray-400 pl-11 mt-1 leading-tight font-medium">{link.description}</p>
-                                                            )}
-                                                        </Link>
-                                                    );
-                                                })}
-                                            </div>
+                                                        const itemColor = MODULE_COLORS[waffleActiveModule.id] || MODULE_COLORS['default'];
 
-                                            {waffleActiveModule.subgroups?.filter(s => s.links?.length > 0).map(sub => (
-                                                <div key={sub.title} className="mt-6 pt-4 border-t border-gray-100">
-                                                    <div className="px-3 mb-3 flex flex-col">
-                                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{sub.title}</span>
-                                                    </div>
-                                                    <div className="grid grid-cols-2 gap-2 px-1">
-                                                        {sub.links.map(link => (
+                                                        return (
                                                             <Link
                                                                 key={link.href}
                                                                 href={link.href}
                                                                 onClick={closeAll}
-                                                                className="flex items-center px-3 py-3 bg-gray-50 rounded-xl hover:bg-blue-50 hover:shadow-sm border border-transparent text-gray-600 hover:text-blue-700 transition-all group"
+                                                                className="flex flex-col items-center cursor-pointer group p-2 rounded-2xl hover:bg-white border border-transparent transition-all duration-300 text-center"
                                                             >
-                                                                <span className="mr-2 opacity-60 group-hover:opacity-100 transition-opacity text-blue-500">
-                                                                    {link.icon && <link.icon size={14} />}
-                                                                </span>
-                                                                <span className="text-[13px] font-bold truncate">{link.name}</span>
+                                                                <div className={`w-[54px] h-[54px] rounded-xl border flex items-center justify-center transition-all duration-300 group-hover:-translate-y-1 ${itemColor}`}>
+                                                                    {link.icon && <link.icon size={24} />}
+                                                                </div>
+                                                                <span className="mt-3 text-[12px] font-bold text-gray-700 leading-tight group-hover:text-black">{link.name}</span>
                                                             </Link>
-                                                        ))}
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+
+                                            {/* Subgrupos del módulo */}
+                                            {waffleActiveModule.subgroups?.filter(s => s.links?.length > 0).map((sub, sIdx) => (
+                                                <div key={sub.title}>
+                                                    <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-4 px-2">{sub.title}</h4>
+                                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-4">
+                                                        {sub.links.map((link, lIdx) => {
+                                                            const cIdx = (waffleActiveModule.links?.length || 0) + (sIdx * 3) + lIdx;
+                                                            const itemColor = MODULE_COLORS[waffleActiveModule.id] || MODULE_COLORS['default'];
+
+                                                            return (
+                                                                <Link
+                                                                    key={link.href}
+                                                                    href={link.href}
+                                                                    onClick={closeAll}
+                                                                    className="flex flex-col items-center cursor-pointer group p-2 rounded-2xl hover:bg-white border border-transparent transition-all duration-300 text-center"
+                                                                >
+                                                                    <div className={`w-[54px] h-[54px] rounded-xl border flex items-center justify-center transition-all duration-300 group-hover:-translate-y-1 ${itemColor}`}>
+                                                                        {link.icon && <link.icon size={24} />}
+                                                                    </div>
+                                                                    <span className="mt-3 text-[12px] font-bold text-gray-700 leading-tight group-hover:text-black">{link.name}</span>
+                                                                </Link>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
-                                    )}
-                                </div>
-                            </div>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
 

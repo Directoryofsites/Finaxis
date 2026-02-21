@@ -974,7 +974,7 @@ function CapturaRapidaContent() {
               </div>
 
               {/* TABLA DE MOVIMIENTOS */}
-              <div className="overflow-hidden rounded-xl border border-gray-200">
+              <div className="overflow-x-auto rounded-xl border border-gray-200">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-slate-100">
                     <tr>
@@ -1351,7 +1351,7 @@ function CapturaRapidaContent() {
                     <p className="text-gray-500">No hay movimientos registrados en este periodo.</p>
                   </div>
                 ) : (
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 text-sm">
                       <thead className="bg-gray-50">
                         <tr>

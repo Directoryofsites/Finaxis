@@ -545,7 +545,7 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
         <div className={`fixed right-0 top-0 bottom-0 z-[60] transition-all duration-300 ease-spring ${widthClass} ${glassClass} flex`}>
             {/* ICONS */}
             <div className="w-12 flex flex-col items-center py-4 bg-gray-50/50 border-r border-gray-200 h-full flex-shrink-0">
-                <button onClick={() => handleTabClick('ai')} className={`nav-item mb-2 p-2 rounded-xl transition-all ${activeTab === 'ai' && (isOpen || isPinned) ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:text-indigo-500 hover:bg-indigo-50'}`}><FaRobot className="text-xl" /></button>
+                <button onClick={() => handleTabClick('ai')} className={`nav-item mb-2 p-2 rounded-xl transition-all ${activeTab === 'ai' ? 'bg-indigo-100 text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-indigo-500 hover:bg-indigo-50'}`} title="Finaxis Copilot (IA)"><FaRobot className="text-xl" /></button>
 
                 {/* BOTÓN BIBLIOTECA (NUEVO) */}
                 <button
@@ -555,16 +555,16 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                         setShowLibraryTabInModal(true);
                         fetchLibrary();
                     }}
-                    className={`nav-item mb-2 p-2 rounded-xl transition-all ${showHistory && showLibraryTabInModal && (isOpen || isPinned) ? 'bg-indigo-200 text-indigo-700' : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50'}`}
+                    className={`nav-item mb-2 p-2 rounded-xl transition-all ${showHistory && showLibraryTabInModal ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'}`}
                     title="Biblioteca de Comandos"
                 >
                     <FaBook className="text-xl" />
                 </button>
-                <button onClick={() => handleTabClick('monitor')} className={`nav-item mb-6 p-2 rounded-xl transition-all ${activeTab === 'monitor' && (isOpen || isPinned) ? 'bg-purple-100 text-purple-600' : 'text-gray-400 hover:text-purple-500 hover:bg-purple-50'}`} title="Monitor de Asientos"><FaBolt className="text-xl" /></button>
+                <button onClick={() => handleTabClick('monitor')} className={`nav-item mb-6 p-2 rounded-xl transition-all ${activeTab === 'monitor' ? 'bg-emerald-100 text-emerald-700 shadow-sm' : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'}`} title="Monitor de Asientos"><FaBolt className="text-xl" /></button>
                 <div className="w-6 h-[1px] bg-gray-200 mb-4"></div>
-                <button onClick={() => handleTabClick('calc')} className={`nav-item p-2 mb-2 rounded-lg ${activeTab === 'calc' && (isOpen || isPinned) ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:bg-blue-50'}`}><FaCalculator /></button>
-                <button onClick={() => handleTabClick('notes')} className={`nav-item p-2 mb-2 rounded-lg ${activeTab === 'notes' && (isOpen || isPinned) ? 'bg-yellow-100 text-yellow-600' : 'text-gray-400 hover:bg-yellow-50'}`}><FaStickyNote /></button>
-                <button onClick={() => handleTabClick('notif')} className={`nav-item p-2 rounded-lg ${activeTab === 'notif' && (isOpen || isPinned) ? 'bg-red-100 text-red-600' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}><FaBell /><span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white"></span></button>
+                <button onClick={() => handleTabClick('calc')} className={`nav-item p-2 mb-2 rounded-xl transition-all ${activeTab === 'calc' ? 'bg-blue-100 text-blue-600 shadow-sm' : 'text-gray-400 hover:bg-blue-50 hover:text-blue-600'}`} title="Calculadora"><FaCalculator /></button>
+                <button onClick={() => handleTabClick('notes')} className={`nav-item p-2 mb-2 rounded-xl transition-all ${activeTab === 'notes' ? 'bg-yellow-100 text-yellow-600 shadow-sm' : 'text-gray-400 hover:bg-yellow-50 hover:text-yellow-600'}`} title="Notas Rápidas"><FaStickyNote /></button>
+                <button onClick={() => handleTabClick('notif')} className={`nav-item p-2 mb-2 rounded-xl transition-all relative ${activeTab === 'notif' ? 'bg-red-100 text-red-600 shadow-sm' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`} title="Notificaciones"><FaBell /><span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white"></span></button>
 
                 {/* BOTÓN IDENTIFICADOR DE EMPRESA */}
                 <button

@@ -743,7 +743,7 @@ export default function NuevaFacturaPage() {
                         </button>
                     </div>
 
-                    <div className="overflow-hidden rounded-xl border border-gray-200">
+                    <div className="overflow-x-auto rounded-xl border border-gray-200">
                         <table className="min-w-full divide-y divide-gray-200 table-fixed">
                             <thead className="bg-slate-100">
                                 <tr>
