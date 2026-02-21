@@ -282,8 +282,8 @@ export default function TopNavigationBar() {
                     </form>
                 </div>
 
-                {/* Lado Derecho: Waffle y Perfil (Con padding extra mr-12 para evitar cruce con RightSidebar) */}
-                <div className="flex items-center space-x-3 relative h-full mr-2 md:mr-10 py-2">
+                {/* Lado Derecho: Waffle y Perfil (Con padding extra mr-14 para evitar cruce con RightSidebar en móviles) */}
+                <div className="flex items-center space-x-3 relative h-full mr-14 md:mr-10 py-2">
 
                     {/* El Waffle Button (App Launcher) */}
                     <div className="relative flex items-center h-full" ref={waffleRef}>
