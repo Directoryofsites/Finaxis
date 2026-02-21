@@ -263,9 +263,9 @@ function PanelGestionUsuarios({ empresa, onDataChange }) {
                 {mensaje.texto && <p className={`p-2 my-2 rounded-md text-sm ${mensaje.tipo === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{mensaje.texto}</p>}
                 <ul className="bg-gray-50 p-3 rounded-md divide-y divide-gray-200">
                     {(empresa.usuarios || []).map(user => (
-                        <li key={user.id} className="text-sm py-2 flex justify-between items-center">
-                            <span>
-                                {user.email} ({user.roles?.map(r => r.nombre).join(', ') || 'Sin rol'})
+                        <li key={user.id} className="text-sm py-3 flex justify-between items-center text-gray-900 font-bold">
+                            <span className="truncate pr-2">
+                                {user.email} <span className="text-indigo-600 ml-1">({user.roles?.map(r => r.nombre).join(', ') || 'Sin rol'})</span>
                             </span>
                             <button
                                 onClick={() => handleEditUser(user)}
@@ -725,9 +725,9 @@ function GestionSoportePanel({ soporteUsers, onDataChange }) {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                         {(soporteUsers || []).map(user => (
-                            <tr key={user.id}>
-                                <td className="px-6 py-4 text-sm">{user.email}</td>
-                                <td className="px-6 py-4 text-sm">{user.nombre_completo || 'N/A'}</td>
+                            <tr key={user.id} className="hover:bg-gray-100 transition-colors">
+                                <td className="px-6 py-4 text-sm text-gray-900 font-bold whitespace-nowrap">{user.email}</td>
+                                <td className="px-6 py-4 text-sm text-gray-800 font-semibold">{user.nombre_completo || 'N/A'}</td>
                                 {/* --- NUEVO: Se añade el botón de Eliminar y se ajusta la lógica de 'disabled' --- */}
                                 <td className="px-6 py-4 text-sm font-medium space-x-4">
                                     <button
