@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { FaCog, FaCheckCircle, FaTimesCircle, FaCalculator, FaInfoCircle, FaBriefcase, FaUserTie } from 'react-icons/fa';
+import { FaCog, FaCheckCircle, FaTimesCircle, FaCalculator, FaInfoCircle, FaBriefcase, FaUserTie, FaBuilding } from 'react-icons/fa';
 
 export default function SimuladorLaboral() {
     // --- SECCIÓN 1: CONFIGURACIÓN DE PARÁMETROS ---
