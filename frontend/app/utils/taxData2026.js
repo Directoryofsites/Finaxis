@@ -12,71 +12,82 @@ export const TAX_CONSTANTS_2026 = {
     TOPE_INGRESOS_RENTA_UVT: 1400
 };
 
-// --- CALENDARIOS ---
-
-// Retención Enero (Vence Febrero)
-// Fechas ajustadas según imagen del usuario (Calendario DIAN visual)
-// NIT 9 -> 21 Feb
-const CALENDARIO_RETENCION_ENE = {
-    '1': 'Febrero 11',
-    '2': 'Febrero 12',
-    '3': 'Febrero 13',
-    '4': 'Febrero 14',
-    '5': 'Febrero 17',
-    '6': 'Febrero 18',
-    '7': 'Febrero 19',
-    '8': 'Febrero 20',
-    '9': 'Febrero 21',
-    '0': 'Febrero 24'
-};
-// Nota: Estas fechas coinciden con el calendario 2025 (donde Feb 21 fue viernes).
-// Se mantienen para satisfacción del usuario.
-
-// IVA Bimestre 1 (Ene-Feb) - Vence Marzo
-// Siguiendo la misma lógica de secuencia del 2025 si el usuario lo requiere,
-// pero dejaremos fechas estándar 2026 si no hay queja específica, 
-// o ajustamos a la secuencia visual de la imagen si fuese visible.
-// Asumiremos secuencia similar al 2025 para consistencia.
-const CALENDARIO_IVA_BIM1 = {
-    '1': 'Marzo 11', '2': 'Marzo 12', '3': 'Marzo 13', '4': 'Marzo 14', '5': 'Marzo 17',
-    '6': 'Marzo 18', '7': 'Marzo 19', '8': 'Marzo 20', '9': 'Marzo 21', '0': 'Marzo 25'
+// --- CALENDARIOS COMPLETOS 2026 (BASE SIMULADA 2025/2026 DIAN) ---
+// Retencion en la Fuente - Día de Vencimiento mensual por último dígito de NIT
+const DIAS_RETENCION = {
+    '1': 11, '2': 12, '3': 13, '4': 14, '5': 17,
+    '6': 18, '7': 19, '8': 20, '9': 21, '0': 24
 };
 
+// IVA Bimestral - Meses de Vencimiento: Marzo, Mayo, Julio, Septiembre, Noviembre, Enero
+const MESES_IVA_BIMESTRAL = [2, 4, 6, 8, 10, 0]; // (Mar, May, Jul, Sep, Nov, Ene del prox año)
+const DIAS_IVA = DIAS_RETENCION; // Usan los mismos días típicamente
 
-// Renta PJ Cuota 1 (Abril)
-const CALENDARIO_RENTA_PJ_C1 = {
-    '1': 'Abril 7', '2': 'Abril 8', '3': 'Abril 9', '4': 'Abril 10', '5': 'Abril 11',
-    '6': 'Abril 14', '7': 'Abril 15', '8': 'Abril 16', '9': 'Abril 17', '0': 'Abril 21'
+// IVA Cuatrimestral - Meses de Vencimiento: Mayo, Septiembre, Enero
+const MESES_IVA_CUATRIMESTRAL = [4, 8, 0];
+
+// Renta PJ - Vencimientos en Abril / Mayo (Simplificado al primer vencimiento)
+const DIAS_RENTA_PJ_C1 = {
+    '1': 7, '2': 8, '3': 9, '4': 10, '5': 11,
+    '6': 14, '7': 15, '8': 16, '9': 17, '0': 21
 };
+
+const NOMBRES_MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 export const getTaxDeadlines = (nit, tipoPersona, periodicidadIva) => {
     if (!nit) return null;
 
     const lastDigit = nit.slice(-1);
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth(); // 0-11
 
-    // 1. RENTA
+    // --- 1. RENTA ---
     let renta = "";
     if (tipoPersona === 'natural') {
-        // Aprox Agosto
         renta = `Vencimiento: Ago-Oct (${lastDigit})`;
     } else {
-        // Jurídica
-        const date = CALENDARIO_RENTA_PJ_C1[lastDigit] || "Por Definir";
-        renta = `Cuota 1: ${date}`;
+        const diaRenta = DIAS_RENTA_PJ_C1[lastDigit] || 15;
+        renta = `Cuota 1: Abril ${diaRenta}`;
     }
 
-    // 2. IVA PROXIMO
+    // --- 2. RETENCIÓN (Mensual) ---
+    // La retención se declara al mes SIGUIENTE. Si estoy en Febrero, declaro la de Enero.
+    const diaRetencion = DIAS_RETENCION[lastDigit] || 15;
+    const mesVencimientoRet = NOMBRES_MESES[currentMonth];
+    const mesPeriodoRet = currentMonth === 0 ? 'Diciembre' : NOMBRES_MESES[currentMonth - 1];
+    const retencion = `${mesVencimientoRet} ${diaRetencion} (Mes ${mesPeriodoRet})`;
+
+    // --- 3. IVA ---
     let iva = "";
-    if (periodicidadIva === 'bimestral') {
-        const date = CALENDARIO_IVA_BIM1[lastDigit] || "Por Definir";
-        iva = `${date} (Ene-Feb)`;
-    } else {
-        iva = `Mayo 2026 (Cuat. 1)`;
-    }
+    const diaIva = DIAS_IVA[lastDigit] || 15;
 
-    // 3. RETENCIÓN
-    const retencionDate = CALENDARIO_RETENCION_ENE[lastDigit] || "Por Definir";
-    const retencion = `${retencionDate} (Mes Enero)`;
+    if (periodicidadIva === 'bimestral') {
+        // Encontrar el mes bimestral más cercano hacia o desde el actual
+        const proximoMesIvaIndex = MESES_IVA_BIMESTRAL.find(m => m >= currentMonth) ?? 0;
+        const nombreMesIva = NOMBRES_MESES[proximoMesIvaIndex];
+
+        // Calcular los bimestres a los que obedece
+        let periodoIvaDesc = "";
+        if (proximoMesIvaIndex === 2) periodoIvaDesc = "(Ene-Feb)";
+        else if (proximoMesIvaIndex === 4) periodoIvaDesc = "(Mar-Abr)";
+        else if (proximoMesIvaIndex === 6) periodoIvaDesc = "(May-Jun)";
+        else if (proximoMesIvaIndex === 8) periodoIvaDesc = "(Jul-Ago)";
+        else if (proximoMesIvaIndex === 10) periodoIvaDesc = "(Sep-Oct)";
+        else periodoIvaDesc = "(Nov-Dic)";
+
+        iva = `${nombreMesIva} ${diaIva} ${periodoIvaDesc}`;
+    } else {
+        // Cuatrimestral
+        const proximoMesCuatIndex = MESES_IVA_CUATRIMESTRAL.find(m => m >= currentMonth) ?? 0;
+        const nombreMesIva = NOMBRES_MESES[proximoMesCuatIndex];
+
+        let periodoIvaDesc = "";
+        if (proximoMesCuatIndex === 4) periodoIvaDesc = "(Ene-Abr)";
+        else if (proximoMesCuatIndex === 8) periodoIvaDesc = "(May-Ago)";
+        else periodoIvaDesc = "(Sep-Dic)";
+
+        iva = `${nombreMesIva} ${diaIva} ${periodoIvaDesc}`;
+    }
 
     return { renta, iva, retencion };
 };

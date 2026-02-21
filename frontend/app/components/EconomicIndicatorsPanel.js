@@ -39,6 +39,7 @@ export default function EconomicIndicatorsPanel({ isOpen, onClose, sidebarExpand
 
     // Simulador State
     const [salaryBase, setSalaryBase] = useState(1300000);
+    const [aplicaExoneracion, setAplicaExoneracion] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editValues, setEditValues] = useState({});
 
@@ -157,17 +158,41 @@ export default function EconomicIndicatorsPanel({ isOpen, onClose, sidebarExpand
     ).slice(0, 3); // Solo mostrar top 3
 
     // --- CÁLCULOS SIMULADOR LABORAL ---
-    const totalDevengado = salaryBase + (salaryBase <= (indicators.salario_minimo * 2) ? indicators.auxilio_transporte : 0);
+    const aplicaAuxilio = salaryBase <= (indicators.salario_minimo * 2);
+    const valorAuxilio = aplicaAuxilio ? (indicators.auxilio_transporte || 0) : 0;
+    const totalDevengado = salaryBase + valorAuxilio;
+
+    // Empleado
     const saludEmp = salaryBase * 0.04;
     const pensionEmp = salaryBase * 0.04;
     const netoPagar = totalDevengado - saludEmp - pensionEmp;
-    const tieneExoneracion = salaryBase < (10 * indicators.salario_minimo);
+
+    // Empresa - Seguridad Social
+    const tieneExoneracion = aplicaExoneracion;
     const saludCia = tieneExoneracion ? 0 : (salaryBase * 0.085);
     const pensionCia = salaryBase * 0.12;
     const arlCia = salaryBase * 0.00522;
-    const parafiscalesCia = tieneExoneracion ? 0 : (salaryBase * 0.09);
-    const caja = salaryBase * 0.04;
-    const costoTotal = totalDevengado + saludCia + pensionCia + arlCia + (tieneExoneracion ? caja : parafiscalesCia);
+    const totalSeguridadSocial = saludCia + pensionCia + arlCia;
+
+    // Empresa - Parafiscales
+    const cajaCia = salaryBase * 0.04;
+    const senaCia = tieneExoneracion ? 0 : (salaryBase * 0.02);
+    const icbfCia = tieneExoneracion ? 0 : (salaryBase * 0.03);
+    const parafiscalesCia = cajaCia + senaCia + icbfCia;
+
+    // Cargos Empresa (Antes de Provisiones)
+    const cargosAntesDePrestaciones = totalDevengado + totalSeguridadSocial + parafiscalesCia;
+
+    // Empresa - Provisiones
+    const baseProvisiones = salaryBase + valorAuxilio;
+    const provPrima = baseProvisiones * 0.0833;
+    const provCesantias = baseProvisiones * 0.0833;
+    const provIntCesantias = provCesantias * 0.12;
+    const provVacaciones = salaryBase * 0.0417;
+    const totalProvisiones = provPrima + provCesantias + provIntCesantias + provVacaciones;
+
+    // Total Empresa
+    const costoTotalReal = totalDevengado + saludCia + pensionCia + arlCia + parafiscalesCia + totalProvisiones;
 
     return (
         <>
@@ -204,9 +229,9 @@ export default function EconomicIndicatorsPanel({ isOpen, onClose, sidebarExpand
                     {loading ? <div className="text-center py-10 text-gray-400 animate-pulse">Cargando indicadores...</div> : (
                         <>
                             {activeTab === 'laboral' && (
-                                <div className="space-y-6 animate-fadeIn">
+                                <div className="space-y-4 animate-fadeIn pb-10">
                                     <div className="bg-white p-5 rounded-xl shadow-sm border border-indigo-100">
-                                        <h3 className="text-xs font-bold text-indigo-900 uppercase tracking-widest mb-4 flex items-center"><FaCalculator className="mr-2" /> Simulador Costos</h3>
+                                        <h3 className="text-xs font-bold text-indigo-900 uppercase tracking-widest mb-4 flex items-center"><FaCalculator className="mr-2" /> Calculadora Rápida</h3>
                                         <div className="mb-4">
                                             <label className="block text-xs font-medium text-gray-500 mb-1">Salario Base Mensual</label>
                                             <input
@@ -215,15 +240,81 @@ export default function EconomicIndicatorsPanel({ isOpen, onClose, sidebarExpand
                                                 onChange={(e) => setSalaryBase(Number(e.target.value))}
                                                 className="w-full text-right font-mono font-bold text-gray-800 text-lg border-b-2 border-indigo-100 focus:border-indigo-500 outline-none bg-transparent"
                                             />
-                                        </div>
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between items-center p-2 bg-green-50 rounded-lg border border-green-100">
-                                                <span className="text-xs text-green-800 font-medium">Neto a Pagar Empleado</span>
-                                                <span className="font-bold text-green-700">{formatCurrency(netoPagar)}</span>
+                                            <div className="mt-3 flex items-center justify-end gap-2">
+                                                <input
+                                                    type="checkbox"
+                                                    id="exoneracionCheckPanel"
+                                                    checked={aplicaExoneracion}
+                                                    onChange={(e) => setAplicaExoneracion(e.target.checked)}
+                                                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                                                />
+                                                <label htmlFor="exoneracionCheckPanel" className="text-[10px] font-bold text-gray-600 cursor-pointer select-none">
+                                                    Aplicar Exoneración Ley 1607 (Salud, SENA, ICBF)
+                                                </label>
                                             </div>
-                                            <div className="flex justify-between items-center p-2 bg-orange-50 rounded-lg border border-orange-100">
-                                                <span className="text-xs text-orange-800 font-medium">Costo Total Empresa</span>
-                                                <span className="font-bold text-orange-700">{formatCurrency(costoTotal * 1.0833 + indicators.auxilio_transporte)}*</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Liquidacion Empleado */}
+                                    <div className="bg-green-50 rounded-xl border border-green-200 overflow-hidden shadow-sm">
+                                        <div className="p-3 bg-green-100/50 border-b border-green-200 flex justify-between items-center">
+                                            <span className="text-xs font-bold text-green-800 uppercase tracking-wider">Empleado recibe</span>
+                                            <span className="font-bold text-green-700 font-mono">{formatCurrency(netoPagar)}</span>
+                                        </div>
+                                        <div className="p-3 space-y-2 text-[10px] text-green-900">
+                                            <div className="flex justify-between"><span>Salario Base</span><span className="font-mono">{formatCurrency(salaryBase)}</span></div>
+                                            {aplicaAuxilio && <div className="flex justify-between"><span>(+) Aux. Transporte</span><span className="font-mono">{formatCurrency(valorAuxilio)}</span></div>}
+                                            <div className="flex justify-between text-rose-600"><span>(-) Salud (4%)</span><span className="font-mono">-{formatCurrency(saludEmp)}</span></div>
+                                            <div className="flex justify-between text-rose-600"><span>(-) Pensión (4%)</span><span className="font-mono">-{formatCurrency(pensionEmp)}</span></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Costo Empresa */}
+                                    <div className="bg-orange-50 rounded-xl border border-orange-200 overflow-hidden shadow-sm">
+                                        <div className="p-3 bg-orange-100/50 border-b border-orange-200 flex justify-between items-center">
+                                            <span className="text-xs font-bold text-orange-800 uppercase tracking-wider">Costo Real Empresa</span>
+                                            <span className="font-bold text-orange-700 font-mono text-base">{formatCurrency(costoTotalReal)}</span>
+                                        </div>
+                                        <div className="p-4 space-y-4 text-[10px] text-orange-900">
+                                            {/* Salario y Auxilio */}
+                                            <div className="pb-2 border-b border-orange-200/50 space-y-1">
+                                                <div className="font-bold text-orange-800 mb-1">DEVENGADO</div>
+                                                <div className="flex justify-between"><span>Salario Base</span><span className="font-mono">{formatCurrency(salaryBase)}</span></div>
+                                                {aplicaAuxilio && <div className="flex justify-between"><span>Aux. Transporte</span><span className="font-mono">{formatCurrency(valorAuxilio)}</span></div>}
+                                                <div className="flex justify-between font-bold text-orange-900 border-t border-orange-200/50 pt-1 mt-1"><span>Subtotal Devengado</span><span className="font-mono">{formatCurrency(totalDevengado)}</span></div>
+                                            </div>
+
+                                            {/* Seguridad Social */}
+                                            <div className="pb-2 border-b border-orange-200/50 space-y-1">
+                                                <div className="font-bold text-orange-800 mb-1">SEGURIDAD SOCIAL {tieneExoneracion && <span className="text-[8px] bg-emerald-100 text-emerald-700 px-1 py-0.5 rounded ml-1">Exento Ley 1607</span>}</div>
+                                                <div className="flex justify-between"><span>Salud {tieneExoneracion ? '(0%)' : '(8.5%)'}</span><span className="font-mono">{formatCurrency(saludCia)}</span></div>
+                                                <div className="flex justify-between"><span>Pensión (12%)</span><span className="font-mono">{formatCurrency(pensionCia)}</span></div>
+                                                <div className="flex justify-between"><span>ARL (0.522%)</span><span className="font-mono">{formatCurrency(arlCia)}</span></div>
+                                                <div className="flex justify-between font-bold text-orange-900 border-t border-orange-200/50 pt-1 mt-1"><span>Subtotal Seg. Social</span><span className="font-mono">{formatCurrency(totalSeguridadSocial)}</span></div>
+                                            </div>
+
+                                            {/* Parafiscales */}
+                                            <div className="pb-2 border-b border-orange-300/80 space-y-1">
+                                                <div className="font-bold text-orange-800 mb-1">PARAFISCALES</div>
+                                                <div className="flex justify-between"><span>Caja Comp. (4%)</span><span className="font-mono">{formatCurrency(cajaCia)}</span></div>
+                                                <div className="flex justify-between"><span>SENA {tieneExoneracion ? '(0%)' : '(2%)'}</span><span className="font-mono">{formatCurrency(senaCia)}</span></div>
+                                                <div className="flex justify-between"><span>ICBF {tieneExoneracion ? '(0%)' : '(3%)'}</span><span className="font-mono">{formatCurrency(icbfCia)}</span></div>
+                                                <div className="flex justify-between font-bold text-orange-900 border-t border-orange-200/50 pt-1 mt-1"><span>Subtotal Parafiscales</span><span className="font-mono">{formatCurrency(parafiscalesCia)}</span></div>
+
+                                                {/* CARGOS ANTES DE PRESTACIONES */}
+                                                <div className="bg-orange-100/50 p-2 mt-2 rounded">
+                                                    <div className="flex justify-between font-black text-orange-900 text-xs"><span>Cargos antes de Provisiones:</span><span className="font-mono">{formatCurrency(cargosAntesDePrestaciones)}</span></div>
+                                                </div>
+                                            </div>
+
+                                            {/* Provisiones */}
+                                            <div className="space-y-1 pt-1">
+                                                <div className="font-bold text-orange-800 mb-1">PROVISIONES (MENSUALES)</div>
+                                                <div className="flex justify-between"><span>Prima (8.33%)</span><span className="font-mono">{formatCurrency(provPrima)}</span></div>
+                                                <div className="flex justify-between"><span>Cesantías (8.33%)</span><span className="font-mono">{formatCurrency(provCesantias)}</span></div>
+                                                <div className="flex justify-between"><span>Int. Cesantías (1% pm)</span><span className="font-mono">{formatCurrency(provIntCesantias)}</span></div>
+                                                <div className="flex justify-between"><span>Vacaciones (4.17%)</span><span className="font-mono">{formatCurrency(provVacaciones)}</span></div>
+                                                <div className="flex justify-between font-bold text-orange-900 border-t border-orange-200/50 pt-1 mt-1"><span>Subtotal Provisiones</span><span className="font-mono">{formatCurrency(totalProvisiones)}</span></div>
                                             </div>
                                         </div>
                                     </div>
