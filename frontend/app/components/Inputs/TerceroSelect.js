@@ -41,9 +41,18 @@ const TerceroSelect = ({ value, onChange, isDisabled = false }) => {
             ...provided,
             zIndex: 9999, // Flotar sobre otros elementos
         }),
-        option: (provided) => ({
+        option: (provided, state) => ({
             ...provided,
             fontSize: '0.875rem',
+            color: state.isSelected ? 'white' : '#111827', // text-gray-900 (Oscuro y legible siempre)
+            backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+            fontWeight: '600', // Bien negrito como pidió el usuario
+            cursor: 'pointer'
+        }),
+        singleValue: (provided) => ({
+            ...provided,
+            color: '#111827',
+            fontWeight: '700'
         }),
         placeholder: (provided) => ({
             ...provided,
