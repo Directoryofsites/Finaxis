@@ -19,6 +19,8 @@ class IndicadorEconomico(Base):
     # --- FINANCIERO (Valores del momento) ---
     trm = Column(Float, default=0) # Dólar Hoy
     euro = Column(Float, default=0) # Euro Hoy
+    tasa_usura = Column(Float, default=0) # Usura Mensual
     
     # --- METADATA ---
+    fecha_sincronizacion = Column(Date, nullable=True) # Para controlar el Lazy Fetch API
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), default=func.now())

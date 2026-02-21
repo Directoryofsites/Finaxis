@@ -8,6 +8,8 @@ class IndicadorBase(BaseModel):
     uvt: Optional[float] = 0
     trm: Optional[float] = 0
     euro: Optional[float] = 0
+    tasa_usura: Optional[float] = 0
+    fecha_sincronizacion: Optional[datetime] = None
 
 class IndicadorUpdate(IndicadorBase):
     pass

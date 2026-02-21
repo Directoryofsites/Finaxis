@@ -18,5 +18,14 @@ export const indicadoresApiService = {
             console.error("Error updating indicadores", error);
             throw error;
         }
+    },
+
+    syncForce: async (vigencia) => {
+        try {
+            return await apiService.post(`/indicadores/${vigencia}/sync_force`);
+        } catch (error) {
+            console.error("Error force syncing indicadores", error);
+            throw error;
+        }
     }
 };

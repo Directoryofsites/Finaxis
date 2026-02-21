@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaMoneyBillWave, FaLandmark, FaChartLine, FaEdit, FaSave, FaTimes, FaCalculator, FaCoins, FaCalendarCheck, FaSearch, FaExternalLinkAlt } from 'react-icons/fa';
+import { FaMoneyBillWave, FaLandmark, FaChartLine, FaEdit, FaSave, FaTimes, FaCalculator, FaCoins, FaCalendarCheck, FaSearch, FaExternalLinkAlt, FaSync, FaPercent } from 'react-icons/fa';
 import { indicadoresApiService } from '@/lib/indicadoresApiService';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/app/context/AuthContext';
@@ -33,6 +33,7 @@ export default function EconomicIndicatorsPanel({ isOpen, onClose, sidebarExpand
         uvt: TAX_CONSTANTS_2026.UVT, // Default 2026
         trm: 4100, // Approx
         euro: 4400,
+        tasa_usura: 28.5, // Approx (placeholder)
         sancion_minima: TAX_CONSTANTS_2026.UVT * 10
     });
 
@@ -124,9 +125,27 @@ export default function EconomicIndicatorsPanel({ isOpen, onClose, sidebarExpand
             trm: indicators.trm,
             salario_minimo: indicators.salario_minimo,
             auxilio_transporte: indicators.auxilio_transporte,
-            uvt: indicators.uvt
+            uvt: indicators.uvt,
+            tasa_usura: indicators.tasa_usura || 0
         });
         setIsEditing(true);
+    };
+
+    const handleSyncForce = async () => {
+        setLoading(true);
+        try {
+            const freshData = await indicadoresApiService.syncForce(currentYear);
+            toast.success("TRM y Euro actualizados (SFC y Frankfurter)");
+
+            const newData = { ...indicators, ...freshData };
+            localStorage.setItem(`indicadores_${currentYear}`, JSON.stringify(newData));
+            setIndicators(newData);
+
+        } catch (err) {
+            toast.error("Error al sincronizar con Datos Abiertos de Colombia");
+        } finally {
+            setLoading(false);
+        }
     };
 
     // --- CALCULOS TRIBUTARIOS ---
@@ -156,7 +175,12 @@ export default function EconomicIndicatorsPanel({ isOpen, onClose, sidebarExpand
                 {/* Header */}
                 <div className="h-16 bg-gradient-to-r from-gray-900 to-gray-800 text-white flex items-center justify-between px-6">
                     <div>
-                        <h2 className="font-bold text-lg flex items-center gap-2"><FaChartLine className="text-yellow-400" /> Indicadores {currentYear}</h2>
+                        <h2 className="font-bold text-lg flex items-center gap-2">
+                            <FaChartLine className="text-yellow-400" /> Indicadores {currentYear}
+                            <button onClick={handleSyncForce} title="Actualizar Datos Oficiales" className="text-indigo-300 hover:text-white transition-colors ml-1" disabled={loading}>
+                                <FaSync className={loading ? "animate-spin" : ""} size={12} />
+                            </button>
+                        </h2>
                         <p className="text-[10px] text-gray-300">TRM Hoy: <span className="text-yellow-300 font-mono font-bold text-sm tracking-wide">{formatCurrency(indicators.trm)}</span></p>
                     </div>
                     <button onClick={onClose} className="text-gray-400 hover:text-white"><FaTimes /></button>
@@ -323,15 +347,23 @@ export default function EconomicIndicatorsPanel({ isOpen, onClose, sidebarExpand
 
                             {activeTab === 'financiero' && (
                                 <div className="space-y-6 animate-fadeIn">
-                                    <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-6 rounded-xl border border-emerald-200 text-center relative overflow-hidden">
-                                        <FaMoneyBillWave className="absolute -right-4 -bottom-4 text-6xl text-emerald-200 opacity-50 transform rotate-12" />
-                                        <h3 className="text-sm font-bold text-emerald-800 uppercase mb-2">Dólar TRM Hoy</h3>
+                                    <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-6 rounded-xl border border-emerald-200 text-center relative overflow-hidden group">
+                                        <FaMoneyBillWave className="absolute -right-4 -bottom-4 text-6xl text-emerald-200 opacity-50 transform rotate-12 transition-transform group-hover:scale-110" />
+                                        <h3 className="text-sm font-bold text-emerald-800 uppercase mb-2">Dólar TRM Oficial (Hoy)</h3>
                                         <div className="text-4xl font-mono font-black text-emerald-700 tracking-tight">{formatCurrency(indicators.trm)}</div>
+                                        <span className="text-[9px] text-emerald-600 block mt-2">Fuente: Datos Abiertos (SFC)</span>
                                     </div>
-                                    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-xl border border-blue-200 text-center relative overflow-hidden">
-                                        <FaCoins className="absolute -right-4 -bottom-4 text-6xl text-blue-200 opacity-50 transform rotate-12" />
+                                    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-xl border border-blue-200 text-center relative overflow-hidden group">
+                                        <FaCoins className="absolute -right-4 -bottom-4 text-6xl text-blue-200 opacity-50 transform rotate-12 transition-transform group-hover:scale-110" />
                                         <h3 className="text-sm font-bold text-blue-800 uppercase mb-2">Euro Hoy</h3>
                                         <div className="text-4xl font-mono font-black text-blue-700 tracking-tight">{formatCurrency(indicators.euro)}</div>
+                                        <span className="text-[9px] text-blue-600 block mt-2">Fuente: Frankfurter (BCE)</span>
+                                    </div>
+                                    <div className="bg-gradient-to-br from-orange-50 to-red-50 p-6 rounded-xl border border-orange-200 text-center relative overflow-hidden group">
+                                        <FaPercent className="absolute -right-4 -bottom-4 text-6xl text-orange-200 opacity-50 transform rotate-12 transition-transform group-hover:scale-110" />
+                                        <h3 className="text-sm font-bold text-orange-800 uppercase mb-2">Tasa de Usura Mensual</h3>
+                                        <div className="text-4xl font-mono font-black text-orange-700 tracking-tight">{indicators.tasa_usura || 0}%</div>
+                                        <span className="text-[9px] text-orange-600 block mt-2">EA (Efectivo Anual) Modificable</span>
                                     </div>
                                 </div>
                             )}
@@ -340,9 +372,15 @@ export default function EconomicIndicatorsPanel({ isOpen, onClose, sidebarExpand
                                 <div className="mt-8 border-t border-gray-200 pt-4 animate-slideInUp">
                                     <h4 className="font-bold text-gray-700 mb-3 text-sm flex items-center gap-2"><FaEdit /> Editar Variables Globales</h4>
                                     <div className="space-y-3">
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-500">TRM (Dólar)</label>
-                                            <input type="number" value={editValues.trm} onChange={(e) => setEditValues({ ...editValues, trm: Number(e.target.value) })} className="w-full p-2 border border-gray-300 rounded text-sm" />
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-500">TRM Manual</label>
+                                                <input type="number" value={editValues.trm} onChange={(e) => setEditValues({ ...editValues, trm: Number(e.target.value) })} className="w-full p-2 border border-gray-300 rounded text-sm" />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-500">Usura (%)</label>
+                                                <input type="number" step="0.01" value={editValues.tasa_usura} onChange={(e) => setEditValues({ ...editValues, tasa_usura: Number(e.target.value) })} className="w-full p-2 border border-gray-300 rounded text-sm" />
+                                            </div>
                                         </div>
                                         <div>
                                             <label className="text-xs font-bold text-gray-500">UVT {currentYear}</label>

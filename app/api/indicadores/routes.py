@@ -22,3 +22,16 @@ def update_indicadores(
     """Actualiza indicadores (TRM, UVT, etc). Requiere autenticación."""
     # Podríamos agregar check de rol admin aqui si es critico
     return service.update_indicadores(db, vigencia, data)
+
+@router.post("/{vigencia}/sync_force", response_model=schema.IndicadorResponse)
+def force_sync_indicadores(
+    vigencia: int, 
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """Fuerza la sincronización de TRM y Euro con las APIs gubernamentales e internacionales."""
+    obj = service.get_by_vigencia(db, vigencia)
+    obj = service.sync_indicadores_api(obj)
+    db.commit()
+    db.refresh(obj)
+    return obj
