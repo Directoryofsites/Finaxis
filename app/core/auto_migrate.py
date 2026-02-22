@@ -135,6 +135,16 @@ def run_auto_migrations():
                 if col not in cols_terceros:
                     migrations.append(('terceros', col, col_type))
 
+            # indicadores_economicos
+            cols_indicadores = get_existing_columns('indicadores_economicos')
+            indicadores_cols = [
+                ("tasa_usura", "FLOAT"),
+                ("fecha_sincronizacion", "DATE")
+            ]
+            for col, col_type in indicadores_cols:
+                if col not in cols_indicadores:
+                    migrations.append(('indicadores_economicos', col, col_type))
+
             # 3. Ejecutar migraciones en un bloque BEGIN/COMMIT
             if migrations:
                 with engine.begin() as trans_conn:
