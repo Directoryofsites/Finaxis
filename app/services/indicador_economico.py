@@ -57,16 +57,16 @@ def sync_indicadores_api(obj: model.IndicadorEconomico) -> model.IndicadorEconom
     except Exception as e:
         print(f"Error fetching TRM: {e}")
 
-    # 2. Fetch Euro (Frankfurter API)
+    # 2. Fetch Euro (ExchangeRate-API)
     try:
-        url_euro = "https://api.frankfurter.app/latest?from=EUR&to=COP"
+        url_euro = "https://open.er-api.com/v6/latest/EUR"
         resp2 = requests.get(url_euro, timeout=5)
         if resp2.status_code == 200:
             data2 = resp2.json()
             if "rates" in data2 and "COP" in data2["rates"]:
                 euro_val = float(data2["rates"]["COP"])
                 obj.euro = euro_val
-                print(f"EURO actualizado desde Frankfurter: {euro_val}")
+                print(f"EURO actualizado desde ER-API: {euro_val}")
     except Exception as e:
         print(f"Error fetching EURO: {e}")
 
