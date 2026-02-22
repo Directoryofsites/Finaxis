@@ -15,6 +15,16 @@ from fastapi.middleware.cors import CORSMiddleware
 # --- INICIO: LÓGICA DE AUTO-CREACIÓN Y SEMBRADO ---
 # Se movió al evento de startup para evitar bloqueos en el arranque del worker
 async def run_startup_tasks():
+    print("Iniciando secuencia de arranque de base de datos...")
+    
+    # 1. Ejecutar auto-migraciones de forma INCONDICIONAL (CRÍTICO PARA PRODUCCIÓN)
+    try:
+        from app.core.auto_migrate import run_auto_migrations
+        run_auto_migrations()
+    except Exception as e:
+        print(f"ERROR CRÍTICO en auto-migraciones: {e}")
+
+    # 2. Ejecutar Seeds y creación de tablas si RUN_SEEDS está activo
     if os.getenv("RUN_SEEDS", "true").lower() == "true":
         print("Ejecutando tareas de mantenimiento de DB (Startup)...")
         from app.core.database import engine, Base
@@ -24,13 +34,7 @@ async def run_startup_tasks():
             # Crear tablas faltantes
             Base.metadata.create_all(bind=engine)
             
-            # NUEVO: Auto-migraciones simples
-            try:
-                from app.core.auto_migrate import run_auto_migrations
-                run_auto_migrations()
-            except Exception as e:
-                print(f"ERROR CRÍTICO en auto-migraciones: {e}")
-
+            # Sembrar datos maestros
             seed_database()
         except Exception as e:
             print(f"Error en tareas de startup (Mantenimiento DB): {e}")
