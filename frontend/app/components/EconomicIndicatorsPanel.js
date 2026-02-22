@@ -81,11 +81,18 @@ export default function EconomicIndicatorsPanel({ isOpen, onClose, sidebarExpand
                 }
             } catch (e) { console.error("LS Error", e); }
 
-            // 3. Try API
+            // 3. Try API (Absoluta Prioridad si es mayor que 0)
             try {
                 const data = await indicadoresApiService.getByVigencia(currentYear);
                 if (data && Object.keys(data).length > 0) {
-                    finalData = { ...finalData, ...data };
+                    const cleanData = { ...data };
+                    // Excluir ceros de la respuesta API para no pisar valores base reales
+                    Object.keys(cleanData).forEach(k => {
+                        if (cleanData[k] === 0 || cleanData[k] === 0.0) {
+                            delete cleanData[k];
+                        }
+                    });
+                    finalData = { ...finalData, ...cleanData };
                 }
             } catch (apiErr) {
                 console.warn("API Fetch Error (using defaults)", apiErr);
