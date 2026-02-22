@@ -45,7 +45,8 @@ def sync_indicadores_api(obj: model.IndicadorEconomico) -> model.IndicadorEconom
     # 1. Fetch TRM (Socrata API - Banco de la República / Superfinanciera)
     try:
         # endpoint api.datos.gov.co, dataset: 32sa-8pi3 (Tasa de Cambio Representativa del Mercado)
-        url_trm = "https://www.datos.gov.co/resource/32sa-8pi3.json?$limit=1&$order=vigenciadesde DESC"
+        # Nota estricta Socrata: El símbolo $ DEBE enviarse codificado como %24 para evitar el error "Unrecognized arguments []"
+        url_trm = "https://www.datos.gov.co/resource/32sa-8pi3.json?%24limit=1&%24order=vigenciadesde%20DESC"
         resp = requests.get(url_trm, timeout=5)
         if resp.status_code == 200:
             data = resp.json()
