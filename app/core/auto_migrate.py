@@ -37,6 +37,7 @@ def run_auto_migrations():
             cols_tasas = get_existing_columns('tasas_impuesto')
             cols_documentos = get_existing_columns('documentos')
             cols_terceros = get_existing_columns('terceros')
+            cols_usuarios = get_existing_columns('usuarios')
             
             # 2. Definir migraciones pendientes
             migrations = []
@@ -66,11 +67,23 @@ def run_auto_migrations():
                 ("saldo_facturas_venta", "INTEGER DEFAULT 0"),
                 ("saldo_documentos_soporte", "INTEGER DEFAULT 0"),
                 ("saldo_notas_credito", "INTEGER DEFAULT 0"),
-                ("fecha_vencimiento_plan", "DATE")
+                ("fecha_vencimiento_plan", "DATE"),
+                # --- CUOTAS IA ---
+                ("limite_mensajes_ia_mensual", "INTEGER DEFAULT 0"),
+                ("consumo_mensajes_ia_actual", "INTEGER DEFAULT 0"),
+                ("fecha_reinicio_cuota_ia", "DATE")
             ]
             for col, col_type in empresa_lite_cols:
                 if col not in cols_empresas:
                     migrations.append(('empresas', col, col_type))
+
+            # usuarios (WHATSAPP)
+            usuario_cols = [
+                ("whatsapp_number", "VARCHAR(50)")
+            ]
+            for col, col_type in usuario_cols:
+                if col not in cols_usuarios:
+                    migrations.append(('usuarios', col, col_type))
 
             # productos
             producto_cols = [
