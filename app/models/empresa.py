@@ -59,6 +59,11 @@ class Empresa(Base):
     # Control de Cupos (Administrativo)
     limite_registros_mensual = Column(Integer, nullable=True, default=1000)
 
+    # --- CONTROL DE CUOTAS DE INTELIGENCIA ARTIFICIAL ---
+    limite_mensajes_ia_mensual = Column(Integer, nullable=False, default=0)
+    consumo_mensajes_ia_actual = Column(Integer, nullable=False, default=0)
+    fecha_reinicio_cuota_ia = Column(Date, nullable=True)
+
     # Plantillas (Standardization)
     is_template = Column(Boolean, default=False)
     template_category = Column(String(50), nullable=True) # 'RETAIL', 'SERVICIOS', 'PH'

@@ -76,6 +76,9 @@ def update_user(db: Session, user: models_usuario.Usuario, user_update: schemas_
         user.email = user_update.email
     if user_update.nombre_completo is not None:
         user.nombre_completo = user_update.nombre_completo
+    if user_update.whatsapp_number is not None:
+        # Prevent tracking arbitrary strings; empty string overrides to None
+        user.whatsapp_number = user_update.whatsapp_number if user_update.whatsapp_number.strip() else None
     
     if user_update.password:
         user.password_hash = get_password_hash(user_update.password)

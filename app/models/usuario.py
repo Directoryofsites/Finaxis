@@ -18,6 +18,7 @@ class Usuario(Base):
     id = Column(Integer, primary_key=True, index=True)
     empresa_id = Column(Integer, ForeignKey('empresas.id'), nullable=True) # Contexto activo o Empresa Holding
     email = Column(String(255), unique=True, index=True, nullable=False)
+    whatsapp_number = Column(String(50), nullable=True, unique=True, index=True) # Para interacción con la IA vía Meta
     password_hash = Column(String, nullable=False)
     
     nombre_completo = Column(String(255), nullable=True)

@@ -401,6 +401,10 @@ app.include_router(indicadores_router.router, prefix="/api", tags=["Indicadores 
 from app.api.api_v1.endpoints import facturacion_electronica
 app.include_router(facturacion_electronica.router, prefix="/api/fe", tags=["Facturación Electrónica DIAN"])
 
+# --- MODULO WHATSAPP (META API) ---
+from app.api.whatsapp import routes as whatsapp_routes
+app.include_router(whatsapp_routes.router, prefix="/api/whatsapp", tags=["WhatsApp"])
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8002)

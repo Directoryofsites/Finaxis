@@ -72,6 +72,9 @@ class EmpresaUpdate(BaseModel):
     saldo_documentos_soporte: Optional[int] = None
     saldo_notas_credito: Optional[int] = None
 
+    # --- CUOTAS IA ---
+    limite_mensajes_ia_mensual: Optional[int] = None
+
 class EmpresaLimiteUpdate(BaseModel):
     limite_registros: Optional[int] = Field(None, ge=0)
     saldo_facturas_venta: Optional[int] = None
@@ -86,6 +89,11 @@ class EmpresaBase(BaseModel):
     limite_registros_mensual: Optional[int] = None # Exposed for portal
     consumo_actual: Optional[int] = 0 # Calculated field
     
+    # --- CUOTAS IA ---
+    limite_mensajes_ia_mensual: Optional[int] = 0
+    consumo_mensajes_ia_actual: Optional[int] = 0
+    fecha_reinicio_cuota_ia: Optional[date] = None
+
     # --- NUEVOS CAMPOS DE LECTURA ---
     direccion: Optional[str] = None
     telefono: Optional[str] = None

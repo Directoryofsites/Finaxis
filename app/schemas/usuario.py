@@ -27,6 +27,7 @@ class UserCreateInCompany(BaseModel):
 
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
+    whatsapp_number: Optional[str] = None
     password: Optional[str] = Field(None, min_length=6)
     nombre_completo: Optional[str] = None
     roles_ids: Optional[List[int]] = None
@@ -34,6 +35,7 @@ class UserUpdate(BaseModel):
 class UserBasic(BaseModel):
     id: int
     email: str
+    whatsapp_number: Optional[str] = None
     nombre_completo: Optional[str] = None
     empresa_id: Optional[int] = None
     
