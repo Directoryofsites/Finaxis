@@ -5,7 +5,7 @@ import { useAuth } from '@/app/context/AuthContext';
 import { apiService } from '@/lib/apiService';
 import { toast } from 'react-toastify';
 import {
-    FaBuilding, FaUserLock, FaSave, FaExclamationTriangle
+    FaBuilding, FaUserLock, FaSave, FaExclamationTriangle, FaUser
 } from 'react-icons/fa';
 
 export default function PerfilConfigPage() {
@@ -28,6 +28,11 @@ export default function PerfilConfigPage() {
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
+    });
+
+    // Estado Usuario
+    const [usuarioData, setUsuarioData] = useState({
+        whatsapp_number: ''
     });
 
     // Estado Template
@@ -58,7 +63,21 @@ export default function PerfilConfigPage() {
         if (user?.empresaId) {
             loadEmpresa();
         }
+        if (user?.id) {
+            loadUsuario();
+        }
     }, [user]);
+
+    const loadUsuario = async () => {
+        try {
+            const res = await apiService.get('/usuarios/me');
+            setUsuarioData({
+                whatsapp_number: res.data.whatsapp_number || ''
+            });
+        } catch (error) {
+            console.error("Error loading usuario:", error);
+        }
+    };
 
     const loadEmpresa = async () => {
         try {
@@ -74,6 +93,22 @@ export default function PerfilConfigPage() {
         } catch (error) {
             console.error("Error loading empresa:", error);
             toast.error("Error al cargar datos de empresa");
+        }
+    };
+
+    const handleSaveUsuario = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+        try {
+            await apiService.put(`/usuarios/${user.id}`, {
+                whatsapp_number: usuarioData.whatsapp_number
+            });
+            toast.success("Perfil personal actualizado correctamente");
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al actualizar perfil personal");
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -151,6 +186,12 @@ export default function PerfilConfigPage() {
                         className={`text-left px-4 py-3 rounded-lg font-medium flex items-center gap-3 transition-colors ${activeTab === 'empresa' ? 'bg-indigo-50 text-indigo-700' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
                     >
                         <FaBuilding /> Datos Empresa
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('usuario')}
+                        className={`text-left px-4 py-3 rounded-lg font-medium flex items-center gap-3 transition-colors ${activeTab === 'usuario' ? 'bg-indigo-50 text-indigo-700' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                    >
+                        <FaUser /> Perfil Personal
                     </button>
                     <button
                         onClick={() => setActiveTab('seguridad')}
@@ -290,6 +331,43 @@ export default function PerfilConfigPage() {
                                 </div>
                             </div>
                         </div>
+                    )}
+
+                    {activeTab === 'usuario' && (
+                        <form onSubmit={handleSaveUsuario} className="space-y-6 max-w-xl animate-fadeIn">
+                            <h3 className="text-lg font-bold text-gray-800 border-b pb-2">Perfil Personal y Enlace IA</h3>
+
+                            <div className="bg-indigo-50 border-l-4 border-indigo-500 p-4 mb-4 rounded-r-lg">
+                                <p className="text-sm text-indigo-700">
+                                    Ingrese su número de celular personal con código de país (Ej: <strong>573001234567</strong>) para autorizar este número a realizar consultas mediante <strong>Inteligencia Artificial por WhatsApp</strong>. Sólo los números almacenados en perfiles activos tendrán acceso al bot de la empresa.
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1 flex justify-between">
+                                    <span>Celular Autorizado de WhatsApp</span>
+                                    <span className="text-xs font-normal text-gray-500 mt-1">(Sin el símbolo +)</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={usuarioData.whatsapp_number}
+                                    onChange={e => setUsuarioData({ ...usuarioData, whatsapp_number: e.target.value })}
+                                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow text-gray-800"
+                                    placeholder="Ejemplo: 573234259925"
+                                />
+                                <p className="text-xs text-gray-400 mt-1 pl-1">Asegúrese de agregar el código de área (57 para Colombia).</p>
+                            </div>
+
+                            <div className="flex justify-start pt-4 border-t mt-4">
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className="bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-bold hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-100 transition-all flex items-center gap-2 shadow hover:shadow-md"
+                                >
+                                    {isLoading ? 'Guardando...' : <><FaSave /> Guardar Cambios</>}
+                                </button>
+                            </div>
+                        </form>
                     )}
 
                     {activeTab === 'seguridad' && (
