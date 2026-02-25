@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capítulo 100: Asistente Inteligente y Reportes con IA</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: var(--secondary-color);
+            margin-top: 1.5em;
+        }
+
+        h1 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #d63384;
+            font-weight: bold;
+        }
+
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 0;
+            padding-left: 20px;
+            color: #475569;
+            background-color: #f1f5f9;
+            padding: 10px 20px;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .example-box {
+            background-color: #eef2ff;
+            border-left: 4px solid #4f46e5;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .example-title {
+            font-weight: bold;
+            color: #4f46e5;
+            margin-bottom: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+
+        .badge-saldos {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #dbfafe;
+            color: #0891b2;
+            font-size: 0.8em;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+
+        .badge-movimiento {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #fef3c7;
+            color: #d97706;
+            font-size: 0.8em;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <a href="javascript:history.back()" class="back-link">← Volver</a>
+
+        <div class="content">
+            <h1>Asistente Inteligente y Reportes de IA</h1>
+            <p>Aprende a comunicarte con el asesor virtual de ContaPY (vía voz, texto o WhatsApp) para generar reportes
+                al instante con máxima precisión, sin necesidad de navegar por menús.</p>
+            <hr />
+
+            <h2>1. Estructura Básica de un Comando</h2>
+            <p>Nuestra Inteligencia Artificial funciona identificando palabras clave dentro de tus instrucciones.
+                Existen tres variables principales que determinan qué reporte entrega el sistema:</p>
+
+            <ul>
+                <li><strong>Movimiento:</strong> Determina si quieres ver el detalle cronológico diario <span
+                        class="badge-movimiento">AUXILIARES</span> o un simple acumulado <span
+                        class="badge-saldos">SALDOS GLOBALES</span>.</li>
+                <li><strong>Tercero:</strong> Nombres de clientes, proveedores, NITs o la palabra genérica "terceros".
+                </li>
+                <li><strong>Cuenta:</strong> Palabras relacionadas al Plan de Cuentas (Arrendamientos, Parqueadero,
+                    Sueldos, Honorarios, Bancos, etc). Solo detecta cuentas de <strong>Nivel Ejecutable</strong>
+                    (Auxiliares).</li>
+            </ul>
+
+            <blockquote>
+                <p><strong>Truco:</strong> Puedes añadir períodos de tiempo a cualquier comando para acotar la búsqueda.
+                    Ejemplo: <code>"en Febrero de 2026"</code>.</p>
+            </blockquote>
+
+            <hr />
+
+            <h2>2. Regla de Oro: ¿Digo "Movimiento" o no?</h2>
+            <p>El uso de la palabra <strong>"Movimiento"</strong>, <strong>"Detalle"</strong>, o <strong>"Libro
+                    Auxiliar"</strong> es el timón que dirige a la Inteligencia Artificial.</p>
+
+            <div class="example-box">
+                <div class="example-title">Escenario 1: Quiero ver SALDOS TOTALES (Sin detalle)</div>
+                <p>Si <strong>NO</strong> pronuncias la palabra "Movimiento", el sistema asumirá que quieres ver el
+                    total adeudado o a favor de forma rápida y te enviará al reporte de <strong>Relación de Saldos
+                        Básica</strong>.</p>
+                <ul>
+                    <li>❌ <strong>Incorrecto:</strong> <code>"Dame los arrendamientos de Juan"</code> (Traerá un simple
+                        saldo).</li>
+                    <li>✅ <strong>Correcto:</strong> <code>"Saldos de cafetería y sus terceros"</code></li>
+                    <li>✅ <strong>Correcto:</strong> <code>"Cartera del mes de enero de Parqueadero"</code> (Omitiste
+                        movimiento: Trae Saldos).</li>
+                </ul>
+            </div>
+
+            <div class="example-box">
+                <div class="example-title">Escenario 2: Quiero ver EL DETALLE CRONOLÓGICO (Transacciones)</div>
+                <p>Para investigar "Qué facturas pagó" o "en qué fechas", debes usar imperativamente la palabra
+                    <strong>"Movimiento"</strong>. Esto obliga al radar a ir al módulo <strong>Auxiliar de
+                        Terceros</strong>.</p>
+                <ul>
+                    <li>✅ <strong>Correcto:</strong> <code>"Movimiento de sueldos y sus terceros del mes pasado"</code>
+                    </li>
+                    <li>✅ <strong>Correcto:</strong> <code>"Movimiento del tercero Pablo Pérez"</code></li>
+                    <li>✅ <strong>Correcto:</strong> <code>"Detalla el movimiento de honorarios de enero"</code></li>
+                </ul>
+            </div>
+
+            <hr />
+
+            <h2>3. Dominando "Sus Cuentas" vs "Sus Terceros"</h2>
+            <p>A veces, una misma palabra (como <em>"Parqueadero"</em>) puede existir en la base de datos grabada como
+                un Cliente (Tercero) o grabada como una Cuenta Contable de Gastos/Ingresos (Nivel Auxiliar).</p>
+            <p>¿Cómo destrabo a la inteligencia artificial para que sepa exactamente a qué me refiero? Usando el
+                <strong>Sufijo de Intención</strong> cruzado:</p>
+
+            <h3>Técnica A: "... y sus cuentas"</h3>
+            <p>Si usas esta frase al final, la IA sabe inmediatamente que la palabra confusa era un <strong>Tercero
+                    Dueño</strong>, y que quieres ver todas las cuentas que él ha afectado.</p>
+            <p>🗣️ <strong>Comando:</strong> <code>"Movimiento de parqueadero lavadero LINA 24 y sus cuentas"</code></p>
+            <ul>
+                <li><strong>¿Qué entiende el sistema?</strong> Descarta la cuenta 51. Va al directorio de Terceros,
+                    busca a "Lina 24", abre la página del Auxiliar y agrupa el reporte por Tercero, listando debajo qué
+                    cuentas tocó.</li>
+            </ul>
+
+            <h3>Técnica B: "... y sus terceros"</h3>
+            <p>Si usas esta frase al final, la IA deduce inmediatamente que la palabra confusa es una <strong>Cuenta
+                    Contable Ejecutable</strong> que fue afectada por mucha gente, y que deseas ver una lista general
+                enfocada en la cuenta.</p>
+            <p>🗣️ <strong>Comando:</strong> <code>"Informe de movimiento de Sueldos y sus terceros de enero"</code></p>
+            <p>🗣️ <strong>Comando:</strong> <code>"Movimiento de Parqueadero y sus terceros"</code></p>
+            <ul>
+                <li><strong>¿Qué entiende el sistema?</strong> Entiende que "Parqueadero" o "Sueldos" se refieren a las
+                    subcuentas del Plan de Cuentas (porque mencionaste <em>y sus terceros</em>). Abre la vista inversa,
+                    pone la Cuenta como protagonista, y glosa debajo todos los empleados o clientes que movieron esa
+                    cuenta específica.</li>
+            </ul>
+
+            <hr />
+
+            <h2>4. Descarga Automática (El Auto-PDF)</h2>
+            <p>La integración con IA está diseñada para darte resultados tangibles sin usar el ratón. Absolutamente
+                <strong>todos</strong> los comandos que cruzan esta Matrix generarán de forma autónoma e invisible un
+                archivo en formato PDF en una nueva pestaña o te lo descargará de manera silenciosa.</p>
+            <p>Si lo solicitas desde el módulo de WhatsApp, la Inteligencia Artificial grabará en el sistema este PDF y
+                te enviará un resumen ejecutivo directo a tu chat móvil.</p>
+
+            <hr />
+
+            <h2>5. Resumen de Prácticas Magistrales</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>¿Qué Deseas?</th>
+                        <th>Estructura Recomendada de Comando</th>
+                        <th>Pantalla Destino de IA</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Ver las transacciones financieras de una **Cuenta Específica** tocada por **varias
+                            personas**</td>
+                        <td><code>"Movimiento de [Cuenta] y sus terceros en [Mes]"</code><br><em>Ej: Movimiento de
+                                Honorarios y sus terceros</em></td>
+                        <td>Auxiliar de Terceros<br><strong>(Agrupado por Cuenta)</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Ver las transacciones financieras de una **Sola Persona** en **varias cuentas**</td>
+                        <td><code>"Movimiento de [Nombre Tercero] y sus cuentas en [Mes]"</code><br><em>Ej: Movimiento
+                                de Juan Pérez y sus cuentas</em></td>
+                        <td>Auxiliar de Terceros<br><strong>(Agrupado por Tercero)</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Ver solo el consolidado resumido (El Total Final)</td>
+                        <td><code>"Saldos de [Cuenta] y [Tercero]"</code><br><em>Ej: Saldos de Donaciones y sus
+                                terceros</em></td>
+                        <td>Relación de Saldos Básicos</td>
+                    </tr>
+                    <tr>
+                        <td>Ver qué pasó en una cuenta sin importar quién lo hizo</td>
+                        <td><code>"Movimiento de [Cuenta]"</code><br><em>Ej: Movimiento de bancos</em></td>
+                        <td>Auxiliar de Cuenta General</td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+
+        <footer>
+            Sistema Finaxis - Manual de Usuario (Módulo Inteligencia Artificial)
+        </footer>
+    </div>
+
+</body>
+
+</html>
