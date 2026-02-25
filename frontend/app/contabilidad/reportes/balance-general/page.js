@@ -21,7 +21,11 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
 import { useAIAutomation } from '../../../hooks/useAIAutomation';
-import BalanceGraphics from './BalanceGraphics';
+import dynamic from 'next/dynamic';
+
+// Deshabilitamos el pre-renderizado del lado del servidor (SSR) para los gráficos
+// ya que Recharts o librerías DOM lanzarán "Node is not defined" en Vercel Build.
+const BalanceGraphics = dynamic(() => import('./BalanceGraphics'), { ssr: false });
 
 // Estilos Reusables (Manual v2.0)
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
