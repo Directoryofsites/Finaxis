@@ -474,37 +474,28 @@ function ReporteTerceroCuentaContent() {
 
               setSelectedCuentas(ids);
 
-              // Auto-ejecutar AHORA que tenemos tercero, fechas y cuentas
-              if (aiFechaInicio && aiFechaFin) {
-                setTimeout(() => {
-                  toast.success("⚡ Ejecutando consulta...");
-                  document.getElementById('btn-consultar-reporte')?.click();
-                  setTimeout(() => window.history.replaceState(null, '', window.location.pathname), 2000); // Limpieza diferida
-                }, 1500);
+              // Auto-ejecutar AHORA que tenemos tercero, fechas (propias o default) y cuentas
+              const isAiTrigger = searchParams.get('trigger') === 'ai' || searchParams.get('auto_pdf') === 'true';
+              if (isAiTrigger) {
+                setShouldAutoRun(true);
               }
             } else {
               // Si pidió cuenta pero no encontró, advertir al usuario pero EJECUTAR con todas
               setError(`No se encontró la cuenta "${aiCuenta}". Se seleccionaron todas.`);
               toast.warn(`⚠️ Cuenta "${aiCuenta}" no encontrada. Mostrando todas.`);
               setSelectedCuentas(['all']);
-              if (aiFechaInicio && aiFechaFin) {
-                setTimeout(() => {
-                  toast.success("⚡ Ejecutando consulta (Todas las cuentas)...");
-                  document.getElementById('btn-consultar-reporte')?.click();
-                  setTimeout(() => window.history.replaceState(null, '', window.location.pathname), 2000);
-                }, 2000); // Un poco más de tiempo para que el usuario lea el warning
+              const isAiTrigger = searchParams.get('trigger') === 'ai' || searchParams.get('auto_pdf') === 'true';
+              if (isAiTrigger) {
+                setShouldAutoRun(true);
               }
             }
           } else {
             // Comportamiento normal (o lista vacía)
             setSelectedCuentas(['all']);
-            // Ejecutar siempre que tengamos fechas
-            if (aiFechaInicio && aiFechaFin) {
-              setTimeout(() => {
-                toast.success("⚡ Ejecutando consulta...");
-                document.getElementById('btn-consultar-reporte')?.click();
-                setTimeout(() => window.history.replaceState(null, '', window.location.pathname), 2000);
-              }, 1500);
+            // Ejecutar siempre que haya sido invocado por IA
+            const isAiTrigger = searchParams.get('trigger') === 'ai' || searchParams.get('auto_pdf') === 'true';
+            if (isAiTrigger) {
+              setShouldAutoRun(true);
             }
           }
 
@@ -743,7 +734,9 @@ function ReporteTerceroCuentaContent() {
         const res = await apiService.get('/reports/tercero-cuenta/get-signed-url', { params });
         const token = res.data.signed_url_token;
         const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL || ''}/api/reports/tercero-cuenta/imprimir?signed_token=${token}`;
+
         window.open(pdfUrl, '_blank');
+
       } else {
         // MODO INVERSO
         const params = {
@@ -758,6 +751,7 @@ function ReporteTerceroCuentaContent() {
         const res = await apiService.get('/reports/auxiliar-inverso/get-signed-url', { params });
         const token = res.data.signed_url_token;
         const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL || ''}/api/reports/auxiliar-inverso/imprimir?signed_token=${token}`;
+
         window.open(pdfUrl, '_blank');
       }
 

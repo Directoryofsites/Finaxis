@@ -291,7 +291,11 @@ export function useSmartSearch() {
         } catch (error) {
             console.error(error);
             setIsThinking(false);
-            toast.error("Error conectando con el cerebro AI.");
+            if (error.response?.status === 403) {
+                toast.error(error.response.data.detail || "Cuota de IA agotada. Contacta soporte.");
+            } else {
+                toast.error("Error conectando con el cerebro AI.");
+            }
         }
     };
 
@@ -300,38 +304,106 @@ export function useSmartSearch() {
         const p = data.parameters || {};
         const queryLower = (text || query || '').toLowerCase();
 
-        // --- INTELLIGENCE: GASTOS / INGRESOS ---
-        const isGastos = queryLower.includes('gasto') || queryLower.includes('egreso') || queryLower.includes('pago a');
-        const isIngresos = queryLower.includes('ingreso') || queryLower.includes('venta') || queryLower.includes('recuperacion');
+        // --- MATRIZ BOOLEANA DE SIMBIOSIS (IA DETERMINISTICA) ---
+        // Exclusivo para comandos contables genéricos de reportes
+        const accountingActions = ['generar_reporte_movimientos', 'generar_relacion_saldos', 'generar_auxiliar_cuenta'];
 
-        // --- INTERCEPTOR: ESTADO DE CUENTA CARTERA / SALDOS ---
-        const isSaldosIntent = queryLower.includes('saldo') || queryLower.includes('cuanto debe') || queryLower.includes('deuda') || isGastos || isIngresos;
-        const isMovimientosIntent = queryLower.includes('movimiento') || queryLower.includes('detalle') || queryLower.includes('auxiliar');
+        if (accountingActions.includes(actionName)) {
+            // 1. Extraer Slots (Variables Booleanas)
+            let terceroIdentified = p.tercero || p.tercero_nombre || p.ai_tercero || p.nombre_tercero;
+            let cuentaIdentified = p.cuenta || p.ai_cuenta || p.cuenta_nombre || p.concepto || p.cuenta_codigo;
 
-        if ((isSaldosIntent || isMovimientosIntent) && (actionName === 'generar_reporte_movimientos' || actionName === 'consultar_documento' || actionName === 'generar_relacion_saldos')) {
-            const terceroIdentified = p.tercero || p.tercero_nombre || p.ai_tercero || p.nombre_tercero;
+            // --- AUTO-CORRECCIÓN INTELIGENTE DE ENTIDADES CRUZADAS (SIMBIOSIS INVERSA) ---
+            // Detectar si el usuario explicitly declaró la propiedad inversa ("y sus cuentas" vs "y sus terceros")
+            const includesSusCuentas = queryLower.includes('sus cuentas') || queryLower.includes('las cuentas');
+            const includesSusTerceros = queryLower.includes('sus terceros') || queryLower.includes('los terceros') || queryLower.includes('sus clientes') || queryLower.includes('sus proveedores');
+
+            // Extractor de emergencia del texto crudo (Caza de la entidad central que la IA pudo mutilar)
+            // Ejemplo: "movimiento de parqueadero lavadero lina 24 y sus cuentas"
+            let rawEntity = null;
+            const matchEntity = queryLower.match(/(?:movimiento de|movimientos de|auxiliar de|detalle de|saldos de)\s+(.+?)\s+(?:y sus|y las|y los)/);
+            if (matchEntity && matchEntity[1]) {
+                const wordsToRemove = ['de', 'reporte', 'del'];
+                rawEntity = matchEntity[1].split(' ').filter(w => !wordsToRemove.includes(w)).join(' ').trim();
+            }
+
+            if (includesSusCuentas) {
+                // Si dice "y sus cuentas", la entidad principal de la oración dicta a un TERCERO dueño.
+                if (rawEntity) terceroIdentified = rawEntity;
+                else if (cuentaIdentified && !terceroIdentified) terceroIdentified = cuentaIdentified;
+                cuentaIdentified = null; // Para que traiga todas las cuentas de este tercero
+            } else if (includesSusTerceros) {
+                // Si dice "y sus terceros", la entidad principal de la oración dicta a una CUENTA general.
+                if (rawEntity) cuentaIdentified = rawEntity;
+                else if (terceroIdentified && !cuentaIdentified) cuentaIdentified = terceroIdentified;
+                terceroIdentified = null; // Para que traiga todos los terceros de esta cuenta
+            }
+
+            // TRUCO INTELIGENTE PARA CUENTAS DE 1 DIGITO
+            // Si la IA devuelve una cuenta genérica muy corta ('4' o '5'),
+            // pero el usuario dictó una palabra clave clara de cuenta, intentamos rescatarla.
+            if (!includesSusCuentas && (!cuentaIdentified || cuentaIdentified.length <= 2) && queryLower) {
+                const words = queryLower.replace(/[^\w\sáéíóú]/g, '').split(' ');
+                const ignore = ['movimiento', 'movimientos', 'sus', 'y', 'de', 'para', 'las', 'los', 'el', 'la', 'tercero', 'terceros', 'auxiliar', 'detalle', 'saldo', 'saldos', 'reporte', 'informe'];
+                const candidato = words.find(w => w.length >= 4 && !ignore.includes(w));
+                if (candidato) cuentaIdentified = candidato;
+            }
+
+            const hasTerceroEntity = !!terceroIdentified;
+            const hasTerceroIntent = queryLower.includes('tercero') || queryLower.includes('terceros') || queryLower.includes('cliente') || queryLower.includes('proveedor') || includesSusTerceros;
+            const hasTercero = hasTerceroEntity || hasTerceroIntent;
+
+            const hasCuenta = !!cuentaIdentified;
+            const hasMovimiento = queryLower.includes('movimiento') || queryLower.includes('detalle') || queryLower.includes('auxiliar') || queryLower.includes('historial') || queryLower.includes('libro');
+
+            // Preparar parámetros base
             const params = new URLSearchParams();
-
-            if (terceroIdentified) params.set('tercero', terceroIdentified);
-            if (isGastos) params.set('cuenta', '5');
-            else if (isIngresos) params.set('cuenta', '4');
-            else if (p.cuenta || p.ai_cuenta) params.set('cuenta', p.cuenta || p.ai_cuenta);
-
+            if (hasTercero && terceroIdentified) params.set('tercero', terceroIdentified);
+            if (hasCuenta && cuentaIdentified) params.set('cuenta', cuentaIdentified);
             if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
             if (p.fecha_fin || p.fecha_corte) params.set('fecha_fin', p.fecha_fin || p.fecha_corte);
 
             params.set('trigger', 'ai');
-            const wantsPdf = p.formato === 'PDF' || (typeof p.formato === 'string' && p.formato.toLowerCase().includes('pdf'));
+            const wantsPdf = true; // Auto PDF forzado por regla de oro
             if (wantsPdf) params.set('auto_pdf', 'true');
 
-            if (isMovimientosIntent) {
+            // --- APLICACIÓN DE LA MATRIZ DE ENRUTAMIENTO ---
+
+            // ESCENARIO A: Pide "Movimiento" y hay "Tercero" (y opcionalmente Cuenta)
+            if (hasMovimiento && hasTercero) {
+                // Evaluamos sub-regla de prioridad (Quién va primero o modo inverso)
+                let mode = '';
+                if (p.vista === 'por_cuenta' || includesSusTerceros || (!hasTerceroEntity && hasTerceroIntent && hasCuenta)) {
+                    mode = 'cuenta_first';
+                }
+                if (mode) params.set('mode', mode);
+
                 router.push(`/contabilidad/reportes/tercero-cuenta?${params.toString()}`);
-                toast.success(`IA: Consultando Movimientos (${isGastos ? 'Gastos' : isIngresos ? 'Ingresos' : 'Detallados'})...`);
-            } else {
-                router.push(`/contabilidad/reportes/relacion-saldos?${params.toString()}`);
-                toast.success(`IA: Consultando Saldos (${isGastos ? 'Gastos' : isIngresos ? 'Ingresos' : 'General'})...`);
+                toast.success(`IA: Consultando Movimientos (Auxiliar de Terceros)...`);
+                return;
             }
-            return;
+
+            // ESCENARIO C: Pide "Movimiento" pero NO hay "Tercero" (Auxiliar Puro)
+            if (hasMovimiento && !hasTercero && hasCuenta) {
+                router.push(`/contabilidad/reportes/auxiliar-cuenta?${params.toString()}`);
+                toast.success(`IA: Consultando Auxiliar de Cuenta...`);
+                return;
+            }
+
+            // ESCENARIO B: NO pide "Movimiento" pero hay "Tercero" (o cuenta relacional) (Variante Pura de Saldos)
+            if (!hasMovimiento && (hasTercero || (hasCuenta && p.vista !== 'general'))) {
+                router.push(`/contabilidad/reportes/relacion-saldos?${params.toString()}`);
+                toast.success(`IA: Consultando Relación de Saldos...`);
+                return;
+            }
+
+            // FALLBACK DEFAULT SI NO CAE EN LA MATRIZ:
+            if (!hasMovimiento && !hasTercero && hasCuenta) {
+                // Solo cuenta sin movimiento = Balance de prueba de esa cuenta
+                router.push(`/contabilidad/reportes/balance-de-prueba?${params.toString()}`);
+                toast.success(`IA: Consultando Saldos (Balance)...`);
+                return;
+            }
         }
 
         // --- INTERCEPTOR: MOVIMIENTOS INVENTARIO ---
@@ -384,69 +456,6 @@ export function useSmartSearch() {
             else if (modulo.includes('inventar')) router.push('/admin/inventario');
             else if (modulo.includes('nomin')) router.push('/nomina/liquidar');
             else toast.success(`IA: Navegando a ${p.modulo}`);
-        } else if (actionName === 'generar_reporte_movimientos' || actionName === 'generar_auxiliar_cuenta') {
-            const params = new URLSearchParams();
-            if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
-            if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
-
-            // Extracción robusta de CUENTA
-            const cuentaVal = p.cuenta || p.cuenta_nombre || p.ai_cuenta || p.concepto || p.cuenta_codigo;
-            if (cuentaVal) params.set('cuenta', cuentaVal);
-
-            const wantsPdf = true; // ALWAYS PDF
-            if (wantsPdf) params.set('auto_pdf', 'true');
-            if (p.whatsapp_destino) { params.set('wpp', p.whatsapp_destino); }
-            if (p.email_destino) { params.set('email', p.email_destino); }
-
-            // Extracción robusta de TERCERO
-            const terceroVal = p.tercero || p.tercero_nombre || p.ai_tercero || p.nombre_tercero;
-            const includesTerceroIntent = queryLower.includes('tercero');
-
-            if (terceroVal || includesTerceroIntent) {
-                if (terceroVal) params.set('tercero', terceroVal);
-
-                // Si tenemos cuenta pero no un tercero específico, es probable que quiera "Por Cuenta (Inverso)"
-                if ((p.cuenta || p.ai_cuenta) && !terceroVal) {
-                    params.set('mode', 'cuenta_first');
-                }
-
-                router.push(`/contabilidad/reportes/tercero-cuenta?${params.toString()}`);
-                toast.success('IA: Procesando Auxiliar por Tercero...');
-            } else {
-                router.push(`/contabilidad/reportes/auxiliar-cuenta?${params.toString()}`);
-                toast.success('IA: Procesando Auxiliar por Cuenta...');
-            }
-        } else if (actionName === 'generar_balance_prueba') {
-            const params = new URLSearchParams();
-            if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
-            if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
-
-            // JUEZ: Divorcio del Nivel 1. Si no viene nivel o si es 1, forzamos a 7.
-            const forcedNivel = (p.nivel && parseInt(p.nivel) > 1) ? p.nivel : '7';
-            params.set('nivel', forcedNivel);
-            const wantsPdf = true; // ALWAYS PDF
-            if (wantsPdf) params.set('auto_pdf', 'true');
-            if (p.whatsapp_destino) { params.set('wpp', p.whatsapp_destino); }
-            router.push(`/contabilidad/reportes/balance-de-prueba?${params.toString()}`);
-            toast.success('IA: Configurando Balance de Prueba...');
-        } else if (actionName === 'generar_relacion_saldos') {
-            const params = new URLSearchParams();
-            if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
-            if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
-
-            const cuentaVal = p.cuenta || p.cuenta_nombre || p.ai_cuenta || p.concepto || p.cuenta_codigo;
-            if (cuentaVal) params.set('cuenta', cuentaVal);
-
-            const terceroVal = p.tercero || p.tercero_nombre || p.ai_tercero || p.nombre_tercero;
-            if (terceroVal) params.set('tercero', terceroVal);
-
-            params.set('trigger', 'ai');
-
-            const wantsPdf = true; // ALWAYS PDF
-            if (wantsPdf) params.set('auto_pdf', 'true');
-
-            router.push(`/contabilidad/reportes/relacion-saldos?${params.toString()}`);
-            toast.success('IA: Consultando Relación de Saldos...');
         } else if (actionName === 'generar_balance_general' || actionName === 'generar_estado_situacion_financiera') {
             const params = new URLSearchParams();
             // Fallback: Si no viene fecha_corte, intenta usar fecha_fin o fecha_inicio (o hoy)

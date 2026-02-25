@@ -10,6 +10,7 @@ from app.services import reports as reports_service
 from app.models.plan_cuenta import PlanCuenta
 from app.models.tercero import Tercero
 from app.schemas import reporte_balance_prueba as schemas_bce
+from app.services.ai_context_helper import apply_default_ai_context
 
 logger = logging.getLogger(__name__)
 
@@ -21,14 +22,15 @@ async def summarize_data_for_whatsapp(raw_data: dict, question: str) -> str:
 Eres un experto asistente financiero llamado "Finaxis AI" conversando por WhatsApp.
 El dueño o contador de la empresa te preguntó o solicitó: "{question}"
 
-El sistema de base de datos extrajo este JSON con la información real:
+En base a la información extraída de su base de datos, aquí están los SUMATORIAS / TOTALES DEL REPORTE SOLICITADO:
 {json.dumps(raw_data, default=str)}
 
 Tu misión:
-- Resume los datos y responde la pregunta de forma natural, clara y muy amigable.
+- Resume los totales principales y responde la pregunta de forma natural, clara y muy amigable.
+- NUNCA listes transacciones fila por fila. Menciona los saldos globales y cifras macro.
 - Formatea para WhatsApp: Usa *negritas* y emojis adecuados (💸, 📊, 📈).
 - Muestra el dinero formateado (ej: *$1,500,000*). Asume pesos colombianos.
-- Extrae la Utilidad/Pérdida (si viene en el dict), Ingresos, y Gastos principales sin abrumar con toda la lista.
+- Dile al usuario que si desea ver el detalle transacción por transacción, debe generar el reporte en la plataforma (o a través del documento adjunto).
 - Si todo está en 0, indícale amablemente que no hay movimientos en ese periodo.
 - ¡Sé directo y servicial!
 """
@@ -41,12 +43,12 @@ Tu misión:
         return completion.choices[0].message.content.strip()
     except Exception as e:
         logger.error(f"Error AI summary: {e}")
-        return "Obtuve los datos, pero falló la generación de lenguaje. Te dejo un adelanto técnico: " + str(raw_data)[:500]
+        return "Obtuve los datos, pero falló la generación de lenguaje. Te dejo el resumen técnico: " + str(raw_data)[:500]
 
 async def dispatch_whatsapp_command(ai_response: dict, text_body: str, empresa_id: int, user_id: int, db: Session) -> str:
     """
     Busca la intención del LLM ('name') y ejecuta la función contable de lectura subyacente.
-    Luego manda a ChatGPT a resumir el JSON resultante.
+    Luego manda a ChatGPT a resumir el JSON resultante (ahora con soporte de Totales reales sin truncar info).
     """
     try:
         if "error" in ai_response:
@@ -55,18 +57,21 @@ async def dispatch_whatsapp_command(ai_response: dict, text_body: str, empresa_i
         action_name = ai_response.get("name")
         params = ai_response.get("parameters", {})
         
-        # Si NO es un comando, es un Toast o Unknown intent
         if not action_name:
-            # En la vieja lógica, el agent devolvía "respuesta" o "message"
             return str(ai_response.get("respuesta", ai_response.get("message", ai_response)))
 
-        safe_log = f"WHATSAPP_DISPATCHER: Ejecutando {action_name} con parametros {params}".encode('ascii', 'replace').decode()
+        # -------------------------------------------------------------------
+        # NUEVO PARADIGMA: Inyectar Contexto y "Defaults inteligentes" al Dict
+        # -------------------------------------------------------------------
+        params = apply_default_ai_context(params, empresa_id, db)
+
+        safe_log = f"WHATSAPP_DISPATCHER: Ejecutando {action_name} con parametros sanitizados {params}".encode('ascii', 'replace').decode()
         logger.info(safe_log)
 
         # 1. ESTADO DE RESULTADOS (Ingresos y Gastos)
         if action_name == "generar_estado_resultados":
-            f_ini_str = params.get("fecha_inicio", "2020-01-01")
-            f_fin_str = params.get("fecha_fin", date.today().isoformat())
+            f_ini_str = params.get("fecha_inicio")
+            f_fin_str = params.get("fecha_fin")
             try:
                 f_ini = date.fromisoformat(f_ini_str)
                 f_fin = date.fromisoformat(f_fin_str)
@@ -75,23 +80,37 @@ async def dispatch_whatsapp_command(ai_response: dict, text_body: str, empresa_i
                 f_fin = date.today()
                 
             data = documento_service.generate_income_statement_report(db, empresa_id, f_ini, f_fin)
-            return await summarize_data_for_whatsapp(data, text_body)
+            # Para WhatsApp AI, solo enviamos los grupos de totales
+            summary_data = {
+                "Ingresos_Totales": data.get("ingresos", {}).get("total_ingresos", 0),
+                "Costos_Totales": data.get("costos", {}).get("total_costos", 0),
+                "Utilidad_Bruta": data.get("utilidad_bruta", 0),
+                "Gastos_Totales": data.get("gastos", {}).get("total_gastos", 0),
+                "Utilidad_Neta": data.get("utilidad_neta", 0)
+            }
+            return await summarize_data_for_whatsapp(summary_data, text_body)
             
         # 2. BALANCE GENERAL
         elif action_name == "generar_estado_situacion_financiera":
-            f_corte_str = params.get("fecha_corte", date.today().isoformat())
+            f_corte_str = params.get("fecha_corte")
             try:
                 f_corte = date.fromisoformat(f_corte_str)
             except ValueError:
                 f_corte = date.today()
                 
             data = documento_service.generate_balance_sheet_report(db, empresa_id, f_corte)
-            return await summarize_data_for_whatsapp(data, text_body)
+            summary_data = {
+                "Total_Activo": data.get("total_activo", 0),
+                "Total_Pasivo": data.get("total_pasivo", 0),
+                "Total_Patrimonio": data.get("total_patrimonio", 0),
+                "Ecuacion_Contable": "balancea" if data.get("total_activo", 0) == (data.get("total_pasivo", 0) + data.get("total_patrimonio", 0)) else "descuadre detectado"
+            }
+            return await summarize_data_for_whatsapp(summary_data, text_body)
 
         # 3. RELACIÓN DE SALDOS (Terceros y Cuentas)
         elif action_name == "generar_relacion_saldos":
-            f_ini_str = params.get("fecha_inicio", "2020-01-01")
-            f_fin_str = params.get("fecha_fin", date.today().isoformat())
+            f_ini_str = params.get("fecha_inicio")
+            f_fin_str = params.get("fecha_fin")
             try:
                 f_ini = date.fromisoformat(f_ini_str)
                 f_fin = date.fromisoformat(f_fin_str)
@@ -99,7 +118,6 @@ async def dispatch_whatsapp_command(ai_response: dict, text_body: str, empresa_i
                 f_ini = date(2020, 1, 1)
                 f_fin = date.today()
 
-            # Intentar buscar el ID de la cuenta por el nombre/código enviado
             cuenta_param = params.get("cuenta", "")
             cuenta_ids = []
             if cuenta_param:
@@ -110,7 +128,6 @@ async def dispatch_whatsapp_command(ai_response: dict, text_body: str, empresa_i
                 if db_cuenta:
                     cuenta_ids = [db_cuenta.id]
 
-            # Intentar buscar el ID del tercero si viene
             tercero_param = params.get("tercero", "")
             tercero_ids = []
             if tercero_param:
@@ -127,16 +144,23 @@ async def dispatch_whatsapp_command(ai_response: dict, text_body: str, empresa_i
                 "cuenta_ids": cuenta_ids,
                 "tercero_ids": tercero_ids
             }
-            data = reports_service.generate_relacion_saldos_report(db, empresa_id, filtros_saldos)
-            # Acortamos lista si es muy larga para el resumen
-            if len(data) > 30:
-                data = data[:30]
-            return await summarize_data_for_whatsapp(data, text_body)
+            data_list = reports_service.generate_relacion_saldos_report(db, empresa_id, filtros_saldos)
+            
+            # NUEVO: En vez de truncar las primeras 30, calculamos el total consolidado 
+            total_saldo_filtrado = sum([float(item.get("saldo_final", 0)) for item in data_list])
+            top_3 = data_list[:3] # Muestra solo el top 3 de los responsables como máximo detalle
+            
+            summary_data = {
+                "Saldo_Total_Encontrado": total_saldo_filtrado,
+                "Filas_Involucradas": len(data_list),
+                "Mayores_involucrados_Muestra": top_3
+            }
+            return await summarize_data_for_whatsapp(summary_data, text_body)
 
         # 4. BALANCE DE PRUEBA
         elif action_name == "generar_balance_prueba":
-            f_ini_str = params.get("fecha_inicio", date(date.today().year, date.today().month, 1).isoformat())
-            f_fin_str = params.get("fecha_fin", date.today().isoformat())
+            f_ini_str = params.get("fecha_inicio")
+            f_fin_str = params.get("fecha_fin")
             try:
                 f_ini = date.fromisoformat(f_ini_str)
                 f_fin = date.fromisoformat(f_fin_str)
@@ -147,21 +171,23 @@ async def dispatch_whatsapp_command(ai_response: dict, text_body: str, empresa_i
             filtros_bp = schemas_bce.FiltrosBalancePrueba(
                 fecha_inicio=f_ini,
                 fecha_fin=f_fin,
-                nivel_maximo=params.get("nivel", 3), # Nivel 3 para que no sea gigante
+                nivel_maximo=params.get("nivel", 3),
                 filtro_cuentas="CON_SALDO_O_MOVIMIENTO"
             )
             data_raw = reports_service.generate_balance_de_prueba_report(db, empresa_id, filtros_bp)
-            # Transformar Pydantic a dict para el sumariador
-            data = {
-                "filas": [f.dict() for f in data_raw["filas"][:40]],
-                "totales": data_raw["totales"].dict()
+            
+            # Extraer solo el consolidado
+            summary_data = {
+                "resumen_totales": data_raw["totales"].dict() if data_raw.get("totales") else {},
+                "aviso": "Reporte extenso. Estos son los resultados consolidados globales."
             }
-            return await summarize_data_for_whatsapp(data, text_body)
+            return await summarize_data_for_whatsapp(summary_data, text_body)
 
         # 5. SALUDOS O COMANDOS NO ENCONTRADOS
         else:
-            return f"He comprendido que deseas la función '{action_name}', pero aún no tengo los reportes de ese tipo integrados completamente en WhatsApp. Por favor descárgalos en la interfaz web."
+            return f"He comprendido que buscas la función '{action_name}', pero te recomiendo generar este reporte directamente en la plataforma web para un máximo nivel de detalle."
             
     except Exception as e:
         logger.error(f"Error en dispatch_whatsapp_command: {e}", exc_info=True)
-        return "❌ Ocurrió un error al buscar los datos en los libros contables. Intenta preguntar de otra manera."
+        return "❌ Ocurrió un error al consultar tus datos en los libros contables. Asegúrate de pedir un reporte o saldo válido."
+

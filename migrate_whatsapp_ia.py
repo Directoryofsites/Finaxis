@@ -3,7 +3,7 @@ from app.core.database import engine
 
 def upgrade():
     with engine.begin() as conn:
-        print("🔍 Iniciando migración de base de datos...")
+        print("--- Iniciando migracion de base de datos ---")
         
         try:
             # 1. Tabla Usuarios: Columna whatsapp_number
@@ -11,9 +11,9 @@ def upgrade():
             if not result.fetchone():
                 conn.execute(text("ALTER TABLE usuarios ADD COLUMN whatsapp_number VARCHAR(50);"))
                 conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_usuarios_whatsapp_number ON usuarios (whatsapp_number);"))
-                print("✅ Columna 'whatsapp_number' agregada a 'usuarios'.")
+                print("OK: Columna 'whatsapp_number' agregada a 'usuarios'.")
             else:
-                print("ℹ️ La columna 'whatsapp_number' ya existe.")
+                print("INFO: La columna 'whatsapp_number' ya existe.")
 
             # 2. Tabla Empresas: Columnas de IA
             columns_to_add = [
@@ -26,11 +26,11 @@ def upgrade():
                 result = conn.execute(text(f"SELECT column_name FROM information_schema.columns WHERE table_name='empresas' AND column_name='{col_name}';"))
                 if not result.fetchone():
                     conn.execute(text(f"ALTER TABLE empresas ADD COLUMN {col_name} {col_type};"))
-                    print(f"✅ Columna '{col_name}' agregada a 'empresas'.")
+                    print(f"OK: Columna '{col_name}' agregada a 'empresas'.")
                 else:
-                    print(f"ℹ️ La columna '{col_name}' ya existe.")
+                    print(f"INFO: La columna '{col_name}' ya existe.")
 
-            print("\n🎊 ¡Migración completada con éxito!")
+            print("\n!!! Migracion completada con exito !!!")
             
         except Exception as e:
             print(f"❌ Error durante la migración: {e}")

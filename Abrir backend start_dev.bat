@@ -4,8 +4,8 @@ echo      INICIANDO SISTEMA FINAXIS
 echo ==========================================
 
 echo 1. Iniciando Backend (Python/FastAPI) en puerto 8002...
-:: Usamos -m uvicorn para asegurar que encuentre el modulo 'app' correctamente
-start "Backend Finaxis (8002)" cmd /k "python -m uvicorn app.main:app --reload --port 8002 --host 127.0.0.1"
+:: Usamos -m uvicorn para asegurar que encuentre el modulo 'app' correctamente e ignoramos frontend para evitar crash de observador de archivos
+start "Backend Finaxis (8002)" cmd /k "python -m uvicorn app.main:app --reload --reload-exclude "frontend" --reload-exclude "node_modules" --port 8002 --host 127.0.0.1"
 
 echo 2. Iniciando Frontend (Next.js) en puerto 3000...
 cd frontend

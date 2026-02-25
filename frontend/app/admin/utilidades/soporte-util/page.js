@@ -43,7 +43,8 @@ function FormularioEditarEmpresa({ empresa, onFinished, onCancel }) {
         is_lite_mode: false,
         saldo_facturas_venta: 0,
         saldo_documentos_soporte: 0,
-        saldo_notas_credito: 0
+        saldo_notas_credito: 0,
+        limite_mensajes_ia_mensual: 0
     });
     const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
     const [isProcessing, setIsProcessing] = useState(false);
@@ -60,7 +61,8 @@ function FormularioEditarEmpresa({ empresa, onFinished, onCancel }) {
                 is_lite_mode: empresa.is_lite_mode || false,
                 saldo_facturas_venta: empresa.saldo_facturas_venta || 0,
                 saldo_documentos_soporte: empresa.saldo_documentos_soporte || 0,
-                saldo_notas_credito: empresa.saldo_notas_credito || 0
+                saldo_notas_credito: empresa.saldo_notas_credito || 0,
+                limite_mensajes_ia_mensual: empresa.limite_mensajes_ia_mensual || 0
             });
         }
     }, [empresa]);
@@ -77,8 +79,15 @@ function FormularioEditarEmpresa({ empresa, onFinished, onCancel }) {
         e.preventDefault();
         setIsProcessing(true);
         setMensaje({ texto: '', tipo: '' });
+
+        // FORZAR CASTEO A INTEGER PARA EVITAR RECHAZO DEL BACKEND Y ERRORES DE STRING
+        const payload = {
+            ...formData,
+            limite_mensajes_ia_mensual: parseInt(formData.limite_mensajes_ia_mensual, 10) || 0
+        };
+
         try {
-            const empresaActualizada = await updateEmpresa(empresa.id, formData);
+            const empresaActualizada = await updateEmpresa(empresa.id, payload);
             setMensaje({ texto: 'Empresa actualizada con éxito.', tipo: 'success' });
             onFinished(empresaActualizada.data);
         } catch (error) {
@@ -136,6 +145,18 @@ function FormularioEditarEmpresa({ empresa, onFinished, onCancel }) {
                     <div>
                         <label className="block text-xs font-medium text-gray-500 uppercase">Saldo Notas Crédito</label>
                         <input type="number" name="saldo_notas_credito" value={formData.saldo_notas_credito} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-blue-300 rounded-md shadow-sm bg-white" />
+                    </div>
+                </div>
+            </div>
+
+            {/* --- SECCIÓN INTELIGENCIA ARTIFICIAL --- */}
+            <div className="bg-purple-50 p-4 rounded-md border border-purple-100 mt-4">
+                <h4 className="text-sm font-bold text-purple-800 mb-3 border-b border-purple-200 pb-1">Configuración Inteligencia Artificial (ChatGPT/WhatsApp)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 uppercase">Límite Mensual Consultas IA</label>
+                        <input type="number" name="limite_mensajes_ia_mensual" value={formData.limite_mensajes_ia_mensual} onChange={handleChange} placeholder="0 para desactivar" className="mt-1 block w-full px-3 py-2 border border-purple-300 rounded-md shadow-sm bg-white" />
+                        <p className="text-xs text-purple-600 mt-1">Coloca 0 si no deseas que la empresa tenga acceso a la IA inteligente.</p>
                     </div>
                 </div>
             </div>
@@ -332,7 +353,7 @@ function ModalGestionarEmpresa({ empresa, onClose, onDataChange }) {
     );
 }
 
-function GestionEmpresasPanel({ onDataChange, onOpenModal }) {
+function GestionEmpresasPanel({ onDataChange, onOpenModal, refreshTrigger }) {
     // --- ESTADO LOCAL PARA BÚSQUEDA Y PAGINACIÓN ---
     const [empresas, setEmpresas] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -360,7 +381,7 @@ function GestionEmpresasPanel({ onDataChange, onOpenModal }) {
             fetchEmpresas();
         }, 500);
         return () => clearTimeout(timer);
-    }, [searchText, roleFilter, showTemplates, page, selectedAccountant]);
+    }, [searchText, roleFilter, showTemplates, page, selectedAccountant, refreshTrigger]);
 
     // NUEVO: Cargar lista de contadores cuando se cambia a la pestaña CONTADOR
     useEffect(() => {
@@ -776,6 +797,7 @@ function SoporteUtilContent() {
 
     const [activeTab, setActiveTab] = useState('gestionSoporte');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
     // CHANGE: Store the full object directly to avoid lookup issues if dashboardData is stale/incomplete
     const [selectedEmpresa, setSelectedEmpresa] = useState(null);
 
@@ -930,7 +952,11 @@ function SoporteUtilContent() {
 
                     {activeTab === 'gestionEmpresas' && (
                         <GestionEmpresasPanel
-                            onDataChange={fetchDashboardData}
+                            refreshTrigger={refreshTrigger}
+                            onDataChange={() => {
+                                fetchDashboardData();
+                                setRefreshTrigger(prev => prev + 1);
+                            }}
                             onOpenModal={(empresa) => {
                                 setSelectedEmpresa(empresa);
                                 setIsModalOpen(true);
@@ -995,6 +1021,7 @@ function SoporteUtilContent() {
                     }}
                     onDataChange={() => {
                         fetchDashboardData();
+                        setRefreshTrigger(prev => prev + 1);
                         setIsModalOpen(false);
                         setSelectedEmpresa(null); // Force close to refresh potential stale data references
                     }}

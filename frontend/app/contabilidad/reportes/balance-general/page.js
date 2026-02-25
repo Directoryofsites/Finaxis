@@ -12,13 +12,16 @@ import {
     FaLandmark,
     FaChartPie,
     FaExclamationTriangle,
-    FaBook
+    FaBook,
+    FaChartBar,
+    FaTable
 } from 'react-icons/fa';
 
 import { toast } from 'react-toastify';
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
 import { useAIAutomation } from '../../../hooks/useAIAutomation';
+import BalanceGraphics from './BalanceGraphics';
 
 // Estilos Reusables (Manual v2.0)
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
@@ -47,8 +50,9 @@ function BalanceGeneralContent() {
     const [error, setError] = useState('');
     const [filtros, setFiltros] = useState({
         fecha_corte: new Date().toISOString().split('T')[0],
-        nivel: 'auxiliar' // 'auxiliar', 'mayor', 'clasificado'
+        nivel: 'clasificado' // Siempre consolidado (NIIF)
     });
+    const [activeTab, setActiveTab] = useState('classic'); // 'classic', 'graphics'
     const [isPageReady, setPageReady] = useState(false);
 
     // Automation State
@@ -186,6 +190,27 @@ function BalanceGeneralContent() {
         );
     }
 
+    // --- CÁLCULOS DINÁMICOS PARA EVITAR SECCIONES VACÍAS ---
+    const activosCorrientes = (reporte?.clasificado_activo?.corriente || []).filter(item => item.codigo && item.codigo.length > 1);
+    const activosNoCorrientes = (reporte?.clasificado_activo?.no_corriente || []).filter(item => item.codigo && item.codigo.length > 1);
+    const pasivosCorrientes = (reporte?.clasificado_pasivo?.corriente || []).filter(item => item.codigo && item.codigo.length > 1);
+    const pasivosNoCorrientes = (reporte?.clasificado_pasivo?.no_corriente || []).filter(item => item.codigo && item.codigo.length > 1);
+    const patrimonioArr = (reporte?.patrimonio || []).filter(item => item.codigo && item.codigo.length > 1);
+
+    const sumTotalActivoCorriente = activosCorrientes.reduce((acc, curr) => acc + curr.saldo, 0);
+    const sumTotalActivoNoCorriente = activosNoCorrientes.reduce((acc, curr) => acc + curr.saldo, 0);
+    const sumTotalPasivoCorriente = pasivosCorrientes.reduce((acc, curr) => acc + curr.saldo, 0);
+    const sumTotalPasivoNoCorriente = pasivosNoCorrientes.reduce((acc, curr) => acc + curr.saldo, 0);
+    const sumTotalPatrimonioBase = patrimonioArr.reduce((acc, curr) => acc + curr.saldo, 0);
+
+    const utilidadCalc = reporte?.utilidad_ejercicio || 0;
+    const totalActivosCalc = sumTotalActivoCorriente + sumTotalActivoNoCorriente;
+    const totalPasivosCalc = sumTotalPasivoCorriente + sumTotalPasivoNoCorriente;
+    const totalPatrimonioCalc = sumTotalPatrimonioBase + utilidadCalc;
+    const totalPasivoPatrimonioCalc = totalPasivosCalc + totalPatrimonioCalc;
+    const ecuacionCuadra = Math.abs(totalActivosCalc - totalPasivoPatrimonioCalc) < 1;
+    // ----------------------------------------------------
+
     // Componente para una fila de cuenta
     const AccountRow = ({ codigo, nombre, saldo, colorClass = "text-gray-700" }) => (
         <div className="flex justify-between items-center py-2 border-b border-gray-50 hover:bg-gray-50 transition-colors px-2 rounded">
@@ -251,17 +276,10 @@ function BalanceGeneralContent() {
                         </div>
 
                         <div className="md:col-span-1">
-                            <label htmlFor="presentationMode" className={labelClass}>Presentación</label>
-                            <select
-                                id="nivel"
-                                value={filtros.nivel}
-                                onChange={(e) => setFiltros(prev => ({ ...prev, nivel: e.target.value }))}
-                                className={inputClass}
-                            >
-                                <option value="auxiliar">Detallado (Auxiliar)</option>
-                                <option value="mayor">Resumen (Cuenta Mayor)</option>
-                                <option value="clasificado">Clasificado (Corriente / No Corriente)</option>
-                            </select>
+                            <label htmlFor="presentationMode" className={labelClass}>Formato de Presentación</label>
+                            <div className="w-full px-4 py-2 border border-blue-100 bg-blue-50 text-blue-800 font-bold rounded-lg shadow-sm text-sm">
+                                ESTÁNDAR NIIF (Corporativo)
+                            </div>
                         </div>
 
                         <div className="md:col-span-2 flex flex-col md:flex-row justify-end gap-3">
@@ -300,8 +318,38 @@ function BalanceGeneralContent() {
                     )}
                 </div>
 
-                {/* CARD 2: REPORTE (RESULTADOS) - ESTILO PROFESIONAL "AUDITADO" */}
                 {reporte && (
+                    <div className="mb-6 flex justify-center w-full print:hidden">
+                        <div className="bg-white p-1 rounded-xl shadow-sm border border-gray-200 inline-flex transition-all">
+                            <button
+                                onClick={() => setActiveTab('classic')}
+                                className={`
+                                    px-6 py-2.5 text-sm font-bold flex items-center gap-2 rounded-lg transition-all
+                                    ${activeTab === 'classic' ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}
+                                `}
+                            >
+                                <FaTable className={activeTab === 'classic' ? 'text-indigo-600' : 'text-gray-400'} /> Vista Clásica
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('graphics')}
+                                className={`
+                                    px-6 py-2.5 text-sm font-bold flex items-center gap-2 rounded-lg transition-all
+                                    ${activeTab === 'graphics' ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}
+                                `}
+                            >
+                                <FaChartBar className={activeTab === 'graphics' ? 'text-indigo-600' : 'text-gray-400'} /> Dashboard Interactivo
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* AREA DE REPORTE O DASHBOARD */}
+                {reporte && activeTab === 'graphics' ? (
+                    <BalanceGraphics
+                        reporte={reporte}
+                        totalesCalculados={{ totalActivosCalc, totalPasivosCalc, totalPatrimonioCalc, totalPasivoPatrimonioCalc, ecuacionCuadra }}
+                    />
+                ) : reporte && activeTab === 'classic' ? (
                     <div className="bg-white rounded-none shadow-2xl border-t-8 border-indigo-900 animate-slideDown max-w-4xl mx-auto print:shadow-none print:border-none">
 
                         {/* CABECERA FORMAL CONTABLE */}
@@ -323,212 +371,172 @@ function BalanceGeneralContent() {
 
                         <div className="p-6 space-y-8">
 
-                            {/* LOGICA DE RENDERIZADO SEGÚN NIVEL */}
-                            {reporte.nivel === 'clasificado' ? (
-                                <>
-                                    {/* ------------ VISTA CLASIFICADA ------------ */}
+                            {/* ------------ VISTA CLASIFICADA (NIIF ESTANDAR) ------------ */}
 
-                                    {/* ACTIVOS */}
-                                    <section>
-                                        <div className="uppercase font-bold text-lg text-gray-900 border-b-2 border-gray-900 mb-4 pb-1">Activos</div>
+                            {/* ACTIVOS */}
+                            <section>
+                                <div className="uppercase font-bold text-lg text-slate-800 border-b-2 border-slate-800 mb-4 pb-1 tracking-wider">ACTIVOS</div>
 
-                                        {/* Activo Corriente */}
-                                        <div className="mb-6 pl-4">
-                                            <h4 className="font-bold text-gray-800 mb-2 uppercase text-sm border-b border-gray-300 inline-block">Activo Corriente</h4>
-                                            <div className="space-y-1 mt-2">
-                                                {reporte.clasificado_activo?.corriente.map((item, index) => (
-                                                    <div key={`act-curr-${index}`} className="flex justify-between items-end hover:bg-gray-50 transition-colors py-1 border-b border-dotted border-gray-200">
-                                                        <div className="flex gap-2 text-sm text-gray-700">
-                                                            <span className="font-mono text-gray-500 text-xs w-12 text-right">{item.codigo}</span>
-                                                            <span>{item.nombre}</span>
-                                                        </div>
-                                                        <span className="font-mono text-sm text-gray-800">{formatCurrency(item.saldo)}</span>
+                                {/* Activo Corriente */}
+                                {activosCorrientes.length > 0 && (
+                                    <div className="mb-6 pl-2 md:pl-4">
+                                        <h4 className="font-bold text-slate-700 mb-2 uppercase text-sm border-b border-slate-200 inline-block">ACTIVO CORRIENTE</h4>
+                                        <div className="space-y-1 mt-2">
+                                            {activosCorrientes.map((item, index) => (
+                                                <div key={`act-curr-${index}`} className="flex justify-between items-end hover:bg-slate-50 transition-colors py-1.5 border-b border-dotted border-slate-200 pl-4">
+                                                    <div className="flex gap-3 text-sm text-slate-600">
+                                                        <span className="font-mono text-slate-500 text-xs w-10 text-right">{item.codigo}</span>
+                                                        <span className="uppercase text-xs">{item.nombre}</span>
                                                     </div>
-                                                ))}
-                                                <div className="flex justify-between items-center pt-2 mt-2 font-bold text-gray-900">
-                                                    <span className="pl-14 text-sm uppercase">Total Activo Corriente</span>
-                                                    <span className="font-mono border-t border-gray-800 w-32 text-right">{formatCurrency(reporte.clasificado_activo?.total_corriente)}</span>
+                                                    <span className="font-mono text-sm text-slate-700">{formatCurrency(item.saldo)}</span>
                                                 </div>
+                                            ))}
+                                            <div className="flex justify-between items-center pt-2 mt-2 font-bold text-slate-800 tracking-wide">
+                                                <span className="pl-16 text-xs uppercase">TOTAL ACTIVO CORRIENTE</span>
+                                                <span className="font-mono border-t border-slate-800 w-36 text-right pt-1">{formatCurrency(sumTotalActivoCorriente)}</span>
                                             </div>
                                         </div>
-
-                                        {/* Activo No Corriente */}
-                                        <div className="mb-6 pl-4">
-                                            <h4 className="font-bold text-gray-800 mb-2 uppercase text-sm border-b border-gray-300 inline-block">Activo No Corriente</h4>
-                                            <div className="space-y-1 mt-2">
-                                                {reporte.clasificado_activo?.no_corriente.map((item, index) => (
-                                                    <div key={`act-nocurr-${index}`} className="flex justify-between items-end hover:bg-gray-50 transition-colors py-1 border-b border-dotted border-gray-200">
-                                                        <div className="flex gap-2 text-sm text-gray-700">
-                                                            <span className="font-mono text-gray-500 text-xs w-12 text-right">{item.codigo}</span>
-                                                            <span>{item.nombre}</span>
-                                                        </div>
-                                                        <span className="font-mono text-sm text-gray-800">{formatCurrency(item.saldo)}</span>
-                                                    </div>
-                                                ))}
-                                                <div className="flex justify-between items-center pt-2 mt-2 font-bold text-gray-900">
-                                                    <span className="pl-14 text-sm uppercase">Total Activo No Corriente</span>
-                                                    <span className="font-mono border-t border-gray-800 w-32 text-right">{formatCurrency(reporte.clasificado_activo?.total_no_corriente)}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* GRAN TOTAL ACTIVOS */}
-                                        <div className="flex justify-end mt-4">
-                                            <div className="flex justify-between items-center w-full md:w-1/2 bg-gray-100 p-2 border border-gray-300">
-                                                <span className="font-bold text-gray-900 uppercase">Total Activos</span>
-                                                <span className="font-mono font-bold text-lg text-gray-900">{formatCurrency(reporte.total_activos)}</span>
-                                            </div>
-                                        </div>
-                                    </section>
-
-                                    {/* PASIVOS */}
-                                    <section>
-                                        <div className="uppercase font-bold text-lg text-gray-900 border-b-2 border-gray-900 mb-4 pb-1">Pasivos</div>
-
-                                        {/* Pasivo Corriente */}
-                                        <div className="mb-6 pl-4">
-                                            <h4 className="font-bold text-gray-800 mb-2 uppercase text-sm border-b border-gray-300 inline-block">Pasivo Corriente</h4>
-                                            <div className="space-y-1 mt-2">
-                                                {reporte.clasificado_pasivo?.corriente.map((item, index) => (
-                                                    <div key={`pas-curr-${index}`} className="flex justify-between items-end hover:bg-gray-50 transition-colors py-1 border-b border-dotted border-gray-200">
-                                                        <div className="flex gap-2 text-sm text-gray-700">
-                                                            <span className="font-mono text-gray-500 text-xs w-12 text-right">{item.codigo}</span>
-                                                            <span>{item.nombre}</span>
-                                                        </div>
-                                                        <span className="font-mono text-sm text-gray-800">{formatCurrency(item.saldo)}</span>
-                                                    </div>
-                                                ))}
-                                                <div className="flex justify-between items-center pt-2 mt-2 font-bold text-gray-900">
-                                                    <span className="pl-14 text-sm uppercase">Total Pasivo Corriente</span>
-                                                    <span className="font-mono border-t border-gray-800 w-32 text-right">{formatCurrency(reporte.clasificado_pasivo?.total_corriente)}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Pasivo No Corriente */}
-                                        <div className="mb-6 pl-4">
-                                            <h4 className="font-bold text-gray-800 mb-2 uppercase text-sm border-b border-gray-300 inline-block">Pasivo No Corriente</h4>
-                                            <div className="space-y-1 mt-2">
-                                                {reporte.clasificado_pasivo?.no_corriente.map((item, index) => (
-                                                    <div key={`pas-nocurr-${index}`} className="flex justify-between items-end hover:bg-gray-50 transition-colors py-1 border-b border-dotted border-gray-200">
-                                                        <div className="flex gap-2 text-sm text-gray-700">
-                                                            <span className="font-mono text-gray-500 text-xs w-12 text-right">{item.codigo}</span>
-                                                            <span>{item.nombre}</span>
-                                                        </div>
-                                                        <span className="font-mono text-sm text-gray-800">{formatCurrency(item.saldo)}</span>
-                                                    </div>
-                                                ))}
-                                                <div className="flex justify-between items-center pt-2 mt-2 font-bold text-gray-900">
-                                                    <span className="pl-14 text-sm uppercase">Total Pasivo No Corriente</span>
-                                                    <span className="font-mono border-t border-gray-800 w-32 text-right">{formatCurrency(reporte.clasificado_pasivo?.total_no_corriente)}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* GRAN TOTAL PASIVOS */}
-                                        <div className="flex justify-end mt-4">
-                                            <div className="flex justify-between items-center w-full md:w-1/2 bg-gray-100 p-2 border border-gray-300">
-                                                <span className="font-bold text-gray-900 uppercase">Total Pasivos</span>
-                                                <span className="font-mono font-bold text-lg text-gray-900">{formatCurrency(reporte.total_pasivos)}</span>
-                                            </div>
-                                        </div>
-                                    </section>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="space-y-8">
-                                        {/* ------------ VISTA ESTANDAR (Auxiliar / Mayor) ------------ */}
-
-                                        <section>
-                                            <div className="uppercase font-bold text-lg text-gray-900 border-b-2 border-gray-900 mb-4 pb-1">Activos</div>
-                                            <div className="space-y-1 pl-4">
-                                                {reporte.activos.length === 0 ? <p className="text-gray-400 italic text-sm">Sin registros.</p> :
-                                                    reporte.activos.map((item, index) => (
-                                                        <div key={`act-${index}`} className="flex justify-between items-end hover:bg-gray-50 transition-colors py-1 border-b border-dotted border-gray-200">
-                                                            <div className="flex gap-2 text-sm text-gray-700">
-                                                                <span className="font-mono text-gray-500 text-xs w-12 text-right">{item.codigo}</span>
-                                                                <span>{item.nombre}</span>
-                                                            </div>
-                                                            <span className="font-mono text-sm text-gray-800">{formatCurrency(item.saldo)}</span>
-                                                        </div>
-                                                    ))
-                                                }
-                                            </div>
-                                            <div className="flex justify-end mt-4">
-                                                <div className="flex justify-between items-center w-full md:w-1/2 bg-gray-100 p-2 border border-gray-300">
-                                                    <span className="font-bold text-gray-900 uppercase">Total Activos</span>
-                                                    <span className="font-mono font-bold text-lg text-gray-900">{formatCurrency(reporte.total_activos)}</span>
-                                                </div>
-                                            </div>
-                                        </section>
-
-                                        <section>
-                                            <div className="uppercase font-bold text-lg text-gray-900 border-b-2 border-gray-900 mb-4 pb-1">Pasivos</div>
-                                            <div className="space-y-1 pl-4">
-                                                {reporte.pasivos.length === 0 ? <p className="text-gray-400 italic text-sm">Sin registros.</p> :
-                                                    reporte.pasivos.map((item, index) => (
-                                                        <div key={`pas-${index}`} className="flex justify-between items-end hover:bg-gray-50 transition-colors py-1 border-b border-dotted border-gray-200">
-                                                            <div className="flex gap-2 text-sm text-gray-700">
-                                                                <span className="font-mono text-gray-500 text-xs w-12 text-right">{item.codigo}</span>
-                                                                <span>{item.nombre}</span>
-                                                            </div>
-                                                            <span className="font-mono text-sm text-gray-800">{formatCurrency(item.saldo)}</span>
-                                                        </div>
-                                                    ))
-                                                }
-                                            </div>
-                                            <div className="flex justify-end mt-4">
-                                                <div className="flex justify-between items-center w-full md:w-1/2 bg-gray-100 p-2 border border-gray-300">
-                                                    <span className="font-bold text-gray-900 uppercase">Total Pasivos</span>
-                                                    <span className="font-mono font-bold text-lg text-gray-900">{formatCurrency(reporte.total_pasivos)}</span>
-                                                </div>
-                                            </div>
-                                        </section>
                                     </div>
-                                </>
-                            )}
+                                )}
+
+                                {/* Activo No Corriente */}
+                                {activosNoCorrientes.length > 0 && (
+                                    <div className="mb-6 pl-2 md:pl-4">
+                                        <h4 className="font-bold text-slate-700 mb-2 uppercase text-sm border-b border-slate-200 inline-block">ACTIVO NO CORRIENTE</h4>
+                                        <div className="space-y-1 mt-2">
+                                            {activosNoCorrientes.map((item, index) => (
+                                                <div key={`act-nocurr-${index}`} className="flex justify-between items-end hover:bg-slate-50 transition-colors py-1.5 border-b border-dotted border-slate-200 pl-4">
+                                                    <div className="flex gap-3 text-sm text-slate-600">
+                                                        <span className="font-mono text-slate-500 text-xs w-10 text-right">{item.codigo}</span>
+                                                        <span className="uppercase text-xs">{item.nombre}</span>
+                                                    </div>
+                                                    <span className="font-mono text-sm text-slate-700">{formatCurrency(item.saldo)}</span>
+                                                </div>
+                                            ))}
+                                            <div className="flex justify-between items-center pt-2 mt-2 font-bold text-slate-800 tracking-wide">
+                                                <span className="pl-16 text-xs uppercase">TOTAL ACTIVO NO CORRIENTE</span>
+                                                <span className="font-mono border-t border-slate-800 w-36 text-right pt-1">{formatCurrency(sumTotalActivoNoCorriente)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* GRAN TOTAL ACTIVOS */}
+                                <div className="flex justify-end mt-6">
+                                    <div className="flex justify-between items-center w-full bg-slate-100 p-3 border-y-2 border-slate-800 shadow-sm">
+                                        <span className="font-black text-slate-900 uppercase tracking-widest pl-4 hover:pl-6 transition-all">TOTAL ACTIVOS</span>
+                                        <span className="font-mono font-black text-xl text-slate-900">{formatCurrency(totalActivosCalc)}</span>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* PASIVOS */}
+                            <section className="mt-10">
+                                <div className="uppercase font-bold text-lg text-slate-800 border-b-2 border-slate-800 mb-4 pb-1 tracking-wider">PASIVOS</div>
+
+                                {/* Pasivo Corriente */}
+                                {pasivosCorrientes.length > 0 && (
+                                    <div className="mb-6 pl-2 md:pl-4">
+                                        <h4 className="font-bold text-slate-700 mb-2 uppercase text-sm border-b border-slate-200 inline-block">PASIVO CORRIENTE</h4>
+                                        <div className="space-y-1 mt-2">
+                                            {pasivosCorrientes.map((item, index) => (
+                                                <div key={`pas-curr-${index}`} className="flex justify-between items-end hover:bg-slate-50 transition-colors py-1.5 border-b border-dotted border-slate-200 pl-4">
+                                                    <div className="flex gap-3 text-sm text-slate-600">
+                                                        <span className="font-mono text-slate-500 text-xs w-10 text-right">{item.codigo}</span>
+                                                        <span className="uppercase text-xs">{item.nombre}</span>
+                                                    </div>
+                                                    <span className="font-mono text-sm text-slate-700">{formatCurrency(item.saldo)}</span>
+                                                </div>
+                                            ))}
+                                            <div className="flex justify-between items-center pt-2 mt-2 font-bold text-slate-800 tracking-wide">
+                                                <span className="pl-16 text-xs uppercase">TOTAL PASIVO CORRIENTE</span>
+                                                <span className="font-mono border-t border-slate-800 w-36 text-right pt-1">{formatCurrency(sumTotalPasivoCorriente)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Pasivo No Corriente */}
+                                {pasivosNoCorrientes.length > 0 && (
+                                    <div className="mb-6 pl-2 md:pl-4">
+                                        <h4 className="font-bold text-slate-700 mb-2 uppercase text-sm border-b border-slate-200 inline-block">PASIVO NO CORRIENTE</h4>
+                                        <div className="space-y-1 mt-2">
+                                            {pasivosNoCorrientes.map((item, index) => (
+                                                <div key={`pas-nocurr-${index}`} className="flex justify-between items-end hover:bg-slate-50 transition-colors py-1.5 border-b border-dotted border-slate-200 pl-4">
+                                                    <div className="flex gap-3 text-sm text-slate-600">
+                                                        <span className="font-mono text-slate-500 text-xs w-10 text-right">{item.codigo}</span>
+                                                        <span className="uppercase text-xs">{item.nombre}</span>
+                                                    </div>
+                                                    <span className="font-mono text-sm text-slate-700">{formatCurrency(item.saldo)}</span>
+                                                </div>
+                                            ))}
+                                            <div className="flex justify-between items-center pt-2 mt-2 font-bold text-slate-800 tracking-wide">
+                                                <span className="pl-16 text-xs uppercase">TOTAL PASIVO NO CORRIENTE</span>
+                                                <span className="font-mono border-t border-slate-800 w-36 text-right pt-1">{formatCurrency(sumTotalPasivoNoCorriente)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* GRAN TOTAL PASIVOS */}
+                                <div className="flex justify-end mt-6">
+                                    <div className="flex justify-between items-center w-full bg-slate-100 p-3 border-y-2 border-slate-800 shadow-sm">
+                                        <span className="font-black text-slate-900 uppercase tracking-widest pl-4 hover:pl-6 transition-all">TOTAL PASIVOS</span>
+                                        <span className="font-mono font-black text-xl text-slate-900">{formatCurrency(totalPasivosCalc)}</span>
+                                    </div>
+                                </div>
+                            </section>
 
                             {/* SECCIÓN: PATRIMONIO (Común) */}
-                            <section className="mt-8">
-                                <div className="uppercase font-bold text-lg text-gray-900 border-b-2 border-gray-900 mb-4 pb-1">Patrimonio</div>
-                                <div className="space-y-1 pl-4">
-                                    {reporte.patrimonio.map((item, index) => (
-                                        <div key={`pat-${index}`} className="flex justify-between items-end hover:bg-gray-50 transition-colors py-1 border-b border-dotted border-gray-200">
-                                            <div className="flex gap-2 text-sm text-gray-700">
-                                                <span className="font-mono text-gray-500 text-xs w-12 text-right">{item.codigo}</span>
-                                                <span>{item.nombre}</span>
+                            <section className="mt-10">
+                                <div className="uppercase font-bold text-lg text-slate-800 border-b-2 border-slate-800 mb-4 pb-1 tracking-wider">PATRIMONIO</div>
+                                <div className="space-y-1 pl-6">
+                                    {patrimonioArr.map((item, index) => (
+                                        <div key={`pat-${index}`} className="flex justify-between items-end hover:bg-slate-50 transition-colors py-1.5 border-b border-dotted border-slate-200">
+                                            <div className="flex gap-3 text-sm text-slate-600">
+                                                <span className="font-mono text-slate-500 text-xs w-10 text-right">{item.codigo}</span>
+                                                <span className="uppercase text-xs">{item.nombre}</span>
                                             </div>
-                                            <span className="font-mono text-sm text-gray-800">{formatCurrency(item.saldo)}</span>
+                                            <span className="font-mono text-sm text-slate-700">{formatCurrency(item.saldo)}</span>
                                         </div>
                                     ))}
-
                                     {/* Utilidad del Ejercicio */}
-                                    <div className="flex justify-between items-end bg-blue-50 py-2 border-b border-blue-100">
-                                        <div className="flex gap-2 text-sm font-bold text-blue-900 pl-14">
-                                            <span className="font-mono text-xs w-12 text-right">3605</span>
-                                            <span>UTILIDAD (PÉRDIDA) DEL EJERCICIO</span>
+                                    <div className="flex justify-between items-end bg-blue-50/50 py-2 border-b border-blue-100">
+                                        <div className="flex gap-3 text-sm font-bold text-indigo-900">
+                                            <span className="font-mono text-xs w-10 text-right">3605</span>
+                                            <span className="uppercase text-xs">UTILIDAD (PÉRDIDA) DEL EJERCICIO</span>
                                         </div>
-                                        <span className={`font-mono text-sm font-bold pr-1 ${reporte.utilidad_ejercicio >= 0 ? 'text-blue-900' : 'text-red-600'}`}>
+                                        <span className={`font-mono text-sm font-bold pr-1 ${reporte.utilidad_ejercicio >= 0 ? 'text-indigo-900' : 'text-red-600'}`}>
                                             {formatCurrency(reporte.utilidad_ejercicio)}
                                         </span>
                                     </div>
                                 </div>
 
-                                <div className="flex justify-end mt-4">
-                                    <div className="flex justify-between items-center w-full md:w-1/2 bg-gray-100 p-2 border border-gray-300">
-                                        <span className="font-bold text-gray-900 uppercase">Total Patrimonio</span>
-                                        <span className="font-mono font-bold text-lg text-gray-900">{formatCurrency(reporte.total_patrimonio)}</span>
+                                <div className="flex justify-end mt-6">
+                                    <div className="flex justify-between items-center w-full bg-slate-100 p-3 border-y-2 border-slate-800 shadow-sm">
+                                        <span className="font-black text-slate-900 uppercase tracking-widest pl-4 hover:pl-6 transition-all">TOTAL PATRIMONIO</span>
+                                        <span className="font-mono font-black text-xl text-slate-900">{formatCurrency(totalPatrimonioCalc)}</span>
                                     </div>
                                 </div>
                             </section>
 
                             {/* ECUACIÓN CONTABLE FIN DE REPORTE */}
-                            <div className="mt-12 pt-4 border-t-4 border-gray-900">
-                                <div className="flex justify-between items-center text-xl font-bold text-gray-900 px-4">
-                                    <span>TOTAL PASIVO + PATRIMONIO</span>
-                                    <span className="font-mono border-b-4 border-double border-gray-900 pb-1">{formatCurrency(reporte.total_pasivo_patrimonio)}</span>
+                            <div className="mt-16 pt-4 border-t-4 border-slate-900 bg-slate-50 rounded-b-lg">
+                                <div className="flex justify-between items-center text-xl p-4">
+                                    <span className="font-black text-slate-900 uppercase tracking-widest pl-2">TOTAL PASIVO + PATRIMONIO</span>
+                                    <span className={`font-mono font-black border-b-4 border-double border-slate-900 pb-1 text-2xl ${ecuacionCuadra ? 'text-slate-900' : 'text-red-600'}`}>
+                                        {formatCurrency(totalPasivoPatrimonioCalc)}
+                                    </span>
                                 </div>
-                                <p className="text-center text-xs text-gray-400 mt-8 mb-8">*** Fin del Informe ***</p>
+                                {!ecuacionCuadra && (
+                                    <div className="px-4 pb-4">
+                                        <div className="bg-red-50 text-red-600 p-3 rounded border border-red-200 text-sm flex justify-between">
+                                            <span><strong>Atención:</strong> Existe un descuadre en la ecuación patrimonial.</span>
+                                            <span className="font-bold font-mono">Diferencia: {formatCurrency(Math.abs(totalActivosCalc - totalPasivoPatrimonioCalc))}</span>
+                                        </div>
+                                    </div>
+                                )}
+                                <p className="text-center text-xs text-slate-400 mt-8 mb-8 pb-4 tracking-widest uppercase">*** Fin del Informe Financiero ***</p>
 
                                 {/* Firmas */}
                                 <div className="flex justify-around mt-16 text-center">
@@ -545,7 +553,7 @@ function BalanceGeneralContent() {
 
                         </div>
                     </div>
-                )}
+                ) : null}
             </div>
         </div>
     );
