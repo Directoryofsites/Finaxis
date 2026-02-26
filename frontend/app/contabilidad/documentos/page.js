@@ -32,6 +32,8 @@ import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../../lib/apiService';
 import { FuncionEspecial } from '../../../lib/constants';
 import ModalCrearTercero from '../../../components/terceros/ModalCrearTercero';
+import CuentaFormModal from '../../../components/PlanCuentas/CuentaFormModal';
+import * as planCuentasService from '../../../lib/planCuentasService';
 
 // Estilos reusables (Manual v2.0)
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
@@ -75,6 +77,10 @@ export default function NuevoDocumentoPage() {
 
   // --- NUEVO: ESTADO MODAL TERCERO ---
   const [showTerceroModal, setShowTerceroModal] = useState(false);
+
+  // --- NUEVO: ESTADOS MODAL CUENTA ---
+  const [showCuentaModal, setShowCuentaModal] = useState(false);
+  const [cuentaTargetIndex, setCuentaTargetIndex] = useState(null);
 
   // Referencias para navegación por teclado
   const formRefs = useRef({});
@@ -536,6 +542,33 @@ export default function NuevoDocumentoPage() {
     setFacturasPendientes([]);
     setAplicaciones({});
     setValorAAbonar('');
+  };
+
+  // --- NUEVO: HANDLER CUENTA CREADA ---
+  const handleCrearCuentaSubmit = async (formData) => {
+    try {
+      const res = await planCuentasService.createCuenta(formData);
+      const nuevaCuenta = res.data;
+
+      // 1. Actualizar maestros locales
+      setMaestros(prev => ({
+        ...prev,
+        cuentas: [...prev.cuentas, nuevaCuenta].sort((a, b) => a.codigo.localeCompare(b.codigo))
+      }));
+
+      // 2. Si veníamos de una fila específica, seleccionarla
+      if (cuentaTargetIndex !== null) {
+        handleMovimientoChange(cuentaTargetIndex, 'cuentaId', nuevaCuenta.id);
+        handleMovimientoChange(cuentaTargetIndex, 'cuentaInput', `${nuevaCuenta.codigo} - ${nuevaCuenta.nombre}`);
+        setCuentaTargetIndex(null);
+      }
+
+      setMensaje(`Cuenta "${nuevaCuenta.codigo} - ${nuevaCuenta.nombre}" creada y disponible.`);
+      toast.success("Cuenta creada exitosamente.");
+    } catch (err) {
+      console.error("Error al crear cuenta desde documento:", err);
+      throw err;
+    }
   };
 
   const handleSubmit = async () => {
@@ -1398,16 +1431,27 @@ export default function NuevoDocumentoPage() {
                   {movimientos.map((mov, index) => (
                     <tr key={mov.rowId} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-2">
-                        <input
-                          list="cuentas-list"
-                          placeholder="Código o nombre..."
-                          value={mov.cuentaInput}
-                          onChange={e => handleMovimientoChange(index, 'cuentaInput', e.target.value)}
-                          onBlur={e => mov.cuentaId === '' && handleCuentaBlur(index, e.target.value)}
-                          className={tableInputClass}
-                          ref={(el) => addRef(`mov-${index}-cuenta`, el)}
-                          onKeyDown={(e) => handleKeyDown(e, `mov-${index}-cuenta`)}
-                        />
+                        <div className="flex items-center gap-1">
+                          <input
+                            list="cuentas-list"
+                            placeholder="Código o nombre..."
+                            value={mov.cuentaInput}
+                            onChange={e => handleMovimientoChange(index, 'cuentaInput', e.target.value)}
+                            onBlur={e => mov.cuentaId === '' && handleCuentaBlur(index, e.target.value)}
+                            className={tableInputClass}
+                            ref={(el) => addRef(`mov-${index}-cuenta`, el)}
+                            onKeyDown={(e) => handleKeyDown(e, `mov-${index}-cuenta`)}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCuentaTargetIndex(index);
+                              setShowCuentaModal(true);
+                            }}
+                            className="p-1.5 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 text-xs font-bold border border-indigo-100 transition-colors"
+                            title="Crear nueva cuenta rápidamente"
+                          ><FaPlus /></button>
+                        </div>
                         <datalist id="cuentas-list">
                           {maestros.cuentas.map(c => <option key={c.id} value={c.codigo}>{`${c.codigo} - ${c.nombre}`}</option>)}
                         </datalist>
@@ -1578,6 +1622,18 @@ export default function NuevoDocumentoPage() {
         isOpen={showTerceroModal}
         onClose={() => setShowTerceroModal(false)}
         onSuccess={handleTerceroCreado}
+      />
+
+      {/* MODAL CREAR CUENTA (PUC) */}
+      <CuentaFormModal
+        isOpen={showCuentaModal}
+        onClose={() => {
+          setShowCuentaModal(false);
+          setCuentaTargetIndex(null);
+        }}
+        onSubmit={handleCrearCuentaSubmit}
+        planCuentasFlat={maestros.cuentas}
+        title="Crear Cuenta Fast-Track"
       />
     </div >
   );
