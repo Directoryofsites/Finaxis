@@ -32,7 +32,7 @@ import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../../lib/apiService';
 import { FuncionEspecial } from '../../../lib/constants';
 import ModalCrearTercero from '../../../components/terceros/ModalCrearTercero';
-import CuentaFormModal from '../../../components/PlanCuentas/CuentaFormModal';
+import CuentaFormModal from '../../components/PlanCuentas/CuentaFormModal';
 import * as planCuentasService from '../../../lib/planCuentasService';
 
 // Estilos reusables (Manual v2.0)
