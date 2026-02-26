@@ -38,12 +38,20 @@ export default function CuentaFormModal({
 
   useEffect(() => {
     if (isOpen) {
-      // Lógica original preservada con Optional Chaining
-      setFormData({
-        codigo: initialData?.codigo || '',
-        nombre: initialData?.nombre || '',
-        permite_movimiento: initialData?.permite_movimiento || false,
-        cuenta_padre_id: initialData?.cuenta_padre_id || null,
+      // Bloquear inicialización si ya hay datos escritos por el usuario (evitar reset por re-render del padre)
+      setFormData(prev => {
+        const tieneID = !!initialData?.id;
+        const yaInicializado = tieneID ? prev.id === initialData.id : (prev.codigo !== '' || prev.nombre !== '');
+
+        if (yaInicializado && !isEdit) return prev; // No tocar si es nuevo y ya se está escribiendo
+
+        return {
+          id: initialData?.id || null,
+          codigo: initialData?.codigo || '',
+          nombre: initialData?.nombre || '',
+          permite_movimiento: initialData?.permite_movimiento || false,
+          cuenta_padre_id: initialData?.cuenta_padre_id || null,
+        };
       });
       setError('');
     }
@@ -84,8 +92,9 @@ export default function CuentaFormModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 animate-fadeIn"
-      onKeyDown={(e) => e.stopPropagation()} // <-- NUEVO: Evitar que Shortcuts de la página padre capturen teclas
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100050] flex justify-center items-center p-4 animate-fadeIn"
+      onKeyDown={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
     >
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md border border-gray-100 transform transition-all scale-100">
 

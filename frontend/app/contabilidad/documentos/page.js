@@ -1634,6 +1634,7 @@ export default function NuevoDocumentoPage() {
           setCuentaTargetIndex(null);
         }}
         onSubmit={handleCrearCuentaSubmit}
+        initialData={null}
         planCuentasFlat={maestros.cuentasFull}
         title="Crear Cuenta Fast-Track"
       />
