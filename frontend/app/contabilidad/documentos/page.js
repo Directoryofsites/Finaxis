@@ -662,7 +662,7 @@ export default function NuevoDocumentoPage() {
       // Pero para no romper la firma del botón simple, usaremos un truco o flag.
       // Alternativa: El botón "Guardar y Emitir" llama a una función que envuelve a handleSubmit.
 
-      return response.data; // RETORNAR DATA PARA FLUJOS COMPUESTOS
+
 
       // --- IMPRESIÓN AUTOMÁTICA (Si está habilitada en el Control Center) ---
       if (imprimirAlGuardar) {
@@ -706,6 +706,8 @@ export default function NuevoDocumentoPage() {
       // setNumeroEditable(false); // Mantener estado de editabilidad
       // setTipoDocSeleccionado(null); // NO LIMPIAR SELECCIÓN
       // setCuentasConfiguradas({ debitoId: null, creditoId: null }); // NO LIMPIAR CONFIG
+
+      return response.data; // RETORNAR DATA PARA FLUJOS COMPUESTOS
 
     } catch (err) {
       const errorDetail = err.response?.data?.detail;
