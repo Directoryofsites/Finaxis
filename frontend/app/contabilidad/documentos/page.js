@@ -89,6 +89,7 @@ export default function NuevoDocumentoPage() {
   // --- ARQUITECTURA DE DATOS MAESTROS ---
   const [maestros, setMaestros] = useState({
     cuentas: [],
+    cuentasFull: [], // Nueva lista completa para el modal de creación
     terceros: [],
     centrosCosto: [],
     tiposDocumento: [],
@@ -125,6 +126,7 @@ export default function NuevoDocumentoPage() {
 
       setMaestros({
         cuentas: aplanarCuentas(cuentasRes.data),
+        cuentasFull: cuentasRes.data, // Guardar lista completa (incluyendo padres/carpetas)
         terceros: tercerosRes.data,
         centrosCosto: ccostoRes.data.filter(c => c.permite_movimiento),
         tiposDocumento: tiposDocRes.data,
@@ -1632,7 +1634,7 @@ export default function NuevoDocumentoPage() {
           setCuentaTargetIndex(null);
         }}
         onSubmit={handleCrearCuentaSubmit}
-        planCuentasFlat={maestros.cuentas}
+        planCuentasFlat={maestros.cuentasFull}
         title="Crear Cuenta Fast-Track"
       />
     </div >
