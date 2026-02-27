@@ -508,7 +508,7 @@ function BalanceGeneralContent() {
                                     <div className="flex justify-between items-end bg-blue-50/50 py-2 border-b border-blue-100">
                                         <div className="flex gap-3 text-sm font-bold text-indigo-900">
                                             <span className="font-mono text-xs w-10 text-right">3605</span>
-                                            <span className="uppercase text-xs">UTILIDAD (PÉRDIDA) DEL EJERCICIO</span>
+                                            <span className="uppercase text-xs">{reporte.nombre_utilidad || 'UTILIDAD (PÉRDIDA) DEL EJERCICIO'}</span>
                                         </div>
                                         <span className={`font-mono text-sm font-bold pr-1 ${reporte.utilidad_ejercicio >= 0 ? 'text-indigo-900' : 'text-red-600'}`}>
                                             {formatCurrency(reporte.utilidad_ejercicio)}

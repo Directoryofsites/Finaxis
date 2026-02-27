@@ -3240,6 +3240,16 @@ def generate_balance_sheet_report(
 
     utilidad_ejercicio = total_ingresos - total_costos - total_gastos
 
+    # --- DINAMIZACIÓN: Obtener nombre oficial de la cuenta de utilidad (3605) ---
+    nombre_utilidad_oficial = "UTILIDAD (PÉRDIDA) DEL EJERCICIO"
+    cuenta_3605 = db.query(models_plan.nombre).filter(
+        models_plan.empresa_id == empresa_id,
+        models_plan.codigo == '3605'
+    ).first()
+    if cuenta_3605:
+        nombre_utilidad_oficial = cuenta_3605.nombre
+    # -------------------------------------------------------------------------
+
     # 2. Procesamiento según Nivel
     final_activos = []
     final_pasivos = []
@@ -3350,6 +3360,7 @@ def generate_balance_sheet_report(
         "total_pasivos": total_pasivos,
         "total_patrimonio": total_patrimonio,
         "utilidad_ejercicio": utilidad_ejercicio,
+        "nombre_utilidad": nombre_utilidad_oficial,
         "total_pasivo_patrimonio": total_pasivos + total_patrimonio,
         "nivel": nivel
     }
@@ -3634,7 +3645,7 @@ def generate_balance_sheet_report_pdf(
     <!-- Utilidad (Insertada manual) -->
     <div class="row">
         <div class="col-code">3605</div>
-        <div class="col-name bold">UTILIDAD DEL EJERCICIO</div>
+        <div class="col-name bold">{{ reporte.nombre_utilidad }}</div>
         <div class="col-val bold">{{ "{:,.0f}".format(reporte.utilidad_ejercicio) }}</div>
     </div>
 

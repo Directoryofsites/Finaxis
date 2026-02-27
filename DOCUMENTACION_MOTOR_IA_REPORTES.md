@@ -45,6 +45,17 @@ El corazón del enrutamiento NO será ambiguo ni buscará "Cualquier saldo o car
     *   *"{Entidad Ambigua} y sus cuentas"* -> Obliga a que la entidad se busque exclusivamente como **Tercero**.
     *   *"{Entidad Ambigua} y sus terceros"* -> Obliga a que la entidad se busque exclusivamente como **Cuenta Ejecutable**.
 
+### 4.2.2 Estándares Universales de Búsqueda (Ultra-Normalización)
+Para garantizar que el sistema sea agnóstico a la gramática y errores fonéticos del usuario o de la transcripción de voz, se aplican las siguientes reglas matemáticas en todos los buscadores de reportes:
+
+1.  **Normalización Fonética Estándar:** Tratamiento unificado de fonemas ambiguos (`V` -> `B`, `Z/C` -> `S`).
+2.  **Supresión de Conectores (Stop-words):** Eliminación activa de conectores gramaticales (`por`, `de`, `con`, `para`, `el`, `la`, `los`, `las`, `un`, `una`) en la fase de comparación. Esto permite que "Ofrendas por bancos" coincida al 100% con "Ofrendas Banco".
+3.  **Invarianza de Plurales:** Eliminación sistemática de la `s` final en palabras de más de 3 letras. Esto garantiza que "Bancos" y "Banco" generen el mismo hash de búsqueda.
+4.  **Scoring por Densidad y Desempate Conciso:** 
+    *   Frente a un empate de palabras clave, el sistema prioriza la cuenta con el nombre **más corto** (mayor densidad de acierto). 
+    *   *Ejemplo:* Si buscas "Ofrendas", "Ofrendas Banco" ganará sobre "Ofrendas Específicas" por ser un match más concentrado.
+5.  **Bono de Inicio:** Prioridad aritmética acumulable si la cuenta comienza exactamente con el término buscado.
+
 ### 4.3. Algoritmo de Enrutamiento de Vistas (Matrices Tercero-Cuenta)
 Se define el esquema base de cuatro (4) dimensiones para consultas mixtas:
 

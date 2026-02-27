@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Paso a Paso: Registro Factura Electrónica DIAN (Empresas/Iglesias)</title>
+    <style>
+        :root {
+            --primary: #003a70;
+            --secondary: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --light-bg: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 4px solid var(--primary);
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .intro {
+            font-size: 1.1em;
+            color: #666;
+        }
+
+        .step {
+            background: var(--light-bg);
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-left: 8px solid var(--primary);
+            position: relative;
+        }
+
+        .step-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .number-circle {
+            background: var(--primary);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 15px;
+            font-size: 0.8em;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            color: white;
+            font-size: 0.9em;
+        }
+
+        .badge-green {
+            background-color: var(--secondary);
+        }
+
+        .badge-blue {
+            background-color: #007bff;
+        }
+
+        .badge-dark {
+            background-color: #343a40;
+        }
+
+        .email-box {
+            background: #ffffff;
+            border: 2px dashed #ccc;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+
+        .note {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .note-important {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+        }
+
+        .note-wait {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        strong {
+            color: #000;
+        }
+
+        .icon-desc {
+            font-style: italic;
+            color: #555;
+            background: #eee;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Guía de Habilitación DIAN (Empresas)</h1>
+            <p class="intro">Manual detallado para el Representante Legal de la Iglesia/Empresa</p>
+        </header>
+
+        <div class="note note-important">
+            <strong>IMPORTANTE:</strong> Este proceso debe realizarlo el Representante Legal, ya que se le enviarán
+            códigos de seguridad a su correo personal registrado en el RUT.
+        </div>
+
+        <!-- PASO 1 -->
+        <div class="step">
+            <div class="step-title">
+                <div class="number-circle">1</div> Entrar a la página de la DIAN
+            </div>
+            <p>Abra el navegador e ingrese a:</p>
+            <p>👉 <strong>www.dian.gov.co</strong></p>
+            <ul>
+                <li>Deslice hacia abajo hasta <strong>"Temas de interés"</strong>.</li>
+                <li>En el recuadro <strong>"Factura Electrónica"</strong>, haga clic en la opción <span
+                        class="badge badge-blue">Habilitación</span>.</li>
+            </ul>
+        </div>
+
+        <!-- PASO 2 -->
+        <div class="step">
+            <div class="step-title">
+                <div class="number-circle">2</div> Iniciar Sesión como Empresa
+            </div>
+            <p>En el portal de acceso, siga estos pasos cuidadosamente:</p>
+            <ul>
+                <li>Haga clic en el botón <span class="badge badge-green">Empresa</span>.</li>
+                <li>Seleccione en el menú desplegable la opción <strong>Representante Legal</strong>.</li>
+                <li>En el campo <strong>NIT de la Empresa</strong>: Escriba el NIT de la iglesia (sin puntos ni
+                    guiones).</li>
+                <li>En el campo <strong>Cédula del Representante</strong>: Escriba su número de identificación.</li>
+                <li>Haga clic en el botón verde <strong>"Entrar"</strong>.</li>
+            </ul>
+        </div>
+
+        <!-- PASO 3 -->
+        <div class="step">
+            <div class="step-title">
+                <div class="number-circle">3</div> Obtener el Token de Acceso
+            </div>
+            <p>Vaya a su correo electrónico personal (el que tiene registrado ante la DIAN).</p>
+            <div class="email-box">
+                <p>1. Busque un correo nuevo de la DIAN con el asunto: <strong>"Token Acceso DIAN"</strong>.</p>
+                <p>2. Ábralo y haga clic en el botón verde <span class="badge badge-green">Acceder</span>.</p>
+            </div>
+            <p>Esto abrirá el portal de Habilitación en su navegador.</p>
+        </div>
+
+        <!-- PASO 4 -->
+        <div class="step">
+            <div class="step-title">
+                <div class="number-circle">4</div> Activar el Software Gratuito
+            </div>
+            <p>Dentro del portal, debe seguir esta ruta:</p>
+            <ul>
+                <li>Menú izquierdo > Ícono de <strong>Registro</strong> (Hoja con lápiz).</li>
+                <li>Seleccione <strong>Documentos Electrónicos > Factura Electrónica</strong>.</li>
+                <li>Clic en el botón verde <strong>Configurar modos de operación</strong>.</li>
+                <li>En la lista, elija <strong>Software Gratuito</strong> y haga clic en <strong>Asociar</strong>.</li>
+            </ul>
+        </div>
+
+        <!-- PASO 5 -->
+        <div class="step">
+            <div class="step-title">
+                <div class="number-circle">5</div> Solicitar la Firma Digital Gratis
+            </div>
+            <p>Vaya al ambiente de facturación:</p>
+            <ul>
+                <li>Menú izquierdo > Último ícono (<strong>Bombillo/Foco prendido</strong>).</li>
+                <li>Clic en el recuadro grande que dice <strong>"Factura Electrónica"</strong>.</li>
+                <li>Una vez dentro, vaya al menú superior <strong>Configuración > Certificados Digitales</strong>.</li>
+                <li>Haga clic en <span class="badge"
+                        style="border:1px solid var(--secondary); color:var(--secondary);">Solicitar certificado
+                        gratuito</span>.</li>
+            </ul>
+            <div class="note note-important">
+                <strong>ADVERTENCIA:</strong> Si sale un cuadro que pide subir archivos (Adicionar), ciérrelo. Solo use
+                el botón de <strong>Solicitar</strong>.
+            </div>
+        </div>
+
+        <!-- PASO 6 -->
+        <div class="step">
+            <div class="step-title">
+                <div class="number-circle">6</div> Activar Firma y Crear Contraseña
+            </div>
+            <p>Regrese por última vez a su correo electrónico:</p>
+            <div class="email-box">
+                <p>1. Busque un correo de <strong>GSE</strong> para <strong>"Activar cuenta"</strong>.</p>
+                <p>2. Haga clic en <span class="badge badge-dark">Activar cuenta</span>.</p>
+                <p>3. Cree su contraseña cumpliendo con los requisitos (Mayúscula, Número y Punto o Asterisco).</p>
+            </div>
+            <div class="note note-important">
+                <strong>CRÍTICO:</strong> Guarde esta contraseña con total seguridad. Sin ella, no podrá firmar
+                legalmente las facturas de la iglesia.
+            </div>
+        </div>
+
+        <!-- PASO 7 -->
+        <div class="step">
+            <div class="step-title">
+                <div class="number-circle">7</div> Sincronización Final
+            </div>
+            <div class="note note-wait">
+                La DIAN tardará de <strong>24 a 48 horas</strong> en cargar su firma. Una vez que aparezca con estado
+                "Vigente" en el portal, ya se puede comenzar a emitir documentos.
+            </div>
+        </div>
+
+        <div style="text-align: center; color: #999; font-size: 0.8em; margin-top: 40px;">
+            Guía de implementación para Entidades Jurídicas - 2026
+        </div>
+    </div>
+
+</body>
+
+</html>

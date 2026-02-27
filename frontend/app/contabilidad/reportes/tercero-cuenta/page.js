@@ -379,8 +379,12 @@ function ReporteTerceroCuentaContent() {
                 .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
                 .replace(/v/g, "b")
                 .replace(/z/g, "s")
-                .replace(/c/g, "s") // Ojo: esto convierte 'casa' en 'sasa', pero 'caza' en 'sasa' tb. Útil para búsqueda fonética.
-                .replace(/[^a-z0-9\s]/g, "");
+                .replace(/c/g, "s")
+                // Eliminar conectores comunes para que no ensucien el match
+                .replace(/\b(de|por|el|la|los|las|un|una|con|para)\b/g, "")
+                // Eliminar plurales simples (s al final de palabras de más de 3 letras)
+                .replace(/(\w{3,})s\b/g, "$1")
+                .replace(/[^a-z0-9]/g, ""); // Quitamos espacios para comparación densa
             };
 
             const searchNormalized = normalize(aiCuenta);
@@ -425,10 +429,19 @@ function ReporteTerceroCuentaContent() {
 
               // 3. COINCIDENCIA POR PALABRAS INDIVIDUALES
               searchWords.forEach(word => {
-                if (codigoNorm.includes(word) || nombreNorm.includes(word)) {
+                if (nombreNorm.includes(word) || codigoNorm.includes(word)) {
                   score += 100;
                 }
+                // BONO: Palabra comienza exactamente igual (ej: 'banco' match con 'bancos')
+                if (nombreNorm.startsWith(word) || nombreNorm.includes(" " + word)) {
+                  score += 50;
+                }
               });
+
+              // 4. BONO: COINCIDENCIA DE 'INICIO DE NOMBRE' (MUY FUERTE)
+              if (nombreNorm.startsWith(searchNormalized.substring(0, 5))) {
+                score += 200;
+              }
 
               // 4. BOOST: Priorizar cuentas de movimiento (nivel detalle)
               // Esto es crucial para que el reporte sea útil
@@ -442,9 +455,10 @@ function ReporteTerceroCuentaContent() {
             });
 
             // Filtrar las que tengan algún match y ordenar por puntaje + longitud (detalle)
+            // CAMBIO CRITICO: El desempate debe preferir el nombre más CORTO (mejor densidad de match)
             const bestMatches = scoredCuentas.filter(c => c.score > 0).sort((a, b) => {
               if (b.score !== a.score) return b.score - a.score;
-              return b.nombre.length - a.nombre.length;
+              return a.nombre.length - b.nombre.length; // SHORTER IS BETTER (Más preciso)
             });
 
             if (bestMatches.length > 0) {

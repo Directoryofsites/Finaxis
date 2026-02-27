@@ -200,11 +200,43 @@ export default function RelacionSaldosClient() {
                             .map(c => c.id);
                         if (matchedIds.length > 0) resolveCuentas = matchedIds;
                     } else {
-                        const matched = resCuentas.data.find(c =>
-                            c.codigo === urlCuenta ||
-                            c.nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(term)
-                        );
-                        if (matched) resolveCuentas = [matched.id];
+                        const normalize = (str) => {
+                            if (!str) return "";
+                            return str.toLowerCase()
+                                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                                .replace(/v/g, "b")
+                                .replace(/z/g, "s")
+                                .replace(/c/g, "s")
+                                // Eliminar conectores comunes
+                                .replace(/\b(de|por|el|la|los|las|un|una|con|para)\b/g, "")
+                                // Eliminar plurales simples (s al final de palabras de más de 3 letras)
+                                .replace(/(\w{3,})s\b/g, "$1")
+                                .replace(/[^a-z0-9]/g, ""); // Comparación densa
+                        };
+
+                        const searchNormalized = normalize(urlCuenta);
+                        const searchWords = searchNormalized.split(" ").filter(w => w.length > 2);
+                        const scoredCuentas = resCuentas.data.map(c => {
+                            let score = 0;
+                            const codigoNorm = normalize(c.codigo);
+                            const nombreNorm = normalize(c.nombre);
+
+                            if (nombreNorm === searchNormalized || codigoNorm === searchNormalized) score += 1000;
+                            if (nombreNorm.includes(searchNormalized) || searchNormalized.includes(nombreNorm)) score += 500;
+                            searchWords.forEach(word => {
+                                if (nombreNorm.includes(word) || codigoNorm.includes(word)) score += 100;
+                                if (nombreNorm.startsWith(word) || nombreNorm.includes(" " + word)) score += 50;
+                            });
+                            if (nombreNorm.startsWith(searchNormalized.substring(0, 5))) score += 200;
+                            return { ...c, score };
+                        });
+
+                        const bestMatches = scoredCuentas.filter(c => c.score > 0).sort((a, b) => {
+                            if (b.score !== a.score) return b.score - a.score;
+                            return a.nombre.length - b.nombre.length;
+                        });
+
+                        if (bestMatches.length > 0) resolveCuentas = [bestMatches[0].id];
                     }
                 }
 

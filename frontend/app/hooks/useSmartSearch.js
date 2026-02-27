@@ -320,10 +320,11 @@ export function useSmartSearch() {
 
             // Extractor de emergencia del texto crudo (Caza de la entidad central que la IA pudo mutilar)
             // Ejemplo: "movimiento de parqueadero lavadero lina 24 y sus cuentas"
+            // Ahora más flexible: atrapa aunque no diga "movimiento de" si hay un "y sus/las/los" claro.
             let rawEntity = null;
-            const matchEntity = queryLower.match(/(?:movimiento de|movimientos de|auxiliar de|detalle de|saldos de)\s+(.+?)\s+(?:y sus|y las|y los)/);
+            const matchEntity = queryLower.match(/(?:(?:movimiento de|movimientos de|auxiliar de|detalle de|saldos de|informe de|reporte de)\s+)?(.+?)\s+(?:y sus|y las|y los)/);
             if (matchEntity && matchEntity[1]) {
-                const wordsToRemove = ['de', 'reporte', 'del'];
+                const wordsToRemove = ['de', 'reporte', 'del', 'los', 'las', 'el', 'la', 'un', 'una', 'por'];
                 rawEntity = matchEntity[1].split(' ').filter(w => !wordsToRemove.includes(w)).join(' ').trim();
             }
 

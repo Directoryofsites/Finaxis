@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Paso a Paso: Registro Factura Electrónica DIAN</title>
+    <style>
+        :root {
+            --primary: #003a70;
+            --secondary: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --light-bg: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 4px solid var(--primary);
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .intro {
+            font-size: 1.1em;
+            color: #666;
+        }
+
+        .step {
+            background: var(--light-bg);
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-left: 8px solid var(--primary);
+            position: relative;
+        }
+
+        .step-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .number-circle {
+            background: var(--primary);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 15px;
+            font-size: 0.8em;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            color: white;
+            font-size: 0.9em;
+        }
+
+        .badge-green {
+            background-color: var(--secondary);
+        }
+
+        .badge-blue {
+            background-color: #007bff;
+        }
+
+        .badge-dark {
+            background-color: #343a40;
+        }
+
+        .email-box {
+            background: #ffffff;
+            border: 2px dashed #ccc;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+
+        .note {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .note-important {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+        }
+
+        .note-wait {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        strong {
+            color: #000;
+        }
+
+        .icon-desc {
+            font-style: italic;
+            color: #555;
+            background: #eee;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Guía de Habilitación DIAN</h1>
+            <p class="intro">Paso a paso para personas que no son expertas en sistemas</p>
+        </header>
+
+        <!-- PASO 1 -->
+        <div class="step">
+            <div class="step-title">
+                <div class="number-circle">1</div> Entrar a la página de la DIAN
+            </div>
+            <p>Lo primero es abrir el navegador e ir a la dirección oficial:</p>
+            <p>👉 <strong>www.dian.gov.co</strong></p>
+            <ul>
+                <li>Baja un poco con el mouse hasta encontrar una sección que dice <strong>"Temas de interés"</strong>.
+                </li>
+                <li>Busca el recuadro que dice <strong>"Factura Electrónica"</strong>.</li>
+                <li>Haz clic en la palabra <span class="badge badge-blue">Habilitación</span> (está justo debajo de
+                    "Micrositio").</li>
+            </ul>
+        </div>
+
+        <!-- PASO 2 -->
+        <div class="step">
+            <div class="step-title">
+                <div class="number-circle">2</div> Iniciar sesión (El menú de entrada)
+            </div>
+            <p>Se abrirá una página azul. Debes hacer lo siguiente:</p>
+            <ul>
+                <li>Haz clic en el botón que dice <span class="badge badge-green">Persona</span>.</li>
+                <li>Escribe tu número de cédula en el cuadro que aparece.</li>
+                <li>Haz clic en el botón verde que dice <strong>"Entrar"</strong>.</li>
+            </ul>
+            <div class="note note-important">
+                <strong>OJO:</strong> En este momento la página parecerá que no hizo nada y te dirá que "Se ha enviado
+                un correo". No te asustes, es normal.
+            </div>
+        </div>
+
+        <!-- PASO 3 -->
+        <div class="step">
+            <div class="step-title">
+                <div class="number-circle">3</div> El "Bendito" Token (Ir a tu correo)
+            </div>
+            <p>Sin cerrar la página de la DIAN, abre tu correo electrónico (Yahoo o el que uses).</p>
+            <div class="email-box">
+                <p>1. Busca un correo nuevo que diga: <strong>"Token Acceso DIAN"</strong>.</p>
+                <p>2. Abre el correo y busca un botón verde grande que dice <span
+                        class="badge badge-green">Acceder</span>.</p>
+                <p>3. Dale clic a ese botón verde.</p>
+            </div>
+            <p>Al darle clic, se abrirá automáticamente una nueva pestaña en tu computador con el panel de la DIAN ya
+                abierto.</p>
+        </div>
+
+        <!-- PASO 4 -->
+        <div class="step">
+            <div class="step-title">
+                <div class="number-circle">4</div> Entrar al Software Gratuito
+            </div>
+            <p>Ahora verás una pantalla con gráficas y menús a la izquierda.</p>
+            <ul>
+                <li>Mira los íconos pequeños en la columna blanca de la izquierda.</li>
+                <li>Busca el último ícono, el que parece un <strong>Bombillo o Foquito prendido</strong> <span
+                        class="icon-desc">(Soluciones Gratuitas)</span>.</li>
+                <li>Al darle clic, verás un recuadro grande en el centro que dice <strong>"Factura
+                        Electrónica"</strong>. Dale clic a ese recuadro.</li>
+            </ul>
+        </div>
+
+        <!-- PASO 5 -->
+        <div class="step">
+            <div class="step-title">
+                <div class="number-circle">5</div> Pedir la Firma Gratis (Certificado)
+            </div>
+            <p>Para poder facturar, necesitas una "firma digital". La DIAN te la regala:</p>
+            <ul>
+                <li>Busca en el menú de arriba la palabra <strong>"Configuración"</strong>.</li>
+                <li>Dale clic y selecciona la opción <strong>"Certificados Digitales"</strong>.</li>
+                <li>Verás un botón blanco con borde verde que dice <span class="badge"
+                        style="border:1px solid var(--secondary); color:var(--secondary);">Solicitar certificado
+                        gratuito</span>. Dale clic.</li>
+            </ul>
+            <div class="note note-important">
+                <strong>Cuidado:</strong> Si se abre una ventanita que dice "Adicionar Certificado" con un botón verde,
+                <strong>ciérrala en la X</strong>. Solo usa el botón que dice "Solicitar".
+            </div>
+        </div>
+
+        <!-- PASO 6 -->
+        <div class="step">
+            <div class="step-title">
+                <div class="number-circle">6</div> Activar la Firma en el Correo
+            </div>
+            <p>Una vez que solicitas el certificado, debes volver una vez más a tu correo electrónico.</p>
+            <div class="email-box">
+                <p>1. Busca un correo de <strong>GSE</strong> que diga <strong>"Activar cuenta"</strong>.</p>
+                <p>2. Dale clic al botón negro que dice <span class="badge badge-dark">Activar cuenta</span>.</p>
+                <p>3. Se abrirá una página para crear una <strong>Contraseña</strong>.</p>
+            </div>
+            <div class="note note-important">
+                <strong>MUY IMPORTANTE:</strong> Crea una contraseña que tenga una Mayúscula, un Número y un símbolo
+                (como un punto . o un asterisco *). <strong>Escríbela en un papel y no la pierdas</strong>, porque con
+                esa clave firmarás cada factura.
+            </div>
+        </div>
+
+        <!-- PASO 7 -->
+        <div class="step">
+            <div class="step-title">
+                <div class="number-circle">7</div> La paciencia es una virtud (Espera de 24-48h)
+            </div>
+            <p>Después de que crees la contraseña en la página de GSE, ya terminaste tu parte por hoy.</p>
+            <div class="note note-wait">
+                <strong>¿Qué sigue?</strong> La DIAN se demora de <strong>1 a 2 días hábiles</strong> en hacer que tu
+                firma aparezca en el sistema.
+                <br><br>
+                Si entras ahora a la DIAN y dice "Certificado no encontrado", <strong>es normal</strong>. Deja pasar un
+                día y mañana vuelve a revisar. Cuando veras una fecha de vencimiento en la tabla de certificados,
+                estaremos listos para las pruebas finales.
+            </div>
+        </div>
+
+        <div style="text-align: center; color: #999; font-size: 0.8em; margin-top: 40px;">
+            Manual simplificado para Héctor Fabio - 2026
+        </div>
+    </div>
+
+</body>
+
+</html>
