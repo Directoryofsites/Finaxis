@@ -141,6 +141,89 @@ const CheckboxMultiSelect = ({ options, selected, onChange, placeholder = "Selec
   );
 };
 
+// NUEVO: Select Inteligente con Búsqueda Integrada para un solo elemento
+const SingleSearchSelect = ({ options, value, onChange, placeholder = "Seleccionar...", icon }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredOptions = options.filter(opt =>
+    (opt.label || opt.nombre || opt.razon_social || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (opt.codigo || opt.numero_identificacion || opt.nit || "").toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const selectedOption = options.find(opt => opt.id === value);
+  const displayLabel = selectedOption ? (selectedOption.label || selectedOption.nombre || selectedOption.razon_social) : placeholder;
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <div
+        className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg shadow-sm bg-white text-sm cursor-pointer flex justify-between items-center focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500 transition-all"
+        onClick={() => { setIsOpen(!isOpen); setSearchTerm(''); }}
+      >
+        {icon && <div className="absolute left-3 top-3 text-gray-400 pointer-events-none">{icon}</div>}
+        <span className={`truncate font-medium ${selectedOption ? 'text-gray-900' : 'text-gray-500'}`}>
+          {displayLabel}
+        </span>
+        <span className="text-gray-400 text-xs">▼</span>
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-60 flex flex-col">
+          <div className="p-2 border-b border-gray-100">
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:border-indigo-500 bg-gray-50"
+              placeholder="Escribe para buscar (ej: JIM)..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              autoFocus
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+          <div className="overflow-y-auto flex-1 p-1 space-y-1 bg-white drop-shadow-xl">
+            <div
+              className={`px-3 py-2 text-sm rounded cursor-pointer transition-colors ${!value ? 'bg-indigo-50 text-indigo-700 font-bold' : 'hover:bg-gray-100 text-gray-700'}`}
+              onClick={() => { onChange(""); setIsOpen(false); }}
+            >
+              -- Borrar Selección --
+            </div>
+            {filteredOptions.map(option => (
+              <div
+                key={option.id}
+                className={`flex flex-col px-3 py-2 rounded cursor-pointer transition-colors ${value === option.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : 'hover:bg-gray-50 border-l-2 border-transparent'}`}
+                onClick={() => { onChange(option.id); setIsOpen(false); }}
+              >
+                <span className={`text-sm ${value === option.id ? 'text-indigo-700 font-bold' : 'text-gray-800 font-medium'}`}>
+                  {option.label || option.nombre || option.razon_social}
+                </span>
+                {(option.numero_identificacion || option.nit || option.codigo) && (
+                  <span className="text-xs text-gray-400 mt-0.5 font-mono">
+                    ID: {option.numero_identificacion || option.nit || option.codigo}
+                  </span>
+                )}
+              </div>
+            ))}
+            {filteredOptions.length === 0 && (
+              <div className="text-center text-xs text-gray-500 py-4 italic">No se encontraron resultados para "{searchTerm}"</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 function ReporteTerceroCuentaContent() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -858,13 +941,13 @@ function ReporteTerceroCuentaContent() {
               <>
                 <div className="md:col-span-2">
                   <label className={labelClass}>Tercero</label>
-                  <div className="relative">
-                    <select value={selectedTercero} onChange={(e) => setSelectedTercero(e.target.value)} className={selectClass}>
-                      <option value="">-- Seleccione Tercero --</option>
-                      {terceros.map(t => <option key={t.id} value={t.id}>{t.razon_social}</option>)}
-                    </select>
-                    <FaUserTag className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
-                  </div>
+                  <SingleSearchSelect
+                    options={terceros}
+                    value={selectedTercero}
+                    onChange={setSelectedTercero}
+                    placeholder="-- Buscar Tercero --"
+                    icon={<FaUserTag />}
+                  />
                 </div>
               </>
             )}
@@ -874,14 +957,13 @@ function ReporteTerceroCuentaContent() {
               <>
                 <div className="md:col-span-2">
                   <label className={labelClass}>Cuenta Principal</label>
-                  <div className="relative">
-                    {/* Idealmente un Autocomplete, por ahora Select simple */}
-                    <select value={selectedCuentaPrincipal} onChange={(e) => setSelectedCuentaPrincipal(e.target.value)} className={selectClass}>
-                      <option value="">-- Seleccione Cuenta --</option>
-                      {cuentasAll.map(c => <option key={c.id} value={c.id}>{c.codigo} - {c.nombre}</option>)}
-                    </select>
-                    <FaBook className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
-                  </div>
+                  <SingleSearchSelect
+                    options={cuentasAll.map(c => ({ ...c, label: `${c.codigo} - ${c.nombre}` }))}
+                    value={selectedCuentaPrincipal}
+                    onChange={setSelectedCuentaPrincipal}
+                    placeholder="-- Buscar Cuenta --"
+                    icon={<FaBook />}
+                  />
                 </div>
               </>
             )}
