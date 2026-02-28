@@ -56,13 +56,12 @@ export default function SmartSearchSection() {
             <div className="mb-8 text-center relative group">
                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
                 <img
-                    src="/logo.png?v=4"
+                    src="/logo.png?v=5"
                     alt="Finaxis AI"
-                    className="relative h-64 md:h-80 object-contain transform transition-transform duration-500 hover:scale-105"
+                    className="relative w-full max-w-sm h-auto object-contain transform transition-transform duration-500 hover:scale-105"
                     style={{
-                        WebkitMaskImage: 'radial-gradient(ellipse at center, black 45%, transparent 80%)',
-                        maskImage: 'radial-gradient(ellipse at center, black 45%, transparent 80%)',
-                        filter: 'drop-shadow(0 20px 30px rgba(0,0,0,0.05))'
+                        height: 'clamp(250px, 40vh, 450px)',
+                        filter: 'drop-shadow(0 20px 30px rgba(0,0,0,0.1))'
                     }}
                 />
             </div>
