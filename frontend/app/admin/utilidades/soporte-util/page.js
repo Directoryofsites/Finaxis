@@ -840,16 +840,38 @@ function PanelCopiasSeguridad() {
     const handleRunManual = async () => {
         if (!window.confirm("¿Está seguro de querer forzar el backup global ahora mismo? Esto podría tomar tiempo dependiendo de la cantidad de empresas.")) return;
         setIsManualRunning(true);
-        setMensaje({ texto: 'Iniciando backup manual...', tipo: 'info' });
+        setMensaje({ texto: 'Generando archivo ZIP y preparando descarga... Por favor no cierre esta ventana.', tipo: 'info' });
         try {
             const res = await runGlobalBackupManually();
-            setMensaje({ texto: res.data.message || 'Backup manual finalizado con éxito.', tipo: 'success' });
+
+            // Extraer el nombre de archivo de los headers si es posible
+            let fileName = 'BACKUP_GLOBAL.zip';
+            const disposition = res.headers['content-disposition'];
+            if (disposition && disposition.indexOf('attachment') !== -1) {
+                const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                const matches = filenameRegex.exec(disposition);
+                if (matches != null && matches[1]) {
+                    fileName = matches[1].replace(/['"]/g, '');
+                }
+            }
+
+            // Crear el Blob url y forzar la descarga
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+
+            setMensaje({ texto: 'Backup manual generado y descargado con éxito.', tipo: 'success' });
 
             // Refrescar el estado para actualizar last_run
             const resConf = await getGlobalBackupConfig();
             setConfig(resConf.data);
         } catch (err) {
-            setMensaje({ texto: 'Error al ejecutar backup manual.', tipo: 'error' });
+            setMensaje({ texto: 'Error al ejecutar o descargar backup manual. Posible timeout o falla en el servidor.', tipo: 'error' });
         } finally {
             setIsManualRunning(false);
         }

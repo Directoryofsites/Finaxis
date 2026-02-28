@@ -149,8 +149,11 @@ def run_global_backup():
         # Retention Policy
         _apply_global_retention_policy(path, cfg.get("dias_retencion", 7))
         
+        return zip_full_path
+        
     except Exception as e:
         logger.error(f"[AutoBackup] Error fatal en Backup Global: {e}")
+        return None
     finally:
         db.close()
 

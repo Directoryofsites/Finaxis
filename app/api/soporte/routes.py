@@ -122,11 +122,21 @@ def save_global_backup_config_route(data: schemas_soporte.GlobalBackupConfig):
 def run_global_backup_manually_route():
     """
     Forzar manualmente la creación de un backup global en el servidor.
-    Se ejecuta de forma síncrona/inmediata en este request.
+    Se ejecuta de forma síncrona/inmediata en este request y descarga el archivo.
     """
+    from fastapi.responses import FileResponse
+    from fastapi import HTTPException
+    import os
     try:
-        scheduler_backup.run_global_backup()
-        return {"message": "Backup global ejecutado exitosamente."}
+        zip_path = scheduler_backup.run_global_backup()
+        if zip_path and os.path.exists(zip_path):
+            filename = os.path.basename(zip_path)
+            return FileResponse(
+                path=zip_path,
+                media_type="application/zip",
+                filename=filename
+            )
+        else:
+            raise HTTPException(status_code=500, detail="El archivo ZIP no se generó correctamente, compruebe los logs.")
     except Exception as e:
-        from fastapi import HTTPException
         raise HTTPException(status_code=500, detail=f"Error ejecutando backup global: {str(e)}")

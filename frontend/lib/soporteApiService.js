@@ -265,5 +265,7 @@ export const saveGlobalBackupConfig = (payload) => {
 };
 
 export const runGlobalBackupManually = () => {
-  return soporteApiService.post('/soporte/backups/global/run');
+  return soporteApiService.post('/soporte/backups/global/run', {}, {
+    responseType: 'blob'
+  });
 };
