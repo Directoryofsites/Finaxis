@@ -17,7 +17,8 @@ def get_by_vigencia(db: Session, vigencia: int) -> model.IndicadorEconomico:
             "uvt": 47065 if vigencia >= 2024 else 42412,
             "sancion_minima": 470650, # 10 UVT
             "trm": 3900,
-            "euro": 4200
+            "euro": 4200,
+            "tasa_usura": 28.5 if vigencia <= 2025 else 25.23
         }
         obj = model.IndicadorEconomico(vigencia=vigencia, **defaults)
         db.add(obj)
@@ -70,6 +71,10 @@ def sync_indicadores_api(obj: model.IndicadorEconomico) -> model.IndicadorEconom
     except Exception as e:
         print(f"Error fetching EURO: {e}")
 
+    # 3. Patch Tasa Usura (en caso de que estuviera en 0 por bug previo)
+    if not obj.tasa_usura or obj.tasa_usura == 0:
+        obj.tasa_usura = 25.23
+        
     # Se marca la fecha de sincronizacion
     obj.fecha_sincronizacion = date.today()
     return obj
