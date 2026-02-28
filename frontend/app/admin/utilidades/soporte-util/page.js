@@ -855,15 +855,22 @@ function PanelCopiasSeguridad() {
                 }
             }
 
-            // Crear el Blob url y forzar la descarga
-            const url = window.URL.createObjectURL(new Blob([res.data]));
+            // Crear el Blob url y forzar la descarga de forma segura
+            const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/zip' }));
             const a = document.createElement("a");
+            a.style.display = 'none';
             a.href = url;
             a.download = fileName;
             document.body.appendChild(a);
+
+            // Forzar el click
             a.click();
-            a.remove();
-            window.URL.revokeObjectURL(url);
+
+            // Limpieza diferida para evitar bloqueos del navegador
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 2000);
 
             setMensaje({ texto: 'Backup manual generado y descargado con éxito.', tipo: 'success' });
 
