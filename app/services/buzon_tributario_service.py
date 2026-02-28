@@ -127,7 +127,8 @@ def procesar_buzon(
     facturas_procesadas = []
     
     try:
-        clean_password = password.replace(" ", "")
+        # Se remueven espacios normales y "No-Breaking Spaces" (\xa0) comunes al copiar de html
+        clean_password = ''.join(password.split())
         mail.login(email_addr, clean_password)
         mail.select("inbox")
         
