@@ -269,3 +269,17 @@ export const runGlobalBackupManually = () => {
     responseType: 'blob'
   });
 };
+
+export const getGlobalBackupFiles = () => {
+  return soporteApiService.get('/soporte/backups/global/list');
+};
+
+export const downloadGlobalBackupFile = (filename) => {
+  return soporteApiService.get(`/soporte/backups/global/download/${filename}`, {
+    responseType: 'blob'
+  });
+};
+
+export const deleteGlobalBackupFile = (filename) => {
+  return soporteApiService.delete(`/soporte/backups/global/delete/${filename}`);
+};

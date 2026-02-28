@@ -140,3 +140,46 @@ def run_global_backup_manually_route():
             raise HTTPException(status_code=500, detail="El archivo ZIP no se generó correctamente, compruebe los logs.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error ejecutando backup global: {str(e)}")
+
+# --- Explorador de Archivos Nube ---
+
+@router.get(
+    "/backups/global/list",
+    dependencies=[Depends(has_permission("soporte:acceder_panel"))]
+)
+def list_global_backup_files_route():
+    """Retorna un listado de los backup .zip disponibles en el disco duro de la nube."""
+    return scheduler_backup.get_global_backup_files()
+
+
+@router.get(
+    "/backups/global/download/{filename}",
+    dependencies=[Depends(has_permission("soporte:acceder_panel"))]
+)
+def download_specific_backup_route(filename: str):
+    """Descarga un .zip específico validado por nombre."""
+    from fastapi.responses import FileResponse
+    from fastapi import HTTPException
+    
+    file_path = scheduler_backup.get_global_backup_file_path(filename)
+    if not file_path:
+        raise HTTPException(status_code=404, detail="Archivo no encontrado o inválido.")
+        
+    return FileResponse(
+        path=file_path,
+        media_type="application/zip",
+        filename=filename
+    )
+
+
+@router.delete(
+    "/backups/global/delete/{filename}",
+    dependencies=[Depends(has_permission("soporte:acceder_panel"))]
+)
+def delete_specific_backup_route(filename: str):
+    """Elimina físicamente un backup viejo para liberar espacio."""
+    from fastapi import HTTPException
+    success = scheduler_backup.delete_global_backup_file(filename)
+    if not success:
+        raise HTTPException(status_code=404, detail="Archivo no encontrado o no pudo ser eliminado.")
+    return {"message": f"Archivo {filename} eliminado correctamente"}

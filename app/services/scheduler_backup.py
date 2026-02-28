@@ -19,6 +19,14 @@ logger = logging.getLogger(__name__)
 
 scheduler = BackgroundScheduler()
 
+def get_global_backup_path() -> str:
+    """Devuelve la ruta configurada para los backups globales"""
+    try:
+        cfg = load_config("global")
+        return cfg.get("ruta_local", "C:/Backups_Finaxis")
+    except Exception:
+        return "C:/Backups_Finaxis"
+
 def load_config(empresa_id=None):
     """
     Carga la configuración. 
@@ -156,6 +164,70 @@ def run_global_backup():
         return None
     finally:
         db.close()
+
+def get_global_backup_files():
+    """
+    Lista todos los archivos ZIP generados en el directorio de backups globales.
+    Devuelve su nombre, tamaño y fecha.
+    """
+    import datetime
+    
+    path = get_global_backup_path()
+    if not os.path.exists(path):
+        return []
+        
+    archivos = []
+    try:
+        # Filtrar solo zips creados por el servicio (prefijo)
+        for i in os.listdir(path):
+            if i.startswith("BACKUP_GLOBAL_") and i.endswith(".zip"):
+                f_path = os.path.join(path, i)
+                if os.path.isfile(f_path):
+                    stats = os.stat(f_path)
+                    
+                    # Size en megabytes
+                    tamano_mb = round(stats.st_size / (1024 * 1024), 2)
+                    fecha_creacion = datetime.datetime.fromtimestamp(stats.st_ctime).isoformat()
+                    
+                    archivos.append({
+                        "filename": i,
+                        "size_mb": tamano_mb,
+                        "created_at": fecha_creacion
+                    })
+        # Ordenar los más nuevos primero
+        archivos.sort(key=lambda x: x["created_at"], reverse=True)
+        return archivos
+    except Exception as e:
+        logger.error(f"Error listando backups en {path}: {e}")
+        return []
+
+def get_global_backup_file_path(filename: str) -> str:
+    """Valida y obtiene la ruta absoluta de un archivo de backup para descarga segura."""
+    if not filename.startswith("BACKUP_GLOBAL_") or not filename.endswith(".zip"):
+        return None
+        
+    # Prevenir path traversal asegurando solo basenames
+    safe_filename = os.path.basename(filename)
+    path = get_global_backup_path()
+    full_path = os.path.join(path, safe_filename)
+    
+    if os.path.exists(full_path) and os.path.isfile(full_path):
+        return full_path
+    return None
+
+def delete_global_backup_file(filename: str) -> bool:
+    """Borra físicamente un archivo de backup validado"""
+    full_path = get_global_backup_file_path(filename)
+    if not full_path:
+        return False
+        
+    try:
+        os.remove(full_path)
+        logger.info(f"[AutoBackup] Usuario eliminó backup manualmente: {full_path}")
+        return True
+    except Exception as e:
+        logger.error(f"[AutoBackup] Error eliminando {full_path}: {e}")
+        return False
 
 def _apply_global_retention_policy(path, days):
     try:

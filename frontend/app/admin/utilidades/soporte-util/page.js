@@ -20,7 +20,10 @@ import {
     getAccountants,
     getGlobalBackupConfig,
     saveGlobalBackupConfig,
-    runGlobalBackupManually
+    runGlobalBackupManually,
+    getGlobalBackupFiles,
+    downloadGlobalBackupFile,
+    deleteGlobalBackupFile
 } from '@/lib/soporteApiService';
 
 import ConteoRegistros from './components/ConteoRegistros';
@@ -800,18 +803,36 @@ function PanelCopiasSeguridad() {
     const [isManualRunning, setIsManualRunning] = useState(false);
     const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
 
+    // --- ESTADO PARA EXPLORADOR DE ARCHIVOS ---
+    const [archivos, setArchivos] = useState([]);
+    const [isLoadingArchivos, setIsLoadingArchivos] = useState(false);
+
+    const fetchConfig = async () => {
+        try {
+            const res = await getGlobalBackupConfig();
+            setConfig(res.data);
+        } catch (err) {
+            setMensaje({ texto: 'Error al cargar configuración de backups', tipo: 'error' });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const fetchArchivos = async () => {
+        setIsLoadingArchivos(true);
+        try {
+            const res = await getGlobalBackupFiles();
+            setArchivos(res.data);
+        } catch (error) {
+            console.error("Error obteniendo lista de archivos de backup", error);
+        } finally {
+            setIsLoadingArchivos(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchConfig = async () => {
-            try {
-                const res = await getGlobalBackupConfig();
-                setConfig(res.data);
-            } catch (err) {
-                setMensaje({ texto: 'Error al cargar configuración de backups', tipo: 'error' });
-            } finally {
-                setIsLoading(false);
-            }
-        };
         fetchConfig();
+        fetchArchivos();
     }, []);
 
     const handleChange = (e) => {
@@ -830,6 +851,7 @@ function PanelCopiasSeguridad() {
             const res = await saveGlobalBackupConfig(config);
             setConfig(res.data);
             setMensaje({ texto: 'Configuración guardada correctamente.', tipo: 'success' });
+            fetchArchivos(); // Refrescar si hubo cambios en la política de retención
         } catch (err) {
             setMensaje({ texto: 'Error al guardar configuración.', tipo: 'error' });
         } finally {
@@ -874,13 +896,43 @@ function PanelCopiasSeguridad() {
 
             setMensaje({ texto: 'Backup manual generado y descargado con éxito.', tipo: 'success' });
 
-            // Refrescar el estado para actualizar last_run
-            const resConf = await getGlobalBackupConfig();
-            setConfig(resConf.data);
+            // Refrescar el estado para actualizar last_run y la lista de archivos
+            await fetchConfig();
+            await fetchArchivos();
         } catch (err) {
             setMensaje({ texto: 'Error al ejecutar o descargar backup manual. Posible timeout o falla en el servidor.', tipo: 'error' });
         } finally {
             setIsManualRunning(false);
+        }
+    };
+
+    const handleDownloadArchivo = async (filename) => {
+        try {
+            const res = await downloadGlobalBackupFile(filename);
+            const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/zip' }));
+            const a = document.createElement("a");
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 2000);
+        } catch (error) {
+            setMensaje({ texto: 'Error descargando archivo específico.', tipo: 'error' });
+        }
+    };
+
+    const handleDeleteArchivo = async (filename) => {
+        if (!window.confirm(`¿Estás seguro de querer eliminar permanentemente el archivo ${filename}?`)) return;
+        try {
+            await deleteGlobalBackupFile(filename);
+            setMensaje({ texto: `Archivo ${filename} eliminado.`, tipo: 'success' });
+            fetchArchivos();
+        } catch (error) {
+            setMensaje({ texto: 'Error eliminando el archivo.', tipo: 'error' });
         }
     };
 
@@ -980,6 +1032,63 @@ function PanelCopiasSeguridad() {
                     </button>
                 </div>
             </form>
+
+            <div className="mt-12 pt-8 border-t border-gray-200">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold text-gray-800">Archivos Generados en la Nube</h3>
+                    <button onClick={fetchArchivos} disabled={isLoadingArchivos} className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-1 px-3 rounded border border-gray-300 transition-colors">
+                        {isLoadingArchivos ? 'Actualizando...' : '↻ Refrescar Lista'}
+                    </button>
+                </div>
+
+                {archivos.length === 0 ? (
+                    <div className="text-center py-6 bg-gray-50 rounded-md border border-gray-200 text-gray-500">
+                        {isLoadingArchivos ? 'Cargando archivos...' : 'No hay copias de seguridad generadas aún en el disco duro del servidor.'}
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-md shadow-sm">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre del Archivo</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Creado</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Tamaño</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {archivos.map((archivo, idx) => (
+                                    <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            📦 {archivo.filename}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {new Date(archivo.created_at).toLocaleString('es-CO')}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right font-mono">
+                                            {archivo.size_mb} MB
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <button
+                                                onClick={() => handleDownloadArchivo(archivo.filename)}
+                                                className="text-indigo-600 hover:text-indigo-900 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded inline-flex items-center gap-1 mr-2 transition-colors"
+                                            >
+                                                ⬇️ Descargar
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteArchivo(archivo.filename)}
+                                                className="text-red-600 hover:text-red-900 border border-red-200 bg-red-50 hover:bg-red-100 px-3 py-1 rounded inline-flex items-center gap-1 transition-colors"
+                                            >
+                                                🗑️ Eliminar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
