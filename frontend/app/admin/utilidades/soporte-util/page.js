@@ -1220,111 +1220,113 @@ function SoporteUtilContent() {
             </header>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Tabs de Navegación */}
-                <div className="mb-8 border-b border-gray-200">
-                    <nav className="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
-                        {['gestionSoporte', 'gestionEmpresas', 'crearEmpresa', 'copias', 'conteo', 'roles', 'auditoria', 'utilidades', 'erradicador', 'maestros'].map((tab) => {
-                            const labels = {
-                                gestionSoporte: 'Usuarios Soporte',
-                                gestionEmpresas: 'Gestión Empresas',
-                                crearEmpresa: 'Crear Empresa',
-                                copias: 'Copias de Seguridad',
-                                conteo: 'Conteo Registros 📊',
-                                roles: 'Roles Globales',
-                                auditoria: 'Auditoría',
-                                utilidades: 'Utilidades',
-                                erradicador: 'Erradicador',
-                                maestros: 'Inspector Maestros'
-                            };
-                            return (
-                                <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab)}
-                                    className={`
-                                        whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors
-                                        ${activeTab === tab
-                                            ? 'border-indigo-500 text-indigo-600'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
-                                    `}
-                                >
-                                    {labels[tab]}
-                                </button>
-                            );
-                        })}
-                    </nav>
-                </div>
+                <div className="flex flex-col md:flex-row gap-8">
+                    {/* Panel Lateral (Navegación Vertical) */}
+                    <div className="w-full md:w-72 flex-shrink-0">
+                        <nav className="flex flex-col space-y-1 bg-white p-4 rounded-xl shadow-sm border border-gray-200" aria-label="Tabs">
+                            {['gestionSoporte', 'gestionEmpresas', 'crearEmpresa', 'copias', 'conteo', 'roles', 'auditoria', 'utilidades', 'erradicador', 'maestros'].map((tab) => {
+                                const labels = {
+                                    gestionSoporte: 'Usuarios Soporte',
+                                    gestionEmpresas: 'Gestión Empresas',
+                                    crearEmpresa: 'Crear Empresa',
+                                    copias: 'Copias de Seguridad',
+                                    conteo: 'Conteo Registros 📊',
+                                    roles: 'Roles Globales',
+                                    auditoria: 'Auditoría',
+                                    utilidades: 'Utilidades',
+                                    erradicador: 'Erradicador',
+                                    maestros: 'Inspector Maestros'
+                                };
+                                return (
+                                    <button
+                                        key={tab}
+                                        onClick={() => setActiveTab(tab)}
+                                        className={`
+                                            w-full text-left px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200
+                                            ${activeTab === tab
+                                                ? 'bg-indigo-50 border-l-4 border-indigo-500 text-indigo-700 shadow-sm'
+                                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-l-4 border-transparent'}
+                                        `}
+                                    >
+                                        {labels[tab]}
+                                    </button>
+                                );
+                            })}
+                        </nav>
+                    </div>
 
-                {/* Contenido de Tabs */}
-                <div className="animate-fadeIn">
-                    {activeTab === 'gestionSoporte' && (
-                        <div className="grid grid-cols-1 gap-6">
-                            <GestionSoportePanel soporteUsers={dashboardData.usuarios_soporte} onDataChange={fetchDashboardData} />
-                            <UltimasOperaciones todasLasEmpresas={dashboardData.empresas || []} limit={5} />
-                        </div>
-                    )}
-
-                    {activeTab === 'gestionEmpresas' && (
-                        <GestionEmpresasPanel
-                            refreshTrigger={refreshTrigger}
-                            onDataChange={() => {
-                                fetchDashboardData();
-                                setRefreshTrigger(prev => prev + 1);
-                            }}
-                            onOpenModal={(empresa) => {
-                                setSelectedEmpresa(empresa);
-                                setIsModalOpen(true);
-                            }}
-                        />
-                    )}
-
-                    {activeTab === 'crearEmpresa' && (
-                        <CrearEmpresaPanel
-                            onEmpresaCreated={(newEmpresa) => {
-                                setActiveTab('gestionEmpresas');
-                                fetchDashboardData();
-                            }}
-                        />
-                    )}
-
-                    {activeTab === 'conteo' && (
-                        <ConteoRegistros />
-                    )}
-
-                    {activeTab === 'roles' && (
-                        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-xl font-bold text-gray-800">Gestión Global de Roles</h2>
-                                <p className="text-sm text-gray-500">Configuración de plantillas de permisos para nuevas empresas.</p>
+                    {/* Contenido de Tabs */}
+                    <div className="flex-1 min-w-0 animate-fadeIn">
+                        {activeTab === 'gestionSoporte' && (
+                            <div className="grid grid-cols-1 gap-6">
+                                <GestionSoportePanel soporteUsers={dashboardData.usuarios_soporte} onDataChange={fetchDashboardData} />
+                                <UltimasOperaciones todasLasEmpresas={dashboardData.empresas || []} limit={5} />
                             </div>
-                            <RolesManagementView isGlobalMode={true} />
-                        </div>
-                    )}
+                        )}
 
-                    {activeTab === 'copias' && (
-                        <PanelCopiasSeguridad />
-                    )}
+                        {activeTab === 'gestionEmpresas' && (
+                            <GestionEmpresasPanel
+                                refreshTrigger={refreshTrigger}
+                                onDataChange={() => {
+                                    fetchDashboardData();
+                                    setRefreshTrigger(prev => prev + 1);
+                                }}
+                                onOpenModal={(empresa) => {
+                                    setSelectedEmpresa(empresa);
+                                    setIsModalOpen(true);
+                                }}
+                            />
+                        )}
 
-                    {activeTab === 'auditoria' && (
-                        <div className="space-y-8">
-                            <AuditoriaConsecutivosSoporte todasLasEmpresas={dashboardData.empresas || []} />
-                            <InspectorUniversal />
-                        </div>
-                    )}
+                        {activeTab === 'crearEmpresa' && (
+                            <CrearEmpresaPanel
+                                onEmpresaCreated={(newEmpresa) => {
+                                    setActiveTab('gestionEmpresas');
+                                    fetchDashboardData();
+                                }}
+                            />
+                        )}
 
-                    {activeTab === 'utilidades' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <ResetConsumoPanel />
-                            <BuscadorPorLlaveNatural />
-                        </div>
-                    )}
+                        {activeTab === 'conteo' && (
+                            <ConteoRegistros />
+                        )}
 
-                    {activeTab === 'erradicador' && (
-                        <ErradicadorUniversal />
-                    )}
+                        {activeTab === 'roles' && (
+                            <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-xl font-bold text-gray-800">Gestión Global de Roles</h2>
+                                    <p className="text-sm text-gray-500">Configuración de plantillas de permisos para nuevas empresas.</p>
+                                </div>
+                                <RolesManagementView isGlobalMode={true} />
+                            </div>
+                        )}
 
-                    {activeTab === 'maestros' && (
-                        <InspectorMaestros />
-                    )}
+                        {activeTab === 'copias' && (
+                            <PanelCopiasSeguridad />
+                        )}
+
+                        {activeTab === 'auditoria' && (
+                            <div className="space-y-8">
+                                <AuditoriaConsecutivosSoporte todasLasEmpresas={dashboardData.empresas || []} />
+                                <InspectorUniversal />
+                            </div>
+                        )}
+
+                        {activeTab === 'utilidades' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <ResetConsumoPanel />
+                                <BuscadorPorLlaveNatural />
+                            </div>
+                        )}
+
+                        {activeTab === 'erradicador' && (
+                            <ErradicadorUniversal />
+                        )}
+
+                        {activeTab === 'maestros' && (
+                            <InspectorMaestros />
+                        )}
+                    </div>
                 </div>
             </main>
 
