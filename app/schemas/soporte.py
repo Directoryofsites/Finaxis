@@ -31,3 +31,10 @@ class EmpresaCreateFromTemplate(BaseModel):
 
 class TemplateConversionRequest(BaseModel):
     template_category: str
+
+class GlobalBackupConfig(BaseModel):
+    enabled: bool
+    hora_ejecucion: str
+    ruta_local: str
+    dias_retencion: int
+    last_run: Optional[str] = None

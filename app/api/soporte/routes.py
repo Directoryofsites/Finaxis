@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.services import soporte as services_soporte
+from app.services import scheduler_backup
 from app.schemas import soporte as schemas_soporte
 from app.schemas import usuario as schemas_usuario # NUEVO IMPORT
 from app.core.security import has_permission
@@ -90,3 +91,42 @@ def convert_empresa_to_template_route(
         source_empresa_id=empresa_id, 
         template_category=data.template_category
     )
+
+@router.get(
+    "/backups/global",
+    response_model=schemas_soporte.GlobalBackupConfig,
+    dependencies=[Depends(has_permission("soporte:acceder_panel"))]
+)
+def get_global_backup_config_route():
+    """
+    Obtiene la configuración global de backups automáticos.
+    """
+    return scheduler_backup.load_config(empresa_id="global")
+
+@router.post(
+    "/backups/global",
+    response_model=schemas_soporte.GlobalBackupConfig,
+    dependencies=[Depends(has_permission("soporte:acceder_panel"))]
+)
+def save_global_backup_config_route(data: schemas_soporte.GlobalBackupConfig):
+    """
+    Guarda y actualiza la configuración global de backups automáticos.
+    """
+    scheduler_backup.save_global_config(data.model_dump())
+    return scheduler_backup.load_config(empresa_id="global")
+
+@router.post(
+    "/backups/global/run",
+    dependencies=[Depends(has_permission("soporte:acceder_panel"))]
+)
+def run_global_backup_manually_route():
+    """
+    Forzar manualmente la creación de un backup global en el servidor.
+    Se ejecuta de forma síncrona/inmediata en este request.
+    """
+    try:
+        scheduler_backup.run_global_backup()
+        return {"message": "Backup global ejecutado exitosamente."}
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"Error ejecutando backup global: {str(e)}")

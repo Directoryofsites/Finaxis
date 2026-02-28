@@ -254,3 +254,16 @@ export const resetConsumoFactory = (empresaId, params = {}) => {
     }
   });
 };
+
+// --- COPIAS DE SEGURIDAD GLOBALES ---
+export const getGlobalBackupConfig = () => {
+  return soporteApiService.get('/soporte/backups/global');
+};
+
+export const saveGlobalBackupConfig = (payload) => {
+  return soporteApiService.post('/soporte/backups/global', payload);
+};
+
+export const runGlobalBackupManually = () => {
+  return soporteApiService.post('/soporte/backups/global/run');
+};

@@ -14,11 +14,13 @@ import {
     createSoporteUser,
     updateSoporteUserPassword,
     getRoles,
-    deleteUser,
     updateUser,
     convertirEnPlantilla,
     searchEmpresas,
-    getAccountants
+    getAccountants,
+    getGlobalBackupConfig,
+    saveGlobalBackupConfig,
+    runGlobalBackupManually
 } from '@/lib/soporteApiService';
 
 import ConteoRegistros from './components/ConteoRegistros';
@@ -781,6 +783,178 @@ function GestionSoportePanel({ soporteUsers, onDataChange }) {
         </div>
     );
 }
+
+// ##################################################################
+// ########### PANEL DE COPIAS DE SEGURIDAD GLOBAL ###########
+// ##################################################################
+function PanelCopiasSeguridad() {
+    const [config, setConfig] = useState({
+        enabled: false,
+        hora_ejecucion: "00:00",
+        dias_retencion: 7,
+        ruta_local: "C:/Backups_Finaxis",
+        last_run: null
+    });
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isManualRunning, setIsManualRunning] = useState(false);
+    const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
+
+    useEffect(() => {
+        const fetchConfig = async () => {
+            try {
+                const res = await getGlobalBackupConfig();
+                setConfig(res.data);
+            } catch (err) {
+                setMensaje({ texto: 'Error al cargar configuración de backups', tipo: 'error' });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchConfig();
+    }, []);
+
+    const handleChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setConfig(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
+    };
+
+    const handleSave = async (e) => {
+        e.preventDefault();
+        setIsSaving(true);
+        setMensaje({ texto: '', tipo: '' });
+        try {
+            const res = await saveGlobalBackupConfig(config);
+            setConfig(res.data);
+            setMensaje({ texto: 'Configuración guardada correctamente.', tipo: 'success' });
+        } catch (err) {
+            setMensaje({ texto: 'Error al guardar configuración.', tipo: 'error' });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleRunManual = async () => {
+        if (!window.confirm("¿Está seguro de querer forzar el backup global ahora mismo? Esto podría tomar tiempo dependiendo de la cantidad de empresas.")) return;
+        setIsManualRunning(true);
+        setMensaje({ texto: 'Iniciando backup manual...', tipo: 'info' });
+        try {
+            const res = await runGlobalBackupManually();
+            setMensaje({ texto: res.data.message || 'Backup manual finalizado con éxito.', tipo: 'success' });
+
+            // Refrescar el estado para actualizar last_run
+            const resConf = await getGlobalBackupConfig();
+            setConfig(resConf.data);
+        } catch (err) {
+            setMensaje({ texto: 'Error al ejecutar backup manual.', tipo: 'error' });
+        } finally {
+            setIsManualRunning(false);
+        }
+    };
+
+    if (isLoading) return <div className="p-4">Cargando configuración...</div>;
+
+    return (
+        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+            <div className="flex justify-between items-center mb-6 border-b pb-4">
+                <div>
+                    <h2 className="text-xl font-bold text-gray-800">Copias de Seguridad Globales (ZIP)</h2>
+                    <p className="text-sm text-gray-500">Configura el respaldo automático de todas las bases de datos de las empresas.</p>
+                </div>
+                <button
+                    onClick={handleRunManual}
+                    disabled={isManualRunning || isSaving}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 flex items-center gap-2 rounded-md font-bold disabled:bg-gray-400 transition-colors"
+                >
+                    {isManualRunning ? '⏳ Ejecutando...' : '▶️ Ejecutar Backup Ahora'}
+                </button>
+            </div>
+
+            {mensaje.texto && (
+                <div className={`p-4 mb-6 rounded-md ${mensaje.tipo === 'success' ? 'bg-green-100 text-green-800 border disabled:opacity-50 border-green-200' : mensaje.tipo === 'info' ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
+                    {mensaje.texto}
+                </div>
+            )}
+
+            <form onSubmit={handleSave} className="space-y-6">
+                <div className="bg-gray-50 p-4 rounded-lg flex items-center justify-between border border-gray-200">
+                    <div>
+                        <h4 className="font-bold text-gray-800">Habilitar Copias Automáticas</h4>
+                        <p className="text-sm text-gray-600">Si se activa, el servidor ejecutará el backup de forma desatendida a la hora configurada.</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="enabled" checked={config.enabled} onChange={handleChange} className="sr-only peer" />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Hora de Ejecución</label>
+                        <input
+                            type="time"
+                            name="hora_ejecucion"
+                            value={config.hora_ejecucion}
+                            onChange={handleChange}
+                            className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Días de Retención</label>
+                        <input
+                            type="number"
+                            name="dias_retencion"
+                            min="1"
+                            max="365"
+                            value={config.dias_retencion}
+                            onChange={handleChange}
+                            className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                            required
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Se eliminarán copias globales más antiguas.</p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Ruta Local del Servidor</label>
+                        <input
+                            type="text"
+                            name="ruta_local"
+                            value={config.ruta_local}
+                            onChange={handleChange}
+                            placeholder="Ej: C:/Backups_Finaxis"
+                            className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-gray-100"
+                            readOnly
+                        />
+                        <p className="text-xs text-gray-500 mt-1">El directorio donde se guarda el .zip</p>
+                    </div>
+                </div>
+
+                <div className="bg-indigo-50 p-4 rounded-md border border-indigo-100 flex justify-between items-center">
+                    <div>
+                        <p className="text-sm font-semibold text-indigo-900">Última ejecución del sistema:</p>
+                        <p className="text-indigo-700 font-mono text-sm mt-1">
+                            {config.last_run ? new Date(config.last_run).toLocaleString('es-CO') : 'Nunca se ha ejecutado'}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex justify-end pt-4 border-t border-gray-200">
+                    <button
+                        type="submit"
+                        disabled={isSaving || isManualRunning}
+                        className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md font-bold transition-colors disabled:opacity-50"
+                    >
+                        {isSaving ? 'Guardando...' : 'Guardar Programación'}
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+}
+
 // ##################################################################
 // ########### FIN DE LA MODIFICACIÓN ###########
 // ##################################################################
@@ -911,11 +1085,12 @@ function SoporteUtilContent() {
                 {/* Tabs de Navegación */}
                 <div className="mb-8 border-b border-gray-200">
                     <nav className="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
-                        {['gestionSoporte', 'gestionEmpresas', 'crearEmpresa', 'conteo', 'roles', 'auditoria', 'utilidades', 'erradicador', 'maestros'].map((tab) => {
+                        {['gestionSoporte', 'gestionEmpresas', 'crearEmpresa', 'copias', 'conteo', 'roles', 'auditoria', 'utilidades', 'erradicador', 'maestros'].map((tab) => {
                             const labels = {
                                 gestionSoporte: 'Usuarios Soporte',
                                 gestionEmpresas: 'Gestión Empresas',
                                 crearEmpresa: 'Crear Empresa',
+                                copias: 'Copias de Seguridad',
                                 conteo: 'Conteo Registros 📊',
                                 roles: 'Roles Globales',
                                 auditoria: 'Auditoría',
@@ -985,6 +1160,10 @@ function SoporteUtilContent() {
                             </div>
                             <RolesManagementView isGlobalMode={true} />
                         </div>
+                    )}
+
+                    {activeTab === 'copias' && (
+                        <PanelCopiasSeguridad />
                     )}
 
                     {activeTab === 'auditoria' && (
