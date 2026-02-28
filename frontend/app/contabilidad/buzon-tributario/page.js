@@ -65,9 +65,11 @@ export default function BuzonTributarioPage() {
             // Cargar Configuración Persistente
             try {
                 const configRes = await apiService.get('/buzon-tributario/config');
-                if (configRes.data && configRes.data.id) {
+                if (configRes.data) {
                     const cfg = configRes.data;
-                    setConfigId(cfg.id);
+                    // Se usa id si llega en la nueva respuesta o isActive
+                    if (cfg.email_addr) setConfigId(true);
+
                     setEmail(cfg.email_addr || '');
                     setPassword(cfg.password_app_masked || ''); // Viene enmascarada del backend
                     setTipoDocumentoId(cfg.tipo_documento_id ? String(cfg.tipo_documento_id) : '');
@@ -102,11 +104,9 @@ export default function BuzonTributarioPage() {
             const res = await apiService.post('/buzon-tributario/config', payload);
             toast.success("Configuración guardada exitosamente.");
 
-            if (res.data && res.data.id) {
-                setConfigId(res.data.id);
-                // Si guardamos, pasamos a la pestaña escanear automáticamente
-                setActiveTab('escanear');
-            }
+            setConfigId(true);
+            // Si guardamos, pasamos a la pestaña escanear automáticamente
+            setActiveTab('escanear');
         } catch (err) {
             console.error("Error saving config:", err);
             toast.error(err.response?.data?.detail || "No se pudo guardar la configuración.");
@@ -268,7 +268,7 @@ export default function BuzonTributarioPage() {
                         {/* CONTENIDO: ESCANEAR */}
                         {activeTab === 'escanear' && (
                             <div className="animate-fadeIn space-y-8">
-                                {!configId ? (
+                                {!email || !password || !tipoDocumentoId || !cuentaGastoId || !cuentaCajaId ? (
                                     <div className="text-center p-12 bg-amber-50 rounded-2xl border border-amber-200">
                                         <FaExclamationTriangle className="text-4xl text-amber-500 mx-auto mb-4" />
                                         <h3 className="text-xl font-bold text-amber-800 mb-2">Faltan Parámetros</h3>
