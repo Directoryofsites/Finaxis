@@ -10,7 +10,7 @@ export default function SmartSearchSection() {
                 <img
                     src="/logo.png?v=4"
                     alt="Finaxis ERP"
-                    className="relative h-64 md:h-80 w-auto object-contain transform transition-transform duration-700 hover:scale-105"
+                    className="relative h-[250px] md:h-[350px] w-auto object-contain transform transition-transform duration-700 hover:scale-105"
                     style={{
                         WebkitMaskImage: 'radial-gradient(ellipse at center, black 45%, transparent 80%)',
                         maskImage: 'radial-gradient(ellipse at center, black 45%, transparent 80%)',
