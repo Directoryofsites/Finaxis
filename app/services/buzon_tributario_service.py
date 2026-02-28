@@ -128,8 +128,9 @@ def procesar_buzon(
     
     try:
         # Se remueven espacios normales y "No-Breaking Spaces" (\xa0) comunes al copiar de html
+        clean_email = ''.join(email_addr.split())
         clean_password = ''.join(password.split())
-        mail.login(email_addr, clean_password)
+        mail.login(clean_email, clean_password)
         mail.select("inbox")
         
         status, messages = mail.search(None, "UNSEEN") # Leer solo "no leídos"
