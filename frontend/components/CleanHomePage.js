@@ -238,12 +238,13 @@ export default function CleanHomePage({ user }) {
     return (
         <div className="h-full w-full flex flex-col items-center justify-center bg-gray-50 select-none overflow-hidden relative">
 
-            {/* Branding Central (Marca de Agua) */}
-            <div className="flex flex-col items-center justify-center opacity-30 transform scale-125 pointer-events-none filter saturate-0">
+            {/* Branding Central (Marca de Agua Integrada) */}
+            <div className="flex flex-col items-center justify-center pointer-events-none transition-all duration-1000 ease-in-out">
                 <img
-                    src="/logo_finaxis_real.png"
+                    src="/logo.png"
                     alt="Finaxis ERP"
-                    className="w-auto h-48 object-contain mb-8 mix-blend-multiply contrast-[1.2] brightness-[1.1]"
+                    className="w-auto h-64 object-contain mb-8 opacity-60 mix-blend-multiply hover:opacity-100 transition-opacity"
+                    style={{ filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.05))' }}
                 />
             </div>
 
