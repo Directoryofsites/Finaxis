@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual: Configurar Buzón Tributario (Gmail)</title>
+    <!-- Tailwind CSS desde CDN para estilos modernos y rápidos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            line-height: 1.6;
+        }
+
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #4f46e5;
+            color: white;
+            font-weight: bold;
+            margin-right: 12px;
+        }
+
+        .highlight {
+            background-color: #e0e7ff;
+            color: #3730a3;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body class="p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden">
+
+        <!-- Encabezado -->
+        <div class="bg-indigo-600 px-8 py-6 text-white">
+            <h1 class="text-3xl font-extrabold mb-2 text-center">Configurar Buzón Tributario (Finaxis)</h1>
+            <p class="text-indigo-100 text-center text-lg">Guía paso a paso para generar la "Clave de Aplicación" en
+                correos de Gmail / Google Workspace.</p>
+        </div>
+
+        <div class="p-8">
+            <div class="bg-amber-50 border-l-4 border-amber-500 p-4 mb-8 rounded-r-lg">
+                <p class="text-amber-800 text-sm">
+                    <strong>Importante:</strong> Por motivos de seguridad, Google ya no permite que aplicaciones
+                    externas (como Finaxis) se conecten usando tu contraseña normal de correo. En su lugar, debes
+                    generar una <strong>Contraseña de Aplicación de 16 letras</strong> que es única y segura para usar
+                    exclusivamente en Finaxis.
+                </p>
+            </div>
+
+            <h2 class="text-2xl font-bold text-gray-800 border-b pb-2 mb-6">Requisito Previo Obligatorio</h2>
+            <div class="ml-6 mb-8 text-gray-600">
+                <p>Para poder crear una contraseña de aplicación, tu cuenta de Google <strong>debe tener activada la
+                        Verificación en 2 pasos</strong> (la que te envía un código al celular cuando entras desde un
+                    equipo nuevo).</p>
+                <p class="mt-2 text-sm">Si no la tienes activa, el sistema de Google te pedirá que la actives primero
+                    configurando tu número de teléfono.</p>
+            </div>
+
+            <h2 class="text-2xl font-bold text-gray-800 border-b pb-2 mb-6">¿Cómo Generar la Clave? (Paso a Paso)</h2>
+
+            <ol class="space-y-8 relative">
+                <!-- Línea conectora -->
+                <div class="absolute left-4 top-4 bottom-0 w-0.5 bg-indigo-100 -z-10 hidden md:block"></div>
+
+                <li class="flex flex-col md:flex-row gap-4 bg-white md:bg-transparent relative z-0">
+                    <div class="flex items-start">
+                        <span class="step-number shadow-mdshrink-0 mt-1">1</span>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-indigo-700">Entrar a la configuración de seguridad de Google
+                        </h3>
+                        <p class="text-gray-600 mt-1">
+                            Abre tu navegador de internet, asegúrate de haber iniciado sesión con el correo de la
+                            empresa (el que recibe las facturas) y haz clic en el siguiente enlace oficial de Google:
+                        </p>
+                        <a href="https://myaccount.google.com/security" target="_blank"
+                            class="inline-block mt-3 px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded text-indigo-600 font-semibold transition-colors">
+                            👉 Ir a Mi Cuenta de Google (Seguridad)
+                        </a>
+                    </div>
+                </li>
+
+                <li class="flex flex-col md:flex-row gap-4 bg-white md:bg-transparent relative z-0">
+                    <div class="flex items-start">
+                        <span class="step-number shadow-md shrink-0 mt-1">2</span>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-indigo-700">Buscar "Contraseñas de Aplicaciones"</h3>
+                        <p class="text-gray-600 mt-1">
+                            En la página de Seguridad, desplázate hacia abajo hasta la sección que dice <span
+                                class="highlight">Cómo accedes a Google</span> (o "Acceso a Google").
+                        </p>
+                        <ul class="list-disc list-inside mt-2 text-gray-600 ml-2 space-y-1">
+                            <li>Deberás ver un renglón que diga <strong>"Verificación en 2 pasos"</strong>. Asegúrate de
+                                que diga "Activada".</li>
+                            <li>Justo debajo o al final de esa página, debe haber un renglón llamado
+                                <strong>"Contraseñas de aplicaciones"</strong> (App passwords). Haz clic ahí.</li>
+                        </ul>
+                        <div class="bg-gray-50 border border-gray-200 rounded p-3 mt-3 text-sm italic text-gray-500">
+                            <strong>Nota:</strong> Si no encuentras el botón, puedes usar el buscador de arriba en esa
+                            misma página de Google y escribir "Contraseñas de aplicaciones". Si te sale y abres la
+                            página, te pedirá ingresar nuevamente tu clave de Gmail por seguridad.
+                        </div>
+                    </div>
+                </li>
+
+                <li class="flex flex-col md:flex-row gap-4 bg-white md:bg-transparent relative z-0">
+                    <div class="flex items-start">
+                        <span class="step-number shadow-md shrink-0 mt-1">3</span>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-indigo-700">Crear la nueva clave</h3>
+                        <p class="text-gray-600 mt-1">
+                            Llegarás a una pantalla donde te pedirá crear una nueva contraseña.
+                        </p>
+                        <ol class="list-decimal list-inside mt-2 text-gray-600 ml-2 space-y-2">
+                            <li>En el campo "Nombre de la aplicación" o "Seleccionar app", escribe <strong
+                                    class="text-gray-800">Finaxis Buzón</strong> (o la palabra que prefieras para
+                                identificarla).</li>
+                            <li>Haz clic en el botón azul <strong
+                                    class="bg-blue-600 text-white px-2 py-0.5 rounded text-sm">Crear</strong>.</li>
+                        </ol>
+                    </div>
+                </li>
+
+                <li class="flex flex-col md:flex-row gap-4 bg-white md:bg-transparent relative z-0">
+                    <div class="flex items-start">
+                        <span class="step-number shadow-md shrink-0 mt-1">4</span>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-emerald-600">Copiar la clave amarilla</h3>
+                        <p class="text-gray-600 mt-1">
+                            Saldrá una ventana emergente (pop-up) con un recuadro amarillo que tiene <strong>16 letras
+                                minúsculas</strong>.
+                        </p>
+                        <div class="mt-3 p-4 bg-yellow-100 border-2 border-yellow-400 rounded-lg text-center">
+                            <span class="text-2xl font-mono tracking-widest font-bold text-gray-800">
+                                abcd efgh ijkl mnop
+                            </span>
+                        </div>
+                        <p class="text-red-500 text-sm mt-2 font-bold">
+                            ⚠️ Selecciona cuidadosamente esa clave y cópiala (Ctrl+C). Una vez que cierres esa ventana
+                            de Google, NUNCA MÁS se volverá a mostrar la clave. Si la pierdes, deberás borrarla y crear
+                            una nueva.
+                        </p>
+                    </div>
+                </li>
+
+                <li class="flex flex-col md:flex-row gap-4 bg-white md:bg-transparent relative z-0">
+                    <div class="flex items-start">
+                        <span class="step-number shadow-md shrink-0 mt-1">5</span>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-indigo-700">Pegarla en Finaxis</h3>
+                        <p class="text-gray-600 mt-1">
+                            Ve a la plataforma de <strong>Finaxis ERP</strong>.
+                        </p>
+                        <ul class="list-disc list-inside mt-2 text-gray-600 ml-2 space-y-1 text-sm">
+                            <li>En el menú de la izquierda, ve a <strong>Contabilidad -> Captura Rápida -> Escanear
+                                    Buzón</strong>.</li>
+                            <li>En la primera pestaña ("Parámetros"), escribe tu correo de Gmail completo en el campo
+                                "Correo de Recepción DIAN".</li>
+                            <li>En el campo "Clave de Aplicación", <strong>pega (Ctrl+V)</strong> esa clave de 16 letras
+                                que copiaste de Google. Puedes dejar los espacios si Google te los incluyó, nuestro
+                                sistema los limpiará inteligentemente.</li>
+                            <li>Configura tus cuentas de gastos, ingresos o banco según corresponda y dale clic a
+                                <strong class="text-indigo-600">"Guardar Parámetros"</strong>.</li>
+                        </ul>
+                        <div
+                            class="mt-4 p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg flex gap-3 items-center">
+                            <span class="text-2xl">✅</span>
+                            <div>
+                                <strong>¡Eso es todo!</strong> Vaya a la pestaña de "Escanear Buzón", haga clic en
+                                Ejecutar, y deje que el robot automatice su contabilidad.
+                            </div>
+                        </div>
+                    </div>
+                </li>
+
+            </ol>
+
+        </div>
+
+        <div class="bg-gray-100 px-8 py-4 text-center text-sm text-gray-500 border-t border-gray-200">
+            <strong>Finaxis ERP</strong> - Tecnología de Inteligencia Artificial para la contabilidad moderna.
+        </div>
+
+    </div>
+
+</body>
+
+</html>

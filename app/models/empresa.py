@@ -45,6 +45,9 @@ class Empresa(Base):
     # Configuración de Correo (One-to-One)
     config_email = relationship("EmpresaConfigEmail", back_populates="empresa", uselist=False, cascade="all, delete-orphan")
     
+    # Configuración de Buzón Tributario (One-to-One)
+    config_buzon = relationship("EmpresaConfigBuzon", back_populates="empresa", uselist=False, cascade="all, delete-orphan")
+    
     # Esto completa la relación con el modelo CupoAdicional
     # This completes the relationship with the CupoAdicional model
     cupos_adicionales = relationship("CupoAdicional", back_populates="empresa", cascade="all, delete-orphan")

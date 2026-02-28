@@ -14,6 +14,7 @@ from .usuario import Usuario
 
 from .empresa import Empresa
 from .empresa_config import EmpresaConfigEmail # <--- FIXED
+from .empresa_config_buzon import EmpresaConfigBuzon # <--- PARA BUZÓN TRIBUTARIO
 from .tercero import Tercero
 from .plan_cuenta import PlanCuenta
 from .tipo_documento import TipoDocumento

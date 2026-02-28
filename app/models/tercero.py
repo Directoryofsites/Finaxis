@@ -37,6 +37,10 @@ class Tercero(Base):
     # --- INICIO NUEVA COLUMNA Y RELACIÓN ---
     lista_precio_id = Column(Integer, ForeignKey('listas_precio.id'), nullable=True)
     lista_precio = relationship('ListaPrecio', back_populates='terceros')
+    
+    # --- CUENTA DE GASTO POR DEFECTO PARA BUZÓN TRIBUTARIO ---
+    cuenta_gasto_defecto_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True)
+    cuenta_gasto_defecto = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_gasto_defecto_id])
     # --- FIN NUEVA COLUMNA Y RELACIÓN ---
 
     created_by = Column(Integer, ForeignKey("usuarios.id"), nullable=True)

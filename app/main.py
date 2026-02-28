@@ -405,6 +405,10 @@ app.include_router(facturacion_electronica.router, prefix="/api/fe", tags=["Fact
 from app.api.whatsapp import routes as whatsapp_routes
 app.include_router(whatsapp_routes.router, prefix="/api/whatsapp", tags=["WhatsApp"])
 
+# --- MODULO BUZON TRIBUTARIO ---
+from app.api.buzon_tributario import routes as buzon_routes
+app.include_router(buzon_routes.router, prefix="/api/buzon-tributario", tags=["Buzón Tributario"])
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8002)

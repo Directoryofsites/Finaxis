@@ -1396,7 +1396,8 @@ def generate_income_statement_report(
     db: Session,
     empresa_id: int,
     fecha_inicio: date,
-    fecha_fin: date
+    fecha_fin: date,
+    nivel: Optional[int] = None
 ) -> Dict[str, Any]:
     def get_saldo_por_clase(db: Session, empresa_id: int, fecha_inicio: date, fecha_fin: date, codigo_prefixes: List[str]):
         query_saldo = db.query(
@@ -1426,13 +1427,36 @@ def generate_income_statement_report(
         formatted_data = []
         for row in query_saldo:
             saldo_contable = float(row.total_debito or 0) - float(row.total_credito or 0)
-            formatted_data.append({
-                "codigo": row.codigo,
-                "nombre": row.nombre,
-                "saldo_contable": saldo_contable,
-                "debito": float(row.total_debito or 0),
-                "credito": float(row.total_credito or 0)
-            })
+            
+            # --- CONSOLIDACIÓN POR NIVEL ---
+            codigo_final = row.codigo
+            nombre_final = row.nombre
+            
+            if nivel:
+                codigo_final = row.codigo[:nivel]
+                # Si consolidamos, necesitamos buscar el nombre de la cuenta padre
+                if len(row.codigo) > nivel:
+                    cuenta_padre = db.query(models_plan).filter(
+                        models_plan.empresa_id == empresa_id,
+                        models_plan.codigo == codigo_final
+                    ).first()
+                    if cuenta_padre:
+                        nombre_final = cuenta_padre.nombre
+            
+            # Buscar si ya existe este código en formatted_data (para sumar saldos consolidados)
+            existente = next((item for item in formatted_data if item["codigo"] == codigo_final), None)
+            if existente:
+                existente["saldo_contable"] += saldo_contable
+                existente["debito"] += float(row.total_debito or 0)
+                existente["credito"] += float(row.total_credito or 0)
+            else:
+                formatted_data.append({
+                    "codigo": codigo_final,
+                    "nombre": nombre_final,
+                    "saldo_contable": saldo_contable,
+                    "debito": float(row.total_debito or 0),
+                    "credito": float(row.total_credito or 0)
+                })
         return formatted_data
 
     ingresos_data_raw = get_saldo_por_clase(db, empresa_id, fecha_inicio, fecha_fin, ['4'])
@@ -1448,11 +1472,24 @@ def generate_income_statement_report(
     total_costos = sum(item['saldo'] for item in costos_data)
     total_gastos = sum(item['saldo'] for item in gastos_data)
 
-    utilidad_bruta = total_ingresos - total_costos
-    utilidad_neta = utilidad_bruta - total_gastos
+    # --- ANÁLISIS VERTICAL (%) ---
+    # Los porcentajes se calculan con respecto al TOTAL DE INGRESOS
+    def calcular_porcentajes(lista, total_ref):
+        if not total_ref: return lista
+        for item in lista:
+            item['porcentaje'] = (item['saldo'] / total_ref) * 100 if total_ref != 0 else 0
+        return lista
+
+    ingresos_data = calcular_porcentajes(ingresos_data, total_ingresos)
+    costos_data = calcular_porcentajes(costos_data, total_ingresos)
+    gastos_data = calcular_porcentajes(gastos_data, total_ingresos)
 
     utilidad_bruta = total_ingresos - total_costos
     utilidad_neta = utilidad_bruta - total_gastos
+
+    # Porcentajes de totales
+    porcentaje_utilidad_bruta = (utilidad_bruta / total_ingresos) * 100 if total_ingresos != 0 else 0
+    porcentaje_utilidad_neta = (utilidad_neta / total_ingresos) * 100 if total_ingresos != 0 else 0
 
     return {
         "ingresos": ingresos_data,
@@ -1462,8 +1499,10 @@ def generate_income_statement_report(
             "total_ingresos": total_ingresos,
             "total_costos": total_costos,
             "utilidad_bruta": utilidad_bruta,
+            "porcentaje_utilidad_bruta": porcentaje_utilidad_bruta,
             "total_gastos": total_gastos,
-            "utilidad_neta": utilidad_neta
+            "utilidad_neta": utilidad_neta,
+            "porcentaje_utilidad_neta": porcentaje_utilidad_neta
         }
     }
 
@@ -1472,19 +1511,24 @@ def generate_income_statement_report_pdf(
     db: Session,
     empresa_id: int,
     fecha_inicio: date,
-    fecha_fin: date
+    fecha_fin: date,
+    nivel: Optional[int] = None
 ):
-    report_data = generate_income_statement_report(db, empresa_id, fecha_inicio, fecha_fin)
+    report_data = generate_income_statement_report(db, empresa_id, fecha_inicio, fecha_fin, nivel=nivel)
 
     empresa_info = db.query(models_empresa).filter(models_empresa.id == empresa_id).first()
     empresa_nombre = empresa_info.razon_social if empresa_info else "Empresa Desconocida"
     empresa_nit = empresa_info.nit if empresa_info else "N/A"
+
+    # Configurar título basado en nivel
+    titulo_reporte = "Estado de Resultados Analítico" if not nivel or nivel > 4 else "Estado de Resultados Clasificado"
 
     context = {
         "empresa_nombre": empresa_nombre,
         "empresa_nit": empresa_nit,
         "fecha_inicio": fecha_inicio.strftime('%d/%m/%Y'),
         "fecha_fin": fecha_fin.strftime('%d/%m/%Y'),
+        "titulo_reporte": titulo_reporte,
         "ingresos": report_data['ingresos'],
         "costos": report_data['costos'],
         "gastos": report_data['gastos'],
@@ -1556,8 +1600,24 @@ def generate_income_statement_cc_report(
     total_ingresos = sum(item['saldo'] for item in ingresos_data)
     total_costos = sum(item['saldo'] for item in costos_data)
     total_gastos = sum(item['saldo'] for item in gastos_data)
+
+    # --- ANÁLISIS VERTICAL (%) ---
+    def calcular_porcentajes(lista, total_ref):
+        if not total_ref: return lista
+        for item in lista:
+            item['porcentaje'] = (item['saldo'] / total_ref) * 100 if total_ref != 0 else 0
+        return lista
+
+    ingresos_data = calcular_porcentajes(ingresos_data, total_ingresos)
+    costos_data = calcular_porcentajes(costos_data, total_ingresos)
+    gastos_data = calcular_porcentajes(gastos_data, total_ingresos)
+
     utilidad_bruta = total_ingresos - total_costos
     utilidad_neta = utilidad_bruta - total_gastos
+
+    # Porcentajes de totales
+    porcentaje_utilidad_bruta = (utilidad_bruta / total_ingresos) * 100 if total_ingresos != 0 else 0
+    porcentaje_utilidad_neta = (utilidad_neta / total_ingresos) * 100 if total_ingresos != 0 else 0
 
     return {
         "ingresos": ingresos_data,
@@ -1567,8 +1627,10 @@ def generate_income_statement_cc_report(
             "total_ingresos": total_ingresos,
             "total_costos": total_costos,
             "utilidad_bruta": utilidad_bruta,
+            "porcentaje_utilidad_bruta": porcentaje_utilidad_bruta,
             "total_gastos": total_gastos,
-            "utilidad_neta": utilidad_neta
+            "utilidad_neta": utilidad_neta,
+            "porcentaje_utilidad_neta": porcentaje_utilidad_neta
         }
     }
 

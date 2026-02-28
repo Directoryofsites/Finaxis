@@ -13,16 +13,63 @@ import {
     FaShoppingCart,
     FaCalculator,
     FaExclamationTriangle,
-    FaBook
+    FaBook,
+    FaArrowUp,
+    FaArrowDown,
+    FaPercent
 } from 'react-icons/fa';
+import { LucideTrendingUp, LucideTrendingDown, LucideDollarSign, LucideBarChart3 } from 'lucide-react';
 
 import { toast } from 'react-toastify';
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
 
-// Estilos Reusables (Manual v2.0)
-const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
-const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none pl-10";
+// Estilos Reusables (Manual v2.0 con estética Premium)
+const labelClass = "block text-[10px] font-bold text-slate-400 uppercase mb-1.5 tracking-widest";
+const inputClass = "w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none pl-10 hover:border-indigo-300";
+
+// Componentes Internos Especializados
+const KpiCard = ({ title, value, percentage, icon: Icon, colorClass, trend }) => (
+    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-start justify-between hover:shadow-md transition-all group overflow-hidden relative">
+        <div className="flex-1">
+            <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">{title}</p>
+            <h4 className="text-2xl font-black text-slate-800 tracking-tight">{value}</h4>
+            <div className="flex items-center gap-1.5 mt-2">
+                <div className={`flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${trend === 'up' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                    {trend === 'up' ? <FaArrowUp size={8} /> : <FaArrowDown size={8} />}
+                    {percentage}%
+                </div>
+            </div>
+        </div>
+        <div className={`p-3 rounded-xl ${colorClass} text-white shadow-lg transform group-hover:scale-110 transition-transform`}>
+            {Icon}
+        </div>
+        <div className="absolute -right-2 -bottom-2 opacity-[0.03] text-6xl transform rotate-12 group-hover:rotate-0 transition-transform">
+            {Icon}
+        </div>
+    </div>
+);
+
+const WaterfallBar = ({ label, value, max, color, subLabel }) => {
+    const widthPercentage = max > 0 ? (Math.abs(value) / max) * 100 : 0;
+    return (
+        <div className="group">
+            <div className="flex justify-between items-end mb-1 px-1">
+                <div className="flex flex-col">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">{label}</span>
+                    {subLabel && <span className="text-[9px] font-black text-indigo-400 -mt-0.5">{subLabel}</span>}
+                </div>
+                <span className="text-xs font-black text-slate-700">{new Intl.NumberFormat('es-CO').format(value)}</span>
+            </div>
+            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                    className={`h-full transition-all duration-1000 ease-out rounded-full ${color}`}
+                    style={{ width: `${widthPercentage}%` }}
+                />
+            </div>
+        </div>
+    );
+};
 
 export default function EstadoResultadosPage() {
     const { user, loading: authLoading } = useAuth();
@@ -99,6 +146,7 @@ export default function EstadoResultadosPage() {
         try {
             const res = await apiService.get('/reports/income-statement', { params: params });
             setReporte(res.data);
+            toast.success("✨ Inteligencia financiera cargada");
         } catch (err) {
             setError(err.response?.data?.detail || 'Error al generar el reporte de Estado de Resultados.');
         } finally {
@@ -117,41 +165,40 @@ export default function EstadoResultadosPage() {
         const formatNumber = (num) => (num || 0).toFixed(2);
         const totales = reporte.totales;
 
-        dataParaCSV.push({ Seccion: 'INGRESOS', Codigo: '', Cuenta: '', Saldo: '' });
-        reporte.ingresos.forEach(item => { dataParaCSV.push({ Seccion: '', Codigo: item.codigo, Cuenta: item.nombre, Saldo: formatNumber(item.saldo) }); });
+        dataParaCSV.push({ Seccion: 'INGRESOS', Codigo: '', Cuenta: '', Saldo: '', Porcentaje: '100%' });
+        reporte.ingresos.forEach(item => { dataParaCSV.push({ Seccion: '', Codigo: item.codigo, Cuenta: item.nombre, Saldo: formatNumber(item.saldo), Porcentaje: formatNumber(item.porcentaje) + '%' }); });
         dataParaCSV.push({ Cuenta: 'TOTAL INGRESOS', Saldo: formatNumber(totales.total_ingresos) });
         dataParaCSV.push({});
 
         if (reporte.costos && reporte.costos.length > 0) {
             dataParaCSV.push({ Seccion: 'COSTOS DE VENTA' });
-            reporte.costos.forEach(item => { dataParaCSV.push({ Seccion: '', Codigo: item.codigo, Cuenta: item.nombre, Saldo: formatNumber(item.saldo) }); });
+            reporte.costos.forEach(item => { dataParaCSV.push({ Seccion: '', Codigo: item.codigo, Cuenta: item.nombre, Saldo: formatNumber(item.saldo), Porcentaje: formatNumber(item.porcentaje) + '%' }); });
             dataParaCSV.push({ Cuenta: 'TOTAL COSTOS', Saldo: formatNumber(totales.total_costos) });
             dataParaCSV.push({});
         }
 
-        dataParaCSV.push({ Cuenta: 'UTILIDAD BRUTA', Saldo: formatNumber(totales.utilidad_bruta) });
+        dataParaCSV.push({ Cuenta: 'UTILIDAD BRUTA', Saldo: formatNumber(totales.utilidad_bruta), Porcentaje: formatNumber(totales.porcentaje_utilidad_bruta) + '%' });
         dataParaCSV.push({});
 
         if (reporte.gastos && reporte.gastos.length > 0) {
             dataParaCSV.push({ Seccion: 'GASTOS OPERACIONALES' });
-            reporte.gastos.forEach(item => { dataParaCSV.push({ Seccion: '', Codigo: item.codigo, Cuenta: item.nombre, Saldo: formatNumber(item.saldo) }); });
+            reporte.gastos.forEach(item => { dataParaCSV.push({ Seccion: '', Codigo: item.codigo, Cuenta: item.nombre, Saldo: formatNumber(item.saldo), Porcentaje: formatNumber(item.porcentaje) + '%' }); });
             dataParaCSV.push({ Cuenta: 'TOTAL GASTOS', Saldo: formatNumber(totales.total_gastos) });
             dataParaCSV.push({});
         }
 
-        dataParaCSV.push({ Cuenta: 'UTILIDAD NETA DEL EJERCICIO', Saldo: formatNumber(totales.utilidad_neta) });
+        dataParaCSV.push({ Cuenta: 'UTILIDAD NETA DEL EJERCICIO', Saldo: formatNumber(totales.utilidad_neta), Porcentaje: formatNumber(totales.porcentaje_utilidad_neta) + '%' });
 
         const csv = window.Papa.unparse(dataParaCSV);
         const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `estado-resultados-${fechaInicio}-al-${fechaFin}.csv`;
+        link.download = `estado-resultados-premium-${fechaInicio}-al-${fechaFin}.csv`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     };
 
-    // HANDLE: Enviar por Correo
     const handleSendEmail = async () => {
         if (!reporte || !emailAddress) return;
         toast.info(`📤 Enviando reporte a ${emailAddress}...`);
@@ -171,19 +218,15 @@ export default function EstadoResultadosPage() {
         }
     };
 
-    // EFECTO: Automatización
     useEffect(() => {
         if (autoPdfTrigger && reporte && !isLoading) {
             handleExportPDF();
-
             if (wppNumber) {
-                const message = `Hola, adjunto el Estado de Resultados de ${user.nombre_empresa} del ${fechaInicio} al ${fechaFin}.`;
+                const message = `Hola, adjunto el Estado de Resultados Premium de ${user.nombre_empresa} del ${fechaInicio} al ${fechaFin}.`;
                 const wppUrl = `https://wa.me/${wppNumber}?text=${encodeURIComponent(message)}`;
                 setTimeout(() => window.open(wppUrl, '_blank'), 1500);
             }
-
             if (emailAddress) handleSendEmail();
-
             setAutoPdfTrigger(false);
             setWppNumber(null);
             setEmailAddress(null);
@@ -195,17 +238,11 @@ export default function EstadoResultadosPage() {
         setIsLoading(true);
         setError(null);
         try {
-            const paramsForSignedUrl = {
-                fecha_inicio: fechaInicio,
-                fecha_fin: fechaFin,
-            };
+            const paramsForSignedUrl = { fecha_inicio: fechaInicio, fecha_fin: fechaFin };
             const signedUrlRes = await apiService.get('/reports/income-statement/get-signed-url', { params: paramsForSignedUrl });
             const signedToken = signedUrlRes.data.signed_url_token;
             const finalPdfUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/reports/income-statement/imprimir?signed_token=${signedToken}`;
-
-            // window.location.href = finalPdfUrl;
             window.open(finalPdfUrl, '_blank');
-
         } catch (err) {
             setError(err.response?.data?.detail || 'Error al obtener la URL firmada para el PDF.');
         } finally {
@@ -214,209 +251,294 @@ export default function EstadoResultadosPage() {
     };
 
     const formatCurrency = (val) => {
-        return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2 }).format(val);
+        return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(val);
     };
 
     if (!isPageReady) {
         return (
-            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-                <FaChartLine className="text-indigo-300 text-6xl mb-4 animate-pulse" />
-                <p className="text-indigo-600 font-semibold text-lg animate-pulse">Cargando Estado de Resultados...</p>
+            <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
+                <div className="relative">
+                    <div className="w-20 h-20 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <LucideTrendingUp className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-indigo-600 w-8 h-8" />
+                </div>
+                <p className="text-slate-600 font-bold mt-6 tracking-tight animate-pulse">Iniciando motor financiero...</p>
             </div>
         );
     }
 
-    const AccountRow = ({ codigo, nombre, saldo, isNegative = false }) => (
-        <div className="flex justify-between items-center py-2 border-b border-gray-100 hover:bg-gray-50 transition-colors px-2 rounded">
-            <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
-                <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-gray-100 text-gray-600">{codigo}</span>
-                <span className="text-sm text-gray-700 font-medium">{nombre}</span>
+    const AccountRow = ({ codigo, nombre, saldo, porcentaje, isNegative = false, isBold = false }) => (
+        <div className={`flex justify-between items-center py-2.5 border-b border-slate-50 hover:bg-slate-50/50 transition-colors px-3 rounded-lg ${isBold ? 'bg-slate-50/30' : ''}`}>
+            <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 flex-1 mr-4">
+                <span className="font-mono text-[10px] font-black px-2 py-0.5 rounded bg-slate-100 text-slate-500 min-w-[50px] text-center border border-slate-200">{codigo}</span>
+                <span className={`text-sm ${isBold ? 'font-black text-slate-800' : 'font-medium text-slate-600'}`}>{nombre}</span>
             </div>
-            <span className={`font-mono text-sm font-bold ${isNegative ? 'text-red-600' : 'text-gray-800'}`}>
-                {isNegative ? `(${formatCurrency(Math.abs(saldo))})` : formatCurrency(saldo)}
-            </span>
+
+            <div className="flex items-center gap-6 md:gap-12 min-w-[120px] md:min-w-[200px] justify-end">
+                <div className="flex items-center gap-1.5 min-w-[60px] justify-end">
+                    <span className={`text-[11px] font-black ${isNegative ? 'text-rose-500' : 'text-slate-400'}`}>
+                        {porcentaje?.toFixed(1)}
+                    </span>
+                    <FaPercent className="text-[8px] text-slate-300" />
+                </div>
+                <span className={`font-mono text-sm tracking-tighter w-24 md:w-32 text-right ${isBold ? 'font-black text-slate-900' : isNegative ? 'text-rose-600 font-bold' : 'text-slate-700 font-bold'}`}>
+                    {isNegative ? `(${formatCurrency(Math.abs(saldo))})` : formatCurrency(saldo)}
+                </span>
+            </div>
         </div>
     );
 
     return (
         <>
-            <div className="min-h-screen bg-gray-50 p-6 font-sans pb-20">
-                <div className="max-w-5xl mx-auto">
+            <div className="min-h-screen bg-slate-50/50 p-4 md:p-8 font-sans pb-32">
+                <div className="max-w-6xl mx-auto">
 
-                    {/* ENCABEZADO */}
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                        <div>
-                            <div className="flex items-center gap-3 mt-3">
-                                <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
-                                    <FaChartLine className="text-2xl" />
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-4">
-                                        <h1 className="text-3xl font-bold text-gray-800">Estado de Resultados</h1>
-                                        <button
-                                            onClick={() => window.open('/manual/capitulo_29_estado_resultados.html', '_blank')}
-                                            className="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded-md flex items-center gap-2 transition-colors"
-                                            title="Ver Manual de Usuario"
-                                        >
-                                            <span className="text-lg">📖</span> <span className="font-bold text-sm hidden md:inline">Manual</span>
-                                        </button>
-                                    </div>
-                                    <p className="text-gray-500 text-sm">Análisis de rentabilidad: Ingresos, Costos y Gastos.</p>
-                                    {/* STATUS INDICATOR */}
-                                    {(wppNumber || autoPdfTrigger || emailAddress) && (
-                                        <div className="mt-2 text-sm font-bold text-green-600 flex items-center gap-2 animate-bounce">
-                                            <span>⚡ Procesando comando: Generando PDF {wppNumber ? 'para WhatsApp...' : emailAddress ? 'para Email...' : '...'}</span>
-                                        </div>
-                                    )}
-                                </div>
+                    {/* BARRA SUPERIOR ELEGANTE */}
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+                        <div className="flex items-center gap-5">
+                            <div className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 text-indigo-600 ring-4 ring-indigo-50">
+                                <LucideBarChart3 size={32} />
                             </div>
+                            <div>
+                                <div className="flex items-center gap-3">
+                                    <h1 className="text-3xl font-black text-slate-850 tracking-tighter">Estado de Resultados Analítico</h1>
+                                    <span className="bg-indigo-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full tracking-widest uppercase">Premium</span>
+                                </div>
+                                <p className="text-slate-500 text-sm font-medium mt-1">Análisis detallado de rentabilidad y eficiencia de <span className="text-indigo-600 font-bold">{user.nombre_empresa}</span></p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-2 w-full md:w-auto">
+                            <button onClick={() => router.push('/contabilidad/reportes/estado-resultados-clasificado')} className="flex-1 md:flex-none px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2">
+                                Ver Clasificado →
+                            </button>
+                            <button onClick={() => window.open('/manual/capitulo_29_reportes_avanzados.html', '_blank')} className="flex-1 md:flex-none px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2">
+                                <FaBook /> Manual
+                            </button>
                         </div>
                     </div>
 
-                    {/* CARD 1: FILTROS */}
-                    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 animate-fadeIn mb-8">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-                            <div>
-                                <label htmlFor="fechaInicio" className={labelClass}>Fecha Inicio</label>
-                                <div className="relative">
-                                    <input
-                                        type="date"
-                                        id="fechaInicio"
-                                        value={fechaInicio}
-                                        onChange={(e) => setFechaInicio(e.target.value)}
-                                        className={inputClass}
-                                    />
-                                    <FaCalendarAlt className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
-                                </div>
-                            </div>
-                            <div>
-                                <label htmlFor="fechaFin" className={labelClass}>Fecha Fin</label>
-                                <div className="relative">
-                                    <input
-                                        type="date"
-                                        id="fechaFin"
-                                        value={fechaFin}
-                                        onChange={(e) => setFechaFin(e.target.value)}
-                                        className={inputClass}
-                                    />
-                                    <FaCalendarAlt className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
-                                </div>
-                            </div>
+                    {/* PANEL DE CONTROL (FILTROS) */}
+                    <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 mb-10 animate-fadeIn overflow-hidden relative group">
+                        <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none transform translate-x-1/4 -translate-y-1/4 group-hover:scale-110 transition-transform duration-700">
+                            <LucideDollarSign size={200} />
+                        </div>
 
-                            <div className="flex flex-col md:flex-row justify-end gap-3">
-                                <button
-                                    id="btn-generar-er"
-                                    onClick={handleGenerateReport}
-                                    disabled={isLoading}
-                                    className={`
-                                w-full md:w-auto px-6 py-2 rounded-lg shadow-md font-bold text-white transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2
-                                ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}
-                            `}
-                                >
-                                    {isLoading ? <span className="loading loading-spinner loading-sm"></span> : <><FaSearch /> Generar</>}
-                                </button>
+                        <div className="relative z-10">
+                            <h5 className="text-xs font-black text-indigo-600 mb-6 uppercase tracking-[0.2em]">Configuración del Análisis</h5>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-8 items-end">
+                                <div className="md:col-span-1">
+                                    <label htmlFor="fechaInicio" className={labelClass}>Periodo Desde</label>
+                                    <div className="relative">
+                                        <input type="date" id="fechaInicio" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} className={inputClass} />
+                                        <FaCalendarAlt className="absolute left-3.5 top-3.5 text-indigo-400 pointer-events-none" />
+                                    </div>
+                                </div>
+                                <div className="md:col-span-1">
+                                    <label htmlFor="fechaFin" className={labelClass}>Periodo Hasta</label>
+                                    <div className="relative">
+                                        <input type="date" id="fechaFin" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} className={inputClass} />
+                                        <FaCalendarAlt className="absolute left-3.5 top-3.5 text-indigo-400 pointer-events-none" />
+                                    </div>
+                                </div>
+                                <div className="md:col-span-2 flex gap-4">
+                                    <button
+                                        id="btn-generar-er"
+                                        onClick={handleGenerateReport}
+                                        disabled={isLoading}
+                                        className={`flex-1 h-[46px] rounded-xl shadow-lg font-black text-sm text-white transition-all transform active:scale-95 flex items-center justify-center gap-3
+                                            ${isLoading ? 'bg-slate-400 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-indigo-700 hover:shadow-indigo-200 hover:tracking-wider'}`}
+                                    >
+                                        {isLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><FaSearch /> Generar Reporte</>}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         {error && (
-                            <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-lg flex items-center gap-3 animate-pulse">
-                                <FaExclamationTriangle className="text-xl" />
-                                <p className="font-bold">{error}</p>
+                            <div className="mt-8 p-4 bg-rose-50 border border-rose-100 text-rose-700 rounded-2xl flex items-center gap-3 animate-headShake">
+                                <div className="bg-rose-500 p-2 rounded-lg text-white shadow-sm"><FaExclamationTriangle /></div>
+                                <p className="font-bold text-sm tracking-tight">{error}</p>
                             </div>
                         )}
                     </div>
 
-                    {/* CARD 2: REPORTE */}
-                    {reporte && (
-                        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden animate-slideDown">
-                            {/* Cabecera Reporte */}
-                            <div className="p-6 bg-gray-50 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
-                                <div>
-                                    <h2 className="text-xl font-bold text-gray-800">{user?.nombre_empresa}</h2>
-                                    <p className="text-sm text-gray-600 font-medium mt-1">
-                                        Periodo: <span className="text-indigo-600">{fechaInicio}</span> al <span className="text-indigo-600">{fechaFin}</span>
-                                    </p>
+                    {/* VISTA DE RESULTADOS */}
+                    {reporte ? (
+                        <div className="space-y-10">
+
+                            {/* KPI CARDS GRID */}
+                            {/* El usuario solicitó quitar los KPIs horizontales y dejar solo el análisis vertical */}
+
+                            {/* DASHBOARD CENTRAL */}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                                {/* CASCADA VISUAL (Waterfall) */}
+                                <div className="lg:col-span-1 bg-white rounded-3xl p-8 border border-slate-100 shadow-sm flex flex-col">
+                                    <div className="flex items-center gap-3 mb-8">
+                                        <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><LucideBarChart3 size={18} /></div>
+                                        <h4 className="text-base font-black text-slate-800 tracking-tight">Estructura de Margen</h4>
+                                    </div>
+                                    <div className="space-y-8 flex-1">
+                                        <WaterfallBar label="Ingresos" value={reporte.totales.total_ingresos} max={reporte.totales.total_ingresos} color="bg-indigo-600" />
+                                        <WaterfallBar label="(-) Costos de Venta" value={Math.abs(reporte.totales.total_costos)} max={reporte.totales.total_ingresos} color="bg-rose-400" />
+                                        <div className="pt-2 border-t border-slate-100">
+                                            <WaterfallBar
+                                                label="(=) Utilidad Bruta"
+                                                value={reporte.totales.utilidad_bruta}
+                                                max={reporte.totales.total_ingresos}
+                                                color="bg-emerald-400 opacity-60"
+                                                subLabel={`${reporte.totales.porcentaje_utilidad_bruta?.toFixed(1)}% Margen Bruto`}
+                                            />
+                                        </div>
+                                        <WaterfallBar label="(-) Gastos Operativos" value={Math.abs(reporte.totales.total_gastos)} max={reporte.totales.total_ingresos} color="bg-orange-400" />
+                                        <div className="pt-4 mt-4 border-t-2 border-slate-200">
+                                            <WaterfallBar
+                                                label="(=) Utilidad Neta"
+                                                value={reporte.totales.utilidad_neta}
+                                                max={reporte.totales.total_ingresos}
+                                                color="bg-emerald-600 shadow-lg shadow-emerald-50"
+                                                subLabel={`${reporte.totales.porcentaje_utilidad_neta?.toFixed(1)}% Margen Neto`}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="mt-10 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
+                                        <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1">Rendimiento Actual</p>
+                                        <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                                            Su <span className="text-indigo-600 font-black tracking-tight">utilidad neta</span> actual es del <span className="font-black text-indigo-700">{reporte.totales.porcentaje_utilidad_neta?.toFixed(2)}%</span>. Por cada peso vendido, la empresa retiene {formatCurrency(reporte.totales.total_ingresos > 0 ? (reporte.totales.utilidad_neta / reporte.totales.total_ingresos) : 0)} centavos tras cubrir todos los costos y gastos.
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="flex gap-3">
-                                    <button onClick={handleExportCSV} disabled={isLoading} className="flex items-center gap-2 px-4 py-2 bg-white border border-green-500 text-green-600 rounded-lg hover:bg-green-50 font-medium transition-colors shadow-sm disabled:opacity-50"><FaFileCsv /> CSV</button>
-                                    <button onClick={handleExportPDF} disabled={isLoading} className="flex items-center gap-2 px-4 py-2 bg-white border border-red-500 text-red-600 rounded-lg hover:bg-red-50 font-medium transition-colors shadow-sm disabled:opacity-50"><FaFilePdf /> PDF</button>
+
+                                {/* TABLA ANALÍTICA PRINCIPAL */}
+                                <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+                                    <div className="p-6 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
+                                        <div className="flex items-center gap-4">
+                                            <h4 className="text-base font-black text-slate-800 tracking-tight uppercase">Cuentas del Periodo</h4>
+                                            <div className="flex gap-2">
+                                                <button onClick={handleExportCSV} className="p-2 bg-white border border-slate-200 text-emerald-600 rounded-lg hover:shadow-sm transition-all shadow-indigo-100"><FaFileCsv /></button>
+                                                <button onClick={handleExportPDF} className="p-2 bg-white border border-slate-200 text-rose-600 rounded-lg hover:shadow-sm transition-all"><FaFilePdf /></button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 overflow-auto p-2">
+                                        <div className="min-w-full">
+                                            {/* HEADER TABLA */}
+                                            <div className="flex justify-between items-center px-4 py-3 bg-slate-50 rounded-xl mb-4 border border-slate-100">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Detalle de Operación</span>
+                                                <div className="flex items-center gap-12 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] md:min-w-[200px] justify-end">
+                                                    <span>% Ventas</span>
+                                                    <span>Valor</span>
+                                                </div>
+                                            </div>
+
+                                            {/* CUERPO - SECCIONADO */}
+                                            <div className="space-y-8 px-2 max-h-[600px] overflow-auto custom-scrollbar">
+                                                {/* INGRESOS */}
+                                                <div>
+                                                    <div className="flex items-center gap-2 mb-3 text-emerald-600 opacity-80">
+                                                        <FaArrowUp size={10} />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest">Flujos de Entrada</span>
+                                                    </div>
+                                                    <div className="space-y-0.5">
+                                                        {reporte.ingresos.map(item => <AccountRow key={item.codigo} {...item} />)}
+                                                        <AccountRow codigo="4" nombre="TOTAL INGRESOS OPERACIONALES" saldo={reporte.totales.total_ingresos} porcentaje={100} isBold={true} />
+                                                    </div>
+                                                </div>
+
+                                                {/* COSTOS */}
+                                                {reporte.costos?.length > 0 && (
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-3 text-rose-500 opacity-80">
+                                                            <FaArrowDown size={10} />
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">Consumos Directos</span>
+                                                        </div>
+                                                        <div className="space-y-0.5">
+                                                            {reporte.costos.map(item => <AccountRow key={item.codigo} {...item} isNegative={true} />)}
+                                                            <AccountRow codigo="6/7" nombre="TOTAL COSTOS DE VENTA" saldo={reporte.totales.total_costos} porcentaje={reporte.totales.total_ingresos > 0 ? (Math.abs(reporte.totales.total_costos) / reporte.totales.total_ingresos * 100) : 0} isBold={true} isNegative={true} />
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                <div className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100 flex justify-between items-center mx-2 group">
+                                                    <span className="font-black text-emerald-800 text-xs tracking-widest uppercase group-hover:tracking-[0.2em] transition-all">UTILIDAD BRUTA</span>
+                                                    <div className="text-right">
+                                                        <p className="text-xs text-emerald-600 font-bold mb-0.5">{reporte.totales.porcentaje_utilidad_bruta?.toFixed(2)}%</p>
+                                                        <p className="font-black text-emerald-900 text-lg tracking-tight">{formatCurrency(reporte.totales.utilidad_bruta)}</p>
+                                                    </div>
+                                                </div>
+
+                                                {/* GASTOS */}
+                                                {reporte.gastos?.length > 0 && (
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-3 text-orange-500 opacity-80">
+                                                            <FaCalculator size={10} />
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">Gastos de Operación</span>
+                                                        </div>
+                                                        <div className="space-y-0.5">
+                                                            {reporte.gastos.map(item => <AccountRow key={item.codigo} {...item} isNegative={true} />)}
+                                                            <AccountRow codigo="5" nombre="TOTAL GASTOS OPERACIONALES" saldo={reporte.totales.total_gastos} porcentaje={reporte.totales.total_ingresos > 0 ? (Math.abs(reporte.totales.total_gastos) / reporte.totales.total_ingresos * 100) : 0} isBold={true} isNegative={true} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* FOOTER TOTAL - UTILIDAD NETA */}
+                                    <div className={`p-8 ${reporte.totales.utilidad_neta >= 0 ? 'bg-slate-900 text-white' : 'bg-rose-900 text-white'} border-t border-slate-100 flex justify-between items-center`}>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-3 mb-1">
+                                                <h3 className="text-2xl font-black uppercase tracking-tighter">Utilidad Neta</h3>
+                                                <div className={`px-2 py-0.5 rounded-full text-[10px] font-black tracking-widest ${reporte.totales.utilidad_neta >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-300'}`}>
+                                                    MARGEN: {reporte.totales.porcentaje_utilidad_neta?.toFixed(2)}%
+                                                </div>
+                                            </div>
+                                            <p className="text-xs opacity-50 font-medium">Resultado final tras deducir costos de venta y gastos administrativos.</p>
+                                        </div>
+                                        <span className="text-4xl font-black tracking-tighter">
+                                            {formatCurrency(reporte.totales.utilidad_neta)}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-
-                            <div className="p-6 space-y-8">
-
-                                {/* INGRESOS */}
-                                <section>
-                                    <div className="flex items-center gap-2 mb-4 pb-2 border-b-2 border-emerald-100">
-                                        <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><FaMoneyBillWave /></div>
-                                        <h3 className="text-xl font-bold text-gray-700">Ingresos Operacionales</h3>
-                                    </div>
-                                    <div className="pl-2 md:pl-4 space-y-1">
-                                        {reporte.ingresos.map(item => <AccountRow key={item.codigo} {...item} />)}
-                                    </div>
-                                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200 bg-emerald-50/50 p-3 rounded-lg">
-                                        <span className="font-bold text-gray-700 uppercase text-sm">Total Ingresos</span>
-                                        <span className="font-mono text-lg font-bold text-emerald-700">{formatCurrency(reporte.totales.total_ingresos)}</span>
-                                    </div>
-                                </section>
-
-                                {/* COSTOS */}
-                                {reporte.costos && reporte.costos.length > 0 && (
-                                    <section>
-                                        <div className="flex items-center gap-2 mb-4 pb-2 border-b-2 border-rose-100">
-                                            <div className="p-2 bg-rose-100 text-rose-600 rounded-lg"><FaShoppingCart /></div>
-                                            <h3 className="text-xl font-bold text-gray-700">Costos de Venta</h3>
-                                        </div>
-                                        <div className="pl-2 md:pl-4 space-y-1">
-                                            {reporte.costos.map(item => <AccountRow key={item.codigo} {...item} isNegative={true} />)}
-                                        </div>
-                                        <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200 bg-rose-50/50 p-3 rounded-lg">
-                                            <span className="font-bold text-gray-700 uppercase text-sm">Total Costos</span>
-                                            <span className="font-mono text-lg font-bold text-rose-700">({formatCurrency(Math.abs(reporte.totales.total_costos))})</span>
-                                        </div>
-                                    </section>
-                                )}
-
-                                {/* UTILIDAD BRUTA */}
-                                <div className="bg-slate-100 p-4 rounded-lg border border-slate-200 flex justify-between items-center">
-                                    <span className="font-bold text-gray-800 uppercase">Utilidad Bruta</span>
-                                    <span className="font-mono text-xl font-bold text-gray-900">{formatCurrency(reporte.totales.utilidad_bruta)}</span>
-                                </div>
-
-                                {/* GASTOS */}
-                                {reporte.gastos && reporte.gastos.length > 0 && (
-                                    <section>
-                                        <div className="flex items-center gap-2 mb-4 pb-2 border-b-2 border-orange-100">
-                                            <div className="p-2 bg-orange-100 text-orange-600 rounded-lg"><FaCalculator /></div>
-                                            <h3 className="text-xl font-bold text-gray-700">Gastos Operacionales</h3>
-                                        </div>
-                                        <div className="pl-2 md:pl-4 space-y-1">
-                                            {reporte.gastos.map(item => <AccountRow key={item.codigo} {...item} isNegative={true} />)}
-                                        </div>
-                                        <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200 bg-orange-50/50 p-3 rounded-lg">
-                                            <span className="font-bold text-gray-700 uppercase text-sm">Total Gastos</span>
-                                            <span className="font-mono text-lg font-bold text-orange-700">({formatCurrency(Math.abs(reporte.totales.total_gastos))})</span>
-                                        </div>
-                                    </section>
-                                )}
-
-                                {/* UTILIDAD NETA */}
-                                <div className={`p-6 rounded-xl shadow-md border-l-8 flex justify-between items-center ${reporte.totales.utilidad_neta >= 0 ? 'bg-green-50 border-green-500 text-green-900' : 'bg-red-50 border-red-500 text-red-900'}`}>
-                                    <div>
-                                        <h3 className="text-2xl font-bold uppercase">Utilidad Neta del Ejercicio</h3>
-                                        <p className="text-sm opacity-80">Ingresos - Costos - Gastos</p>
-                                    </div>
-                                    <span className="font-mono text-3xl font-bold">
-                                        {formatCurrency(reporte.totales.utilidad_neta)}
-                                    </span>
-                                </div>
-
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-3xl p-20 border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center animate-fadeIn">
+                            <div className="w-24 h-24 bg-indigo-50 text-indigo-200 rounded-full flex items-center justify-center mb-6">
+                                <LucideBarChart3 size={48} />
                             </div>
+                            <h4 className="text-xl font-bold text-slate-800 mb-2 tracking-tight">Análisis Desconectado</h4>
+                            <p className="text-slate-500 max-w-sm mx-auto text-sm leading-relaxed">Defina el periodo de análisis arriba y haga clic en **Generar Reporte** para iniciar el motor de inteligencia financiera.</p>
                         </div>
                     )}
                 </div>
             </div>
 
             <Script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" />
+
+            <style jsx>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 4px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: #e2e8f0;
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: #cbd5e1;
+                }
+                
+                @keyframes slideUp {
+                    from { transform: translateY(20px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+                .animate-slideUp {
+                    animation: slideUp 0.6s ease-out forwards;
+                }
+            `}</style>
         </>
     );
 }

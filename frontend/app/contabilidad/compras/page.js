@@ -17,7 +17,8 @@ import {
     FaListOl,
     FaFileInvoice,
     FaBook,
-    FaSatelliteDish
+    FaSatelliteDish,
+    FaInbox
 } from 'react-icons/fa';
 
 import { useAuth } from '../../context/AuthContext';
@@ -404,7 +405,7 @@ export default function NuevaCompraPage() {
                                     Nueva Compra
                                     <button
                                         onClick={() => window.open('/manual/capitulo_40_compras.html', '_blank')}
-                                        className="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded-md flex items-center gap-2 transition-colors font-bold text-sm border border-indigo-100 shadow-sm"
+                                        className="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded-md flex items-center gap-2 transition-colors font-bold text-sm border border-indigo-100 shadow-sm ml-2"
                                         type="button"
                                     >
                                         <FaBook className="text-lg" /> <span className="hidden md:inline">Manual</span>

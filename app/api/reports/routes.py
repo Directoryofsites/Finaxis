@@ -741,17 +741,19 @@ def get_tercero_cuenta_report_pdf(
 def get_income_statement_report(
     fecha_inicio: date = Query(..., description="Fecha de inicio del reporte (YYYY-MM-DD)"),
     fecha_fin: date = Query(..., description="Fecha de fin del reporte (YYYY-MM-DD)"),
+    nivel: Optional[int] = Query(None, description="Nivel de detalle (ej: 4 para cuenta mayor)"),
     db: Session = Depends(get_db),
     current_user: usuario_schema.User = Depends(get_current_user)
 ):
     """
     Genera los datos para el reporte de Estado de Resultados.
     """
-    report_data = documento_service.generate_income_statement_report( # <-- Esta función debe existir en services/documento.py
+    report_data = documento_service.generate_income_statement_report(
         db=db,
         empresa_id=current_user.empresa_id,
         fecha_inicio=fecha_inicio,
-        fecha_fin=fecha_fin
+        fecha_fin=fecha_fin,
+        nivel=nivel
     )
     return report_data
 
@@ -759,6 +761,7 @@ def get_income_statement_report(
 def get_signed_income_statement_report_url(
     fecha_inicio: date = Query(..., description="Fecha de inicio del reporte (YYYY-MM-DD)"),
     fecha_fin: date = Query(..., description="Fecha de fin del reporte (YYYY-MM-DD)"),
+    nivel: Optional[int] = Query(None, description="Nivel de detalle"),
     db: Session = Depends(get_db),
     current_user: usuario_schema.User = Depends(get_current_user)
 ):
@@ -772,7 +775,8 @@ def get_signed_income_statement_report_url(
         expiration_seconds=15, # La URL será válida por 15 segundos
         fecha_inicio=fecha_inicio.isoformat(),
         fecha_fin=fecha_fin.isoformat(),
-        empresa_id=current_user.empresa_id
+        empresa_id=current_user.empresa_id,
+        nivel=nivel
     )
     return {"signed_url_token": signed_token}
 
@@ -797,12 +801,14 @@ def get_income_statement_report_pdf(
     fecha_inicio = date.fromisoformat(verified_params["fecha_inicio"])
     fecha_fin = date.fromisoformat(verified_params["fecha_fin"])
     empresa_id = verified_params["empresa_id"]
+    nivel = verified_params.get("nivel")
 
-    pdf_content = documento_service.generate_income_statement_report_pdf( # <-- Esta función debe existir en services/documento.py
+    pdf_content = documento_service.generate_income_statement_report_pdf( 
         db=db,
         empresa_id=empresa_id,
         fecha_inicio=fecha_inicio,
-        fecha_fin=fecha_fin
+        fecha_fin=fecha_fin,
+        nivel=nivel
     )
     from fastapi.responses import Response
     return Response(content=pdf_content, media_type="application/pdf")

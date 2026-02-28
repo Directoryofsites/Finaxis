@@ -2595,92 +2595,188 @@ TEMPLATES_EMPAQUETADOS = {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Estado de Resultados por Centro de Costo</title>
+    <title>Estado de Resultados por Centro de Costo Premium</title>
     <style>
-        body { font-family: sans-serif; font-size: 10px; }
-        .header { text-align: center; margin-bottom: 20px; }
-        .header h1, .header h2, .header h3 { margin: 0; }
-        .header h3 { font-weight: normal; font-style: italic; }
-        .report-info { margin-bottom: 20px; text-align: center; }
-        .content-table { width: 100%; border-collapse: collapse; }
-        .content-table td { padding: 4px; }
-        .account-row td:first-child { padding-left: 20px; }
-        .total-section-row td { font-weight: bold; border-top: 1px solid #000; border-bottom: 1px solid #000; }
-        .final-total-row td { font-weight: bold; border-top: 2px solid #000; border-bottom: 3px double #000; background-color: #f2f2f2; }
+        @page {
+            margin: 1.5cm;
+            @bottom-right {
+                content: "Página " counter(page) " de " counter(pages);
+                font-size: 8px;
+                color: #64748b;
+            }
+        }
+        body { 
+            font-family: 'Helvetica', 'Arial', sans-serif; 
+            font-size: 9px; 
+            color: #1e293b;
+            line-height: 1.4;
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            border-bottom: 2px solid #6366f1;
+            padding-bottom: 15px;
+        }
+        .header h1 { margin: 0; font-size: 18px; color: #1e1b4b; text-transform: uppercase; letter-spacing: 1px; }
+        .header h2 { margin: 5px 0 0; font-size: 12px; font-weight: normal; color: #475569; }
+        .header h3 { margin: 5px 0 0; font-size: 11px; font-weight: bold; color: #6366f1; font-style: italic; }
+        
+        .report-title {
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #4f46e5;
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+        .report-info { margin-bottom: 25px; text-align: center; font-size: 10px; color: #64748b; }
+        
+        .content-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .content-table th {
+            text-align: left;
+            padding: 8px;
+            background-color: #f8fafc;
+            color: #475569;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 8px;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .content-table td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; }
+        
+        .section-header { 
+            background-color: #f1f5f9; 
+            font-weight: bold; 
+            color: #334155;
+            font-size: 10px;
+        }
+        .account-row td:first-child { padding-left: 20px; color: #475569; }
+        
+        .total-row { font-weight: bold; background-color: #f8fafc; }
+        .total-row td { border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+        
+        .highlight-row { 
+            font-weight: bold; 
+            background-color: #eef2ff; 
+            color: #3730a3;
+            font-size: 11px;
+        }
+        
+        .net-profit-row { 
+            font-weight: bold; 
+            background-color: #1e293b; 
+            color: #ffffff;
+            font-size: 12px;
+        }
+        .net-profit-row td { padding: 12px 8px; }
+
         .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .percentage-col { width: 60px; color: #94a3b8; font-size: 8px; font-weight: bold; }
+        .amount-col { width: 120px; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>{{ empresa_nombre }}</h1>
         <h2>NIT: {{ empresa_nit }}</h2>
-        <h2>Estado de Resultados por Centro de Costo</h2>
-        <h3>{{ centro_costo_nombre_display }}</h3>
+        <div class="report-title">Estado de Resultados Analítico</div>
+        <h3>Centro de Costo: {{ centro_costo_nombre_display }}</h3>
     </div>
 
     <div class="report-info">
-        <strong>Periodo:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}
+        <strong>Periodo de Análisis:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}
     </div>
 
     <table class="content-table">
-        <tbody>
+        <thead>
             <tr>
-                <td colspan="2"><strong>INGRESOS OPERACIONALES</strong></td>
+                <th>Detalle de Cuenta / Concepto</th>
+                <th class="text-right percentage-col">% Anal.</th>
+                <th class="text-right amount-col">Saldo (COP)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- INGRESOS -->
+            <tr class="section-header">
+                <td colspan="3">INGRESOS OPERACIONALES</td>
             </tr>
             {% for ingreso in ingresos %}
             <tr class="account-row">
                 <td>{{ ingreso.codigo }} - {{ ingreso.nombre }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(ingreso.saldo) }}</td>
+                <td class="text-right percentage-col">{{ "{:,.1f}%".format(ingreso.porcentaje) if ingreso.porcentaje else "100.0%" }}</td>
+                <td class="text-right amount-col">{{ "{:,.0f}".format(ingreso.saldo) }}</td>
             </tr>
             {% endfor %}
-            <tr class="total-section-row">
-                <td><strong>TOTAL INGRESOS OPERACIONALES</strong></td>
-                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.total_ingresos) }}</strong></td>
+            <tr class="total-row">
+                <td>TOTAL INGRESOS OPERACIONALES</td>
+                <td class="text-right percentage-col">100.0%</td>
+                <td class="text-right amount-col">{{ "{:,.0f}".format(totales.total_ingresos) }}</td>
             </tr>
 
-            <tr><td colspan="2">&nbsp;</td></tr>
+            <tr><td colspan="3" style="border:none; height: 10px;"></td></tr>
 
-            <tr>
-                <td colspan="2"><strong>COSTOS DE VENTA</strong></td>
+            <!-- COSTOS -->
+            {% if costos %}
+            <tr class="section-header">
+                <td colspan="3">COSTOS DE VENTA</td>
             </tr>
             {% for costo in costos %}
             <tr class="account-row">
                 <td>{{ costo.codigo }} - {{ costo.nombre }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(costo.saldo) }}</td>
+                <td class="text-right percentage-col">{{ "{:,.1f}%".format(costo.porcentaje) if costo.porcentaje else "0.0%" }}</td>
+                <td class="text-right amount-col">({{ "{:,.0f}".format(costo.saldo|abs) }})</td>
             </tr>
             {% endfor %}
-            <tr class="total-section-row">
-                <td><strong>TOTAL COSTOS DE VENTA</strong></td>
-                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.total_costos) }}</strong></td>
+            <tr class="total-row">
+                <td>TOTAL COSTOS DE VENTA</td>
+                <td class="text-right percentage-col">{{ "{:,.1f}%".format(totales.total_costos / totales.total_ingresos * 100) if totales.total_ingresos else '0.0%' }}</td>
+                <td class="text-right amount-col">({{ "{:,.0f}".format(totales.total_costos|abs) }})</td>
+            </tr>
+            {% endif %}
+
+            <tr class="highlight-row">
+                <td>UTILIDAD BRUTA</td>
+                <td class="text-right percentage-col">{{ "{:,.1f}%".format(totales.porcentaje_utilidad_bruta) if totales.porcentaje_utilidad_bruta else "0.0%" }}</td>
+                <td class="text-right amount-col">{{ "{:,.0f}".format(totales.utilidad_bruta) }}</td>
             </tr>
 
-            <tr class="final-total-row">
-                <td><strong>UTILIDAD BRUTA</strong></td>
-                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.utilidad_bruta) }}</strong></td>
-            </tr>
+            <tr><td colspan="3" style="border:none; height: 10px;"></td></tr>
 
-            <tr><td colspan="2">&nbsp;</td></tr>
-
-            <tr>
-                <td colspan="2"><strong>GASTOS OPERACIONALES</strong></td>
+            <!-- GASTOS -->
+            {% if gastos %}
+            <tr class="section-header">
+                <td colspan="3">GASTOS OPERACIONALES</td>
             </tr>
             {% for gasto in gastos %}
             <tr class="account-row">
                 <td>{{ gasto.codigo }} - {{ gasto.nombre }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(gasto.saldo) }}</td>
+                <td class="text-right percentage-col">{{ "{:,.1f}%".format(gasto.porcentaje) if gasto.porcentaje else "0.0%" }}</td>
+                <td class="text-right amount-col">({{ "{:,.0f}".format(gasto.saldo|abs) }})</td>
             </tr>
             {% endfor %}
-            <tr class="total-section-row">
-                <td><strong>TOTAL GASTOS OPERACIONALES</strong></td>
-                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.total_gastos) }}</strong></td>
+            <tr class="total-row">
+                <td>TOTAL GASTOS OPERACIONALES</td>
+                <td class="text-right percentage-col">{{ "{:,.1f}%".format(totales.total_gastos / totales.total_ingresos * 100) if totales.total_ingresos else '0.0%' }}</td>
+                <td class="text-right amount-col">({{ "{:,.0f}".format(totales.total_gastos|abs) }})</td>
             </tr>
+            {% endif %}
 
-            <tr class="final-total-row">
-                <td><strong>UTILIDAD (O PÉRDIDA) DEL EJERCICIO</strong></td>
-                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.utilidad_neta) }}</strong></td>
+            <tr><td colspan="3" style="border:none; height: 20px;"></td></tr>
+
+            <tr class="net-profit-row">
+                <td>UTILIDAD NETA DEL EJERCICIO</td>
+                <td class="text-right percentage-col">{{ "{:,.1f}%".format(totales.porcentaje_utilidad_neta) if totales.porcentaje_utilidad_neta else "0.0%" }}</td>
+                <td class="text-right amount-col">{{ "{:,.0f}".format(totales.utilidad_neta) }}</td>
             </tr>
         </tbody>
     </table>
+
+    <div style="margin-top: 50px; text-align: center; color: #94a3b8; font-size: 8px;">
+        Este documento es una representación fiel de los libros contables de la organización.<br>
+        Generado automáticamente por Finaxis Intelligence System.
+    </div>
 </body>
 </html>
 ''',
@@ -2690,90 +2786,185 @@ TEMPLATES_EMPAQUETADOS = {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Estado de Resultados</title>
+    <title>{{ titulo_reporte }} Premium</title>
     <style>
-        body { font-family: sans-serif; font-size: 10px; }
-        .header { text-align: center; margin-bottom: 20px; }
-        .header h1, .header h2 { margin: 0; }
-        .report-info { margin-bottom: 20px; text-align: center; }
-        .content-table { width: 100%; border-collapse: collapse; }
-        .content-table td { padding: 4px; }
-        .account-row td:first-child { padding-left: 20px; }
-        .total-section-row td { font-weight: bold; border-top: 1px solid #000; border-bottom: 1px solid #000; }
-        .final-total-row td { font-weight: bold; border-top: 2px solid #000; border-bottom: 3px double #000; background-color: #f2f2f2; }
+        @page {
+            margin: 1.5cm;
+            @bottom-right {
+                content: "Página " counter(page) " de " counter(pages);
+                font-size: 8px;
+                color: #64748b;
+            }
+        }
+        body { 
+            font-family: 'Helvetica', 'Arial', sans-serif; 
+            font-size: 9px; 
+            color: #1e293b;
+            line-height: 1.4;
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            border-bottom: 2px solid #6366f1;
+            padding-bottom: 15px;
+        }
+        .header h1 { margin: 0; font-size: 18px; color: #1e1b4b; text-transform: uppercase; letter-spacing: 1px; }
+        .header h2 { margin: 5px 0 0; font-size: 12px; font-weight: normal; color: #475569; }
+        .report-title {
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #4f46e5;
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+        .report-info { margin-bottom: 25px; text-align: center; font-size: 10px; color: #64748b; }
+        
+        .content-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .content-table th {
+            text-align: left;
+            padding: 8px;
+            background-color: #f8fafc;
+            color: #475569;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 8px;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .content-table td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; }
+        
+        .section-header { 
+            background-color: #f1f5f9; 
+            font-weight: bold; 
+            color: #334155;
+            font-size: 10px;
+        }
+        .account-row td:first-child { padding-left: 20px; color: #475569; }
+        
+        .total-row { font-weight: bold; background-color: #f8fafc; }
+        .total-row td { border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+        
+        .highlight-row { 
+            font-weight: bold; 
+            background-color: #eef2ff; 
+            color: #3730a3;
+            font-size: 11px;
+        }
+        
+        .net-profit-row { 
+            font-weight: bold; 
+            background-color: #1e293b; 
+            color: #ffffff;
+            font-size: 12px;
+        }
+        .net-profit-row td { padding: 12px 8px; }
+
         .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .percentage-col { width: 60px; color: #94a3b8; font-size: 8px; font-weight: bold; }
+        .amount-col { width: 120px; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>{{ empresa_nombre }}</h1>
         <h2>NIT: {{ empresa_nit }}</h2>
-        <h2>Estado de Resultados</h2>
+        <div class="report-title">{{ titulo_reporte }}</div>
     </div>
 
     <div class="report-info">
-        <strong>Periodo:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}
+        <strong>Periodo de Análisis:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}
     </div>
 
     <table class="content-table">
-        <tbody>
+        <thead>
             <tr>
-                <td colspan="2"><strong>INGRESOS OPERACIONALES</strong></td>
+                <th>Detalle de Cuenta / Concepto</th>
+                <th class="text-right percentage-col">% Anal.</th>
+                <th class="text-right amount-col">Saldo (COP)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- INGRESOS -->
+            <tr class="section-header">
+                <td colspan="3">INGRESOS OPERACIONALES</td>
             </tr>
             {% for ingreso in ingresos %}
             <tr class="account-row">
                 <td>{{ ingreso.codigo }} - {{ ingreso.nombre }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(ingreso.saldo) }}</td>
+                <td class="text-right percentage-col">{{ "{:,.1f}%".format(ingreso.porcentaje) if ingreso.porcentaje else "100.0%" }}</td>
+                <td class="text-right amount-col">{{ "{:,.0f}".format(ingreso.saldo) }}</td>
             </tr>
             {% endfor %}
-            <tr class="total-section-row">
-                <td><strong>TOTAL INGRESOS OPERACIONALES</strong></td>
-                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.total_ingresos) }}</strong></td>
+            <tr class="total-row">
+                <td>TOTAL INGRESOS OPERACIONALES</td>
+                <td class="text-right percentage-col">100.0%</td>
+                <td class="text-right amount-col">{{ "{:,.0f}".format(totales.total_ingresos) }}</td>
             </tr>
 
-            <tr><td colspan="2">&nbsp;</td></tr>
+            <tr><td colspan="3" style="border:none; height: 10px;"></td></tr>
 
-            <tr>
-                <td colspan="2"><strong>COSTOS DE VENTA</strong></td>
+            <!-- COSTOS -->
+            {% if costos %}
+            <tr class="section-header">
+                <td colspan="3">COSTOS DE VENTA</td>
             </tr>
             {% for costo in costos %}
             <tr class="account-row">
                 <td>{{ costo.codigo }} - {{ costo.nombre }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(costo.saldo) }}</td>
+                <td class="text-right percentage-col">{{ "{:,.1f}%".format(costo.porcentaje) if costo.porcentaje else "0.0%" }}</td>
+                <td class="text-right amount-col">({{ "{:,.0f}".format(costo.saldo|abs) }})</td>
             </tr>
             {% endfor %}
-            <tr class="total-section-row">
-                <td><strong>TOTAL COSTOS DE VENTA</strong></td>
-                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.total_costos) }}</strong></td>
+            <tr class="total-row">
+                <td>TOTAL COSTOS DE VENTA</td>
+                <td class="text-right percentage-col">{{ "{:,.1f}%".format(totales.total_costos / totales.total_ingresos * 100) if totales.total_ingresos else '0.0%' }}</td>
+                <td class="text-right amount-col">({{ "{:,.0f}".format(totales.total_costos|abs) }})</td>
+            </tr>
+            {% endif %}
+
+            <tr class="highlight-row">
+                <td>UTILIDAD BRUTA</td>
+                <td class="text-right percentage-col">{{ "{:,.1f}%".format(totales.porcentaje_utilidad_bruta) if totales.porcentaje_utilidad_bruta else "0.0%" }}</td>
+                <td class="text-right amount-col">{{ "{:,.0f}".format(totales.utilidad_bruta) }}</td>
             </tr>
 
-            <tr class="final-total-row">
-                <td><strong>UTILIDAD BRUTA</strong></td>
-                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.utilidad_bruta) }}</strong></td>
-            </tr>
+            <tr><td colspan="3" style="border:none; height: 10px;"></td></tr>
 
-            <tr><td colspan="2">&nbsp;</td></tr>
-
-            <tr>
-                <td colspan="2"><strong>GASTOS OPERACIONALES</strong></td>
+            <!-- GASTOS -->
+            {% if gastos %}
+            <tr class="section-header">
+                <td colspan="3">GASTOS OPERACIONALES</td>
             </tr>
             {% for gasto in gastos %}
             <tr class="account-row">
                 <td>{{ gasto.codigo }} - {{ gasto.nombre }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(gasto.saldo) }}</td>
+                <td class="text-right percentage-col">{{ "{:,.1f}%".format(gasto.porcentaje) if gasto.porcentaje else "0.0%" }}</td>
+                <td class="text-right amount-col">({{ "{:,.0f}".format(gasto.saldo|abs) }})</td>
             </tr>
             {% endfor %}
-            <tr class="total-section-row">
-                <td><strong>TOTAL GASTOS OPERACIONALES</strong></td>
-                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.total_gastos) }}</strong></td>
+            <tr class="total-row">
+                <td>TOTAL GASTOS OPERACIONALES</td>
+                <td class="text-right percentage-col">{{ "{:,.1f}%".format(totales.total_gastos / totales.total_ingresos * 100) if totales.total_ingresos else '0.0%' }}</td>
+                <td class="text-right amount-col">({{ "{:,.0f}".format(totales.total_gastos|abs) }})</td>
             </tr>
+            {% endif %}
 
-            <tr class="final-total-row">
-                <td><strong>UTILIDAD (O PÉRDIDA) DEL EJERCICIO</strong></td>
-                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.utilidad_neta) }}</strong></td>
+            <tr><td colspan="3" style="border:none; height: 20px;"></td></tr>
+
+            <tr class="net-profit-row">
+                <td>UTILIDAD NETA DEL EJERCICIO</td>
+                <td class="text-right percentage-col">{{ "{:,.1f}%".format(totales.porcentaje_utilidad_neta) if totales.porcentaje_utilidad_neta else "0.0%" }}</td>
+                <td class="text-right amount-col">{{ "{:,.0f}".format(totales.utilidad_neta) }}</td>
             </tr>
         </tbody>
     </table>
+
+    <div style="margin-top: 50px; text-align: center; color: #94a3b8; font-size: 8px;">
+        Este documento es una representación fiel de los libros contables de la organización.<br>
+        Generado automáticamente por Finaxis Intelligence System.
+    </div>
 </body>
 </html>
 ''',

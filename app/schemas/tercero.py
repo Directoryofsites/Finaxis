@@ -30,6 +30,7 @@ class TerceroBase(BaseModel):
 
     # --- INICIO NUEVO CAMPO OPCIONAL ---
     lista_precio_id: Optional[int] = None
+    cuenta_gasto_defecto_id: Optional[int] = None
     # --- FIN NUEVO CAMPO OPCIONAL ---
 
 # Esquema para crear un Tercero
@@ -63,6 +64,7 @@ class TerceroUpdate(BaseModel):
     
     # --- INICIO NUEVO CAMPO OPCIONAL ---
     lista_precio_id: Optional[int] = None # Permitimos actualizar la lista de precios
+    cuenta_gasto_defecto_id: Optional[int] = None
     # --- FIN NUEVO CAMPO OPCIONAL ---
 
 # Esquema para leer un Tercero

@@ -57,10 +57,12 @@ export default function EditarTerceroPage() {
         actividad_economica_ciiu: '',
         es_regimen_simple: false,
         lista_precio_id: '',
-        municipio_dane: '' // Added for DANE support
+        municipio_dane: '', // Added for DANE support
+        cuenta_gasto_defecto_id: ''
     });
 
     const [listasPrecio, setListasPrecio] = useState([]);
+    const [cuentasGasto, setCuentasGasto] = useState([]);
     const [listasLoading, setListasLoading] = useState(true);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -74,9 +76,8 @@ export default function EditarTerceroPage() {
                 setError(null);
 
                 try {
-                    const [terceroResponse, listasResponse] = await Promise.all([
-                        apiService.get(`/terceros/${id}`),
-                        getListasPrecio()
+                    const [terceroResponse] = await Promise.all([
+                        apiService.get(`/terceros/${id}`)
                     ]);
 
                     const terceroData = terceroResponse.data;
@@ -97,10 +98,22 @@ export default function EditarTerceroPage() {
                         es_regimen_simple: terceroData.es_regimen_simple || false,
                         es_regimen_simple: terceroData.es_regimen_simple || false,
                         lista_precio_id: terceroData.lista_precio_id ? String(terceroData.lista_precio_id) : '',
-                        municipio_dane: terceroData.municipio_dane || '' // Load existing code
+                        municipio_dane: terceroData.municipio_dane || '', // Load existing code
+                        cuenta_gasto_defecto_id: terceroData.cuenta_gasto_defecto_id ? String(terceroData.cuenta_gasto_defecto_id) : ''
                     });
 
+                    // Fetch Cuentas y Listas
+                    const [listasResponse, cuentasResponse] = await Promise.all([
+                        getListasPrecio(),
+                        apiService.get('/plan-cuentas/list-flat?permite_movimiento=true')
+                    ]);
+
                     setListasPrecio(listasResponse || []);
+
+                    const cuentasFiltradas = (cuentasResponse.data || []).filter(c =>
+                        c.codigo.startsWith('5') || c.codigo.startsWith('6') || c.codigo.startsWith('7')
+                    );
+                    setCuentasGasto(cuentasFiltradas);
 
                 } catch (err) {
                     setError(err.response?.data?.detail || "Error al cargar los datos necesarios.");
@@ -133,9 +146,11 @@ export default function EditarTerceroPage() {
         setError(null);
 
         const listaPrecioIdFinal = formData.lista_precio_id ? parseInt(formData.lista_precio_id, 10) : null;
+        const cuentaGastoIdFinal = formData.cuenta_gasto_defecto_id ? parseInt(formData.cuenta_gasto_defecto_id, 10) : null;
 
         const { nit, ...updatePayload } = formData;
         updatePayload.lista_precio_id = listaPrecioIdFinal;
+        updatePayload.cuenta_gasto_defecto_id = cuentaGastoIdFinal;
 
         updatePayload.nombre_comercial = updatePayload.nombre_comercial || null;
         updatePayload.direccion = updatePayload.direccion || null;
@@ -349,6 +364,20 @@ export default function EditarTerceroPage() {
                                             <option value="">-- Ninguna (Precio Base) --</option>
                                             {listasPrecio.map((lista) => (
                                                 <option key={lista.id} value={lista.id}>{lista.nombre}</option>
+                                            ))}
+                                        </select>
+                                        <FaTags className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
+                                    </div>
+                                </div>
+
+                                {/* Cuenta de Gasto por Defecto */}
+                                <div className="md:col-span-2">
+                                    <label htmlFor="cuenta_gasto_defecto_id" className={labelClass}>Cuenta de Gasto por Defecto (Buzón Tributario)</label>
+                                    <div className="relative">
+                                        <select name="cuenta_gasto_defecto_id" id="cuenta_gasto_defecto_id" value={formData.cuenta_gasto_defecto_id} onChange={handleChange} className={selectClass}>
+                                            <option value="">-- Seleccione Cuenta (Opcional) --</option>
+                                            {cuentasGasto.map((cuenta) => (
+                                                <option key={cuenta.id} value={cuenta.id}>{cuenta.codigo} - {cuenta.nombre}</option>
                                             ))}
                                         </select>
                                         <FaTags className="absolute left-3 top-3 text-gray-400 pointer-events-none" />

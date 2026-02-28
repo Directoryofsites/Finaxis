@@ -142,7 +142,8 @@ def run_auto_migrations():
                 ("codigo_postal", "VARCHAR(10)"),
                 ("regimen_fiscal", "VARCHAR(5)"),
                 ("responsabilidad_fiscal", "VARCHAR(20)"),
-                ("lista_precio_id", "INTEGER")
+                ("lista_precio_id", "INTEGER"),
+                ("cuenta_gasto_defecto_id", "INTEGER")
             ]
             for col, col_type in tercero_cols:
                 if col not in cols_terceros:

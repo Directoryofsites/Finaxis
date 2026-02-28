@@ -51,10 +51,12 @@ export default function CrearTerceroPage() {
         lista_precio_id: '',
         tipo_documento: '13',
         tipo_persona: '2',
-        regimen_fiscal: '49'
+        regimen_fiscal: '49',
+        cuenta_gasto_defecto_id: ''
     });
 
     const [listasPrecio, setListasPrecio] = useState([]);
+    const [cuentasGasto, setCuentasGasto] = useState([]);
     const [listasLoading, setListasLoading] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -66,10 +68,22 @@ export default function CrearTerceroPage() {
             if (user) {
                 try {
                     setListasLoading(true);
-                    const data = await getListasPrecio();
-                    setListasPrecio(data || []);
+
+                    const [listasData, cuentasData] = await Promise.all([
+                        getListasPrecio(),
+                        apiService.get('/plan-cuentas/list-flat?permite_movimiento=true')
+                    ]);
+
+                    setListasPrecio(listasData || []);
+                    // Filtrar solo las cuentas de Gasto (clase 5) o Costo (clase 6, 7) si se desea, 
+                    // o dejarlas todas. Vamos a filtrar preferiblemente las que empiezan por 5, 6 o 7.
+                    const cuentasFiltradas = (cuentasData.data || []).filter(c =>
+                        c.codigo.startsWith('5') || c.codigo.startsWith('6') || c.codigo.startsWith('7')
+                    );
+                    setCuentasGasto(cuentasFiltradas);
+
                 } catch (err) {
-                    setError("Error al cargar las listas de precios.");
+                    setError("Error al cargar datos auxiliares.");
                     console.error(err);
                 } finally {
                     setListasLoading(false);
@@ -127,11 +141,13 @@ export default function CrearTerceroPage() {
         }
 
         const listaPrecioIdFinal = formData.lista_precio_id ? parseInt(formData.lista_precio_id, 10) : null;
+        const cuentaGastoIdFinal = formData.cuenta_gasto_defecto_id ? parseInt(formData.cuenta_gasto_defecto_id, 10) : null;
 
         const payload = {
             ...formData,
             empresa_id: user.empresaId,
             lista_precio_id: listaPrecioIdFinal,
+            cuenta_gasto_defecto_id: cuentaGastoIdFinal,
             nombre_comercial: formData.nombre_comercial || null,
             direccion: formData.direccion || null,
             ciudad: formData.ciudad || null,
@@ -370,6 +386,18 @@ export default function CrearTerceroPage() {
                                     </div>
                                 </div>
                                 <div>
+                                    <label htmlFor="cuenta_gasto_defecto_id" className={labelClass}>Cuenta de Gasto por Defecto (Buzón Tributario)</label>
+                                    <div className="relative">
+                                        <select name="cuenta_gasto_defecto_id" id="cuenta_gasto_defecto_id" value={formData.cuenta_gasto_defecto_id} onChange={handleChange} className={selectClass}>
+                                            <option value="">-- Seleccione Cuenta (Opcional) --</option>
+                                            {cuentasGasto.map((cuenta) => (
+                                                <option key={cuenta.id} value={cuenta.id}>{cuenta.codigo} - {cuenta.nombre}</option>
+                                            ))}
+                                        </select>
+                                        <FaTags className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
+                                    </div>
+                                </div>
+                                <div className="md:col-span-2">
                                     <label htmlFor="actividad_economica_ciiu" className={labelClass}>Actividad CIIU</label>
                                     <input type="text" name="actividad_economica_ciiu" id="actividad_economica_ciiu" value={formData.actividad_economica_ciiu} onChange={handleChange} className={`${inputClass} pl-4`} />
                                 </div>
