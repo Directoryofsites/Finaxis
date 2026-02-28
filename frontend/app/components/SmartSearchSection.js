@@ -8,12 +8,12 @@ export default function SmartSearchSection() {
             <div className="text-center relative group select-none">
                 <div className="absolute -inset-8 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500 rounded-full blur-[60px] opacity-10 group-hover:opacity-30 transition duration-1000 group-hover:duration-500"></div>
                 <img
-                    src="/logo.png?v=3"
+                    src="/logo.png?v=4"
                     alt="Finaxis ERP"
-                    className="relative w-full max-w-sm h-auto object-contain transform transition-transform duration-700 hover:scale-105"
+                    className="relative h-64 md:h-80 w-auto object-contain transform transition-transform duration-700 hover:scale-105"
                     style={{
-                        WebkitMaskImage: 'radial-gradient(ellipse at center, black 40%, transparent 75%)',
-                        maskImage: 'radial-gradient(ellipse at center, black 40%, transparent 75%)',
+                        WebkitMaskImage: 'radial-gradient(ellipse at center, black 45%, transparent 80%)',
+                        maskImage: 'radial-gradient(ellipse at center, black 45%, transparent 80%)',
                         filter: 'drop-shadow(0 20px 30px rgba(0,0,0,0.05))'
                     }}
                 />
