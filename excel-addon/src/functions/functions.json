@@ -1,0 +1,35 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/office-js/custom-functions.schema.json",
+  "functions": [
+    {
+      "id": "saldo",
+      "name": "SALDO",
+      "description": "Obtiene el saldo de una cuenta contable desde Finaxis. (Ej: =FINAXIS.SALDO(\"1105\", \"2026-03\"))",
+      "helpUrl": "https://finaxis.com.co/ayuda/excel",
+      "parameters": [
+        {
+          "name": "cuenta",
+          "description": "El código de la cuenta contable (ej. '110505')",
+          "type": "string",
+          "optional": false
+        },
+        {
+          "name": "periodo",
+          "description": "El periodo hasta el cual calcular en formato AAAA-MM (ej. '2026-03'). Si se deja vacío calcula hasta hoy.",
+          "type": "string",
+          "optional": true
+        }
+      ],
+      "result": {
+        "type": "number",
+        "dimensionality": "scalar"
+      },
+      "options": {
+        "cancelable": false,
+        "requiresAddress": false,
+        "stream": false,
+        "volatile": false
+      }
+    }
+  ]
+}

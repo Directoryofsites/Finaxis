@@ -1,0 +1,120 @@
+/*
+ * taskpane.js
+ * Lógica del panel lateral de Finaxis en Excel.
+ */
+
+const API_BASE_URL = "https://finaxis.onrender.com"; // En desarrollo usar http://localhost:8002
+
+Office.onReady((info) => {
+    if (info.host === Office.HostType.Workbook) {
+        document.getElementById("login-btn").onclick = attemptLogin;
+        document.getElementById("logout-btn").onclick = logout;
+        document.getElementById("empresa-select").onchange = updateActiveCompany;
+
+        // Revisar si ya hay un token guardado en la memoria compartida
+        checkExistingSession();
+    }
+});
+
+async function attemptLogin() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const errorMsg = document.getElementById("login-error");
+    const btn = document.getElementById("login-btn");
+
+    if (!email || !password) {
+        errorMsg.innerText = "Por favor ingrese ambos campos.";
+        return;
+    }
+
+    try {
+        errorMsg.innerText = "";
+        btn.innerText = "Conectando...";
+        btn.disabled = true;
+
+        const formData = new URLSearchParams();
+        formData.append("username", email);
+        formData.append("password", password);
+
+        // Usamos la API Optimizada de Excel
+        const response = await fetch(`${API_BASE_URL}/api/excel/auth`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error("Credenciales incorrectas");
+        }
+
+        const data = await response.json();
+
+        // Guardamos el Session State en OfficeRuntime.storage (SharedRuntime seguro)
+        await OfficeRuntime.storage.setItem("finaxis_token", data.access_token);
+        await OfficeRuntime.storage.setItem("finaxis_empresas", JSON.stringify(data.empresas));
+
+        // Predeterminamos la primera empresa
+        if (data.empresas && data.empresas.length > 0) {
+            await OfficeRuntime.storage.setItem("finaxis_active_empresa_id", data.empresas[0].id.toString());
+        }
+
+        showDashboard(data.usuario, data.empresas);
+
+    } catch (error) {
+        errorMsg.innerText = error.message;
+    } finally {
+        btn.innerText = "Conectar";
+        btn.disabled = false;
+    }
+}
+
+async function checkExistingSession() {
+    try {
+        const token = await OfficeRuntime.storage.getItem("finaxis_token");
+        const empresasStr = await OfficeRuntime.storage.getItem("finaxis_empresas");
+
+        if (token && empresasStr) {
+            const empresas = JSON.parse(empresasStr);
+            // Por simplicidad, si hay token asumimos que está activo. 
+            // Si la API falla después, la fórmula devolverá ERROR y el usuario deberá volver a loguearse.
+            showDashboard("Usuario Contable", empresas);
+        }
+    } catch (e) {
+        console.log("No hay sesión guardada.");
+    }
+}
+
+function showDashboard(nombre, empresas) {
+    document.getElementById("login-container").classList.remove("active");
+    document.getElementById("dashboard-container").classList.add("active");
+
+    document.getElementById("user-display").innerText = nombre || "Usuario(a)";
+
+    // Poblar Selector de Empresas
+    const select = document.getElementById("empresa-select");
+    select.innerHTML = "";
+    empresas.forEach(emp => {
+        let opt = document.createElement("option");
+        opt.value = emp.id;
+        opt.innerText = emp.razon_social;
+        select.appendChild(opt);
+    });
+}
+
+async function updateActiveCompany() {
+    const select = document.getElementById("empresa-select");
+    const selectedId = select.value;
+    await OfficeRuntime.storage.setItem("finaxis_active_empresa_id", selectedId);
+}
+
+async function logout() {
+    await OfficeRuntime.storage.removeItem("finaxis_token");
+    await OfficeRuntime.storage.removeItem("finaxis_empresas");
+    await OfficeRuntime.storage.removeItem("finaxis_active_empresa_id");
+
+    document.getElementById("dashboard-container").classList.remove("active");
+    document.getElementById("login-container").classList.add("active");
+    document.getElementById("password").value = "";
+}

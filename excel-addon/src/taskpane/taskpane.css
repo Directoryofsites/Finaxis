@@ -1,0 +1,150 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    color: #333333;
+    background-color: #f8f9fa;
+}
+
+.header {
+    background-color: #0f172a;
+    color: white;
+    padding: 20px;
+    text-align: center;
+    border-bottom: 3px solid #3b82f6;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 24px;
+    letter-spacing: 2px;
+}
+
+.header p {
+    margin: 5px 0 0 0;
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+main {
+    padding: 20px;
+}
+
+.container {
+    display: none;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.container.active {
+    display: block;
+}
+
+h2 {
+    font-size: 18px;
+    margin-top: 0;
+    color: #1e293b;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 10px;
+}
+
+.input-group {
+    margin-bottom: 15px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.input-group input,
+.input-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+.input-group input:focus,
+.input-group select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.primary-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.primary-btn:hover {
+    background-color: #2563eb;
+}
+
+.secondary-btn {
+    width: 100%;
+    padding: 10px;
+    background-color: #e2e8f0;
+    color: #475569;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-top: 15px;
+}
+
+.secondary-btn:hover {
+    background-color: #cbd5e1;
+}
+
+.error-msg {
+    color: #ef4444;
+    font-size: 13px;
+    margin-top: 10px;
+    text-align: center;
+    min-height: 20px;
+}
+
+.success-icon {
+    font-size: 40px;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.info-box {
+    background-color: #f0fdfa;
+    border: 1px solid #99f6e4;
+    padding: 15px;
+    border-radius: 6px;
+    margin: 20px 0;
+    font-size: 13px;
+    color: #0d9488;
+}
+
+code {
+    display: block;
+    background-color: #1e293b;
+    color: #38bdf8;
+    padding: 8px;
+    border-radius: 4px;
+    margin-top: 8px;
+    font-family: monospace;
+    font-size: 14px;
+}

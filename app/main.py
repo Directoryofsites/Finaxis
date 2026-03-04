@@ -77,6 +77,7 @@ from app.api.cartera import routes as cartera_router
 from app.api.proveedores import routes as proveedores_router
 from app.api.usuarios import routes as usuarios_router
 from app.api.usuarios import busquedas as busquedas_guardadas_router # <--- NUEVO ROUTER
+from app.api.excel import routes as excel_router # <--- ADD-IN EXCEL
 from app.api.auditoria.routes import router as auditoria_router
 from app.api.roles import routes as roles_routes
 from app.api.soporte import routes as soporte_router
@@ -324,6 +325,7 @@ app.include_router(compras_routes.router, prefix="/api/compras", tags=["Compras"
 app.include_router(reportes_inventario_routes.router, prefix="/api/reportes-inventario", tags=["Reportes de Inventario"])
 app.include_router(reportes_financieros_inv_routes.router, prefix="/api/reportes-financieros-inventario", tags=["Reportes Financieros Inventario"])
 app.include_router(gestion_ventas_routes.router, prefix="/api/gestion-ventas", tags=["Gestión de Ventas"])
+app.include_router(excel_router.router, prefix="/api/excel", tags=["Excel Add-in"])
 
 app.include_router(reportes_facturacion_routes.router, prefix="/api/reportes-facturacion", tags=["Reportes de Facturación"])
 app.include_router(bodegas_router.router, prefix="/api/bodegas", tags=["Bodegas"])
