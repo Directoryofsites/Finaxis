@@ -124,29 +124,11 @@ app = FastAPI(
 # Solo arrancamos si no estamos en Vercel o si se fuerza.
 if os.getenv("VERCEL") != "1":
     from app.services.scheduler_backup import start_scheduler
-    import asyncio
-    import urllib.request
     
-    async def start_keep_alive():
-        """Ping cada 10 min a Render para evitar la suspensión (sleep) por inactividad."""
-        url = "https://finaxis.onrender.com/api/ping"
-        while True:
-            await asyncio.sleep(600) # 600 segundos = 10 minutos
-            try:
-                # Ejecutamos el request HTTP bloqueante en un hilo seguro
-                loop = asyncio.get_event_loop()
-                await loop.run_in_executor(None, lambda: urllib.request.urlopen(url, timeout=10).read())
-                print(f"[Keep-Alive] Auto-ping completado internamente: {url}")
-            except Exception as e:
-                print(f"[Keep-Alive] Error en auto-ping: {e}")
-
     @app.on_event("startup")
     async def startup_event():
         await run_startup_tasks() # Ejecutar migraciones y seeds de forma segura
         start_scheduler()
-        
-        # Lanzar la tarea de bucle de latido (Keep-Alive interno) al arrancar el worker
-        asyncio.create_task(start_keep_alive())
 # --- FIN: SCHEDULER ---
 
 origins = [
