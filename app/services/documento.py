@@ -1010,12 +1010,12 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
             "dian_cufe": getattr(db_doc, 'dian_cufe', "") or "",
             "dian_estado": getattr(db_doc, 'dian_estado', "") or "",
             "dian_xml_url": getattr(db_doc, 'dian_xml_url', "") or "",
-            # Nuevos datos de la resolución DIAN desde ConfiguracionFE (usando la relación empresa.configuracion_fe)
-            "resolucion_numero": getattr(empresa.configuracion_fe[0], 'resolucion_numero', '') or 'N/A' if getattr(empresa, 'configuracion_fe', None) and len(empresa.configuracion_fe) > 0 else 'N/A',
-            "resolucion_fecha": getattr(empresa.configuracion_fe[0], 'resolucion_fecha').strftime('%d/%m/%Y') if getattr(empresa, 'configuracion_fe', None) and len(empresa.configuracion_fe) > 0 and getattr(empresa.configuracion_fe[0], 'resolucion_fecha', None) else 'N/A',
-            "resolucion_prefijo": getattr(empresa.configuracion_fe[0], 'prefijo', '') or 'FV' if getattr(empresa, 'configuracion_fe', None) and len(empresa.configuracion_fe) > 0 else 'FV',
-            "resolucion_rango_desde": getattr(empresa.configuracion_fe[0], 'rango_desde', '') or '0' if getattr(empresa, 'configuracion_fe', None) and len(empresa.configuracion_fe) > 0 else '0',
-            "resolucion_rango_hasta": getattr(empresa.configuracion_fe[0], 'rango_hasta', '') or '0' if getattr(empresa, 'configuracion_fe', None) and len(empresa.configuracion_fe) > 0 else '0'
+            # Nuevos datos de la resolución DIAN desde ConfiguracionFE (relación uselist=False)
+            "resolucion_numero": getattr(empresa.configuracion_fe, 'resolucion_numero', '') or 'N/A' if getattr(empresa, 'configuracion_fe', None) else 'N/A',
+            "resolucion_fecha": getattr(empresa.configuracion_fe, 'resolucion_fecha').strftime('%d/%m/%Y') if getattr(empresa, 'configuracion_fe', None) and getattr(empresa.configuracion_fe, 'resolucion_fecha', None) else 'N/A',
+            "resolucion_prefijo": getattr(empresa.configuracion_fe, 'prefijo', '') or 'FV' if getattr(empresa, 'configuracion_fe', None) else 'FV',
+            "resolucion_rango_desde": getattr(empresa.configuracion_fe, 'rango_desde', '') or '0' if getattr(empresa, 'configuracion_fe', None) else '0',
+            "resolucion_rango_hasta": getattr(empresa.configuracion_fe, 'rango_hasta', '') or '0' if getattr(empresa, 'configuracion_fe', None) else '0'
         },
         "tercero": {
             "razon_social": getattr(beneficiario, 'razon_social', "Varios") if beneficiario else "Varios",

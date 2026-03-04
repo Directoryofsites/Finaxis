@@ -49,7 +49,8 @@ function FormularioEditarEmpresa({ empresa, onFinished, onCancel }) {
         saldo_facturas_venta: 0,
         saldo_documentos_soporte: 0,
         saldo_notas_credito: 0,
-        limite_mensajes_ia_mensual: 0
+        limite_mensajes_ia_mensual: 0,
+        fe_proveedor: 'FACTUS' // Nuevo: Campo para FE
     });
     const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
     const [isProcessing, setIsProcessing] = useState(false);
@@ -67,7 +68,8 @@ function FormularioEditarEmpresa({ empresa, onFinished, onCancel }) {
                 saldo_facturas_venta: empresa.saldo_facturas_venta || 0,
                 saldo_documentos_soporte: empresa.saldo_documentos_soporte || 0,
                 saldo_notas_credito: empresa.saldo_notas_credito || 0,
-                limite_mensajes_ia_mensual: empresa.limite_mensajes_ia_mensual || 0
+                limite_mensajes_ia_mensual: empresa.limite_mensajes_ia_mensual || 0,
+                fe_proveedor: empresa.configuracion_fe?.proveedor || 'FACTUS'
             });
         }
     }, [empresa]);
@@ -92,9 +94,15 @@ function FormularioEditarEmpresa({ empresa, onFinished, onCancel }) {
         };
 
         try {
-            const empresaActualizada = await updateEmpresa(empresa.id, payload);
-            setMensaje({ texto: 'Empresa actualizada con éxito.', tipo: 'success' });
-            onFinished(empresaActualizada.data);
+            await updateEmpresa(empresa.id, payload);
+
+            // ACTUALIZACIÓN ADICIONAL: Proveedor FE
+            // Importamos axios o usamos soporteApiService directamente para el FE config
+            const fePayload = { proveedor: formData.fe_proveedor };
+            await soporteApiService.put(`/fe/config/${empresa.id}`, fePayload);
+
+            setMensaje({ texto: 'Empresa y Proveedor FE actualizados con éxito.', tipo: 'success' });
+            onFinished({ ...empresa, ...payload, configuracion_fe: { ...empresa.configuracion_fe, proveedor: formData.fe_proveedor } });
         } catch (error) {
             const errorMsg = error.response?.data?.detail || 'Error al actualizar la empresa.';
             setMensaje({ texto: errorMsg, tipo: 'error' });
@@ -162,6 +170,26 @@ function FormularioEditarEmpresa({ empresa, onFinished, onCancel }) {
                         <label className="block text-xs font-medium text-gray-500 uppercase">Límite Mensual Consultas IA</label>
                         <input type="number" name="limite_mensajes_ia_mensual" value={formData.limite_mensajes_ia_mensual} onChange={handleChange} placeholder="0 para desactivar" className="mt-1 block w-full px-3 py-2 border border-purple-300 rounded-md shadow-sm bg-white" />
                         <p className="text-xs text-purple-600 mt-1">Coloca 0 si no deseas que la empresa tenga acceso a la IA inteligente.</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* --- SECCIÓN FACTURACIÓN ELECTRÓNICA --- */}
+            <div className="bg-emerald-50 p-4 rounded-md border border-emerald-100 mt-4">
+                <h4 className="text-sm font-bold text-emerald-800 mb-3 border-b border-emerald-200 pb-1">Facturación Electrónica (DIAN)</h4>
+                <div className="grid grid-cols-1 gap-4">
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 uppercase">Proveedor Tecnológico Activo</label>
+                        <select
+                            name="fe_proveedor"
+                            value={formData.fe_proveedor}
+                            onChange={handleChange}
+                            className="mt-1 block w-full px-3 py-2 border border-emerald-300 rounded-md shadow-sm bg-white font-bold text-emerald-700"
+                        >
+                            <option value="FACTUS">FACTUS (Estándar)</option>
+                            <option value="DATAICO">DATAICO (Nuevo)</option>
+                        </select>
+                        <p className="text-[10px] text-emerald-600 mt-1 italic">Este selector cambia el motor de emisión DIAN para esta empresa.</p>
                     </div>
                 </div>
             </div>

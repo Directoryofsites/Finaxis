@@ -26,6 +26,7 @@ export default function DetalleEmpresaPage() {
 
     // NUEVO: Estado para la configuración de FE
     const [feConfig, setFeConfig] = useState({
+        proveedor: 'FACTUS',
         ambiente: 'PRUEBAS',
         resolucion_numero: '',
         resolucion_fecha: '',
@@ -80,6 +81,7 @@ export default function DetalleEmpresaPage() {
                     try {
                         const resFE = await apiService.get(`/fe/config/${id}`);
                         setFeConfig({
+                            proveedor: resFE.data.proveedor || 'FACTUS',
                             ambiente: resFE.data.ambiente || 'PRUEBAS',
                             resolucion_numero: resFE.data.resolucion_numero || '',
                             resolucion_fecha: resFE.data.resolucion_fecha || '',
@@ -283,17 +285,25 @@ export default function DetalleEmpresaPage() {
 
                                 {/* Bloque 1: Entorno */}
                                 <div className="p-7 bg-slate-50/80 rounded-[2rem] border border-slate-100/80">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                        <div>
+                                            <h3 className="text-sm font-bold text-slate-800 mb-1 flex items-center gap-2">Proveedor Tecnológico</h3>
+                                            <p className="text-xs text-slate-500 mb-4">Motor de emisión a usar.</p>
+                                            <select name="proveedor" value={feConfig.proveedor} onChange={handleFEInputChange} className="select select-bordered w-full bg-white border-transparent focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200/50 font-bold text-slate-700 shadow-sm rounded-xl">
+                                                <option value="FACTUS">FACTUS (Base Original)</option>
+                                                <option value="DATAICO">DATAICO Nuevo!</option>
+                                            </select>
+                                        </div>
                                         <div>
                                             <h3 className="text-sm font-bold text-slate-800 mb-1 flex items-center gap-2">Ambiente de Trabajo</h3>
-                                            <p className="text-xs text-slate-500 mb-4">Servidor destino para los XML y validaciones.</p>
+                                            <p className="text-xs text-slate-500 mb-4">Servidor destino para los XML.</p>
                                             <select name="ambiente" value={feConfig.ambiente} onChange={handleFEInputChange} className="select select-bordered w-full bg-white border-transparent focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200/50 font-bold text-slate-700 shadow-sm rounded-xl">
                                                 <option value="PRUEBAS">Habilitación (Sandbox Pruebas)</option>
                                                 <option value="PRODUCCION">Producción (Emisión Real)</option>
                                             </select>
                                         </div>
                                         <div>
-                                            <h3 className="text-sm font-bold text-slate-800 mb-1">API Token (Factus)</h3>
+                                            <h3 className="text-sm font-bold text-slate-800 mb-1">API Token ({feConfig.proveedor})</h3>
                                             <p className="text-xs text-slate-500 mb-4">Credenciales de autenticación en formato JSON.</p>
                                             <textarea name="api_token" value={feConfig.api_token} onChange={handleFEInputChange} className="textarea textarea-bordered w-full h-16 font-mono text-[11px] bg-white border-transparent focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200/50 shadow-sm rounded-xl" placeholder='{"client_id": "...", "client_secret": "..."}'></textarea>
                                         </div>

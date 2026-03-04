@@ -1,6 +1,6 @@
 
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Date, Text
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from ..core.database import Base
 
 class ConfiguracionFE(Base):
@@ -41,4 +41,4 @@ class ConfiguracionFE(Base):
     habilitado = Column(Boolean, default=False)
     
     # Relación
-    empresa = relationship("Empresa", backref="configuracion_fe")
+    empresa = relationship("Empresa", backref=backref("configuracion_fe", uselist=False))

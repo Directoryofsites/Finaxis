@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from .usuario import User
     from .usuario import UserBasic
 # --- FIN: IMPORTACIÓN CORREGIDA ---
+from .configuracion_fe import ConfiguracionFEResponse
 
 # --- ESQUEMA INTERNO PARA DATOS DE USUARIO EN LA CREACIÓN ---
 class UsuarioData(BaseModel):
@@ -118,6 +119,7 @@ class EmpresaBase(BaseModel):
 
 class Empresa(EmpresaBase):
     id: int
+    configuracion_fe: Optional[ConfiguracionFEResponse] = None
 
     class Config:
         from_attributes = True

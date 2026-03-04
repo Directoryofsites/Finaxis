@@ -193,7 +193,12 @@ class FacturaElectronicaService:
                 "username": creds.get("username"),
                 "password": creds.get("password")
             }
-            provider = FactusProvider(provider_config)
+            
+            if config.proveedor and config.proveedor.upper() == "DATAICO":
+                from app.services.providers.dataico_provider import DataicoProvider
+                provider = DataicoProvider(provider_config)
+            else:
+                provider = FactusProvider(provider_config)
             
             # 4. Construir Items con Limpieza de Cargos Globales
             
@@ -336,8 +341,9 @@ class FacturaElectronicaService:
                 "phone": tercero.telefono or "0000000",
                 "legal_organization_id": tipo_persona, 
                 "tribute_id": "21" if tipo_persona == '2' else "01",
-                # "identification_document_id": factus_doc_id, # Se asigna abajo
-                "municipality_id": "980",
+                "city_code": str(tercero.municipio_dane or ""), 
+                "city_name": str(tercero.ciudad or "Bogota"),
+                "municipality_id": str(tercero.municipio_dane or "980"),
                 "country_code": "CO"
             }
             
@@ -375,9 +381,26 @@ class FacturaElectronicaService:
             elif is_nc: bill_type_str = "CreditNote"
             elif is_nd: bill_type_str = "DebitNote"
 
+            # Determinando Prefix y Resolution según el tipo de Comprobante
+            doc_prefix = config.prefijo or ""
+            doc_resolution = config.resolucion_numero or ""
+            
+            if is_ds:
+                doc_prefix = config.ds_prefijo or ""
+                doc_resolution = config.ds_resolucion_numero or ""
+            elif is_nc:
+                doc_prefix = "NC"
+                doc_resolution = "" # Dataico rechaza NCs enviadas con la resolución de facturas
+            elif is_nd:
+                doc_prefix = "ND"
+                doc_resolution = ""
+
             # Payload Final
             factus_payload = {
                 "numbering_range_id": range_id,
+                "resolution_number": doc_resolution,
+                "prefix": doc_prefix,
+                "number": doc.numero,
                 "reference_code": f"{'DS' if is_ds else ('NC' if is_nc else ('ND' if is_nd else 'FE'))}-{doc.numero}-{uuid.uuid4().hex[:4]}",
                 "observation": f"{doc_type_name} #{doc.numero} - {doc.observaciones or ''}",
                 "payment_form": "1",
@@ -420,7 +443,7 @@ class FacturaElectronicaService:
                 # 4. Ajuste de precio
 
                 # Extraer concepto de las observaciones si viene en formato [CODE] Description
-                # O usar default '1' (Devolución) para NC, '3' (Cambio Valor) para ND
+                # O usar default '1' (Devolución parcial) para NC, '3' (Cambio Valor) para ND
                 
                 concept_code = "1"
                 if is_nd: concept_code = "3"
@@ -434,13 +457,17 @@ class FacturaElectronicaService:
                         description = obs
                 else:
                     description = obs or ("Nota Débito Generada" if is_nd else "Nota Crédito Generada")
+                    # Para Anulación completa se debe forzar a "2" a través de la interfaz web, 
+                    # asumiendo "1" (devolución parcial/rebaja) como seguro contra errores de validación de monto DIAN 
+                    if is_nc and not obs:
+                        concept_code = "1" 
 
                 # Factus usa 'correction_concept_code' en root O 'discrepancy_response'
                 # Para v2 (UBL 2.1), suele ser discrepancy_response.
                 
                 factus_payload["discrepancy_response"] = {
                     "reference_code": str(parent_doc.numero),
-                    "correction_concept_id": concept_code, # Factus field name might be correction_concept_id inside object
+                    "correction_concept_id": concept_code, 
                     "description": description
                 }
                 # Algunos endpoints de Factus piden reference_code en la raiz de discrepancy
@@ -465,8 +492,8 @@ class FacturaElectronicaService:
                  factus_payload["customer"] = partner_data
             
             # --- ENVIO ---
-            print(f"DEBUG PAYLOAD {bill_type_str} A FACTUS:")
-            print(json.dumps(factus_payload, indent=2))
+            print(f"DEBUG PAYLOAD {bill_type_str} AL PROVEEDOR:")
+            # print(json.dumps(factus_payload, indent=2))
             response = provider.emit(factus_payload)
             
             # 5. Actualizar Documento
