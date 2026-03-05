@@ -13,15 +13,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-# --- MIDDLEWARE PARA DESHABILITAR CACHÉ EN EXCEL ADDON ---
-@app.middleware("http")
-async def add_no_cache_headers(request, call_next):
-    response = await call_next(request)
-    if request.url.path.startswith("/excel-addon"):
-        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-        response.headers["Pragma"] = "no-cache"
-        response.headers["Expires"] = "0"
-    return response
 
 # --- INICIO: RUTAS DE AUTH Y EXCEL ---
 # --- INICIO: LÓGICA DE AUTO-CREACIÓN Y SEMBRADO ---
@@ -136,6 +127,16 @@ app = FastAPI(
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 EXCEL_ADDON_PATH = os.path.join(os.path.dirname(BASE_DIR), "excel-addon")
 app.mount("/excel-addon", StaticFiles(directory=EXCEL_ADDON_PATH), name="excel-addon")
+
+# --- MIDDLEWARE PARA DESHABILITAR CACHÉ EN EXCEL ADDON ---
+@app.middleware("http")
+async def add_no_cache_headers(request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/excel-addon"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
 
 # --- INICIO: SCHEDULER DE COPIAS (AUTO-BACKUP) ---
 # En Vercel (serverless) los Background Workers no funcionan bien. 
