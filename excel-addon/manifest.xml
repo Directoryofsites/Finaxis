@@ -45,7 +45,7 @@
               <SourceLocation resid="Functions.Script.Url"/>
             </Script>
             <Page>
-              <SourceLocation resid="Functions.Page.Url"/>
+              <SourceLocation resid="Taskpane.Url"/>
             </Page>
             <Metadata>
               <SourceLocation resid="Functions.Metadata.Url"/>
@@ -102,7 +102,6 @@
         <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://finaxis.com.co"/>
         <bt:Url id="Taskpane.Url" DefaultValue="https://finaxis.onrender.com/excel-addon/src/taskpane/taskpane.html"/>
         <bt:Url id="Functions.Script.Url" DefaultValue="https://finaxis.onrender.com/excel-addon/src/functions/functions.js"/>
-        <bt:Url id="Functions.Page.Url" DefaultValue="https://finaxis.onrender.com/excel-addon/src/functions/functions.html"/>
         <bt:Url id="Functions.Metadata.Url" DefaultValue="https://finaxis.onrender.com/excel-addon/src/functions/functions.json"/>
       </bt:Urls>
       <bt:ShortStrings>
