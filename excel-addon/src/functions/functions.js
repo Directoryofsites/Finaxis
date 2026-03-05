@@ -38,21 +38,27 @@ async function saldo(cuenta, periodo) {
     }
 
     // 3. Consultar al Backend de Finaxis
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout para fórmulas
+    let response;
+
     try {
-        const response = await fetch(url, {
+        response = await fetch(url, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`,
                 "Content-Type": "application/json"
-            }
+            },
+            signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             if (response.status === 401) {
                 // Token expirado o inválido
-                throw new CustomFunctions.Error(CustomFunctions.ErrorCode.notAvailable, "La sesión expiró. Vuelva a conectarse.");
+                throw new CustomFunctions.Error(CustomFunctions.ErrorCode.notAvailable, "La sesión expiró. Vuelva a conectarse en el panel.");
             }
-            throw new CustomFunctions.Error(CustomFunctions.ErrorCode.invalidValue, "Error consultando saldo.");
+            throw new CustomFunctions.Error(CustomFunctions.ErrorCode.invalidValue, "Error consultando saldo (HTTP " + response.status + ").");
         }
 
         const data = await response.json();
@@ -61,9 +67,13 @@ async function saldo(cuenta, periodo) {
         return data.saldo;
 
     } catch (error) {
+        clearTimeout(timeoutId);
         // Si el fetch falla por red (Render dormido, sin internet, etc)
         if (error instanceof CustomFunctions.Error) {
             throw error;
+        }
+        if (error.name === 'AbortError') {
+            throw new CustomFunctions.Error(CustomFunctions.ErrorCode.notAvailable, "Timeout: El servidor Finaxis tardó demasiado.");
         }
         throw new CustomFunctions.Error(CustomFunctions.ErrorCode.notAvailable, "Error de red conectando a Finaxis.");
     }

@@ -39,24 +39,44 @@ async function attemptLogin() {
 
     try {
         errorMsg.innerText = "";
-        btn.innerText = "Conectando...";
+        btn.innerText = "Conectando (Despertando servidor, puede tardar 1 min)...";
         btn.disabled = true;
 
         const formData = new URLSearchParams();
         formData.append("username", email);
         formData.append("password", password);
 
-        // Usamos la API Optimizada de Excel
-        const response = await fetch(`${API_BASE_URL}/api/excel/auth`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: formData
-        });
+        // Controlador de Timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 segundos de timeout
+
+        let response;
+        try {
+            // Usamos la API Optimizada de Excel
+            response = await fetch(`${API_BASE_URL}/api/excel/auth`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: formData,
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+        } catch (fetchError) {
+            clearTimeout(timeoutId);
+            if (fetchError.name === 'AbortError') {
+                throw new Error("El servidor tardó demasiado en responder (Timeout). Es posible que esté 'dormido'. Por favor, intente conectar de nuevo en unos segundos.");
+            }
+            throw new Error("Error de red: No se pudo conectar con el servidor Finaxis. Compruebe su conexión.");
+        }
 
         if (!response.ok) {
-            throw new Error("Credenciales incorrectas");
+            let serverError = "Credenciales incorrectas o error en el servidor";
+            try {
+                const errorData = await response.json();
+                serverError = errorData.detail || serverError;
+            } catch (e) { }
+            throw new Error(serverError);
         }
 
         const data = await response.json();
@@ -73,6 +93,7 @@ async function attemptLogin() {
         showDashboard(data.usuario, data.empresas);
 
     } catch (error) {
+        log("Login Error: " + error.message);
         errorMsg.innerText = error.message;
     } finally {
         btn.innerText = "Conectar";
@@ -92,7 +113,7 @@ async function checkExistingSession() {
             showDashboard("Usuario Contable", empresas);
         }
     } catch (e) {
-        console.log("No hay sesión guardada.");
+        log("No hay sesión guardada o error leyendo storage: " + e.message);
     }
 }
 
