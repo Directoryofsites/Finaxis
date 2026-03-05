@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/office-js/custom-functions.schema.json",
   "functions": [
     {
-      "id": "saldo",
+      "id": "SALDO",
       "name": "SALDO",
       "description": "Obtiene el saldo de una cuenta contable desde Finaxis. (Ej: =FINAXIS.SALDO(\"1105\", \"2026-03\"))",
       "helpUrl": "https://finaxis.com.co/ayuda/excel",
