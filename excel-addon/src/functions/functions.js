@@ -3,6 +3,8 @@
  * Lógica detrás de las fórmulas nativas de Excel (Ej. =FINAXIS.SALDO)
  */
 
+console.log("Finaxis Functions: Cargando script...");
+
 const API_BASE_URL = "https://finaxis.onrender.com"; // En desarrollo usar http://localhost:8002
 
 /**

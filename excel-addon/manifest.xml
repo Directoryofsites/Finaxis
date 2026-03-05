@@ -6,7 +6,7 @@
           xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
           xsi:type="TaskPaneApp">
   <Id>d2325ab3-5c82-4f0e-be9b-a4897f2bf0b1</Id>
-  <Version>1.0.0.0</Version>
+  <Version>1.0.0.1</Version>
   <ProviderName>Finaxis</ProviderName>
   <DefaultLocale>es-ES</DefaultLocale>
   <DisplayName DefaultValue="Finaxis ContaExcel"/>
