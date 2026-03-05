@@ -6,14 +6,18 @@
 const API_BASE_URL = "https://finaxis.onrender.com"; // En desarrollo usar http://localhost:8002
 
 Office.onReady((info) => {
-    if (info.host === Office.HostType.Workbook) {
-        document.getElementById("login-btn").onclick = attemptLogin;
-        document.getElementById("logout-btn").onclick = logout;
-        document.getElementById("empresa-select").onchange = updateActiveCompany;
+    // Vinculamos los eventos a los botones sin importar el tipo de host (Desktop/Web)
+    const loginBtn = document.getElementById("login-btn");
+    loginBtn.onclick = attemptLogin;
 
-        // Revisar si ya hay un token guardado en la memoria compartida
-        checkExistingSession();
-    }
+    // Indicador visual de que Office.js cargó y el botón está "vivo"
+    loginBtn.innerText = "Conectar a Finaxis";
+
+    document.getElementById("logout-btn").onclick = logout;
+    document.getElementById("empresa-select").onchange = updateActiveCompany;
+
+    // Revisar si ya hay un token guardado en la memoria compartida
+    checkExistingSession();
 });
 
 async function attemptLogin() {
