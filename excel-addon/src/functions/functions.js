@@ -70,4 +70,6 @@ async function saldo(cuenta, periodo) {
 }
 
 // Registro global de la función para el entorno de Excel MS
-CustomFunctions.associate("SALDO", saldo);
+if (typeof CustomFunctions !== "undefined") {
+    CustomFunctions.associate("SALDO", saldo);
+}
