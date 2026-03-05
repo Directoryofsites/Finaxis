@@ -122,7 +122,9 @@ app = FastAPI(
 )
 
 # Servir los archivos del Add-in de Excel de forma pública
-app.mount("/excel-addon", StaticFiles(directory="excel-addon"), name="excel-addon")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+EXCEL_ADDON_PATH = os.path.join(os.path.dirname(BASE_DIR), "excel-addon")
+app.mount("/excel-addon", StaticFiles(directory=EXCEL_ADDON_PATH), name="excel-addon")
 
 # --- INICIO: SCHEDULER DE COPIAS (AUTO-BACKUP) ---
 # En Vercel (serverless) los Background Workers no funcionan bien. 
