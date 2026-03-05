@@ -128,31 +128,23 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 EXCEL_ADDON_PATH = os.path.join(os.path.dirname(BASE_DIR), "excel-addon")
 
 # --- MIDDLEWARE PARA EXCEL ADDON (CORS + NO CACHÉ) ---
-# Debe ir ANTES de app.mount para interceptar el preflight OPTIONS
-@app.middleware("http")
-async def add_no_cache_headers(request, call_next):
-    # En Excel Web, la carga de functions.json requiere CORS explícito
-    if request.method == "OPTIONS" and request.url.path.startswith("/excel-addon"):
-        from fastapi import Response
-        response = Response(status_code=200)
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "*"
-        return response
+# En Excel Web, la carga de manifest.xml y functions.json requiere CORS.
+# Dado que usamos allow_credentials=True, no podemos usar allow_origins=["*"].
+# Usamos allow_origin_regex para permitir de forma segura los dominios de Office.
 
+@app.middleware("http")
+async def excel_addon_headers(request, call_next):
     response = await call_next(request)
     if request.url.path.startswith("/excel-addon"):
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
-        response.headers["Access-Control-Allow-Origin"] = "*"
     return response
 
 app.mount("/excel-addon", StaticFiles(directory=EXCEL_ADDON_PATH), name="excel-addon")
 
 # --- INICIO: SCHEDULER DE COPIAS (AUTO-BACKUP) ---
-# En Vercel (serverless) los Background Workers no funcionan bien. 
-# Solo arrancamos si no estamos en Vercel o si se fuerza.
+# ... (omni-existing code) ...
 if os.getenv("VERCEL") != "1":
     from app.services.scheduler_backup import start_scheduler
     
@@ -177,7 +169,8 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins, # Restaurado lista explícita para compatibilidad con allow_credentials=True
+    allow_origins=origins,
+    allow_origin_regex=r"https://.*\.officeapps\.live\.com|https://.*\.microsoft\.com|https://.*\.office\.com",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
