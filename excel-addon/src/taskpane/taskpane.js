@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://finaxis.onrender.com"; // En desarrollo usar http://localhost:8002
+var API_BASE_URL = "https://finaxis.onrender.com"; // Usar var para no chocar con functions.js
 
 function log(msg) {
     const debug = document.getElementById("debug-log");

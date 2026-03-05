@@ -5,7 +5,7 @@
 
 console.log("Finaxis Functions: Cargando script...");
 
-const API_BASE_URL = "https://finaxis.onrender.com"; // En desarrollo usar http://localhost:8002
+var API_BASE_URL = "https://finaxis.onrender.com"; // Usar var en Shared Runtime
 
 /**
  * Obtiene el saldo de una cuenta contable desde Finaxis.
@@ -70,6 +70,9 @@ async function saldo(cuenta, periodo) {
 }
 
 // Registro global de la función para el entorno de Excel MS
-if (typeof CustomFunctions !== "undefined") {
+try {
     CustomFunctions.associate("SALDO", saldo);
+    console.log("Asociación de funciones 'SALDO' completada.");
+} catch (e) {
+    console.error("ERROR asociando funciones: " + e.message);
 }
