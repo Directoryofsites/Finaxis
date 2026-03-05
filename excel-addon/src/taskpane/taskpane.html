@@ -5,6 +5,11 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- CSP Crítica para Excel Web: Permitir conexión a nuestra propia API -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' https://appsforoffice.microsoft.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://appsforoffice.microsoft.com; connect-src 'self' https://finaxis.onrender.com https://*.officeapps.live.com https://*.microsoft.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:;">
+
     <title>Finaxis Excel Panel</title>
 
     <!-- Framework de Office.js (Requisito fundamental) -->
