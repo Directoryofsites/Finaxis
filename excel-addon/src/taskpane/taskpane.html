@@ -57,11 +57,19 @@
 
                 <button id="logout-btn" class="secondary-btn">Cerrar Sesión</button>
             </div>
+
+            <!-- Área de Depuración (Para ver errores en Excel Web) -->
+            <div id="debug-log"
+                style="margin-top:20px; font-size:10px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:10px; font-family:monospace; white-space:pre-wrap;">
+                Consola Finaxis:
+            </div>
         </main>
     </div>
 
-    <!-- Script Principal -->
-    <script src="taskpane.js"></script>
+    <!-- Script Principal con Cache Buster -->
+    <script>
+        document.write('<script src="taskpane.js?v=' + Date.now() + '"><\/script>');
+    </script>
 </body>
 
 </html>

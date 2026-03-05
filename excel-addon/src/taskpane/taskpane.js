@@ -1,22 +1,28 @@
-/*
- * taskpane.js
- * Lógica del panel lateral de Finaxis en Excel.
- */
-
 const API_BASE_URL = "https://finaxis.onrender.com"; // En desarrollo usar http://localhost:8002
 
-Office.onReady((info) => {
-    // Vinculamos los eventos a los botones sin importar el tipo de host (Desktop/Web)
-    const loginBtn = document.getElementById("login-btn");
-    loginBtn.onclick = attemptLogin;
+function log(msg) {
+    const debug = document.getElementById("debug-log");
+    if (debug) {
+        debug.innerText += "\n> " + msg;
+    }
+    console.log(msg);
+}
 
-    // Indicador visual de que Office.js cargó y el botón está "vivo"
-    loginBtn.innerText = "Conectar a Finaxis";
+window.onerror = function (message, source, lineno, colno, error) {
+    log("ERROR JS: " + message + " en " + lineno);
+};
+
+Office.onReady((info) => {
+    log("Office.onReady disparado. Host: " + info.host);
+    const loginBtn = document.getElementById("login-btn");
+
+    // Indicador visual crítico para confirmar que el JS cargó
+    loginBtn.innerText = "Conectar a Finaxis (Listo)";
+    loginBtn.onclick = attemptLogin;
 
     document.getElementById("logout-btn").onclick = logout;
     document.getElementById("empresa-select").onchange = updateActiveCompany;
 
-    // Revisar si ya hay un token guardado en la memoria compartida
     checkExistingSession();
 });
 

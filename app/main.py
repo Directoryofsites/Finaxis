@@ -13,6 +13,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+# --- MIDDLEWARE PARA DESHABILITAR CACHÉ EN EXCEL ADDON ---
+@app.middleware("http")
+async def add_no_cache_headers(request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/excel-addon"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
+# --- INICIO: RUTAS DE AUTH Y EXCEL ---
 # --- INICIO: LÓGICA DE AUTO-CREACIÓN Y SEMBRADO ---
 # Se movió al evento de startup para evitar bloqueos en el arranque del worker
 async def run_startup_tasks():
