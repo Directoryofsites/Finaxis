@@ -51,7 +51,8 @@ def login_excel_addon(db: Session = Depends(get_db), form_data: OAuth2PasswordRe
     return {
         "access_token": access_token, 
         "token_type": "bearer",
-        "usuario": user.nombre,
+        "usuario": user.nombre_completo,
+        "email": user.email,
         "empresas": empresas
     }
 
