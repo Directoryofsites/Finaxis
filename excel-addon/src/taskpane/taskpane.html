@@ -19,7 +19,9 @@
     <link href="taskpane.css" rel="stylesheet" type="text/css" />
 
     <!-- Script de Funciones (Para Shared Runtime) -->
-    <script src="/excel-addon/src/functions/functions.js" type="text/javascript"></script>
+    <script>
+        document.write('<script src="../functions/functions.js?v=' + Date.now() + '" type="text/javascript"><\/script>');
+    </script>
 </head>
 
 <body class="ms-font-m">

@@ -3,7 +3,10 @@
  * Lógica detrás de las fórmulas nativas de Excel (Ej. =FINAXIS.SALDO)
  */
 
-console.log("Finaxis Functions: Cargando script...");
+console.log("Finaxis Functions: Iniciando carga de funciones.js...");
+function debugFuncLog(msg) {
+    console.log("FUNC_DEBUG: " + msg);
+}
 
 var API_BASE_URL = "https://finaxis.onrender.com"; // Usar var en Shared Runtime
 
@@ -82,7 +85,7 @@ async function saldo(cuenta, periodo) {
 // Registro global de la función para el entorno de Excel MS
 try {
     CustomFunctions.associate("SALDO", saldo);
-    console.log("Asociación de funciones 'SALDO' completada.");
+    console.log("Asociación de funciones 'SALDO' completada con éxito.");
 } catch (e) {
-    console.error("ERROR asociando funciones: " + e.message);
+    console.error("ERROR FATAL asociando funciones: " + e.message);
 }
