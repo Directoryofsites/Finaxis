@@ -11,6 +11,7 @@ os.environ['GIO_USE_VOLUME_MONITOR'] = 'dummy'
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 # --- INICIO: LÓGICA DE AUTO-CREACIÓN Y SEMBRADO ---
 # Se movió al evento de startup para evitar bloqueos en el arranque del worker
@@ -119,6 +120,9 @@ app = FastAPI(
     description="Backend para la gestión contable, construido con FastAPI y Python.",
     version="1.0.0"
 )
+
+# Servir los archivos del Add-in de Excel de forma pública
+app.mount("/excel-addon", StaticFiles(directory="excel-addon"), name="excel-addon")
 
 # --- INICIO: SCHEDULER DE COPIAS (AUTO-BACKUP) ---
 # En Vercel (serverless) los Background Workers no funcionan bien. 
