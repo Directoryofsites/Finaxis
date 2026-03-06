@@ -20,10 +20,12 @@ from app.schemas import usuario as schemas_usuario
 from app.core.hashing import get_password_hash
 
 def get_user_by_email(db: Session, email: str):
+    if not email:
+        return None
     return db.query(models_usuario.Usuario).options(
         joinedload(models_usuario.Usuario.roles),
-        joinedload(models_usuario.Usuario.empresa) # <--- CARGA EAGER DE EMPRESA
-    ).filter(models_usuario.Usuario.email == email).first()
+        joinedload(models_usuario.Usuario.empresa)
+    ).filter(func.lower(models_usuario.Usuario.email) == email.lower().strip()).first()
 
 def get_user_by_id(db: Session, usuario_id: int):
     return db.query(models_usuario.Usuario).options(

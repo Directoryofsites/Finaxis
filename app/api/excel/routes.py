@@ -51,6 +51,20 @@ async def login_excel_addon(
         )
 
     user = services_usuario.get_user_by_email(db, email=username)
+    
+    # --- DIAGNOSTICO DE AUTH ---
+    print(f"DEBUG AUTH: Intentando login para: {username}")
+    print(f"DEBUG AUTH: ¿Usuario encontrado?: {user is not None}")
+    if user:
+        print(f"DEBUG AUTH: Email en BD: {user.email}")
+        is_correct = verify_password(password, user.password_hash)
+        print(f"DEBUG AUTH: ¿Password verificado?: {is_correct}")
+        if not is_correct:
+             # Solo logueamos longitudes para evitar brechas de seguridad
+             print(f"DEBUG AUTH: Longitud password enviado: {len(password)}")
+             print(f"DEBUG AUTH: Hash en BD comienza por: {user.password_hash[:10]}")
+    # --- FIN DIAGNOSTICO ---
+
     if not user or not verify_password(password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
