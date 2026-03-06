@@ -137,20 +137,27 @@ def get_saldo_excel(
     
     if periodo:
         try:
-            # Parsear "2026-03" -> Fecha límite "2026-03-31" (último día del mes)
+            # Soporta tanto "2026-03" como "2026-03-01"
             parts = periodo.split("-")
-            year, month = int(parts[0]), int(parts[1])
-            if month == 12:
-                next_month = date(year + 1, 1, 1)
-            else:
-                next_month = date(year, month + 1, 1)
             
-            end_date = next_month - timedelta(days=1)
-            # Acotamos hasta el final del día de la fecha límite
-            end_date_str = end_date.strftime("%Y-%m-%d 23:59:59")
+            if len(parts) == 3:
+                # Caso: YYYY-MM-DD
+                end_date_str = f"{periodo} 23:59:59"
+            elif len(parts) == 2:
+                # Caso: YYYY-MM (Fin de mes)
+                year, month = int(parts[0]), int(parts[1])
+                if month == 12:
+                    next_month = date(year + 1, 1, 1)
+                else:
+                    next_month = date(year, month + 1, 1)
+                end_date = next_month - timedelta(days=1)
+                end_date_str = end_date.strftime("%Y-%m-%d 23:59:59")
+            else:
+                raise ValueError("Formato inválido")
+                
             query = query.filter(Documento.fecha <= end_date_str)
         except Exception:
-            raise HTTPException(status_code=400, detail="Formato de periodo inválido. Use YYYY-MM.")
+            raise HTTPException(status_code=400, detail="Formato de periodo inválido. Use YYYY-MM o YYYY-MM-DD.")
             
     resultado = query.first()
     
