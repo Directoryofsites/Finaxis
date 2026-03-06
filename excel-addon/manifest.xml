@@ -6,7 +6,7 @@
           xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
           xsi:type="TaskPaneApp">
   <Id>d2325ab3-5c82-4f0e-be9b-a4897f2bf0b1</Id>
-  <Version>1.0.0.7</Version>
+  <Version>1.0.0.8</Version>
   <ProviderName>Finaxis</ProviderName>
   <DefaultLocale>es-ES</DefaultLocale>
   <DisplayName DefaultValue="Finaxis ContaExcel"/>
@@ -101,8 +101,8 @@
       <bt:Urls>
         <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://finaxis.com.co"/>
         <bt:Url id="Taskpane.Url" DefaultValue="https://finaxis.onrender.com/excel-addon/src/taskpane/taskpane.html"/>
-        <bt:Url id="Functions.Script.Url" DefaultValue="https://finaxis.onrender.com/excel-addon/src/functions/functions.js"/>
-        <bt:Url id="Functions.Metadata.Url" DefaultValue="https://finaxis.onrender.com/excel-addon/src/functions/functions.json"/>
+        <bt:Url id="Functions.Script.Url" DefaultValue="https://finaxis.onrender.com/excel-addon/src/functions/functions.v108.js"/>
+        <bt:Url id="Functions.Metadata.Url" DefaultValue="https://finaxis.onrender.com/excel-addon/src/functions/functions.v108.json"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="Functions.Namespace" DefaultValue="FINAXIS"/>

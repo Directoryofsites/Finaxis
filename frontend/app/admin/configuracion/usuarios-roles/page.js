@@ -168,10 +168,26 @@ export default function UsuariosRolesPage() {
         const findPermId = (permName) => allPermisos.find(p => p.nombre === permName)?.id;
 
         menuStructure.forEach(module => {
+            const moduleItems = [];
+
+            // 0. Add Module-Level Access Permission (The ":acceso" one)
+            if (module.permission) {
+                const modPermId = findPermId(module.permission);
+                if (modPermId) {
+                    moduleItems.push({
+                        id: modPermId,
+                        perm_name: module.permission,
+                        label: `ACCESO: ${module.name}`,
+                        desc: `Permiso maestro para ver el módulo ${module.name}`
+                    });
+                }
+            }
+
             // Case 1: Module has direct links (e.g. Contabilida, Activos)
             if (module.links) {
-                const items = module.links
+                const linkItems = module.links
                     .filter(link => link.permission) // Only links with permissions
+                    .filter(link => link.permission !== module.permission) // Avoid duplication if already added
                     .map(link => ({
                         id: findPermId(link.permission), // The DB ID of the permission
                         perm_name: link.permission,
@@ -180,14 +196,16 @@ export default function UsuariosRolesPage() {
                     }))
                     .filter(item => item.id); // Only if permission exists in DB
 
-                if (items.length > 0) {
-                    sections.push({ title: module.name, items });
+                moduleItems.push(...linkItems);
+
+                if (moduleItems.length > 0) {
+                    sections.push({ title: module.name, items: moduleItems });
                 }
             }
             // Case 2: Module has subgroups (e.g. Admin)
             else if (module.subgroups) {
-                module.subgroups.forEach(sub => {
-                    const items = sub.links
+                module.subgroups.forEach((sub, subIdx) => {
+                    const subItems = sub.links
                         .filter(link => link.permission)
                         .map(link => ({
                             id: findPermId(link.permission),
@@ -197,8 +215,23 @@ export default function UsuariosRolesPage() {
                         }))
                         .filter(item => item.id);
 
-                    if (items.length > 0) {
-                        sections.push({ title: `${module.name} - ${sub.title}`, items });
+                    // For the first subgroup of a module with permission, we can prepend the module access
+                    const combinedItems = [];
+                    if (subIdx === 0 && module.permission) {
+                        const modPermId = findPermId(module.permission);
+                        if (modPermId) {
+                            combinedItems.push({
+                                id: modPermId,
+                                perm_name: module.permission,
+                                label: `ACCESO: ${module.name}`,
+                                desc: `Permiso maestro para ver el módulo ${module.name}`
+                            });
+                        }
+                    }
+                    combinedItems.push(...subItems);
+
+                    if (combinedItems.length > 0) {
+                        sections.push({ title: `${module.name} - ${sub.title}`, items: combinedItems });
                     }
                 });
             }

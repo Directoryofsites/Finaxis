@@ -256,6 +256,7 @@ export const menuStructure = [
                     { name: 'Cierre Periodos', href: '/admin/utilidades/periodos-contables', mnemonic: 'r', icon: FaCalendarAlt, permission: 'utilidades:cierre_periodos' },
                     { name: 'Auditoría de Consecutivos', href: '/admin/utilidades/auditoria-consecutivos', mnemonic: 'a', icon: FaCheckCircle, permission: 'utilidades:auditoria_consecutivos' },
                     { name: 'Conteo Registros', href: '/admin/utilidades/conteo-registros', mnemonic: 'o', icon: FaDatabase, permission: 'utilidades:conteo_registros' },
+                    { name: 'Buzón de PQRs', href: '/admin/pqrs', mnemonic: 'q', icon: FaEnvelope, description: 'Tickets de soporte de tus clientes.', permission: 'utilidades:scripts' },
                     { name: 'Mi Plan y Consumo', href: '/contabilidad/consumo', mnemonic: 'n', icon: FaChartPie, description: 'Estado de cupos y recargas.', permission: 'contabilidad:acceso' },
                 ]
             },

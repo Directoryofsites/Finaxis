@@ -217,3 +217,66 @@ async def get_current_soporte_user(
     if not is_soporte:
         raise forbidden_exception
     return user
+
+# ==========================================
+# SEGURIDAD PARA PORTAL TERCEROS (PUBLICO)
+# ==========================================
+from app.models import tercero as models_tercero
+from pydantic import BaseModel
+
+class TokenTerceroData(BaseModel):
+    tercero_id: int
+    empresa_id: int
+
+def create_tercero_token(tercero_id: int, empresa_id: int, expires_delta: Optional[timedelta] = None):
+    """Crea un token de acceso exclusivo para Terceros (Clientes en Portal Público)."""
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        # Token corto para portales públicos (ej. 2 horas)
+        expire = datetime.now(timezone.utc) + timedelta(hours=2)
+    
+    to_encode = {
+        "exp": expire, 
+        "sub": f"tercero:{tercero_id}", 
+        "scope": "portal_tercero",
+        "emp_id": empresa_id
+    }
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+oauth2_tercero_scheme = OAuth2PasswordBearer(tokenUrl="/api/soporte/portal-login")
+
+async def get_current_tercero(
+    token: str = Depends(oauth2_tercero_scheme),
+    db: Session = Depends(get_db)
+) -> models_tercero.Tercero:
+    """Valida el token de un Tercero y devuelve la instancia del cliente."""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Sesión del portal inválida o expirada",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        scope: str = payload.get("scope")
+        if scope != "portal_tercero":
+            raise JWTError("Invalid token scope.")
+            
+        sub: str = payload.get("sub")
+        if not sub or not sub.startswith("tercero:"):
+            raise credentials_exception
+            
+        tercero_id = int(sub.split(":")[1])
+        empresa_id = payload.get("emp_id")
+    except (JWTError, ValueError, AttributeError):
+        raise credentials_exception
+
+    tercero = db.query(models_tercero.Tercero).filter(
+        models_tercero.Tercero.id == tercero_id,
+        models_tercero.Tercero.empresa_id == empresa_id
+    ).first()
+    
+    if tercero is None:
+        raise credentials_exception
+        
+    return tercero

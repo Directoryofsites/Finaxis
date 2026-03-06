@@ -583,7 +583,20 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                     <FaBuilding />
                 </button>
 
+                {/* BOTÓN PORTAL DE SOPORTE */}
+                <button
+                    onClick={() => {
+                        const nit = user?.empresa?.nit || '900123456';
+                        window.open(`/portal/${nit}`, '_blank');
+                    }}
+                    className="nav-item p-2 mt-2 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                    title="Vista Previa: Portal Público"
+                >
+                    <FaRobot className="text-xl" />
+                </button>
+
                 {/* BOTÓN INDICADORES ECONÓMICOS */}
+
                 <button
                     onClick={() => setShowIndicators(!showIndicators)}
                     className={`nav-item p-2 mt-2 rounded-lg transition-colors ${showIndicators ? 'bg-green-100 text-green-600' : 'text-gray-400 hover:text-green-600 hover:bg-green-50'}`}

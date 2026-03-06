@@ -283,3 +283,12 @@ export const downloadGlobalBackupFile = (filename) => {
 export const deleteGlobalBackupFile = (filename) => {
   return soporteApiService.delete(`/soporte/backups/global/delete/${filename}`);
 };
+
+// --- GESTIÓN DE PQRS / TICKETS ---
+export const getTicketsAdmin = () => {
+  return soporteApiService.get('/soporte/tickets/admin');
+};
+
+export const updateTicketAdmin = (ticketId, data) => {
+  return soporteApiService.patch(`/soporte/tickets/admin/${ticketId}`, data);
+};

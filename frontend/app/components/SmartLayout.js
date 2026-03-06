@@ -82,32 +82,33 @@ export default function SmartLayout({ children }) {
                 </React.Suspense>
             )}
 
-            {/* 2. Top Navigation (Fixed Top, adjusted margin?) */}
-            {/* TopNav suele ser fixed. Si queremos que se ajuste con el Pin, debemos pasare props o envolverlo */}
-            {/* Por simplicidad actual, TopNav está fixed w-full. Puede que el RightSidebar la tape. Idealmente RightSidebar tiene z-index mayor. */}
-            <div className="z-50">
-                <React.Suspense fallback={<div className="h-16 w-full bg-gray-100"></div>}>
-                    <TopNavigationBar />
-                </React.Suspense>
-            </div>
+            {/* 2. Top Navigation (Fixed Top, adjusted margin?) - Hide in Portal */}
+            {!isPortal && (
+                <div className="z-50">
+                    <React.Suspense fallback={<div className="h-16 w-full bg-gray-100"></div>}>
+                        <TopNavigationBar />
+                    </React.Suspense>
+                </div>
+            )}
 
             {/* 3. Main Content Wrapper */}
-            {/* TopNav tiene altura h-16 (64px) aprox. Añadimos pad-top */}
             <main
-                className="flex-1 pt-20 px-4 pb-4 md:px-8 transition-all duration-300"
+                className={`flex-1 ${isPortal ? 'pt-0 px-0 pb-0' : 'pt-20 px-4 pb-4 md:px-8'} transition-all duration-300`}
                 style={mainContentStyle}
             >
                 {children}
             </main>
 
-            {/* 4. Right Sidebar (Smart Hub) */}
-            <RightSidebar
-                isOpen={rightState === 'open'}
-                isPinned={rightState === 'pinned'}
-                onToggle={handleToggle}
-                onPin={handlePin}
-                onClose={handleClose}
-            />
+            {/* 4. Right Sidebar (Smart Hub) - Hide in Portal */}
+            {!isPortal && (
+                <RightSidebar
+                    isOpen={rightState === 'open'}
+                    isPinned={rightState === 'pinned'}
+                    onToggle={handleToggle}
+                    onPin={handlePin}
+                    onClose={handleClose}
+                />
+            )}
 
             {/* Overlay para cerrar modo 'Open' (Flotante) al hacer click fuera */}
             {rightState === 'open' && (

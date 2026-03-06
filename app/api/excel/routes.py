@@ -1,6 +1,7 @@
 from datetime import timedelta, date, datetime
-from typing import Optional, Dict, Any, List
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Optional, Dict, Any, List, Union
+from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -18,13 +19,39 @@ from app.models.empresa import Empresa
 router = APIRouter()
 
 @router.post("/auth", response_model=Dict[str, Any])
-def login_excel_addon(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
+async def login_excel_addon(
+    request: Request,
+    db: Session = Depends(get_db)
+):
     """
-    Endpoint de autenticación optimizado para el Add-in de Excel.
-    Retorna el token y la lista de empresas a las que el usuario tiene acceso.
+    Endpoint de autenticación universal para Finaxis.
+    Soporta JSON (Google Sheets) y Form-Data (Excel/OAuth2).
     """
-    user = services_usuario.get_user_by_email(db, email=form_data.username)
-    if not user or not verify_password(form_data.password, user.password_hash):
+    username = None
+    password = None
+    
+    content_type = request.headers.get("Content-Type", "")
+    
+    try:
+        if "application/json" in content_type:
+            data = await request.json()
+            username = data.get("username")
+            password = data.get("password")
+        else:
+            form_data = await request.form()
+            username = form_data.get("username")
+            password = form_data.get("password")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Error al procesar los datos de entrada.")
+
+    if not username or not password:
+         raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Se requiere el usuario y la contraseña."
+        )
+
+    user = services_usuario.get_user_by_email(db, email=username)
+    if not user or not verify_password(password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email o contraseña incorrecta",
