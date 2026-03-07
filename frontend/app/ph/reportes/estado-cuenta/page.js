@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Script from 'next/script';
 import { useAuth } from '../../../context/AuthContext';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 import { phService } from '../../../../lib/phService';
 import { FaFilePdf, FaBuilding, FaUser, FaMoneyBillWave, FaSearch, FaHistory } from 'react-icons/fa';
@@ -46,8 +48,8 @@ export default function EstadoCuentaPage() {
 
     // Exportar PDF
     const handleExportPDF = () => {
-        if (!reporte || !window.jspdf) return;
-        const doc = new window.jspdf.jsPDF();
+        if (!reporte) return;
+        const doc = new jsPDF();
 
         // Encabezado
         doc.setFontSize(16);
@@ -107,9 +109,7 @@ export default function EstadoCuentaPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 p-6 font-sans pb-20">
-            {/* Scripts PDF */}
-            <Script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" strategy="afterInteractive" />
-            <Script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js" strategy="afterInteractive" />
+            {/* Las librerías PDF locales se encargan de la generación */}
 
             <div className="max-w-5xl mx-auto">
                 {/* HEADER */}

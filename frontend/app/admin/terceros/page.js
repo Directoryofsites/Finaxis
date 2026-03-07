@@ -21,6 +21,10 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../../lib/apiService';
 
+// Importaciones nativas (en lugar de CDNs)
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+
 // --- ESTILOS REUSABLES (Estandarizados v2.0) ---
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
 const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all outline-none pl-10";
@@ -100,8 +104,8 @@ export default function GestionTercerosPage() {
 
   const handleExportPDF = () => {
     if (tercerosFiltrados.length === 0) return;
-    if (!window.jspdf) return alert("Librería PDF cargando. Intente de nuevo.");
-    const { jsPDF } = window.jspdf;
+
+    // Al usar la librería nativa instanciamos directamente:
     const doc = new jsPDF();
 
     doc.setFontSize(18);
@@ -141,8 +145,7 @@ export default function GestionTercerosPage() {
   return (
     <>
       <Script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" />
-      <Script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" />
-      <Script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" />
+      {/* Las librerías PDF ahora se importan nativamente para prevenir fallos en build/producción */}
 
       <div className="min-h-screen bg-gray-50 p-6 font-sans pb-20">
         <div className="max-w-7xl mx-auto">

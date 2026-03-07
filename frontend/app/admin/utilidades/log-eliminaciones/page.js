@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Script from 'next/script';
 import { useAuth } from '../../../context/AuthContext';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 export default function LogEliminacionesPage() {
   const { user } = useAuth();
@@ -105,15 +106,11 @@ export default function LogEliminacionesPage() {
   };
 
   const handleExportPDF = () => {
-    if (typeof window.jspdf === 'undefined') {
-      return alert("La librería PDF aún no está lista. Por favor, espere un segundo.");
-    }
     if (logs.length === 0) {
       alert("No hay datos para generar el PDF.");
       return;
     }
     try {
-      const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation: 'landscape' });
       if (typeof doc.autoTable !== 'function') {
         throw new Error("La librería autoTable no ha cargado.");
@@ -191,8 +188,6 @@ export default function LogEliminacionesPage() {
     <>
       {/* PASO 4: SCRIPTS ESTÁNDAR DESDE CDN */}
       <Script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" />
-      <Script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" />
-      <Script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" />
 
       <div className="container mx-auto p-8 bg-gray-50 min-h-screen">
         <div className="mb-8">
