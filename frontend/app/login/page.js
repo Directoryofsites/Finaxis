@@ -71,29 +71,84 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-24 bg-gray-50">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
-        <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">
-          Iniciar Sesión
-        </h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Usuario o Email</label>
-            <input type="text" id="email" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Contraseña</label>
-            <input type="password" id="password" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          </div>
-          <button type="submit" disabled={isLoading} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300">
-            {isLoading ? 'Iniciando...' : 'Iniciar Sesión'}
-          </button>
-        </form>
-        {message && (
-          <p className={`mt-4 text-center text-sm font-medium ${message.includes('exitoso') ? 'text-green-600' : 'text-red-600'}`}>
-            {message}
+    <main className="relative flex min-h-screen flex-col items-center justify-center p-4 sm:p-24 overflow-hidden">
+      {/* Fondo de Imagen Financiera/Tecnológica (Ligera) */}
+      <div
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000"
+        style={{
+          // Usando una imagen optimizada de baja calidad/resolución web para carga rápida (Analytics/Finance)
+          backgroundImage: "url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=75&w=1920&auto=format&fit=crop')",
+        }}
+      ></div>
+
+      {/* Overlay Degradado (Mezcla Azul Oscuro a Negro para contraste, dando el look moderno) */}
+      <div className="absolute inset-0 z-0 bg-gradient-to-br from-indigo-900/90 via-blue-900/80 to-slate-900/95 mix-blend-multiply"></div>
+
+      {/* Partículas o Elementos abstractos decorativos (Puro CSS) */}
+      <div className="absolute inset-0 z-0 opacity-30">
+        <div className="absolute top-0 -left-1/4 w-1/2 h-1/2 bg-blue-500 rounded-full mix-blend-screen filter blur-[150px] animate-blob"></div>
+        <div className="absolute bottom-0 -right-1/4 w-1/2 h-1/2 bg-indigo-600 rounded-full mix-blend-screen filter blur-[150px] animate-blob animation-delay-2000"></div>
+      </div>
+
+      <div className="z-10 w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] p-8 sm:p-10 transform transition-all">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-extrabold text-white tracking-tight mb-2">
+            Finaxis
+          </h1>
+          <p className="text-indigo-200 text-sm font-medium">
+            Plataforma Financiera Inteligente
           </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label htmlFor="email" className="block text-sm font-semibold text-gray-100 mb-1.5 ml-1">Usuario o Email</label>
+            <input
+              type="text"
+              id="email"
+              className="mt-1 block w-full px-4 py-3 bg-white/90 border border-white/30 text-gray-900 placeholder-gray-500 rounded-xl shadow-inner focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-colors text-sm"
+              placeholder="tu@correo.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="password" className="block text-sm font-semibold text-gray-100 mb-1.5 ml-1">Contraseña</label>
+            <input
+              type="password"
+              id="password"
+              className="mt-1 block w-full px-4 py-3 bg-white/90 border border-white/30 text-gray-900 placeholder-gray-500 rounded-xl shadow-inner focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-colors text-sm"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-400 focus:ring-offset-slate-900 transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+            >
+              {isLoading ? 'Autenticando...' : 'Iniciar Sesión'}
+            </button>
+          </div>
+        </form>
+
+        {message && (
+          <div className={`mt-6 p-4 rounded-xl text-center text-sm font-medium border backdrop-blur-md ${message.includes('exitoso') ? 'bg-green-500/20 text-green-200 border-green-500/30' : 'bg-red-500/20 text-red-200 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.2)]'}`}>
+            {message}
+          </div>
         )}
+      </div>
+
+      {/* Pie de página pequeño */}
+      <div className="absolute bottom-6 text-center z-10">
+        <p className="text-gray-400 text-xs tracking-wider">
+          &copy; {new Date().getFullYear()} Finaxis. Todos los derechos reservados.
+        </p>
       </div>
     </main>
   );
