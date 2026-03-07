@@ -23,7 +23,7 @@ import { apiService } from '../../../lib/apiService';
 
 // Importaciones nativas (en lugar de CDNs)
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 // --- ESTILOS REUSABLES (Estandarizados v2.0) ---
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
@@ -122,7 +122,7 @@ export default function GestionTercerosPage() {
     const tableColumn = ["NIT", "Razón Social", "Email", "Teléfono", "Ciudad"];
     const tableRows = tercerosFiltrados.map(t => [t.nit, t.razon_social, t.email, t.telefono, t.ciudad]);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: searchTerm.length >= 3 ? 40 : 35,
       head: [tableColumn],
       body: tableRows,

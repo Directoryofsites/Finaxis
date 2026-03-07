@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../../../context/AuthContext';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 export default function LogEliminacionesPage() {
   const { user } = useAuth();
@@ -112,9 +112,6 @@ export default function LogEliminacionesPage() {
     }
     try {
       const doc = new jsPDF({ orientation: 'landscape' });
-      if (typeof doc.autoTable !== 'function') {
-        throw new Error("La librería autoTable no ha cargado.");
-      }
       doc.setFontSize(16);
       doc.text("Informe de Auditoría de Operaciones", 14, 22);
       doc.setFontSize(10);
@@ -126,7 +123,7 @@ export default function LogEliminacionesPage() {
         if (logIndex > 0) {
           doc.addPage();
         }
-        doc.autoTable({
+        autoTable(doc, {
           body: [
             [{ content: 'Usuario:', styles: { fontStyle: 'bold' } }, log.email_usuario],
             [{ content: 'Fecha Operación:', styles: { fontStyle: 'bold' } }, formatDate(log.fecha_operacion)],
@@ -161,7 +158,7 @@ export default function LogEliminacionesPage() {
               });
             }
           });
-          doc.autoTable({
+          autoTable(doc, {
             body: body, startY: lastY + 15, theme: 'grid',
             styles: { fontSize: 8, cellPadding: 1.5 },
             columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' } }

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Script from 'next/script';
 import { useAuth } from '../../../context/AuthContext';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 import { phService } from '../../../../lib/phService';
 import { FaFilePdf, FaBuilding, FaUser, FaMoneyBillWave, FaSearch, FaHistory } from 'react-icons/fa';
@@ -84,7 +84,7 @@ export default function EstadoCuentaPage() {
             `$${parseFloat(t.saldo).toLocaleString()}`
         ]);
 
-        doc.autoTable({
+        autoTable(doc, {
             head: [tableColumn],
             body: tableRows,
             startY: 60,
