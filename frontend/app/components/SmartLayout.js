@@ -4,8 +4,10 @@ import SidebarFavorites from './SidebarFavorites';
 import TopNavigationBar from '../../components/TopNavigationBar';
 import RightSidebar from './RightSidebar';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '../context/AuthContext';
 
 export default function SmartLayout({ children }) {
+    const { user } = useAuth();
     // Estado del Sidebar Derecho
     // 'pinned' = fijo y empuja el contenido.
     // 'open' = flotante sobre el contenido.
@@ -64,26 +66,27 @@ export default function SmartLayout({ children }) {
     // Calculamos margenes
     const rightSidebarWidth = 350;
     const isPortal = pathname?.startsWith('/portal');
+    const showInternalNav = !isPortal && !!user;
 
     const mainContentStyle = {
         transition: 'margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.3s',
-        // En móvil, NUNCA empujamos contenido (los sidebars son overlays)
-        marginRight: (!isPortal && !isMobile && (rightState === 'pinned' || rightState === 'open')) ? `${rightSidebarWidth}px` : (!isPortal && !isMobile ? '48px' : '0px'),
-        marginLeft: (isPortal || isMobile) ? '0px' : '48px'
+        // Si no hay navegación interna, quitamos los márgenes laterales
+        marginRight: (showInternalNav && !isMobile && (rightState === 'pinned' || rightState === 'open')) ? `${rightSidebarWidth}px` : (showInternalNav && !isMobile ? '48px' : '0px'),
+        marginLeft: (!showInternalNav || isMobile) ? '0px' : '48px'
     };
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
 
-            {/* 1. Left Sidebar (Fixed, High Z-Index) - Hide in Portal */}
-            {!isPortal && (
+            {/* 1. Left Sidebar (Fixed, High Z-Index) - Hide in Portal or No User */}
+            {showInternalNav && (
                 <React.Suspense fallback={<div className="w-12 bg-white h-screen border-r border-gray-200"></div>}>
                     <SidebarFavorites />
                 </React.Suspense>
             )}
 
-            {/* 2. Top Navigation (Fixed Top, adjusted margin?) - Hide in Portal */}
-            {!isPortal && (
+            {/* 2. Top Navigation - Hide in Portal or No User */}
+            {showInternalNav && (
                 <div className="z-50">
                     <React.Suspense fallback={<div className="h-16 w-full bg-gray-100"></div>}>
                         <TopNavigationBar />
@@ -93,14 +96,14 @@ export default function SmartLayout({ children }) {
 
             {/* 3. Main Content Wrapper */}
             <main
-                className={`flex-1 ${isPortal ? 'pt-0 px-0 pb-0' : 'pt-20 px-4 pb-4 md:px-8'} transition-all duration-300`}
+                className={`flex-1 ${!showInternalNav ? 'pt-0 px-0 pb-0' : 'pt-20 px-4 pb-4 md:px-8'} transition-all duration-300`}
                 style={mainContentStyle}
             >
                 {children}
             </main>
 
-            {/* 4. Right Sidebar (Smart Hub) - Hide in Portal */}
-            {!isPortal && (
+            {/* 4. Right Sidebar (Smart Hub) - Hide in Portal or No User */}
+            {showInternalNav && (
                 <RightSidebar
                     isOpen={rightState === 'open'}
                     isPinned={rightState === 'pinned'}

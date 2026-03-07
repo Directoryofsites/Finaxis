@@ -22,6 +22,7 @@ import { toast, ToastContainer } from 'react-toastify';
 
 // --- Componentes ---
 import SmartSearchSection from './components/SmartSearchSection';
+import LandingPage from './components/LandingPage';
 
 // --- Servicios Frontend ---
 import { getFinancialRatios, getHorizontalAnalysis, getVerticalAnalysis } from '../lib/dashboardService';
@@ -994,19 +995,7 @@ function HomePageContent() {
     }
 
     if (!user) {
-        // Vista para usuarios no autenticados
-        return (
-            <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-gray-100">
-                <div className="w-full max-w-md text-center bg-white p-10 rounded-xl shadow-2xl">
-                    <h1 className="text-4xl font-extrabold text-blue-600 mb-4">Finaxis</h1>
-                    <p className="mt-4 text-lg text-gray-600">Tu Sistema Finaxis ERP. Por favor, inicia sesión para acceder.</p>
-                    <div className="mt-8 flex justify-center gap-4">
-                        <Link href="/login" className="btn btn-primary btn-lg shadow-lg">Iniciar Sesión</Link>
-                        <Link href="/register" className="btn btn-outline btn-lg">Registrarse</Link>
-                    </div>
-                </div>
-            </main>
-        );
+        return <LandingPage />;
     }
 
     // Renderizado Estilo Desktop "Zen Mode"
