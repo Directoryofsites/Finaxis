@@ -123,6 +123,31 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# --- INICIO: REGISTRO DE RATE LIMITING (Bot Protection) ---
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from app.core.security import limiter
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+# --- FIN: REGISTRO DE RATE LIMITING ---
+
+# --- INICIO: MIDDLEWARE DE SEGURIDAD (Cabeceras HTTP) ---
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+# --- FIN: MIDDLEWARE DE SEGURIDAD ---
+
 # Servir los archivos del Add-in de Excel de forma pública
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 EXCEL_ADDON_PATH = os.path.join(os.path.dirname(BASE_DIR), "excel-addon")

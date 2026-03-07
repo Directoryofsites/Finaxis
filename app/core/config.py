@@ -22,16 +22,14 @@ load_dotenv(dotenv_path=dotenv_path)
 
 
 class Settings(BaseSettings):
-    # --- SEGURIDAD: REVERTIDO A CLAVE DE DESARROLLO (Kiro/Backup) ---
-    # Si no existe archivo .env, se usará esta conexión por defecto.
-    DATABASE_URL: str = "postgresql://postgres:mysecretpassword@localhost:5432/contapy_db"
-    
-    # DEBUG: Print loaded URL
-    print(f"--- DEBUG CONFIG LOADED: {DATABASE_URL} ---")
-    
-    SECRET_KEY: str = "secret_key_por_defecto_para_produccion_segura"
+    # --- SEGURIDAD: CONFIGURACIÓN ESTRICTA ---
+    # Obliga al sistema a fallar (fail-fast) si no encuentra .env, 
+    # evitando usar contraseñas quemadas en el código (Vulnerabilidad A02).
+    DATABASE_URL: str
+    SECRET_KEY: str
+
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440 # 24 horas para evitar desconexiones
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 120 # 2 horas (Recomendación de Seguridad Fase 2C)
     PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 30
     
     # --- AÑADIDO PARA LA IMPRESIÓN SEGURA ---

@@ -12,21 +12,31 @@ from app.core.hashing import verify_password
 from app.core.database import get_db
 from app.schemas import token as token_schema
 from app.models import usuario as models_usuario
+from app.core.security import limiter
+from fastapi import Request
 
 router = APIRouter()
 
 @router.post("/login", response_model=token_schema.Token)
-def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
+@limiter.limit("10/5minutes")
+def login_for_access_token(request: Request, db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
+    # 1. Verificar si la cuenta está en periodo de bloqueo (DoS distribuido)
+    security.check_account_lockout(form_data.username)
+
     user = services_usuario.get_user_by_email(db, email=form_data.username)
     # --- INICIO DE LA CORRECCIÓN ARQUITECTÓNICA ---
     # Se llama directamente a la función verify_password importada.
     if not user or not verify_password(form_data.password, user.password_hash):
-    # --- FIN DE LA CORRECCIÓN ARQUITECTÓNICA ---
+        # 2. Registrar fallo
+        security.register_failed_login(form_data.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email o contraseña incorrecta",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+    # 3. Limpiar contador de fallos tras éxito
+    security.reset_failed_login(form_data.username)
     access_token_expires = timedelta(minutes=security.settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     # FIX: Incluir roles en el token para que el frontend pueda redireccionar
     roles_list = [rol.nombre for rol in user.roles]
@@ -37,26 +47,25 @@ def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2Passw
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/soporte/login", response_model=token_schema.Token)
-def login_soporte_for_access_token(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
+@limiter.limit("10/5minutes")
+def login_soporte_for_access_token(request: Request, db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
+    security.check_account_lockout(form_data.username)
+
     user: models_usuario.Usuario = services_usuario.get_user_by_email(db, email=form_data.username)
     # --- INICIO DE LA CORRECCIÓN ARQUITECTÓNICA ---
     # Se aplica la misma corrección a la ruta de login de soporte.
     if not user or not verify_password(form_data.password, user.password_hash):
-    # --- FIN DE LA CORRECCIÓN ARQUITECTÓNICA ---
+        security.register_failed_login(form_data.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales de soporte incorrectas.",
         )
     
+    security.reset_failed_login(form_data.username)
+    
     user_roles = {rol.nombre for rol in user.roles} if user.roles else set()
 
-        # --- INICIO: SONDAS DE DIAGNÓSTICO DE LA CAJA NEGRA ---
-    print("="*50)
-    print(f"SONDA DE DIAGNÓSTICO: Verificando al usuario: {user.email}")
-    print(f"SONDA DE DIAGNÓSTICO: ¿Atributo 'roles' existe?: {'roles' in dir(user)}")
-    print(f"SONDA DE DIAGNÓSTICO: Contenido de user.roles: {user.roles}")
-    print("="*50)
-    # --- FIN: SONDAS DE DIAGNÓSTICO ---
+        # --- ELIMINADOS: SONDAS DE DIAGNÓSTICO (Para proteger PII) ---
 
     if "soporte" not in user_roles:
         raise HTTPException(
@@ -118,9 +127,11 @@ def switch_company_context(
                  # Check Owner
                  if target_company.owner_id == current_user.id:
                      access_found = True
-                 # Check Padre (Si soy usuario de la holding)
+                 # FIX SEGURIDAD NIVEL 2 (Prevención IDOR):
+                 # Solo permitir salto a la Hija si el usuario pertenece a la Padre Y ES ADMINISTRADOR
                  elif current_user.empresa_id and target_company.padre_id == current_user.empresa_id:
-                     access_found = True
+                     if "Administrador" in user_roles: # Requiere ser admin de la holding
+                         access_found = True
 
         if not access_found:
              raise HTTPException(

@@ -58,7 +58,12 @@ export default function LoginPage() {
       }
 
     } catch (error) {
-      const errorMessage = error.response?.data?.detail || 'Credenciales inválidas o error en el servidor.';
+      let errorMessage = 'Credenciales inválidas o error en el servidor.';
+      if (error.response?.status === 429) {
+        errorMessage = 'Por seguridad, ha superado el límite de intentos. Por favor, espere 5 minutos antes de intentar nuevamente.';
+      } else if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      }
       setMessage(errorMessage);
     } finally {
       setIsLoading(false);

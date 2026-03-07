@@ -27,6 +27,14 @@ apiService.interceptors.request.use(
         return config;
     },
     (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// --- FIX SEGURIDAD: REDIRECCIÓN 401 EN RESPUESTA ---
+apiService.interceptors.response.use(
+    (response) => response,
+    (error) => {
         if (error.response && error.response.status === 401) {
             // Token expirado o inválido
             if (typeof window !== 'undefined') {
@@ -40,6 +48,7 @@ apiService.interceptors.request.use(
         return Promise.reject(error);
     }
 );
+// --- FIN FIX SEGURIDAD ---
 
 export const setAuthToken = (token) => {
     if (token) {

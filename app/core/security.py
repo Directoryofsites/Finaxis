@@ -3,7 +3,11 @@ from typing import Optional, Set
 from jose import jwt, JWTError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session, selectinload, joinedload 
+from sqlalchemy.orm import Session, selectinload, joinedload
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+limiter = Limiter(key_func=get_remote_address)
 
 from .config import settings
 from app.core.database import get_db
@@ -19,7 +23,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(days=30)
+        expire = datetime.now(timezone.utc) + timedelta(hours=1) # FIX: Fallback de 30 días cambiado a 1 hora (A07)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
@@ -128,6 +132,38 @@ def has_permission(required_permission: str):
     return _permission_checker
 
 # ... (El resto de las funciones de seguridad se mantienen) ...
+
+# --- INICIO: FASE 3 - BLOQUEO POR CUENTA (ANTI ATAQUE DISTRIBUIDO) ---
+_failed_logins = {}
+MAX_FAILED_ATTEMPTS = 10
+LOCKOUT_DURATION_MINUTES = 5
+
+def check_account_lockout(email: str):
+    """Verifica si la cuenta está bloqueada temporalmente debido a múltiples intentos fallidos."""
+    record = _failed_logins.get(email)
+    if record:
+        if record.get("locked_until") and datetime.now() < record["locked_until"]:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Cuenta bloqueada por seguridad debido a múltiples intentos fallidos (Fase 3). Intente de nuevo en 5 minutos."
+            )
+        # Si ya pasó el castigo, reseteamos el contador para darle una nueva oportunidad
+        if record.get("locked_until") and datetime.now() >= record["locked_until"]:
+            _failed_logins[email] = {"count": 0, "locked_until": None}
+
+def register_failed_login(email: str):
+    """Registra un intento fallido y bloquea la cuenta si sobrepasa el límite."""
+    record = _failed_logins.get(email, {"count": 0, "locked_until": None})
+    record["count"] += 1
+    if record["count"] >= MAX_FAILED_ATTEMPTS:
+        record["locked_until"] = datetime.now() + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+    _failed_logins[email] = record
+
+def reset_failed_login(email: str):
+    """Limpia el registro de fallos cuando el usuario hace login exitosamente."""
+    if email in _failed_logins:
+        del _failed_logins[email]
+# --- FIN: FASE 3 ---
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),

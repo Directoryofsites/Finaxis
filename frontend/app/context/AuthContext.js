@@ -17,8 +17,10 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setAuthToken(null);
     if (typeof window !== 'undefined') {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem('soporteAuthToken'); // <--- FIX VULNERABILIDAD CRÍTICA
+      // FIX SEGURIDAD: Limpieza profunda (Deep Logout)
+      // Se eliminan por completo los rastros de la sesión actual en el navegador
+      localStorage.clear();
+      sessionStorage.clear();
       window.location.href = '/login';
     }
   }, []);
