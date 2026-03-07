@@ -440,6 +440,21 @@ export default function EconomicIndicatorsPanel({ isOpen, onClose, sidebarExpand
                                             <FaExternalLinkAlt /> Ver Calendario y Tablas Completas
                                         </button>
                                     </div>
+
+                                    {/* ENLACES EXTERNOS DIAN */}
+                                    <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100/50">
+                                        <h3 className="text-xs font-bold text-gray-600 uppercase tracking-widest flex items-center mb-4">
+                                            <FaLandmark className="mr-2 text-blue-500" /> Consultas Externas DIAN
+                                        </h3>
+                                        <p className="text-[10px] text-gray-500 mb-3">Acceso directo a herramientas oficiales de validación.</p>
+
+                                        <button
+                                            onClick={() => window.open('https://catalogo-vpfe.dian.gov.co/User/SearchDocument', '_blank')}
+                                            className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm hover:from-blue-700 hover:to-indigo-800 transition-all flex justify-center items-center gap-2"
+                                        >
+                                            <FaSearch /> Buscar Documentos (Factura Electrónica)
+                                        </button>
+                                    </div>
                                 </div>
                             )}
 
