@@ -712,31 +712,29 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
                 'rc': 'reports/auxiliar_por_recibos_report.html',
                 'fv': 'reports/invoice_template.html',  # FIXED: Nueva plantilla moderna
             }
-            
-            plantilla_key = mapa_plantillas.get(tipo_codigo)
-            
-            # PRIORIDAD 3: FALLBACK A PLANTILLAS LOCALES ESPECÍFICAS
-            if es_factura_venta:
-                 # Si es factura de venta pero NO TIENE CUFE, usa la moderna genérica
-                 try:
-                     print(f"🟡 [PDF] -> NO TIENE CUFE. Abriendo: invoice_template.html")
-                     with open('app/templates/reports/invoice_template.html', 'r', encoding='utf-8') as f:
-                         html_content = f.read()
-                 except Exception as e:
-                     print(f"🔴 [PDF ERROR FATAL] falló lectura de HTML fallback: {e}")
-                     html_content = "<html><body><h1>Error de Sistema</h1><p>No se pudo leer la plantilla invoice_template.html.</p></body></html>"
-            elif plantilla_key and plantilla_key in TEMPLATES_EMPAQUETADOS:
-                 print(f"   -> PLANTILLA LOCAL ENCONTRADA: {plantilla_key}")
-                 html_content = TEMPLATES_EMPAQUETADOS[plantilla_key]
-            else:
-                 print("   -> NO SE ENCONTRO NINGUNA PLANTILLA ESPECÍFICA. Usando plantilla GENÉRICA de base.")
-                 # Usamos la plantilla genérica nueva
-                 try:
-                     with open('app/templates/reports/generic_document_template.html', 'r', encoding='utf-8') as f:
-                         html_content = f.read()
-                 except Exception as e:
-                     print(f"Error cargando plantilla genérica: {e}")
-                     html_content = "<html><body><h1>Error de Plantilla</h1><p>No se encontró la plantilla genérica base.</p></body></html>"
+    # --- SELECCIÓN DE PLANTILLA ---
+    # Detectar si es Factura de Venta para aplicar el diseño del Exito solo en el PDF
+    es_factura_venta = False
+    func_especial = db_doc.tipo_documento.funcion_especial
+    if func_especial in ['FACTURA_VENTA', 'cartera_cliente']:
+        es_factura_venta = True
+    elif any(getattr(m.cuenta, 'codigo', '').startswith('4') for m in db_doc.movimientos):
+        es_factura_venta = True
+
+    # Usar la nueva plantilla del Exito si es venta, de lo contrario la Premium estándar
+    template_key = 'reports/exito_fe_template.html' if es_factura_venta else 'reports/premium_fe_template.html'
+    html_content = TEMPLATES_EMPAQUETADOS.get(template_key)
+
+    # Fallback si por alguna razón no está en el empaquetado (ej. desarrollo local)
+    if not html_content:
+        import os
+        template_path = os.path.join(os.path.dirname(__file__), '..', 'templates', 'reports', os.path.basename(template_key))
+        if os.path.exists(template_path):
+            with open(template_path, 'r', encoding='utf-8') as f:
+                html_content = f.read()
+        else:
+            # Fallback final a la plantilla premium que siempre debe existir
+            html_content = TEMPLATES_EMPAQUETADOS.get('reports/premium_fe_template.html', '')
     
     # 3. Empresa
     empresa = db.query(models_empresa).filter(models_empresa.id == empresa_id).first()
@@ -797,7 +795,8 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
             models_producto.nombre.label("nombre"),
             models_mov_inv.cantidad.label("cantidad_real"),
             models_mov.credito.label("valor_total"),
-            models_producto.impuesto_iva_id.label("impuesto_iva_id")
+            models_producto.impuesto_iva_id.label("impuesto_iva_id"),
+            models_mov.descuento_valor.label("descuento_valor")
         ).join(models_doc, models_mov_inv.documento_id == models_doc.id)\
          .join(models_producto, models_mov_inv.producto_id == models_producto.id)\
          .join(models_grupo, models_producto.grupo_id == models_grupo.id)\
@@ -817,10 +816,24 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
                 tasas_db = db.query(TasaImpuesto).filter(TasaImpuesto.id.in_(impuesto_ids)).all()
                 tasas_impuesto = {tasa.id: tasa.tasa for tasa in tasas_db}
             
+            # Variables para totalizar
+            subtotal_bruto_acumulado = 0.0
+            sum_credito = sum(float(item.valor_total) for item in query_comercial)
+            cargos_globales_doc = float(getattr(db_doc, 'cargos_globales_valor', 0) or 0)
+            
             for item in query_comercial:
                 cant = float(item.cantidad_real)
-                val = float(item.valor_total)
-                unit = val / cant if cant > 0 else 0
+                val_prorrateado = float(item.valor_total) # Base contable (después de prorrateo)
+                descuento_total = float(getattr(item, 'descuento_valor', 0) or 0)
+                
+                # Proporción del cargo
+                cargo_linea = 0
+                if sum_credito > 0:
+                    cargo_linea = (val_prorrateado / sum_credito) * cargos_globales_doc
+                
+                # Reconstruir valor bruto
+                val_bruto = val_prorrateado + descuento_total - cargo_linea
+                unit = val_bruto / cant if cant > 0 else 0
                 
                 # Obtener tasa de IVA del producto
                 tasa_iva = 0
@@ -828,7 +841,7 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
                     tasa_iva = tasas_impuesto[item.impuesto_iva_id]
                 
                 # Calcular base gravable (El valor en la cuenta de ingreso 4xxx ES la base)
-                base_gravable = val 
+                base_gravable = val_prorrateado 
                 valor_iva = base_gravable * tasa_iva
                 
                 # Acumular por tipo de base
@@ -845,15 +858,16 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
                     "producto_codigo": item.codigo, 
                     "producto_nombre": item.nombre,
                     "cantidad": f"{cant:,.2f}", 
-                    "precio_unitario": f"{unit:,.0f}", 
-                    "subtotal": f"{val:,.0f}",
+                    "precio_unitario": unit, # lo pasamos como float para formatearlo con el filtro en la vista
+                    "subtotal": val_bruto, 
                     "debito_fmt": "0", 
-                    "credito_fmt": f"{val:,.0f}",
+                    "credito_fmt": f"{val_bruto:,.0f}",
                     "tasa_iva": tasa_iva,
                     "base_gravable": base_gravable,
                     "valor_iva": valor_iva
                 })
-                subtotal_acumulado += val
+                subtotal_acumulado += val_prorrateado
+                subtotal_bruto_acumulado += val_bruto
         else:
             # Fallback Venta
             for mov in db_doc.movimientos:
@@ -990,6 +1004,9 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
     # Calcular totales de IVA para el contexto
     total_iva_calculado = iva_5_total + iva_19_total
     
+    # Subtotal a mostrar (el bruto si se calculó en VENTA, sino el normal)
+    subtotal_mostrar = subtotal_bruto_acumulado if modo_operacion == 'VENTA' else subtotal_acumulado
+    
     # 5. Contexto
     beneficiario = db_doc.beneficiario
     context = {
@@ -1025,13 +1042,15 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
         },
         "items": items_facturables,
         "totales": {
-            "subtotal": f"{subtotal_acumulado:,.0f}",
+            "subtotal": f"{subtotal_mostrar:,.0f}",
             "base_exenta": f"{base_exenta:,.0f}" if base_exenta > 0 else "0.00",
             "base_gravable_5": f"{base_gravable_5:,.0f}" if base_gravable_5 > 0 else "0.00",
             "base_gravable_19": f"{base_gravable_19:,.0f}" if base_gravable_19 > 0 else "0.00",
             "iva_5": f"{iva_5_total:,.0f}" if iva_5_total > 0 else "0.00",
             "iva_19": f"{iva_19_total:,.0f}" if iva_19_total > 0 else "0.00",
             "impuestos": f"{total_iva_calculado:,.0f}" if modo_operacion == 'VENTA' else f"{impuestos_acumulados:,.0f}",
+            "descuento_global": f"{getattr(db_doc, 'descuento_global_valor', 0) or 0:,.0f}",
+            "cargos_globales": f"{getattr(db_doc, 'cargos_globales_valor', 0) or 0:,.0f}",
             "total": f"{total_redondeado:,.0f}",
             "total_debito": f"{suma_debito_total:,.0f}",
             "total_credito": f"{suma_credito_total:,.0f}",
@@ -1041,6 +1060,15 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
 
     # 6. Render
     try:
+        if 'format_decimal' not in GLOBAL_JINJA_ENV.filters:
+            def format_decimal_filter(value, precision=2):
+                try:
+                    val = float(value)
+                    return f"{val:,.{precision}f}"
+                except (ValueError, TypeError):
+                    return value
+            GLOBAL_JINJA_ENV.filters['format_decimal'] = format_decimal_filter
+            
         template = GLOBAL_JINJA_ENV.from_string(html_content)
         rendered_html = template.render(context)
         pdf_file = HTML(string=rendered_html).write_pdf()

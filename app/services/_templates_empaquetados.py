@@ -1898,6 +1898,472 @@ TEMPLATES_EMPAQUETADOS = {
 </html>
 ''',
 
+    'reports/exito_fe_template.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Factura Electrónica de Venta - Estilo Exito</title>
+    <style>
+        /* RESET & BASE */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #000;
+            font-size: 10px;
+            margin: 0;
+            padding: 0;
+            line-height: 1.2;
+            background: #ffffff;
+        }
+
+        @page {
+            size: letter;
+            margin: 1cm;
+        }
+
+        /* UTILIDADES */
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-bold {
+            font-weight: bold;
+        }
+
+        .text-uppercase {
+            text-transform: uppercase;
+        }
+
+        /* HEADER CENTRADO */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .company-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .company-nit {
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .company-details {
+            font-size: 9px;
+            margin-bottom: 2px;
+        }
+
+        /* SECCIÓN TIPO DOCUMENTO Y NÚMERO (IZQUIERDA) */
+        .doc-info {
+            position: absolute;
+            top: 0;
+            left: 0;
+            text-align: left;
+            width: 200px;
+        }
+
+        .doc-title {
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .doc-number {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .doc-dates {
+            font-size: 8px;
+            margin-top: 5px;
+        }
+
+        /* CLIENTE Y DIRECCIÓN */
+        .client-section {
+            width: 100%;
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
+            padding: 10px 0;
+            margin-bottom: 15px;
+            display: table;
+        }
+
+        .client-col {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+        }
+
+        .row {
+            display: table;
+            width: 100%;
+            margin-bottom: 3px;
+        }
+
+        .label {
+            display: table-cell;
+            width: 80px;
+            font-weight: bold;
+        }
+
+        .value {
+            display: table-cell;
+        }
+
+        /* TABLA DE ITEMS */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+
+        .items-table th {
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
+            padding: 5px;
+            text-align: center;
+            background: #f2f2f2;
+            font-weight: bold;
+        }
+
+        .items-table td {
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* SECCIÓN TOTALES E IMPUESTOS */
+        .summary-section {
+            display: table;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .taxes-box {
+            display: table-cell;
+            width: 60%;
+            vertical-align: top;
+        }
+
+        .totals-box {
+            display: table-cell;
+            width: 40%;
+            vertical-align: top;
+        }
+
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .summary-table th,
+        .summary-table td {
+            border: 1px solid #ddd;
+            padding: 4px;
+            text-align: right;
+        }
+
+        .summary-table th {
+            background: #f2f2f2;
+        }
+
+        .total-pay-row {
+            background: #eee;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        /* PIE DE PÁGINA (DIAN) */
+        .dian-section {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #000;
+            display: table;
+            width: 100%;
+        }
+
+        .qr-col {
+            display: table-cell;
+            width: 120px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .dian-info-col {
+            display: table-cell;
+            padding-left: 15px;
+            vertical-align: top;
+            font-size: 8px;
+        }
+
+        .amount-words {
+            margin: 10px 0;
+            font-weight: bold;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <div class="company-name">{{empresa.razon_social}}</div>
+        <div class="company-nit">NIT: {{empresa.nit}}</div>
+        <div class="company-details">Responsable de IVA</div>
+        <div class="company-details">{{empresa.direccion}} - {{empresa.ciudad}} - Colombia</div>
+        <div class="company-details">Teléfono - {{empresa.telefono}}</div>
+        <div class="company-details">E-mail: {{empresa.email}}</div>
+        <div class="company-details text-bold">REPRESENTACION GRAFICA DE FACTURA ELECTRONICA</div>
+    </div>
+
+    <div class="doc-info">
+        <div class="doc-title">FACTURA ELECTRONICA DE VENTA</div>
+        <div class="doc-number">{{documento.tipo_documento_codigo}} - {{documento.numero}}</div>
+        <div class="doc-dates">
+            Fecha Validación DIAN: {{documento.fecha_emision}}<br>
+            Hora Validación DIAN: {{documento.hora_emision|default('00:00:00')}}
+        </div>
+    </div>
+
+    <div class="client-section">
+        <div class="client-col">
+            <div class="row">
+                <div class="label">Cliente:</div>
+                <div class="value text-bold">{{tercero.razon_social}}</div>
+            </div>
+            <div class="row">
+                <div class="label">CC o NIT:</div>
+                <div class="value">{{tercero.nit}}</div>
+            </div>
+            <div class="row">
+                <div class="label">Régimen:</div>
+                <div class="value">{{tercero.regimen|default('No responsable de IVA')}}</div>
+            </div>
+            <div class="row">
+                <div class="label">Obligación:</div>
+                <div class="value">{{tercero.responsabilidad|default('No responsable')}}</div>
+            </div>
+            <div class="row">
+                <div class="label">Email:</div>
+                <div class="value">{{tercero.email}}</div>
+            </div>
+            <div class="row">
+                <div class="label">Forma de Pago:</div>
+                <div class="value">{{documento.forma_pago|default('Contado')}}</div>
+            </div>
+        </div>
+        <div class="client-col">
+            <div class="row">
+                <div class="label">Dirección:</div>
+                <div class="value">{{tercero.direccion}}</div>
+            </div>
+            <div class="row">
+                <div class="label">Ciudad:</div>
+                <div class="value">{{tercero.ciudad}}</div>
+            </div>
+            <div class="row">
+                <div class="label">Teléfono:</div>
+                <div class="value">{{tercero.telefono}}</div>
+            </div>
+            <div class="row">
+                <div class="label">Medios de Pago:</div>
+                <div class="value">Efectivo</div>
+            </div>
+            <div class="row">
+                <div class="label">Plazo:</div>
+                <div class="value">0 Dias</div>
+            </div>
+            <div class="row">
+                <div class="label">Vencimiento:</div>
+                <div class="value">{{documento.fecha_vencimiento}}</div>
+            </div>
+        </div>
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th width="4%">#</th>
+                <th width="14%">Código</th>
+                <th width="32%">Descripción</th>
+                <th width="7%">Cantidad</th>
+                <th width="7%">UM</th>
+                <th width="12%">Val. Unit</th>
+                <th width="10%">% IVA</th>
+                <th width="14%">Val. Item</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="text-center">{{ loop.index }}</td>
+                <td>{{ item.producto_codigo }}</td>
+                <td>{{ item.producto_nombre }}</td>
+                <td class="text-center">{{ item.cantidad }}</td>
+                <td class="text-center">Unidad</td>
+                <td class="text-right">{{ item.precio_unitario|format_decimal }}</td>
+                <td class="text-right">
+                    {% if item.tasa_iva and item.tasa_iva > 0 %}
+                    {{ (item.tasa_iva * 100)|round(0) }}%
+                    {% else %}
+                    0%
+                    {% endif %}
+                </td>
+                <td class="text-right">{{ item.subtotal|format_decimal }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="summary-section">
+        <div class="taxes-box">
+            <table class="summary-table" style="width: 90%;">
+                <thead>
+                    <tr>
+                        <th colspan="4" class="text-center">Impuestos y Retenciones</th>
+                    </tr>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Base</th>
+                        <th>Porcentaje</th>
+                        <th>Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if totales.base_gravable_5 != '0.00' %}
+                    <tr>
+                        <td class="text-center">IVA</td>
+                        <td>{{ totales.base_gravable_5 }}</td>
+                        <td class="text-center">5.00%</td>
+                        <td>{{ totales.iva_5 }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if totales.base_gravable_19 != '0.00' %}
+                    <tr>
+                        <td class="text-center">IVA</td>
+                        <td>{{ totales.base_gravable_19 }}</td>
+                        <td class="text-center">19.00%</td>
+                        <td>{{ totales.iva_19 }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if totales.base_exenta != '0.00' and totales.base_gravable_19 == '0.00' and
+                    totales.base_gravable_5 == '0.00' %}
+                    <tr>
+                        <td class="text-center">Totalmente Exento</td>
+                        <td>{{ totales.base_exenta }}</td>
+                        <td class="text-center">0.00%</td>
+                        <td>0.00</td>
+                    </tr>
+                    {% endif %}
+                    {% if totales.base_gravable_5 == '0.00' and totales.base_gravable_19 == '0.00' and
+                    totales.base_exenta == '0.00' %}
+                    <tr>
+                        <td class="text-center">N/A</td>
+                        <td>0.00</td>
+                        <td class="text-center">0.00%</td>
+                        <td>0.00</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+
+            <div class="amount-words">
+                PRECIO EN LETRAS SON: {{ totales.valor_letras|upper }}
+            </div>
+
+            <div style="border: 1px solid #ddd; padding: 10px; min-height: 50px;">
+                <strong>OBSERVACIONES:</strong><br>
+                {{ documento.observaciones or '.' }}
+            </div>
+        </div>
+
+        <div class="totals-box">
+            <table class="summary-table">
+                <thead>
+                    <tr>
+                        <th colspan="2" class="text-center">Totales</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Nro Lineas:</td>
+                        <td>{{ items|length }}</td>
+                    </tr>
+                    <tr>
+                        <td>Base:</td>
+                        <td>{{ totales.subtotal }}</td>
+                    </tr>
+                    <tr>
+                        <td>Impuestos:</td>
+                        <td>{{ totales.impuestos|default(totales.iva_19) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Retenciones:</td>
+                        <td>0.00</td>
+                    </tr>
+                    <tr>
+                        <td>Descuentos En Lineas:</td>
+                        <td>0.00</td>
+                    </tr>
+                    <tr>
+                        <td>Descuentos Globales:</td>
+                        <td>{{ totales.descuento_global|default('0.00') }}</td>
+                    </tr>
+                    <tr>
+                        <td>Otros Cargos:</td>
+                        <td>{{ totales.cargos_globales|default('0.00') }}</td>
+                    </tr>
+                    <tr class="total-pay-row">
+                        <td>Total Factura:</td>
+                        <td>{{ totales.total }}</td>
+                    </tr>
+                    <tr class="total-pay-row">
+                        <td>Total a Pagar:</td>
+                        <td>{{ totales.total }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if documento.dian_cufe %}
+    <div class="dian-section">
+        <div class="qr-col">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://catalogo-vpfe-hab.dian.gov.co/document/searchqr?documentkey={{documento.dian_cufe}}"
+                width="100" height="100">
+        </div>
+        <div class="dian-info-col">
+            <strong>Resolución de Facturación Electrónica</strong><br>
+            Nro. {{documento.resolucion_numero}} de {{documento.resolucion_fecha}}<br>
+            Prefijo: {{documento.resolucion_prefijo}}, Rango {{documento.resolucion_rango_desde}} Al
+            {{documento.resolucion_rango_hasta}}<br>
+            Vigencia Desde: {{documento.resolucion_fecha}} Hasta:
+            {{documento.resolucion_fecha_fin|default('2027-10-10')}}<br><br>
+
+            <strong>CUFE:</strong> {{documento.dian_cufe}}<br><br>
+
+            La presente Factura Electrónica de Venta, es un título valor de acuerdo con lo establecido en el Código de
+            Comercio y en especial en los artículos 621,772 y 774.
+        </div>
+    </div>
+    {% endif %}
+
+</body>
+
+</html>
+''',
+
     'reports/fuentes_usos_report.html': r'''
 <!DOCTYPE html>
 <html lang="es">
@@ -2277,6 +2743,20 @@ TEMPLATES_EMPAQUETADOS = {
         </div>
     </div>
 
+    {% if documento.dian_cufe %}
+    <div style="margin-top: 30px; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 9px; color: #555;">
+        <strong>Información Fiscal (DIAN/Proveedor):</strong><br>
+        <strong>{% if 'SOPORTE' in documento.tipo_nombre.upper() %}CUDS{% else %}CUFE{% endif %}:</strong> <span
+            style="font-family: monospace;">{{documento.dian_cufe}}</span><br>
+        <strong>Estado DIAN:</strong> {{documento.dian_estado}}<br>
+        {% if not documento.dian_xml_url %}
+        <br>
+        <em>Nota: Documento generado en entorno de Pruebas/Habilitación (Sin URL pública directa). Este documento es
+            válido como soporte interno.</em>
+        {% endif %}
+    </div>
+    {% endif %}
+
     <div style="text-align: center; font-size: 9px; color: #aaa; margin-top: 20px;">
         Gracias por su confianza.
     </div>
@@ -2595,188 +3075,92 @@ TEMPLATES_EMPAQUETADOS = {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Estado de Resultados por Centro de Costo Premium</title>
+    <title>Estado de Resultados por Centro de Costo</title>
     <style>
-        @page {
-            margin: 1.5cm;
-            @bottom-right {
-                content: "Página " counter(page) " de " counter(pages);
-                font-size: 8px;
-                color: #64748b;
-            }
-        }
-        body { 
-            font-family: 'Helvetica', 'Arial', sans-serif; 
-            font-size: 9px; 
-            color: #1e293b;
-            line-height: 1.4;
-        }
-        .header { 
-            text-align: center; 
-            margin-bottom: 30px; 
-            border-bottom: 2px solid #6366f1;
-            padding-bottom: 15px;
-        }
-        .header h1 { margin: 0; font-size: 18px; color: #1e1b4b; text-transform: uppercase; letter-spacing: 1px; }
-        .header h2 { margin: 5px 0 0; font-size: 12px; font-weight: normal; color: #475569; }
-        .header h3 { margin: 5px 0 0; font-size: 11px; font-weight: bold; color: #6366f1; font-style: italic; }
-        
-        .report-title {
-            text-align: center;
-            font-size: 14px;
-            font-weight: bold;
-            color: #4f46e5;
-            margin-top: 10px;
-            text-transform: uppercase;
-        }
-        .report-info { margin-bottom: 25px; text-align: center; font-size: 10px; color: #64748b; }
-        
-        .content-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .content-table th {
-            text-align: left;
-            padding: 8px;
-            background-color: #f8fafc;
-            color: #475569;
-            font-weight: bold;
-            text-transform: uppercase;
-            font-size: 8px;
-            letter-spacing: 1px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .content-table td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; }
-        
-        .section-header { 
-            background-color: #f1f5f9; 
-            font-weight: bold; 
-            color: #334155;
-            font-size: 10px;
-        }
-        .account-row td:first-child { padding-left: 20px; color: #475569; }
-        
-        .total-row { font-weight: bold; background-color: #f8fafc; }
-        .total-row td { border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
-        
-        .highlight-row { 
-            font-weight: bold; 
-            background-color: #eef2ff; 
-            color: #3730a3;
-            font-size: 11px;
-        }
-        
-        .net-profit-row { 
-            font-weight: bold; 
-            background-color: #1e293b; 
-            color: #ffffff;
-            font-size: 12px;
-        }
-        .net-profit-row td { padding: 12px 8px; }
-
+        body { font-family: sans-serif; font-size: 10px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1, .header h2, .header h3 { margin: 0; }
+        .header h3 { font-weight: normal; font-style: italic; }
+        .report-info { margin-bottom: 20px; text-align: center; }
+        .content-table { width: 100%; border-collapse: collapse; }
+        .content-table td { padding: 4px; }
+        .account-row td:first-child { padding-left: 20px; }
+        .total-section-row td { font-weight: bold; border-top: 1px solid #000; border-bottom: 1px solid #000; }
+        .final-total-row td { font-weight: bold; border-top: 2px solid #000; border-bottom: 3px double #000; background-color: #f2f2f2; }
         .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        .percentage-col { width: 60px; color: #94a3b8; font-size: 8px; font-weight: bold; }
-        .amount-col { width: 120px; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>{{ empresa_nombre }}</h1>
         <h2>NIT: {{ empresa_nit }}</h2>
-        <div class="report-title">Estado de Resultados Analítico</div>
-        <h3>Centro de Costo: {{ centro_costo_nombre_display }}</h3>
+        <h2>Estado de Resultados por Centro de Costo</h2>
+        <h3>{{ centro_costo_nombre_display }}</h3>
     </div>
 
     <div class="report-info">
-        <strong>Periodo de Análisis:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}
+        <strong>Periodo:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}
     </div>
 
     <table class="content-table">
-        <thead>
-            <tr>
-                <th>Detalle de Cuenta / Concepto</th>
-                <th class="text-right percentage-col">% Anal.</th>
-                <th class="text-right amount-col">Saldo (COP)</th>
-            </tr>
-        </thead>
         <tbody>
-            <!-- INGRESOS -->
-            <tr class="section-header">
-                <td colspan="3">INGRESOS OPERACIONALES</td>
+            <tr>
+                <td colspan="2"><strong>INGRESOS OPERACIONALES</strong></td>
             </tr>
             {% for ingreso in ingresos %}
             <tr class="account-row">
                 <td>{{ ingreso.codigo }} - {{ ingreso.nombre }}</td>
-                <td class="text-right percentage-col">{{ "{:,.1f}%".format(ingreso.porcentaje) if ingreso.porcentaje else "100.0%" }}</td>
-                <td class="text-right amount-col">{{ "{:,.0f}".format(ingreso.saldo) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(ingreso.saldo) }}</td>
             </tr>
             {% endfor %}
-            <tr class="total-row">
-                <td>TOTAL INGRESOS OPERACIONALES</td>
-                <td class="text-right percentage-col">100.0%</td>
-                <td class="text-right amount-col">{{ "{:,.0f}".format(totales.total_ingresos) }}</td>
+            <tr class="total-section-row">
+                <td><strong>TOTAL INGRESOS OPERACIONALES</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.total_ingresos) }}</strong></td>
             </tr>
 
-            <tr><td colspan="3" style="border:none; height: 10px;"></td></tr>
+            <tr><td colspan="2">&nbsp;</td></tr>
 
-            <!-- COSTOS -->
-            {% if costos %}
-            <tr class="section-header">
-                <td colspan="3">COSTOS DE VENTA</td>
+            <tr>
+                <td colspan="2"><strong>COSTOS DE VENTA</strong></td>
             </tr>
             {% for costo in costos %}
             <tr class="account-row">
                 <td>{{ costo.codigo }} - {{ costo.nombre }}</td>
-                <td class="text-right percentage-col">{{ "{:,.1f}%".format(costo.porcentaje) if costo.porcentaje else "0.0%" }}</td>
-                <td class="text-right amount-col">({{ "{:,.0f}".format(costo.saldo|abs) }})</td>
+                <td class="text-right">{{ "{:,.2f}".format(costo.saldo) }}</td>
             </tr>
             {% endfor %}
-            <tr class="total-row">
-                <td>TOTAL COSTOS DE VENTA</td>
-                <td class="text-right percentage-col">{{ "{:,.1f}%".format(totales.total_costos / totales.total_ingresos * 100) if totales.total_ingresos else '0.0%' }}</td>
-                <td class="text-right amount-col">({{ "{:,.0f}".format(totales.total_costos|abs) }})</td>
-            </tr>
-            {% endif %}
-
-            <tr class="highlight-row">
-                <td>UTILIDAD BRUTA</td>
-                <td class="text-right percentage-col">{{ "{:,.1f}%".format(totales.porcentaje_utilidad_bruta) if totales.porcentaje_utilidad_bruta else "0.0%" }}</td>
-                <td class="text-right amount-col">{{ "{:,.0f}".format(totales.utilidad_bruta) }}</td>
+            <tr class="total-section-row">
+                <td><strong>TOTAL COSTOS DE VENTA</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.total_costos) }}</strong></td>
             </tr>
 
-            <tr><td colspan="3" style="border:none; height: 10px;"></td></tr>
+            <tr class="final-total-row">
+                <td><strong>UTILIDAD BRUTA</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.utilidad_bruta) }}</strong></td>
+            </tr>
 
-            <!-- GASTOS -->
-            {% if gastos %}
-            <tr class="section-header">
-                <td colspan="3">GASTOS OPERACIONALES</td>
+            <tr><td colspan="2">&nbsp;</td></tr>
+
+            <tr>
+                <td colspan="2"><strong>GASTOS OPERACIONALES</strong></td>
             </tr>
             {% for gasto in gastos %}
             <tr class="account-row">
                 <td>{{ gasto.codigo }} - {{ gasto.nombre }}</td>
-                <td class="text-right percentage-col">{{ "{:,.1f}%".format(gasto.porcentaje) if gasto.porcentaje else "0.0%" }}</td>
-                <td class="text-right amount-col">({{ "{:,.0f}".format(gasto.saldo|abs) }})</td>
+                <td class="text-right">{{ "{:,.2f}".format(gasto.saldo) }}</td>
             </tr>
             {% endfor %}
-            <tr class="total-row">
-                <td>TOTAL GASTOS OPERACIONALES</td>
-                <td class="text-right percentage-col">{{ "{:,.1f}%".format(totales.total_gastos / totales.total_ingresos * 100) if totales.total_ingresos else '0.0%' }}</td>
-                <td class="text-right amount-col">({{ "{:,.0f}".format(totales.total_gastos|abs) }})</td>
+            <tr class="total-section-row">
+                <td><strong>TOTAL GASTOS OPERACIONALES</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.total_gastos) }}</strong></td>
             </tr>
-            {% endif %}
 
-            <tr><td colspan="3" style="border:none; height: 20px;"></td></tr>
-
-            <tr class="net-profit-row">
-                <td>UTILIDAD NETA DEL EJERCICIO</td>
-                <td class="text-right percentage-col">{{ "{:,.1f}%".format(totales.porcentaje_utilidad_neta) if totales.porcentaje_utilidad_neta else "0.0%" }}</td>
-                <td class="text-right amount-col">{{ "{:,.0f}".format(totales.utilidad_neta) }}</td>
+            <tr class="final-total-row">
+                <td><strong>UTILIDAD (O PÉRDIDA) DEL EJERCICIO</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.utilidad_neta) }}</strong></td>
             </tr>
         </tbody>
     </table>
-
-    <div style="margin-top: 50px; text-align: center; color: #94a3b8; font-size: 8px;">
-        Este documento es una representación fiel de los libros contables de la organización.<br>
-        Generado automáticamente por Finaxis Intelligence System.
-    </div>
 </body>
 </html>
 ''',
@@ -2786,185 +3170,90 @@ TEMPLATES_EMPAQUETADOS = {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>{{ titulo_reporte }} Premium</title>
+    <title>Estado de Resultados</title>
     <style>
-        @page {
-            margin: 1.5cm;
-            @bottom-right {
-                content: "Página " counter(page) " de " counter(pages);
-                font-size: 8px;
-                color: #64748b;
-            }
-        }
-        body { 
-            font-family: 'Helvetica', 'Arial', sans-serif; 
-            font-size: 9px; 
-            color: #1e293b;
-            line-height: 1.4;
-        }
-        .header { 
-            text-align: center; 
-            margin-bottom: 30px; 
-            border-bottom: 2px solid #6366f1;
-            padding-bottom: 15px;
-        }
-        .header h1 { margin: 0; font-size: 18px; color: #1e1b4b; text-transform: uppercase; letter-spacing: 1px; }
-        .header h2 { margin: 5px 0 0; font-size: 12px; font-weight: normal; color: #475569; }
-        .report-title {
-            text-align: center;
-            font-size: 14px;
-            font-weight: bold;
-            color: #4f46e5;
-            margin-top: 10px;
-            text-transform: uppercase;
-        }
-        .report-info { margin-bottom: 25px; text-align: center; font-size: 10px; color: #64748b; }
-        
-        .content-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .content-table th {
-            text-align: left;
-            padding: 8px;
-            background-color: #f8fafc;
-            color: #475569;
-            font-weight: bold;
-            text-transform: uppercase;
-            font-size: 8px;
-            letter-spacing: 1px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .content-table td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; }
-        
-        .section-header { 
-            background-color: #f1f5f9; 
-            font-weight: bold; 
-            color: #334155;
-            font-size: 10px;
-        }
-        .account-row td:first-child { padding-left: 20px; color: #475569; }
-        
-        .total-row { font-weight: bold; background-color: #f8fafc; }
-        .total-row td { border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
-        
-        .highlight-row { 
-            font-weight: bold; 
-            background-color: #eef2ff; 
-            color: #3730a3;
-            font-size: 11px;
-        }
-        
-        .net-profit-row { 
-            font-weight: bold; 
-            background-color: #1e293b; 
-            color: #ffffff;
-            font-size: 12px;
-        }
-        .net-profit-row td { padding: 12px 8px; }
-
+        body { font-family: sans-serif; font-size: 10px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1, .header h2 { margin: 0; }
+        .report-info { margin-bottom: 20px; text-align: center; }
+        .content-table { width: 100%; border-collapse: collapse; }
+        .content-table td { padding: 4px; }
+        .account-row td:first-child { padding-left: 20px; }
+        .total-section-row td { font-weight: bold; border-top: 1px solid #000; border-bottom: 1px solid #000; }
+        .final-total-row td { font-weight: bold; border-top: 2px solid #000; border-bottom: 3px double #000; background-color: #f2f2f2; }
         .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        .percentage-col { width: 60px; color: #94a3b8; font-size: 8px; font-weight: bold; }
-        .amount-col { width: 120px; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>{{ empresa_nombre }}</h1>
         <h2>NIT: {{ empresa_nit }}</h2>
-        <div class="report-title">{{ titulo_reporte }}</div>
+        <h2>Estado de Resultados</h2>
     </div>
 
     <div class="report-info">
-        <strong>Periodo de Análisis:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}
+        <strong>Periodo:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}
     </div>
 
     <table class="content-table">
-        <thead>
-            <tr>
-                <th>Detalle de Cuenta / Concepto</th>
-                <th class="text-right percentage-col">% Anal.</th>
-                <th class="text-right amount-col">Saldo (COP)</th>
-            </tr>
-        </thead>
         <tbody>
-            <!-- INGRESOS -->
-            <tr class="section-header">
-                <td colspan="3">INGRESOS OPERACIONALES</td>
+            <tr>
+                <td colspan="2"><strong>INGRESOS OPERACIONALES</strong></td>
             </tr>
             {% for ingreso in ingresos %}
             <tr class="account-row">
                 <td>{{ ingreso.codigo }} - {{ ingreso.nombre }}</td>
-                <td class="text-right percentage-col">{{ "{:,.1f}%".format(ingreso.porcentaje) if ingreso.porcentaje else "100.0%" }}</td>
-                <td class="text-right amount-col">{{ "{:,.0f}".format(ingreso.saldo) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(ingreso.saldo) }}</td>
             </tr>
             {% endfor %}
-            <tr class="total-row">
-                <td>TOTAL INGRESOS OPERACIONALES</td>
-                <td class="text-right percentage-col">100.0%</td>
-                <td class="text-right amount-col">{{ "{:,.0f}".format(totales.total_ingresos) }}</td>
+            <tr class="total-section-row">
+                <td><strong>TOTAL INGRESOS OPERACIONALES</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.total_ingresos) }}</strong></td>
             </tr>
 
-            <tr><td colspan="3" style="border:none; height: 10px;"></td></tr>
+            <tr><td colspan="2">&nbsp;</td></tr>
 
-            <!-- COSTOS -->
-            {% if costos %}
-            <tr class="section-header">
-                <td colspan="3">COSTOS DE VENTA</td>
+            <tr>
+                <td colspan="2"><strong>COSTOS DE VENTA</strong></td>
             </tr>
             {% for costo in costos %}
             <tr class="account-row">
                 <td>{{ costo.codigo }} - {{ costo.nombre }}</td>
-                <td class="text-right percentage-col">{{ "{:,.1f}%".format(costo.porcentaje) if costo.porcentaje else "0.0%" }}</td>
-                <td class="text-right amount-col">({{ "{:,.0f}".format(costo.saldo|abs) }})</td>
+                <td class="text-right">{{ "{:,.2f}".format(costo.saldo) }}</td>
             </tr>
             {% endfor %}
-            <tr class="total-row">
-                <td>TOTAL COSTOS DE VENTA</td>
-                <td class="text-right percentage-col">{{ "{:,.1f}%".format(totales.total_costos / totales.total_ingresos * 100) if totales.total_ingresos else '0.0%' }}</td>
-                <td class="text-right amount-col">({{ "{:,.0f}".format(totales.total_costos|abs) }})</td>
-            </tr>
-            {% endif %}
-
-            <tr class="highlight-row">
-                <td>UTILIDAD BRUTA</td>
-                <td class="text-right percentage-col">{{ "{:,.1f}%".format(totales.porcentaje_utilidad_bruta) if totales.porcentaje_utilidad_bruta else "0.0%" }}</td>
-                <td class="text-right amount-col">{{ "{:,.0f}".format(totales.utilidad_bruta) }}</td>
+            <tr class="total-section-row">
+                <td><strong>TOTAL COSTOS DE VENTA</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.total_costos) }}</strong></td>
             </tr>
 
-            <tr><td colspan="3" style="border:none; height: 10px;"></td></tr>
+            <tr class="final-total-row">
+                <td><strong>UTILIDAD BRUTA</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.utilidad_bruta) }}</strong></td>
+            </tr>
 
-            <!-- GASTOS -->
-            {% if gastos %}
-            <tr class="section-header">
-                <td colspan="3">GASTOS OPERACIONALES</td>
+            <tr><td colspan="2">&nbsp;</td></tr>
+
+            <tr>
+                <td colspan="2"><strong>GASTOS OPERACIONALES</strong></td>
             </tr>
             {% for gasto in gastos %}
             <tr class="account-row">
                 <td>{{ gasto.codigo }} - {{ gasto.nombre }}</td>
-                <td class="text-right percentage-col">{{ "{:,.1f}%".format(gasto.porcentaje) if gasto.porcentaje else "0.0%" }}</td>
-                <td class="text-right amount-col">({{ "{:,.0f}".format(gasto.saldo|abs) }})</td>
+                <td class="text-right">{{ "{:,.2f}".format(gasto.saldo) }}</td>
             </tr>
             {% endfor %}
-            <tr class="total-row">
-                <td>TOTAL GASTOS OPERACIONALES</td>
-                <td class="text-right percentage-col">{{ "{:,.1f}%".format(totales.total_gastos / totales.total_ingresos * 100) if totales.total_ingresos else '0.0%' }}</td>
-                <td class="text-right amount-col">({{ "{:,.0f}".format(totales.total_gastos|abs) }})</td>
+            <tr class="total-section-row">
+                <td><strong>TOTAL GASTOS OPERACIONALES</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.total_gastos) }}</strong></td>
             </tr>
-            {% endif %}
 
-            <tr><td colspan="3" style="border:none; height: 20px;"></td></tr>
-
-            <tr class="net-profit-row">
-                <td>UTILIDAD NETA DEL EJERCICIO</td>
-                <td class="text-right percentage-col">{{ "{:,.1f}%".format(totales.porcentaje_utilidad_neta) if totales.porcentaje_utilidad_neta else "0.0%" }}</td>
-                <td class="text-right amount-col">{{ "{:,.0f}".format(totales.utilidad_neta) }}</td>
+            <tr class="final-total-row">
+                <td><strong>UTILIDAD (O PÉRDIDA) DEL EJERCICIO</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(totales.utilidad_neta) }}</strong></td>
             </tr>
         </tbody>
     </table>
-
-    <div style="margin-top: 50px; text-align: center; color: #94a3b8; font-size: 8px;">
-        Este documento es una representación fiel de los libros contables de la organización.<br>
-        Generado automáticamente por Finaxis Intelligence System.
-    </div>
 </body>
 </html>
 ''',
@@ -3599,6 +3888,458 @@ TEMPLATES_EMPAQUETADOS = {
     </table>
 
 </body>
+</html>
+''',
+
+    'reports/invoice_premium_template.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{{documento.tipo_nombre}} - Premium</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 0;
+            /* Usaremos paddings internos para mayor control del diseño */
+        }
+
+        body {
+            font-family: 'Garamond', 'Georgia', serif;
+            color: #1a1a1a;
+            font-size: 10px;
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+            background-color: #ffffff;
+        }
+
+        .page-accent {
+            height: 8px;
+            background: linear-gradient(90deg, #1e293b 0%, #475569 100%);
+            width: 100%;
+        }
+
+        .container {
+            padding: 40px 50px;
+        }
+
+        /* ENCABEZADO */
+        .header {
+            display: table;
+            width: 100%;
+            margin-bottom: 40px;
+        }
+
+        .header-left {
+            display: table-cell;
+            vertical-align: top;
+            width: 60%;
+        }
+
+        .header-right {
+            display: table-cell;
+            vertical-align: top;
+            width: 40%;
+            text-align: right;
+        }
+
+        .company-logo {
+            max-height: 80px;
+            margin-bottom: 15px;
+        }
+
+        .company-name {
+            font-size: 22px;
+            font-weight: bold;
+            color: #1e293b;
+            margin: 0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .company-info {
+            font-size: 9px;
+            color: #64748b;
+            font-family: sans-serif;
+            margin-top: 5px;
+        }
+
+        .doc-label {
+            font-size: 28px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin: 0;
+            font-weight: 300;
+        }
+
+        .doc-number-box {
+            display: inline-block;
+            background: #f8fafc;
+            padding: 10px 20px;
+            border: 1px solid #e2e8f0;
+            margin-top: 10px;
+        }
+
+        .doc-number {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        /* BLOQUES DE DATOS */
+        .info-grid {
+            display: table;
+            width: 100%;
+            margin-bottom: 30px;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 20px;
+        }
+
+        .info-col {
+            display: table-cell;
+            width: 50%;
+        }
+
+        .section-title {
+            font-family: sans-serif;
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .client-name {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1e293b;
+            margin: 0 0 5px 0;
+        }
+
+        .data-text {
+            font-size: 10px;
+            color: #475569;
+            font-family: sans-serif;
+        }
+
+        /* TABLA DE ITEMS */
+        .items-container {
+            margin-top: 20px;
+            margin-bottom: 40px;
+        }
+
+        table.items-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table.items-table th {
+            font-family: sans-serif;
+            background-color: #f8fafc;
+            color: #475569;
+            padding: 12px 10px;
+            text-align: left;
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+            border-bottom: 2px solid #1e293b;
+        }
+
+        table.items-table td {
+            padding: 15px 10px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: top;
+        }
+
+        .item-desc {
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        .item-sub {
+            font-size: 8px;
+            color: #64748b;
+            margin-top: 3px;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        /* TOTALES */
+        .footer-grid {
+            display: table;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .footer-left {
+            display: table-cell;
+            width: 60%;
+            vertical-align: top;
+        }
+
+        .footer-right {
+            display: table-cell;
+            width: 40%;
+            vertical-align: top;
+        }
+
+        .totals-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .totals-table td {
+            padding: 8px 10px;
+            font-family: sans-serif;
+        }
+
+        .total-row {
+            background-color: #1e293b;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .total-row td {
+            padding: 12px 10px !important;
+        }
+
+        .payment-info {
+            background-color: #fffbeb;
+            border: 1px solid #fef3c7;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 9px;
+            color: #92400e;
+        }
+
+        /* FISCAL */
+        .fiscal-area {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px dashed #cbd5e1;
+            display: table;
+            width: 100%;
+        }
+
+        .fiscal-left {
+            display: table-cell;
+            width: 75%;
+            font-size: 8px;
+            color: #64748b;
+            font-family: sans-serif;
+        }
+
+        .fiscal-right {
+            display: table-cell;
+            width: 25%;
+            text-align: right;
+        }
+
+        .qr-placeholder {
+            width: 80px;
+            height: 80px;
+            background: #eee;
+            margin-left: auto;
+        }
+
+        .cufe-text {
+            font-family: monospace;
+            word-break: break-all;
+            background: #f1f5f9;
+            padding: 5px;
+            display: block;
+            margin-top: 5px;
+            color: #0f172a;
+        }
+
+        .signature-line {
+            margin-top: 60px;
+            border-top: 1px solid #94a3b8;
+            width: 200px;
+            padding-top: 5px;
+            font-size: 8px;
+            text-transform: uppercase;
+            font-family: sans-serif;
+            color: #94a3b8;
+        }
+
+        .finaxis-brand {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 7px;
+            color: #cbd5e1;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page-accent"></div>
+    <div class="container">
+        <!-- CABECERA -->
+        <div class="header">
+            <div class="header-left">
+                {% if empresa.logo_url %}
+                <img src="{{empresa.logo_url}}" class="company-logo">
+                {% endif %}
+                <h1 class="company-name">{{empresa.razon_social}}</h1>
+                <div class="company-info">
+                    NIT: {{empresa.nit}} • Régimen Común<br>
+                    {{empresa.direccion}}<br>
+                    {{empresa.email}} • {{empresa.telefono}}
+                </div>
+            </div>
+            <div class="header-right">
+                <h2 class="doc-label">{{documento.tipo_nombre}}</h2>
+                <div class="doc-number-box">
+                    <span style="font-size: 8px; display: block; color: #94a3b8; text-transform: uppercase;">Número de
+                        Documento</span>
+                    <span class="doc-number">{{documento.prefix}}{{documento.consecutivo}}</span>
+                </div>
+                <div style="margin-top: 15px; font-size: 10px; color: #475569;">
+                    <strong>Fecha:</strong> {{documento.fecha_emision}}<br>
+                    {% if documento.fecha_vencimiento %}
+                    <strong>Vencimiento:</strong> {{documento.fecha_vencimiento}}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- INFO CLIENTE Y OTROS -->
+        <div class="info-grid">
+            <div class="info-col">
+                <div class="section-title">Facturado a</div>
+                <h3 class="client-name">{{tercero.razon_social}}</h3>
+                <div class="data-text">
+                    ID/NIT: {{tercero.nit}}<br>
+                    {{tercero.direccion}}<br>
+                    {{tercero.telefono}}
+                </div>
+            </div>
+            <div class="info-col" style="padding-left: 20px;">
+                <div class="section-title">Detalles de Operación</div>
+                <div class="data-text">
+                    <strong>Vendedor:</strong> {{documento.vendedor|default('N/A')}}<br>
+                    <strong>Forma de Pago:</strong> {{documento.metodo_pago|default('Contado')}}<br>
+                    <strong>Moneda:</strong> COP - Pesos Colombianos
+                </div>
+            </div>
+        </div>
+
+        <!-- ITEMS -->
+        <div class="items-container">
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th width="50%">Descripción del Servicio</th>
+                        <th width="10%" class="text-center">Cant.</th>
+                        <th width="20%" class="text-right">Precio Unit.</th>
+                        <th width="20%" class="text-right">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>
+                            <div class="item-desc">{{item.producto_nombre}}</div>
+                            <div class="item-sub">Cod: {{item.producto_codigo}}</div>
+                        </td>
+                        <td class="text-center">{{item.cantidad}}</td>
+                        <td class="text-right">{{item.precio_unitario}}</td>
+                        <td class="text-right">{{item.subtotal}}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- TOTALES Y NOTAS -->
+        <div class="footer-grid">
+            <div class="footer-left">
+                <div class="section-title">Observaciones</div>
+                <div style="font-size: 9px; color: #475569; padding-right: 30px;">
+                    {{documento.observaciones|default('Sin observaciones adicionales.')}}
+                </div>
+
+                <div class="payment-info">
+                    <strong>Información de Pago:</strong><br>
+                    Por favor realizar transferencia a la cuenta de ahorros No. XXX-XXXXXX-XX de Banco XXXXXX.<br>
+                    Referencia: Factura {{documento.consecutivo}}
+                </div>
+            </div>
+            <div class="footer-right">
+                <table class="totals-table">
+                    <tr>
+                        <td class="text-right">Subtotal:</td>
+                        <td class="text-right" width="40%">{{totales.subtotal}}</td>
+                    </tr>
+                    {% if totales.descuentos and totales.descuentos != '0.00' %}
+                    <tr>
+                        <td class="text-right">Descuentos:</td>
+                        <td class="text-right" style="color: #dc2626;">-{{totales.descuentos}}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td class="text-right">Impuestos (IVA):</td>
+                        <td class="text-right">{{totales.iva_19|default(totales.iva_5)|default('0.00')}}</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td class="text-right">TOTAL:</td>
+                        <td class="text-right">{{totales.total}}</td>
+                    </tr>
+                </table>
+                <div style="font-size: 8px; font-style: italic; text-align: right; margin-top: 10px; color: #94a3b8;">
+                    Son: {{totales.valor_letras}}
+                </div>
+            </div>
+        </div>
+
+        <!-- AREA FISCAL DIAN -->
+        {% if documento.dian_cufe %}
+        <div class="fiscal-area">
+            <div class="fiscal-left">
+                <strong>INFORMACIÓN FISCAL DIAN</strong><br>
+                Software Proveedor: <strong>FINAXIS ENTERPRISE</strong> (Tecnología Cloud)<br>
+                Tipo: {% if 'SOPORTE' in documento.tipo_nombre.upper() %}Documento Soporte Electrónico{% else %}Factura
+                Electrónica de Venta{% endif %}<br>
+                CUFE/CUDS:
+                <span class="cufe-text">{{documento.dian_cufe}}</span>
+            </div>
+            <div class="fiscal-right">
+                {% if documento.qr_base64 %}
+                <img src="data:image/png;base64,{{documento.qr_base64}}" style="width: 80px; height: 80px;">
+                {% else %}
+                <div class="qr-placeholder"
+                    style="display: flex; align-items: center; justify-content: center; font-size: 6px;">
+                    CÓDIGO QR VALIDACIÓN
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="signature-line">
+            Recibido por (Nombre y Cédula)
+        </div>
+
+        <div class="finaxis-brand">
+            Software de Gestión Inteligente • FINAXIS.COM.CO
+        </div>
+    </div>
+</body>
+
 </html>
 ''',
 
@@ -4961,6 +5702,687 @@ TEMPLATES_EMPAQUETADOS = {
 </html>
 ''',
 
+    'reports/premium_fe_template.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Factura Electrónica de Venta Premium</title>
+    <style>
+        /* RESET & BASE */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            color: #1e293b;
+            font-size: 10px;
+            margin: 0;
+            padding: 10px 15px;
+            line-height: 1.4;
+            background: #ffffff;
+        }
+
+        @page {
+            size: letter;
+            margin: 1.5cm 1.5cm;
+        }
+
+        /* TIPOGRAFÍA & UTILIDADES */
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-bold {
+            font-weight: 700;
+        }
+
+        .text-uppercase {
+            text-transform: uppercase;
+        }
+
+        .text-primary {
+            color: #0f172a;
+        }
+
+        .text-secondary {
+            color: #64748b;
+        }
+
+        .text-brand {
+            color: #2563eb;
+        }
+
+        .text-danger {
+            color: #f43f5e;
+        }
+
+        /* Modern rose-red */
+
+        /* CABEZOTE: Glassmorphism / Modern Layout */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 20px;
+        }
+
+        .header-left {
+            width: 55%;
+        }
+
+        .logo-placeholder {
+            max-width: 160px;
+            max-height: 60px;
+            margin-bottom: 12px;
+        }
+
+        .emisor-name {
+            font-size: 16px;
+            font-weight: 900;
+            color: #0f172a;
+            margin-bottom: 4px;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+        }
+
+        .emisor-nit {
+            font-size: 10px;
+            font-weight: 700;
+            color: #3b82f6;
+            margin-bottom: 6px;
+        }
+
+        .emisor-details {
+            font-size: 9px;
+            color: #475569;
+            line-height: 1.5;
+        }
+
+        /* BLOQUE TIPO DOCUMENTO DERECHA */
+        .header-right {
+            width: 40%;
+            text-align: right;
+            border-left: 1px solid #e2e8f0;
+            padding-left: 20px;
+        }
+
+        .doc-title {
+            font-size: 14px;
+            font-weight: 900;
+            color: #1e40af;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            letter-spacing: -0.5px;
+        }
+
+        .doc-number {
+            font-size: 20px;
+            font-weight: 900;
+            color: #f43f5e;
+            margin-bottom: 12px;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            letter-spacing: -0.5px;
+        }
+
+        .doc-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            text-align: right;
+            row-gap: 6px;
+            font-size: 9px;
+            column-gap: 10px;
+        }
+
+        .meta-label {
+            color: #64748b;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 8px;
+        }
+
+        .meta-value {
+            color: #0f172a;
+            font-weight: 800;
+        }
+
+        /* INFORMACIÓN ADQUIRENTE (CARD MODERNO) */
+        .adquirente-section {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .adquirente-col {
+            width: 48%;
+        }
+
+        .adq-label {
+            font-size: 8px;
+            text-transform: uppercase;
+            color: #3b82f6;
+            font-weight: 900;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .adq-name {
+            font-size: 13px;
+            font-weight: 900;
+            color: #0f172a;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .adq-detail-row {
+            display: flex;
+            margin-bottom: 4px;
+            font-size: 9px;
+        }
+
+        .adq-detail-label {
+            width: 35%;
+            color: #64748b;
+            font-weight: 700;
+        }
+
+        .adq-detail-value {
+            width: 65%;
+            color: #1e293b;
+            font-weight: 700;
+        }
+
+        /* DETALLE DE PRODUCTOS (TABLA MODERNA) */
+        .items-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 25px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .items-table th {
+            background-color: #f8fafc;
+            color: #475569;
+            font-size: 8px;
+            text-transform: uppercase;
+            padding: 10px 12px;
+            font-weight: 800;
+            border-bottom: 1px solid #e2e8f0;
+            letter-spacing: 0.5px;
+        }
+
+        .items-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+            background: #ffffff;
+        }
+
+        .items-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .item-code {
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 8px;
+            color: #94a3b8;
+            font-weight: 700;
+        }
+
+        .item-name {
+            font-weight: 700;
+            color: #1e293b;
+            font-size: 9px;
+        }
+
+        .item-number {
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 9px;
+            font-weight: 700;
+            color: #334155;
+        }
+
+        /* ZONA DE TOTALES Y OBSERVACIONES */
+        .bottom-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+        }
+
+        .notes-section {
+            width: 55%;
+        }
+
+        .amount-words-box {
+            background: #f0fdf4;
+            /* Verde muy claro indicando éxito / pago */
+            border-left: 4px solid #22c55e;
+            padding: 12px 15px;
+            border-radius: 0 6px 6px 0;
+            margin-bottom: 15px;
+        }
+
+        .amount-words-label {
+            font-size: 8px;
+            color: #166534;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .amount-words-value {
+            font-size: 9px;
+            color: #15803d;
+            font-weight: 800;
+        }
+
+        .obs-box {
+            background: #ffffff;
+            border: 1px dashed #cbd5e1;
+            padding: 12px 15px;
+            border-radius: 6px;
+        }
+
+        .obs-label {
+            font-size: 8px;
+            color: #64748b;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .obs-text {
+            font-size: 9px;
+            color: #334155;
+            white-space: pre-line;
+            font-weight: 500;
+        }
+
+        .totales-section {
+            width: 40%;
+        }
+
+        .totales-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .totales-table td {
+            padding: 8px 12px;
+            font-size: 10px;
+            border-bottom: 1px solid #f8fafc;
+        }
+
+        .total-label-cell {
+            color: #64748b;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 8px;
+        }
+
+        .total-value-cell {
+            text-align: right;
+            font-weight: 800;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            color: #1e293b;
+        }
+
+        .row-base td {
+            background: #f8fafc;
+            color: #1e293b;
+        }
+
+        .row-tax td {
+            background: #fdf2f8;
+            color: #be185d;
+        }
+
+        .row-grand-total td {
+            background: #1e40af;
+            /* Azul vibrante premium */
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 900;
+            border-bottom: none;
+            padding: 15px 12px;
+            border-radius: 0 0 8px 8px;
+            /* Si fuera el final de un contenedor contiguo, asumamos borde redondeado inferior */
+        }
+
+        .row-grand-total .total-label-cell {
+            color: #bfdbfe;
+            font-size: 10px;
+        }
+
+        .row-grand-total .total-value-cell {
+            color: #ffffff;
+        }
+
+        .totales-wrapper {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        /* SECCIÓN FACTURACIÓN ELECTRÓNICA DIAN */
+        /* Hacemos este bloque VISUALMENTE IMPECABLE para que el usuario no tenga quejas */
+        .fe-dian-section {
+            margin-top: 30px;
+            border: 1px solid #cbd5e1;
+            border-top: 4px solid #10b981;
+            /* Verde esmeralda DIAN Aceptado */
+            border-radius: 8px;
+            display: flex;
+            padding: 20px;
+            background: #ffffff;
+            page-break-inside: avoid;
+        }
+
+        .fe-qr-col {
+            width: 25%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-right: 1px solid #e2e8f0;
+            padding-right: 20px;
+        }
+
+        .qr-placeholder {
+            width: 140px;
+            height: 140px;
+            object-fit: contain;
+        }
+
+        .qr-fallback {
+            width: 140px;
+            height: 140px;
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            font-size: 10px;
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .fe-info-col {
+            width: 75%;
+            padding-left: 25px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .fe-title {
+            font-size: 12px;
+            font-weight: 900;
+            color: #047857;
+            /* Verde DIAN oscuro */
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .fe-cufe-box {
+            background: #f1f5f9;
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 12px;
+        }
+
+        .fe-cufe-label {
+            font-size: 8px;
+            color: #64748b;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .fe-cufe-value {
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 9px;
+            font-weight: 700;
+            color: #1e293b;
+            word-break: break-all;
+            line-height: 1.4;
+        }
+
+        .fe-legal-text {
+            font-size: 8px;
+            color: #64748b;
+            line-height: 1.5;
+            text-align: justify;
+            font-weight: 500;
+        }
+
+        /* PIE DE PÁGINA */
+        .commercial-footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 8px;
+            color: #94a3b8;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 15px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- CABECERA DE LA FACTURA -->
+    <div class="header">
+        <div class="header-left">
+            {% if empresa.logo_url %}
+            <img src="{{empresa.logo_url}}" class="logo-placeholder" alt="Logo {{empresa.razon_social}}">
+            {% endif %}
+            <div class="emisor-name">{{empresa.razon_social}}</div>
+            <div class="emisor-nit">NIT: {{empresa.nit}}</div>
+            <div class="emisor-details">
+                {{empresa.direccion}}<br>
+                Teléfono: {{empresa.telefono}} {% if empresa.email %}| Correo: {{empresa.email}}{% endif %}<br>
+                <strong style="color:#0f172a;">Responsabilidad Tributaria:</strong> IVA Régimen Común
+            </div>
+        </div>
+
+        <div class="header-right">
+            <div class="doc-title">Factura Electrónica de Venta</div>
+            <div class="doc-number">N° {{documento.consecutivo}}</div>
+            <div class="doc-meta">
+                <div class="meta-label">Fecha Emisión:</div>
+                <div class="meta-value">{{documento.fecha_emision}}</div>
+
+                <div class="meta-label">Fecha Venc.:</div>
+                <div class="meta-value">{{documento.fecha_vencimiento}}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DATOS DEL ADQUIRENTE (CLIENTE) -->
+    <div class="adquirente-section">
+        <div class="adquirente-col">
+            <div class="adq-label">Adquirente (Cliente)</div>
+            <div class="adq-name">{{tercero.razon_social}}</div>
+
+            <div class="adq-detail-row">
+                <div class="adq-detail-label">NIT / CC:</div>
+                <div class="adq-detail-value">{{tercero.nit}}</div>
+            </div>
+        </div>
+        <div class="adquirente-col">
+            <div class="adq-detail-row" style="margin-top: 18px;">
+                <div class="adq-detail-label">Dirección:</div>
+                <div class="adq-detail-value">{{tercero.direccion|default('No registrada')}}</div>
+            </div>
+            <div class="adq-detail-row">
+                <div class="adq-detail-label">Teléfono:</div>
+                <div class="adq-detail-value">{{tercero.telefono|default('No registrado')}}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DETALLE DE ITEMS -->
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th width="12%" class="text-left">Código</th>
+                <th width="40%" class="text-left">Descripción del Producto o Servicio</th>
+                <th width="8%" class="text-center">Cant.</th>
+                <th width="15%" class="text-right">Vr. Unitario</th>
+                <th width="8%" class="text-right">IVA</th>
+                <th width="17%" class="text-right">Valor Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="item-code">{{item.producto_codigo}}</td>
+                <td class="item-name">{{item.producto_nombre}}</td>
+                <td class="text-center item-number" style="color:#2563eb;">{{item.cantidad}}</td>
+                <td class="text-right item-number">{{item.precio_unitario}}</td>
+                <td class="text-right item-number">{{ (item.tasa_iva * 100)|round(0) if item.tasa_iva else 0 }}%</td>
+                <td class="text-right item-number">{{item.subtotal}}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- TOTALES Y REEMBOLSOS -->
+    <div class="bottom-section">
+        <div class="notes-section">
+            {% if totales.valor_letras %}
+            <div class="amount-words-box">
+                <div class="amount-words-label">Valor en letras</div>
+                <div class="amount-words-value">SON: {{totales.valor_letras}}</div>
+            </div>
+            {% endif %}
+
+            {% if documento.observaciones %}
+            <div class="obs-box">
+                <div class="obs-label">Observaciones Adicionales</div>
+                <div class="obs-text">{{documento.observaciones}}</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="totales-section">
+            <div class="totales-wrapper">
+                <table class="totales-table">
+                    <tr>
+                        <td class="total-label-cell">Subtotal Neto:</td>
+                        <td class="total-value-cell">{{totales.subtotal}}</td>
+                    </tr>
+
+                    {% if totales.base_exenta and totales.base_exenta != '0.00' %}
+                    <tr class="row-base">
+                        <td class="total-label-cell">Base Exenta (0%):</td>
+                        <td class="total-value-cell">{{totales.base_exenta}}</td>
+                    </tr>
+                    {% endif %}
+
+                    {% if totales.base_gravable_5 and totales.base_gravable_5 != '0.00' %}
+                    <tr class="row-base">
+                        <td class="total-label-cell">Base Gravable (5%):</td>
+                        <td class="total-value-cell">{{totales.base_gravable_5}}</td>
+                    </tr>
+                    {% endif %}
+
+                    {% if totales.base_gravable_19 and totales.base_gravable_19 != '0.00' %}
+                    <tr class="row-base">
+                        <td class="total-label-cell">Base Gravable (19%):</td>
+                        <td class="total-value-cell">{{totales.base_gravable_19}}</td>
+                    </tr>
+                    {% endif %}
+
+                    {% if totales.iva_5 and totales.iva_5 != '0.00' %}
+                    <tr class="row-tax">
+                        <td class="total-label-cell" style="color:#be185d;">Impuesto IVA (5%):</td>
+                        <td class="total-value-cell" style="color:#be185d;">{{totales.iva_5}}</td>
+                    </tr>
+                    {% endif %}
+
+                    {% if totales.iva_19 and totales.iva_19 != '0.00' %}
+                    <tr class="row-tax">
+                        <td class="total-label-cell" style="color:#be185d;">Impuesto IVA (19%):</td>
+                        <td class="total-value-cell" style="color:#be185d;">{{totales.iva_19}}</td>
+                    </tr>
+                    {% endif %}
+
+                    <tr class="row-grand-total">
+                        <td class="total-label-cell">TOTAL A PAGAR:</td>
+                        <td class="total-value-cell">{{totales.total}}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- BLOQUE DIAN - FACTURACIÓN ELECTRÓNICA -->
+    <!-- Mostrar SIEMPRE Si existe CUFE para garantizar visibilidad de la validación -->
+    {% if documento.dian_cufe %}
+    <div class="fe-dian-section">
+        <div class="fe-qr-col">
+            <!-- Usamos goqr.me para crear un QR que apunte a la URL oficial de escaneo de la DIAN -->
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://catalogo-vpfe-hab.dian.gov.co/document/searchqr?documentkey={{documento.dian_cufe}}"
+                class="qr-placeholder" alt="QR DIAN Sandbox">
+        </div>
+        <div class="fe-info-col">
+            <div class="fe-title">✓ Documento Electrónico DIAN</div>
+
+            <div class="fe-cufe-box">
+                <div class="fe-cufe-label">CUFE (Código Único de Facturación Electrónica):</div>
+                <div class="fe-cufe-value">{{documento.dian_cufe}}</div>
+            </div>
+
+            <div class="fe-legal-text">
+                Autorización Numeración Facturación Electrónica DIAN NO.
+                <strong>{{documento.resolucion_numero}}</strong> de fecha
+                <strong>{{documento.resolucion_fecha}}</strong>.
+                Rango desde <strong>{{documento.resolucion_prefijo}}-{{documento.resolucion_rango_desde}}</strong> hasta
+                <strong>{{documento.resolucion_prefijo}}-{{documento.resolucion_rango_hasta}}</strong>.
+                Esta factura se asimila en todos sus efectos a una letra de cambio según el Art. 774 del Código de
+                Comercio.
+                Transcurridos 3 días hábiles desde su recepción, si no hay reclamación en contra, se entenderá aceptada
+                y constituirá título ejecutivo.
+            </div>
+
+
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="commercial-footer">
+        Finaxis Enterprise Software - Sistema Integral de Facturación Electrónica DIAN
+    </div>
+
+</body>
+
+</html>
+''',
+
     'reports/rentabilidad_documento_report.html': r'''
 <!DOCTYPE html>
 <html>
@@ -6008,35 +7430,40 @@ TEMPLATES_EMPAQUETADOS = {
     <title>Auxiliar por Tercero y Cuenta</title>
     <style>
         @page {
-            size: letter;
+            size: letter landscape;
             margin: 1.5cm;
         }
 
         body {
-            font-family: sans-serif;
-            font-size: 10px;
+            font-family: Arial, sans-serif;
+            font-size: 8px;
             color: #333;
         }
 
         .header {
             text-align: center;
-            margin-bottom: 20px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
         }
 
-        .header h1 {
+        h1,
+        h2 {
             margin: 0;
-            font-size: 16px;
         }
 
-        .header h2 {
-            margin: 0;
+        h1 {
+            font-size: 14px;
+        }
+
+        h2 {
             font-size: 12px;
             font-weight: normal;
         }
 
         .report-info {
             margin-bottom: 15px;
-            font-size: 10px;
+            font-size: 9px;
         }
 
         table {
@@ -6046,7 +7473,7 @@ TEMPLATES_EMPAQUETADOS = {
 
         th,
         td {
-            border: 1px solid #ccc;
+            border: 1px solid #ddd;
             padding: 4px;
             text-align: left;
             word-wrap: break-word;
@@ -6054,6 +7481,7 @@ TEMPLATES_EMPAQUETADOS = {
 
         th {
             background-color: #f2f2f2;
+            text-align: center;
             font-weight: bold;
         }
 
@@ -6061,25 +7489,19 @@ TEMPLATES_EMPAQUETADOS = {
             text-align: right;
         }
 
+        .text-center {
+            text-align: center;
+        }
+
         .total-global-row td {
             font-weight: bold;
-            background-color: #f8f8f8;
-            border-top: 1.5px solid #999;
+            background-color: #e0e0e0;
+            border-top: 2px solid #333;
         }
 
         .cuenta-header-row td {
             font-weight: bold;
             background-color: #f2f2f2;
-            padding-top: 8px;
-            padding-bottom: 8px;
-            border-top: 2px solid #666;
-        }
-
-        .saldo-cuenta-row td {
-            background-color: #fafafa;
-            font-style: italic;
-            font-size: 9px;
-            color: #666;
         }
     </style>
 </head>
@@ -6088,32 +7510,34 @@ TEMPLATES_EMPAQUETADOS = {
     <div class="header">
         <h1>{{ empresa_nombre }}</h1>
         <h2>NIT: {{ empresa_nit }}</h2>
-        <h2>Auxiliar por Tercero y Cuenta</h2>
     </div>
 
     <div class="report-info">
-        <strong>Tercero:</strong> {{ tercero_info.nit }} - {{ tercero_info.razon_social }}<br>
-        <strong>Periodo:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}
+        <h2>Auxiliar por Tercero y Cuenta</h2>
+        <p>
+            <strong>Tercero:</strong> {{ tercero_info.nit }} - {{ tercero_info.razon_social }}<br>
+            <strong>Periodo:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}
+        </p>
     </div>
 
     <table>
         <thead>
             <tr>
-                <th width="10%">Fecha</th>
-                <th width="15%">Documento</th>
+                <th>Fecha</th>
+                <th>Documento</th>
                 <th>Concepto</th>
                 {% if has_cost_centers %}
-                <th width="10%">C. Costo</th>
+                <th>C. Costo</th>
                 {% endif %}
-                <th width="12%" class="text-right">Débito</th>
-                <th width="12%" class="text-right">Crédito</th>
-                <th width="15%" class="text-right">Saldo Parcial</th>
+                <th class="text-right">Débito</th>
+                <th class="text-right">Crédito</th>
+                <th class="text-right">Saldo Parcial</th>
             </tr>
         </thead>
         <tbody>
             <tr class="total-global-row">
-                <td colspan="{{ 4 if has_cost_centers else 3 }}"><strong>SALDO ANTERIOR GLOBAL</strong></td>
-                <td colspan="3" class="text-right"><strong>{{ "{:,.2f}".format(saldo_anterior_global) }}</strong></td>
+                <td colspan="{{ 6 if has_cost_centers else 5 }}"><strong>SALDO ANTERIOR GLOBAL</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(saldo_anterior_global) }}</strong></td>
             </tr>
 
             {% for cuenta_id, grupo_movimientos in movimientos | groupby('cuenta_id') %}
@@ -6121,13 +7545,13 @@ TEMPLATES_EMPAQUETADOS = {
             {% set primer_mov = movimientos_lista[0] %}
             <tr class="cuenta-header-row">
                 <td colspan="{{ 7 if has_cost_centers else 6 }}">
-                    Cuenta: {{ primer_mov.cuenta_codigo }} - {{ primer_mov.cuenta_nombre }}
+                    <strong>Cuenta: {{ primer_mov.cuenta_codigo }} - {{ primer_mov.cuenta_nombre }}</strong>
                 </td>
             </tr>
-            <tr class="saldo-cuenta-row">
-                <td colspan="{{ 6 if has_cost_centers else 5 }}">Saldo Anterior de la Cuenta</td>
+            <tr style="background-color: #fafafa;">
+                <td colspan="{{ 6 if has_cost_centers else 5 }}"><i>Saldo Anterior de la Cuenta</i></td>
                 <td class="text-right">
-                    {{ "{:,.2f}".format(saldos_iniciales_por_cuenta.get(cuenta_id | string, 0)) }}
+                    <i>{{ "{:,.2f}".format(saldos_iniciales_por_cuenta.get(cuenta_id | string, 0)) }}</i>
                 </td>
             </tr>
 
@@ -6146,7 +7570,7 @@ TEMPLATES_EMPAQUETADOS = {
             {% endfor %}
             {% endfor %}
 
-            <tr class="total-global-row" style="background-color: #f1f5f9; border-top: 2px solid #333;">
+            <tr class="total-global-row" style="background-color: #f1f5f9;">
                 <td colspan="{{ 4 if has_cost_centers else 3 }}"><strong>TOTALES MOVIMIENTOS DEL PERIODO</strong></td>
                 <td class="text-right"><strong>{{ "{:,.2f}".format(total_debito_global) }}</strong></td>
                 <td class="text-right"><strong>{{ "{:,.2f}".format(total_credito_global) }}</strong></td>

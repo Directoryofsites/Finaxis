@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Factura Electrónica de Venta - Estilo Exito</title>
+    <style>
+        /* RESET & BASE */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #000;
+            font-size: 10px;
+            margin: 0;
+            padding: 0;
+            line-height: 1.2;
+            background: #ffffff;
+        }
+
+        @page {
+            size: letter;
+            margin: 1cm;
+        }
+
+        /* UTILIDADES */
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-bold {
+            font-weight: bold;
+        }
+
+        .text-uppercase {
+            text-transform: uppercase;
+        }
+
+        /* HEADER CENTRADO */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .company-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .company-nit {
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .company-details {
+            font-size: 9px;
+            margin-bottom: 2px;
+        }
+
+        /* SECCIÓN TIPO DOCUMENTO Y NÚMERO (IZQUIERDA) */
+        .doc-info {
+            position: absolute;
+            top: 0;
+            left: 0;
+            text-align: left;
+            width: 200px;
+        }
+
+        .doc-title {
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .doc-number {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .doc-dates {
+            font-size: 8px;
+            margin-top: 5px;
+        }
+
+        /* CLIENTE Y DIRECCIÓN */
+        .client-section {
+            width: 100%;
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
+            padding: 10px 0;
+            margin-bottom: 15px;
+            display: table;
+        }
+
+        .client-col {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+        }
+
+        .row {
+            display: table;
+            width: 100%;
+            margin-bottom: 3px;
+        }
+
+        .label {
+            display: table-cell;
+            width: 80px;
+            font-weight: bold;
+        }
+
+        .value {
+            display: table-cell;
+        }
+
+        /* TABLA DE ITEMS */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+
+        .items-table th {
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
+            padding: 5px;
+            text-align: center;
+            background: #f2f2f2;
+            font-weight: bold;
+        }
+
+        .items-table td {
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* SECCIÓN TOTALES E IMPUESTOS */
+        .summary-section {
+            display: table;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .taxes-box {
+            display: table-cell;
+            width: 60%;
+            vertical-align: top;
+        }
+
+        .totals-box {
+            display: table-cell;
+            width: 40%;
+            vertical-align: top;
+        }
+
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .summary-table th,
+        .summary-table td {
+            border: 1px solid #ddd;
+            padding: 4px;
+            text-align: right;
+        }
+
+        .summary-table th {
+            background: #f2f2f2;
+        }
+
+        .total-pay-row {
+            background: #eee;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        /* PIE DE PÁGINA (DIAN) */
+        .dian-section {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #000;
+            display: table;
+            width: 100%;
+        }
+
+        .qr-col {
+            display: table-cell;
+            width: 120px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .dian-info-col {
+            display: table-cell;
+            padding-left: 15px;
+            vertical-align: top;
+            font-size: 8px;
+        }
+
+        .amount-words {
+            margin: 10px 0;
+            font-weight: bold;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <div class="company-name">{{empresa.razon_social}}</div>
+        <div class="company-nit">NIT: {{empresa.nit}}</div>
+        <div class="company-details">Responsable de IVA</div>
+        <div class="company-details">{{empresa.direccion}} - {{empresa.ciudad}} - Colombia</div>
+        <div class="company-details">Teléfono - {{empresa.telefono}}</div>
+        <div class="company-details">E-mail: {{empresa.email}}</div>
+        <div class="company-details text-bold">REPRESENTACION GRAFICA DE FACTURA ELECTRONICA</div>
+    </div>
+
+    <div class="doc-info">
+        <div class="doc-title">FACTURA ELECTRONICA DE VENTA</div>
+        <div class="doc-number">{{documento.tipo_documento_codigo}} - {{documento.numero}}</div>
+        <div class="doc-dates">
+            Fecha Validación DIAN: {{documento.fecha_emision}}<br>
+            Hora Validación DIAN: {{documento.hora_emision|default('00:00:00')}}
+        </div>
+    </div>
+
+    <div class="client-section">
+        <div class="client-col">
+            <div class="row">
+                <div class="label">Cliente:</div>
+                <div class="value text-bold">{{tercero.razon_social}}</div>
+            </div>
+            <div class="row">
+                <div class="label">CC o NIT:</div>
+                <div class="value">{{tercero.nit}}</div>
+            </div>
+            <div class="row">
+                <div class="label">Régimen:</div>
+                <div class="value">{{tercero.regimen|default('No responsable de IVA')}}</div>
+            </div>
+            <div class="row">
+                <div class="label">Obligación:</div>
+                <div class="value">{{tercero.responsabilidad|default('No responsable')}}</div>
+            </div>
+            <div class="row">
+                <div class="label">Email:</div>
+                <div class="value">{{tercero.email}}</div>
+            </div>
+            <div class="row">
+                <div class="label">Forma de Pago:</div>
+                <div class="value">{{documento.forma_pago|default('Contado')}}</div>
+            </div>
+        </div>
+        <div class="client-col">
+            <div class="row">
+                <div class="label">Dirección:</div>
+                <div class="value">{{tercero.direccion}}</div>
+            </div>
+            <div class="row">
+                <div class="label">Ciudad:</div>
+                <div class="value">{{tercero.ciudad}}</div>
+            </div>
+            <div class="row">
+                <div class="label">Teléfono:</div>
+                <div class="value">{{tercero.telefono}}</div>
+            </div>
+            <div class="row">
+                <div class="label">Medios de Pago:</div>
+                <div class="value">Efectivo</div>
+            </div>
+            <div class="row">
+                <div class="label">Plazo:</div>
+                <div class="value">0 Dias</div>
+            </div>
+            <div class="row">
+                <div class="label">Vencimiento:</div>
+                <div class="value">{{documento.fecha_vencimiento}}</div>
+            </div>
+        </div>
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th width="4%">#</th>
+                <th width="14%">Código</th>
+                <th width="32%">Descripción</th>
+                <th width="7%">Cantidad</th>
+                <th width="7%">UM</th>
+                <th width="12%">Val. Unit</th>
+                <th width="10%">% IVA</th>
+                <th width="14%">Val. Item</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="text-center">{{ loop.index }}</td>
+                <td>{{ item.producto_codigo }}</td>
+                <td>{{ item.producto_nombre }}</td>
+                <td class="text-center">{{ item.cantidad }}</td>
+                <td class="text-center">Unidad</td>
+                <td class="text-right">{{ item.precio_unitario|format_decimal }}</td>
+                <td class="text-right">
+                    {% if item.tasa_iva and item.tasa_iva > 0 %}
+                    {{ (item.tasa_iva * 100)|round(0) }}%
+                    {% else %}
+                    0%
+                    {% endif %}
+                </td>
+                <td class="text-right">{{ item.subtotal|format_decimal }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="summary-section">
+        <div class="taxes-box">
+            <table class="summary-table" style="width: 90%;">
+                <thead>
+                    <tr>
+                        <th colspan="4" class="text-center">Impuestos y Retenciones</th>
+                    </tr>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Base</th>
+                        <th>Porcentaje</th>
+                        <th>Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if totales.base_gravable_5 != '0.00' %}
+                    <tr>
+                        <td class="text-center">IVA</td>
+                        <td>{{ totales.base_gravable_5 }}</td>
+                        <td class="text-center">5.00%</td>
+                        <td>{{ totales.iva_5 }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if totales.base_gravable_19 != '0.00' %}
+                    <tr>
+                        <td class="text-center">IVA</td>
+                        <td>{{ totales.base_gravable_19 }}</td>
+                        <td class="text-center">19.00%</td>
+                        <td>{{ totales.iva_19 }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if totales.base_exenta != '0.00' and totales.base_gravable_19 == '0.00' and
+                    totales.base_gravable_5 == '0.00' %}
+                    <tr>
+                        <td class="text-center">Totalmente Exento</td>
+                        <td>{{ totales.base_exenta }}</td>
+                        <td class="text-center">0.00%</td>
+                        <td>0.00</td>
+                    </tr>
+                    {% endif %}
+                    {% if totales.base_gravable_5 == '0.00' and totales.base_gravable_19 == '0.00' and
+                    totales.base_exenta == '0.00' %}
+                    <tr>
+                        <td class="text-center">N/A</td>
+                        <td>0.00</td>
+                        <td class="text-center">0.00%</td>
+                        <td>0.00</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+
+            <div class="amount-words">
+                PRECIO EN LETRAS SON: {{ totales.valor_letras|upper }}
+            </div>
+
+            <div style="border: 1px solid #ddd; padding: 10px; min-height: 50px;">
+                <strong>OBSERVACIONES:</strong><br>
+                {{ documento.observaciones or '.' }}
+            </div>
+        </div>
+
+        <div class="totals-box">
+            <table class="summary-table">
+                <thead>
+                    <tr>
+                        <th colspan="2" class="text-center">Totales</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Nro Lineas:</td>
+                        <td>{{ items|length }}</td>
+                    </tr>
+                    <tr>
+                        <td>Base:</td>
+                        <td>{{ totales.subtotal }}</td>
+                    </tr>
+                    <tr>
+                        <td>Impuestos:</td>
+                        <td>{{ totales.impuestos|default(totales.iva_19) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Retenciones:</td>
+                        <td>0.00</td>
+                    </tr>
+                    <tr>
+                        <td>Descuentos En Lineas:</td>
+                        <td>0.00</td>
+                    </tr>
+                    <tr>
+                        <td>Descuentos Globales:</td>
+                        <td>{{ totales.descuento_global|default('0.00') }}</td>
+                    </tr>
+                    <tr>
+                        <td>Otros Cargos:</td>
+                        <td>{{ totales.cargos_globales|default('0.00') }}</td>
+                    </tr>
+                    <tr class="total-pay-row">
+                        <td>Total Factura:</td>
+                        <td>{{ totales.total }}</td>
+                    </tr>
+                    <tr class="total-pay-row">
+                        <td>Total a Pagar:</td>
+                        <td>{{ totales.total }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if documento.dian_cufe %}
+    <div class="dian-section">
+        <div class="qr-col">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://catalogo-vpfe-hab.dian.gov.co/document/searchqr?documentkey={{documento.dian_cufe}}"
+                width="100" height="100">
+        </div>
+        <div class="dian-info-col">
+            <strong>Resolución de Facturación Electrónica</strong><br>
+            Nro. {{documento.resolucion_numero}} de {{documento.resolucion_fecha}}<br>
+            Prefijo: {{documento.resolucion_prefijo}}, Rango {{documento.resolucion_rango_desde}} Al
+            {{documento.resolucion_rango_hasta}}<br>
+            Vigencia Desde: {{documento.resolucion_fecha}} Hasta:
+            {{documento.resolucion_fecha_fin|default('2027-10-10')}}<br><br>
+
+            <strong>CUFE:</strong> {{documento.dian_cufe}}<br><br>
+
+            La presente Factura Electrónica de Venta, es un título valor de acuerdo con lo establecido en el Código de
+            Comercio y en especial en los artículos 621,772 y 774.
+        </div>
+    </div>
+    {% endif %}
+
+</body>
+
+</html>

@@ -19,7 +19,9 @@ import {
     FaTrash,
     FaSave,
     FaTag,
-    FaEdit
+    FaEdit,
+    FaPrint,
+    FaCheckCircle
 } from 'react-icons/fa';
 
 import { useAuth } from '../../context/AuthContext';
@@ -82,6 +84,10 @@ export default function NuevaFacturaPage() {
     const [tipoDescuentoGlobal, setTipoDescuentoGlobal] = useState('$'); // '$' o '%'
     const [cargoGlobal, setCargoGlobal] = useState(0);
     // ------------------------------------------
+
+    // --- NUEVO: Estado para impresión post-guardado ---
+    const [documentoRecienCreadoId, setDocumentoRecienCreadoId] = useState(null);
+    // --------------------------------------------------
 
     const [maestros, setMaestros] = useState({
         // terceros: [], // YA NO CARGAMOS TODOS LOS TERCEROS AL INICIO
@@ -459,11 +465,12 @@ export default function NuevaFacturaPage() {
             const response = await facturacionService.createFactura(payload);
             toast.success(`¡Éxito! Factura #${response.numero} creada.`);
             setItems([]);
-            // setBeneficiarioId(''); // MANTENER CLIENTE SELECCIONADO PARA FACTURACIÓN RÁPIDA
-            // setCentroCostoId(''); // MANTENER CENTRO DE COSTO SELECCIONADO (Request usuario)
-            // setClienteListaPrecioId(null); // MANTENER LISTA DE PRECIOS
-            // setFecha(new Date()); // MANTENER FECHA SELECCIONADA (Request usuario: desatraso de contabilidad)
-            // setFechaVencimiento(new Date()); // MANTENER FECHA VENCIMIENTO
+
+            // Guardamos el ID para habilitar el botón de imprimir
+            setDocumentoRecienCreadoId(response.id);
+
+            // Opcional: limpiar otros estados si se desea un "modo nueva factura" limpio, 
+            // pero el usuario pidió mantener algunos.
 
         } catch (err) {
             console.error("Error al guardar factura:", err);
@@ -529,10 +536,13 @@ export default function NuevaFacturaPage() {
             }
 
             setItems([]);
-            // Redirigir al detalle para ver el botón de Ver Factura
-            setTimeout(() => {
-                router.push(`/contabilidad/documentos/${docId}`);
-            }, 1500);
+            // Guardamos el ID para habilitar el botón de imprimir
+            setDocumentoRecienCreadoId(docId);
+
+            // Redirigir al detalle para ver el botón de Ver Factura (Opcional, ahora tenemos el botón aquí)
+            // setTimeout(() => {
+            //     router.push(`/contabilidad/documentos/${docId}`);
+            // }, 1500);
 
         } catch (err) {
             console.error(err);
@@ -542,6 +552,27 @@ export default function NuevaFacturaPage() {
         }
     };
 
+    // --- NUEVO: FUNCIÓN IMPRIMIR FACTURA RECIÉN CREADA ---
+    const handleImprimirFactura = useCallback(async () => {
+        if (!documentoRecienCreadoId) return;
+        try {
+            const tempToastId = toast.loading("Generando PDF de la factura...");
+            const res = await apiService.post(`/documentos/${documentoRecienCreadoId}/solicitar-impresion`);
+
+            if (res.data?.signed_url) {
+                toast.update(tempToastId, { render: "PDF Generado", type: "success", isLoading: false, autoClose: 2000 });
+                const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002';
+                const absoluteUrl = res.data.signed_url.startsWith('http') ? res.data.signed_url : `${API_URL}${res.data.signed_url}`;
+                window.open(absoluteUrl, '_blank', 'noopener,noreferrer');
+            } else {
+                throw new Error("No se recibió URL del PDF");
+            }
+        } catch (error) {
+            console.error("Error al imprimir factura:", error);
+            toast.error("Error al generar el PDF de la factura.");
+        }
+    }, [documentoRecienCreadoId]);
+    // -----------------------------------------------------
 
     if (pageIsLoading || authLoading) {
         return (
@@ -919,6 +950,18 @@ export default function NuevaFacturaPage() {
                         <> <FaSave className="text-xl" /> Solo Guardar </>
                     )}
                 </button>
+
+                {/* BOTÓN CONDICIONAL: IMPRIMIR FACTURA (Aparece tras guardar) */}
+                {documentoRecienCreadoId && (
+                    <button
+                        type="button"
+                        onClick={handleImprimirFactura}
+                        className="px-6 py-4 rounded-xl shadow-lg font-bold text-teal-800 text-lg transition-all transform hover:-translate-y-1 flex items-center gap-3 bg-teal-100 hover:bg-teal-200 border-2 border-teal-300 animate-fadeIn"
+                    >
+                        <FaPrint className="text-xl" /> Imprimir Factura Guardada
+                        <FaCheckCircle className="text-green-500 absolute -top-2 -right-2 text-xl bg-white rounded-full" />
+                    </button>
+                )}
             </div>
 
             <ProductSelectionModal
