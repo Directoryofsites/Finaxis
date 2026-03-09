@@ -287,7 +287,7 @@ function AuxiliarPorCuentaContent() {
 
         const dataToExport = [
             ['Fecha', 'Tipo Doc', 'Número', 'Nit/CC', 'Beneficiario', 'Concepto', 'Debito', 'Credito', 'Saldo Parcial'],
-            ['', '', '', '', '', 'SALDO ANTERIOR', '', '', reportData.saldoAnterior.toFixed(2)],
+            ['', '', '', '', '', 'SALDO ANTERIOR', '', '', Math.round(reportData.saldoAnterior).toString()],
             ...reportData.movimientos.map(mov => [
                 new Date(mov.fecha).toLocaleDateString('es-CO', { timeZone: 'UTC' }),
                 mov.tipo_documento,
@@ -295,9 +295,9 @@ function AuxiliarPorCuentaContent() {
                 mov.beneficiario_nit || '',
                 mov.beneficiario || '',
                 mov.concepto.replace(/,/g, ''),
-                parseFloat(mov.debito).toFixed(2),
-                parseFloat(mov.credito).toFixed(2),
-                mov.saldo_parcial.toFixed(2)
+                Math.round(parseFloat(mov.debito || 0)).toString(),
+                Math.round(parseFloat(mov.credito || 0)).toString(),
+                Math.round(mov.saldo_parcial || 0).toString()
             ])
         ];
 
