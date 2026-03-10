@@ -210,6 +210,7 @@ export default function MigracionDatosPage() {
           <section className="animate-fadeIn" style={{ animationDelay: '0.3s' }}>
             <TransformacionForm
               tiposDocumento={maestros.tiposDocumento}
+              cuentas={maestros.cuentas}
             />
           </section>
 
