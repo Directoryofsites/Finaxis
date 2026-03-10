@@ -140,7 +140,7 @@ export default function TransformacionForm({ tiposDocumento, cuentas = [] }) {
         if (tipoDestino) codigoDestino = tipoDestino.codigo;
       }
 
-      const documentosTransformados = documentosAProcesar.map(doc => {
+      let documentosTransformados = documentosAProcesar.map(doc => {
         const newDoc = { ...doc };
 
         // Transformar Fecha
@@ -165,10 +165,12 @@ export default function TransformacionForm({ tiposDocumento, cuentas = [] }) {
         }
 
         // --- NUEVO: Reemplazo de Cuentas Contables ---
+        newDoc._accountChanged = false; // Flag temporal
         if (transformRules.replaceAccountFrom && transformRules.replaceAccountTo) {
           if (newDoc.movimientos_contables) {
             newDoc.movimientos_contables = newDoc.movimientos_contables.map(mov => {
               if (mov.cuenta_codigo === transformRules.replaceAccountFrom) {
+                newDoc._accountChanged = true;
                 return { ...mov, cuenta_codigo: transformRules.replaceAccountTo };
               }
               return mov;
@@ -178,6 +180,20 @@ export default function TransformacionForm({ tiposDocumento, cuentas = [] }) {
 
         return newDoc;
       });
+
+      // Si el usuario aplicó la regla de cuentas, limpiar del JSON los documentos que no tenían esa cuenta
+      if (transformRules.replaceAccountFrom && transformRules.replaceAccountTo) {
+        documentosTransformados = documentosTransformados.filter(doc => doc._accountChanged);
+      }
+
+      // Eliminar el flag temporal para no ensuciar el JSON de salida
+      documentosTransformados.forEach(doc => delete doc._accountChanged);
+
+      if (documentosTransformados.length === 0) {
+        setLocalMessage("Ningún documento fue afectado por la regla de reemplazo. Verifica que la cuenta origen exista en los documentos.");
+        setIsTransforming(false);
+        return;
+      }
 
       // Filtrar movimientos contables asociados (solo los de los docs procesados)
       // Nota: En el JSON nuevo, los movimientos vienen DENTRO del documento ("transacciones" -> "movimientos_contables")
