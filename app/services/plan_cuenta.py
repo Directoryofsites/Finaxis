@@ -313,6 +313,10 @@ def _desvincular_cuentas_bloqueantes(db: Session, ids_a_eliminar: List[int], emp
     db.query(TasaImpuesto).filter(TasaImpuesto.empresa_id == empresa_id, TasaImpuesto.cuenta_id.in_(ids_a_eliminar)).update({"cuenta_id": None}, synchronize_session=False)
     db.query(TasaImpuesto).filter(TasaImpuesto.empresa_id == empresa_id, TasaImpuesto.cuenta_iva_descontable_id.in_(ids_a_eliminar)).update({"cuenta_iva_descontable_id": None}, synchronize_session=False)
 
+    # Movimientos Eliminados (Eliminar los registros de auditoría asociados a la cuenta para permitir el borrado de la cuenta misma)
+    from app.models.movimiento_contable import MovimientoEliminado
+    db.query(MovimientoEliminado).filter(MovimientoEliminado.cuenta_id.in_(ids_a_eliminar)).delete(synchronize_session=False)
+
     # Conciliacion Bancaria (Optional ones)
     db.query(ConciliacionBancaria).filter(ConciliacionBancaria.empresa_id == empresa_id, ConciliacionBancaria.commission_account_id.in_(ids_a_eliminar)).update({"commission_account_id": None}, synchronize_session=False)
     db.query(ConciliacionBancaria).filter(ConciliacionBancaria.empresa_id == empresa_id, ConciliacionBancaria.interest_income_account_id.in_(ids_a_eliminar)).update({"interest_income_account_id": None}, synchronize_session=False)
