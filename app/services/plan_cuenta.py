@@ -199,27 +199,24 @@ def _identificar_cuentas_borrables(db: Session, cuenta_id: int, empresa_id: int)
     ).distinct().all()
     ids_protegidos.update({item[0] for item in cuentas_con_movimiento_q})
     
-    # B. Cuentas usadas en Impuestos (TasaImpuesto)
-    # TasaImpuesto usa cuenta_id (venta) y cuenta_iva_descontable_id (compra)
-    impuestos_q = db.query(TasaImpuesto.cuenta_id, TasaImpuesto.cuenta_iva_descontable_id).filter(
-        TasaImpuesto.empresa_id == empresa_id
-    ).all()
-    for t in impuestos_q:
-        if t.cuenta_id in descendientes_ids: ids_protegidos.add(t.cuenta_id)
-        if t.cuenta_iva_descontable_id in descendientes_ids: ids_protegidos.add(t.cuenta_iva_descontable_id)
-        
-    # C. Cuentas usadas en Tipos de Documento
-    # TipoDocumento usa cuenta_debito_cxc_id, cuenta_credito_cxc_id, cuenta_debito_cxp_id, cuenta_credito_cxp_id
-    tipos_doc_q = db.query(
-        TipoDocumento.cuenta_debito_cxc_id, TipoDocumento.cuenta_credito_cxc_id,
-        TipoDocumento.cuenta_debito_cxp_id, TipoDocumento.cuenta_credito_cxp_id
-    ).filter(TipoDocumento.empresa_id == empresa_id).all()
+    # B. Cuentas con FK NO-NULLABLES (Ej: ConciliacionBancaria.bank_account_id, Concepto.cuenta_ingreso_id)
+    from app.models.conciliacion_bancaria import ConciliacionBancaria
+    from app.models.propiedad_horizontal.concepto import Concepto
     
-    for td in tipos_doc_q:
-        if td.cuenta_debito_cxc_id in descendientes_ids: ids_protegidos.add(td.cuenta_debito_cxc_id)
-        if td.cuenta_credito_cxc_id in descendientes_ids: ids_protegidos.add(td.cuenta_credito_cxc_id)
-        if td.cuenta_debito_cxp_id in descendientes_ids: ids_protegidos.add(td.cuenta_debito_cxp_id)
-        if td.cuenta_credito_cxp_id in descendientes_ids: ids_protegidos.add(td.cuenta_credito_cxp_id)
+    bancos_q = db.query(ConciliacionBancaria.bank_account_id).filter(
+        ConciliacionBancaria.empresa_id == empresa_id,
+        ConciliacionBancaria.bank_account_id.in_(list(descendientes_ids))
+    ).distinct().all()
+    ids_protegidos.update({item[0] for item in bancos_q})
+    
+    conceptos_q = db.query(Concepto.cuenta_ingreso_id).filter(
+        Concepto.empresa_id == empresa_id,
+        Concepto.cuenta_ingreso_id.in_(list(descendientes_ids))
+    ).distinct().all()
+    ids_protegidos.update({item[0] for item in conceptos_q})
+
+    # Cuentas de configuración general que permiten NULL ya no se protegen silenciosamente,
+    # serán puestas en NULL durante la ejecución.
 
     # 3. Identificar cuentas a conservar (las protegidas + sus ancestros)
     cuentas_a_conservar_ids = set(ids_protegidos)
@@ -265,19 +262,91 @@ def analizar_depuracion_jerarquica(db: Session, cuenta_id: int, empresa_id: int)
         mensaje=mensaje
     )
 
+from sqlalchemy.exc import IntegrityError
+
+def _desvincular_cuentas_bloqueantes(db: Session, ids_a_eliminar: List[int], empresa_id: int):
+    """
+    Intenta poner en NULL las referencias (Foreign Keys) a las cuentas que se van a eliminar,
+    en tablas de configuración donde esto esté permitido (nullable=True).
+    """
+    from app.models.tercero import Tercero
+    from app.models.activo_categoria import ActivoCategoria
+    from app.models.nomina import Nomina
+    from app.models.tipo_documento import TipoDocumento
+    from app.models.empresa_config_buzon import EmpresaConfigBuzon
+    from app.models.conciliacion_bancaria import ConciliacionBancaria
+    
+    # Tercero
+    db.query(Tercero).filter(Tercero.empresa_id == empresa_id, Tercero.cuenta_gasto_defecto_id.in_(ids_a_eliminar)).update({"cuenta_gasto_defecto_id": None}, synchronize_session=False)
+
+    # TipoDocumento
+    db.query(TipoDocumento).filter(TipoDocumento.empresa_id == empresa_id, TipoDocumento.cuenta_caja_id.in_(ids_a_eliminar)).update({"cuenta_caja_id": None}, synchronize_session=False)
+    db.query(TipoDocumento).filter(TipoDocumento.empresa_id == empresa_id, TipoDocumento.cuenta_debito_cxc_id.in_(ids_a_eliminar)).update({"cuenta_debito_cxc_id": None}, synchronize_session=False)
+    db.query(TipoDocumento).filter(TipoDocumento.empresa_id == empresa_id, TipoDocumento.cuenta_credito_cxc_id.in_(ids_a_eliminar)).update({"cuenta_credito_cxc_id": None}, synchronize_session=False)
+    db.query(TipoDocumento).filter(TipoDocumento.empresa_id == empresa_id, TipoDocumento.cuenta_debito_cxp_id.in_(ids_a_eliminar)).update({"cuenta_debito_cxp_id": None}, synchronize_session=False)
+    db.query(TipoDocumento).filter(TipoDocumento.empresa_id == empresa_id, TipoDocumento.cuenta_credito_cxp_id.in_(ids_a_eliminar)).update({"cuenta_credito_cxp_id": None}, synchronize_session=False)
+    
+    # ActivoCategoria
+    db.query(ActivoCategoria).filter(ActivoCategoria.empresa_id == empresa_id, ActivoCategoria.cuenta_activo_id.in_(ids_a_eliminar)).update({"cuenta_activo_id": None}, synchronize_session=False)
+    db.query(ActivoCategoria).filter(ActivoCategoria.empresa_id == empresa_id, ActivoCategoria.cuenta_gasto_depreciacion_id.in_(ids_a_eliminar)).update({"cuenta_gasto_depreciacion_id": None}, synchronize_session=False)
+    db.query(ActivoCategoria).filter(ActivoCategoria.empresa_id == empresa_id, ActivoCategoria.cuenta_depreciacion_acumulada_id.in_(ids_a_eliminar)).update({"cuenta_depreciacion_acumulada_id": None}, synchronize_session=False)
+
+    # Nomina
+    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_sueldo_id.in_(ids_a_eliminar)).update({"cuenta_sueldo_id": None}, synchronize_session=False)
+    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_auxilio_transporte_id.in_(ids_a_eliminar)).update({"cuenta_auxilio_transporte_id": None}, synchronize_session=False)
+    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_horas_extras_id.in_(ids_a_eliminar)).update({"cuenta_horas_extras_id": None}, synchronize_session=False)
+    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_comisiones_id.in_(ids_a_eliminar)).update({"cuenta_comisiones_id": None}, synchronize_session=False)
+    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_otros_devengados_id.in_(ids_a_eliminar)).update({"cuenta_otros_devengados_id": None}, synchronize_session=False)
+    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_salarios_por_pagar_id.in_(ids_a_eliminar)).update({"cuenta_salarios_por_pagar_id": None}, synchronize_session=False)
+    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_aporte_salud_id.in_(ids_a_eliminar)).update({"cuenta_aporte_salud_id": None}, synchronize_session=False)
+    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_aporte_pension_id.in_(ids_a_eliminar)).update({"cuenta_aporte_pension_id": None}, synchronize_session=False)
+    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_fondo_solidaridad_id.in_(ids_a_eliminar)).update({"cuenta_fondo_solidaridad_id": None}, synchronize_session=False)
+    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_retencion_fuente_id.in_(ids_a_eliminar)).update({"cuenta_retencion_fuente_id": None}, synchronize_session=False)
+    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_otras_deducciones_id.in_(ids_a_eliminar)).update({"cuenta_otras_deducciones_id": None}, synchronize_session=False)
+    
+    # Config Buzon
+    db.query(EmpresaConfigBuzon).filter(EmpresaConfigBuzon.empresa_id == empresa_id, EmpresaConfigBuzon.cuenta_gasto_id.in_(ids_a_eliminar)).update({"cuenta_gasto_id": None}, synchronize_session=False)
+    db.query(EmpresaConfigBuzon).filter(EmpresaConfigBuzon.empresa_id == empresa_id, EmpresaConfigBuzon.cuenta_caja_id.in_(ids_a_eliminar)).update({"cuenta_caja_id": None}, synchronize_session=False)
+
+    # Impuestos
+    from app.models.impuesto import TasaImpuesto
+    db.query(TasaImpuesto).filter(TasaImpuesto.empresa_id == empresa_id, TasaImpuesto.cuenta_id.in_(ids_a_eliminar)).update({"cuenta_id": None}, synchronize_session=False)
+    db.query(TasaImpuesto).filter(TasaImpuesto.empresa_id == empresa_id, TasaImpuesto.cuenta_iva_descontable_id.in_(ids_a_eliminar)).update({"cuenta_iva_descontable_id": None}, synchronize_session=False)
+
+    # Conciliacion Bancaria (Optional ones)
+    db.query(ConciliacionBancaria).filter(ConciliacionBancaria.empresa_id == empresa_id, ConciliacionBancaria.commission_account_id.in_(ids_a_eliminar)).update({"commission_account_id": None}, synchronize_session=False)
+    db.query(ConciliacionBancaria).filter(ConciliacionBancaria.empresa_id == empresa_id, ConciliacionBancaria.interest_income_account_id.in_(ids_a_eliminar)).update({"interest_income_account_id": None}, synchronize_session=False)
+    db.query(ConciliacionBancaria).filter(ConciliacionBancaria.empresa_id == empresa_id, ConciliacionBancaria.bank_charges_account_id.in_(ids_a_eliminar)).update({"bank_charges_account_id": None}, synchronize_session=False)
+    db.query(ConciliacionBancaria).filter(ConciliacionBancaria.empresa_id == empresa_id, ConciliacionBancaria.adjustment_account_id.in_(ids_a_eliminar)).update({"adjustment_account_id": None}, synchronize_session=False)
+
+    db.commit()
+
 def ejecutar_depuracion_jerarquica(db: Session, ids_a_eliminar: List[int], empresa_id: int):
     # ... (código existente sin cambios)
     if not ids_a_eliminar:
         raise HTTPException(status_code=400, detail="No se proporcionaron IDs para eliminar.")
+        
+    # Paso previo: Desvincular de otras tablas donde se permita
+    _desvincular_cuentas_bloqueantes(db, ids_a_eliminar, empresa_id)
+        
     cuentas_a_borrar = db.query(models.PlanCuenta).filter(
         models.PlanCuenta.id.in_(ids_a_eliminar),
         models.PlanCuenta.empresa_id == empresa_id
     ).order_by(models.PlanCuenta.nivel.desc()).all()
     if len(cuentas_a_borrar) != len(ids_a_eliminar):
         raise HTTPException(status_code=400, detail="Algunas de las cuentas a eliminar no se encontraron o no pertenecen a la empresa.")
-    for cuenta in cuentas_a_borrar:
-        db.delete(cuenta)
-    db.commit()
+    
+    try:
+        for cuenta in cuentas_a_borrar:
+            db.delete(cuenta)
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="⚠️ Eliminación bloqueada. Estas cuentas todavía están asignadas a configuraciones esenciales (como Impuestos, Parámetros de P.H. o Bancos) o tienen Movimientos Contables obligatorios que no pueden desvincularse automáticamente. Por favor revisa y desvincúlalas primero."
+        )
+        
     return {"message": f"{len(cuentas_a_borrar)} cuentas han sido eliminadas exitosamente."}
 
 def get_cuenta(db: Session, cuenta_id: int, empresa_id: int):

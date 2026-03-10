@@ -314,6 +314,7 @@ export default function PlanDeCuentasPage() {
       fetchCuentas();
     } catch (err) {
       setError(err.response?.data?.detail || 'Error al ejecutar la depuración.');
+      setIsConfirmModalOpen(false);
     } finally {
       setIsActionLoading(false);
     }
