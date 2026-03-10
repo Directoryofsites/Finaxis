@@ -7,21 +7,27 @@ import { FaArrowLeft, FaChartLine, FaExclamationTriangle, FaFilePdf } from 'reac
 export default function ReporteEjecucion({ escenario, onBack }) {
     const [reporte, setReporte] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [mesDesde, setMesDesde] = useState(1);
+    const [mesHasta, setMesHasta] = useState(12);
+
+    const fetchReporte = async () => {
+        setLoading(true);
+        try {
+            const res = await apiService.get(`/presupuesto/escenarios/${escenario.id}/ejecucion`, {
+                params: { mes_desde: mesDesde, mes_hasta: mesHasta }
+            });
+            setReporte(res.data);
+        } catch (error) {
+            console.error(error);
+            toast.error("Error cargando reporte de ejecución");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchReporte = async () => {
-            try {
-                const res = await apiService.get(`/presupuesto/escenarios/${escenario.id}/ejecucion`);
-                setReporte(res.data);
-            } catch (error) {
-                console.error(error);
-                toast.error("Error cargando reporte de ejecución");
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchReporte();
-    }, [escenario.id]);
+    }, [escenario.id, mesDesde, mesHasta]);
 
     if (loading) return <div className="p-8 text-center">Calculando variaciones (Presupuesto vs Real)...</div>;
 
@@ -36,7 +42,7 @@ export default function ReporteEjecucion({ escenario, onBack }) {
 
             // 2. Construir URL
             const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002';
-            const url = `${API_BASE}/api/presupuesto/escenarios/${escenario.id}/ejecucion/pdf?token=${token}`;
+            const url = `${API_BASE}/api/presupuesto/escenarios/${escenario.id}/ejecucion/pdf?token=${token}&mes_desde=${mesDesde}&mes_hasta=${mesHasta}`;
 
             // 3. Abrir
             window.open(url, '_blank');
@@ -71,9 +77,33 @@ export default function ReporteEjecucion({ escenario, onBack }) {
                 </button>
             </div>
 
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                {/* TODO: Calcular totales globales en frontend o backend */}
+            {/* Filtros de Rango */}
+            <div className="flex gap-4 mb-6 bg-gray-50 p-4 rounded border items-end">
+                <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Mes Desde</label>
+                    <select value={mesDesde} onChange={e => setMesDesde(Number(e.target.value))} className="border p-2 rounded">
+                        <option value={1}>Enero</option><option value={2}>Febrero</option>
+                        <option value={3}>Marzo</option><option value={4}>Abril</option>
+                        <option value={5}>Mayo</option><option value={6}>Junio</option>
+                        <option value={7}>Julio</option><option value={8}>Agosto</option>
+                        <option value={9}>Septiembre</option><option value={10}>Octubre</option>
+                        <option value={11}>Noviembre</option><option value={12}>Diciembre</option>
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Mes Hasta</label>
+                    <select value={mesHasta} onChange={e => setMesHasta(Number(e.target.value))} className="border p-2 rounded">
+                        <option value={1}>Enero</option><option value={2}>Febrero</option>
+                        <option value={3}>Marzo</option><option value={4}>Abril</option>
+                        <option value={5}>Mayo</option><option value={6}>Junio</option>
+                        <option value={7}>Julio</option><option value={8}>Agosto</option>
+                        <option value={9}>Septiembre</option><option value={10}>Octubre</option>
+                        <option value={11}>Noviembre</option><option value={12}>Diciembre</option>
+                    </select>
+                </div>
+                <div className="text-sm text-gray-500 italic pb-2">
+                    Visualizando el acumulado de meses seleccionados.
+                </div>
             </div>
 
             {/* Grid Comparativo */}
@@ -91,29 +121,29 @@ export default function ReporteEjecucion({ escenario, onBack }) {
                     </thead>
                     <tbody>
                         {reporte.items.map(item => {
-                            const isOverBudget = item.total_anual.variacion < 0; // Gasté más de lo planeado (asumiendo gasto)
-                            // Para ingresos sería al revés, pero por simplicidad asumiremos enfoque de Gasto por ahora
-                            // Ojo: En contabilidad, Gasto es Debito. Ingreso es Credito. 
-                            // Mi logica backend hizo Plan - Real. 
-                            // Si Plan (Gasto) = 100, Real (Gasto) = 120 -> 100 - 120 = -20 (Variacion Negativa = Sobrecosto) -> ROJO
+                            const isOverBudget = item.rango.variacion < 0; // Ojo, lógica simplificada
+                            // Identificar si es cuenta mayor o hijo
+                            const rowClass = item.nivel < 5 ? "font-bold bg-gray-50 uppercase text-xs" : "hover:bg-blue-50";
 
                             return (
-                                <tr key={item.cuenta_id} className="hover:bg-gray-50">
+                                <tr key={item.cuenta_id} className={`border-b ${rowClass}`}>
                                     <td className="p-2 border">
-                                        <span className="font-mono font-bold mr-2">{item.codigo}</span>
-                                        {item.nombre}
+                                        <div style={{ paddingLeft: `${(item.nivel - 1) * 1.5}rem` }}>
+                                            <span className="font-mono mr-2 text-gray-500">{item.codigo}</span>
+                                            {item.nombre}
+                                        </div>
                                     </td>
-                                    <td className="p-2 border text-right">{item.total_anual.presupuestado.toLocaleString()}</td>
-                                    <td className="p-2 border text-right">{item.total_anual.ejecutado.toLocaleString()}</td>
-                                    <td className={`p-2 border text-right font-bold ${item.total_anual.variacion < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                        {item.total_anual.variacion.toLocaleString()}
+                                    <td className="p-2 border text-right">{item.rango.presupuestado.toLocaleString('es-CO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                    <td className="p-2 border text-right">{item.rango.ejecutado.toLocaleString('es-CO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                    <td className={`p-2 border text-right font-bold ${item.rango.variacion < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                        {item.rango.variacion.toLocaleString('es-CO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                                     </td>
                                     <td className="p-2 border text-center">
-                                        {item.total_anual.porcentaje_ejecucion.toFixed(1)}%
+                                        {item.rango.porcentaje_ejecucion.toFixed(1)}%
                                     </td>
                                     <td className="p-2 border text-center">
-                                        {item.total_anual.variacion < 0 ? (
-                                            <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-bold">EXCEDIDO</span>
+                                        {item.rango.variacion < 0 ? (
+                                            <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-bold">ALERTA</span>
                                         ) : (
                                             <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-bold">OK</span>
                                         )}
@@ -125,7 +155,7 @@ export default function ReporteEjecucion({ escenario, onBack }) {
                 </table>
             </div>
             <p className="text-xs text-gray-400 mt-2">
-                * Variación Negativa (Rojo) indica que la ejecución (gasto real) superó el presupuesto.
+                * Variación Negativa (Rojo) generalmente indica que el saldo ejecutado desfavorablemente superó el presupuesto (Sobrecosto en Gastos/Costos, Faltante en Ingresos).
             </p>
         </div>
     );

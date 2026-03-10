@@ -108,22 +108,11 @@ class EjecucionItem(BaseModel):
     cuenta_id: int
     codigo: str
     nombre: str
+    nivel: int = 1
+    cuenta_padre_id: Optional[int] = None
     
-    # Datos por mes (01..12) del año fiscal
-    enero: EjecucionMes
-    febrero: EjecucionMes
-    marzo: EjecucionMes
-    abril: EjecucionMes
-    mayo: EjecucionMes
-    junio: EjecucionMes
-    julio: EjecucionMes
-    agosto: EjecucionMes
-    septiembre: EjecucionMes
-    octubre: EjecucionMes
-    noviembre: EjecucionMes
-    diciembre: EjecucionMes
-    
-    total_anual: EjecucionMes
+    # Datos consolidados para el rango de meses seleccionado
+    rango: EjecucionMes
 
 class ReporteEjecucion(BaseModel):
     escenario: Escenario

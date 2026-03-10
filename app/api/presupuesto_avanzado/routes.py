@@ -105,15 +105,49 @@ def update_item(
          raise HTTPException(status_code=404, detail="Item no encontrado")
     return item
 
+@router.put("/escenarios/{escenario_id}/items/batch")
+def update_items_batch(
+    escenario_id: int,
+    data: List[schemas.PresupuestoItemUpdate],
+    db: Session = Depends(get_db),
+    current_user: models_usuario = Depends(get_current_user)
+):
+    """Guarda masivamente los items modificados en la grilla."""
+    # Como la capa de servicio hace commit 1 a 1, vamos a usar lógica directa acá para más rápido
+    from app.models.presupuesto_avanzado import PresupuestoItem
+    
+    modified_count = 0
+    # Agrupar por cuenta o item iterando
+    for item_data in data:
+        if not item_data.cuenta_id: continue
+        item = db.query(PresupuestoItem).filter(
+            PresupuestoItem.escenario_id == escenario_id, 
+            PresupuestoItem.cuenta_id == item_data.cuenta_id
+        ).first()
+        
+        if item:
+            for key, value in item_data.dict(exclude_unset=True).items():
+                if key.startswith("mes_"):
+                     setattr(item, key, value)
+            
+            # Recalcular Total
+            item.valor_total = sum([getattr(item, f"mes_{i:02d}") for i in range(1, 13)])
+            modified_count += 1
+            
+    db.commit()
+    return {"message": "Items guardados correctamente", "modified": modified_count}
+
 # --- EJECUCIÓN ---
 
 @router.get("/escenarios/{escenario_id}/ejecucion", response_model=schemas.ReporteEjecucion)
 def get_reporte_ejecucion(
     escenario_id: int,
+    mes_desde: int = 1,
+    mes_hasta: int = 12,
     db: Session = Depends(get_db),
     current_user: models_usuario = Depends(get_current_user)
 ):
-    reporte = service.calcular_ejecucion_comparativa(db, escenario_id)
+    reporte = service.calcular_ejecucion_comparativa(db, escenario_id, mes_desde, mes_hasta)
     if not reporte:
          raise HTTPException(status_code=404, detail="Escenario no encontrado")
     return reporte
@@ -152,6 +186,8 @@ def get_presupuesto_pdf(
 @router.get("/escenarios/{escenario_id}/ejecucion/pdf")
 def get_ejecucion_pdf(
     escenario_id: int,
+    mes_desde: int = 1,
+    mes_hasta: int = 12,
     token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
@@ -160,6 +196,6 @@ def get_ejecucion_pdf(
         valid_id = validate_signed_token(token, salt="presupuesto_pdf", max_age=30)
         if not valid_id or int(valid_id) != escenario_id:
             raise HTTPException(status_code=401, detail="Token PDF inválido o expirado")
-        return pdf_service.generate_pdf_ejecucion(db, escenario_id)
+        return pdf_service.generate_pdf_ejecucion(db, escenario_id, mes_desde, mes_hasta)
         
     raise HTTPException(status_code=401, detail="Se requiere token de descarga (flujo seguro)")

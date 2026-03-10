@@ -126,17 +126,17 @@ TEMPLATE_EJECUCION = f"""
         </thead>
         <tbody>
             {{% for item in items %}}
-            <tr>
-                <td><b>{{{{ item['codigo'] }}}}</b> {{{{ item['nombre'] }}}}</td>
-                <td class="text-right">{{{{ item['total_anual']['presupuestado'] | format_currency }}}}</td>
-                <td class="text-right">{{{{ item['total_anual']['ejecutado'] | format_currency }}}}</td>
-                <td class="text-right font-bold {{{{ 'negative' if item['total_anual']['variacion'] < 0 else 'positive' }}}}">
-                    {{{{ item['total_anual']['variacion'] | format_currency }}}}
+            <tr style="{{{{ 'font-weight: bold; background-color: #f9fafb;' if item.nivel < 5 else '' }}}}">
+                <td style="padding-left: {{{{ (item.nivel - 1) * 10 }}}}px"><b>{{{{ item['codigo'] }}}}</b> {{{{ item['nombre'] }}}}</td>
+                <td class="text-right">{{{{ item['rango']['presupuestado'] | format_currency }}}}</td>
+                <td class="text-right">{{{{ item['rango']['ejecutado'] | format_currency }}}}</td>
+                <td class="text-right font-bold {{{{ 'negative' if item['rango']['variacion'] < 0 else 'positive' }}}}">
+                    {{{{ item['rango']['variacion'] | format_currency }}}}
                 </td>
-                <td class="text-center">{{{{ "%.1f"|format(item['total_anual']['porcentaje_ejecucion']) }}}}%</td>
+                <td class="text-center">{{{{ "%.1f"|format(item['rango']['porcentaje_ejecucion']) }}}}%</td>
                  <td class="text-center">
-                    {{% if item['total_anual']['variacion'] < 0 %}}
-                        <span style="background-color: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px;">EXCEDIDO</span>
+                    {{% if item['rango']['variacion'] < 0 %}}
+                        <span style="background-color: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px;">ALERTA</span>
                     {{% else %}}
                         <span style="background-color: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 4px;">OK</span>
                     {{% endif %}}
@@ -200,9 +200,9 @@ def generate_pdf_matriz_presupuesto(db: Session, escenario_id: int):
         raise HTTPException(status_code=500, detail=f"Error generando PDF: {e}")
 
 
-def generate_pdf_ejecucion(db: Session, escenario_id: int):
+def generate_pdf_ejecucion(db: Session, escenario_id: int, mes_desde: int = 1, mes_hasta: int = 12):
     # 1. Get Data from existing service
-    reporte = service_presupuesto.calcular_ejecucion_comparativa(db, escenario_id)
+    reporte = service_presupuesto.calcular_ejecucion_comparativa(db, escenario_id, mes_desde, mes_hasta)
     if not reporte: raise HTTPException(status_code=404, detail="Reporte no generado")
     
     escenario = reporte["escenario"] 

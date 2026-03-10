@@ -10,6 +10,7 @@ import { FaCalculator, FaSave, FaArrowLeft, FaMagic, FaFilePdf } from 'react-ico
 export default function PresupuestoGrid({ escenario, onBack }) {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     const [showProjectionModal, setShowProjectionModal] = useState(false);
 
     // Proyeccion Params
@@ -55,6 +56,63 @@ export default function PresupuestoGrid({ escenario, onBack }) {
         }
     };
 
+    const handleMonthChange = (itemId, mesKey, valStr) => {
+        const val = parseFloat(valStr) || 0;
+        setItems(prev => prev.map(it => {
+            if (it.id === itemId) {
+                const newItem = { ...it, [mesKey]: val };
+                // Recalcular total
+                newItem.valor_total = (
+                    (newItem.mes_01||0) + (newItem.mes_02||0) + (newItem.mes_03||0) + (newItem.mes_04||0) +
+                    (newItem.mes_05||0) + (newItem.mes_06||0) + (newItem.mes_07||0) + (newItem.mes_08||0) +
+                    (newItem.mes_09||0) + (newItem.mes_10||0) + (newItem.mes_11||0) + (newItem.mes_12||0)
+                );
+                return newItem;
+            }
+            return it;
+        }));
+    };
+
+    const handleAnnualChange = (itemId, valStr) => {
+        const val = parseFloat(valStr) || 0;
+        const perMonth = val / 12;
+        setItems(prev => prev.map(it => {
+            if (it.id === itemId) {
+                return {
+                    ...it,
+                    valor_total: val,
+                    mes_01: perMonth, mes_02: perMonth, mes_03: perMonth, mes_04: perMonth,
+                    mes_05: perMonth, mes_06: perMonth, mes_07: perMonth, mes_08: perMonth,
+                    mes_09: perMonth, mes_10: perMonth, mes_11: perMonth, mes_12: perMonth
+                };
+            }
+            return it;
+        }));
+    };
+
+    const handleSaveChanges = async () => {
+        setIsSaving(true);
+        const tid = toast.loading("Guardando presupuesto...");
+        try {
+            const payload = items.map(it => ({
+                cuenta_id: it.cuenta_id,
+                metodo_proyeccion: it.metodo_proyeccion,
+                valor_total: it.valor_total,
+                mes_01: it.mes_01, mes_02: it.mes_02, mes_03: it.mes_03, mes_04: it.mes_04,
+                mes_05: it.mes_05, mes_06: it.mes_06, mes_07: it.mes_07, mes_08: it.mes_08,
+                mes_09: it.mes_09, mes_10: it.mes_10, mes_11: it.mes_11, mes_12: it.mes_12
+            }));
+            await apiService.put(`/presupuesto/escenarios/${escenario.id}/items/batch`, payload);
+            toast.success("Presupuesto guardado exitosamente", { id: tid });
+            fetchItems();
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al guardar presupuesto", { id: tid });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const handleDownloadPDF = async () => {
         const toastId = toast.loading("Generando PDF...");
         try {
@@ -91,6 +149,13 @@ export default function PresupuestoGrid({ escenario, onBack }) {
                     </div>
                 </div>
                 <div className="flex gap-2">
+                    <button
+                        onClick={handleSaveChanges}
+                        disabled={isSaving}
+                        className={`px-4 py-2 rounded flex items-center gap-2 shadow-sm text-white font-bold transition-all ${isSaving ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'}`}
+                    >
+                        <FaSave /> {isSaving ? "Guardando..." : "Guardar Cambios"}
+                    </button>
                     <button
                         onClick={handleDownloadPDF}
                         className="bg-gray-600 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-gray-700 shadow-sm"
@@ -137,25 +202,33 @@ export default function PresupuestoGrid({ escenario, onBack }) {
                             </tr>
                         )}
                         {items.map(item => (
-                            <tr key={item.id} className="hover:bg-gray-50">
+                            <tr key={item.id} className="hover:bg-gray-50 focus-within:bg-blue-50 transition-colors">
                                 <td className="p-2 border">
-                                    <span className="font-mono font-bold mr-2">{item.cuenta?.codigo}</span>
-                                    {item.cuenta?.nombre || `(ID: ${item.cuenta_id})`}
+                                    <div className="font-mono font-bold text-xs text-gray-500">{item.cuenta?.codigo}</div>
+                                    <div className="truncate w-40" title={item.cuenta?.nombre}>{item.cuenta?.nombre}</div>
                                 </td>
-                                <td className="p-2 border text-right">{item.mes_01?.toLocaleString()}</td>
-                                <td className="p-2 border text-right">{item.mes_02?.toLocaleString()}</td>
-                                <td className="p-2 border text-right">{item.mes_03?.toLocaleString()}</td>
-                                <td className="p-2 border text-right">{item.mes_04?.toLocaleString()}</td>
-                                <td className="p-2 border text-right">{item.mes_05?.toLocaleString()}</td>
-                                <td className="p-2 border text-right">{item.mes_06?.toLocaleString()}</td>
-                                <td className="p-2 border text-right">{item.mes_07?.toLocaleString()}</td>
-                                <td className="p-2 border text-right">{item.mes_08?.toLocaleString()}</td>
-                                <td className="p-2 border text-right">{item.mes_09?.toLocaleString()}</td>
-                                <td className="p-2 border text-right">{item.mes_10?.toLocaleString()}</td>
-                                <td className="p-2 border text-right">{item.mes_11?.toLocaleString()}</td>
-                                <td className="p-2 border text-right">{item.mes_12?.toLocaleString()}</td>
-                                <td className="p-2 border text-right font-bold">{item.valor_total?.toLocaleString()}</td>
-                                <td className="p-2 border text-xs">{item.metodo_proyeccion}</td>
+                                {Array.from({length: 12}, (_, i) => {
+                                    const mesKey = `mes_${(i+1).toString().padStart(2, '0')}`;
+                                    return (
+                                        <td key={mesKey} className="p-0 border">
+                                            <input 
+                                                type="number" 
+                                                className="w-full text-right p-2 bg-transparent outline-none focus:ring-2 focus:ring-blue-500"
+                                                value={item[mesKey] === 0 ? "" : Number(item[mesKey]).toFixed(2)}
+                                                onChange={(e) => handleMonthChange(item.id, mesKey, e.target.value)}
+                                            />
+                                        </td>
+                                    );
+                                })}
+                                <td className="p-0 border bg-blue-50 font-bold">
+                                    <input 
+                                        type="number" 
+                                        className="w-full text-right p-2 bg-transparent outline-none focus:ring-2 focus:ring-green-500 text-blue-800"
+                                        value={item.valor_total === 0 ? "" : Number(item.valor_total).toFixed(2)}
+                                        onChange={(e) => handleAnnualChange(item.id, e.target.value)}
+                                        title="Edite aquí para dividir entre 12 meses"
+                                    />
+                                </td>
                             </tr>
                         ))}
                     </tbody>

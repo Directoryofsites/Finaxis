@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from typing import List, Optional
 from datetime import datetime
 
@@ -32,6 +32,45 @@ def create_escenario(db: Session, empresa_id: int, escenario: schemas.EscenarioC
     db.add(db_escenario)
     db.commit()
     db.refresh(db_escenario)
+    
+    # -----------------------------------------------------
+    # INICIALIZACIÓN AUTOMÁTICA DE CUENTAS DE RESULTADO
+    # -----------------------------------------------------
+    # Al crear un presupuesto, se deben traer únicamente las
+    # cuentas de resultado (4, 5, 6, 7) de nivel inferior 
+    # (permite_movimiento = True) y que tengan algún movimiento.
+    # -----------------------------------------------------
+    from app.models import PlanCuenta, MovimientoContable
+    
+    # Buscar IDs de cuentas que cumplan las condiciones
+    cuentas_elegibles = db.query(PlanCuenta.id).join(
+        MovimientoContable, PlanCuenta.id == MovimientoContable.cuenta_id
+    ).filter(
+        PlanCuenta.empresa_id == empresa_id,
+        PlanCuenta.permite_movimiento == True,
+        or_(
+            PlanCuenta.codigo.like('4%'),
+            PlanCuenta.codigo.like('5%'),
+            PlanCuenta.codigo.like('6%'),
+            PlanCuenta.codigo.like('7%')
+        )
+    ).distinct().all()
+    
+    # Crear los items en ceros para cada cuenta
+    if cuentas_elegibles:
+        nuevos_items = []
+        for (cuenta_id,) in cuentas_elegibles:
+            nuevos_items.append(
+                models.PresupuestoItem(
+                    escenario_id=db_escenario.id,
+                    cuenta_id=cuenta_id,
+                    metodo_proyeccion=schemas.MetodoProyeccion.MANUAL,
+                    valor_total=0
+                )
+            )
+        db.bulk_save_objects(nuevos_items)
+        db.commit()
+        
     return db_escenario
 
 def update_escenario(db: Session, escenario_id: int, updates: schemas.EscenarioUpdate):
@@ -76,9 +115,17 @@ def proyectar_escenario_automatico(db: Session, escenario_id: int, base_year: in
         func.sum(MovimientoContable.debito).label("total_debito"),
         func.sum(MovimientoContable.credito).label("total_credito"),
         func.extract('month', Documento.fecha).label("mes")
-    ).join(Documento, MovimientoContable.documento_id == Documento.id).filter(
+    ).join(Documento, MovimientoContable.documento_id == Documento.id).join(
+        PlanCuenta, MovimientoContable.cuenta_id == PlanCuenta.id
+    ).filter(
         Documento.empresa_id == escenario.empresa_id,
-        func.extract('year', Documento.fecha) == base_year
+        func.extract('year', Documento.fecha) == base_year,
+        or_(
+            PlanCuenta.codigo.like('4%'),
+            PlanCuenta.codigo.like('5%'),
+            PlanCuenta.codigo.like('6%'),
+            PlanCuenta.codigo.like('7%')
+        )
     ).group_by(
         MovimientoContable.cuenta_id,
         func.extract('month', Documento.fecha)
@@ -149,7 +196,18 @@ def proyectar_escenario_automatico(db: Session, escenario_id: int, base_year: in
     return {"message": "Proyección completada", "items_procesados": len(proyeccion_data), "items_nuevos": items_created}
 
 def get_items_escenario(db: Session, escenario_id: int):
-    return db.query(models.PresupuestoItem).filter(models.PresupuestoItem.escenario_id == escenario_id).all()
+    from app.models import PlanCuenta
+    return db.query(models.PresupuestoItem).join(
+        PlanCuenta, models.PresupuestoItem.cuenta_id == PlanCuenta.id
+    ).filter(
+        models.PresupuestoItem.escenario_id == escenario_id,
+        or_(
+            PlanCuenta.codigo.like('4%'),
+            PlanCuenta.codigo.like('5%'),
+            PlanCuenta.codigo.like('6%'),
+            PlanCuenta.codigo.like('7%')
+        )
+    ).all()
 
 def update_item_manual(db: Session, item_id: int, data: schemas.PresupuestoItemUpdate):
     item = db.query(models.PresupuestoItem).filter(models.PresupuestoItem.id == item_id).first()
@@ -177,117 +235,129 @@ def update_item_manual(db: Session, item_id: int, data: schemas.PresupuestoItemU
 
 # --- REPORTE DE EJECUCIÓN ---
 
-def calcular_ejecucion_comparativa(db: Session, escenario_id: int):
+def calcular_ejecucion_comparativa(db: Session, escenario_id: int, mes_desde: int = 1, mes_hasta: int = 12):
     escenario = get_escenario(db, escenario_id)
     if not escenario: return None
     
     # 1. Obtener Presupuesto (Plan)
     items_presupuesto = get_items_escenario(db, escenario_id)
-    plan_map = {item.cuenta_id: item for item in items_presupuesto}
     
-    # 2. Obtener Ejecución Real (Realidad)
-    # Similar a la proyección, pero del año ACTUAL del escenario
+    # 2. Obtener Ejecución Real (Realidad) para el rango de meses seleccionado
     movimientos_reales = db.query(
         MovimientoContable.cuenta_id,
         func.sum(MovimientoContable.debito).label("total_debito"),
-        func.sum(MovimientoContable.credito).label("total_credito"),
-        func.extract('month', Documento.fecha).label("mes")
+        func.sum(MovimientoContable.credito).label("total_credito")
     ).join(Documento, MovimientoContable.documento_id == Documento.id).filter(
         Documento.empresa_id == escenario.empresa_id,
-        func.extract('year', Documento.fecha) == escenario.anio
+        func.extract('year', Documento.fecha) == escenario.anio,
+        func.extract('month', Documento.fecha) >= mes_desde,
+        func.extract('month', Documento.fecha) <= mes_hasta
     ).group_by(
-        MovimientoContable.cuenta_id,
-        func.extract('month', Documento.fecha)
+        MovimientoContable.cuenta_id
     ).all()
     
-    real_map = {} # {cuenta_id: {mes: valor}}
-    
+    real_map = {} # {cuenta_id: valor_neto}
     for row in movimientos_reales:
         cid = row.cuenta_id
-        mes = int(row.mes)
-        neto = row.total_debito - row.total_credito # Asumimos neto por ahora
+        # Asumimos neto, aunque para ingresos (4) es crédito - débito. Lo simplificamos o evaluamos.
+        # En contabilidad, cuentas 4 son naturaleza crédito. 5,6,7 son naturaleza débito.
+        # Si queremos mostrar en positivo siempre para el reporte:
+        c = db.query(PlanCuenta.codigo).filter(PlanCuenta.id == cid).first()
+        if c and str(c[0]).startswith('4'):
+            neto = row.total_credito - row.total_debito
+        else:
+            neto = row.total_debito - row.total_credito
+        real_map[cid] = float(neto)
         
-        if cid not in real_map:
-            real_map[cid] = {m: 0.0 for m in range(1, 13)}
-        real_map[cid][mes] += float(neto)
-        
-    # 3. Unificar Cuentas
-    all_cuentas_ids = set(plan_map.keys()).union(set(real_map.keys()))
+    # 3. Traer TODAS las cuentas de RESULTADO de la empresa para habilitar la mayorización
+    todas_cuentas = db.query(PlanCuenta).filter(
+        PlanCuenta.empresa_id == escenario.empresa_id,
+        or_(
+            PlanCuenta.codigo.like('4%'),
+            PlanCuenta.codigo.like('5%'),
+            PlanCuenta.codigo.like('6%'),
+            PlanCuenta.codigo.like('7%')
+        )
+    ).all()
+    map_cuentas = {c.id: c for c in todas_cuentas}
     
+    # Preparar el diccionario de resultados acumulados
+    resultados_agrupados = {
+        c.id: {
+            "cuenta_id": c.id,
+            "codigo": c.codigo,
+            "nombre": c.nombre,
+            "nivel": c.nivel,
+            "cuenta_padre_id": c.cuenta_padre_id,
+            "presupuestado": 0.0,
+            "ejecutado": 0.0
+        } for c in todas_cuentas
+    }
+    
+    # 4. Asignar Valores Base (Hojas)
+    # 4a. Asignar Presupuesto
+    for item in items_presupuesto:
+        if item.cuenta_id in resultados_agrupados:
+            val_plan_rango = 0.0
+            # Sumar solo los meses del rango seleccionado
+            for m in range(mes_desde, mes_hasta + 1):
+                mes_key = f"mes_{m:02d}"
+                val_plan_rango += getattr(item, mes_key, 0.0) or 0.0
+            resultados_agrupados[item.cuenta_id]["presupuestado"] += val_plan_rango
+
+    # 4b. Asignar Ejecución Real
+    for cuenta_id, val_real in real_map.items():
+        if cuenta_id in resultados_agrupados:
+            resultados_agrupados[cuenta_id]["ejecutado"] += val_real
+            
+    # 5. Mayorización (Roll-Up Bubbling)
+    # Ordenamos de mayor nivel a menor nivel, iterando para propagar valores al padre
+    niveles_descendentes = sorted(list(set([c.nivel for c in todas_cuentas])), reverse=True)
+    
+    for nivel in niveles_descendentes:
+        # Buscar todas las cuentas en este nivel
+        cuentas_nivel = [c for c in resultados_agrupados.values() if c["nivel"] == nivel]
+        for cuenta in cuentas_nivel:
+            padre_id = cuenta["cuenta_padre_id"]
+            if padre_id and padre_id in resultados_agrupados:
+                # Sumarle los montos del hijo al padre
+                resultados_agrupados[padre_id]["presupuestado"] += cuenta["presupuestado"]
+                resultados_agrupados[padre_id]["ejecutado"] += cuenta["ejecutado"]
+                
+    # 6. Filtrar y Formatear Resultado Final
+    # Solo devolver las cuentas que tengan algún monto (presupuestado o ejecutado) para no llenar de ceros
     reporte_items = []
     
-    for cid in all_cuentas_ids:
-        # Obtener datos de cuenta (Plan o Real)
-        # Necesitamos el objeto cuenta para nombre/codigo. 
-        # Si está en plan, lo tenemos fácil. Si solo está en real, consulta extra o cache.
-        cuenta_obj = None
-        codigo = "N/A"
-        nombre = "Cuenta Desconocida"
-        
-        if cid in plan_map:
-             if plan_map[cid].cuenta:
-                 codigo = plan_map[cid].cuenta.codigo
-                 nombre = plan_map[cid].cuenta.nombre
-        else:
-             # Fetch ad-hoc si solo tuvo movimiento real sin presupuesto
-             c = db.query(PlanCuenta).filter(PlanCuenta.id == cid).first()
-             if c:
-                 codigo = c.codigo
-                 nombre = c.nombre
-        
-        # Construir Item
-        item_data = {
-            "cuenta_id": cid,
-            "codigo": codigo,
-            "nombre": nombre,
-            "total_anual": {"presupuestado": 0, "ejecutado": 0, "variacion": 0, "porcentaje_ejecucion": 0}
-        }
-        
-        for m in range(1, 13):
-            mes_key = f"mes_{m:02d}"
-            # Plan
-            val_plan = 0
-            if cid in plan_map:
-                val_plan = getattr(plan_map[cid], mes_key, 0) or 0
-                
-            # Real
-            val_real = 0
-            if cid in real_map:
-                val_real = real_map[cid].get(m, 0)
-                
-            variacion = val_plan - val_real # Positivo = Ahorro (en gastos), Negativo = Sobrecosto
-            porc = 0
+    # Ordenar por codigo contable
+    cuentas_ordenadas = sorted(resultados_agrupados.values(), key=lambda x: str(x["codigo"]))
+    
+    for cuenta in cuentas_ordenadas:
+        if cuenta["presupuestado"] != 0 or cuenta["ejecutado"] != 0:
+            val_plan = cuenta["presupuestado"]
+            val_real = cuenta["ejecutado"]
+            
+            # Para cuentas 4 (Ingresos), la meta de presupuesto significa "Ganar más". 
+            # Variacion Positiva = Superaste la meta. 
+            variacion = val_real - val_plan if cuenta["codigo"].startswith('4') else val_plan - val_real
+            
+            porc = 0.0
             if val_plan != 0:
                 porc = (val_real / val_plan) * 100
             elif val_real > 0:
-                porc = 100 # No presupuestado pero ejecutado
+                porc = 100.0
                 
-            # Mapear nombre mes español
-            nombres_meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", 
-                             "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+            reporte_items.append({
+                "cuenta_id": cuenta["cuenta_id"],
+                "codigo": cuenta["codigo"],
+                "nombre": cuenta["nombre"],
+                "nivel": cuenta["nivel"],
+                "cuenta_padre_id": cuenta["cuenta_padre_id"],
+                "rango": {
+                    "presupuestado": val_plan,
+                    "ejecutado": val_real,
+                    "variacion": variacion,
+                    "porcentaje_ejecucion": porc
+                }
+            })
             
-            nome_mes = nombres_meses[m-1]
-            
-            item_data[nome_mes] = {
-                "presupuestado": val_plan,
-                "ejecutado": val_real,
-                "variacion": variacion,
-                "porcentaje_ejecucion": porc
-            }
-            
-            # Acumular Anual
-            item_data["total_anual"]["presupuestado"] += val_plan
-            item_data["total_anual"]["ejecutado"] += val_real
-            
-        # Calcular variacion total final
-        t_plan = item_data["total_anual"]["presupuestado"]
-        t_real = item_data["total_anual"]["ejecutado"]
-        item_data["total_anual"]["variacion"] = t_plan - t_real
-        if t_plan != 0:
-            item_data["total_anual"]["porcentaje_ejecucion"] = (t_real / t_plan) * 100
-        elif t_real > 0:
-             item_data["total_anual"]["porcentaje_ejecucion"] = 100
-             
-        reporte_items.append(item_data)
-        
     return {"escenario": escenario, "items": reporte_items}
