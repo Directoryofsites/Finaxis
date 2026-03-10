@@ -271,7 +271,7 @@ def _desvincular_cuentas_bloqueantes(db: Session, ids_a_eliminar: List[int], emp
     """
     from app.models.tercero import Tercero
     from app.models.activo_categoria import ActivoCategoria
-    from app.models.nomina import Nomina
+    from app.models.nomina import ConfiguracionNomina
     from app.models.tipo_documento import TipoDocumento
     from app.models.empresa_config_buzon import EmpresaConfigBuzon
     from app.models.conciliacion_bancaria import AccountingConfig
@@ -292,17 +292,17 @@ def _desvincular_cuentas_bloqueantes(db: Session, ids_a_eliminar: List[int], emp
     db.query(ActivoCategoria).filter(ActivoCategoria.empresa_id == empresa_id, ActivoCategoria.cuenta_depreciacion_acumulada_id.in_(ids_a_eliminar)).update({"cuenta_depreciacion_acumulada_id": None}, synchronize_session=False)
 
     # Nomina
-    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_sueldo_id.in_(ids_a_eliminar)).update({"cuenta_sueldo_id": None}, synchronize_session=False)
-    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_auxilio_transporte_id.in_(ids_a_eliminar)).update({"cuenta_auxilio_transporte_id": None}, synchronize_session=False)
-    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_horas_extras_id.in_(ids_a_eliminar)).update({"cuenta_horas_extras_id": None}, synchronize_session=False)
-    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_comisiones_id.in_(ids_a_eliminar)).update({"cuenta_comisiones_id": None}, synchronize_session=False)
-    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_otros_devengados_id.in_(ids_a_eliminar)).update({"cuenta_otros_devengados_id": None}, synchronize_session=False)
-    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_salarios_por_pagar_id.in_(ids_a_eliminar)).update({"cuenta_salarios_por_pagar_id": None}, synchronize_session=False)
-    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_aporte_salud_id.in_(ids_a_eliminar)).update({"cuenta_aporte_salud_id": None}, synchronize_session=False)
-    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_aporte_pension_id.in_(ids_a_eliminar)).update({"cuenta_aporte_pension_id": None}, synchronize_session=False)
-    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_fondo_solidaridad_id.in_(ids_a_eliminar)).update({"cuenta_fondo_solidaridad_id": None}, synchronize_session=False)
-    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_retencion_fuente_id.in_(ids_a_eliminar)).update({"cuenta_retencion_fuente_id": None}, synchronize_session=False)
-    db.query(Nomina).filter(Nomina.empresa_id == empresa_id, Nomina.cuenta_otras_deducciones_id.in_(ids_a_eliminar)).update({"cuenta_otras_deducciones_id": None}, synchronize_session=False)
+    db.query(ConfiguracionNomina).filter(ConfiguracionNomina.empresa_id == empresa_id, ConfiguracionNomina.cuenta_sueldo_id.in_(ids_a_eliminar)).update({"cuenta_sueldo_id": None}, synchronize_session=False)
+    db.query(ConfiguracionNomina).filter(ConfiguracionNomina.empresa_id == empresa_id, ConfiguracionNomina.cuenta_auxilio_transporte_id.in_(ids_a_eliminar)).update({"cuenta_auxilio_transporte_id": None}, synchronize_session=False)
+    db.query(ConfiguracionNomina).filter(ConfiguracionNomina.empresa_id == empresa_id, ConfiguracionNomina.cuenta_horas_extras_id.in_(ids_a_eliminar)).update({"cuenta_horas_extras_id": None}, synchronize_session=False)
+    db.query(ConfiguracionNomina).filter(ConfiguracionNomina.empresa_id == empresa_id, ConfiguracionNomina.cuenta_comisiones_id.in_(ids_a_eliminar)).update({"cuenta_comisiones_id": None}, synchronize_session=False)
+    db.query(ConfiguracionNomina).filter(ConfiguracionNomina.empresa_id == empresa_id, ConfiguracionNomina.cuenta_otros_devengados_id.in_(ids_a_eliminar)).update({"cuenta_otros_devengados_id": None}, synchronize_session=False)
+    db.query(ConfiguracionNomina).filter(ConfiguracionNomina.empresa_id == empresa_id, ConfiguracionNomina.cuenta_salarios_por_pagar_id.in_(ids_a_eliminar)).update({"cuenta_salarios_por_pagar_id": None}, synchronize_session=False)
+    db.query(ConfiguracionNomina).filter(ConfiguracionNomina.empresa_id == empresa_id, ConfiguracionNomina.cuenta_aporte_salud_id.in_(ids_a_eliminar)).update({"cuenta_aporte_salud_id": None}, synchronize_session=False)
+    db.query(ConfiguracionNomina).filter(ConfiguracionNomina.empresa_id == empresa_id, ConfiguracionNomina.cuenta_aporte_pension_id.in_(ids_a_eliminar)).update({"cuenta_aporte_pension_id": None}, synchronize_session=False)
+    db.query(ConfiguracionNomina).filter(ConfiguracionNomina.empresa_id == empresa_id, ConfiguracionNomina.cuenta_fondo_solidaridad_id.in_(ids_a_eliminar)).update({"cuenta_fondo_solidaridad_id": None}, synchronize_session=False)
+    db.query(ConfiguracionNomina).filter(ConfiguracionNomina.empresa_id == empresa_id, ConfiguracionNomina.cuenta_retencion_fuente_id.in_(ids_a_eliminar)).update({"cuenta_retencion_fuente_id": None}, synchronize_session=False)
+    db.query(ConfiguracionNomina).filter(ConfiguracionNomina.empresa_id == empresa_id, ConfiguracionNomina.cuenta_otras_deducciones_id.in_(ids_a_eliminar)).update({"cuenta_otras_deducciones_id": None}, synchronize_session=False)
     
     # Config Buzon
     db.query(EmpresaConfigBuzon).filter(EmpresaConfigBuzon.empresa_id == empresa_id, EmpresaConfigBuzon.cuenta_gasto_id.in_(ids_a_eliminar)).update({"cuenta_gasto_id": None}, synchronize_session=False)
