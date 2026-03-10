@@ -68,7 +68,7 @@ class ExportRequest(BaseModel):
     centroCostoId: Optional[int] = None
     conceptoKeyword: Optional[str] = None
     valorOperador: Optional[str] = None
-    valorMonto: Optional[float] = None
+    montoMinimo: Optional[float] = None
 
 
 # --- ESQUEMAS PARA ANÁLISIS Y RESTAURACIÓN (Sin cambios) ---

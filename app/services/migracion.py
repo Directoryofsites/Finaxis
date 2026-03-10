@@ -493,19 +493,24 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
             # --- NUEVO: Filtro por Cuenta Contable (Basado en Movimientos) ---
             f_cuenta = filtros.get('cuentaId')
             if f_cuenta:
-                # Filtramos documentos que tengan al menos un movimiento con esta cuenta
+                # Usamos una subconsulta EXISTS para mayor robustez
                 query_docs = query_docs.filter(
-                    Documento.movimientos.any(MovimientoContable.cuenta_id == f_cuenta)
+                    db.query(MovimientoContable.id).filter(
+                        MovimientoContable.documento_id == Documento.id,
+                        MovimientoContable.cuenta_id == f_cuenta
+                    ).exists()
                 )
 
-            # --- NUEVO: Filtro por Centro de Costo (Doble validación: Cabecera o Movimientos) ---
+            # --- NUEVO: Filtro por Centro de Costo (Cabecera o Movimientos) ---
             f_cc = filtros.get('centroCostoId')
             if f_cc:
-                # Filtramos si el CC está en la cabecera O en alguno de sus movimientos
                 query_docs = query_docs.filter(
                     or_(
                         Documento.centro_costo_id == f_cc,
-                        Documento.movimientos.any(MovimientoContable.centro_costo_id == f_cc)
+                        db.query(MovimientoContable.id).filter(
+                            MovimientoContable.documento_id == Documento.id,
+                            MovimientoContable.centro_costo_id == f_cc
+                        ).exists()
                     )
                 )
 
@@ -516,7 +521,10 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
                 query_docs = query_docs.filter(
                     or_(
                         Documento.observaciones.ilike(search),
-                        Documento.movimientos.any(MovimientoContable.concepto.ilike(search))
+                        db.query(MovimientoContable.id).filter(
+                            MovimientoContable.documento_id == Documento.id,
+                            MovimientoContable.concepto.ilike(search)
+                        ).exists()
                     )
                 )
 
@@ -525,7 +533,7 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
             if f_monto:
                 try:
                     monto_float = float(f_monto)
-                    # Subconsulta para obtener documentos cuya suma de débitos supere el monto
+                    # Filtramos documentos donde la suma de débitos sea >= monto
                     sq_doc_monto = db.query(MovimientoContable.documento_id)\
                         .group_by(MovimientoContable.documento_id)\
                         .having(func.sum(MovimientoContable.debito) >= monto_float)\
@@ -533,7 +541,7 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
                     
                     query_docs = query_docs.filter(Documento.id.in_(select(sq_doc_monto)))
                 except (ValueError, TypeError):
-                    print(f"⚠️ [EXPORT] Monto inválido recibido: {f_monto}")
+                    pass
 
         docs = query_docs.all()
         print(f"✅ [EXPORT] Documentos encontrados: {len(docs)} (Conta={transacciones_conta_flag}, Inv={transacciones_inv_flag})")
