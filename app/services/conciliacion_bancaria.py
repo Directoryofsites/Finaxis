@@ -10,6 +10,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 import difflib
 import time
+import pdfplumber
+
 from ..core.cache import cached, BankReconciliationCache, cache
 from ..core.monitoring import monitor_performance, BankReconciliationMonitor, log_performance_warning
 
@@ -229,7 +231,7 @@ class ImportEngine:
     def __init__(self, db: Session):
         self.db = db
     
-    def validate_file(self, file_path: str, config_id: int) -> FileValidationResult:
+    def validate_file(self, file_path: str, config_id: int, password: Optional[str] = None) -> FileValidationResult:
         """Valida un archivo de extracto bancario según la configuración"""
         try:
             # Obtener configuración
@@ -265,6 +267,10 @@ class ImportEngine:
                 result = self._validate_csv_file(file_path, config)
             elif config.file_format.upper() in ['XLS', 'XLSX']:
                 result = self._validate_excel_file(file_path, config)
+            elif config.file_format.upper() == 'PDF':
+                result = self._validate_pdf_file(file_path, config, password)
+            elif config.file_format.upper() == 'TEXTO':
+                result = self._validate_text_file(file_path, config)
             else:
                 return FileValidationResult(
                     is_valid=False,
@@ -382,12 +388,24 @@ class ImportEngine:
             if 'date' in config.field_mapping:
                 date_col = config.field_mapping['date']
                 if date_col < len(row):
+                    # Normalize date format from JS (YYYY-MM-DD) to Python (%Y-%m-%d)
+                    py_date_format = config.date_format.replace('YYYY', '%Y').replace('MM', '%m').replace('DD', '%d')
+                    date_str_val = str(row[date_col]).strip()
                     try:
-                        # Normalize date format from JS (YYYY-MM-DD) to Python (%Y-%m-%d)
-                        py_date_format = config.date_format.replace('YYYY', '%Y').replace('MM', '%m').replace('DD', '%d')
-                        datetime.strptime(str(row[date_col]).strip(), py_date_format)
+                        datetime.strptime(date_str_val, py_date_format)
                     except ValueError:
-                        errors.append(f"Fila {row_num}: Formato de fecha inválido en columna {date_col + 1} (Esperado: {config.date_format}, Valor: {row[date_col]})")
+                        # Tanteo secundario con parser tolerante
+                        import dateutil.parser
+                        try:
+                            # Primero intentar con la preferencia del usuario
+                            dayfirst = config.date_format.startswith('DD')
+                            dateutil.parser.parse(date_str_val, dayfirst=dayfirst)
+                        except Exception:
+                            try:
+                                # Forzar dayfirst invertido si lo anterior falló por meses > 12
+                                dateutil.parser.parse(date_str_val, dayfirst=not dayfirst)
+                            except Exception:
+                                errors.append(f"Fila {row_num}: Formato de fecha inválido en columna {date_col + 1} (Esperado: {config.date_format}, Valor: {date_str_val})")
             
             # Validar monto
             if 'amount' in config.field_mapping:
@@ -436,7 +454,7 @@ class ImportEngine:
         
         return data
     
-    def parse_bank_statement(self, file_path: str, config: ImportConfig) -> List[BankMovementCreate]:
+    def parse_bank_statement(self, file_path: str, config: ImportConfig, password: Optional[str] = None) -> List[BankMovementCreate]:
         """Parsea un extracto bancario y retorna lista de movimientos"""
         movements = []
         
@@ -445,6 +463,10 @@ class ImportEngine:
                 movements = self._parse_csv_file(file_path, config)
             elif config.file_format.upper() in ['XLS', 'XLSX']:
                 movements = self._parse_excel_file(file_path, config)
+            elif config.file_format.upper() == 'PDF':
+                movements = self._parse_pdf_file(file_path, config, password)
+            elif config.file_format.upper() == 'TEXTO':
+                movements = self._parse_text_file(file_path, config)
         
         except Exception as e:
             raise Exception(f"Error parseando archivo: {str(e)}")
@@ -491,6 +513,331 @@ class ImportEngine:
         
         return movements
     
+    def _validate_pdf_file(self, file_path: str, config: ImportConfig, password: Optional[str] = None) -> FileValidationResult:
+        """Valida archivo PDF usando pdfplumber"""
+        errors = []
+        warnings = []
+        sample_data = []
+        total_rows = 0
+        
+        try:
+            with pdfplumber.open(file_path, password=password) as pdf:
+                if len(pdf.pages) == 0:
+                    errors.append("El archivo PDF está vacío.")
+                    return FileValidationResult(is_valid=False, errors=errors)
+                
+                # Intentar leer tablas de las páginas (máximo 5 páginas para validación)
+                pages_to_check = min(len(pdf.pages), 5)
+                tables_found = False
+                
+                # Variables temporales para evitar acumular errores de "tablas falsas" 
+                # si finalmente pasamos al modo fallback
+                temp_errors = []
+                temp_warnings = []
+                temp_sample_data = []
+                
+                for p in range(pages_to_check):
+                    page = pdf.pages[p]
+                    # Configuración especial para extractos bancarios sin cuadricula
+                    table_settings = {
+                        "vertical_strategy": "text",
+                        "horizontal_strategy": "text",
+                        "snap_tolerance": 5,
+                        "join_tolerance": 5
+                    }
+                    tables = page.extract_tables(table_settings)
+                    
+                    if tables:
+                        for table in tables:
+                            # Ignorar filas vacías
+                            cleaned_table = [row for row in table if any(cell for cell in row)]
+                            
+                            # Saltar encabezados si es la primera página procesada (heurística simple)
+                            start_idx = config.header_rows if p == 0 else 0
+                            
+                            for i, row in enumerate(cleaned_table[start_idx:]):
+                                total_rows += 1
+                                
+                                # Limpiar nulos de pdfplumber
+                                row_str = [str(cell).replace('\\n', ' ').strip() if cell else "" for cell in row]
+                                
+                                row_errors = self._validate_row_data(row_str, config, total_rows + config.header_rows)
+                                
+                                if not row_errors:
+                                    tables_found = True
+                                    if len(temp_sample_data) < 5:
+                                        temp_sample_data.append(self._extract_row_data(row_str, config))
+                                else:
+                                    # Silenciosamente ignoramos las filas inválidas en tablas de PDF,
+                                    # pero guardamos un warning por si acaso.
+                                    temp_warnings.append(f"Fila {total_rows + config.header_rows} ignorada: {row_errors[0]}")
+                                
+                                if total_rows > 1000:
+                                    temp_warnings.append("Validación PDF limitada a las primeras 1000 filas.")
+                                    break
+                            
+                            if total_rows > 1000:
+                                break
+                    if total_rows > 1000:
+                        break
+                
+                # FALLBACK: Si no sirvió ningún dato extraído por tablas, usar extracción textual
+                if not tables_found:
+                    total_rows = 0  # Reset
+                    
+                    import re
+                    # Acepta: YYYY/MM/DD, DD-MM-YYYY, DD.MM.YYYY, 12/03, o '12 MAY 2026' en cualquier lugar de la línea
+                    date_pattern = re.compile(r'(\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}|\d{1,2}[-/.]\d{1,2}|\d{1,2}\s+[A-Za-z]{2,8}\s+\d{0,4})')
+                    
+                    for p in range(pages_to_check):
+                        page = pdf.pages[p]
+                        text = page.extract_text()
+                        if not text:
+                            continue
+                            
+                        lines = text.split('\n')
+                        for line in lines:
+                            if date_pattern.search(line):
+                                tables_found = True  # Marca que al menos procesamos líneas de texto utilizables
+                                total_rows += 1
+                                # Separar la línea de manera inteligente
+                                parts = self._fallback_parse_line(line, config)
+                                if parts and len(parts) >= 3:
+                                    row_errors = self._validate_row_data(parts, config, total_rows + config.header_rows)
+                                    if not row_errors:
+                                        tables_found = True  # Marca que al menos procesamos líneas utilizables
+                                        if len(temp_sample_data) < 5:
+                                            temp_sample_data.append(self._extract_row_data(parts, config))
+                                    else:
+                                        temp_warnings.append(f"Línea de texto {total_rows} ignorada: {row_errors[0]}")
+                                
+                                if total_rows > 1000:
+                                    break
+                        if total_rows > 1000:
+                            break
+                    
+                    if not tables_found:
+                        errors.append("No se detectaron tablas estructuradas ni formato de texto reconocible en el PDF.")
+                else:
+                    # Si las tablas de pdfplumber hallaron filas válidas, no registramos errores bloqueantes
+                    # simplemente agregamos los warnings de las filas basura que saltamos
+                    warnings.extend(temp_warnings)
+                    sample_data.extend(temp_sample_data)
+        
+        except Exception as e:
+            errors.append(f"Error leyendo archivo PDF: {str(e)}")
+            
+        if len(sample_data) == 0 and len(errors) == 0:
+            errors.append("No se encontraron filas con los datos requeridos por la configuración.")
+        
+        return FileValidationResult(
+            is_valid=len(errors) == 0 and total_rows > 0,
+            errors=errors,
+            warnings=warnings,
+            total_rows=total_rows,
+            sample_data=sample_data
+        )
+
+    def _validate_text_file(self, file_path: str, config: ImportConfig) -> FileValidationResult:
+        """Valida un archivo de texto crudo usando heurística"""
+        errors = []
+        warnings = []
+        sample_data = []
+        total_rows = 0
+        
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            import re
+            # Nueva expresión para soporte de fechas DD/MM
+            date_pattern = re.compile(r'(\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}|\d{1,2}[-/.]\d{1,2}|\d{1,2}\s+[A-Za-z]{2,8}\s+\d{0,4})')
+            
+            lines = content.split('\n')
+            for line in lines:
+                if date_pattern.search(line):
+                    total_rows += 1
+                    parts = self._fallback_parse_line(line, config)
+                    if parts and len(parts) >= 3:
+                        row_errors = self._validate_row_data(parts, config, total_rows)
+                        if not row_errors:
+                            if len(sample_data) < 5:
+                                sample_data.append(self._extract_row_data(parts, config))
+                        else:
+                            warnings.append(f"Línea {total_rows} ignorada: {row_errors[0]}")
+                    
+                    if total_rows > 1000:
+                        warnings.append("Validación limitada a las primeras 1000 filas reconocidas.")
+                        break
+
+        except Exception as e:
+            errors.append(f"Error leyendo archivo de texto: {str(e)}")
+            
+        if len(sample_data) == 0 and len(errors) == 0:
+            errors.append("No se encontraron filas con los datos requeridos por la configuración.")
+            
+        return FileValidationResult(
+            is_valid=len(errors) == 0 and total_rows > 0,
+            errors=errors,
+            warnings=warnings,
+            total_rows=total_rows,
+            sample_data=sample_data
+        )
+
+    def _fallback_parse_line(self, line: str, config: ImportConfig) -> List[str]:
+        """Heurística para separar una línea de texto de un extracto en las columnas definidas"""
+        import re
+        tokens = re.split(r'\s+', line.strip())
+        if len(tokens) < 3:
+            return []
+            
+        # Buscar el primer token que parezca una fecha
+        date_pattern = re.compile(r'(\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}|\d{1,2}[-/.]\d{1,2}|\d{1,2}\s+[A-Za-z]{2,8}\s+\d{0,4})')
+        date_idx = -1
+        for i, token in enumerate(tokens):
+            if date_pattern.search(token):
+                date_idx = i
+                break
+        
+        if date_idx == -1:
+            date_idx = 0 # Fallback al primer token
+            
+        date_str = tokens[date_idx]
+        numeric_tokens = []
+        desc_end_idx = len(tokens)
+        
+        # Buscar desde el final las columnas numéricas (Montos, Saldos)
+        for i in range(len(tokens)-1, date_idx, -1):
+            if re.search(r'\d', tokens[i]) and re.match(r'^[-+]?[\d.,]+[a-zA-Z^\W]*$', tokens[i]):
+                numeric_tokens.insert(0, tokens[i])
+                desc_end_idx = i
+            else:
+                break
+                
+        if not numeric_tokens:
+            desc_str = " ".join(tokens[date_idx+1:])
+            amount_str = ""
+            balance_str = ""
+        else:
+            desc_str = " ".join(tokens[date_idx+1:desc_end_idx])
+            balance_str = numeric_tokens[-1] if len(numeric_tokens) > 1 else ""
+            amount_str = numeric_tokens[-2] if len(numeric_tokens) > 1 else numeric_tokens[0]
+            
+        # Reconstruir array según el field_mapping
+        max_idx = max([v for v in config.field_mapping.values() if isinstance(v, int)], default=5) if config.field_mapping else 5
+        parts = [""] * (max_idx + 1)
+        
+        mapping = config.field_mapping or {}
+        if "date" in mapping: parts[mapping["date"]] = date_str
+        elif "transaction_date" in mapping: parts[mapping["transaction_date"]] = date_str
+        else: parts[0] = date_str
+            
+        if "description" in mapping: parts[mapping["description"]] = desc_str
+        else: parts[1] = desc_str
+            
+        if "amount" in mapping: parts[mapping["amount"]] = amount_str
+        else: parts[3] = amount_str
+            
+        if "balance" in mapping: parts[mapping["balance"]] = balance_str
+            
+        return parts
+
+    def _parse_pdf_file(self, file_path: str, config: ImportConfig, password: Optional[str] = None) -> List[BankMovementCreate]:
+        """Parsea archivo PDF usando pdfplumber"""
+        movements = []
+        
+        with pdfplumber.open(file_path, password=password) as pdf:
+            is_first_page = True
+            tables_found_anywhere = False
+            
+            for page in pdf.pages:
+                # Configuración especial para extractos bancarios sin cuadricula
+                table_settings = {
+                    "vertical_strategy": "text",
+                    "horizontal_strategy": "text",
+                    "snap_tolerance": 5,
+                    "join_tolerance": 5
+                }
+                tables = page.extract_tables(table_settings)
+                
+                if tables:
+                    for table in tables:
+                        # Ignorar filas vacías extraídas por pdfplumber
+                        cleaned_table = [row for row in table if any(cell for cell in row)]
+                        
+                        # Saltar los header_rows solo en la primera tabla de la primera página
+                        start_idx = config.header_rows if is_first_page else 0
+                        
+                        for row in cleaned_table[start_idx:]:
+                            try:
+                                # Preparar row para parseo (pdfplumber extrae None si la celda está vacía)
+                                row_str = [str(cell).replace('\\n', ' ').strip() if cell else "" for cell in row]
+                                
+                                movement = self._create_movement_from_row(row_str, config)
+                                if movement:
+                                    tables_found_anywhere = True
+                                    movements.append(movement)
+                            except Exception as e:
+                                print(f"Error procesando fila de PDF tabla: {str(e)}")
+                                continue
+                        
+                        is_first_page = False
+
+            # FALLBACK si no se encontraron tablas: usar texto puro
+            if not tables_found_anywhere:
+                import re
+                date_pattern = re.compile(r'(\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}|\d{1,2}[-/.]\d{1,2}|\d{1,2}\s+[A-Za-z]{2,8}\s+\d{0,4})')
+                for page in pdf.pages:
+                    text = page.extract_text()
+                    if not text:
+                        continue
+                        
+                    lines = text.split('\n')
+                    for line in lines:
+                        if date_pattern.search(line):
+                            try:
+                                # Separar la línea de manera inteligente
+                                parts = self._fallback_parse_line(line, config)
+                                if parts and len(parts) >= 3:
+                                    movement = self._create_movement_from_row(parts, config)
+                                    if movement:
+                                        movements.append(movement)
+                            except Exception as e:
+                                print(f"Error procesando fila de PDF texto: {str(e)}")
+                                continue
+        
+        return movements
+
+    def _parse_text_file(self, file_path: str, config: ImportConfig) -> List[BankMovementCreate]:
+        """Parsea un archivo de texto crudo convertido a líneas individuales"""
+        movements = []
+        
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            import re
+            date_pattern = re.compile(r'(\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}|\d{1,2}[-/.]\d{1,2}|\d{1,2}\s+[A-Za-z]{2,8}\s+\d{0,4})')
+            
+            lines = content.split('\n')
+            for line in lines:
+                if date_pattern.search(line):
+                    try:
+                        # Separar la línea de manera inteligente
+                        parts = self._fallback_parse_line(line, config)
+                        if parts and len(parts) >= 3:
+                            movement = self._create_movement_from_row(parts, config)
+                            if movement:
+                                movements.append(movement)
+                    except Exception as e:
+                        print(f"Error procesando fila de texto: {str(e)}")
+                        continue
+        
+        except Exception as e:
+            raise Exception(f"Error procesando archivo de texto: {str(e)}")
+            
+        return movements
+
     def _create_movement_from_row(self, row: List[str], config: ImportConfig) -> Optional[BankMovementCreate]:
         """Crea un movimiento bancario desde una fila de datos"""
         try:
@@ -506,7 +853,16 @@ class ImportEngine:
                     date_str = str(row[date_col]).strip()
                     # Normalize date format from JS (YYYY-MM-DD) to Python (%Y-%m-%d)
                     py_date_format = config.date_format.replace('YYYY', '%Y').replace('MM', '%m').replace('DD', '%d')
-                    transaction_date = datetime.strptime(date_str, py_date_format).date()
+                    
+                    try:
+                        transaction_date = datetime.strptime(date_str, py_date_format).date()
+                    except ValueError:
+                        import dateutil.parser
+                        dayfirst = config.date_format.startswith('DD')
+                        try:
+                            transaction_date = dateutil.parser.parse(date_str, dayfirst=dayfirst).date()
+                        except Exception:
+                            transaction_date = dateutil.parser.parse(date_str, dayfirst=not dayfirst).date()
             
             # Monto
             if 'amount' in config.field_mapping:
@@ -665,7 +1021,7 @@ class ImportEngine:
             raise Exception(f"Error almacenando movimientos: {str(e)}")
     
     def create_import_session(self, file_path: str, config_id: int, bank_account_id: int, 
-                            empresa_id: int, user_id: int) -> ImportSession:
+                            empresa_id: int, user_id: int, original_filename: str = None) -> ImportSession:
         """Crea una nueva sesión de importación"""
         try:
             # Generar hash del archivo
@@ -677,7 +1033,7 @@ class ImportEngine:
                 id=session_id,
                 bank_account_id=bank_account_id,
                 empresa_id=empresa_id,
-                file_name=os.path.basename(file_path),
+                file_name=original_filename or os.path.basename(file_path),
                 file_hash=file_hash,
                 import_config_id=config_id,
                 user_id=user_id,

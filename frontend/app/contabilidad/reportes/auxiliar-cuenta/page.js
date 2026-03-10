@@ -17,6 +17,7 @@ import { toast } from 'react-toastify';
 
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../../lib/apiService';
+import * as planCuentasService from '../../../../lib/planCuentasService';
 
 // Estilos Reusables (Manual v2.0)
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
@@ -222,11 +223,11 @@ function AuxiliarPorCuentaContent() {
 
     const fetchCuentas = async () => {
         try {
-            const res = await apiService.get('/plan-cuentas/');
+            const res = await planCuentasService.getPlanCuentas({ limit: 5000 });
             const aplanarCuentas = (cuentasArray) => {
                 let listaPlana = [];
                 cuentasArray.forEach(cuenta => {
-                    // Detectar si es auxiliar (hoja) si no tiene hijos o si hijos es vacío
+                    // Detectar si es auxiliar (hoja)
                     const esAuxiliar = !cuenta.children || cuenta.children.length === 0;
 
                     listaPlana.push({

@@ -62,7 +62,7 @@ class PlanCuenta(PlanCuentaBase):
     empresa_id: int
     created_by: Optional[int] = None
     updated_by: Optional[int] = None
-    children: List['PlanCuenta'] = []
+    children: List['PlanCuenta'] = Field(default=[], alias="hijos")
 
     class Config:
         from_attributes = True

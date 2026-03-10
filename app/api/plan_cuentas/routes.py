@@ -137,7 +137,7 @@ def get_plan_cuentas_flat(
 
 @router.get("/", response_model=List[schemas_plan.PlanCuenta])
 def read_cuentas(
-    skip: int = 0, limit: int = 100, db: Session = Depends(get_db),
+    skip: int = 0, limit: int = 5000, db: Session = Depends(get_db),
     current_user: models_usuario = Depends(get_current_user)
 ):
     return services_plan.get_cuentas(db, empresa_id=current_user.empresa_id, skip=skip, limit=limit)
