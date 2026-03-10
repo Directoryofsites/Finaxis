@@ -218,12 +218,16 @@ export default function TransformacionForm({ tiposDocumento, cuentas = [] }) {
         })
       };
 
-      // Limpiamos propiedades viejas si existen para no confundir
+      // Limpiamos propiedades viejas o temporales si existen para no confundir al importador
+      if (newBackupData.data) {
+        delete newBackupData.documentos;
+        delete newBackupData.transacciones;
+      }
       if (newBackupData.movimientos_contables) delete newBackupData.movimientos_contables;
       if (newBackupData.movimientos_inventario) delete newBackupData.movimientos_inventario;
 
       setTransformedJson(JSON.stringify(newBackupData, null, 2));
-      setLocalMessage(`¡Éxito! Se transformaron ${documentosTransformados.length} documentos. Listo para descargar.`);
+      setLocalMessage(`¡Éxito! Se generó un archivo modificado con ${documentosTransformados.length} documentos. Listo para descargar.`);
 
     } catch (err) {
       setLocalError(`Error durante la transformación: ${err.message}`);
