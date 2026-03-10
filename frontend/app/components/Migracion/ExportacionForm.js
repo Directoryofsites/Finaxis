@@ -70,8 +70,7 @@ export default function ExportacionForm({
     cuentaId: '',
     centroCostoId: '',
     conceptoKeyword: '',
-    valorOperador: 'mayor',
-    valorMonto: ''
+    montoMinimo: ''
   };
 
   const [filtros, setFiltros] = useState(initialState);
@@ -431,6 +430,22 @@ export default function ExportacionForm({
               <div>
                 <label className={labelClass}>Palabra Clave (Concepto)</label>
                 <input type="text" name="conceptoKeyword" value={filtros.conceptoKeyword} onChange={handleFiltroChange} placeholder="Ej: Arriendo..." className={inputClass} />
+              </div>
+
+              {/* NUEVO: Monto Mínimo */}
+              <div>
+                <label className={labelClass}>Monto Mínimo (&gt; $)</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    name="montoMinimo"
+                    value={filtros.montoMinimo}
+                    onChange={handleFiltroChange}
+                    placeholder="Ej: 45000"
+                    className={inputClass}
+                  />
+                  <span className="absolute right-3 top-2.5 text-gray-400 font-bold">$</span>
+                </div>
               </div>
             </div>
           </div>

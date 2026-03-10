@@ -520,6 +520,21 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
                     )
                 )
 
+            # --- NUEVO: Filtro por Monto Mínimo (Basado en la suma de Débitos) ---
+            f_monto = filtros.get('montoMinimo')
+            if f_monto:
+                try:
+                    monto_float = float(f_monto)
+                    # Subconsulta para obtener documentos cuya suma de débitos supere el monto
+                    sq_doc_monto = db.query(MovimientoContable.documento_id)\
+                        .group_by(MovimientoContable.documento_id)\
+                        .having(func.sum(MovimientoContable.debito) >= monto_float)\
+                        .subquery()
+                    
+                    query_docs = query_docs.filter(Documento.id.in_(select(sq_doc_monto)))
+                except (ValueError, TypeError):
+                    print(f"⚠️ [EXPORT] Monto inválido recibido: {f_monto}")
+
         docs = query_docs.all()
         print(f"✅ [EXPORT] Documentos encontrados: {len(docs)} (Conta={transacciones_conta_flag}, Inv={transacciones_inv_flag})")
 
