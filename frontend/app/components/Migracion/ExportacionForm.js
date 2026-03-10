@@ -140,7 +140,7 @@ export default function ExportacionForm({
     try {
       // 1. Limpieza de datos (Convertir '' a null para evitar error 422 en backend)
       const cleanFiltros = { ...filtros };
-      ['tipoDocId', 'terceroId', 'cuentaId', 'centroCostoId', 'valorMonto'].forEach(field => {
+      ['tipoDocId', 'terceroId', 'cuentaId', 'centroCostoId', 'montoMinimo'].forEach(field => {
         if (cleanFiltros[field] === '') cleanFiltros[field] = null;
         else if (cleanFiltros[field]) cleanFiltros[field] = Number(cleanFiltros[field]);
       });
