@@ -199,13 +199,13 @@ def _identificar_cuentas_borrables(db: Session, cuenta_id: int, empresa_id: int)
     ).distinct().all()
     ids_protegidos.update({item[0] for item in cuentas_con_movimiento_q})
     
-    # B. Cuentas con FK NO-NULLABLES (Ej: ConciliacionBancaria.bank_account_id, Concepto.cuenta_ingreso_id)
-    from app.models.conciliacion_bancaria import ConciliacionBancaria
+    # B. Cuentas con FK NO-NULLABLES (Ej: ImportSession.bank_account_id, Concepto.cuenta_ingreso_id)
+    from app.models.conciliacion_bancaria import ImportSession
     from app.models.propiedad_horizontal.concepto import Concepto
     
-    bancos_q = db.query(ConciliacionBancaria.bank_account_id).filter(
-        ConciliacionBancaria.empresa_id == empresa_id,
-        ConciliacionBancaria.bank_account_id.in_(list(descendientes_ids))
+    bancos_q = db.query(ImportSession.bank_account_id).filter(
+        ImportSession.empresa_id == empresa_id,
+        ImportSession.bank_account_id.in_(list(descendientes_ids))
     ).distinct().all()
     ids_protegidos.update({item[0] for item in bancos_q})
     
@@ -274,7 +274,7 @@ def _desvincular_cuentas_bloqueantes(db: Session, ids_a_eliminar: List[int], emp
     from app.models.nomina import Nomina
     from app.models.tipo_documento import TipoDocumento
     from app.models.empresa_config_buzon import EmpresaConfigBuzon
-    from app.models.conciliacion_bancaria import ConciliacionBancaria
+    from app.models.conciliacion_bancaria import AccountingConfig
     
     # Tercero
     db.query(Tercero).filter(Tercero.empresa_id == empresa_id, Tercero.cuenta_gasto_defecto_id.in_(ids_a_eliminar)).update({"cuenta_gasto_defecto_id": None}, synchronize_session=False)
@@ -318,10 +318,10 @@ def _desvincular_cuentas_bloqueantes(db: Session, ids_a_eliminar: List[int], emp
     db.query(MovimientoEliminado).filter(MovimientoEliminado.cuenta_id.in_(ids_a_eliminar)).delete(synchronize_session=False)
 
     # Conciliacion Bancaria (Optional ones)
-    db.query(ConciliacionBancaria).filter(ConciliacionBancaria.empresa_id == empresa_id, ConciliacionBancaria.commission_account_id.in_(ids_a_eliminar)).update({"commission_account_id": None}, synchronize_session=False)
-    db.query(ConciliacionBancaria).filter(ConciliacionBancaria.empresa_id == empresa_id, ConciliacionBancaria.interest_income_account_id.in_(ids_a_eliminar)).update({"interest_income_account_id": None}, synchronize_session=False)
-    db.query(ConciliacionBancaria).filter(ConciliacionBancaria.empresa_id == empresa_id, ConciliacionBancaria.bank_charges_account_id.in_(ids_a_eliminar)).update({"bank_charges_account_id": None}, synchronize_session=False)
-    db.query(ConciliacionBancaria).filter(ConciliacionBancaria.empresa_id == empresa_id, ConciliacionBancaria.adjustment_account_id.in_(ids_a_eliminar)).update({"adjustment_account_id": None}, synchronize_session=False)
+    db.query(AccountingConfig).filter(AccountingConfig.empresa_id == empresa_id, AccountingConfig.commission_account_id.in_(ids_a_eliminar)).update({"commission_account_id": None}, synchronize_session=False)
+    db.query(AccountingConfig).filter(AccountingConfig.empresa_id == empresa_id, AccountingConfig.interest_income_account_id.in_(ids_a_eliminar)).update({"interest_income_account_id": None}, synchronize_session=False)
+    db.query(AccountingConfig).filter(AccountingConfig.empresa_id == empresa_id, AccountingConfig.bank_charges_account_id.in_(ids_a_eliminar)).update({"bank_charges_account_id": None}, synchronize_session=False)
+    db.query(AccountingConfig).filter(AccountingConfig.empresa_id == empresa_id, AccountingConfig.adjustment_account_id.in_(ids_a_eliminar)).update({"adjustment_account_id": None}, synchronize_session=False)
 
     db.commit()
 
