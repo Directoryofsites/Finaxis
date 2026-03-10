@@ -201,7 +201,7 @@ def _identificar_cuentas_borrables(db: Session, cuenta_id: int, empresa_id: int)
     
     # B. Cuentas con FK NO-NULLABLES (Ej: ImportSession.bank_account_id, Concepto.cuenta_ingreso_id)
     from app.models.conciliacion_bancaria import ImportSession
-    from app.models.propiedad_horizontal.concepto import Concepto
+    from app.models.propiedad_horizontal.concepto import PHConcepto
     
     bancos_q = db.query(ImportSession.bank_account_id).filter(
         ImportSession.empresa_id == empresa_id,
@@ -209,9 +209,9 @@ def _identificar_cuentas_borrables(db: Session, cuenta_id: int, empresa_id: int)
     ).distinct().all()
     ids_protegidos.update({item[0] for item in bancos_q})
     
-    conceptos_q = db.query(Concepto.cuenta_ingreso_id).filter(
-        Concepto.empresa_id == empresa_id,
-        Concepto.cuenta_ingreso_id.in_(list(descendientes_ids))
+    conceptos_q = db.query(PHConcepto.cuenta_ingreso_id).filter(
+        PHConcepto.empresa_id == empresa_id,
+        PHConcepto.cuenta_ingreso_id.in_(list(descendientes_ids))
     ).distinct().all()
     ids_protegidos.update({item[0] for item in conceptos_q})
 
