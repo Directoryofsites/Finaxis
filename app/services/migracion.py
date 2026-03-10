@@ -481,7 +481,7 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
             f_tipo = filtros.get('tipoDocId')
             if f_tipo:
                 query_docs = query_docs.filter(Documento.tipo_documento_id == f_tipo)
-                
+
             f_desde = filtros.get('fechaInicio')
             if f_desde:
                 query_docs = query_docs.filter(Documento.fecha >= f_desde)
@@ -489,6 +489,36 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
             f_hasta = filtros.get('fechaFin')
             if f_hasta:
                 query_docs = query_docs.filter(Documento.fecha <= f_hasta)
+
+            # --- NUEVO: Filtro por Cuenta Contable (Basado en Movimientos) ---
+            f_cuenta = filtros.get('cuentaId')
+            if f_cuenta:
+                # Filtramos documentos que tengan al menos un movimiento con esta cuenta
+                query_docs = query_docs.filter(
+                    Documento.movimientos.any(MovimientoContable.cuenta_id == f_cuenta)
+                )
+
+            # --- NUEVO: Filtro por Centro de Costo (Doble validación: Cabecera o Movimientos) ---
+            f_cc = filtros.get('centroCostoId')
+            if f_cc:
+                # Filtramos si el CC está en la cabecera O en alguno de sus movimientos
+                query_docs = query_docs.filter(
+                    or_(
+                        Documento.centro_costo_id == f_cc,
+                        Documento.movimientos.any(MovimientoContable.centro_costo_id == f_cc)
+                    )
+                )
+
+            # --- NUEVO: Filtro por Palabra Clave (Concepto) ---
+            f_keyword = filtros.get('conceptoKeyword')
+            if f_keyword:
+                search = f"%{f_keyword}%"
+                query_docs = query_docs.filter(
+                    or_(
+                        Documento.observaciones.ilike(search),
+                        Documento.movimientos.any(MovimientoContable.concepto.ilike(search))
+                    )
+                )
 
         docs = query_docs.all()
         print(f"✅ [EXPORT] Documentos encontrados: {len(docs)} (Conta={transacciones_conta_flag}, Inv={transacciones_inv_flag})")
