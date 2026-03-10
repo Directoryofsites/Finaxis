@@ -373,8 +373,8 @@ export default function ExportacionForm({
           </div>
         </div>
 
-        {/* COLUMNA 2 y 3: FILTROS AVANZADOS (Condicional) */}
-        <div className={`lg:col-span-2 p-6 rounded-xl border border-gray-200 transition-all duration-300 ${!(filtros.paquetes.transacciones_contabilidad || filtros.paquetes.transacciones_inventario) ? 'bg-gray-50 opacity-60 pointer-events-none grayscale' : 'bg-white shadow-sm'}`}>
+        {/* COLUMNA 2 y 3: FILTROS AVANZADOS */}
+        <div className="lg:col-span-2 p-6 rounded-xl border border-gray-200 transition-all duration-300 bg-white shadow-sm">
           <div className="flex items-center gap-2 mb-6 pb-2 border-b border-gray-100">
             <FaFilter className="text-gray-400" />
             <h3 className="font-bold text-gray-700">Filtros de Transacciones</h3>
@@ -385,7 +385,7 @@ export default function ExportacionForm({
             <div className="space-y-4">
               <div>
                 <label className={labelClass}>Tipo de Documento</label>
-                <select name="tipoDocId" value={filtros.tipoDocId} onChange={handleFiltroChange} className={inputClass} disabled={!(filtros.paquetes.transacciones_contabilidad || filtros.paquetes.transacciones_inventario)}>
+                <select name="tipoDocId" value={filtros.tipoDocId} onChange={handleFiltroChange} className={inputClass}>
 
                   <option value="">Todos</option>
                   {maestros.tiposDocumento.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
@@ -393,14 +393,14 @@ export default function ExportacionForm({
               </div>
               <div>
                 <label className={labelClass}>Tercero</label>
-                <select name="terceroId" value={filtros.terceroId} onChange={handleFiltroChange} className={inputClass} disabled={!filtros.paquetes.transacciones}>
+                <select name="terceroId" value={filtros.terceroId} onChange={handleFiltroChange} className={inputClass}>
                   <option value="">Todos</option>
                   {maestros.terceros.map(t => <option key={t.id} value={t.id}>{t.razon_social}</option>)}
                 </select>
               </div>
               <div>
                 <label className={labelClass}>Cuenta Contable</label>
-                <select name="cuentaId" value={filtros.cuentaId} onChange={handleFiltroChange} className={inputClass} disabled={!filtros.paquetes.transacciones}>
+                <select name="cuentaId" value={filtros.cuentaId} onChange={handleFiltroChange} className={inputClass}>
                   <option value="">Todas</option>
                   {maestros.cuentas.map(c => <option key={c.id} value={c.id}>{c.codigo} - {c.nombre}</option>)}
                 </select>
@@ -410,7 +410,7 @@ export default function ExportacionForm({
             <div className="space-y-4">
               <div>
                 <label className={labelClass}>Centro de Costo</label>
-                <select name="centroCostoId" value={filtros.centroCostoId} onChange={handleFiltroChange} className={inputClass} disabled={!filtros.paquetes.transacciones}>
+                <select name="centroCostoId" value={filtros.centroCostoId} onChange={handleFiltroChange} className={inputClass}>
                   <option value="">Todos</option>
                   {maestros.centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                 </select>
@@ -419,18 +419,18 @@ export default function ExportacionForm({
                 <label className={labelClass}>Rango de Fechas</label>
                 <div className="flex gap-2">
                   <div className="relative w-full">
-                    <input type="date" name="fechaInicio" value={filtros.fechaInicio} onChange={handleFiltroChange} className={inputClass} disabled={!filtros.paquetes.transacciones} />
+                    <input type="date" name="fechaInicio" value={filtros.fechaInicio} onChange={handleFiltroChange} className={inputClass} />
                     <FaCalendarAlt className="absolute right-3 top-3 text-gray-400 pointer-events-none" />
                   </div>
                   <div className="relative w-full">
-                    <input type="date" name="fechaFin" value={filtros.fechaFin} onChange={handleFiltroChange} className={inputClass} disabled={!filtros.paquetes.transacciones} />
+                    <input type="date" name="fechaFin" value={filtros.fechaFin} onChange={handleFiltroChange} className={inputClass} />
                     <FaCalendarAlt className="absolute right-3 top-3 text-gray-400 pointer-events-none" />
                   </div>
                 </div>
               </div>
               <div>
                 <label className={labelClass}>Palabra Clave (Concepto)</label>
-                <input type="text" name="conceptoKeyword" value={filtros.conceptoKeyword} onChange={handleFiltroChange} placeholder="Ej: Arriendo..." className={inputClass} disabled={!filtros.paquetes.transacciones} />
+                <input type="text" name="conceptoKeyword" value={filtros.conceptoKeyword} onChange={handleFiltroChange} placeholder="Ej: Arriendo..." className={inputClass} />
               </div>
             </div>
           </div>
