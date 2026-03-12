@@ -451,24 +451,40 @@ class PresupuestoService:
             for index, row in df.iterrows():
                 codigo = str(row['codigo']).strip()
                 try:
-                    raw_valor = str(row['valor_anual']).strip()
-                    # Clean currency symbols and spaces
-                    clean_valor = raw_valor.replace('$', '').replace(' ', '').replace('\xa0', '')
+                    raw_valor = str(row['valor_anual']).strip().lower()
                     
-                    # Logic to handle international number formats:
-                    # If it has both dot and comma, assume dot is thousand separator and comma is decimal.
-                    if '.' in clean_valor and ',' in clean_valor:
-                        clean_valor = clean_valor.replace('.', '').replace(',', '.')
-                    # If it only has dots, and the last dot is NOT 3 digits from the end (e.g. 1.000.000 vs 1.23),
-                    # or it has multiple dots, they are likely thousand separators.
-                    elif '.' in clean_valor:
-                        if clean_valor.count('.') > 1 or len(clean_valor.split('.')[-1]) != 2:
+                    # Handle common empty/null representations in pandas/excel
+                    if not raw_valor or raw_valor in ['nan', 'none', 'null', '']:
+                        valor_anual = Decimal('0')
+                    else:
+                        # Clean currency symbols and spaces
+                        clean_valor = raw_valor.replace('$', '').replace(' ', '').replace('\xa0', '').replace('usd', '')
+                        
+                        # Logic to handle international number formats
+                        if '.' in clean_valor and ',' in clean_valor:
+                            clean_valor = clean_valor.replace('.', '').replace(',', '.')
+                        elif clean_valor.count('.') > 1:
                             clean_valor = clean_valor.replace('.', '')
-                    # If it only has comma, it's the decimal separator.
-                    elif ',' in clean_valor:
-                        clean_valor = clean_valor.replace(',', '.')
+                        elif '.' in clean_valor:
+                            parts = clean_valor.split('.')
+                            if len(parts[-1]) == 3:
+                                clean_valor = clean_valor.replace('.', '')
+                        elif ',' in clean_valor:
+                            clean_valor = clean_valor.replace(',', '.')
 
-                    valor_anual = Decimal(clean_valor)
+                        # If cleaning resulted in empty string (e.g. only '$' was present)
+                        if not clean_valor:
+                            valor_anual = Decimal('0')
+                        else:
+                            try:
+                                valor_anual = Decimal(clean_valor)
+                                # Check for non-finite values (NaN, Inf) which Pydantic rejects
+                                if not valor_anual.is_finite():
+                                    valor_anual = Decimal('0')
+                            except:
+                                # Fallback if cleaning failed to produce a valid decimal
+                                results["errors"].append(f"Fila {index+2}: Valor inválido '{raw_valor}'")
+                                continue
                     
                     # Validate account exists
                     acc = db.query(PlanCuenta).filter(
