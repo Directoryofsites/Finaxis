@@ -82,7 +82,7 @@ async def create_import_config(
 @router.get("/import-configs", response_model=List[ImportConfigSchema])
 async def get_import_configs(
     bank_id: Optional[int] = None,
-    current_user: Usuario = Depends(has_permission("conciliacion_bancaria:ver")),
+    current_user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Obtener configuraciones de importación"""
@@ -170,7 +170,9 @@ async def delete_import_config(
 @router.post("/import-configs/{config_id}/validate", response_model=FileValidationResult)
 async def validate_config_with_sample(
     config_id: int,
-    file: UploadFile = File(...),
+    file: Optional[UploadFile] = File(None),
+    pdf_password: Optional[str] = Form(None),
+    raw_text: Optional[str] = Form(None),
     current_user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -184,14 +186,21 @@ async def validate_config_with_sample(
         raise HTTPException(status_code=404, detail="Configuración no encontrada")
     
     # Guardar archivo temporal
-    with tempfile.NamedTemporaryFile(delete=False, suffix=f".{config.file_format.lower()}") as temp_file:
-        content = await file.read()
-        temp_file.write(content)
-        temp_file_path = temp_file.name
+    if raw_text:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".txt", mode='w', encoding='utf-8') as temp_file:
+            temp_file.write(raw_text)
+            temp_file_path = temp_file.name
+    elif file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{config.file_format.lower()}") as temp_file:
+            content = await file.read()
+            temp_file.write(content)
+            temp_file_path = temp_file.name
+    else:
+        raise HTTPException(status_code=400, detail="Debe proporcionar un archivo o texto plano")
     
     try:
         import_engine = ImportEngine(db)
-        result = import_engine.validate_file(temp_file_path, config_id)
+        result = import_engine.validate_file(temp_file_path, config_id, pdf_password)
         return result
     finally:
         # Limpiar archivo temporal
@@ -321,9 +330,11 @@ async def get_configurations_by_bank(
 
 @router.post("/import", response_model=ImportSessionSchema)
 async def import_bank_statement(
-    file: UploadFile = File(...),
     config_id: int = Form(...),
     bank_account_id: int = Form(...),
+    file: Optional[UploadFile] = File(None),
+    pdf_password: Optional[str] = Form(None),
+    raw_text: Optional[str] = Form(None),
     current_user: Usuario = Depends(has_permission("conciliacion_bancaria:importar")),
     db: Session = Depends(get_db)
 ):
@@ -338,16 +349,25 @@ async def import_bank_statement(
         raise HTTPException(status_code=404, detail="Configuración no encontrada")
     
     # Guardar archivo temporal
-    with tempfile.NamedTemporaryFile(delete=False, suffix=f".{config.file_format.lower()}") as temp_file:
-        content = await file.read()
-        temp_file.write(content)
-        temp_file_path = temp_file.name
+    if raw_text:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".txt", mode='w', encoding='utf-8') as temp_file:
+            temp_file.write(raw_text)
+            temp_file_path = temp_file.name
+            original_filename = "Texto_Pegado.txt"
+    elif file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{config.file_format.lower()}") as temp_file:
+            content = await file.read()
+            temp_file.write(content)
+            temp_file_path = temp_file.name
+            original_filename = file.filename
+    else:
+        raise HTTPException(status_code=400, detail="Debe proporcionar un archivo o pegar texto plano.")
     
     try:
         import_engine = ImportEngine(db)
         
         # 1. Validar archivo
-        validation_result = import_engine.validate_file(temp_file_path, config_id)
+        validation_result = import_engine.validate_file(temp_file_path, config_id, pdf_password)
         if not validation_result.is_valid:
             raise HTTPException(
                 status_code=400, 
@@ -359,11 +379,11 @@ async def import_bank_statement(
         
         # 2. Crear sesión de importación
         import_session = import_engine.create_import_session(
-            temp_file_path, config_id, bank_account_id, current_user.empresa_id, current_user.id
+            temp_file_path, config_id, bank_account_id, current_user.empresa_id, current_user.id, original_filename
         )
         
         # 3. Parsear movimientos
-        movements = import_engine.parse_bank_statement(temp_file_path, config)
+        movements = import_engine.parse_bank_statement(temp_file_path, config, pdf_password)
         
         # 4. Detectar duplicados
         duplicate_report = import_engine.detect_duplicates(movements, bank_account_id)

@@ -1,138 +1,279 @@
 # -*- coding: utf-8 -*-
-# ¡¡¡ ARCHIVO AUTO-GENERADO !!!
+# Â¡Â¡Â¡ ARCHIVO AUTO-GENERADO !!!
 # No editar este archivo manualmente. Ejecutar precompile_templates.py para actualizar.
 
 TEMPLATES_EMPAQUETADOS = {
-    'reports/account_ledger_report.html': r'''
-<!DOCTYPE html>
+    'reports/account_ledger_report.html': r'''<!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-g">
+    <meta charset="UTF-8">
     <title>Auxiliar por Cuenta</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: sans-serif;
-            font-size: 10px;
+        :root {
+            --green-inst: #1C3A18;
+            --green-light: #2D5A27;
+            --gold-soft: #C9A84C;
+            --white: #FFFFFF;
+            --bg-page: #FAFAF7;
+            --text-main: #1C3A18;
+            --text-muted: #666666;
+            --text-labels: #444444;
+            --bg-grand-total: #F2F5F1;
+            --bg-accent: #FAFAF7;
+            --negative: #B22222;
         }
+
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--white);
+            color: var(--text-main);
+            font-family: 'DM Sans', sans-serif;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .page-container {
+            width: 297mm;
+            height: 210mm;
+            margin: 0 auto;
+            position: relative;
+            box-sizing: border-box;
+            overflow: hidden;
+            background-color: var(--white);
+        }
+
+        .decor-bar-top {
+            height: 6px;
+            background: linear-gradient(90deg, var(--green-inst), var(--green-light), var(--gold-soft), var(--green-light), var(--green-inst));
+            width: 100%;
+        }
+
+        .decor-bar-bottom {
+            height: 4px;
+            background: linear-gradient(90deg, var(--green-inst), var(--gold-soft));
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+        }
+
+        header {
+            padding: 35px 50px 20px 50px;
+            display: table;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .header-left { display: table-cell; vertical-align: middle; text-align: left; }
+        .header-right { display: table-cell; vertical-align: middle; text-align: right; }
+
+        .badge-premium {
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--green-inst);
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .badge-premium::before { content: "â€¢"; margin-right: 8px; color: var(--gold-soft); }
+
+        .company-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 1;
+            margin: 0;
+            color: var(--green-inst);
+        }
+        .company-nit {
+            font-size: 10px;
+            color: #888;
+            margin-top: 4px;
+            letter-spacing: 1px;
+        }
+
+        .report-title-box {
+            text-align: right;
+        }
+        .doc-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 22px;
+            font-style: italic;
+            color: #444;
+            margin-bottom: 8px;
+        }
+        .date-range-badge {
+            display: inline-block;
+            border: 1px solid var(--green-inst);
+            padding: 5px 12px;
+            border-radius: 2px;
+        }
+        .date-range-text { font-size: 13px; font-weight: 700; color: var(--green-inst); }
+
+        .account-ribbon {
+            margin: 0 50px;
+            padding: 12px 20px;
+            background-color: var(--bg-grand-total);
+            border-left: 4px solid var(--green-inst);
+            font-size: 12px;
+            color: var(--text-main);
+        }
+        .account-ribbon strong { color: var(--green-light); margin-right: 5px; }
+
+        main { padding: 25px 50px; }
 
         table {
             width: 100%;
             border-collapse: collapse;
         }
 
-        th,
-        td {
-            border: 1px solid #ccc;
-            padding: 4px;
+        thead th {
+            background-color: #F8F9F7;
+            color: var(--text-labels);
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            padding: 12px 10px;
+            border-bottom: 2px solid var(--green-inst);
             text-align: left;
         }
 
-        th {
-            background-color: #f2f2f2;
+        tbody td {
+            padding: 10px;
+            font-size: 10px;
+            border-bottom: 1px solid #EEE;
+            color: #333;
+            vertical-align: middle;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
+        .row-alt { background-color: #FCFCFB; }
+        .text-right { text-align: right !important; }
+        .negative { color: var(--negative) !important; font-weight: 500; }
+        
+        .doc-id { font-weight: 700; color: var(--green-light); font-size: 9px; }
+
+        .subtotal-row {
+            background-color: #F8F9F7;
+            font-weight: 700;
+            color: var(--green-inst);
         }
 
-        .header h1 {
-            margin: 0;
+        .grand-total-section {
+            background-color: var(--green-inst);
+            color: var(--white);
+            font-weight: 700;
+            font-size: 12px;
         }
-
-        .header h2 {
-            margin: 0;
-            font-weight: normal;
-        }
-
-        .report-info {
-            margin-bottom: 15px;
-        }
-
-        .text-right {
-            text-align: right;
-        }
-
-        .total-row td {
-            font-weight: bold;
-            background-color: #f8f8f8;
-        }
+        .grand-total-section td { border: none; padding: 15px 10px; color: var(--white) !important; }
+        .gold-label { color: var(--gold-soft); text-transform: uppercase; letter-spacing: 1px; font-size: 10px; }
     </style>
 </head>
-
 <body>
-    <div class="header">
-        <h1>{{ empresa_nombre }}</h1>
-        <h2>NIT: {{ empresa_nit }}</h2>
-        <h2>Auxiliar por Cuenta</h2>
+    <div class="page-container">
+        <div class="decor-bar-top"></div>
+        
+        <header>
+            <div class="header-left">
+                <span class="badge-premium">Inteligencia Financiera</span>
+                <h1 class="company-name">{{ empresa_nombre or 'VERDURAS LA 21' }}</h1>
+                <div class="company-nit">NIT: {{ empresa_nit or '901464119-7' }}</div>
+            </div>
+            <div class="header-right">
+                <div class="report-title-box">
+                    <div class="doc-title">Auxiliar por Cuenta</div>
+                    <div class="date-range-badge">
+                        <span class="date-range-text">Del {{ fecha_inicio }} al {{ fecha_fin }}</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="account-ribbon">
+            <strong>CUENTA SELECCIONADA:</strong> {{ cuenta_codigo }} - {{ cuenta_nombre }}
+        </div>
+
+        <main>
+            <table>
+                <thead>
+                    <tr>
+                        <th width="80">Fecha</th>
+                        <th width="120">Documento</th>
+                        <th>Beneficiario / Tercero</th>
+                        <th width="200">Concepto</th>
+                        {% if has_cost_centers %}
+                        <th width="90" class="text-right" style="white-space: nowrap;">C. Costo</th>
+                        {% endif %}
+                        <th width="100" class="text-right">D&eacute;bitos</th>
+                        <th width="100" class="text-right">Cr&eacute;ditos</th>
+                        <th width="110" class="text-right">Saldo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="subtotal-row">
+                        <td colspan="{{ 5 if has_cost_centers else 4 }}">SALDO ANTERIOR</td>
+                        <td colspan="3" class="text-right" style="padding-right: 10px;">{{ "{:,.0f}".format(saldo_anterior).replace(',', '.') }}</td>
+                    </tr>
+                    
+                    {% for mov in movimientos %}
+                    <tr class="{{ 'row-alt' if loop.index0 % 2 == 0 else '' }}">
+                        <td>{{ mov.fecha.strftime('%Y-%m-%d') }}</td>
+                        <td class="doc-id">{{ mov.tipo_documento }}-{{ mov.numero_documento }}</td>
+                        <td style="font-size: 9px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            {{ mov.beneficiario or 'N/A' }}
+                        </td>
+                        <td style="font-size: 9px; line-height: 1.2;">{{ mov.concepto }}</td>
+                        {% if has_cost_centers %}
+                        <td class="text-right" style="color: #888;">{{ mov.centro_costo_codigo or '-' }}</td>
+                        {% endif %}
+                        <td class="text-right">{{ "{:,.0f}".format(mov.debito).replace(',', '.') }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(mov.credito).replace(',', '.') }}</td>
+                        <td class="text-right {{ 'negative' if mov.saldo_parcial < 0 else '' }}">
+                            {{ "{:,.0f}".format(mov.saldo_parcial).replace(',', '.') }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                    <tr class="subtotal-row">
+                        <td colspan="{{ 5 if has_cost_centers else 4 }}">MOVIMIENTOS DEL PERIODO</td>
+                        <td class="text-right">{{ "{:,.0f}".format(total_debito_periodo).replace(',', '.') }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(total_credito_periodo).replace(',', '.') }}</td>
+                        <td></td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr class="grand-total-section">
+                        <td colspan="{{ 5 if has_cost_centers else 4 }}">
+                            <span class="gold-label">Consolidado Final</span><br>
+                            SALDO ACUMULADO AL {{ fecha_fin }}
+                        </td>
+                        {% set saldo_final = movimientos[-1].saldo_parcial if movimientos else saldo_anterior %}
+                        <td colspan="3" class="text-right" style="font-size: 16px; padding-right: 10px;">
+                            {{ "{:,.0f}".format(saldo_final).replace(',', '.') }}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </main>
+
+        <div class="decor-bar-bottom"></div>
     </div>
-
-    <div class="report-info">
-        <strong>Cuenta:</strong> {{ cuenta_codigo }} - {{ cuenta_nombre }}<br>
-        <strong>Periodo:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Fecha</th>
-                <th>Documento</th>
-                <th>Beneficiario</th>
-                <th>Concepto</th>
-                {% if has_cost_centers %}
-                <th>C. Costo</th>
-                {% endif %}
-                <th class="text-right">Débito</th>
-                <th class="text-right">Crédito</th>
-                <th class="text-right">Saldo Parcial</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr class="total-row">
-                <td colspan="{{ 5 if has_cost_centers else 4 }}"><strong>SALDO ANTERIOR</strong></td>
-                <td colspan="3" class="text-right"><strong>{{ "{:,.2f}".format(saldo_anterior) }}</strong></td>
-            </tr>
-            {% for mov in movimientos %}
-            <tr>
-
-                <td>{{ mov.fecha.strftime('%Y-%m-%d') }}</td>
-                <td>{{ mov.tipo_documento }}-{{ mov.numero_documento }}</td>
-                <td>{{ mov.beneficiario or '' }}</td>
-                <td>{{ mov.concepto }}</td>
-                {% if has_cost_centers %}
-                <td>{{ mov.centro_costo_codigo or '' }}</td>
-                {% endif %}
-                <td class="text-right">{{ "{:,.2f}".format(mov.debito) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(mov.credito) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(mov.saldo_parcial) }}</td>
-            </tr>
-            {% endfor %}
-            <tr class="total-row" style="background-color: #f1f5f9;">
-                <td colspan="{{ 5 if has_cost_centers else 4 }}"><strong>TOTALES MOVIMIENTOS DEL PERIODO</strong></td>
-                <td class="text-right"><strong>{{ "{:,.2f}".format(total_debito_periodo) }}</strong></td>
-                <td class="text-right"><strong>{{ "{:,.2f}".format(total_credito_periodo) }}</strong></td>
-                <td></td>
-            </tr>
-            <tr class="total-row" style="background-color: #1e293b; color: white;">
-                <td colspan="{{ 5 if has_cost_centers else 4 }}"><strong>SALDO FINAL ACUMULADO AL {{ fecha_fin
-                        }}</strong></td>
-                {% set saldo_final = movimientos[-1].saldo_parcial if movimientos else saldo_anterior %}
-                <td colspan="3" class="text-right"><strong>{{ "{:,.2f}".format(saldo_final) }}</strong></td>
-            </tr>
-        </tbody>
-    </table>
 </body>
-
 </html>
 ''',
-
     'reports/analisis_cuenta_doc_report.html': r'''
 <!DOCTYPE html>
 <html lang="es">
 
 <head>
-    <title>Análisis de Cuenta por Documento</title>
+    <title>AnÃ¡lisis de Cuenta por Documento</title>
     <meta charset="UTF-8">
     <style>
         @page {
@@ -226,7 +367,7 @@ TEMPLATES_EMPAQUETADOS = {
     <div class="header">
         <h1>{{ empresa_nombre }}</h1>
         <h2>NIT: {{ empresa_nit }}</h2>
-        <h2>ANÁLISIS DE CUENTA POR DOCUMENTO</h2>
+        <h2>ANÃLISIS DE CUENTA POR DOCUMENTO</h2>
         <p>Periodo: {{ fecha_inicio }} - {{ fecha_fin }}</p>
     </div>
 
@@ -240,10 +381,10 @@ TEMPLATES_EMPAQUETADOS = {
         <table>
             <thead>
                 <tr>
-                    <th class="text-left" style="width: 15%">Cód. Tipo</th>
+                    <th class="text-left" style="width: 15%">CÃ³d. Tipo</th>
                     <th class="text-left" style="width: 45%">Tipo de Documento</th>
-                    <th style="width: 20%">Débitos</th>
-                    <th style="width: 20%">Créditos</th>
+                    <th style="width: 20%">DÃ©bitos</th>
+                    <th style="width: 20%">CrÃ©ditos</th>
                 </tr>
             </thead>
             <tbody>
@@ -269,8 +410,8 @@ TEMPLATES_EMPAQUETADOS = {
         <table>
             <tr>
                 <td class="text-left"><strong>TOTALES GENERALES</strong></td>
-                <td><strong>Débitos: ${{ "{:,.0f}".format(reporte.totales_generales.debito) }}</strong></td>
-                <td><strong>Créditos: ${{ "{:,.0f}".format(reporte.totales_generales.credito) }}</strong></td>
+                <td><strong>DÃ©bitos: ${{ "{:,.0f}".format(reporte.totales_generales.debito) }}</strong></td>
+                <td><strong>CrÃ©ditos: ${{ "{:,.0f}".format(reporte.totales_generales.credito) }}</strong></td>
             </tr>
         </table>
     </div>
@@ -316,8 +457,8 @@ TEMPLATES_EMPAQUETADOS = {
             <tr>
                 <th style="width: 12%;">Fecha</th>
                 <th style="width: 18%;">Documento</th>
-                <th style="width: 20%;">Débito (Cargos)</th>
-                <th style="width: 20%;">Crédito (Abonos)</th>
+                <th style="width: 20%;">DÃ©bito (Cargos)</th>
+                <th style="width: 20%;">CrÃ©dito (Abonos)</th>
                 <th style="width: 30%;">Saldo</th>
             </tr>
         </thead>
@@ -340,9 +481,9 @@ TEMPLATES_EMPAQUETADOS = {
                         <td colspan="4" class="detalle-app">
                         {% for app in mov.detalle_aplicaciones %}
                             {% if app.afectado_por %}
-                                <span>↳ Abonado por {{ app.afectado_por }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
+                                <span>â†³ Abonado por {{ app.afectado_por }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
                             {% elif app.afecta_a %}
-                                <span>↳ Abona a {{ app.afecta_a }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
+                                <span>â†³ Abona a {{ app.afecta_a }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
                             {% endif %}
                         {% endfor %}
                         </td>
@@ -390,7 +531,7 @@ TEMPLATES_EMPAQUETADOS = {
         <h2>Auxiliar por Centro de Costo y Cuenta</h2>
         <p>Centro de Costo: {{ centro_costo_nombre_display }}</p>
         <p>Cuenta: {{ cuenta_nombre_display }}</p>
-        <p>Período: {{ fecha_inicio }} al {{ fecha_fin }}</p>
+        <p>PerÃ­odo: {{ fecha_inicio }} al {{ fecha_fin }}</p>
     </div>
 
     <table>
@@ -401,8 +542,8 @@ TEMPLATES_EMPAQUETADOS = {
                 <th style="width: 15%;">Beneficiario</th>
                 <th style="width: 10%;">Cuenta</th>
                 <th style="width: 20%;">Concepto</th>
-                <th style="width: 10%;">Débito</th>
-                <th style="width: 10%;">Crédito</th>
+                <th style="width: 10%;">DÃ©bito</th>
+                <th style="width: 10%;">CrÃ©dito</th>
                 <th style="width: 12%;">Saldo Parcial</th>
             </tr>
         </thead>
@@ -506,7 +647,7 @@ TEMPLATES_EMPAQUETADOS = {
             <tr>
                 <td></td><td colspan="4" class="detalle-app">
                 {% for abono in f.abonos_detalle %}
-                    <span>↳ Abonado por {{ abono.documento }} por valor de {{ '{:,.2f}'.format(abono.valor) }}</span><br>
+                    <span>â†³ Abonado por {{ abono.documento }} por valor de {{ '{:,.2f}'.format(abono.valor) }}</span><br>
                 {% endfor %}
                 </td>
             </tr>
@@ -571,7 +712,7 @@ TEMPLATES_EMPAQUETADOS = {
             <tr>
                 <td></td><td colspan="2" class="detalle-app">
                 {% for f in r.facturas_afectadas %}
-                    <span>↳ Abona a {{ f.documento }} por valor de {{ '{:,.2f}'.format(f.valor) }}</span><br>
+                    <span>â†³ Abona a {{ f.documento }} por valor de {{ '{:,.2f}'.format(f.valor) }}</span><br>
                 {% endfor %}
                 </td>
             </tr>
@@ -638,7 +779,7 @@ TEMPLATES_EMPAQUETADOS = {
             <tr>
                 <td></td><td colspan="4" class="detalle-app">
                 {% for abono in f.abonos_detalle %}
-                    <span>↳ Pagado por {{ abono.documento }} por valor de {{ '{:,.2f}'.format(abono.valor) }}</span><br>
+                    <span>â†³ Pagado por {{ abono.documento }} por valor de {{ '{:,.2f}'.format(abono.valor) }}</span><br>
                 {% endfor %}
                 </td>
             </tr>
@@ -703,7 +844,7 @@ TEMPLATES_EMPAQUETADOS = {
             <tr>
                 <td></td><td colspan="2" class="detalle-app">
                 {% for f in r.facturas_afectadas %}
-                    <span>↳ Paga a {{ f.documento }} por valor de {{ '{:,.2f}'.format(f.valor) }}</span><br>
+                    <span>â†³ Paga a {{ f.documento }} por valor de {{ '{:,.2f}'.format(f.valor) }}</span><br>
                 {% endfor %}
                 </td>
             </tr>
@@ -756,8 +897,8 @@ TEMPLATES_EMPAQUETADOS = {
             <tr>
                 <th style="width: 12%;">Fecha</th>
                 <th style="width: 25%;">Documento</th>
-                <th style="width: 21%;">Débito (Pagos)</th>
-                <th style="width: 21%;">Crédito (Deudas)</th>
+                <th style="width: 21%;">DÃ©bito (Pagos)</th>
+                <th style="width: 21%;">CrÃ©dito (Deudas)</th>
                 <th style="width: 21%;">Saldo</th>
             </tr>
         </thead>
@@ -780,9 +921,9 @@ TEMPLATES_EMPAQUETADOS = {
                         <td colspan="4" class="detalle-app">
                         {% for app in mov.detalle_aplicaciones %}
                             {% if app.afectado_por %}
-                                <span>↳ Pagado por {{ app.afectado_por }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
+                                <span>â†³ Pagado por {{ app.afectado_por }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
                             {% elif app.afecta_a %}
-                                <span>↳ Paga a {{ app.afecta_a }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
+                                <span>â†³ Paga a {{ app.afecta_a }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
                             {% endif %}
                         {% endfor %}
                         </td>
@@ -862,11 +1003,11 @@ TEMPLATES_EMPAQUETADOS = {
     <table>
         <thead>
             <tr>
-                <th>Código</th>
+                <th>CÃ³digo</th>
                 <th>Nombre del Centro de Costo</th>
                 <th class="text-right">Saldo Inicial</th>
-                <th class="text-right">Débitos</th>
-                <th class="text-right">Créditos</th>
+                <th class="text-right">DÃ©bitos</th>
+                <th class="text-right">CrÃ©ditos</th>
                 <th class="text-right">Nuevo Saldo</th>
             </tr>
         </thead>
@@ -896,97 +1037,207 @@ TEMPLATES_EMPAQUETADOS = {
 </html>
 ''',
 
-    'reports/balance_de_prueba_report.html': r'''
-<!DOCTYPE html>
+    'reports/balance_de_prueba_report.html': r'''<!DOCTYPE html>
 <html>
 <head>
     <title>Balance de Prueba</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; margin: 20px; }
-        h1 { text-align: center; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 10px; }
-        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .text-right { text-align: right; }
-        .nivel-1 { font-weight: bold; background-color: #e0e0e0; }
-        .nivel-2 { font-weight: bold; background-color: #f0f0f0; padding-left: 20px; }
-        .nivel-3 { padding-left: 40px; }
-        .nivel-4 { padding-left: 60px; }
-        .nivel-5 { padding-left: 80px; }
-        tfoot { font-weight: bold; background-color: #e0e0e0; }
+        :root {
+            --green-inst: #2D6A26;
+            --green-light: #6BAD5E;
+            --blue-slate: #4A6FA5;
+            --gold-soft: #C9A84C;
+            --white: #FFFFFF;
+            --bg-page: #FAFAF7;
+            --text-main: #1A1A1A;
+            --text-muted: #BBBBBB;
+            --text-labels: #444444;
+            --bg-grand-total: #F5FAF4;
+        }
 
-        .report-header {
-        text-align: center;
-        margin-bottom: 30px;
-    }
-    .company-info h1 {
-        margin: 0;
-        font-size: 18px;
-    }
-    .company-info p {
-        margin: 0;
-        font-size: 14px;
-        color: #555;
-    }
-    .report-info {
-        margin-top: 15px;
-    }
-    .report-info h2 {
-        margin: 0;
-        font-size: 16px;
-    }
-    .report-info p {
-        margin: 0;
-        font-size: 12px;
-        color: #777;
-    }
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--white);
+            color: var(--text-main);
+            font-family: 'DM Sans', sans-serif;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .page-container {
+            width: 210mm;
+            height: 297mm;
+            margin: 0 auto;
+            position: relative;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .top-bar {
+            height: 4px;
+            background: linear-gradient(90deg, var(--green-inst), var(--green-light), var(--gold-soft), var(--green-light), var(--green-inst));
+            width: 100%;
+        }
+
+        .bottom-bar {
+            height: 3px;
+            background: linear-gradient(90deg, var(--green-inst), var(--green-light), var(--gold-soft));
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+        }
+
+        header {
+            padding: 40px 50px 20px 50px;
+            display: table;
+            width: 100%;
+            box-sizing: border-box;
+            border-bottom: 1px solid #F0F0F0;
+        }
+
+        .header-left { display: table-cell; vertical-align: middle; text-align: left; }
+        .header-right { display: table-cell; vertical-align: middle; text-align: right; }
+
+        .badge {
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--green-inst);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .badge::before { content: "â€¢"; margin-right: 6px; }
+
+        .company-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 36px;
+            font-weight: 700;
+            line-height: 1;
+            margin: 0;
+        }
+        .company-name span { color: var(--green-inst); }
+
+        .doc-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-style: italic;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .date-box {
+            display: inline-block;
+            border: 1.5px solid var(--green-inst);
+            border-radius: 4px;
+            padding: 5px 12px;
+        }
+        .date-value { font-size: 14px; font-weight: 700; }
+
+        main { padding: 30px 50px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        thead th {
+            background: #F8F9FA;
+            color: var(--text-labels);
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 10px;
+            border-bottom: 2px solid #EEE;
+            text-align: left;
+        }
+
+        .text-right { text-align: right !important; }
+
+        tbody td {
+            padding: 8px 10px;
+            font-size: 11px;
+            border-bottom: 1px solid #F0F0F0;
+            color: var(--text-labels);
+        }
+
+        .acc-code { font-weight: 700; color: #999; font-size: 10px; }
+        .nivel-1 { background: #F2F8F1; font-weight: 700; color: var(--green-inst); }
+        .nivel-2 { font-weight: 700; }
+
+        tfoot td {
+            background: var(--bg-grand-total);
+            border-top: 2px solid var(--green-inst);
+            padding: 12px 10px;
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--green-inst);
+        }
     </style>
 </head>
 <body>
+    <div class="page-container">
+        <div class="top-bar"></div>
+        <header>
+            <div class="header-left">
+                <span class="badge">Informe Financiero Oficial</span>
+                <h1 class="company-name">Verduras <span>La 21</span></h1>
+                <div style="font-size: 10px; color: #999; margin-top: 4px; letter-spacing: 1px;">NIT {{ empresa.nit if empresa else 'N/A' }}</div>
+            </div>
+            <div class="header-right">
+                <div class="doc-title">{{ titulo_reporte }}</div>
+                <div class="date-box">
+                    <div class="date-value">{{ periodo }}</div>
+                </div>
+            </div>
+        </header>
 
-    <header class="report-header">
-    <div class="company-info">
-        <h1>{{ empresa.razon_social if empresa else 'Nombre de Empresa no disponible' }}</h1>
-        <p>NIT: {{ empresa.nit if empresa else 'N/A' }}</p>
-    </div>
-    <div class="report-info">
-        <h2>{{ titulo_reporte }}</h2>
-        <p>{{ periodo }}</p>
-    </div>
-</header>
+        <main>
     <table>
         <thead>
             <tr>
-                <th>Código</th>
+                <th>CÃ³digo</th>
                 <th>Nombre de la Cuenta</th>
                 <th class="text-right">Saldo Inicial</th>
-                <th class="text-right">Débitos</th>
-                <th class="text-right">Créditos</th>
+                <th class="text-right">DÃ©bitos</th>
+                <th class="text-right">CrÃ©ditos</th>
                 <th class="text-right">Nuevo Saldo</th>
             </tr>
         </thead>
         <tbody>
             {% for fila in filas %}
             <tr class="nivel-{{ fila.nivel }}">
-                <td>{{ fila.codigo }}</td>
+                <td class="acc-code">{{ fila.codigo }}</td>
                 <td>{{ fila.nombre }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(fila.saldo_inicial) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(fila.debito) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(fila.credito) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(fila.nuevo_saldo) }}</td>
+                <td class="text-right">{{ "{:,.0f}".format(fila.saldo_inicial).replace(',', '.') }}</td>
+                <td class="text-right">{{ "{:,.0f}".format(fila.debito).replace(',', '.') }}</td>
+                <td class="text-right">{{ "{:,.0f}".format(fila.credito).replace(',', '.') }}</td>
+                <td class="text-right">{{ "{:,.0f}".format(fila.nuevo_saldo).replace(',', '.') }}</td>
             </tr>
             {% endfor %}
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="2">TOTALES</td>
-                <td class="text-right">{{ "{:,.2f}".format(totales.saldo_inicial) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(totales.debito) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(totales.credito) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(totales.nuevo_saldo) }}</td>
+                <td colspan="2">TOTALES GENERALES</td>
+                <td class="text-right">{{ "{:,.0f}".format(totales.saldo_inicial).replace(',', '.') }}</td>
+                <td class="text-right">{{ "{:,.0f}".format(totales.debito).replace(',', '.') }}</td>
+                <td class="text-right">{{ "{:,.0f}".format(totales.credito).replace(',', '.') }}</td>
+                <td class="text-right">{{ "{:,.0f}".format(totales.nuevo_saldo).replace(',', '.') }}</td>
             </tr>
         </tfoot>
     </table>
+    </main>
+    <div class="bottom-bar"></div>
+    </div>
 </body>
 </html>
 ''',
@@ -1126,7 +1377,7 @@ TEMPLATES_EMPAQUETADOS = {
             </div>
         {% endfor %}
         <div class="item-row utilidad-row">
-            <span>3605 - Utilidad (Pérdida) del Ejercicio</span>
+            <span>3605 - Utilidad (PÃ©rdida) del Ejercicio</span>
             <span>{{ "{:,.2f}".format(reporte.utilidad_ejercicio) }}</span>
         </div>
         <div class="total-row">
@@ -1276,7 +1527,7 @@ TEMPLATES_EMPAQUETADOS = {
             </div>
         {% endfor %}
         <div class="item-row utilidad-row">
-            <span>3605 - Utilidad (Pérdida) del Ejercicio</span>
+            <span>3605 - Utilidad (PÃ©rdida) del Ejercicio</span>
             <span>{{ "{:,.2f}".format(reporte.utilidad_ejercicio) }}</span>
         </div>
         <div class="total-row">
@@ -1328,7 +1579,7 @@ TEMPLATES_EMPAQUETADOS = {
         <table>
             <thead>
                 <tr>
-                    <th>Código</th>
+                    <th>CÃ³digo</th>
                     <th>Producto / Servicio</th>
                     <th>Grupo</th>
                     <th class="text-right">Costo Promedio</th>
@@ -1536,7 +1787,7 @@ TEMPLATES_EMPAQUETADOS = {
     </div>
 
     <div class="doc-title">
-        <h3>{{ documento.tipo_nombre }} N° {{ documento.consecutivo }}</h3>
+        <h3>{{ documento.tipo_nombre }} NÂ° {{ documento.consecutivo }}</h3>
     </div>
 
     <div class="info-grid">
@@ -1544,7 +1795,7 @@ TEMPLATES_EMPAQUETADOS = {
             <div class="info-cell label">Fecha:</div>
             <div class="info-cell">{{ documento.fecha_emision }}</div>
             <div class="info-cell label">Ciudad:</div>
-            <div class="info-cell">Bogotá D.C.</div> <!-- Placeholder city -->
+            <div class="info-cell">BogotÃ¡ D.C.</div> <!-- Placeholder city -->
         </div>
         <div class="info-row">
             <div class="info-cell label">Pagado a:</div>
@@ -1561,10 +1812,10 @@ TEMPLATES_EMPAQUETADOS = {
     <table class="items-table">
         <thead>
             <tr>
-                <th style="width: 15%;">Código</th>
-                <th style="width: 45%;">Descripción</th>
-                <th style="width: 20%;" class="text-right">Débito</th>
-                <th style="width: 20%;" class="text-right">Crédito</th>
+                <th style="width: 15%;">CÃ³digo</th>
+                <th style="width: 45%;">DescripciÃ³n</th>
+                <th style="width: 20%;" class="text-right">DÃ©bito</th>
+                <th style="width: 20%;" class="text-right">CrÃ©dito</th>
             </tr>
         </thead>
         <tbody>
@@ -1591,19 +1842,19 @@ TEMPLATES_EMPAQUETADOS = {
 
     <div class="signatures">
         <div class="sig-box">
-            <div class="sig-line">Elaboró</div>
+            <div class="sig-line">ElaborÃ³</div>
         </div>
         <div class="sig-box">
-            <div class="sig-line">Aprobó</div>
+            <div class="sig-line">AprobÃ³</div>
         </div>
         <div class="sig-box">
-            <div class="sig-line">Recibí Conforme</div>
+            <div class="sig-line">RecibÃ­ Conforme</div>
             <div style="font-size: 8pt;">C.C.</div>
         </div>
     </div>
 
     <div class="footer">
-        Generado automáticamente por Finaxis Cloud
+        Generado automÃ¡ticamente por Finaxis Cloud
     </div>
 </body>
 
@@ -1666,9 +1917,9 @@ TEMPLATES_EMPAQUETADOS = {
                 <td class="text-right">{{ '{:,.2f}'.format(factura.saldo_pendiente) }}</td>
                 <td class="text-center">
                     {% if factura.estado == 'VENCIDA' %}
-                        <span class="vencida">{{ factura.dias_mora }} días de mora</span>
+                        <span class="vencida">{{ factura.dias_mora }} dÃ­as de mora</span>
                     {% else %}
-                        <span class="por-vencer">Vence en {{ factura.dias_para_vencer }} días</span>
+                        <span class="por-vencer">Vence en {{ factura.dias_para_vencer }} dÃ­as</span>
                     {% endif %}
                 </td>
             </tr>
@@ -1686,10 +1937,10 @@ TEMPLATES_EMPAQUETADOS = {
 
     <div class="aging-grid">
         <div class="aging-box"><h4 class="por-vencer">Por Vencer</h4><p>{{ '{:,.2f}'.format(reporte.edades.por_vencer) }}</p></div>
-        <div class="aging-box"><h4 class="vencida">1-30 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_1_30) }}</p></div>
-        <div class="aging-box"><h4 class="vencida">31-60 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_31_60) }}</p></div>
-        <div class="aging-box"><h4 class="vencida">61-90 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_61_90) }}</p></div>
-        <div class="aging-box"><h4 class="vencida">+90 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_mas_90) }}</p></div>
+        <div class="aging-box"><h4 class="vencida">1-30 DÃ­as</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_1_30) }}</p></div>
+        <div class="aging-box"><h4 class="vencida">31-60 DÃ­as</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_31_60) }}</p></div>
+        <div class="aging-box"><h4 class="vencida">61-90 DÃ­as</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_61_90) }}</p></div>
+        <div class="aging-box"><h4 class="vencida">+90 DÃ­as</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_mas_90) }}</p></div>
     </div>
 </body>
 </html>
@@ -1751,9 +2002,9 @@ TEMPLATES_EMPAQUETADOS = {
                 <td class="text-right">{{ '{:,.2f}'.format(factura.saldo_pendiente) }}</td>
                 <td class="text-center">
                     {% if factura.estado == 'VENCIDA' %}
-                        <span class="vencida">{{ factura.dias_mora }} días de mora</span>
+                        <span class="vencida">{{ factura.dias_mora }} dÃ­as de mora</span>
                     {% else %}
-                        <span class="por-vencer">Vence en {{ factura.dias_para_vencer }} días</span>
+                        <span class="por-vencer">Vence en {{ factura.dias_para_vencer }} dÃ­as</span>
                     {% endif %}
                 </td>
             </tr>
@@ -1771,10 +2022,10 @@ TEMPLATES_EMPAQUETADOS = {
 
     <div class="aging-grid">
         <div class="aging-box"><h4 class="por-vencer">Por Vencer</h4><p>{{ '{:,.2f}'.format(reporte.edades.por_vencer) }}</p></div>
-        <div class="aging-box"><h4 class="vencida">1-30 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_1_30) }}</p></div>
-        <div class="aging-box"><h4 class="vencida">31-60 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_31_60) }}</p></div>
-        <div class="aging-box"><h4 class="vencida">61-90 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_61_90) }}</p></div>
-        <div class="aging-box"><h4 class="vencida">+90 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_mas_90) }}</p></div>
+        <div class="aging-box"><h4 class="vencida">1-30 DÃ­as</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_1_30) }}</p></div>
+        <div class="aging-box"><h4 class="vencida">31-60 DÃ­as</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_31_60) }}</p></div>
+        <div class="aging-box"><h4 class="vencida">61-90 DÃ­as</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_61_90) }}</p></div>
+        <div class="aging-box"><h4 class="vencida">+90 DÃ­as</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_mas_90) }}</p></div>
     </div>
 </body>
 </html>
@@ -1841,13 +2092,13 @@ TEMPLATES_EMPAQUETADOS = {
     </div>
 
     <div class="info">
-        <p><strong>Período Analizado:</strong> {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
+        <p><strong>PerÃ­odo Analizado:</strong> {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
     </div>
 
     <table>
         <thead>
             <tr>
-                <th>Código</th>
+                <th>CÃ³digo</th>
                 <th>Producto</th>
                 <th class="text-right">Cant. Inicial</th>
                 <th class="text-right">Valor Inicial</th>
@@ -1876,7 +2127,7 @@ TEMPLATES_EMPAQUETADOS = {
             </tr>
             {% else %}
             <tr>
-                <td colspan="10" style="text-align:center;">No se encontraron productos con movimiento en el período seleccionado.</td>
+                <td colspan="10" style="text-align:center;">No se encontraron productos con movimiento en el perÃ­odo seleccionado.</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -1898,13 +2149,616 @@ TEMPLATES_EMPAQUETADOS = {
 </html>
 ''',
 
+    'reports/estado_resultados_gerencial.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estado de Resultados Â· {{ empresa_nombre }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cream:    #faf8f4;
+      --white:    #ffffff;
+      --warm1:    #f3ede3;
+      --warm2:    #e8dfd0;
+      --ink:      #1a1612;
+      --ink2:     #3d3529;
+      --muted:    #8a7e6f;
+      --rule:     #d9cfc0;
+      --gold:     #b5892a;
+      --gold-lt:  #f5ead4;
+      --green:    #2e7d52;
+      --green-lt: #e6f4ed;
+      --red:      #b53a2a;
+      --red-lt:   #faecea;
+      --blue:     #1e4f87;
+      --blue-lt:  #e8f0fb;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--cream);
+      color: var(--ink);
+      font-family: 'Lato', sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* â”€â”€â”€ PAGE WRAPPER â”€â”€â”€ */
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 60px 48px 80px;
+      background: var(--white);
+      box-shadow: 0 2px 40px rgba(90,60,20,.10);
+      min-height: 100vh;
+    }
+
+    /* â”€â”€â”€ HEADER â”€â”€â”€ */
+    .header {
+      border-top: 4px solid var(--ink);
+      padding-top: 28px;
+      margin-bottom: 40px;
+      position: relative;
+    }
+    .header::after {
+      content: '';
+      display: block;
+      height: 1px;
+      background: var(--rule);
+      margin-top: 28px;
+    }
+    .org-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: .01em;
+      color: var(--ink);
+    }
+    .org-meta {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .doc-title {
+      margin-top: 16px;
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-style: italic;
+      color: var(--gold);
+      font-weight: 400;
+    }
+    .doc-period {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 3px;
+      font-family: 'IBM Plex Mono', monospace;
+      letter-spacing: .06em;
+    }
+
+    /* â”€â”€â”€ KPI STRIP â”€â”€â”€ */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--rule);
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 48px;
+    }
+    .kpi-cell {
+      background: var(--white);
+      padding: 20px 22px;
+    }
+    .kpi-cell:hover { background: var(--warm1); }
+    .kpi-label {
+      font-size: 10px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      margin-bottom: 6px;
+    }
+    .kpi-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 20px;
+      font-weight: 500;
+    }
+    .kpi-value.green { color: var(--green); }
+    .kpi-value.red   { color: var(--red);   }
+    .kpi-value.gold  { color: var(--gold);  }
+    .kpi-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    /* â”€â”€â”€ SECTION TITLE â”€â”€â”€ */
+    .section-head {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 4px;
+    }
+    .section-head h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .section-head h2.income { color: var(--green); }
+    .section-head h2.expense { color: var(--red); }
+    .section-head::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--rule);
+    }
+
+    /* â”€â”€â”€ TABLE â”€â”€â”€ */
+    .tbl-wrap { margin-bottom: 36px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead tr {
+      border-bottom: 2px solid var(--rule);
+    }
+    thead th {
+      font-size: 10px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--muted);
+      font-weight: 500;
+      padding: 8px 10px 10px;
+    }
+    thead th:first-child { text-align: left; padding-left: 0; }
+    thead th:not(:first-child) { text-align: right; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--warm1);
+      transition: background .12s;
+    }
+    tbody tr:hover { background: var(--warm1); }
+
+    td {
+      padding: 11px 10px;
+      font-size: 14px;
+      vertical-align: middle;
+    }
+    td:first-child {
+      padding-left: 0;
+      color: var(--ink2);
+      font-weight: 400;
+    }
+    td:not(:first-child) {
+      text-align: right;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      color: var(--ink);
+    }
+
+    .code-cell {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      padding-right: 16px;
+    }
+
+    /* pct bar */
+    .bar-wrap { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+    .bar-track {
+      width: 80px; height: 5px;
+      background: var(--warm2);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .bar-fill { height: 100%; border-radius: 3px; }
+
+    /* subtotal / total rows */
+    tr.subtotal td {
+      border-top: 1.5px solid var(--rule);
+      border-bottom: 1.5px solid var(--rule);
+      font-weight: 700;
+      font-size: 14px;
+      background: var(--warm1);
+    }
+    tr.subtotal td:first-child { font-family: 'Lato', sans-serif; }
+    tr.subtotal td:not(:first-child) { font-family: 'IBM Plex Mono', monospace; }
+
+    tr.grand-total td {
+      border-top: 3px double var(--ink);
+      padding-top: 16px;
+      padding-bottom: 16px;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    tr.grand-total td:first-child {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+    }
+
+    .loss { color: var(--red) !important; }
+    .profit { color: var(--green) !important; }
+
+    /* badge */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: 'IBM Plex Mono', monospace;
+      letter-spacing: .05em;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    .badge.ing { background: var(--green-lt); color: var(--green); }
+    .badge.gasto { background: var(--red-lt); color: var(--red); }
+    .badge.info { background: var(--blue-lt); color: var(--blue); }
+
+    /* group header inside tbody */
+    tr.group-row td {
+      font-size: 11px;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      padding: 14px 0 4px;
+      border-bottom: none;
+      background: transparent;
+    }
+    tr.group-row:hover { background: transparent; }
+
+    /* â”€â”€â”€ UTILIDAD BLOCK â”€â”€â”€ */
+    .result-block {
+      margin-top: 8px;
+      border-radius: 10px;
+      padding: 24px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .result-block.loss { background: var(--red-lt); border: 1.5px solid #e8bdb8; }
+    .result-block.profit { background: var(--green-lt); border: 1.5px solid #a8d9bb; }
+    .result-label {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .result-label.loss  { color: var(--red); }
+    .result-label.profit { color: var(--green); }
+    .result-period { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .result-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 32px;
+      font-weight: 500;
+    }
+    .result-value.loss  { color: var(--red); }
+    .result-value.profit { color: var(--green); }
+
+    /* â”€â”€â”€ DONUT CHART â”€â”€â”€ */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin: 44px 0;
+    }
+    .chart-card {
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      padding: 22px;
+      background: var(--white);
+    }
+    .chart-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .donut-wrap { display: flex; align-items: center; gap: 16px; }
+    svg.donut { flex-shrink: 0; }
+    .legend-list { font-size: 12px; color: var(--ink2); }
+    .legend-list li {
+      display: flex; align-items: center; gap: 7px;
+      margin-bottom: 7px; list-style: none;
+    }
+    .leg-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink:0; }
+    .leg-name { flex: 1; }
+    .leg-pct { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+
+    /* â”€â”€â”€ BAR CHART â”€â”€â”€ */
+    .hbar-list { list-style: none; }
+    .hbar-item { margin-bottom: 10px; }
+    .hbar-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+    .hbar-name { font-family: 'Lato', sans-serif; color: var(--ink2); }
+    .hbar-val  { font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
+    .hbar-track { height: 8px; background: var(--warm2); border-radius: 4px; overflow: hidden; }
+    .hbar-fill  { height: 100%; border-radius: 4px; }
+
+    /* â”€â”€â”€ FOOTER â”€â”€â”€ */
+    .footer {
+      margin-top: 60px;
+      padding-top: 20px;
+      border-top: 1px solid var(--rule);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* â”€â”€â”€ PRINT â”€â”€â”€ */
+    @media print {
+      body { background: #fff; }
+      .page { box-shadow: none; padding: 30px 30px 50px; }
+      .kpi-cell:hover, tbody tr:hover { background: none; }
+    }
+
+    @media (max-width: 640px) {
+      .page { padding: 30px 20px 50px; }
+      .kpi-strip { grid-template-columns: 1fr; }
+      .charts-row { grid-template-columns: 1fr; }
+      .result-value { font-size: 24px; }
+    }
+
+    /* â”€â”€â”€ ANIMATIONS â”€â”€â”€ */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .page > * {
+      animation: fadeUp .5s ease both;
+    }
+    .page > *:nth-child(1) { animation-delay: .05s; }
+    .page > *:nth-child(2) { animation-delay: .12s; }
+    .page > *:nth-child(3) { animation-delay: .18s; }
+    .page > *:nth-child(4) { animation-delay: .24s; }
+    .page > *:nth-child(5) { animation-delay: .30s; }
+    .page > *:nth-child(6) { animation-delay: .36s; }
+    .page > *:nth-child(7) { animation-delay: .42s; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="org-name">{{ empresa_nombre }}</div>
+    <div class="org-meta">NIT: {{ empresa_nit }}</div>
+    <div class="doc-title">Estado de Resultados Gerencial</div>
+    <div class="doc-period">PerÃ­odo: {{ fecha_inicio }} â€” {{ fecha_fin }}</div>
+  </header>
+
+  <!-- KPIs -->
+  <div class="kpi-strip">
+    <div class="kpi-cell">
+      <div class="kpi-label">Total Ingresos</div>
+      <div class="kpi-value green">${{ "{:,.0f}".format(report_data.totales.total_ingresos).replace(',', '.') }}</div>
+      <div class="kpi-sub">Ingresos operacionales</div>
+    </div>
+    <div class="kpi-cell">
+      <div class="kpi-label">Total Gastos</div>
+      <div class="kpi-value red">${{ "{:,.0f}".format(report_data.totales.total_gastos).replace(',', '.') }}</div>
+      <div class="kpi-sub">Gastos operacionales</div>
+    </div>
+    <div class="kpi-cell">
+      <div class="kpi-label">Resultado del PerÃ­odo</div>
+      <div class="kpi-value {% if report_data.totales.utilidad_neta < 0 %}red{% else %}gold{% endif %}">
+        {% if report_data.totales.utilidad_neta < 0 %}âˆ’{% endif %}${{ "{:,.0f}".format(report_data.totales.utilidad_neta | abs).replace(',', '.') }}
+      </div>
+      <div class="kpi-sub">{% if report_data.totales.utilidad_neta < 0 %}DÃ©ficit{% else %}SuperÃ¡vit{% endif %} operacional</div>
+    </div>
+  </div>
+
+  <!-- INGRESOS -->
+  <div class="tbl-wrap">
+    <div class="section-head"><h2 class="income">Ingresos Operacionales</h2></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Cuenta</th>
+          <th>DescripciÃ³n</th>
+          <th>Valor</th>
+          <th>% s/Total Ing.</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ing in report_data.ingresos %}
+        <tr>
+          <td class="code-cell">{{ ing.codigo }}</td>
+          <td>{{ ing.nombre }} {% if ing.is_ingreso_principal %}<span class="badge ing">Principal</span>{% endif %}</td>
+          <td>${{ "{:,.0f}".format(ing.saldo).replace(',', '.') }}</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:{{ ing.porcentaje | round(1) }}%; background:#2e7d52;"></div></div>
+              <span>{{ "{:,.1f}".format(ing.porcentaje).replace('.', ',') }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+        <tr class="subtotal">
+          <td colspan="2"><strong>TOTAL INGRESOS OPERACIONALES</strong></td>
+          <td><strong>${{ "{:,.0f}".format(report_data.totales.total_ingresos).replace(',', '.') }}</strong></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- GASTOS -->
+  <div class="tbl-wrap">
+    <div class="section-head"><h2 class="expense">Gastos Operacionales</h2></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Cuenta</th>
+          <th>DescripciÃ³n</th>
+          <th>Valor</th>
+          <th>% s/Total Gtos.</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <!-- NÃ“MINA -->
+        {% if report_data.gastos_nomina %}
+        <tr class="group-row"><td colspan="4">â–¸ NÃ³mina y Carga Prestacional</td></tr>
+        {% for gasto in report_data.gastos_nomina %}
+        <tr>
+          <td class="code-cell">{{ gasto.codigo }}</td>
+          <td>{{ gasto.nombre }} {% if gasto.is_mayor_gasto %}<span class="badge gasto">Mayor gasto</span>{% endif %}</td>
+          <td>${{ "{:,.0f}".format(gasto.saldo).replace(',', '.') }}</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:{{ gasto.porcentaje | round(1) }}%; background:#b53a2a;"></div></div>
+              <span>{{ "{:,.1f}".format(gasto.porcentaje).replace('.', ',') }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+        {% endif %}
+
+        <!-- OPERATIVOS -->
+        {% if report_data.gastos_operativos %}
+        <tr class="group-row"><td colspan="4">â–¸ Gastos Operativos</td></tr>
+        {% for gasto in report_data.gastos_operativos %}
+        <tr>
+          <td class="code-cell">{{ gasto.codigo }}</td>
+          <td>{{ gasto.nombre }} {% if gasto.is_mayor_gasto %}<span class="badge gasto">Mayor gasto</span>{% endif %}</td>
+          <td>${{ "{:,.0f}".format(gasto.saldo).replace(',', '.') }}</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:{{ gasto.porcentaje | round(1) }}%; background:#c05a45;"></div></div>
+              <span>{{ "{:,.1f}".format(gasto.porcentaje).replace('.', ',') }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+        {% endif %}
+
+        <!-- GENERALES -->
+        {% if report_data.gastos_generales %}
+        <tr class="group-row"><td colspan="4">â–¸ Gastos Generales y Tributarios</td></tr>
+        {% for gasto in report_data.gastos_generales %}
+        <tr>
+          <td class="code-cell">{{ gasto.codigo }}</td>
+          <td>{{ gasto.nombre }} {% if gasto.is_mayor_gasto %}<span class="badge gasto">Mayor gasto</span>{% endif %}</td>
+          <td>${{ "{:,.0f}".format(gasto.saldo).replace(',', '.') }}</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:{{ gasto.porcentaje | round(1) }}%; background:#d8958a;"></div></div>
+              <span>{{ "{:,.1f}".format(gasto.porcentaje).replace('.', ',') }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+        {% endif %}
+
+        <tr class="subtotal">
+          <td colspan="2"><strong>TOTAL GASTOS OPERACIONALES</strong></td>
+          <td><strong>${{ "{:,.0f}".format(report_data.totales.total_gastos).replace(',', '.') }}</strong></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- RESULTADO -->
+  <div class="result-block {% if report_data.totales.utilidad_neta < 0 %}loss{% else %}profit{% endif %}">
+    <div>
+      <div class="result-label {% if report_data.totales.utilidad_neta < 0 %}loss{% else %}profit{% endif %}">Utilidad (PÃ©rdida) del Ejercicio</div>
+      <div class="result-period">PerÃ­odo {{ fecha_inicio }} â€“ {{ fecha_fin }}</div>
+    </div>
+    <div class="result-value {% if report_data.totales.utilidad_neta < 0 %}loss{% else %}profit{% endif %}">
+      {% if report_data.totales.utilidad_neta < 0 %}âˆ’{% endif %}${{ "{:,.0f}".format(report_data.totales.utilidad_neta | abs).replace(',', '.') }}
+    </div>
+  </div>
+
+  <!-- GRÃFICAS -->
+  <div class="charts-row">
+
+    <!-- Donut ingresos -->
+    <div class="chart-card">
+      <div class="chart-title">ComposiciÃ³n de Ingresos</div>
+      <div class="donut-wrap">
+        <svg class="donut" width="90" height="90" viewBox="0 0 36 36">
+          <circle r="15.9155" cx="18" cy="18" fill="none" stroke="#e8dfd0" stroke-width="3.8"/>
+          
+          {% set ns = namespace(offset=25) %}
+          {% set colors = ['#2e7d52', '#5aab82', '#9ecfb5', '#c8e6d6', '#e0f0e6'] %}
+          
+          {% for ing in report_data.ingresos[:5] %}
+          {% set pct = ing.porcentaje %}
+          {% if pct > 0 %}
+          <circle r="15.9155" cx="18" cy="18" fill="none" stroke="{{ colors[loop.index0] }}" stroke-width="3.8"
+            stroke-dasharray="{{ pct | round(1) }} {{ 100 - (pct | round(1)) }}" stroke-dashoffset="{{ ns.offset }}" stroke-linecap="round"/>
+          {% set ns.offset = ns.offset - pct %}
+          {% endif %}
+          {% endfor %}
+        </svg>
+        <ul class="legend-list">
+          {% for ing in report_data.ingresos[:5] %}
+          <li><div class="leg-swatch" style="background:{{ colors[loop.index0] }}"></div><span class="leg-name">{{ ing.nombre }}</span><span class="leg-pct">{{ "{:,.1f}".format(ing.porcentaje).replace('.', ',') }}%</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <!-- Barras top 5 gastos -->
+    <div class="chart-card">
+      <div class="chart-title">Top 5 Rubros de Gasto</div>
+      <ul class="hbar-list">
+        {% for gasto in report_data.top_5_gastos %}
+        <li class="hbar-item">
+          <div class="hbar-meta"><span class="hbar-name">{{ gasto.nombre }}</span><span class="hbar-val">${{ "{:,.0f}".format(gasto.saldo).replace(',', '.') }} Â· {{ "{:,.1f}".format(gasto.porcentaje).replace('.', ',') }}%</span></div>
+          <div class="hbar-track"><div class="hbar-fill" style="width:{{ gasto.porcentaje | round(1) }}%; background:{% if loop.index0 == 0 %}#b53a2a{% elif loop.index0 == 1 %}#c05a45{% else %}#1e4f87{% endif %};"></div></div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <span>Estado de Resultados Gerencial Â· {{ fecha_inicio }} â€“ {{ fecha_fin }} Â· {{ empresa_nombre }} Â· NIT {{ empresa_nit }}</span>
+    <span>Generado automÃ¡ticamente Â· Solo lectura</span>
+  </footer>
+
+</div>
+</body>
+</html>
+
+''',
+
     'reports/exito_fe_template.html': r'''
 <!DOCTYPE html>
 <html lang="es">
 
 <head>
     <meta charset="UTF-8">
-    <title>Factura Electrónica de Venta - Estilo Exito</title>
+    <title>Factura ElectrÃ³nica de Venta - Estilo Exito</title>
     <style>
         /* RESET & BASE */
         * {
@@ -1966,7 +2820,7 @@ TEMPLATES_EMPAQUETADOS = {
             margin-bottom: 2px;
         }
 
-        /* SECCIÓN TIPO DOCUMENTO Y NÚMERO (IZQUIERDA) */
+        /* SECCIÃ“N TIPO DOCUMENTO Y NÃšMERO (IZQUIERDA) */
         .doc-info {
             position: absolute;
             top: 0;
@@ -1990,7 +2844,7 @@ TEMPLATES_EMPAQUETADOS = {
             margin-top: 5px;
         }
 
-        /* CLIENTE Y DIRECCIÓN */
+        /* CLIENTE Y DIRECCIÃ“N */
         .client-section {
             width: 100%;
             border-top: 1px solid #000;
@@ -2043,7 +2897,7 @@ TEMPLATES_EMPAQUETADOS = {
             border-bottom: 1px solid #eee;
         }
 
-        /* SECCIÓN TOTALES E IMPUESTOS */
+        /* SECCIÃ“N TOTALES E IMPUESTOS */
         .summary-section {
             display: table;
             width: 100%;
@@ -2084,7 +2938,7 @@ TEMPLATES_EMPAQUETADOS = {
             font-size: 12px;
         }
 
-        /* PIE DE PÁGINA (DIAN) */
+        /* PIE DE PÃGINA (DIAN) */
         .dian-section {
             margin-top: 20px;
             padding: 10px;
@@ -2122,7 +2976,7 @@ TEMPLATES_EMPAQUETADOS = {
         <div class="company-nit">NIT: {{empresa.nit}}</div>
         <div class="company-details">Responsable de IVA</div>
         <div class="company-details">{{empresa.direccion}} - {{empresa.ciudad}} - Colombia</div>
-        <div class="company-details">Teléfono - {{empresa.telefono}}</div>
+        <div class="company-details">TelÃ©fono - {{empresa.telefono}}</div>
         <div class="company-details">E-mail: {{empresa.email}}</div>
         <div class="company-details text-bold">REPRESENTACION GRAFICA DE FACTURA ELECTRONICA</div>
     </div>
@@ -2131,8 +2985,8 @@ TEMPLATES_EMPAQUETADOS = {
         <div class="doc-title">FACTURA ELECTRONICA DE VENTA</div>
         <div class="doc-number">{{documento.tipo_documento_codigo}} - {{documento.numero}}</div>
         <div class="doc-dates">
-            Fecha Validación DIAN: {{documento.fecha_emision}}<br>
-            Hora Validación DIAN: {{documento.hora_emision|default('00:00:00')}}
+            Fecha ValidaciÃ³n DIAN: {{documento.fecha_emision}}<br>
+            Hora ValidaciÃ³n DIAN: {{documento.hora_emision|default('00:00:00')}}
         </div>
     </div>
 
@@ -2147,11 +3001,11 @@ TEMPLATES_EMPAQUETADOS = {
                 <div class="value">{{tercero.nit}}</div>
             </div>
             <div class="row">
-                <div class="label">Régimen:</div>
+                <div class="label">RÃ©gimen:</div>
                 <div class="value">{{tercero.regimen|default('No responsable de IVA')}}</div>
             </div>
             <div class="row">
-                <div class="label">Obligación:</div>
+                <div class="label">ObligaciÃ³n:</div>
                 <div class="value">{{tercero.responsabilidad|default('No responsable')}}</div>
             </div>
             <div class="row">
@@ -2165,7 +3019,7 @@ TEMPLATES_EMPAQUETADOS = {
         </div>
         <div class="client-col">
             <div class="row">
-                <div class="label">Dirección:</div>
+                <div class="label">DirecciÃ³n:</div>
                 <div class="value">{{tercero.direccion}}</div>
             </div>
             <div class="row">
@@ -2173,7 +3027,7 @@ TEMPLATES_EMPAQUETADOS = {
                 <div class="value">{{tercero.ciudad}}</div>
             </div>
             <div class="row">
-                <div class="label">Teléfono:</div>
+                <div class="label">TelÃ©fono:</div>
                 <div class="value">{{tercero.telefono}}</div>
             </div>
             <div class="row">
@@ -2195,8 +3049,8 @@ TEMPLATES_EMPAQUETADOS = {
         <thead>
             <tr>
                 <th width="4%">#</th>
-                <th width="14%">Código</th>
-                <th width="32%">Descripción</th>
+                <th width="14%">CÃ³digo</th>
+                <th width="32%">DescripciÃ³n</th>
                 <th width="7%">Cantidad</th>
                 <th width="7%">UM</th>
                 <th width="12%">Val. Unit</th>
@@ -2344,7 +3198,7 @@ TEMPLATES_EMPAQUETADOS = {
                 width="100" height="100">
         </div>
         <div class="dian-info-col">
-            <strong>Resolución de Facturación Electrónica</strong><br>
+            <strong>ResoluciÃ³n de FacturaciÃ³n ElectrÃ³nica</strong><br>
             Nro. {{documento.resolucion_numero}} de {{documento.resolucion_fecha}}<br>
             Prefijo: {{documento.resolucion_prefijo}}, Rango {{documento.resolucion_rango_desde}} Al
             {{documento.resolucion_rango_hasta}}<br>
@@ -2353,8 +3207,8 @@ TEMPLATES_EMPAQUETADOS = {
 
             <strong>CUFE:</strong> {{documento.dian_cufe}}<br><br>
 
-            La presente Factura Electrónica de Venta, es un título valor de acuerdo con lo establecido en el Código de
-            Comercio y en especial en los artículos 621,772 y 774.
+            La presente Factura ElectrÃ³nica de Venta, es un tÃ­tulo valor de acuerdo con lo establecido en el CÃ³digo de
+            Comercio y en especial en los artÃ­culos 621,772 y 774.
         </div>
     </div>
     {% endif %}
@@ -2497,13 +3351,13 @@ TEMPLATES_EMPAQUETADOS = {
                     <p>K.T. Inicial: <strong>{{ "${:,.0f}".format(resumen_kt.kt_ini) }}</strong></p>
                 </td>
                 <td style="border: none; width: 50%;">
-                    <h3>Variación en el Periodo</h3>
+                    <h3>VariaciÃ³n en el Periodo</h3>
                     <p>Activo Corriente Final: <strong>{{ "${:,.0f}".format(resumen_kt.activo_cte_fin) }}</strong></p>
                     <p>Pasivo Corriente Final: <strong>{{ "${:,.0f}".format(resumen_kt.pasivo_cte_fin) }}</strong></p>
                     <hr>
                     <p>K.T. Final: <strong>{{ "${:,.0f}".format(resumen_kt.kt_fin) }}</strong></p>
                     <h4 class="{{ 'text-success' if resumen_kt.variacion_kt > 0 else 'text-danger' }}">
-                        Variación K.T.: {{ "${:,.0f}".format(resumen_kt.variacion_kt) }}
+                        VariaciÃ³n K.T.: {{ "${:,.0f}".format(resumen_kt.variacion_kt) }}
                     </h4>
                 </td>
             </tr>
@@ -2514,12 +3368,12 @@ TEMPLATES_EMPAQUETADOS = {
     <table>
         <thead>
             <tr>
-                <th style="width: 10%;">Código</th>
+                <th style="width: 10%;">CÃ³digo</th>
                 <th style="width: 30%;">Cuenta</th>
                 <th style="width: 15%;">Saldo Inicial</th>
                 <th style="width: 15%;">Saldo Final</th>
                 <th style="width: 15%; background-color: #28a745;">FUENTES (Origen)</th>
-                <th style="width: 15%; background-color: #dc3545;">USOS (Aplicación)</th>
+                <th style="width: 15%; background-color: #dc3545;">USOS (AplicaciÃ³n)</th>
             </tr>
         </thead>
         <tbody>
@@ -2549,7 +3403,7 @@ TEMPLATES_EMPAQUETADOS = {
                 <td colspan="2" class="text-center font-bold">
                     {{ "${:,.0f}".format(totales.diferencia) }}
                     <br>
-                    <span style="font-size: 9px; font-weight: normal;">(Debe ser igual a la Variación K.T.)</span>
+                    <span style="font-size: 9px; font-weight: normal;">(Debe ser igual a la VariaciÃ³n K.T.)</span>
                 </td>
             </tr>
         </tfoot>
@@ -2557,8 +3411,8 @@ TEMPLATES_EMPAQUETADOS = {
 
     <div style="font-size: 9px; color: #666; margin-top: 20px;">
         <p><strong>Nota Interpretativa:</strong><br>
-            - <strong>FUENTES:</strong> Dinero generado por disminución de Activos (ej. cobro de cartera) o aumento de
-            Pasivos (ej. financiación proveedores).<br>
+            - <strong>FUENTES:</strong> Dinero generado por disminuciÃ³n de Activos (ej. cobro de cartera) o aumento de
+            Pasivos (ej. financiaciÃ³n proveedores).<br>
             - <strong>USOS:</strong> Dinero utilizado para aumentar Activos (ej. compra inventario) o disminuir Pasivos
             (ej. pago deudas).</p>
     </div>
@@ -2674,7 +3528,7 @@ TEMPLATES_EMPAQUETADOS = {
             </td>
             <td width="40%" valign="top" align="right">
                 <div class="doc-type-box">{{documento.tipo_nombre}}</div>
-                <div class="doc-number">N° {{documento.consecutivo}}</div>
+                <div class="doc-number">NÂ° {{documento.consecutivo}}</div>
                 <div style="text-align: right; margin-top: 5px;">Fecha: <strong>{{documento.fecha_emision}}</strong>
                 </div>
             </td>
@@ -2703,9 +3557,9 @@ TEMPLATES_EMPAQUETADOS = {
         <thead>
             <tr>
                 <th width="15%">Cuenta</th>
-                <th width="45%">Descripción</th>
-                <th width="20%" class="text-right">Débito</th>
-                <th width="20%" class="text-right">Crédito</th>
+                <th width="45%">DescripciÃ³n</th>
+                <th width="20%" class="text-right">DÃ©bito</th>
+                <th width="20%" class="text-right">CrÃ©dito</th>
             </tr>
         </thead>
         <tbody>
@@ -2730,29 +3584,29 @@ TEMPLATES_EMPAQUETADOS = {
 
     <div class="signatures">
         <div class="sig-col">
-            <div class="sig-line">Elaboró</div>
+            <div class="sig-line">ElaborÃ³</div>
         </div>
         <div class="sig-col">
-            <div class="sig-line">Revisó</div>
+            <div class="sig-line">RevisÃ³</div>
         </div>
         <div class="sig-col">
-            <div class="sig-line">Aprobó</div>
+            <div class="sig-line">AprobÃ³</div>
         </div>
         <div class="sig-col">
-            <div class="sig-line">Contabilizó</div>
+            <div class="sig-line">ContabilizÃ³</div>
         </div>
     </div>
 
     {% if documento.dian_cufe %}
     <div style="margin-top: 30px; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 9px; color: #555;">
-        <strong>Información Fiscal (DIAN/Proveedor):</strong><br>
+        <strong>InformaciÃ³n Fiscal (DIAN/Proveedor):</strong><br>
         <strong>{% if 'SOPORTE' in documento.tipo_nombre.upper() %}CUDS{% else %}CUFE{% endif %}:</strong> <span
             style="font-family: monospace;">{{documento.dian_cufe}}</span><br>
         <strong>Estado DIAN:</strong> {{documento.dian_estado}}<br>
         {% if not documento.dian_xml_url %}
         <br>
-        <em>Nota: Documento generado en entorno de Pruebas/Habilitación (Sin URL pública directa). Este documento es
-            válido como soporte interno.</em>
+        <em>Nota: Documento generado en entorno de Pruebas/HabilitaciÃ³n (Sin URL pÃºblica directa). Este documento es
+            vÃ¡lido como soporte interno.</em>
         {% endif %}
     </div>
     {% endif %}
@@ -2822,7 +3676,7 @@ TEMPLATES_EMPAQUETADOS = {
             width: 100%;
             border-collapse: collapse;
             margin-top: 10px;
-            /* Asegurar que la cabecera se repita en cada página */
+            /* Asegurar que la cabecera se repita en cada pÃ¡gina */
             display: table;
         }
 
@@ -2972,7 +3826,7 @@ TEMPLATES_EMPAQUETADOS = {
     <div class="filters-info">
         <strong>Filtros Aplicados:</strong><br>
         Rango de Fechas: {{ filtros.fecha_inicio or 'Inicio' }} - {{ filtros.fecha_fin or 'Actualidad' }} <br>
-        Tipo de Operación: {{ filtros.tipo_operacion or 'TODOS' }} <br>
+        Tipo de OperaciÃ³n: {{ filtros.tipo_operacion or 'TODOS' }} <br>
         <strong>Registros Exportados: {{ items|length }} (Max: 5000)</strong>
     </div>
 
@@ -2980,7 +3834,7 @@ TEMPLATES_EMPAQUETADOS = {
         <thead>
             <tr>
                 <th width="15%">Fecha</th>
-                <th width="15%">Operación</th>
+                <th width="15%">OperaciÃ³n</th>
                 <th width="20%">Empresa</th>
                 <th width="25%">Detalle / Documento</th>
                 <th width="15%">Origen/Bolsa</th>
@@ -2995,7 +3849,7 @@ TEMPLATES_EMPAQUETADOS = {
                 <td>
                     {% if item.tipo_operacion == 'CONSUMO' %} <span class="tag tag-consumo">CONSUMO</span>
                     {% elif item.tipo_operacion == 'COMPRA' %} <span class="tag tag-compra">COMPRA RECARGA</span>
-                    {% elif item.tipo_operacion == 'REVERSION' %} <span class="tag tag-reversion">REVERSIÓN</span>
+                    {% elif item.tipo_operacion == 'REVERSION' %} <span class="tag tag-reversion">REVERSIÃ“N</span>
                     {% elif item.tipo_operacion == 'CIERRE' %} <span class="tag tag-cierre">CIERRE MENSUAL</span>
                     {% else %} {{ item.tipo_operacion }} {% endif %}
                 </td>
@@ -3063,7 +3917,7 @@ TEMPLATES_EMPAQUETADOS = {
     {% endif %}
 
     <div class="footer">
-        Este reporte fue generado automáticamente por el sistema FINAXIS.
+        Este reporte fue generado automÃ¡ticamente por el sistema FINAXIS.
     </div>
 </body>
 
@@ -3156,7 +4010,7 @@ TEMPLATES_EMPAQUETADOS = {
             </tr>
 
             <tr class="final-total-row">
-                <td><strong>UTILIDAD (O PÉRDIDA) DEL EJERCICIO</strong></td>
+                <td><strong>UTILIDAD (O PÃ‰RDIDA) DEL EJERCICIO</strong></td>
                 <td class="text-right"><strong>{{ "{:,.2f}".format(totales.utilidad_neta) }}</strong></td>
             </tr>
         </tbody>
@@ -3249,7 +4103,7 @@ TEMPLATES_EMPAQUETADOS = {
             </tr>
 
             <tr class="final-total-row">
-                <td><strong>UTILIDAD (O PÉRDIDA) DEL EJERCICIO</strong></td>
+                <td><strong>UTILIDAD (O PÃ‰RDIDA) DEL EJERCICIO</strong></td>
                 <td class="text-right"><strong>{{ "{:,.2f}".format(totales.utilidad_neta) }}</strong></td>
             </tr>
         </tbody>
@@ -3342,7 +4196,7 @@ TEMPLATES_EMPAQUETADOS = {
             color: #374151;
         }
 
-        /* INFORMACIÓN CLIENTE */
+        /* INFORMACIÃ“N CLIENTE */
         .client-section {
             background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
             border-radius: 6px;
@@ -3440,7 +4294,7 @@ TEMPLATES_EMPAQUETADOS = {
             color: #374151;
         }
 
-        /* SECCIÓN TOTALES PROFESIONAL */
+        /* SECCIÃ“N TOTALES PROFESIONAL */
         .totals-container {
             display: flex;
             justify-content: space-between;
@@ -3538,7 +4392,7 @@ TEMPLATES_EMPAQUETADOS = {
             min-width: 85px;
         }
 
-        /* PIE DE PÁGINA EMPRESARIAL */
+        /* PIE DE PÃGINA EMPRESARIAL */
         .footer-area {
             margin-top: 28px;
             padding-top: 16px;
@@ -3597,14 +4451,14 @@ TEMPLATES_EMPAQUETADOS = {
             {% endif %}
             <div class="company-name">{{empresa.razon_social}}</div>
             <div class="company-details">
-                NIT: {{empresa.nit}} • {{empresa.direccion}}<br>
-                Tel: {{empresa.telefono}}{% if empresa.email %} • {{empresa.email}}{% endif %}
+                NIT: {{empresa.nit}} â€¢ {{empresa.direccion}}<br>
+                Tel: {{empresa.telefono}}{% if empresa.email %} â€¢ {{empresa.email}}{% endif %}
             </div>
         </div>
         
         <div class="document-section">
             <div class="doc-type">{{documento.tipo_nombre}}</div>
-            <div class="doc-number">N° {{documento.consecutivo}}</div>
+            <div class="doc-number">NÂ° {{documento.consecutivo}}</div>
             <div class="doc-dates">
                 <span class="date-label">Fecha:</span> {{documento.fecha_emision}}<br>
                 {% if documento.fecha_vencimiento %}<span class="date-label">Vence:</span> {{documento.fecha_vencimiento}}<br>{% endif %}
@@ -3613,12 +4467,12 @@ TEMPLATES_EMPAQUETADOS = {
         </div>
     </div>
 
-    <!-- INFORMACIÓN DEL CLIENTE -->
+    <!-- INFORMACIÃ“N DEL CLIENTE -->
     <div class="client-section">
         <div class="client-header">Cliente / Proveedor</div>
         <div class="client-name">{{tercero.razon_social}}</div>
         <div class="client-info">
-            NIT/CC: {{tercero.nit}}{% if tercero.direccion %} • {{tercero.direccion}}{% endif %}{% if tercero.telefono %} • Tel: {{tercero.telefono}}{% endif %}
+            NIT/CC: {{tercero.nit}}{% if tercero.direccion %} â€¢ {{tercero.direccion}}{% endif %}{% if tercero.telefono %} â€¢ Tel: {{tercero.telefono}}{% endif %}
         </div>
     </div>
 
@@ -3626,8 +4480,8 @@ TEMPLATES_EMPAQUETADOS = {
     <table class="products-table">
         <thead>
             <tr>
-                <th width="10%">Código</th>
-                <th width="40%">Descripción del Producto/Servicio</th>
+                <th width="10%">CÃ³digo</th>
+                <th width="40%">DescripciÃ³n del Producto/Servicio</th>
                 <th width="8%" class="text-center">Cant.</th>
                 <th width="12%" class="text-right">Precio Unit.</th>
                 <th width="10%" class="text-right">Descuento</th>
@@ -3648,7 +4502,7 @@ TEMPLATES_EMPAQUETADOS = {
         </tbody>
     </table>
 
-    <!-- TOTALES Y DISCRIMINACIÓN FISCAL -->
+    <!-- TOTALES Y DISCRIMINACIÃ“N FISCAL -->
     <div class="totals-container">
         <div class="notes-area">
             {% if totales.valor_letras %}
@@ -3680,7 +4534,7 @@ TEMPLATES_EMPAQUETADOS = {
             </div>
             {% endif %}
             
-            <!-- DISCRIMINACIÓN DE BASES GRAVABLES -->
+            <!-- DISCRIMINACIÃ“N DE BASES GRAVABLES -->
             {% if totales.base_exenta and totales.base_exenta != '0.00' %}
             <div class="total-line base-line">
                 <span class="total-label">Base Exenta (0%):</span>
@@ -3702,7 +4556,7 @@ TEMPLATES_EMPAQUETADOS = {
             </div>
             {% endif %}
             
-            <!-- DISCRIMINACIÓN DE IMPUESTOS -->
+            <!-- DISCRIMINACIÃ“N DE IMPUESTOS -->
             {% if totales.iva_5 and totales.iva_5 != '0.00' %}
             <div class="total-line tax-line">
                 <span class="total-label">IVA (5%):</span>
@@ -3720,7 +4574,7 @@ TEMPLATES_EMPAQUETADOS = {
             <!-- RETENCIONES -->
             {% if totales.retencion and totales.retencion != '0.00' %}
             <div class="total-line">
-                <span class="total-label">Retención:</span>
+                <span class="total-label">RetenciÃ³n:</span>
                 <span class="total-value">-{{totales.retencion}}</span>
             </div>
             {% endif %}
@@ -3733,30 +4587,30 @@ TEMPLATES_EMPAQUETADOS = {
         </div>
     </div>
 
-    <!-- PIE DE PÁGINA EMPRESARIAL -->
+    <!-- PIE DE PÃGINA EMPRESARIAL -->
     <div class="footer-area">
         <div class="legal-notice">
-            Esta factura se asimila en todos sus efectos a una letra de cambio de conformidad con el artículo 774 del Código de Comercio. 
-            Los pagos realizados después del vencimiento causarán intereses de mora según las tasas legales vigentes.
+            Esta factura se asimila en todos sus efectos a una letra de cambio de conformidad con el artÃ­culo 774 del CÃ³digo de Comercio. 
+            Los pagos realizados despuÃ©s del vencimiento causarÃ¡n intereses de mora segÃºn las tasas legales vigentes.
         </div>
 
         <div class="signature-grid">
             <div class="signature-field">
-                <div class="signature-line">Elaboró</div>
+                <div class="signature-line">ElaborÃ³</div>
             </div>
             <div class="signature-field">
-                <div class="signature-line">Revisó</div>
+                <div class="signature-line">RevisÃ³</div>
             </div>
             <div class="signature-field">
-                <div class="signature-line">Aprobó</div>
+                <div class="signature-line">AprobÃ³</div>
             </div>
             <div class="signature-field">
-                <div class="signature-line">Recibí Conforme</div>
+                <div class="signature-line">RecibÃ­ Conforme</div>
             </div>
         </div>
 
         <div class="footer-brand">
-            Gracias por su confianza • Powered by ContaPY Enterprise
+            Gracias por su confianza â€¢ Powered by ContaPY Enterprise
         </div>
     </div>
 </body>
@@ -3774,7 +4628,7 @@ TEMPLATES_EMPAQUETADOS = {
             size: letter;
             margin: 1.5cm;
             @bottom-center {
-                content: "Página " counter(page) " de " counter(pages);
+                content: "PÃ¡gina " counter(page) " de " counter(pages);
                 font-size: 10px;
             }
         }
@@ -3830,7 +4684,7 @@ TEMPLATES_EMPAQUETADOS = {
     <div class="header">
         <h1>{{ empresa.razon_social }}</h1>
         <h2>NIT: {{ empresa.nit }}</h2>
-        <p><strong>Libro de Inventarios y Balances (Estado de Situación Financiera)</strong></p>
+        <p><strong>Libro de Inventarios y Balances (Estado de SituaciÃ³n Financiera)</strong></p>
         <p>Con corte al {{ fecha_corte.strftime('%d de %B de %Y') }}</p>
     </div>
 
@@ -3873,7 +4727,7 @@ TEMPLATES_EMPAQUETADOS = {
         </tr>
         {% endfor %}
         <tr>
-            <td>Utilidad (o Pérdida) del Ejercicio</td>
+            <td>Utilidad (o PÃ©rdida) del Ejercicio</td>
             <td class="text-right">{{ "${:,.2f}".format(reporte.utilidad_ejercicio) }}</td>
         </tr>
         <tr class="total-row">
@@ -3902,7 +4756,7 @@ TEMPLATES_EMPAQUETADOS = {
         @page {
             size: letter;
             margin: 0;
-            /* Usaremos paddings internos para mayor control del diseño */
+            /* Usaremos paddings internos para mayor control del diseÃ±o */
         }
 
         body {
@@ -4196,15 +5050,15 @@ TEMPLATES_EMPAQUETADOS = {
                 {% endif %}
                 <h1 class="company-name">{{empresa.razon_social}}</h1>
                 <div class="company-info">
-                    NIT: {{empresa.nit}} • Régimen Común<br>
+                    NIT: {{empresa.nit}} â€¢ RÃ©gimen ComÃºn<br>
                     {{empresa.direccion}}<br>
-                    {{empresa.email}} • {{empresa.telefono}}
+                    {{empresa.email}} â€¢ {{empresa.telefono}}
                 </div>
             </div>
             <div class="header-right">
                 <h2 class="doc-label">{{documento.tipo_nombre}}</h2>
                 <div class="doc-number-box">
-                    <span style="font-size: 8px; display: block; color: #94a3b8; text-transform: uppercase;">Número de
+                    <span style="font-size: 8px; display: block; color: #94a3b8; text-transform: uppercase;">NÃºmero de
                         Documento</span>
                     <span class="doc-number">{{documento.prefix}}{{documento.consecutivo}}</span>
                 </div>
@@ -4229,7 +5083,7 @@ TEMPLATES_EMPAQUETADOS = {
                 </div>
             </div>
             <div class="info-col" style="padding-left: 20px;">
-                <div class="section-title">Detalles de Operación</div>
+                <div class="section-title">Detalles de OperaciÃ³n</div>
                 <div class="data-text">
                     <strong>Vendedor:</strong> {{documento.vendedor|default('N/A')}}<br>
                     <strong>Forma de Pago:</strong> {{documento.metodo_pago|default('Contado')}}<br>
@@ -4243,7 +5097,7 @@ TEMPLATES_EMPAQUETADOS = {
             <table class="items-table">
                 <thead>
                     <tr>
-                        <th width="50%">Descripción del Servicio</th>
+                        <th width="50%">DescripciÃ³n del Servicio</th>
                         <th width="10%" class="text-center">Cant.</th>
                         <th width="20%" class="text-right">Precio Unit.</th>
                         <th width="20%" class="text-right">Subtotal</th>
@@ -4274,7 +5128,7 @@ TEMPLATES_EMPAQUETADOS = {
                 </div>
 
                 <div class="payment-info">
-                    <strong>Información de Pago:</strong><br>
+                    <strong>InformaciÃ³n de Pago:</strong><br>
                     Por favor realizar transferencia a la cuenta de ahorros No. XXX-XXXXXX-XX de Banco XXXXXX.<br>
                     Referencia: Factura {{documento.consecutivo}}
                 </div>
@@ -4310,10 +5164,10 @@ TEMPLATES_EMPAQUETADOS = {
         {% if documento.dian_cufe %}
         <div class="fiscal-area">
             <div class="fiscal-left">
-                <strong>INFORMACIÓN FISCAL DIAN</strong><br>
-                Software Proveedor: <strong>FINAXIS ENTERPRISE</strong> (Tecnología Cloud)<br>
-                Tipo: {% if 'SOPORTE' in documento.tipo_nombre.upper() %}Documento Soporte Electrónico{% else %}Factura
-                Electrónica de Venta{% endif %}<br>
+                <strong>INFORMACIÃ“N FISCAL DIAN</strong><br>
+                Software Proveedor: <strong>FINAXIS ENTERPRISE</strong> (TecnologÃ­a Cloud)<br>
+                Tipo: {% if 'SOPORTE' in documento.tipo_nombre.upper() %}Documento Soporte ElectrÃ³nico{% else %}Factura
+                ElectrÃ³nica de Venta{% endif %}<br>
                 CUFE/CUDS:
                 <span class="cufe-text">{{documento.dian_cufe}}</span>
             </div>
@@ -4323,7 +5177,7 @@ TEMPLATES_EMPAQUETADOS = {
                 {% else %}
                 <div class="qr-placeholder"
                     style="display: flex; align-items: center; justify-content: center; font-size: 6px;">
-                    CÓDIGO QR VALIDACIÓN
+                    CÃ“DIGO QR VALIDACIÃ“N
                 </div>
                 {% endif %}
             </div>
@@ -4331,11 +5185,11 @@ TEMPLATES_EMPAQUETADOS = {
         {% endif %}
 
         <div class="signature-line">
-            Recibido por (Nombre y Cédula)
+            Recibido por (Nombre y CÃ©dula)
         </div>
 
         <div class="finaxis-brand">
-            Software de Gestión Inteligente • FINAXIS.COM.CO
+            Software de GestiÃ³n Inteligente â€¢ FINAXIS.COM.CO
         </div>
     </div>
 </body>
@@ -4428,7 +5282,7 @@ TEMPLATES_EMPAQUETADOS = {
             color: #374151;
         }
 
-        /* INFORMACIÓN CLIENTE */
+        /* INFORMACIÃ“N CLIENTE */
         .client-section {
             background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
             border-radius: 6px;
@@ -4460,7 +5314,7 @@ TEMPLATES_EMPAQUETADOS = {
         }
 
         /* TABLA PRODUCTOS */
-        /* CONFIGURACIÓN DE PÁGINA PARA PDF (WeasyPrint) */
+        /* CONFIGURACIÃ“N DE PÃGINA PARA PDF (WeasyPrint) */
         @page {
             size: letter;
             margin: 1cm;
@@ -4540,7 +5394,7 @@ TEMPLATES_EMPAQUETADOS = {
             color: #374151;
         }
 
-        /* SECCIÓN TOTALES PROFESIONAL */
+        /* SECCIÃ“N TOTALES PROFESIONAL */
         .totals-container {
             display: flex;
             justify-content: space-between;
@@ -4638,7 +5492,7 @@ TEMPLATES_EMPAQUETADOS = {
             min-width: 85px;
         }
 
-        /* PIE DE PÁGINA EMPRESARIAL */
+        /* PIE DE PÃGINA EMPRESARIAL */
         .footer-area {
             margin-top: 28px;
             padding-top: 16px;
@@ -4697,14 +5551,14 @@ TEMPLATES_EMPAQUETADOS = {
             {% endif %}
             <div class="company-name">{{empresa.razon_social}}</div>
             <div class="company-details">
-                NIT: {{empresa.nit}} • {{empresa.direccion}}<br>
-                Tel: {{empresa.telefono}}{% if empresa.email %} • {{empresa.email}}{% endif %}
+                NIT: {{empresa.nit}} â€¢ {{empresa.direccion}}<br>
+                Tel: {{empresa.telefono}}{% if empresa.email %} â€¢ {{empresa.email}}{% endif %}
             </div>
         </div>
 
         <div class="document-section">
             <div class="doc-type">{{documento.tipo_nombre}}</div>
-            <div class="doc-number">N° {{documento.consecutivo}}</div>
+            <div class="doc-number">NÂ° {{documento.consecutivo}}</div>
             <div class="doc-dates">
                 <span class="date-label">Fecha:</span> {{documento.fecha_emision}}<br>
                 {% if documento.fecha_vencimiento %}<span class="date-label">Vence:</span>
@@ -4714,13 +5568,13 @@ TEMPLATES_EMPAQUETADOS = {
         </div>
     </div>
 
-    <!-- INFORMACIÓN DEL CLIENTE -->
+    <!-- INFORMACIÃ“N DEL CLIENTE -->
     <div class="client-section">
         <div class="client-header">Cliente / Proveedor</div>
         <div class="client-name">{{tercero.razon_social}}</div>
         <div class="client-info">
-            NIT/CC: {{tercero.nit}}{% if tercero.direccion %} • {{tercero.direccion}}{% endif %}{% if tercero.telefono
-            %} • Tel: {{tercero.telefono}}{% endif %}
+            NIT/CC: {{tercero.nit}}{% if tercero.direccion %} â€¢ {{tercero.direccion}}{% endif %}{% if tercero.telefono
+            %} â€¢ Tel: {{tercero.telefono}}{% endif %}
         </div>
     </div>
 
@@ -4728,8 +5582,8 @@ TEMPLATES_EMPAQUETADOS = {
     <table class="products-table">
         <thead>
             <tr>
-                <th width="10%">Código</th>
-                <th width="40%">Descripción del Producto/Servicio</th>
+                <th width="10%">CÃ³digo</th>
+                <th width="40%">DescripciÃ³n del Producto/Servicio</th>
                 <th width="8%" class="text-center">Cant.</th>
                 <th width="12%" class="text-right">Precio Unit.</th>
                 <th width="10%" class="text-right">Descuento</th>
@@ -4750,7 +5604,7 @@ TEMPLATES_EMPAQUETADOS = {
         </tbody>
     </table>
 
-    <!-- TOTALES Y DISCRIMINACIÓN FISCAL -->
+    <!-- TOTALES Y DISCRIMINACIÃ“N FISCAL -->
     <div class="totals-container">
         <div class="notes-area">
             {% if totales.valor_letras %}
@@ -4782,7 +5636,7 @@ TEMPLATES_EMPAQUETADOS = {
             </div>
             {% endif %}
 
-            <!-- DISCRIMINACIÓN DE BASES GRAVABLES -->
+            <!-- DISCRIMINACIÃ“N DE BASES GRAVABLES -->
             {% if totales.base_exenta and totales.base_exenta != '0.00' %}
             <div class="total-line base-line">
                 <span class="total-label">Base Exenta (0%):</span>
@@ -4804,7 +5658,7 @@ TEMPLATES_EMPAQUETADOS = {
             </div>
             {% endif %}
 
-            <!-- DISCRIMINACIÓN DE IMPUESTOS -->
+            <!-- DISCRIMINACIÃ“N DE IMPUESTOS -->
             {% if totales.iva_5 and totales.iva_5 != '0.00' %}
             <div class="total-line tax-line">
                 <span class="total-label">IVA (5%):</span>
@@ -4822,7 +5676,7 @@ TEMPLATES_EMPAQUETADOS = {
             <!-- RETENCIONES -->
             {% if totales.retencion and totales.retencion != '0.00' %}
             <div class="total-line">
-                <span class="total-label">Retención:</span>
+                <span class="total-label">RetenciÃ³n:</span>
                 <span class="total-value">-{{totales.retencion}}</span>
             </div>
             {% endif %}
@@ -4835,31 +5689,31 @@ TEMPLATES_EMPAQUETADOS = {
         </div>
     </div>
 
-    <!-- PIE DE PÁGINA EMPRESARIAL -->
+    <!-- PIE DE PÃGINA EMPRESARIAL -->
     <div class="footer-area">
         <div class="legal-notice">
-            Esta factura se asimila en todos sus efectos a una letra de cambio de conformidad con el artículo 774 del
-            Código de Comercio.
-            Los pagos realizados después del vencimiento causarán intereses de mora según las tasas legales vigentes.
+            Esta factura se asimila en todos sus efectos a una letra de cambio de conformidad con el artÃ­culo 774 del
+            CÃ³digo de Comercio.
+            Los pagos realizados despuÃ©s del vencimiento causarÃ¡n intereses de mora segÃºn las tasas legales vigentes.
         </div>
 
         <div class="signature-grid">
             <div class="signature-field">
-                <div class="signature-line">Elaboró</div>
+                <div class="signature-line">ElaborÃ³</div>
             </div>
             <div class="signature-field">
-                <div class="signature-line">Revisó</div>
+                <div class="signature-line">RevisÃ³</div>
             </div>
             <div class="signature-field">
-                <div class="signature-line">Aprobó</div>
+                <div class="signature-line">AprobÃ³</div>
             </div>
             <div class="signature-field">
-                <div class="signature-line">Recibí Conforme</div>
+                <div class="signature-line">RecibÃ­ Conforme</div>
             </div>
         </div>
 
         <div class="footer-brand">
-            Gracias por su confianza • Powered by ContaPY Enterprise
+            Gracias por su confianza â€¢ Powered by ContaPY Enterprise
         </div>
     </div>
 </body>
@@ -4880,7 +5734,7 @@ TEMPLATES_EMPAQUETADOS = {
             margin: 1.5cm;
 
             @bottom-center {
-                content: "Página " counter(page) " de " counter(pages);
+                content: "PÃ¡gina " counter(page) " de " counter(pages);
                 font-size: 10px;
             }
         }
@@ -5004,8 +5858,8 @@ TEMPLATES_EMPAQUETADOS = {
                 {% if has_cost_centers %}
                 <th>C. Costo</th>
                 {% endif %}
-                <th class="text-right">Débito</th>
-                <th class="text-right">Crédito</th>
+                <th class="text-right">DÃ©bito</th>
+                <th class="text-right">CrÃ©dito</th>
             </tr>
         </thead>
 
@@ -5046,7 +5900,7 @@ TEMPLATES_EMPAQUETADOS = {
             {% else %}
             <tr>
                 <td colspan="{{ 7 if has_cost_centers else 6 }}" style="text-align:center;">No hay movimientos para el
-                    período seleccionado.</td>
+                    perÃ­odo seleccionado.</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -5078,7 +5932,7 @@ TEMPLATES_EMPAQUETADOS = {
             margin: 2cm;
 
             @bottom-center {
-                content: "Página " counter(page) " de " counter(pages);
+                content: "PÃ¡gina " counter(page) " de " counter(pages);
                 font-size: 10px;
             }
         }
@@ -5182,10 +6036,10 @@ TEMPLATES_EMPAQUETADOS = {
                     <td colspan="4">COMPROBANTE: {{ grupo.tipo_documento }}</td>
                 </tr>
                 <tr>
-                    <th style="width: 15%">Código</th>
+                    <th style="width: 15%">CÃ³digo</th>
                     <th style="width: 45%">Cuenta</th>
-                    <th style="width: 20%">Débitos</th>
-                    <th style="width: 20%">Créditos</th>
+                    <th style="width: 20%">DÃ©bitos</th>
+                    <th style="width: 20%">CrÃ©ditos</th>
                 </tr>
             </thead>
             <tbody>
@@ -5270,7 +6124,7 @@ TEMPLATES_EMPAQUETADOS = {
             background-color: #f2f2f2;
             font-weight: bold;
             text-align: center;
-            /* Ajuste de tamaño de fuente para cabecera */
+            /* Ajuste de tamaÃ±o de fuente para cabecera */
             font-size: 7.5pt; 
         }
         .text-right { text-align: right; font-family: 'Courier New', monospace; }
@@ -5291,7 +6145,7 @@ TEMPLATES_EMPAQUETADOS = {
 
     <div class="info">
         <p><strong>Producto:</strong> {{ data.producto_codigo }} - {{ data.producto_nombre }}</p>
-        <p><strong>Período Analizado:</strong> {{ filtros.fecha_inicio | truncate(10, True, '') }} al {{ filtros.fecha_fin | truncate(10, True, '') }}</p>
+        <p><strong>PerÃ­odo Analizado:</strong> {{ filtros.fecha_inicio | truncate(10, True, '') }} al {{ filtros.fecha_fin | truncate(10, True, '') }}</p>
     </div>
 
     <table>
@@ -5314,24 +6168,24 @@ TEMPLATES_EMPAQUETADOS = {
         </thead>
         <tbody>
 
-            {# FIX CRÍTICO DE ALINEACIÓN: Fila de Saldo Anterior #}
+            {# FIX CRÃTICO DE ALINEACIÃ“N: Fila de Saldo Anterior #}
             {% set saldo_inicial_cant = data.totales.saldo_inicial_cantidad | default(0) | float %}
             {% set saldo_inicial_valor = data.totales.saldo_inicial_valor | default(0) | float %}
             
-            {# FIX CRÍTICO: Evitar División por Cero en Costo Promedio Inicial #}
+            {# FIX CRÃTICO: Evitar DivisiÃ³n por Cero en Costo Promedio Inicial #}
             {% set costo_prom_inicial = saldo_inicial_valor / saldo_inicial_cant if saldo_inicial_cant else 0.00 %}
             
             <tr class="saldo-anterior">
                 <td>{{ filtros.fecha_inicio | truncate(10, True, '') }}</td>
-                <td colspan="8">SALDO ANTERIOR</td> {# ¡FIX DE ALINEACIÓN CRÍTICO! Fusiona 8 celdas (Col 2 a Col 9) #}
+                <td colspan="8">SALDO ANTERIOR</td> {# Â¡FIX DE ALINEACIÃ“N CRÃTICO! Fusiona 8 celdas (Col 2 a Col 9) #}
 
-                {# Las últimas 3 columnas (Saldo, Costo Prom, Saldo Val) se mantienen alineadas #}
+                {# Las Ãºltimas 3 columnas (Saldo, Costo Prom, Saldo Val) se mantienen alineadas #}
                 <td class="text-right"><strong>{{ "%.2f"|format(saldo_inicial_cant) }}</strong></td>
                 <td class="text-right"><strong>{{ costo_prom_inicial | float | format_miles }}</strong></td>
                 <td class="text-right"><strong>{{ saldo_inicial_valor | float | format_miles }}</strong></td>
             </tr>
 
-            {# Bucle de Movimientos: FIX CRÍTICO: Se usa 'data.movimientos' #}
+            {# Bucle de Movimientos: FIX CRÃTICO: Se usa 'data.movimientos' #}
             {% for item in data.movimientos | default([]) %}
                 
                 <tr class="{{ 'entrada' if item.entrada_cantidad else 'salida' }}">
@@ -5362,7 +6216,7 @@ TEMPLATES_EMPAQUETADOS = {
     
     {# Totales Finales #}
     <div class="info">
-        <p><strong>Balance del Período:</strong></p>
+        <p><strong>Balance del PerÃ­odo:</strong></p>
         <p>Entradas (Cant.): {{ "%.2f"|format(data.totales.total_entradas_cantidad) }} | Salidas (Cant.): {{ "%.2f"|format(data.totales.total_salidas_cantidad) }}</p>
         <p><strong>Saldo Final:</strong> {{ "%.2f"|format(data.totales.saldo_final_cantidad) }} unidades con un valor total de <strong>${{ data.totales.saldo_final_valor | float | format_miles }}</strong></p>
     </div>
@@ -5384,7 +6238,7 @@ TEMPLATES_EMPAQUETADOS = {
             margin: 1.5cm;
 
             @bottom-center {
-                content: "Página " counter(page) " de " counter(pages);
+                content: "PÃ¡gina " counter(page) " de " counter(pages);
                 font-size: 10px;
             }
         }
@@ -5464,11 +6318,11 @@ TEMPLATES_EMPAQUETADOS = {
     <table>
         <thead>
             <tr>
-                <th style="width: 15%;">Código</th>
+                <th style="width: 15%;">CÃ³digo</th>
                 <th style="width: 35%;">Cuenta</th>
                 <th class="text-right" style="width: 12.5%;">Saldo Anterior</th>
-                <th class="text-right" style="width: 12.5%;">Débitos</th>
-                <th class="text-right" style="width: 12.5%;">Créditos</th>
+                <th class="text-right" style="width: 12.5%;">DÃ©bitos</th>
+                <th class="text-right" style="width: 12.5%;">CrÃ©ditos</th>
                 <th class="text-right" style="width: 12.5%;">Nuevo Saldo</th>
             </tr>
         </thead>
@@ -5484,7 +6338,7 @@ TEMPLATES_EMPAQUETADOS = {
             </tr>
             {% else %}
             <tr>
-                <td colspan="6" style="text-align: center;">No se encontraron movimientos ni saldos para el período
+                <td colspan="6" style="text-align: center;">No se encontraron movimientos ni saldos para el perÃ­odo
                     seleccionado.</td>
             </tr>
             {% endfor %}
@@ -5510,7 +6364,7 @@ TEMPLATES_EMPAQUETADOS = {
 
 <head>
     <meta charset="UTF-8">
-    <title>Reporte Analítico de Movimientos</title>
+    <title>Reporte AnalÃ­tico de Movimientos</title>
     <style>
         body {
             font-family: sans-serif;
@@ -5569,7 +6423,7 @@ TEMPLATES_EMPAQUETADOS = {
             font-family: monospace;
         }
 
-        /* Para alinear números */
+        /* Para alinear nÃºmeros */
         .total-row {
             font-weight: bold;
             background-color: #e8e8e8;
@@ -5588,7 +6442,7 @@ TEMPLATES_EMPAQUETADOS = {
 <body>
     <div class="header">
         <h1>{{ empresa_nombre }}</h1>
-        <h2>Reporte Analítico de Movimiento y Saldos</h2>
+        <h2>Reporte AnalÃ­tico de Movimiento y Saldos</h2>
         <p>Periodo: {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
     </div>
 
@@ -5596,7 +6450,7 @@ TEMPLATES_EMPAQUETADOS = {
         <p><strong>Filtros Aplicados:</strong></p>
         <p>Bodega: {{ bodega_nombre | default('Todas', true) }}</p>
         <p>Grupo: {{ grupo_nombre | default('Todos', true) }}</p>
-        <p>Artículo: {{ producto_nombre | default('Todos', true) }}</p>
+        <p>ArtÃ­culo: {{ producto_nombre | default('Todos', true) }}</p>
         <p>Vista por: {{ 'Valor' if filtros.vista_por_valor else 'Cantidad' }}</p>
     </div>
 
@@ -5689,7 +6543,7 @@ TEMPLATES_EMPAQUETADOS = {
         {% endif %}
     </table>
 
-    {# Filtro personalizado de Jinja2 para formatear números/moneda #}
+    {# Filtro personalizado de Jinja2 para formatear nÃºmeros/moneda #}
     {% macro format_value(num, is_currency) %}
     {% if is_currency %}
     {{ "$ {:,.0f}".format(num | float) }}
@@ -5708,7 +6562,7 @@ TEMPLATES_EMPAQUETADOS = {
 
 <head>
     <meta charset="UTF-8">
-    <title>Factura Electrónica de Venta Premium</title>
+    <title>Factura ElectrÃ³nica de Venta Premium</title>
     <style>
         /* RESET & BASE */
         * {
@@ -5730,7 +6584,7 @@ TEMPLATES_EMPAQUETADOS = {
             margin: 1.5cm 1.5cm;
         }
 
-        /* TIPOGRAFÍA & UTILIDADES */
+        /* TIPOGRAFÃA & UTILIDADES */
         .text-right {
             text-align: right;
         }
@@ -5854,7 +6708,7 @@ TEMPLATES_EMPAQUETADOS = {
             font-weight: 800;
         }
 
-        /* INFORMACIÓN ADQUIRENTE (CARD MODERNO) */
+        /* INFORMACIÃ“N ADQUIRENTE (CARD MODERNO) */
         .adquirente-section {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
@@ -5970,7 +6824,7 @@ TEMPLATES_EMPAQUETADOS = {
 
         .amount-words-box {
             background: #f0fdf4;
-            /* Verde muy claro indicando éxito / pago */
+            /* Verde muy claro indicando Ã©xito / pago */
             border-left: 4px solid #22c55e;
             padding: 12px 15px;
             border-radius: 0 6px 6px 0;
@@ -6079,7 +6933,7 @@ TEMPLATES_EMPAQUETADOS = {
             overflow: hidden;
         }
 
-        /* SECCIÓN FACTURACIÓN ELECTRÓNICA DIAN */
+        /* SECCIÃ“N FACTURACIÃ“N ELECTRÃ“NICA DIAN */
         /* Hacemos este bloque VISUALMENTE IMPECABLE para que el usuario no tenga quejas */
         .fe-dian-section {
             margin-top: 30px;
@@ -6178,7 +7032,7 @@ TEMPLATES_EMPAQUETADOS = {
             font-weight: 500;
         }
 
-        /* PIE DE PÁGINA */
+        /* PIE DE PÃGINA */
         .commercial-footer {
             margin-top: 30px;
             text-align: center;
@@ -6203,16 +7057,16 @@ TEMPLATES_EMPAQUETADOS = {
             <div class="emisor-nit">NIT: {{empresa.nit}}</div>
             <div class="emisor-details">
                 {{empresa.direccion}}<br>
-                Teléfono: {{empresa.telefono}} {% if empresa.email %}| Correo: {{empresa.email}}{% endif %}<br>
-                <strong style="color:#0f172a;">Responsabilidad Tributaria:</strong> IVA Régimen Común
+                TelÃ©fono: {{empresa.telefono}} {% if empresa.email %}| Correo: {{empresa.email}}{% endif %}<br>
+                <strong style="color:#0f172a;">Responsabilidad Tributaria:</strong> IVA RÃ©gimen ComÃºn
             </div>
         </div>
 
         <div class="header-right">
-            <div class="doc-title">Factura Electrónica de Venta</div>
-            <div class="doc-number">N° {{documento.consecutivo}}</div>
+            <div class="doc-title">Factura ElectrÃ³nica de Venta</div>
+            <div class="doc-number">NÂ° {{documento.consecutivo}}</div>
             <div class="doc-meta">
-                <div class="meta-label">Fecha Emisión:</div>
+                <div class="meta-label">Fecha EmisiÃ³n:</div>
                 <div class="meta-value">{{documento.fecha_emision}}</div>
 
                 <div class="meta-label">Fecha Venc.:</div>
@@ -6234,11 +7088,11 @@ TEMPLATES_EMPAQUETADOS = {
         </div>
         <div class="adquirente-col">
             <div class="adq-detail-row" style="margin-top: 18px;">
-                <div class="adq-detail-label">Dirección:</div>
+                <div class="adq-detail-label">DirecciÃ³n:</div>
                 <div class="adq-detail-value">{{tercero.direccion|default('No registrada')}}</div>
             </div>
             <div class="adq-detail-row">
-                <div class="adq-detail-label">Teléfono:</div>
+                <div class="adq-detail-label">TelÃ©fono:</div>
                 <div class="adq-detail-value">{{tercero.telefono|default('No registrado')}}</div>
             </div>
         </div>
@@ -6248,8 +7102,8 @@ TEMPLATES_EMPAQUETADOS = {
     <table class="items-table">
         <thead>
             <tr>
-                <th width="12%" class="text-left">Código</th>
-                <th width="40%" class="text-left">Descripción del Producto o Servicio</th>
+                <th width="12%" class="text-left">CÃ³digo</th>
+                <th width="40%" class="text-left">DescripciÃ³n del Producto o Servicio</th>
                 <th width="8%" class="text-center">Cant.</th>
                 <th width="15%" class="text-right">Vr. Unitario</th>
                 <th width="8%" class="text-right">IVA</th>
@@ -6340,8 +7194,8 @@ TEMPLATES_EMPAQUETADOS = {
         </div>
     </div>
 
-    <!-- BLOQUE DIAN - FACTURACIÓN ELECTRÓNICA -->
-    <!-- Mostrar SIEMPRE Si existe CUFE para garantizar visibilidad de la validación -->
+    <!-- BLOQUE DIAN - FACTURACIÃ“N ELECTRÃ“NICA -->
+    <!-- Mostrar SIEMPRE Si existe CUFE para garantizar visibilidad de la validaciÃ³n -->
     {% if documento.dian_cufe %}
     <div class="fe-dian-section">
         <div class="fe-qr-col">
@@ -6350,23 +7204,23 @@ TEMPLATES_EMPAQUETADOS = {
                 class="qr-placeholder" alt="QR DIAN Sandbox">
         </div>
         <div class="fe-info-col">
-            <div class="fe-title">✓ Documento Electrónico DIAN</div>
+            <div class="fe-title">âœ“ Documento ElectrÃ³nico DIAN</div>
 
             <div class="fe-cufe-box">
-                <div class="fe-cufe-label">CUFE (Código Único de Facturación Electrónica):</div>
+                <div class="fe-cufe-label">CUFE (CÃ³digo Ãšnico de FacturaciÃ³n ElectrÃ³nica):</div>
                 <div class="fe-cufe-value">{{documento.dian_cufe}}</div>
             </div>
 
             <div class="fe-legal-text">
-                Autorización Numeración Facturación Electrónica DIAN NO.
+                AutorizaciÃ³n NumeraciÃ³n FacturaciÃ³n ElectrÃ³nica DIAN NO.
                 <strong>{{documento.resolucion_numero}}</strong> de fecha
                 <strong>{{documento.resolucion_fecha}}</strong>.
                 Rango desde <strong>{{documento.resolucion_prefijo}}-{{documento.resolucion_rango_desde}}</strong> hasta
                 <strong>{{documento.resolucion_prefijo}}-{{documento.resolucion_rango_hasta}}</strong>.
-                Esta factura se asimila en todos sus efectos a una letra de cambio según el Art. 774 del Código de
+                Esta factura se asimila en todos sus efectos a una letra de cambio segÃºn el Art. 774 del CÃ³digo de
                 Comercio.
-                Transcurridos 3 días hábiles desde su recepción, si no hay reclamación en contra, se entenderá aceptada
-                y constituirá título ejecutivo.
+                Transcurridos 3 dÃ­as hÃ¡biles desde su recepciÃ³n, si no hay reclamaciÃ³n en contra, se entenderÃ¡ aceptada
+                y constituirÃ¡ tÃ­tulo ejecutivo.
             </div>
 
 
@@ -6375,7 +7229,7 @@ TEMPLATES_EMPAQUETADOS = {
     {% endif %}
 
     <div class="commercial-footer">
-        Finaxis Enterprise Software - Sistema Integral de Facturación Electrónica DIAN
+        Finaxis Enterprise Software - Sistema Integral de FacturaciÃ³n ElectrÃ³nica DIAN
     </div>
 
 </body>
@@ -6414,21 +7268,21 @@ TEMPLATES_EMPAQUETADOS = {
     </div>
 
     <div class="header-section">
-        <h1>Análisis de Rentabilidad por Documento</h1>
+        <h1>AnÃ¡lisis de Rentabilidad por Documento</h1>
     </div>
 
     <div class="info-box">
         <p><strong>Documento Auditado:</strong> {{ data.documento_ref }}</p>
         <p><strong>Tercero:</strong> {{ data.tercero_nombre }}</p>
         <p><strong>Fecha de Documento:</strong> {{ data.fecha|date("d/m/Y") }}</p>
-        <p><strong>Filtro Usado:</strong> Código {{ filtros.tipo_documento_codigo|default('N/A') }} y Número {{ filtros.numero_documento|default('N/A') }}</p>
+        <p><strong>Filtro Usado:</strong> CÃ³digo {{ filtros.tipo_documento_codigo|default('N/A') }} y NÃºmero {{ filtros.numero_documento|default('N/A') }}</p>
     </div>
 
     <table>
         <thead>
             <tr>
-                <th style="width: 15%;">CÓDIGO</th>
-                <th style="width: 25%;">ARTÍCULO</th>
+                <th style="width: 15%;">CÃ“DIGO</th>
+                <th style="width: 25%;">ARTÃCULO</th>
                 <th class="right" style="width: 8%;">CANT.</th>
                 <th class="right" style="width: 10%;">VTA. UNIT.</th>
                 <th class="right" style="width: 10%;">COSTO UNIT.</th>
@@ -6482,7 +7336,7 @@ TEMPLATES_EMPAQUETADOS = {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Análisis de Rentabilidad de Factura</title>
+    <title>AnÃ¡lisis de Rentabilidad de Factura</title>
     <style>
         body { font-family: sans-serif; font-size: 10px; }
         .container { width: 100%; margin: 0 auto; }
@@ -6508,18 +7362,18 @@ TEMPLATES_EMPAQUETADOS = {
         <div class="header">
             <h1>{{ empresa.nombre }}</h1>
             <p>NIT: {{ empresa.nit }}</p>
-            <h2>Análisis de Rentabilidad de Factura</h2>
+            <h2>AnÃ¡lisis de Rentabilidad de Factura</h2>
         </div>
 
         <table class="info-table">
             <tr>
                 <td width="15%"><strong class="label">Documento:</strong></td>
-                <td width="35%">{{ doc.tipo_documento.nombre }} N° {{ doc.numero }}</td>
+                <td width="35%">{{ doc.tipo_documento.nombre }} NÂ° {{ doc.numero }}</td>
                 <td width="15%"><strong class="label">Cliente:</strong></td>
                 <td width="35%">{{ doc.beneficiario.razon_social }}</td>
             </tr>
             <tr>
-                <td><strong class="label">Fecha Emisión:</strong></td>
+                <td><strong class="label">Fecha EmisiÃ³n:</strong></td>
                 <td>{{ doc.fecha.strftime('%Y-%m-%d') }}</td>
                 <td><strong class="label">NIT Cliente:</strong></td>
                 <td>{{ doc.beneficiario.nit }}</td>
@@ -6671,8 +7525,8 @@ TEMPLATES_EMPAQUETADOS = {
 
     <div class="info">
         <p><strong>Producto:</strong> {{ producto_info.codigo }} - {{ producto_info.nombre }}</p>
-        <p><strong>Período Analizado:</strong> {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
-        <p><strong>Fecha de Generación:</strong> {{ fecha_generacion }}</p>
+        <p><strong>PerÃ­odo Analizado:</strong> {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
+        <p><strong>Fecha de GeneraciÃ³n:</strong> {{ fecha_generacion }}</p>
     </div>
 
     <table>
@@ -6704,7 +7558,7 @@ TEMPLATES_EMPAQUETADOS = {
             </tr>
             {% else %}
             <tr>
-                <td colspan="9" style="text-align:center;">No se encontraron ventas para este producto en el período seleccionado.</td>
+                <td colspan="9" style="text-align:center;">No se encontraron ventas para este producto en el perÃ­odo seleccionado.</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -6738,15 +7592,15 @@ TEMPLATES_EMPAQUETADOS = {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Análisis de Rentabilidad por Producto/Grupo</title>
+    <title>AnÃ¡lisis de Rentabilidad por Producto/Grupo</title>
     <style>
         @page {
-            size: letter landscape; /* Paisaje para más columnas */
+            size: letter landscape; /* Paisaje para mÃ¡s columnas */
             margin: 1.5cm;
         }
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
-            font-size: 8pt; /* Tamaño reducido para caber más info */
+            font-size: 8pt; /* TamaÃ±o reducido para caber mÃ¡s info */
             color: #333;
         }
         .header {
@@ -6755,12 +7609,12 @@ TEMPLATES_EMPAQUETADOS = {
             padding-bottom: 10px;
             margin-bottom: 15px; /* Reducido margen */
         }
-        .header h1 { margin: 0; font-size: 14pt; } /* Reducido tamaño */
-        .header h2 { margin: 0; font-size: 11pt; font-weight: normal; } /* Reducido tamaño */
+        .header h1 { margin: 0; font-size: 14pt; } /* Reducido tamaÃ±o */
+        .header h2 { margin: 0; font-size: 11pt; font-weight: normal; } /* Reducido tamaÃ±o */
         .info {
             margin-bottom: 15px; /* Reducido margen */
             text-align: center;
-            font-size: 9pt; /* Reducido tamaño */
+            font-size: 9pt; /* Reducido tamaÃ±o */
         }
         .info p { margin: 1px 0; }
         table {
@@ -6780,13 +7634,13 @@ TEMPLATES_EMPAQUETADOS = {
             text-align: center;
         }
         .text-right { text-align: right; }
-        .nowrap { white-space: nowrap; } /* Para columnas de ID/Código */
+        .nowrap { white-space: nowrap; } /* Para columnas de ID/CÃ³digo */
         tfoot td {
             font-weight: bold;
             background-color: #e8e8e8;
             border-top: 2px solid #333;
         }
-        /* Clases para formato numérico */
+        /* Clases para formato numÃ©rico */
         .currency { text-align: right; }
         .percentage { text-align: right; }
     </style>
@@ -6795,11 +7649,11 @@ TEMPLATES_EMPAQUETADOS = {
 
     <div class="header">
         <h1>{{ empresa.razon_social if empresa else 'Empresa Desconocida' }}</h1>
-        <h2>{{ titulo_reporte | default('Análisis de Rentabilidad') }}</h2>
+        <h2>{{ titulo_reporte | default('AnÃ¡lisis de Rentabilidad') }}</h2>
     </div>
 
     <div class="info">
-        <p><strong>Período Analizado:</strong> {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
+        <p><strong>PerÃ­odo Analizado:</strong> {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
         {% if filtros.grupos_nombres %}
         <p><strong>Grupos:</strong> {{ filtros.grupos_nombres | join(', ') }}</p>
         {% elif filtros.producto_nombre %}
@@ -6812,7 +7666,7 @@ TEMPLATES_EMPAQUETADOS = {
     <table>
         <thead>
             <tr>
-                <th class="nowrap">Código</th>
+                <th class="nowrap">CÃ³digo</th>
                 <th>Producto</th>
                 <th class="currency">Venta Total</th>
                 <th class="currency">Costo Total</th>
@@ -6879,10 +7733,10 @@ TEMPLATES_EMPAQUETADOS = {
         <h1>{{ empresa.razon_social }}</h1>
         <h3>NIT: {{ empresa.nit }}</h3>
         <h2>Explorador de Transacciones de {{ filtros.tipo_reporte.capitalize() }}</h2>
-        <p>Período del {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
+        <p>PerÃ­odo del {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
     </div>
 
-    <h4>Resumen del Período</h4>
+    <h4>Resumen del PerÃ­odo</h4>
     <table class="kpi-table">
         <tr>
             <td>{{ 'Total Facturado' if filtros.tipo_reporte == 'ventas' else 'Total Comprado' }}</td>
@@ -6954,7 +7808,7 @@ TEMPLATES_EMPAQUETADOS = {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Reporte de Gestión de Ventas</title>
+    <title>Reporte de GestiÃ³n de Ventas</title>
     <style>
         body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #333; }
         .header { text-align: center; margin-bottom: 20px; }
@@ -6976,8 +7830,8 @@ TEMPLATES_EMPAQUETADOS = {
 <body>
     <div class="header">
         <h1>{{ data.empresa_nombre }}</h1>
-        <h2>Reporte de Gestión de Ventas</h2>
-        <p>Período del {{ data.filtros.fecha_inicio }} al {{ data.filtros.fecha_fin }}</p>
+        <h2>Reporte de GestiÃ³n de Ventas</h2>
+        <p>PerÃ­odo del {{ data.filtros.fecha_inicio }} al {{ data.filtros.fecha_fin }}</p>
     </div>
 
     <h3>Resumen General</h3>
@@ -7050,7 +7904,7 @@ TEMPLATES_EMPAQUETADOS = {
     <title>{{ titulo_reporte }}</title>
     <style>
         body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10px; color: #333; }
-        /* FORZAR ORIENTACIÓN HORIZONTAL PARA MOVIMIENTOS DETALLADOS */
+        /* FORZAR ORIENTACIÃ“N HORIZONTAL PARA MOVIMIENTOS DETALLADOS */
         @page { size: Letter landscape; margin: 1cm; } 
         h1 { font-size: 16px; text-align: center; margin-bottom: 5px; }
         h2 { font-size: 14px; text-align: center; margin-bottom: 15px; }
@@ -7065,7 +7919,7 @@ TEMPLATES_EMPAQUETADOS = {
         .total-row td { padding-top: 6px; padding-bottom: 6px; }
         .no-data { text-align: center; font-style: italic; padding: 20px; }
 
-        /* --- Estilos Específicos para cada Vista --- */
+        /* --- Estilos EspecÃ­ficos para cada Vista --- */
 
         /* Vista Movimientos */
         .vista-movimientos th { font-size: 9px; }
@@ -7086,7 +7940,7 @@ TEMPLATES_EMPAQUETADOS = {
     <div class="header-info">
         <p style="font-size: 14px; font-weight: bold;">{{ empresa_nombre }}</p>
         <p>NIT: (pendiente)</p>
-        <p>Teléfono: (pendiente)</p>
+        <p>TelÃ©fono: (pendiente)</p>
     </div>
 
     <h1>{{ titulo_reporte }}</h1>
@@ -7116,7 +7970,7 @@ TEMPLATES_EMPAQUETADOS = {
                     <th>Documento</th>
                     <th>Tercero</th>
                     <th>Bodega</th>
-                    <th>Código</th>
+                    <th>CÃ³digo</th>
                     <th>Producto</th>
                     <th>Tipo Mov.</th>
                     <th class="text-right">Cantidad</th>
@@ -7272,7 +8126,7 @@ TEMPLATES_EMPAQUETADOS = {
 <html lang="es">
 
 <head>
-    <title>Auditoría Contable Avanzada</title>
+    <title>AuditorÃ­a Contable Avanzada</title>
     <meta charset="UTF-8">
     <style>
         @page {
@@ -7348,7 +8202,7 @@ TEMPLATES_EMPAQUETADOS = {
             background-color: #ffebee;
         }
 
-        /* Se eliminó el tachado */
+        /* Se eliminÃ³ el tachado */
 
         tfoot td {
             font-weight: bold;
@@ -7396,7 +8250,7 @@ TEMPLATES_EMPAQUETADOS = {
             {% else %}
             <tr>
                 <td colspan="{{ headers|length }}">No se encontraron resultados que coincidan con los criterios de
-                    búsqueda.</td>
+                    bÃºsqueda.</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -7421,172 +8275,279 @@ TEMPLATES_EMPAQUETADOS = {
 </html>
 ''',
 
-    'reports/tercero_account_ledger_report.html': r'''
-<!DOCTYPE html>
+    'reports/tercero_account_ledger_report.html': r'''<!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <title>Auxiliar por Tercero y Cuenta</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --green-inst: #1C3A18;
+            --green-light: #2D5A27;
+            --gold-soft: #C9A84C;
+            --white: #FFFFFF;
+            --bg-page: #FAFAF7;
+            --text-main: #1C3A18;
+            --text-labels: #444444;
+            --bg-accent: #F2F5F1;
+        }
+
         @page {
-            size: letter landscape;
-            margin: 1.5cm;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 8px;
-            color: #333;
-        }
-
-        .header {
-            text-align: center;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }
-
-        h1,
-        h2 {
+            size: A4 landscape;
             margin: 0;
         }
 
-        h1 {
-            font-size: 14px;
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--white);
+            color: var(--text-main);
+            font-family: 'DM Sans', sans-serif;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
 
-        h2 {
-            font-size: 12px;
-            font-weight: normal;
+        .page-container {
+            width: 297mm;
+            min-height: 210mm;
+            margin: 0 auto;
+            position: relative;
+            box-sizing: border-box;
+            background-color: var(--white);
+            padding-bottom: 30px;
         }
 
-        .report-info {
-            margin-bottom: 15px;
+        .decor-bar-top {
+            height: 6px;
+            background: linear-gradient(90deg, var(--green-inst), var(--green-light), var(--gold-soft), var(--green-light), var(--green-inst));
+            width: 100%;
+        }
+
+        .decor-bar-bottom {
+            height: 4px;
+            background: linear-gradient(90deg, var(--green-inst), var(--gold-soft));
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+        }
+
+        header {
+            padding: 30px 40px 15px 40px;
+            display: table;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .header-left { display: table-cell; vertical-align: middle; text-align: left; }
+        .header-right { display: table-cell; vertical-align: middle; text-align: right; }
+
+        .badge-premium {
+            font-size: 8px;
+            font-weight: 700;
+            color: var(--green-inst);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .badge-premium::before { content: "•"; margin-right: 6px; color: var(--gold-soft); }
+
+        .company-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1;
+            margin: 0;
+            color: var(--green-inst);
+        }
+        .company-nit {
             font-size: 9px;
+            color: #888;
+            margin-top: 2px;
+            letter-spacing: 1px;
         }
+
+        .report-title-box {
+            text-align: right;
+        }
+        .doc-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-style: italic;
+            color: #444;
+            margin-bottom: 6px;
+        }
+        .date-range-badge {
+            display: inline-block;
+            border: 1px solid var(--green-inst);
+            padding: 4px 10px;
+            border-radius: 2px;
+        }
+        .date-range-text { font-size: 11px; font-weight: 700; color: var(--green-inst); }
+
+        .tercero-ribbon {
+            background-color: var(--green-inst);
+            color: var(--white);
+            padding: 12px 40px;
+            font-size: 11px;
+            margin-bottom: 20px;
+        }
+        .tercero-ribbon strong { color: var(--gold-soft); }
+
+        main { padding: 0 40px; }
 
         table {
             width: 100%;
             border-collapse: collapse;
+            margin-bottom: 30px;
         }
 
-        th,
-        td {
-            border: 1px solid #ddd;
-            padding: 4px;
+        thead th {
+            background-color: #F8F9F7;
+            color: var(--text-labels);
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 10px 8px;
+            border-bottom: 2px solid var(--green-inst);
             text-align: left;
-            word-wrap: break-word;
         }
 
-        th {
-            background-color: #f2f2f2;
-            text-align: center;
-            font-weight: bold;
+        tbody td {
+            padding: 8px;
+            font-size: 9px;
+            border-bottom: 1px solid #EEE;
+            color: #333;
+            vertical-align: middle;
         }
 
-        .text-right {
-            text-align: right;
+        .row-alt { background-color: #FCFCFB; }
+        .text-right { text-align: right !important; }
+        .text-center { text-align: center !important; }
+        
+        .cuenta-header {
+            background-color: #F4F6F2;
+            font-weight: 700;
+            color: var(--green-inst);
+            font-size: 10px;
         }
 
-        .text-center {
-            text-align: center;
+        .saldo-ant-row {
+            font-style: italic;
+            color: #666;
+            font-size: 8px;
         }
 
-        .total-global-row td {
-            font-weight: bold;
-            background-color: #e0e0e0;
-            border-top: 2px solid #333;
+        .total-section {
+            background-color: var(--green-inst);
+            color: var(--white);
+            font-weight: 700;
+            font-size: 10px;
         }
-
-        .cuenta-header-row td {
-            font-weight: bold;
-            background-color: #f2f2f2;
-        }
+        .total-section td { border: none; padding: 12px 8px; color: var(--white) !important; }
+        .gold-label { color: var(--gold-soft); text-transform: uppercase; letter-spacing: 1px; font-size: 8px; }
     </style>
 </head>
-
 <body>
-    <div class="header">
-        <h1>{{ empresa_nombre }}</h1>
-        <h2>NIT: {{ empresa_nit }}</h2>
+    <div class="page-container">
+        <div class="decor-bar-top"></div>
+        
+        <header>
+            <div class="header-left">
+                <span class="badge-premium">Inteligencia Financiera</span>
+                <h1 class="company-name">{{ empresa_nombre or 'VERDURAS LA 21' }}</h1>
+                <div class="company-nit">NIT: {{ empresa_nit or '901464119-7' }}</div>
+            </div>
+            <div class="header-right">
+                <div class="report-title-box">
+                    <div class="doc-title">Auxiliar por Tercero y Cuenta</div>
+                    <div class="date-range-badge">
+                        <span class="date-range-text">Del {{ fecha_inicio }} al {{ fecha_fin }}</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="tercero-ribbon">
+            <strong>TERCERO SELECCIONADO:</strong> {{ tercero_info.nit }} &#8212; {{ tercero_info.razon_social }}
+        </div>
+
+        <main>
+            <table>
+                <thead>
+                    <tr>
+                        <th width="10%">Fecha</th>
+                        <th width="12%">Documento</th>
+                        <th>Concepto</th>
+                        {% if has_cost_centers %}
+                        <th width="10%">C. Costo</th>
+                        {% endif %}
+                        <th width="12%" class="text-right">D&eacute;bito</th>
+                        <th width="12%" class="text-right">Cr&eacute;dito</th>
+                        <th width="12%" class="text-right">Saldo Parcial</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="cuenta-header">
+                        <td colspan="{{ 6 if has_cost_centers else 5 }}">SALDO ANTERIOR GLOBAL</td>
+                        <td class="text-right">{{ "{:,.0f}".format(saldo_anterior_global).replace(',', '.') }}</td>
+                    </tr>
+
+                    {% for cuenta_id, grupo_movimientos in movimientos | groupby('cuenta_id') %}
+                    {% set movimientos_lista = list(grupo_movimientos) %}
+                    {% set primer_mov = movimientos_lista[0] %}
+                    <tr class="cuenta-header" style="background-color: #EEE; color: #333; font-size: 9px;">
+                        <td colspan="{{ 7 if has_cost_centers else 6 }}">
+                            Cuenta: {{ primer_mov.cuenta_codigo }} &#8212; {{ primer_mov.cuenta_nombre }}
+                        </td>
+                    </tr>
+                    <tr class="saldo-ant-row">
+                        <td colspan="{{ 6 if has_cost_centers else 5 }}">Saldo Inicial de la Cuenta</td>
+                        <td class="text-right">
+                            {{ "{:,.0f}".format(saldos_iniciales_por_cuenta.get(cuenta_id | string, 0)).replace(',', '.') }}
+                        </td>
+                    </tr>
+
+                    {% for mov in movimientos_lista %}
+                    <tr class="{{ 'row-alt' if loop.index0 % 2 == 0 else '' }}">
+                        <td class="text-center">{{ mov.fecha.strftime('%Y-%m-%d') if mov.fecha else '' }}</td>
+                        <td style="font-weight: 700; color: var(--green-light);">{{ mov.tipo_documento }}-{{ mov.numero_documento }}</td>
+                        <td style="font-size: 8px;">{{ mov.concepto }}</td>
+                        {% if has_cost_centers %}
+                        <td class="text-center" style="color: #888;">{{ mov.centro_costo_codigo or '-' }}</td>
+                        {% endif %}
+                        <td class="text-right">{{ "{:,.0f}".format(mov.debito).replace(',', '.') }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(mov.credito).replace(',', '.') }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(mov.saldo_parcial).replace(',', '.') }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% endfor %}
+
+                    <tr class="cuenta-header">
+                        <td colspan="{{ 4 if has_cost_centers else 3 }}">TOTALES MOVIMIENTOS PERIODO</td>
+                        <td class="text-right">{{ "{:,.0f}".format(total_debito_global).replace(',', '.') }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(total_credito_global).replace(',', '.') }}</td>
+                        <td></td>
+                    </tr>
+
+                    <tr class="total-section">
+                        <td colspan="{{ 6 if has_cost_centers else 5 }}">
+                            <span class="gold-label">Consolidado Final</span><br>
+                            SALDO FINAL GLOBAL AL {{ fecha_fin }}
+                        </td>
+                        {% set saldo_final_global = (movimientos[-1].saldo_parcial if movimientos else saldo_anterior_global) %}
+                        <td class="text-right" style="font-size: 14px;">
+                            {{ "{:,.0f}".format(saldo_final_global).replace(',', '.') }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </main>
+        <div class="decor-bar-bottom"></div>
     </div>
-
-    <div class="report-info">
-        <h2>Auxiliar por Tercero y Cuenta</h2>
-        <p>
-            <strong>Tercero:</strong> {{ tercero_info.nit }} - {{ tercero_info.razon_social }}<br>
-            <strong>Periodo:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}
-        </p>
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Fecha</th>
-                <th>Documento</th>
-                <th>Concepto</th>
-                {% if has_cost_centers %}
-                <th>C. Costo</th>
-                {% endif %}
-                <th class="text-right">Débito</th>
-                <th class="text-right">Crédito</th>
-                <th class="text-right">Saldo Parcial</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr class="total-global-row">
-                <td colspan="{{ 6 if has_cost_centers else 5 }}"><strong>SALDO ANTERIOR GLOBAL</strong></td>
-                <td class="text-right"><strong>{{ "{:,.2f}".format(saldo_anterior_global) }}</strong></td>
-            </tr>
-
-            {% for cuenta_id, grupo_movimientos in movimientos | groupby('cuenta_id') %}
-            {% set movimientos_lista = list(grupo_movimientos) %}
-            {% set primer_mov = movimientos_lista[0] %}
-            <tr class="cuenta-header-row">
-                <td colspan="{{ 7 if has_cost_centers else 6 }}">
-                    <strong>Cuenta: {{ primer_mov.cuenta_codigo }} - {{ primer_mov.cuenta_nombre }}</strong>
-                </td>
-            </tr>
-            <tr style="background-color: #fafafa;">
-                <td colspan="{{ 6 if has_cost_centers else 5 }}"><i>Saldo Anterior de la Cuenta</i></td>
-                <td class="text-right">
-                    <i>{{ "{:,.2f}".format(saldos_iniciales_por_cuenta.get(cuenta_id | string, 0)) }}</i>
-                </td>
-            </tr>
-
-            {% for mov in movimientos_lista %}
-            <tr>
-                <td>{{ mov.fecha.strftime('%Y-%m-%d') if mov.fecha else '' }}</td>
-                <td>{{ mov.tipo_documento }}-{{ mov.numero_documento }}</td>
-                <td>{{ mov.concepto }}</td>
-                {% if has_cost_centers %}
-                <td>{{ mov.centro_costo_codigo or '' }}</td>
-                {% endif %}
-                <td class="text-right">{{ "{:,.2f}".format(mov.debito) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(mov.credito) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(mov.saldo_parcial) }}</td>
-            </tr>
-            {% endfor %}
-            {% endfor %}
-
-            <tr class="total-global-row" style="background-color: #f1f5f9;">
-                <td colspan="{{ 4 if has_cost_centers else 3 }}"><strong>TOTALES MOVIMIENTOS DEL PERIODO</strong></td>
-                <td class="text-right"><strong>{{ "{:,.2f}".format(total_debito_global) }}</strong></td>
-                <td class="text-right"><strong>{{ "{:,.2f}".format(total_credito_global) }}</strong></td>
-                <td></td>
-            </tr>
-
-            <tr class="total-global-row" style="background-color: #1e293b; color: white;">
-                <td colspan="{{ 6 if has_cost_centers else 5 }}"><strong>SALDO FINAL GLOBAL AL {{ fecha_fin }}</strong>
-                </td>
-                {% set saldo_final_global = (movimientos[-1].saldo_parcial if movimientos else saldo_anterior_global) %}
-                <td class="text-right"><strong>{{ "{:,.2f}".format(saldo_final_global) }}</strong></td>
-            </tr>
-        </tbody>
-    </table>
 </body>
-
 </html>
 ''',
 
@@ -7628,13 +8589,13 @@ TEMPLATES_EMPAQUETADOS = {
     <table>
         <thead>
             <tr>
-                <th style="width: 10%;">Cód.</th>
+                <th style="width: 10%;">CÃ³d.</th>
                 <th style="width: 30%;">Producto</th>
                 <th style="width: 15%;" class="text-right">Saldo Actual</th>
-                <th style="width: 10%;" class="text-right">Stock Mín.</th>
-                <th style="width: 10%;" class="text-right">Stock Máx.</th>
+                <th style="width: 10%;" class="text-right">Stock MÃ­n.</th>
+                <th style="width: 10%;" class="text-right">Stock MÃ¡x.</th>
                 <th style="width: 15%;" class="text-right">Diferencia</th>
-                <th style="width: 10%;" class="text-center">Decisión</th>
+                <th style="width: 10%;" class="text-center">DecisiÃ³n</th>
             </tr>
         </thead>
         <tbody>
@@ -7668,7 +8629,7 @@ TEMPLATES_EMPAQUETADOS = {
         </tbody>
     </table>
     
-    <h2>Total Artículos en Alerta: {{ data | length }}</h2>
+    <h2>Total ArtÃ­culos en Alerta: {{ data | length }}</h2>
 
 </body>
 </html>

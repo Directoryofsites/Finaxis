@@ -61,6 +61,8 @@ const MASTER_ICON_MAP = {
     '/contabilidad/documentos/crear': FaFileAlt,
     '/contabilidad/documentos': FaFileInvoiceDollar,
     '/contabilidad/reportes/balance-prueba': FaBalanceScale,
+    '/contabilidad/reportes/balance-general': FaBalanceScale,
+    '/contabilidad/reportes/balance-general-gerencial': FaGem,
     '/contabilidad/reportes/libro-diario': FaBook,
     '/contabilidad/reportes/estado-situacion': FaChartBar,
     '/contabilidad/reportes/estado-resultado': FaChartLine,
@@ -139,7 +141,9 @@ const getSmartIconForRoute = (route) => {
     if (routeLower.includes('conteo') || routeLower.includes('count')) return FaSort;
 
     if (routeLower.includes('contabil') || routeLower.includes('account')) return FaCalculator;
+    if (routeLower.includes('balance') && routeLower.includes('general') && routeLower.includes('gerencial')) return FaGem;
     if (routeLower.includes('balance') && routeLower.includes('general')) return FaBalanceScale;
+    if (routeLower.includes('estado') && routeLower.includes('resultado') && routeLower.includes('gerencial')) return FaMagic;
     if (routeLower.includes('estado') && routeLower.includes('resultado')) return FaChartBar;
     if (routeLower.includes('libro') && routeLower.includes('diario')) return FaBook;
     if (routeLower.includes('plan') && routeLower.includes('cuenta')) return FaBook;

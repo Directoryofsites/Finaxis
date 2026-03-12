@@ -1573,6 +1573,169 @@ def generate_income_statement_report_pdf(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al generar el PDF de Estado de Resultados: {e}")
 
+# --- INICIO: REPORTE GERENCIAL (DISEÑO PREMIUM) ---
+
+def generate_income_statement_gerencial_report(
+    db: Session,
+    empresa_id: int,
+    fecha_inicio: date,
+    fecha_fin: date
+) -> Dict[str, Any]:
+    # Función auxiliar para obtener saldos por prefijo de cuenta
+    def get_saldo_cuentas(db: Session, empresa_id: int, fecha_inicio: date, fecha_fin: date, codigo_prefixes: List[str]):
+        query_saldo = db.query(
+            models_plan.codigo.label("codigo"),
+            models_plan.nombre.label("nombre"),
+            func.sum(models_mov.debito).label("total_debito"),
+            func.sum(models_mov.credito).label("total_credito")
+        ).join(models_mov, models_plan.id == models_mov.cuenta_id) \
+        .join(models_doc, models_mov.documento_id == models_doc.id) \
+        .filter(
+            models_doc.empresa_id == empresa_id,
+            models_doc.fecha.between(fecha_inicio, fecha_fin),
+            models_doc.anulado == False
+        )
+
+        if codigo_prefixes:
+            codigo_like_conditions = [models_plan.codigo.like(f"{prefix}%") for prefix in codigo_prefixes]
+            query_saldo = query_saldo.filter(or_(*codigo_like_conditions))
+        else:
+            return [] 
+
+        query_saldo = query_saldo.group_by(
+            models_plan.codigo,
+            models_plan.nombre
+        ).order_by(models_plan.codigo).all()
+
+        formatted_data = []
+        for row in query_saldo:
+            saldo_contable = float(row.total_debito or 0) - float(row.total_credito or 0)
+            if saldo_contable != 0:
+                formatted_data.append({
+                    "codigo": row.codigo,
+                    "nombre": row.nombre,
+                    "saldo": saldo_contable
+                })
+        return formatted_data
+
+    # 1. Ingresos
+    ingresos_data_raw = get_saldo_cuentas(db, empresa_id, fecha_inicio, fecha_fin, ['4'])
+    # Invertir el signo de ingresos (crédito es positivo en finanzas)
+    ingresos_items = [{"codigo": item['codigo'], "nombre": item['nombre'], "saldo": -item['saldo']} for item in ingresos_data_raw]
+    total_ingresos = sum(item['saldo'] for item in ingresos_items)
+    # Ordenar mayor a menor
+    ingresos_items = sorted(ingresos_items, key=lambda x: x['saldo'], reverse=True)
+
+    for item in ingresos_items:
+        item['porcentaje'] = (item['saldo'] / total_ingresos) * 100 if total_ingresos != 0 else 0
+
+    # 2. Gastos (Clase 5, 6, 7)
+    gastos_data_raw = get_saldo_cuentas(db, empresa_id, fecha_inicio, fecha_fin, ['5', '6', '7'])
+    total_gastos = sum(item['saldo'] for item in gastos_data_raw)
+    
+    # Clasificación de Gastos para el formato Gerencial
+    nominas = []
+    operativos = []
+    generales = []
+
+    for item in gastos_data_raw:
+        codigo = item['codigo']
+        item['porcentaje'] = (item['saldo'] / total_gastos) * 100 if total_gastos != 0 else 0
+        
+        # Lógica de asignación a grupos basada en PUC colombiano estandar
+        if codigo.startswith('5105') or codigo.startswith('5205'):
+            nominas.append(item)
+        elif codigo.startswith(('5110', '5120', '5135', '5210', '5220', '5235', '6', '7')):
+            operativos.append(item)
+        else:
+            generales.append(item)
+
+    # Ordenar gastos de mayor a menor impacto
+    nominas = sorted(nominas, key=lambda x: x['saldo'], reverse=True)
+    operativos = sorted(operativos, key=lambda x: x['saldo'], reverse=True)
+    generales = sorted(generales, key=lambda x: x['saldo'], reverse=True)
+
+    # Identificar el mayor gasto global
+    if gastos_data_raw:
+        mayor_gasto = max(gastos_data_raw, key=lambda x: x['saldo'])
+        for lst in [nominas, operativos, generales]:
+            for item in lst:
+                if item['codigo'] == mayor_gasto['codigo']:
+                    item['is_mayor_gasto'] = True
+
+    # Marcar el ingreso principal
+    if ingresos_items:
+        ingresos_items[0]['is_ingreso_principal'] = True
+
+    # 3. Resultado
+    utilidad_neta = total_ingresos - total_gastos
+
+    # 4. Top 5 Gastos
+    todos_los_gastos_ordenados = sorted(gastos_data_raw, key=lambda x: x['saldo'], reverse=True)
+    top_5_gastos = todos_los_gastos_ordenados[:5]
+
+    return {
+        "totales": {
+            "total_ingresos": total_ingresos,
+            "total_gastos": total_gastos,
+            "utilidad_neta": utilidad_neta
+        },
+        "ingresos": ingresos_items,
+        "gastos_nomina": nominas,
+        "gastos_operativos": operativos,
+        "gastos_generales": generales,
+        "top_5_gastos": top_5_gastos
+    }
+
+def generate_income_statement_gerencial_report_pdf(
+    db: Session,
+    empresa_id: int,
+    fecha_inicio: date,
+    fecha_fin: date
+):
+    report_data = generate_income_statement_gerencial_report(db, empresa_id, fecha_inicio, fecha_fin)
+
+    empresa_info = db.query(models_empresa).filter(models_empresa.id == empresa_id).first()
+    empresa_nombre = empresa_info.razon_social if empresa_info else "Empresa Desconocida"
+    empresa_nit = empresa_info.nit if empresa_info else "N/A"
+
+    context = {
+        "empresa_nombre": empresa_nombre,
+        "empresa_nit": empresa_nit,
+        "fecha_inicio": fecha_inicio.strftime('%d %B %Y').lower(),
+        "fecha_fin": fecha_fin.strftime('%d %B %Y').lower(),
+        "report_data": report_data
+    }
+
+    try:
+        import os
+        base_dir = os.path.dirname(__file__)
+        fallback_path = os.path.join(base_dir, '..', 'templates', 'reports', 'estado_resultados_gerencial.html')
+        
+        template_string = None
+        # PRIORIDAD: Sistema de archivos para reflejar cambios inmediatos
+        if os.path.exists(fallback_path):
+            with open(fallback_path, 'r', encoding='utf-8') as f:
+                template_string = f.read()
+        
+        if not template_string:
+            template_string = TEMPLATES_EMPAQUETADOS.get('reports/estado_resultados_gerencial.html')
+
+        if not template_string:
+            raise KeyError("Template 'reports/estado_resultados_gerencial.html' not found in package or filesystem")
+            
+        template = GLOBAL_JINJA_ENV.from_string(template_string)
+        rendered_html = template.render(context)
+        
+        # Opciones para WeasyPrint si es necesario
+        return HTML(string=rendered_html).write_pdf()
+    except KeyError:
+        raise HTTPException(status_code=500, detail="La plantilla 'reports/estado_resultados_gerencial.html' no pudo ser localizada.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al generar el PDF de Estado de Resultados Gerencial: {e}")
+
+# --- FIN: REPORTE GERENCIAL (DISEÑO PREMIUM) ---
+
 def generate_income_statement_cc_report(
     db: Session,
     empresa_id: int,
@@ -3454,6 +3617,65 @@ def generate_balance_sheet_report(
         "total_pasivo_patrimonio": total_pasivos + total_patrimonio,
         "nivel": nivel
     }
+
+# --- GERENCIAL: BALANCE SHEET ---
+
+def generate_balance_sheet_gerencial_report(
+    db: Session, 
+    empresa_id: int, 
+    fecha_corte: date
+) -> Dict[str, Any]:
+    """
+    Obtiene los datos del balance general en nivel 'clasificado' para el reporte gerencial.
+    """
+    return generate_balance_sheet_report(db, empresa_id, fecha_corte, nivel='clasificado')
+
+def generate_balance_sheet_gerencial_report_pdf(
+    db: Session, 
+    empresa_id: int, 
+    fecha_corte: date
+):
+    """
+    Genera el archivo PDF para el reporte de Balance General Gerencial (Diseño Blanco).
+    """
+    report_data = generate_balance_sheet_gerencial_report(db, empresa_id, fecha_corte)
+    empresa_info = db.query(models_empresa).filter(models_empresa.id == empresa_id).first()
+    
+    if not empresa_info:
+        raise HTTPException(status_code=404, detail=f"No se encontró la empresa con ID {empresa_id}")
+
+    context = {
+        "empresa": empresa_info,
+        "fecha_corte": fecha_corte,
+        "reporte": report_data,
+        "nivel": 'clasificado'
+    }
+    
+    try:
+        # Priorizar carga desde sistema de archivos para desarrollo rápido
+        import os
+        template_os_path = os.path.join(os.path.dirname(__file__), '..', 'templates', 'reports', 'balance_general_gerencial.html')
+        
+        if os.path.exists(template_os_path):
+            with open(template_os_path, 'r', encoding='utf-8') as f:
+                template_string = f.read()
+            template = GLOBAL_JINJA_ENV.from_string(template_string)
+        else:
+            template_string = TEMPLATES_EMPAQUETADOS.get('reports/balance_general_gerencial.html')
+            if not template_string:
+                raise HTTPException(status_code=500, detail="La plantilla 'reports/balance_general_gerencial.html' no fue encontrada.")
+            template = GLOBAL_JINJA_ENV.from_string(template_string)
+            
+        rendered_html = template.render(context)
+        
+        # Opciones de WeasyPrint para mayor calidad
+        return HTML(string=rendered_html).write_pdf()
+        
+    except Exception as e:
+        print(f"Error generando PDF Balance Gerencial: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al generar el PDF del reporte gerencial: {e}")
+
+# --- FIN: NUEVAS FUNCIONES PARA BALANCE GENERAL ---
 
 def generate_balance_sheet_report_pdf(
     db: Session, 

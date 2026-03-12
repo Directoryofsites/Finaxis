@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
     FaBalanceScale,
@@ -14,7 +15,8 @@ import {
     FaExclamationTriangle,
     FaBook,
     FaChartBar,
-    FaTable
+    FaTable,
+    FaGem
 } from 'react-icons/fa';
 
 import { toast } from 'react-toastify';
@@ -242,9 +244,16 @@ function BalanceGeneralContent() {
                             <div>
                                 <div className="flex items-center gap-4">
                                     <h1 className="text-3xl font-bold text-gray-800">Balance General</h1>
+                                    <Link
+                                        href="/contabilidad/reportes/balance-general-gerencial"
+                                        className="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg font-bold text-sm hover:bg-emerald-100 transition-all flex items-center gap-2 border border-emerald-100 shadow-sm"
+                                    >
+                                        <FaGem className="text-emerald-500" />
+                                        <span>Balance Gerencial</span>
+                                    </Link>
                                     <button
                                         onClick={() => window.open('/manual/capitulo_28_balance_general.html', '_blank')}
-                                        className="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded-md flex items-center gap-2 transition-colors"
+                                        className="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded-md flex items-center gap-2 transition-colors border border-transparent hover:border-indigo-100"
                                         title="Ver Manual de Usuario"
                                     >
                                         <span className="text-lg">📖</span> <span className="font-bold text-sm hidden md:inline">Manual</span>

@@ -1,10 +1,10 @@
-﻿import {
+import {
     FaCalculator, FaChartBar, FaUsers, FaFileInvoiceDollar, FaBoxes, FaCog,
     FaFileAlt, FaPlus, FaBook, FaBalanceScale, FaCheckCircle, FaUniversity,
     FaClipboardList, FaWrench, FaHandshake, FaTruckMoving, FaReceipt, FaLock,
     FaListUl, FaDollarSign, FaChartLine, FaChartPie, FaPercentage, FaFileContract,
     FaRedoAlt, FaCalendarAlt, FaTools, FaTimes, FaChartArea, FaStar, FaBuilding,
-    FaTractor, FaCogs, FaHome, FaIndustry, FaExchangeAlt, FaUpload, FaEye, FaArrowUp, FaDatabase, FaEnvelope
+    FaTractor, FaCogs, FaHome, FaIndustry, FaExchangeAlt, FaUpload, FaEye, FaArrowUp, FaDatabase, FaEnvelope, FaGem
 } from 'react-icons/fa';
 
 // Módulos definidos externamente para claridad
@@ -110,8 +110,10 @@ export const menuStructure = [
             { name: 'Libro Diario Resumen', href: '/contabilidad/reportes/libro-diario-resumen', mnemonic: 'u', icon: FaBook, description: 'Resumen por tipo de documento.', permission: 'contabilidad:libro_diario' },
             { name: 'Análisis de Cuenta por Documento', href: '/contabilidad/reportes/analisis-cuenta-documento', mnemonic: 'n', icon: FaBook, description: 'Desglose por fuente.', permission: 'contabilidad:analisis_cuenta' },
             { name: 'Balance General', href: '/contabilidad/reportes/balance-general', mnemonic: 'b', icon: FaBalanceScale, description: 'Estado de situación financiera (ESF).', permission: 'contabilidad:balance_general' },
+            { name: 'Balance General Gerencial', href: '/contabilidad/reportes/balance-general-gerencial', mnemonic: 'j', icon: FaGem, description: 'Visión premium del balance con diseño corporativo.', permission: 'contabilidad:balance_general' },
             { name: 'Estado Resultados Analítico', href: '/contabilidad/reportes/estado-resultados', mnemonic: 'p', icon: FaChartBar, description: 'Pérdidas y Ganancias detallado con análisis premium.', permission: 'contabilidad:pyg' },
             { name: 'Estado Resultados Clasificado', href: '/contabilidad/reportes/estado-resultados-clasificado', mnemonic: 'c', icon: FaChartPie, description: 'Pérdidas y Ganancias consolidado a nivel de cuenta mayor (4 dígitos).', permission: 'contabilidad:pyg' },
+            { name: 'Estado Resultados Gerencial', href: '/contabilidad/reportes/estado-resultados-gerencial', mnemonic: 'g', icon: FaChartLine, description: 'Visión estratégica y análisis visual financiero.', permission: 'contabilidad:pyg' },
             { name: 'Balance Prueba', href: '/contabilidad/reportes/balance-de-prueba', mnemonic: 'a', icon: FaCheckCircle, description: 'Resumen de saldos débito y crédito.', permission: 'contabilidad:balance_prueba' },
             { name: 'Auxiliar Contable', href: '/contabilidad/reportes/auxiliar-cuenta', mnemonic: 'x', icon: FaFileAlt, description: 'Detalle de movimientos por cuenta.', permission: 'contabilidad:auxiliar' },
             { name: 'Libros Oficiales', href: '/admin/utilidades/libros-oficiales', mnemonic: 'o', icon: FaUniversity, description: 'Generación de libros reglamentarios.', permission: 'contabilidad:libros_oficiales' },

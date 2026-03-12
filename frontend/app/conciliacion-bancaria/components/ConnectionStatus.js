@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Wifi, WifiOff, AlertCircle } from 'lucide-react';
+import { Wifi, WifiOff, RefreshCw, Server, AlertCircle, CheckCircle } from 'lucide-react';
+import { apiService } from '@/lib/apiService';
 import { Badge } from '@/components/ui/badge';
 
 const ConnectionStatus = () => {
@@ -10,13 +11,9 @@ const ConnectionStatus = () => {
 
   const checkConnection = async () => {
     try {
-      const response = await fetch('/api/conciliacion-bancaria/health', {
-        method: 'GET',
-        headers: {
-          'Cache-Control': 'no-cache'
-        }
-      });
-      
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002';
+      // Usar fetch directo para no contaminar los logs de apiService si falla
+      const response = await fetch(`${apiUrl}/api/conciliacion-bancaria/health`);
       if (response.ok) {
         setStatus('online');
       } else {
@@ -25,17 +22,17 @@ const ConnectionStatus = () => {
     } catch (error) {
       setStatus('offline');
     }
-    
+
     setLastCheck(new Date());
   };
 
   useEffect(() => {
     // Verificar conexión inicial
     checkConnection();
-    
+
     // Verificar cada 30 segundos
     const interval = setInterval(checkConnection, 30000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -77,7 +74,7 @@ const ConnectionStatus = () => {
 
   return (
     <div className="fixed bottom-6 left-6 z-50">
-      <Badge 
+      <Badge
         variant={config.variant}
         className={`${config.className} px-3 py-1 flex items-center space-x-2 shadow-lg cursor-pointer`}
         onClick={checkConnection}

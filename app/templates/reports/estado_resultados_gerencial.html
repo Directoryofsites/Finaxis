@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Estado de Resultados Gerencial - {{ empresa_nombre }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Colores Primarios (Sincronizados con Balance Gerencial) */
+            --green-inst: #2D6A26;
+            --green-light: #6BAD5E;
+            --blue-slate: #4A6FA5;
+            --gold-soft: #C9A84C;
+            --green-text: #1A3D17;
+            --blue-text: #1F3560;
+            --gold-text: #6B5010;
+            
+            /* Fondos */
+            --white: #FFFFFF;
+            --bg-ingresos: #F2F8F1;
+            --bg-gastos: #FDF5F5;
+            --bg-resultado: #FBF8F1;
+            --row-ingresos: #EEF5ED;
+            --row-gastos: #F9EEEE;
+            --row-resultado: #FAF5E9;
+            --gray-light: #FAFAFA;
+            --bg-grand-total: #1A3D17; /* Verde oscuro para el total final */
+            
+            /* Texto */
+            --text-main: #1A1A1A;
+            --text-muted: #BBBBBB;
+            --text-labels: #444444;
+            --red-contable: #C0392B;
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--white);
+            color: var(--text-main);
+            font-family: 'DM Sans', sans-serif;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .page-container {
+            width: 210mm;
+            height: 297mm;
+            margin: 0 auto;
+            position: relative;
+            background: var(--white);
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        /* Barras Decorativas */
+        .top-bar {
+            height: 4px;
+            background: linear-gradient(90deg, var(--green-inst), var(--green-light), var(--gold-soft), var(--green-light), var(--green-inst));
+            width: 100%;
+        }
+
+        .bottom-bar {
+            height: 3px;
+            background: linear-gradient(90deg, var(--green-inst), var(--green-light), var(--gold-soft));
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+        }
+
+        /* Cabecera */
+        header {
+            padding: 30px 56px 20px 56px;
+            display: table;
+            width: 100%;
+            box-sizing: border-box;
+            border-bottom: 1px solid #F0F0F0;
+        }
+
+        .header-left {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: left;
+        }
+
+        .header-right {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: right;
+        }
+
+        .badge {
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--green-inst);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .badge::before {
+            content: "•";
+            margin-right: 6px;
+            font-size: 12px;
+        }
+
+        .company-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 38px;
+            font-weight: 700;
+            line-height: 1;
+            margin: 0;
+            color: var(--text-main);
+        }
+        .company-name span { color: var(--green-inst); }
+
+        .company-nit {
+            font-size: 10px;
+            color: var(--text-muted);
+            letter-spacing: 1.5px;
+            margin-top: 4px;
+            font-weight: 400;
+        }
+
+        .doc-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            font-style: italic;
+            color: #555555;
+            margin-bottom: 10px;
+        }
+
+        .date-box {
+            display: inline-block;
+            border: 1.5px solid var(--green-inst);
+            border-radius: 4px;
+            padding: 6px 14px;
+            text-align: center;
+        }
+
+        .date-label {
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--green-inst);
+            margin-bottom: 1px;
+        }
+
+        .date-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        /* Cuerpo */
+        main {
+            padding: 20px 56px;
+        }
+
+        /* Tarjetas de Sección */
+        .section-card {
+            border: 1.5px solid #E4E4E4;
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--white);
+            margin-bottom: 15px;
+        }
+
+        .card-header {
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1.5px solid #E4E4E4;
+        }
+        .card-header.ingresos { background: var(--bg-ingresos); }
+        .card-header.gastos { background: var(--bg-gastos); }
+        .card-header.resultado { background: var(--bg-resultado); }
+
+        .header-stripe {
+            width: 3px;
+            height: 16px;
+            border-radius: 2px;
+            margin-right: 10px;
+        }
+        .ingresos .header-stripe { background: var(--green-inst); }
+        .gastos .header-stripe { background: var(--red-contable); }
+        .resultado .header-stripe { background: var(--gold-soft); }
+
+        .card-title {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-labels);
+        }
+
+        /* Tablas */
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .sub-header {
+            background: var(--gray-light);
+            border-bottom: 1px solid #F0F0F0;
+        }
+        .sub-header td {
+            padding: 4px 16px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #AAAAAA;
+        }
+
+        .row-item td {
+            padding: 6px 16px;
+            border-bottom: 1px solid #F8F8F8;
+            vertical-align: middle;
+        }
+        .acc-code { font-size: 9px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; width: 40px; }
+        .acc-name { font-size: 12px; color: var(--text-labels); padding-right: 10px; }
+        .acc-value { 
+            font-size: 12px; 
+            font-weight: 500; 
+            text-align: right; 
+            font-variant-numeric: tabular-nums; 
+            white-space: nowrap;
+            min-width: 100px;
+        }
+
+        .negativo { color: var(--red-contable) !important; }
+
+        .row-subtotal td { padding: 8px 16px; font-weight: 700; font-size: 13px; }
+        .ingresos .row-subtotal { background: #EEF5ED; border-top: 1.5px solid #D8E8D6; color: var(--green-inst); }
+        .gastos .row-subtotal { background: #F9EEEE; border-top: 1.5px solid #E8D6D6; color: var(--red-contable); }
+
+        .row-total td { padding: 10px 16px; font-weight: 700; font-size: 13.5px; }
+        .ingresos .row-total { background: var(--row-ingresos); border-top: 2px solid var(--green-inst); color: var(--green-text); }
+        .gastos .row-total { background: var(--row-gastos); border-top: 2px solid var(--red-contable); color: var(--red-contable); }
+        .resultado .row-total { background: var(--row-resultado); border-top: 2px solid var(--gold-soft); color: var(--gold-text); }
+
+        /* KPIs */
+        .kpi-container {
+            display: table;
+            width: 100%;
+            border-spacing: 15px 0;
+            margin-top: 5px;
+            margin-left: -15px;
+        }
+
+        .kpi-card {
+            display: table-cell;
+            width: 33.33%;
+            border: 1.5px solid #E4E4E4;
+            border-radius: 8px;
+            padding: 15px;
+            position: relative;
+            background: var(--white);
+        }
+        .kpi-card::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 15%;
+            bottom: 15%;
+            width: 4px;
+            border-radius: 0 2px 2px 0;
+        }
+        .kpi-ingresos::before { background: var(--green-inst); }
+        .kpi-gastos::before { background: var(--red-contable); }
+        .kpi-resultado::before { background: var(--gold-soft); }
+
+        .kpi-label {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .kpi-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        /* Grand Total */
+        .grand-total-bar {
+            background: var(--bg-grand-total);
+            border: 2px solid var(--green-inst);
+            border-radius: 8px;
+            padding: 15px 25px;
+            margin-top: 15px;
+            display: table;
+            width: 100%;
+            box-sizing: border-box;
+            color: white;
+        }
+
+        .gt-left {
+            display: table-cell;
+            vertical-align: middle;
+            width: 40px;
+        }
+
+        .pulse-circle {
+            width: 32px;
+            height: 32px;
+            background: var(--gold-soft);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--green-text);
+        }
+
+        .gt-center {
+            display: table-cell;
+            vertical-align: middle;
+            padding-left: 15px;
+        }
+
+        .gt-label {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 16px;
+            font-style: italic;
+            font-weight: 600;
+        }
+
+        .gt-right {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: right;
+        }
+
+        .gt-val-prefix {
+            font-size: 11px;
+            color: #CBD5E1;
+            margin-right: 5px;
+        }
+
+        .gt-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--gold-soft);
+            white-space: nowrap;
+        }
+
+        /* Firmas */
+        .signatures {
+            margin-top: 30px;
+            display: table;
+            width: 100%;
+        }
+
+        .sig-col {
+            display: table-cell;
+            width: 50%;
+            text-align: center;
+            padding: 0 40px;
+        }
+
+        .sig-line {
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent, var(--gold-soft), transparent);
+            width: 80%;
+            margin: 0 auto 10px auto;
+        }
+
+        .sig-name {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-main);
+        }
+
+        .sig-meta {
+            font-size: 9px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="top-bar"></div>
+        
+        <header>
+            <div class="header-left">
+                <span class="badge">Informe Financiero Oficial</span>
+                <h1 class="company-name">Verduras <span>La 21</span></h1>
+                <div class="company-nit">NIT {{ empresa_nit or '942.807.497' }}</div>
+            </div>
+            <div class="header-right">
+                <div class="doc-title">Estado de Resultados Gerencial</div>
+                <div class="date-box">
+                    <div class="date-label">Período</div>
+                    <div class="date-value">{{ fecha_inicio }} — {{ fecha_fin }}</div>
+                </div>
+                <div style="font-size: 9px; color: #BBBBBB; margin-top: 8px; letter-spacing: 1px;">Cifras en Pesos Colombianos (COP)</div>
+            </div>
+        </header>
+
+        <main>
+            <!-- INGRESOS OPERACIONALES -->
+            <div class="section-card">
+                <div class="card-header ingresos">
+                    <div class="header-stripe"></div>
+                    <span class="card-title">Ingresos Operacionales</span>
+                </div>
+                <table class="report-table ingresos">
+                    <tr class="sub-header">
+                        <td colspan="3">▸ Detalle de Ingresos</td>
+                    </tr>
+                    {% for ing in report_data.ingresos %}
+                    <tr class="row-item">
+                        <td class="acc-code">{{ ing.codigo }}</td>
+                        <td class="acc-name">{{ ing.nombre }}</td>
+                        <td class="acc-value">
+                            $ {{ "{:,.0f}".format(ing.saldo).replace(',', '.') }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="row-total">
+                        <td colspan="2">TOTAL INGRESOS OPERACIONALES</td>
+                        <td class="acc-value">
+                            $ {{ "{:,.0f}".format(report_data.totales.total_ingresos).replace(',', '.') }}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- GASTOS OPERACIONALES -->
+            <div class="section-card">
+                <div class="card-header gastos">
+                    <div class="header-stripe"></div>
+                    <span class="card-title">Gastos Operacionales</span>
+                </div>
+                <table class="report-table gastos">
+                    {% if report_data.gastos_nomina %}
+                    <tr class="sub-header">
+                        <td colspan="3">▸ Nómina y Carga Prestacional</td>
+                    </tr>
+                    {% for gasto in report_data.gastos_nomina %}
+                    <tr class="row-item">
+                        <td class="acc-code">{{ gasto.codigo }}</td>
+                        <td class="acc-name">{{ gasto.nombre }}</td>
+                        <td class="acc-value">$ {{ "{:,.0f}".format(gasto.saldo).replace(',', '.') }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% endif %}
+
+                    {% if report_data.gastos_operativos %}
+                    <tr class="sub-header">
+                        <td colspan="3">▸ Gastos Operativos</td>
+                    </tr>
+                    {% for gasto in report_data.gastos_operativos %}
+                    <tr class="row-item">
+                        <td class="acc-code">{{ gasto.codigo }}</td>
+                        <td class="acc-name">{{ gasto.nombre }}</td>
+                        <td class="acc-value">$ {{ "{:,.0f}".format(gasto.saldo).replace(',', '.') }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% endif %}
+
+                    <tr class="row-total">
+                        <td colspan="2">TOTAL GASTOS OPERACIONALES</td>
+                        <td class="acc-value">
+                            $ {{ "{:,.0f}".format(report_data.totales.total_gastos).replace(',', '.') }}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- KPIs -->
+            <div class="kpi-container">
+                <div class="kpi-card kpi-ingresos">
+                    <div class="kpi-label">Total Ingresos</div>
+                    <div class="kpi-value">$ {{ "{:,.0f}".format(report_data.totales.total_ingresos).replace(',', '.') }}</div>
+                </div>
+                <div class="kpi-card kpi-gastos">
+                    <div class="kpi-label">Total Gastos</div>
+                    <div class="kpi-value">$ {{ "{:,.0f}".format(report_data.totales.total_gastos).replace(',', '.') }}</div>
+                </div>
+                <div class="kpi-card kpi-resultado">
+                    <div class="kpi-label">Utilidad Ejercicio</div>
+                    <div class="kpi-value {% if report_data.totales.utilidad_neta < 0 %}negativo{% endif %}">
+                        {% if report_data.totales.utilidad_neta < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(report_data.totales.utilidad_neta | abs).replace(',', '.') }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grand Total Bar -->
+            <div class="grand-total-bar">
+                <div class="gt-left">
+                    <div class="pulse-circle">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    </div>
+                </div>
+                <div class="gt-center">
+                    <div class="gt-label">Resultado Final del Período</div>
+                </div>
+                <div class="gt-right">
+                    <span class="gt-val-prefix">COP</span>
+                    <span class="gt-value">{% if report_data.totales.utilidad_neta < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(report_data.totales.utilidad_neta | abs).replace(',', '.') }}</span>
+                </div>
+            </div>
+
+            <!-- Signatures -->
+            <div class="signatures">
+                <div class="sig-col">
+                    <div class="sig-line"></div>
+                    <div class="sig-name">Representante Legal</div>
+                    <div class="sig-meta">C.C. _______________________</div>
+                </div>
+                <div class="sig-col">
+                    <div class="sig-line"></div>
+                    <div class="sig-name">Contador Público</div>
+                    <div class="sig-meta">T.P. _______________________</div>
+                </div>
+            </div>
+        </main>
+
+        <div class="bottom-bar"></div>
+    </div>
+</body>
+</html>

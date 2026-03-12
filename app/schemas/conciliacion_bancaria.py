@@ -7,7 +7,7 @@ from decimal import Decimal
 class ImportConfigBase(BaseModel):
     bank_id: int
     name: str
-    file_format: str = Field(..., pattern="^(CSV|TXT|XLS|XLSX)$")
+    file_format: str = Field(..., pattern="^(CSV|TXT|XLS|XLSX|PDF|TEXTO)$")
     delimiter: str = ","
     date_format: str = "%Y-%m-%d"
     field_mapping: Dict[str, int]

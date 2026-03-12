@@ -31,6 +31,8 @@ export default function FileImportInterface({ selectedBankAccount, onBankAccount
   const [importResult, setImportResult] = useState(null);
   const [bankAccounts, setBankAccounts] = useState([]);
   const fileInputRef = useRef(null);
+  const [pdfPassword, setPdfPassword] = useState('');
+  const [rawText, setRawText] = useState('');
 
   // Cargar configuraciones y cuentas bancarias
   useEffect(() => {
@@ -66,13 +68,21 @@ export default function FileImportInterface({ selectedBankAccount, onBankAccount
     }
   };
 
-  const validateFile = async (file) => {
+  const validateFile = async (fileOrText) => {
     if (!selectedConfig) return;
 
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      if (selectedConfig.file_format === 'TEXTO') {
+        formData.append('raw_text', fileOrText);
+      } else {
+        formData.append('file', fileOrText);
+      }
+
+      if (selectedConfig.file_format === 'PDF' && pdfPassword) {
+        formData.append('pdf_password', pdfPassword);
+      }
 
       // axios maneja el content-type multipart automáticamente cuando ve FormData
       // PERO si apiService tiene default 'application/json', hay que anularlo
@@ -110,16 +120,24 @@ export default function FileImportInterface({ selectedBankAccount, onBankAccount
   };
 
   const handleImport = async () => {
-    if (!selectedFile || !selectedConfig || !selectedBankAccount) return;
+    if ((!selectedFile && selectedConfig?.file_format !== 'TEXTO') || (!rawText && selectedConfig?.file_format === 'TEXTO') || !selectedConfig || !selectedBankAccount) return;
 
     setLoading(true);
     setStep(4);
 
     try {
       const formData = new FormData();
-      formData.append('file', selectedFile);
+      if (selectedConfig.file_format === 'TEXTO') {
+        formData.append('raw_text', rawText);
+      } else {
+        formData.append('file', selectedFile);
+      }
       formData.append('config_id', selectedConfig.id);
       formData.append('bank_account_id', selectedBankAccount.id);
+
+      if (selectedConfig.file_format === 'PDF' && pdfPassword) {
+        formData.append('pdf_password', pdfPassword);
+      }
 
       const response = await apiService.post('/conciliacion-bancaria/import', formData, {
         headers: {
@@ -151,6 +169,8 @@ export default function FileImportInterface({ selectedBankAccount, onBankAccount
     setValidationResult(null);
     setImportResult(null);
     setSelectedConfig(null);
+    setPdfPassword('');
+    setRawText('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -241,41 +261,106 @@ export default function FileImportInterface({ selectedBankAccount, onBankAccount
         </Card>
       )}
 
-      {/* Paso 2: Selección de archivo */}
+      {/* Paso 2: Selección de archivo o Texto */}
       {step >= 2 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <FileText className="h-5 w-5" />
-              <span>Selección de Archivo</span>
+              <span>{selectedConfig?.file_format === 'TEXTO' ? 'Entrada de Texto' : 'Selección de Archivo'}</span>
               {step > 2 && <CheckCircle className="h-5 w-5 text-green-500" />}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {step === 2 && (
-              <div>
-                <Label htmlFor="file">Archivo del Banco ({selectedConfig?.file_format})</Label>
-                <Input
-                  ref={fileInputRef}
-                  id="file"
-                  type="file"
-                  accept={`.${selectedConfig?.file_format?.toLowerCase()}`}
-                  onChange={handleFileSelect}
-                  className="mt-1"
+            {step === 2 && selectedConfig?.file_format === 'TEXTO' && (
+              <div className="space-y-4">
+                <Label htmlFor="rawText">Pega el texto de tu extracto aquí:</Label>
+                <textarea
+                  id="rawText"
+                  className="w-full min-h-[200px] p-4 border rounded-md font-mono text-sm shadow-inner focus:ring-2 focus:ring-blue-500 whitespace-pre-wrap"
+                  placeholder="2/02 PAGO INTERBANC IGLESIA 2,000,000.00 44,573,233..."
+                  value={rawText}
+                  onChange={(e) => setRawText(e.target.value)}
                 />
-                <div className="text-sm text-gray-600 mt-1">
-                  Formatos soportados: {selectedConfig?.file_format}
+                <Button
+                  onClick={() => {
+                    setStep(3);
+                    validateFile(rawText);
+                  }}
+                  disabled={!rawText || rawText.length < 10}
+                  className="w-full"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Validar Texto Pegado
+                </Button>
+              </div>
+            )}
+
+            {step === 2 && selectedConfig?.file_format !== 'TEXTO' && (
+              <div className="space-y-4">
+                {selectedConfig?.file_format === 'PDF' && (
+                  <div>
+                    <Label htmlFor="pdfPassword" className="font-bold text-gray-700 block mb-1">Contraseña del PDF (Opcional)</Label>
+                    <Input
+                      id="pdfPassword"
+                      type="password"
+                      placeholder="Dejar en blanco si el archivo no tiene clave"
+                      value={pdfPassword}
+                      onChange={(e) => setPdfPassword(e.target.value)}
+                      className="max-w-md bg-yellow-50 focus:bg-white transition-colors"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Si el banco protege tu extracto (ej. con tu clave), ingresa la clave temporalmente aquí para su desprotección.</p>
+                  </div>
+                )}
+                <div>
+                  <Label htmlFor="file">Archivo del Banco ({selectedConfig?.file_format})</Label>
+                  <Input
+                    ref={fileInputRef}
+                    id="file"
+                    type="file"
+                    accept={`.${selectedConfig?.file_format?.toLowerCase()}`}
+                    onChange={handleFileSelect}
+                    className="mt-1"
+                  />
+                  <div className="text-sm text-gray-600 mt-1">
+                    Formatos soportados: {selectedConfig?.file_format}
+                  </div>
                 </div>
               </div>
             )}
 
-            {selectedFile && (
+            {selectedConfig?.file_format === 'TEXTO' && step > 2 && (
+              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-green-800">Texto Crudo Listo</div>
+                    <div className="text-sm text-green-600">
+                      {rawText.length} caracteres provistos
+                    </div>
+                  </div>
+                  {step === 3 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setStep(2);
+                        setValidationResult(null);
+                      }}
+                    >
+                      <X className="h-4 w-4 text-red-500" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {selectedConfig?.file_format !== 'TEXTO' && selectedFile && (
               <div className="p-3 bg-green-50 rounded-lg">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-medium">{selectedFile.name}</div>
                     <div className="text-sm text-gray-600">
-                      {formatFileSize(selectedFile.size)} - {selectedFile.type || 'Archivo de texto'}
+                      {formatFileSize(selectedFile.size)} - {selectedFile.type || 'Archivo de datos'}
                     </div>
                   </div>
                   {step === 2 && (
@@ -519,7 +604,7 @@ export default function FileImportInterface({ selectedBankAccount, onBankAccount
             <div className="space-y-2 text-sm text-gray-600">
               <p>1. <strong>Selecciona la cuenta bancaria</strong> donde se registrarán los movimientos</p>
               <p>2. <strong>Elige la configuración</strong> que corresponde al formato de tu banco</p>
-              <p>3. <strong>Sube el archivo</strong> del extracto bancario (TXT, CSV, Excel)</p>
+              <p>3. <strong>Sube el archivo</strong> del extracto bancario (TXT, CSV, Excel, PDF)</p>
               <p>4. <strong>Valida los datos</strong> antes de importar</p>
               <p>5. <strong>Importa los movimientos</strong> para comenzar la conciliación</p>
             </div>

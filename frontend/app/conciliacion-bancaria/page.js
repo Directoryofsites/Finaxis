@@ -25,12 +25,9 @@ import ReconciliationReports from './components/ReconciliationReports';
 import AutomaticAdjustments from './components/AutomaticAdjustments';
 import AccountingConfiguration from './components/AccountingConfiguration';
 import BreadcrumbNavigation from './components/BreadcrumbNavigation';
-import ContextualHelp from './components/ContextualHelp';
-import NotificationCenter from './components/NotificationCenter';
 import ConnectionStatus from './components/ConnectionStatus';
 import TestForm from './components/TestForm';
-import EventMonitor from './components/EventMonitor';
-import InputDiagnostic from './components/InputDiagnostic';
+import { apiService } from '@/lib/apiService';
 
 // Importar estilos específicos
 import './conciliacion-bancaria.css';
@@ -73,11 +70,8 @@ function ConciliacionBancariaContent() {
     if (!selectedBankAccount) return;
 
     try {
-      const response = await fetch(`/api/conciliacion-bancaria/reconcile/summary/${selectedBankAccount.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setReconciliationSummary(data);
-      }
+      const response = await apiService.get(`/conciliacion-bancaria/reconcile/summary/${selectedBankAccount.id}`);
+      setReconciliationSummary(response.data);
     } catch (error) {
       console.error('Error cargando resumen:', error);
     }
@@ -289,11 +283,7 @@ function ConciliacionBancariaContent() {
       </Tabs>
 
       {/* Componentes flotantes */}
-      <ContextualHelp activeTab={activeTab} />
-      <NotificationCenter />
       <ConnectionStatus />
-      <EventMonitor />
-      <InputDiagnostic />
     </div>
   );
 }

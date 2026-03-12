@@ -1,5 +1,7 @@
 'use client';
 
+import { apiService } from '@/lib/apiService';
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,20 +43,13 @@ export default function ReconciliationDashboard({
       // PERO ya cambiamos ImportConfigManager a apiService. Deberíamos ser consistentes.
       // Sin embargo, para no romper imports, usaré apiService.get y aseguro de añadir el import si falta.
 
-      const response = await fetch('/api/conciliacion-bancaria/bank-accounts', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        }
-      });
+      const response = await apiService.get('/conciliacion-bancaria/bank-accounts');
+      const accounts = response.data;
+      setBankAccounts(accounts);
 
-      if (response.ok) {
-        const accounts = await response.json();
-        setBankAccounts(accounts);
-
-        // Seleccionar la primera cuenta por defecto si no hay ninguna seleccionada
-        if (!selectedBankAccount && accounts.length > 0) {
-          onBankAccountChange(accounts[0]);
-        }
+      // Seleccionar la primera cuenta por defecto si no hay ninguna seleccionada
+      if (!selectedBankAccount && accounts.length > 0) {
+        onBankAccountChange(accounts[0]);
       }
     } catch (error) {
       console.error('Error cargando cuentas bancarias:', error);
@@ -66,11 +61,8 @@ export default function ReconciliationDashboard({
     if (!selectedBankAccount) return;
 
     try {
-      const response = await fetch(`/api/conciliacion-bancaria/reconciliations?bank_account_id=${selectedBankAccount.id}&limit=5`);
-      if (response.ok) {
-        const data = await response.json();
-        setRecentActivity(data.reconciliations || []);
-      }
+      const response = await apiService.get(`/conciliacion-bancaria/reconciliations?bank_account_id=${selectedBankAccount.id}&limit=5`);
+      setRecentActivity(response.data.reconciliations || []);
     } catch (error) {
       console.error('Error cargando actividad reciente:', error);
     }
@@ -85,23 +77,14 @@ export default function ReconciliationDashboard({
       const formData = new FormData();
       formData.append('bank_account_id', selectedBankAccount.id);
 
-      const response = await fetch('/api/conciliacion-bancaria/reconcile/auto', {
-        method: 'POST',
-        body: formData
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        alert(`Conciliación automática completada: ${result.auto_applied} movimientos conciliados`);
-        onSummaryUpdate();
-        loadRecentActivity();
-      } else {
-        const error = await response.json();
-        alert(`Error: ${error.detail}`);
-      }
+      const response = await apiService.post('/conciliacion-bancaria/reconcile/auto', formData);
+      const result = response.data;
+      alert(`Conciliación automática completada: ${result.auto_applied} movimientos conciliados`);
+      onSummaryUpdate();
+      loadRecentActivity();
     } catch (error) {
       console.error('Error:', error);
-      alert('Error ejecutando conciliación automática');
+      alert(error.response?.data?.detail || 'Error ejecutando conciliación automática');
     } finally {
       setLoading(false);
     }
@@ -156,8 +139,8 @@ export default function ReconciliationDashboard({
               <div
                 key={account.id}
                 className={`border rounded-lg p-4 cursor-pointer transition-all ${selectedBankAccount?.id === account.id
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-gray-300'
                   }`}
                 onClick={() => onBankAccountChange(account)}
               >

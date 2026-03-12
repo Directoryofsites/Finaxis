@@ -17,6 +17,7 @@ from app.models import permiso as models_permiso
 from app.core.hashing import verify_password, get_password_hash # Asegurar esta importación
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/api/auth/token", auto_error=False)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -217,6 +218,18 @@ async def get_current_user(
             user.empresa = empresa_context
             
     return user
+
+async def get_current_user_optional(
+    token: Optional[str] = Depends(oauth2_scheme_optional),
+    db: Session = Depends(get_db)
+) -> Optional[models_usuario.Usuario]:
+    """Versión opcional de get_current_user que no lanza excepción si no hay token."""
+    if not token:
+        return None
+    try:
+        return await get_current_user(token, db)
+    except Exception:
+        return None
 
 oauth2_soporte_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/soporte/login")
 

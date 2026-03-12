@@ -439,115 +439,218 @@ def generate_relacion_saldos_pdf(db: Session, empresa_id: int, filtros: Dict[str
 
     # 4. Plantilla HTML Profesional
     html_template = """
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="utf-8">
-        <title>Relación de Saldos</title>
-        <style>
-            @page {
-                size: A4 landscape;
-                margin: 1cm;
-            }
-            body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 9pt; color: #333; margin: 0; padding: 0; }
-            .header-container { width: 100%; border-bottom: 2px solid #4f46e5; padding-bottom: 10px; margin-bottom: 15px; }
-            .empresa-nombre { font-size: 16pt; font-weight: bold; color: #1e1b4b; text-transform: uppercase; }
-            .empresa-nit { font-size: 10pt; color: #666; margin-top: 2px; }
-            .reporte-titulo { font-size: 14pt; font-weight: bold; color: #4338ca; margin-top: 10px; text-align: center; }
-            .reporte-fechas { font-size: 10pt; font-weight: bold; color: #555; text-align: center; margin-top: 4px; }
-            
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            th { 
-                background-color: #e0e7ff; 
-                color: #312e81; 
-                font-weight: bold; 
-                padding: 6px; 
-                border: 1px solid #c7d2fe; 
-                text-align: center;
-                font-size: 8pt;
-                text-transform: uppercase;
-            }
-            td { 
-                border: 1px solid #e5e7eb; 
-                padding: 5px; 
-                font-size: 8.5pt;
-                vertical-align: middle;
-            }
-            tr:nth-child(even) { background-color: #f9fafb; }
-            .text-right { text-align: right; }
-            .text-center { text-align: center; }
-            .font-mono { font-family: 'Courier New', Courier, monospace; letter-spacing: -0.5px; }
-            .font-bold { font-weight: bold; }
-            
-            .total-row td { 
-                background-color: #312e81; 
-                color: white; 
-                font-weight: bold; 
-                border: 1px solid #312e81;
-                font-size: 9pt;
-            }
-            
-            .footer {
-                position: fixed; 
-                bottom: 0; 
-                width: 100%; 
-                text-align: center; 
-                font-size: 7pt; 
-                color: #999;
-                border-top: 1px solid #eee;
-                padding-top: 5px;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="header-container">
-            <div class="empresa-nombre">{{ empresa.razon_social }}</div>
-            <div class="empresa-nit">NIT: {{ empresa.nit }} {% if empresa.dv %}- {{ empresa.dv }}{% endif %}</div>
-            <div class="reporte-titulo">{{ titulo_reporte }}</div>
-            <div class="reporte-fechas">Del {{ fecha_inicio }} al {{ fecha_fin }}</div>
-        </div>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Relaci&oacute;n de Saldos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --green-inst: #1C3A18;
+            --green-light: #2D5A27;
+            --gold-soft: #C9A84C;
+            --white: #FFFFFF;
+            --bg-page: #FAFAF7;
+            --text-main: #1C3A18;
+            --text-labels: #444444;
+            --bg-accent: #F2F5F1;
+        }
 
-        <table>
-            <thead>
-                <tr>
-                    <th width="10%">Cuenta</th>
-                    <th width="20%">Nombre Cuenta</th>
-                    <th width="10%">NIT Tercero</th>
-                    <th width="20%">Nombre Tercero</th>
-                    <th width="10%">Saldo Anterior</th>
-                    <th width="10%">Débito</th>
-                    <th width="10%">Crédito</th>
-                    <th width="10%">Saldo Final</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in data %}
-                <tr>
-                    <td class="text-center font-bold">{{ row.cuenta_codigo }}</td>
-                    <td>{{ row.cuenta_nombre }}</td>
-                    <td class="text-center">{{ row.tercero_nit }}</td>
-                    <td>{{ row.tercero_nombre }}</td>
-                    <td class="text-right font-mono">{{ "{:,.2f}".format(row.saldo_anterior) }}</td>
-                    <td class="text-right font-mono">{{ "{:,.2f}".format(row.debito) }}</td>
-                    <td class="text-right font-mono">{{ "{:,.2f}".format(row.credito) }}</td>
-                    <td class="text-right font-mono font-bold">{{ "{:,.2f}".format(row.saldo_final) }}</td>
-                </tr>
-                {% endfor %}
-                <tr class="total-row">
-                    <td colspan="4" class="text-right">TOTALES GENERALES</td>
-                    <td class="text-right">{{ "{:,.2f}".format(total_anterior) }}</td>
-                    <td class="text-right">{{ "{:,.2f}".format(total_debito) }}</td>
-                    <td class="text-right">{{ "{:,.2f}".format(total_credito) }}</td>
-                    <td class="text-right">{{ "{:,.2f}".format(total_final) }}</td>
-                </tr>
-            </tbody>
-        </table>
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
 
-        <div class="footer">
-            Generado por Sistema Contable | Fecha de Impresión: {{ fecha_fin }}
-        </div>
-    </body>
-    </html>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--white);
+            color: var(--text-main);
+            font-family: 'DM Sans', sans-serif;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .page-container {
+            width: 297mm;
+            height: 210mm;
+            margin: 0 auto;
+            position: relative;
+            box-sizing: border-box;
+            overflow: hidden;
+            background-color: var(--white);
+        }
+
+        .decor-bar-top {
+            height: 6px;
+            background: linear-gradient(90deg, var(--green-inst), var(--green-light), var(--gold-soft), var(--green-light), var(--green-inst));
+            width: 100%;
+        }
+
+        .decor-bar-bottom {
+            height: 4px;
+            background: linear-gradient(90deg, var(--green-inst), var(--gold-soft));
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+        }
+
+        header {
+            padding: 30px 40px 15px 40px;
+            display: table;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .header-left { display: table-cell; vertical-align: middle; text-align: left; }
+        .header-right { display: table-cell; vertical-align: middle; text-align: right; }
+
+        .badge-premium {
+            font-size: 8px;
+            font-weight: 700;
+            color: var(--green-inst);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .badge-premium::before { content: "•"; margin-right: 6px; color: var(--gold-soft); }
+
+        .company-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1;
+            margin: 0;
+            color: var(--green-inst);
+        }
+        .company-nit {
+            font-size: 9px;
+            color: #888;
+            margin-top: 2px;
+            letter-spacing: 1px;
+        }
+
+        .report-title-box {
+            text-align: right;
+        }
+        .doc-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-style: italic;
+            color: #444;
+            margin-bottom: 6px;
+        }
+        .date-range-badge {
+            display: inline-block;
+            border: 1px solid var(--green-inst);
+            padding: 4px 10px;
+            border-radius: 2px;
+        }
+        .date-range-text { font-size: 11px; font-weight: 700; color: var(--green-inst); }
+
+        main { padding: 15px 40px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead th {
+            background-color: #F8F9F7;
+            color: var(--text-labels);
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 10px 8px;
+            border-bottom: 2px solid var(--green-inst);
+            text-align: left;
+        }
+
+        tbody td {
+            padding: 8px;
+            font-size: 9px;
+            border-bottom: 1px solid #EEE;
+            color: #333;
+            vertical-align: middle;
+        }
+
+        .row-alt { background-color: #FCFCFB; }
+        .text-right { text-align: right !important; }
+        .text-center { text-align: center !important; }
+        
+        .font-bold { font-weight: 700; }
+        .total-row td { border: none; padding: 12px 8px; color: var(--white) !important; }
+        .gold-label { color: var(--gold-soft); text-transform: uppercase; letter-spacing: 1px; font-size: 8px; }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="decor-bar-top"></div>
+        
+        <header>
+            <div class="header-left">
+                <span class="badge-premium">Inteligencia Financiera</span>
+                <h1 class="company-name">{{ empresa.razon_social }}</h1>
+                <div class="company-nit">NIT: {{ empresa.nit }}{% if empresa.dv %}-{{ empresa.dv }}{% endif %}</div>
+            </div>
+            <div class="header-right">
+                <div class="report-title-box">
+                    <div class="doc-title">{{ titulo_reporte }}</div>
+                    <div class="date-range-badge">
+                        <span class="date-range-text">Del {{ fecha_inicio }} al {{ fecha_fin }}</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <table>
+                <thead>
+                    <tr>
+                        <th width="8%">Cuenta</th>
+                        <th width="22%">Nombre Cuenta</th>
+                        <th width="10%">NIT Tercero</th>
+                        <th>Nombre Tercero</th>
+                        <th width="12%" class="text-right">Saldo Anterior</th>
+                        <th width="10%" class="text-right">D&eacute;bito</th>
+                        <th width="10%" class="text-right">Cr&eacute;dito</th>
+                        <th width="12%" class="text-right">Saldo Final</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in data %}
+                    <tr class="{{ 'row-alt' if loop.index0 % 2 == 0 else '' }}">
+                        <td class="text-center font-bold" style="color: var(--green-light);">{{ row.cuenta_codigo }}</td>
+                        <td>{{ row.cuenta_nombre }}</td>
+                        <td class="text-center">{{ row.tercero_nit }}</td>
+                        <td style="font-size: 8px;">{{ row.tercero_nombre }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(row.saldo_anterior).replace(',', '.') }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(row.debito).replace(',', '.') }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(row.credito).replace(',', '.') }}</td>
+                        <td class="text-right font-bold">{{ "{:,.0f}".format(row.saldo_final).replace(',', '.') }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="total-row">
+                        <td colspan="4">
+                            <span class="gold-label">Consolidado</span><br>
+                            TOTALES GENERALES
+                        </td>
+                        <td class="text-right">{{ "{:,.0f}".format(total_anterior).replace(',', '.') }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(total_debito).replace(',', '.') }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(total_credito).replace(',', '.') }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(total_final).replace(',', '.') }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </main>
+
+        <div class="decor-bar-bottom"></div>
+    </div>
+</body>
+</html>
     """
     
     try:
@@ -570,7 +673,8 @@ def generate_auxiliar_inverso_report(db: Session, empresa_id: int, filtros: Dict
         MovimientoContable,
         Documento,
         Tercero.razon_social.label("tercero_nombre"),
-        Tercero.id.label("tercero_id_real")
+        Tercero.id.label("tercero_id_real"),
+        Tercero.nit.label("tercero_nit") # Agregado para el PDF
     ).select_from(MovimientoContable)\
      .join(Documento, MovimientoContable.documento_id == Documento.id)\
      .outerjoin(Tercero, Documento.beneficiario_id == Tercero.id)\
@@ -617,7 +721,7 @@ def generate_auxiliar_inverso_report(db: Session, empresa_id: int, filtros: Dict
     # Tracking de saldos parciales por tercero
     running_balances = saldos_iniciales_map.copy()
     
-    for mov, doc, t_nombre, t_id in raw_movs:
+    for mov, doc, t_nombre, t_id, t_nit in raw_movs:
         tid = t_id or 0
         current_bal = running_balances.get(tid, 0.0)
         new_bal = current_bal + float(mov.debito) - float(mov.credito)
@@ -631,6 +735,7 @@ def generate_auxiliar_inverso_report(db: Session, empresa_id: int, filtros: Dict
             # Crucial: Frontend usará esto para agrupar
             "tercero_id": tid, 
             "tercero_nombre": t_nombre or "Cuantías Menores",
+            "tercero_nit": t_nit or "-", # Agregado
             
             # Campos estándar
             "cuenta_codigo": mov.cuenta.codigo, # Fijo
@@ -646,7 +751,7 @@ def generate_auxiliar_inverso_report(db: Session, empresa_id: int, filtros: Dict
         "movimientos": movimientos_resp,
         "saldos_iniciales_por_tercero": {str(k): v for k, v in saldos_iniciales_map.items()}
     }
-
+    
 def generate_auxiliar_inverso_pdf(db: Session, empresa_id: int, filtros: Dict[str, Any]):
     report_data = generate_auxiliar_inverso_report(db, empresa_id, filtros)
     empresa_info = db.query(models_empresa).filter(models_empresa.id == empresa_id).first()
@@ -656,23 +761,17 @@ def generate_auxiliar_inverso_pdf(db: Session, empresa_id: int, filtros: Dict[st
     cuenta_display = f"{cuenta_principal.codigo} - {cuenta_principal.nombre}" if cuenta_principal else "Desconocida"
 
     # Preparar datos agrupados para la plantilla
-    # La plantilla espera una estructura similar a 'movimientos' pero quizás agrupada
-    # Vamos a usar la misma plantilla de auxiliar tercero si es posible, O una genérica dinámica.
-    # Dado que "tercero_cuenta" (auxiliar normal) ya tiene una plantilla, intentaremos adaptarla o usar una nueva.
-    # Para rapidez y calidad, usaremos una estructura de contexto compatible con una plantilla nueva simple.
-    
-    # Agrupar movimientos por tercero para la vista impresa
     grouped_movs = {}
-    
-    # Inicializar con saldos
     saldos_init = report_data['saldos_iniciales_por_tercero']
+    total_periodo_deb = 0
+    total_periodo_cre = 0
     
-    # Agrupar
     for mov in report_data['movimientos']:
         tid = str(mov['tercero_id'])
         if tid not in grouped_movs:
             grouped_movs[tid] = {
                 "tercero_nombre": mov['tercero_nombre'],
+                "tercero_nit": mov.get('tercero_nit', '-'),
                 "saldo_inicial": saldos_init.get(tid, 0),
                 "movimientos": [],
                 "total_debito": 0,
@@ -683,9 +782,10 @@ def generate_auxiliar_inverso_pdf(db: Session, empresa_id: int, filtros: Dict[st
         grouped_movs[tid]['movimientos'].append(mov)
         grouped_movs[tid]['total_debito'] += mov['debito']
         grouped_movs[tid]['total_credito'] += mov['credito']
-        grouped_movs[tid]['saldo_final'] = mov['saldo_parcial'] # El último será el final
+        grouped_movs[tid]['saldo_final'] = mov['saldo_parcial']
+        total_periodo_deb += mov['debito']
+        total_periodo_cre += mov['credito']
 
-    # Convertir a lista
     lista_terceros = list(grouped_movs.values())
     lista_terceros.sort(key=lambda x: x['tercero_nombre'])
 
@@ -693,77 +793,146 @@ def generate_auxiliar_inverso_pdf(db: Session, empresa_id: int, filtros: Dict[st
         'empresa': empresa_info,
         'fecha_inicio': filtros['fecha_inicio'].strftime('%d/%m/%Y'),
         'fecha_fin': filtros['fecha_fin'].strftime('%d/%m/%Y'),
-        'titulo_reporte': f"Auxiliar Contable Inverso (Por Cuenta)",
-        'subtitulo': f"Cuenta Principal: {cuenta_display}",
+        'titulo_reporte': "Auxiliar Contable (Por Cuenta e Inverso)",
+        'cuenta_nombre': cuenta_principal.nombre if cuenta_principal else '',
+        'cuenta_codigo': cuenta_principal.codigo if cuenta_principal else '',
         'data_agrupada': lista_terceros,
-        'total_general_saldo_ant': report_data['saldoAnterior']
+        'total_debito_global': total_periodo_deb,
+        'total_credito_global': total_periodo_cre,
+        'saldo_anterior_global': report_data['saldoAnterior']
     }
 
-    # Definir plantilla HTML inline por simplicidad y robustez inmediata
+    # Plantilla Premium Horizontal
     html_template = """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <style>
-            body { font-family: sans-serif; font-size: 10px; color: #333; }
-            .header { text-align: center; margin-bottom: 20px; }
-            .empresa-nombre { font-size: 14px; font-weight: bold; }
-            .reporte-titulo { font-size: 12px; font-weight: bold; margin-top: 5px; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-            th, td { border: 1px solid #ddd; padding: 4px; text-align: left; }
-            th { background-color: #f2f2f2; font-weight: bold; }
-            .text-right { text-align: right; }
-            .group-header { background-color: #e0e7ff; font-weight: bold; padding: 5px; margin-top: 10px; }
-            .total-row { font-weight: bold; background-color: #f9fafb; }
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <div class="empresa-nombre">{{ empresa.razon_social }}</div>
-            <div>NIT: {{ empresa.nit }}</div>
-            <div class="reporte-titulo">{{ titulo_reporte }}</div>
-            <div>{{ subtitulo }}</div>
-            <div>Del {{ fecha_inicio }} al {{ fecha_fin }}</div>
-        </div>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Auxiliar por Cuenta Inverso</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --green-inst: #1C3A18;
+            --green-light: #2D5A27;
+            --gold-soft: #C9A84C;
+            --white: #FFFFFF;
+            --text-main: #1C3A18;
+            --text-labels: #444444;
+        }
 
-        {% for grupo in data_agrupada %}
-            <div class="group-header">
-                Tercero: {{ grupo.tercero_nombre }} | Saldo Inicial: {{ "{:,.2f}".format(grupo.saldo_inicial) }}
+        @page { size: A4; margin: 0; }
+        body { margin: 0; padding: 0; background-color: var(--white); color: var(--text-main); font-family: 'DM Sans', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+        .page-container { width: 210mm; min-height: 297mm; margin: 0 auto; position: relative; box-sizing: border-box; background-color: var(--white); padding-bottom: 30px; }
+        .decor-bar-top { height: 6px; background: linear-gradient(90deg, var(--green-inst), var(--green-light), var(--gold-soft), var(--green-light), var(--green-inst)); width: 100%; }
+        .decor-bar-bottom { height: 4px; background: linear-gradient(90deg, var(--green-inst), var(--gold-soft)); width: 100%; position: absolute; bottom: 0; }
+
+        header { padding: 30px 40px 15px 40px; display: table; width: 100%; box-sizing: border-box; }
+        .header-left { display: table-cell; vertical-align: middle; text-align: left; }
+        .header-right { display: table-cell; vertical-align: middle; text-align: right; }
+
+        .badge-premium { font-size: 8px; font-weight: 700; color: var(--green-inst); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; display: block; }
+        .badge-premium::before { content: "•"; margin-right: 6px; color: var(--gold-soft); }
+
+        .company-name { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 700; line-height: 1; margin: 0; color: var(--green-inst); }
+        .company-nit { font-size: 9px; color: #888; margin-top: 2px; letter-spacing: 1px; }
+
+        .report-title-box { text-align: right; }
+        .doc-title { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-style: italic; color: #444; margin-bottom: 6px; }
+        .date-range-badge { display: inline-block; border: 1px solid var(--green-inst); padding: 4px 10px; border-radius: 2px; }
+        .date-range-text { font-size: 11px; font-weight: 700; color: var(--green-inst); }
+
+        .account-ribbon { background-color: var(--green-inst); color: var(--white); padding: 12px 40px; font-size: 11px; margin-bottom: 20px; }
+        .account-ribbon strong { color: var(--gold-soft); }
+
+        main { padding: 0 40px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; page-break-inside: avoid; }
+        thead th { background-color: #F8F9F7; color: var(--text-labels); font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 10px 8px; border-bottom: 2px solid var(--green-inst); text-align: left; }
+        tbody td { padding: 8px; font-size: 9px; border-bottom: 1px solid #EEE; color: #333; vertical-align: middle; }
+
+        .tercero-header { background-color: #F4F6F2; font-weight: 700; color: var(--green-inst); font-size: 10px; }
+        .saldo-ant-row { font-style: italic; color: #666; font-size: 8px; }
+        .total-section { background-color: var(--green-inst); color: var(--white); font-weight: 700; font-size: 10px; }
+        .total-section td { border: none; padding: 12px 8px; color: var(--white) !important; }
+        .gold-label { color: var(--gold-soft); text-transform: uppercase; letter-spacing: 1px; font-size: 8px; }
+        .text-right { text-align: right !important; }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="decor-bar-top"></div>
+        <header>
+            <div class="header-left">
+                <span class="badge-premium">Inteligencia Financiera</span>
+                <h1 class="company-name">{{ empresa.razon_social }}</h1>
+                <div class="company-nit">NIT: {{ empresa.nit }}{% if empresa.dv %}-{{ empresa.dv }}{% endif %}</div>
             </div>
+            <div class="header-right">
+                <div class="report-title-box">
+                    <div class="doc-title">{{ titulo_reporte }}</div>
+                    <div class="date-range-badge"><span class="date-range-text">Del {{ fecha_inicio }} al {{ fecha_fin }}</span></div>
+                </div>
+            </div>
+        </header>
+
+        <div class="account-ribbon"><strong>CUENTA PRINCIPAL:</strong> {{ cuenta_codigo }} &#8212; {{ cuenta_nombre }}</div>
+
+        <main>
+            {% for grupo in data_agrupada %}
             <table>
                 <thead>
                     <tr>
-                        <th width="15%">Fecha</th>
+                        <th width="12%">Fecha</th>
                         <th width="15%">Documento</th>
-                        <th>Concepto</th>
-                        <th width="12%" class="text-right">Débito</th>
-                        <th width="12%" class="text-right">Crédito</th>
-                        <th width="12%" class="text-right">Saldo</th>
+                        <th>Concepto / Detalle</th>
+                        <th width="12%" class="text-right">D&eacute;bito</th>
+                        <th width="12%" class="text-right">Cr&eacute;dito</th>
+                        <th width="15%" class="text-right">Saldo</th>
                     </tr>
                 </thead>
                 <tbody>
+                    <tr class="tercero-header">
+                        <td colspan="5">TERCERO: {{ grupo.tercero_nit }} &#8212; {{ grupo.tercero_nombre }}</td>
+                        <td class="text-right"><span style="font-size: 7px; color: #666; font-weight: normal;">INICIAL:</span> {{ "{:,.0f}".format(grupo.saldo_inicial).replace(',', '.') }}</td>
+                    </tr>
                     {% for mov in grupo.movimientos %}
                     <tr>
-                        <td>{{ mov.fecha }}</td>
-                        <td>{{ mov.tipo_documento }} #{{ mov.numero_documento }}</td>
-                        <td>{{ mov.concepto }}</td>
-                        <td class="text-right">{{ "{:,.2f}".format(mov.debito) }}</td>
-                        <td class="text-right">{{ "{:,.2f}".format(mov.credito) }}</td>
-                        <td class="text-right">{{ "{:,.2f}".format(mov.saldo_parcial) }}</td>
+                        <td class="text-center">{{ mov.fecha }}</td>
+                        <td style="font-weight: 700; color: var(--green-light);">{{ mov.tipo_documento }}-{{ mov.numero_documento }}</td>
+                        <td style="font-size: 8px;">{{ mov.concepto }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(mov.debito).replace(',', '.') }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(mov.credito).replace(',', '.') }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(mov.saldo_parcial).replace(',', '.') }}</td>
                     </tr>
                     {% endfor %}
-                    <tr class="total-row">
-                        <td colspan="3" class="text-right">Total Tercero:</td>
-                        <td class="text-right">{{ "{:,.2f}".format(grupo.total_debito) }}</td>
-                        <td class="text-right">{{ "{:,.2f}".format(grupo.total_credito) }}</td>
-                        <td class="text-right">{{ "{:,.2f}".format(grupo.saldo_final) }}</td>
+                    <tr class="tercero-header" style="background-color: #EEE; color: #333;">
+                        <td colspan="3">TOTAL DETALLE TERCERO</td>
+                        <td class="text-right">{{ "{:,.0f}".format(grupo.total_debito).replace(',', '.') }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(grupo.total_credito).replace(',', '.') }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(grupo.saldo_final).replace(',', '.') }}</td>
                     </tr>
                 </tbody>
             </table>
-        {% endfor %}
-    </body>
-    </html>
+            {% endfor %}
+
+            <table>
+                <tbody>
+                    <tr class="total-section">
+                        <td colspan="3"><span class="gold-label">Consolidado Total</span><br>TOTALES GENERALES DE LA CUENTA</td>
+                        <td class="text-right">{{ "{:,.0f}".format(total_debito_global).replace(',', '.') }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(total_credito_global).replace(',', '.') }}</td>
+                        <td class="text-right" style="font-size: 14px;">
+                            {% set saldo_final_global = (data_agrupada[-1].saldo_final if data_agrupada else saldo_anterior_global) %}
+                            {{ "{:,.0f}".format(saldo_final_global).replace(',', '.') }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </main>
+        <div class="decor-bar-bottom"></div>
+    </div>
+</body>
+</html>
     """
     
     try:

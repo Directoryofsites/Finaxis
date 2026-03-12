@@ -305,6 +305,7 @@ def resetear_password(payload: usuario_schema.PasswordResetPayload, db: Session 
 
 @router.post("/exportar-datos")
 def exportar_datos(export_request: migracion_schemas.ExportRequest, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(has_permission("utilidades:migracion"))): # <-- CAMBIO AQUÍ
+    print(f"DEBUG EXPORT: {export_request.dict(exclude_none=True)}")
     # 1. Obtener Data
     data = migracion_service.exportar_datos(db=db, export_request=export_request, empresa_id=current_user.empresa_id)
     

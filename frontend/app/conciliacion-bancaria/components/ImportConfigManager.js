@@ -378,10 +378,10 @@ export default function ImportConfigManager() {
             <Label htmlFor="bank_name">Nombre del banco</Label>
             <Input
               id="bank_name"
-              value={formData.bank_name}
-              onChange={(e) => handleInputChange('bank_name', e.target.value)}
-              placeholder="Ej: Banco Nacional"
-              className="conciliacion-input"
+              value={formData.bank_name || 'Asignado en creación'}
+              disabled={true}
+              title="El banco no se puede modificar una vez creada la configuración."
+              className="conciliacion-input bg-gray-100 text-gray-500 cursor-not-allowed"
             />
           </div>
         </div>
@@ -400,6 +400,8 @@ export default function ImportConfigManager() {
                 <option value="csv">CSV</option>
                 <option value="txt">TXT</option>
                 <option value="excel">Excel</option>
+                <option value="pdf">PDF</option>
+                <option value="texto">Texto</option>
               </select>
             </div>
           </div>
@@ -616,7 +618,7 @@ export default function ImportConfigManager() {
       )}
 
       {/* EDICIÓN: Formulario Legacy (Solo para editar existentes) */}
-      {isEditing && <ConfigurationForm />}
+      {isEditing && ConfigurationForm()}
 
       {/* Panel de Debug */}
       <DebugPanel formData={formData} />

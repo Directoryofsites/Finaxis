@@ -813,6 +813,76 @@ def get_income_statement_report_pdf(
     from fastapi.responses import Response
     return Response(content=pdf_content, media_type="application/pdf")
 
+# --- INICIO: NUEVO ESTADO DE RESULTADOS GERENCIAL ---
+@router.get("/income-statement-gerencial", response_model=Dict[str, Any])
+def get_income_statement_gerencial_report(
+    fecha_inicio: date = Query(..., description="Fecha de inicio del reporte (YYYY-MM-DD)"),
+    fecha_fin: date = Query(..., description="Fecha de fin del reporte (YYYY-MM-DD)"),
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    """
+    Genera los datos para el reporte de Estado de Resultados Gerencial.
+    """
+    report_data = documento_service.generate_income_statement_gerencial_report(
+        db=db,
+        empresa_id=current_user.empresa_id,
+        fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin
+    )
+    return report_data
+
+@router.get("/income-statement-gerencial/get-signed-url", response_model=Dict[str, str])
+def get_signed_income_statement_gerencial_report_url(
+    fecha_inicio: date = Query(..., description="Fecha de inicio del reporte (YYYY-MM-DD)"),
+    fecha_fin: date = Query(..., description="Fecha de fin del reporte (YYYY-MM-DD)"),
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    """
+    Genera una URL firmada y temporal para la descarga del reporte de Estado de Resultados Gerencial en PDF.
+    """
+    pdf_endpoint = "/api/reports/income-statement-gerencial/imprimir" 
+
+    signed_token = reports_service.generate_signed_report_url(
+        endpoint=pdf_endpoint,
+        expiration_seconds=15,
+        fecha_inicio=fecha_inicio.isoformat(),
+        fecha_fin=fecha_fin.isoformat(),
+        empresa_id=current_user.empresa_id
+    )
+    return {"signed_url_token": signed_token}
+
+@router.get("/income-statement-gerencial/imprimir")
+def get_income_statement_gerencial_report_pdf(
+    signed_token: str = Query(..., description="Token de URL firmada para el reporte"),
+    db: Session = Depends(get_db)
+):
+    """
+    Sirve el reporte de Estado de Resultados Gerencial en formato PDF.
+    """
+    pdf_endpoint = "/api/reports/income-statement-gerencial/imprimir"
+    verified_params = reports_service.verify_signed_report_url(
+        signed_token=signed_token,
+        expected_endpoint=pdf_endpoint,
+        max_age_seconds=60 
+    )
+    if not verified_params:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="URL de descarga inválida o expirada.")
+
+    fecha_inicio = date.fromisoformat(verified_params["fecha_inicio"])
+    fecha_fin = date.fromisoformat(verified_params["fecha_fin"])
+    empresa_id = verified_params["empresa_id"]
+
+    pdf_content = documento_service.generate_income_statement_gerencial_report_pdf( 
+        db=db,
+        empresa_id=empresa_id,
+        fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin
+    )
+    from fastapi.responses import Response
+    return Response(content=pdf_content, media_type="application/pdf")
+# --- FIN: NUEVO ESTADO DE RESULTADOS GERENCIAL ---
 
 # --- NUEVO: REPORTE RELACIÓN DE SALDOS (CUENTA Y TERCEROS) ---
 @router.get("/relacion-saldos", response_model=List[Dict[str, Any]])
@@ -1186,6 +1256,72 @@ def get_balance_sheet_report_pdf(
         empresa_id=empresa_id,
         fecha_corte=fecha_corte,
         nivel=nivel
+    )
+    from fastapi.responses import Response
+    from fastapi.responses import Response
+    return Response(content=pdf_content, media_type="application/pdf")
+
+# --- RUTAS PARA REPORTE BALANCE GENERAL GERENCIAL (DISEÑO PREMIUM) ---
+
+@router.get("/balance-sheet-gerencial", response_model=Dict[str, Any])
+def get_balance_sheet_gerencial_report(
+    fecha_corte: date = Query(..., description="Fecha de corte del reporte (YYYY-MM-DD)"),
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    """
+    Genera los datos para el reporte de Balance General Gerencial.
+    """
+    return documento_service.generate_balance_sheet_gerencial_report(
+        db=db,
+        empresa_id=current_user.empresa_id,
+        fecha_corte=fecha_corte
+    )
+
+@router.get("/balance-sheet-gerencial/get-signed-url", response_model=Dict[str, Any])
+def get_signed_balance_sheet_gerencial_report_url(
+    fecha_corte: date = Query(..., description="Fecha de corte del reporte (YYYY-MM-DD)"),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    """
+    Genera una URL firmada para la descarga del PDF del Balance General Gerencial.
+    """
+    pdf_endpoint = "/api/reports/balance-sheet-gerencial/imprimir"
+    
+    signed_token = reports_service.generate_signed_report_url(
+        endpoint=pdf_endpoint,
+        expiration_seconds=60,
+        fecha_corte=fecha_corte.isoformat(),
+        empresa_id=current_user.empresa_id
+    )
+    return {"signed_url_token": signed_token}
+
+@router.get("/balance-sheet-gerencial/imprimir")
+def get_balance_sheet_gerencial_report_pdf(
+    signed_token: str = Query(..., description="Token de URL firmada para el reporte"),
+    db: Session = Depends(get_db)
+):
+    """
+    Sirve el reporte de Balance General Gerencial en PDF después de verificar la URL firmada.
+    """
+    pdf_endpoint = "/api/reports/balance-sheet-gerencial/imprimir"
+
+    verified_params = reports_service.verify_signed_report_url(
+        signed_token=signed_token,
+        expected_endpoint=pdf_endpoint,
+        max_age_seconds=60
+    )
+
+    if not verified_params:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="URL de descarga inválida o expirada.")
+
+    fecha_corte = date.fromisoformat(verified_params["fecha_corte"])
+    empresa_id = verified_params["empresa_id"]
+
+    pdf_content = documento_service.generate_balance_sheet_gerencial_report_pdf(
+        db=db,
+        empresa_id=empresa_id,
+        fecha_corte=fecha_corte
     )
     from fastapi.responses import Response
     return Response(content=pdf_content, media_type="application/pdf")

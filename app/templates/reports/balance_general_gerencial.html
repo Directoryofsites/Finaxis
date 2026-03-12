@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Estado de Situación Financiera - Gerencial</title>
+    <!-- WeasyPrint renders local fonts if installed, or we can use webfonts if connected -->
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Colores Primarios */
+            --green-inst: #2D6A26;
+            --green-light: #6BAD5E;
+            --blue-slate: #4A6FA5;
+            --gold-soft: #C9A84C;
+            --green-text: #1A3D17;
+            --blue-text: #1F3560;
+            --gold-text: #6B5010;
+            
+            /* Fondos */
+            --white: #FFFFFF;
+            --bg-activos: #F2F8F1;
+            --bg-pasivos: #F3F5F8;
+            --bg-patrimonio: #FBF8F1;
+            --row-activos: #EEF5ED;
+            --row-pasivos: #EEF1F8;
+            --row-patrimonio: #FAF5E9;
+            --subrow-activos: #F7F9F7;
+            --subrow-pasivos: #F3F6FB;
+            --gray-light: #FAFAFA;
+            --bg-grand-total: #F5FAF4;
+            
+            /* Texto */
+            --text-main: #1A1A1A;
+            --text-muted: #BBBBBB;
+            --text-labels: #444444;
+            --red-contable: #C0392B;
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--white);
+            color: var(--text-main);
+            font-family: 'DM Sans', sans-serif;
+            -webkit-print-color-adjust: exact;
+        }
+
+        .page-container {
+            width: 210mm;
+            height: 297mm; /* Forced A4 height to ensure everything fits */
+            margin: 0 auto;
+            position: relative;
+            background: var(--white);
+            box-sizing: border-box;
+            overflow: hidden; /* Prevent spillover */
+        }
+
+        /* Barras Decorativas */
+        .top-bar {
+            height: 4px; /* Reduced */
+            background: linear-gradient(90deg, var(--green-inst), var(--green-light), var(--gold-soft), var(--green-light), var(--green-inst));
+            width: 100%;
+        }
+
+        .bottom-bar {
+            height: 3px;
+            background: linear-gradient(90deg, var(--green-inst), var(--green-light), var(--gold-soft));
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+        }
+
+        /* Cabecera */
+        header {
+            padding: 30px 56px 20px 56px; /* Reduced padding */
+            display: table;
+            width: 100%;
+            box-sizing: border-box;
+            border-bottom: 1px solid #F0F0F0;
+        }
+
+        .header-left {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: left;
+        }
+
+        .header-right {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: right;
+        }
+
+        .badge {
+            font-size: 9px; /* Reduced */
+            font-weight: 700;
+            color: var(--green-inst);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .badge::before {
+            content: "•";
+            margin-right: 6px;
+            font-size: 12px;
+        }
+
+        .company-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 38px; /* Reduced */
+            font-weight: 700;
+            line-height: 1;
+            margin: 0;
+            color: var(--text-main);
+        }
+        .company-name span {
+            color: var(--green-inst);
+        }
+
+        .company-nit {
+            font-size: 10px;
+            color: var(--text-muted);
+            letter-spacing: 1.5px;
+            margin-top: 4px;
+            font-weight: 400;
+        }
+
+        .doc-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            font-style: italic;
+            color: #555555;
+            margin-bottom: 10px;
+        }
+
+        .date-box {
+            display: inline-block;
+            border: 1.5px solid var(--green-inst);
+            border-radius: 4px;
+            padding: 6px 14px;
+            text-align: center;
+        }
+
+        .date-label {
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--green-inst);
+            margin-bottom: 1px;
+        }
+
+        .date-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        /* Cuerpo */
+        main {
+            padding: 20px 56px; /* Reduced */
+        }
+
+        .grid-container {
+            display: table;
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 24px 0;
+            margin-left: -24px;
+        }
+
+        .col {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+        }
+
+        /* Tarjetas de Sección */
+        .section-card {
+            border: 1.5px solid #E4E4E4;
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--white);
+            margin-bottom: 15px; /* Reduced from 24px */
+        }
+
+        .card-header {
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1.5px solid #E4E4E4;
+        }
+        .card-header.activos { background: var(--bg-activos); }
+        .card-header.pasivos { background: var(--bg-pasivos); }
+        .card-header.patrimonio { background: var(--bg-patrimonio); }
+
+        .header-stripe {
+            width: 3px;
+            height: 16px;
+            border-radius: 2px;
+            margin-right: 10px;
+        }
+        .activos .header-stripe { background: var(--green-inst); }
+        .pasivos .header-stripe { background: var(--blue-slate); }
+        .patrimonio .header-stripe { background: var(--gold-soft); }
+
+        .card-title {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-labels);
+        }
+
+        /* Tablas */
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .sub-header {
+            background: var(--gray-light);
+            border-bottom: 1px solid #F0F0F0;
+        }
+        .sub-header td {
+            padding: 4px 16px; /* Reduced */
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #AAAAAA;
+        }
+
+        .row-item td {
+            padding: 6px 16px; /* Reduced */
+            border-bottom: 1px solid #F8F8F8;
+            vertical-align: middle; /* Fix for alignment */
+        }
+        .acc-code { font-size: 9px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; width: 40px; }
+        .acc-name { font-size: 12px; color: var(--text-labels); padding-right: 10px; }
+        .acc-value { 
+            font-size: 12px; 
+            font-weight: 500; 
+            text-align: right; 
+            font-variant-numeric: tabular-nums; 
+            white-space: nowrap; /* CRITICAL FIX: No wrapping for currency */
+            min-width: 90px;
+        }
+
+        .negativo { color: var(--red-contable) !important; }
+
+        .row-subtotal td { padding: 8px 16px; font-weight: 700; font-size: 13px; }
+        .activos .row-subtotal { background: var(--subrow-activos); border-top: 1.5px solid #D8E8D6; color: var(--green-inst); }
+        .pasivos .row-subtotal { background: var(--subrow-pasivos); border-top: 1.5px solid #C0CEDF; color: var(--blue-slate); }
+
+        .row-total td { padding: 10px 16px; font-weight: 700; font-size: 13.5px; }
+        .activos .row-total { background: var(--row-activos); border-top: 2px solid var(--green-inst); color: var(--green-text); }
+        .pasivos .row-total { background: var(--row-pasivos); border-top: 2px solid var(--blue-slate); color: var(--blue-text); }
+        .patrimonio .row-total { background: var(--row-patrimonio); border-top: 2px solid var(--gold-soft); color: var(--gold-text); }
+
+        /* KPIs */
+        .kpi-container {
+            display: table;
+            width: 100%;
+            border-spacing: 15px 0;
+            margin-top: 5px;
+            margin-left: -15px;
+        }
+
+        .kpi-card {
+            display: table-cell;
+            width: 33.33%;
+            border: 1.5px solid #E4E4E4;
+            border-radius: 8px;
+            padding: 15px; /* Reduced */
+            position: relative;
+            background: var(--white);
+        }
+        .kpi-card::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 15%;
+            bottom: 15%;
+            width: 4px;
+            border-radius: 0 2px 2px 0;
+        }
+        .kpi-activos::before { background: var(--green-inst); }
+        .kpi-pasivos::before { background: var(--red-contable); }
+        .kpi-patrimonio::before { background: var(--gold-soft); }
+
+        .kpi-label {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .kpi-value {
+            font-size: 16px; /* Reduced */
+            font-weight: 700;
+            color: var(--text-main);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        /* Grand Total */
+        .grand-total-bar {
+            background: var(--bg-grand-total);
+            border: 2px solid var(--green-inst);
+            border-radius: 8px;
+            padding: 15px 25px; /* Reduced */
+            margin-top: 15px; /* Reduced */
+            display: table;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .gt-left {
+            display: table-cell;
+            vertical-align: middle;
+            width: 40px;
+        }
+
+        .pulse-circle {
+            width: 32px;
+            height: 32px;
+            background: var(--green-inst);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .gt-center {
+            display: table-cell;
+            vertical-align: middle;
+            padding-left: 15px;
+        }
+
+        .gt-label {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 16px;
+            font-style: italic;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .gt-right {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: right;
+        }
+
+        .gt-val-prefix {
+            font-size: 11px;
+            color: #888888;
+            margin-right: 5px;
+        }
+
+        .gt-value {
+            font-size: 22px; /* Reduced */
+            font-weight: 700;
+            color: var(--green-text);
+            white-space: nowrap;
+        }
+
+        .equation-note {
+            text-align: center;
+            font-size: 10px;
+            color: #AAAAAA;
+            font-style: italic;
+            margin-top: 8px;
+        }
+
+        /* Firmas */
+        .signatures {
+            margin-top: 30px; /* Reduced from 60px */
+            display: table;
+            width: 100%;
+        }
+
+        .sig-col {
+            display: table-cell;
+            width: 50%;
+            text-align: center;
+            padding: 0 40px;
+        }
+
+        .sig-line {
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent, var(--gold-soft), transparent);
+            width: 80%;
+            margin: 0 auto 10px auto;
+        }
+
+        .sig-name {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-main);
+        }
+
+        .sig-meta {
+            font-size: 9px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="top-bar"></div>
+        
+        <header>
+            <div class="header-left">
+                <span class="badge">Informe Financiero Oficial</span>
+                <h1 class="company-name">Verduras <span>La 21</span></h1>
+                <div class="company-nit">NIT {{ empresa.nit or '942.807.497' }}</div>
+            </div>
+            <div class="header-right">
+                <div class="doc-title">Estado de Situación Financiera</div>
+                <div class="date-box">
+                    <div class="date-label">Fecha de Corte</div>
+                    <div class="date-value">{{ fecha_corte.strftime('%d de %B de %Y') }}</div>
+                </div>
+                <div style="font-size: 9px; color: #BBBBBB; margin-top: 8px; letter-spacing: 1px;">Cifras en Pesos Colombianos (COP)</div>
+            </div>
+        </header>
+
+        <main>
+            <div class="grid-container">
+                <!-- COLUMNA ACTIVOS -->
+                <div class="col">
+                    <div class="section-card">
+                        <div class="card-header activos">
+                            <div class="header-stripe"></div>
+                            <span class="card-title">Activos</span>
+                        </div>
+                        <table class="report-table activos">
+                            {% if reporte.clasificado_activo.corriente %}
+                            <tr class="sub-header">
+                                <td colspan="3">▸ Activo Corriente</td>
+                            </tr>
+                            {% for it in reporte.clasificado_activo.corriente %}
+                            <tr class="row-item">
+                                <td class="acc-code">{{ it.codigo }}</td>
+                                <td class="acc-name">{{ it.nombre }}</td>
+                                <td class="acc-value {% if it.saldo < 0 %}negativo{% endif %}">
+                                    {% if it.saldo < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(it.saldo | abs).replace(',', '.') }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            <tr class="row-subtotal">
+                                <td colspan="2">Total Activo Corriente</td>
+                                <td class="acc-value">
+                                    {% if reporte.clasificado_activo.total_corriente < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(reporte.clasificado_activo.total_corriente | abs).replace(',', '.') }}
+                                </td>
+                            </tr>
+                            {% endif %}
+
+                            {% if reporte.clasificado_activo.no_corriente %}
+                            <tr class="sub-header">
+                                <td colspan="3">▸ Activo No Corriente</td>
+                            </tr>
+                            {% for it in reporte.clasificado_activo.no_corriente %}
+                            <tr class="row-item">
+                                <td class="acc-code">{{ it.codigo }}</td>
+                                <td class="acc-name">{{ it.nombre }}</td>
+                                <td class="acc-value {% if it.saldo < 0 %}negativo{% endif %}">
+                                    {% if it.saldo < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(it.saldo | abs).replace(',', '.') }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% endif %}
+
+                            <tr class="row-total">
+                                <td colspan="2">TOTAL ACTIVOS</td>
+                                <td class="acc-value">
+                                    {% if reporte.total_activos < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(reporte.total_activos | abs).replace(',', '.') }}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- COLUMNA PASIVOS Y PATRIMONIO -->
+                <div class="col">
+                    <!-- PASIVOS -->
+                    <div class="section-card">
+                        <div class="card-header pasivos">
+                            <div class="header-stripe"></div>
+                            <span class="card-title">Pasivos</span>
+                        </div>
+                        <table class="report-table pasivos">
+                            <tr class="sub-header">
+                                <td colspan="3">▸ Pasivo Corriente</td>
+                            </tr>
+                            {% for it in reporte.clasificado_pasivo.corriente %}
+                            <tr class="row-item">
+                                <td class="acc-code">{{ it.codigo }}</td>
+                                <td class="acc-name">{{ it.nombre }}</td>
+                                <td class="acc-value {% if it.saldo < 0 %}negativo{% endif %}">
+                                    {% if it.saldo < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(it.saldo | abs).replace(',', '.') }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            <tr class="row-subtotal">
+                                <td colspan="2">Total Pasivo Corriente</td>
+                                <td class="acc-value">
+                                    {% if reporte.clasificado_pasivo.total_corriente < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(reporte.clasificado_pasivo.total_corriente | abs).replace(',', '.') }}
+                                </td>
+                            </tr>
+                            <tr class="row-total">
+                                <td colspan="2">TOTAL PASIVOS</td>
+                                <td class="acc-value">
+                                    {% if reporte.total_pasivos < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(reporte.total_pasivos | abs).replace(',', '.') }}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- PATRIMONIO -->
+                    <div class="section-card">
+                        <div class="card-header patrimonio">
+                            <div class="header-stripe"></div>
+                            <span class="card-title">Patrimonio</span>
+                        </div>
+                        <table class="report-table patrimonio">
+                            {% for it in reporte.patrimonio %}
+                            <tr class="row-item">
+                                <td class="acc-code">{{ it.codigo }}</td>
+                                <td class="acc-name">{{ it.nombre }}</td>
+                                <td class="acc-value {% if it.saldo < 0 %}negativo{% endif %}">
+                                    {% if it.saldo < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(it.saldo | abs).replace(',', '.') }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            <!-- Utilidad -->
+                            <tr class="row-item">
+                                <td class="acc-code">3605</td>
+                                <td class="acc-name">{{ reporte.nombre_utilidad }}</td>
+                                <td class="acc-value {% if reporte.utilidad_ejercicio < 0 %}negativo{% endif %}">
+                                    {% if reporte.utilidad_ejercicio < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(reporte.utilidad_ejercicio | abs).replace(',', '.') }}
+                                </td>
+                            </tr>
+                            <tr class="row-total">
+                                <td colspan="2">TOTAL PATRIMONIO</td>
+                                <td class="acc-value">
+                                    {% if reporte.total_patrimonio < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(reporte.total_patrimonio | abs).replace(',', '.') }}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="kpi-container">
+                <div class="kpi-card kpi-activos">
+                    <div class="kpi-label">Total Activos</div>
+                    <div class="kpi-value">$ {{ "{:,.0f}".format(reporte.total_activos | abs).replace(',', '.') }}</div>
+                </div>
+                <div class="kpi-card kpi-pasivos">
+                    <div class="kpi-label">Total Pasivos</div>
+                    <div class="kpi-value">$ {{ "{:,.0f}".format(reporte.total_pasivos | abs).replace(',', '.') }}</div>
+                </div>
+                <div class="kpi-card kpi-patrimonio">
+                    <div class="kpi-label">Patrimonio Neto</div>
+                    <div class="kpi-value">$ {{ "{:,.0f}".format(reporte.total_patrimonio | abs).replace(',', '.') }}</div>
+                </div>
+            </div>
+
+            <!-- Grand Total -->
+            <div class="grand-total-bar">
+                <div class="gt-left">
+                    <div class="pulse-circle">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    </div>
+                </div>
+                <div class="gt-center">
+                    <div class="gt-label">Verificación Contable: Total Pasivo + Patrimonio</div>
+                </div>
+                <div class="gt-right">
+                    <span class="gt-val-prefix">COP</span>
+                    <span class="gt-value">$ {{ "{:,.0f}".format(reporte.total_pasivo_patrimonio | abs).replace(',', '.') }}</span>
+                </div>
+            </div>
+
+            <div class="equation-note">
+                Activos = Pasivos + Patrimonio · Ecuación contable verificada
+            </div>
+
+            <!-- Signatures -->
+            <div class="signatures">
+                <div class="sig-col">
+                    <div class="sig-line"></div>
+                    <div class="sig-name">Representante Legal</div>
+                    <div class="sig-meta">C.C. _______________________</div>
+                </div>
+                <div class="sig-col">
+                    <div class="sig-line"></div>
+                    <div class="sig-name">Contador Público</div>
+                    <div class="sig-meta">T.P. _______________________</div>
+                </div>
+            </div>
+        </main>
+
+        <div class="bottom-bar"></div>
+    </div>
+</body>
+</html>

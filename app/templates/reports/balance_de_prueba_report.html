@@ -2,59 +2,167 @@
 <html>
 <head>
     <title>Balance de Prueba</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; margin: 20px; }
-        h1 { text-align: center; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 10px; }
-        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .text-right { text-align: right; }
-        .nivel-1 { font-weight: bold; background-color: #e0e0e0; }
-        .nivel-2 { font-weight: bold; background-color: #f0f0f0; padding-left: 20px; }
-        .nivel-3 { padding-left: 40px; }
-        .nivel-4 { padding-left: 60px; }
-        .nivel-5 { padding-left: 80px; }
-        tfoot { font-weight: bold; background-color: #e0e0e0; }
+        :root {
+            --green-inst: #2D6A26;
+            --green-light: #6BAD5E;
+            --blue-slate: #4A6FA5;
+            --gold-soft: #C9A84C;
+            --white: #FFFFFF;
+            --bg-page: #FAFAF7;
+            --text-main: #1A1A1A;
+            --text-muted: #BBBBBB;
+            --text-labels: #444444;
+            --bg-grand-total: #F5FAF4;
+        }
 
-        .report-header {
-        text-align: center;
-        margin-bottom: 30px;
-    }
-    .company-info h1 {
-        margin: 0;
-        font-size: 18px;
-    }
-    .company-info p {
-        margin: 0;
-        font-size: 14px;
-        color: #555;
-    }
-    .report-info {
-        margin-top: 15px;
-    }
-    .report-info h2 {
-        margin: 0;
-        font-size: 16px;
-    }
-    .report-info p {
-        margin: 0;
-        font-size: 12px;
-        color: #777;
-    }
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--white);
+            color: var(--text-main);
+            font-family: 'DM Sans', sans-serif;
+            -webkit-print-color-adjust: exact;
+        }
+
+        .page-container {
+            width: 210mm;
+            height: 297mm;
+            margin: 0 auto;
+            position: relative;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .top-bar {
+            height: 4px;
+            background: linear-gradient(90deg, var(--green-inst), var(--green-light), var(--gold-soft), var(--green-light), var(--green-inst));
+            width: 100%;
+        }
+
+        .bottom-bar {
+            height: 3px;
+            background: linear-gradient(90deg, var(--green-inst), var(--green-light), var(--gold-soft));
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+        }
+
+        header {
+            padding: 40px 50px 20px 50px;
+            display: table;
+            width: 100%;
+            box-sizing: border-box;
+            border-bottom: 1px solid #F0F0F0;
+        }
+
+        .header-left { display: table-cell; vertical-align: middle; text-align: left; }
+        .header-right { display: table-cell; vertical-align: middle; text-align: right; }
+
+        .badge {
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--green-inst);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .badge::before { content: "•"; margin-right: 6px; }
+
+        .company-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 36px;
+            font-weight: 700;
+            line-height: 1;
+            margin: 0;
+        }
+        .company-name span { color: var(--green-inst); }
+
+        .doc-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-style: italic;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .date-box {
+            display: inline-block;
+            border: 1.5px solid var(--green-inst);
+            border-radius: 4px;
+            padding: 5px 12px;
+        }
+        .date-value { font-size: 14px; font-weight: 700; }
+
+        main { padding: 30px 50px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        thead th {
+            background: #F8F9FA;
+            color: var(--text-labels);
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 10px;
+            border-bottom: 2px solid #EEE;
+            text-align: left;
+        }
+
+        .text-right { text-align: right !important; }
+
+        tbody td {
+            padding: 8px 10px;
+            font-size: 11px;
+            border-bottom: 1px solid #F0F0F0;
+            color: var(--text-labels);
+        }
+
+        .acc-code { font-weight: 700; color: #999; font-size: 10px; }
+        .nivel-1 { background: #F2F8F1; font-weight: 700; color: var(--green-inst); }
+        .nivel-2 { font-weight: 700; }
+
+        tfoot td {
+            background: var(--bg-grand-total);
+            border-top: 2px solid var(--green-inst);
+            padding: 12px 10px;
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--green-inst);
+        }
     </style>
 </head>
 <body>
 
-    <header class="report-header">
-    <div class="company-info">
-        <h1>{{ empresa.razon_social if empresa else 'Nombre de Empresa no disponible' }}</h1>
-        <p>NIT: {{ empresa.nit if empresa else 'N/A' }}</p>
-    </div>
-    <div class="report-info">
-        <h2>{{ titulo_reporte }}</h2>
-        <p>{{ periodo }}</p>
-    </div>
-</header>
+    <div class="page-container">
+        <div class="top-bar"></div>
+        <header>
+            <div class="header-left">
+                <span class="badge">Informe Financiero Oficial</span>
+                <h1 class="company-name">Verduras <span>La 21</span></h1>
+                <div style="font-size: 10px; color: #999; margin-top: 4px; letter-spacing: 1px;">NIT {{ empresa.nit if empresa else 'N/A' }}</div>
+            </div>
+            <div class="header-right">
+                <div class="doc-title">{{ titulo_reporte }}</div>
+                <div class="date-box">
+                    <div class="date-value">{{ periodo }}</div>
+                </div>
+            </div>
+        </header>
+
+        <main>
     <table>
         <thead>
             <tr>
@@ -69,24 +177,27 @@
         <tbody>
             {% for fila in filas %}
             <tr class="nivel-{{ fila.nivel }}">
-                <td>{{ fila.codigo }}</td>
+                <td class="acc-code">{{ fila.codigo }}</td>
                 <td>{{ fila.nombre }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(fila.saldo_inicial) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(fila.debito) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(fila.credito) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(fila.nuevo_saldo) }}</td>
+                <td class="text-right">{{ "{:,.0f}".format(fila.saldo_inicial).replace(',', '.') }}</td>
+                <td class="text-right">{{ "{:,.0f}".format(fila.debito).replace(',', '.') }}</td>
+                <td class="text-right">{{ "{:,.0f}".format(fila.credito).replace(',', '.') }}</td>
+                <td class="text-right">{{ "{:,.0f}".format(fila.nuevo_saldo).replace(',', '.') }}</td>
             </tr>
             {% endfor %}
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="2">TOTALES</td>
-                <td class="text-right">{{ "{:,.2f}".format(totales.saldo_inicial) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(totales.debito) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(totales.credito) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(totales.nuevo_saldo) }}</td>
+                <td colspan="2">TOTALES GENERALES</td>
+                <td class="text-right">{{ "{:,.0f}".format(totales.saldo_inicial).replace(',', '.') }}</td>
+                <td class="text-right">{{ "{:,.0f}".format(totales.debito).replace(',', '.') }}</td>
+                <td class="text-right">{{ "{:,.0f}".format(totales.credito).replace(',', '.') }}</td>
+                <td class="text-right">{{ "{:,.0f}".format(totales.nuevo_saldo).replace(',', '.') }}</td>
             </tr>
         </tfoot>
     </table>
+    </main>
+    <div class="bottom-bar"></div>
+    </div>
 </body>
 </html>

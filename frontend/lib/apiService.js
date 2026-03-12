@@ -10,6 +10,9 @@ export const apiService = axios.create({
     baseURL: `${API_URL}/api`,
     headers: {
         'Content-Type': 'application/json'
+    },
+    paramsSerializer: {
+        indexes: null // Evita que los arrays se envíen como meses[]=1&meses[]=2, los envía como meses=1&meses=2
     }
 });
 // --- FIN DE LA CIRUGÍA ---

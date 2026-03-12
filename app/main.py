@@ -333,6 +333,10 @@ def api_ping():
 def read_root():
     return {"status": "ok", "message": "Bienvenido a la API del Sistema Contable"}
 
+@app.get("/api/ping-test")
+def ping_test():
+    return {"status": "success", "message": "Server is alive and reloaded"}
+
 # Inclusión de todos los routers
 app.include_router(auth_router.router, prefix="/api/auth", tags=["Autenticación"])
 app.include_router(terceros_router.router, prefix="/api/terceros", tags=["Terceros"])
@@ -444,9 +448,13 @@ app.include_router(conciliacion_bancaria_router.router, prefix="/api", tags=["Co
 from app.api.api_v1.endpoints import consumo as consumo_router
 app.include_router(consumo_router.router, prefix="/api/consumo", tags=["Consumo y Auditoria"])
 
-# --- MODULO PRESUPUESTO AVANZADO (NUEVO) ---
-from app.api.presupuesto_avanzado import routes as presupuesto_router
-app.include_router(presupuesto_router.router, prefix="/api/presupuesto", tags=["Presupuesto Avanzado"])
+# --- MODULO CONSUMO DE REGISTROS ---
+from app.api.api_v1.endpoints import consumo as consumo_router
+app.include_router(consumo_router.router, prefix="/api/consumo", tags=["Consumo y Auditoria"])
+
+# --- MODULO PRESUPUESTO (NUEVO) ---
+from app.api.endpoints import presupuesto as presupuesto_router
+app.include_router(presupuesto_router.router, prefix="/api/presupuesto", tags=["Presupuesto"])
 
 # --- MODULO INDICADORES ECONOMICOS ---
 from app.api.indicadores import routes as indicadores_router

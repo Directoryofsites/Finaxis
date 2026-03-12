@@ -14,6 +14,7 @@ import {
     Save,
     Building2,
     FileSpreadsheet,
+    FileText,
     TableProperties,
     CheckCircle,
     AlertCircle
@@ -238,18 +239,22 @@ export default function ImportConfigWizard({ onCancel, onSaveSuccess }) {
 
                         <div className="grid gap-4">
                             <Label className="text-lg">3. ¿Qué tipo de archivo te entrega el banco?</Label>
-                            <div className="grid grid-cols-3 gap-4">
-                                {['CSV', 'TXT', 'EXCEL'].map(fmt => (
+                            <div className="grid grid-cols-5 gap-2">
+                                {['CSV', 'TXT', 'EXCEL', 'PDF', 'TEXTO'].map(fmt => (
                                     <div
                                         key={fmt}
                                         onClick={() => handleInputChange('file_format', fmt)}
-                                        className={`cursor-pointer p-4 border rounded-xl flex flex-col items-center justify-center gap-2 transition-all
+                                        className={`cursor-pointer p-3 border rounded-xl flex flex-col items-center justify-center gap-2 transition-all
                                     ${formData.file_format === fmt
                                                 ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
                                                 : 'border-gray-200 hover:border-blue-300'}`}
                                     >
-                                        <FileSpreadsheet className={`w-8 h-8 ${formData.file_format === fmt ? 'text-blue-600' : 'text-gray-400'}`} />
-                                        <span className="font-bold">{fmt}</span>
+                                        {fmt === 'TEXTO' ? (
+                                            <FileText className={`w-7 h-7 ${formData.file_format === fmt ? 'text-blue-600' : 'text-gray-400'}`} />
+                                        ) : (
+                                            <FileSpreadsheet className={`w-7 h-7 ${formData.file_format === fmt ? 'text-blue-600' : 'text-gray-400'}`} />
+                                        )}
+                                        <span className="font-bold text-xs">{fmt}</span>
                                     </div>
                                 ))}
                             </div>
@@ -269,19 +274,21 @@ export default function ImportConfigWizard({ onCancel, onSaveSuccess }) {
                         </div>
 
                         <div className="grid grid-cols-2 gap-6">
-                            <div>
-                                <Label>Delimitador (para CSV/TXT)</Label>
-                                <select
-                                    className="w-full p-3 mt-2 border rounded-md"
-                                    value={formData.delimiter}
-                                    onChange={e => handleInputChange('delimiter', e.target.value)}
-                                >
-                                    <option value=",">Coma (,)</option>
-                                    <option value=";">Punto y coma (;)</option>
-                                    <option value="|">Barra vertical (|)</option>
-                                    <option value="\t">Tabulación</option>
-                                </select>
-                            </div>
+                            {(formData.file_format === 'CSV' || formData.file_format === 'TXT') && (
+                                <div>
+                                    <Label>Delimitador (para CSV/TXT)</Label>
+                                    <select
+                                        className="w-full p-3 mt-2 border rounded-md"
+                                        value={formData.delimiter}
+                                        onChange={e => handleInputChange('delimiter', e.target.value)}
+                                    >
+                                        <option value=",">Coma (,)</option>
+                                        <option value=";">Punto y coma (;)</option>
+                                        <option value="|">Barra vertical (|)</option>
+                                        <option value="\t">Tabulación</option>
+                                    </select>
+                                </div>
+                            )}
                             <div>
                                 <Label>Filas de encabezado</Label>
                                 <select

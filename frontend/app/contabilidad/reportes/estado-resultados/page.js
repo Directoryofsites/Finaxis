@@ -311,6 +311,9 @@ export default function EstadoResultadosPage() {
                             <button onClick={() => router.push('/contabilidad/reportes/estado-resultados-clasificado')} className="flex-1 md:flex-none px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2">
                                 Ver Clasificado →
                             </button>
+                            <button onClick={() => router.push('/contabilidad/reportes/estado-resultados-gerencial')} className="flex-1 md:flex-none px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2">
+                                Ver Gerencial →
+                            </button>
                             <button onClick={() => window.open('/manual/capitulo_29_reportes_avanzados.html', '_blank')} className="flex-1 md:flex-none px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2">
                                 <FaBook /> Manual
                             </button>

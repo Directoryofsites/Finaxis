@@ -6,10 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Settings, 
-  Save, 
-  AlertCircle, 
+import {
+  Settings,
+  Save,
+  AlertCircle,
   CheckCircle,
   DollarSign,
   TrendingUp,
@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 
 import DebugPanel from './DebugPanel';
+import { apiService } from '@/lib/apiService';
 
 export default function AccountingConfiguration({ bankAccount, onConfigurationSaved }) {
   const [config, setConfig] = useState({
@@ -37,7 +38,7 @@ export default function AccountingConfiguration({ bankAccount, onConfigurationSa
   const handleConfigChange = (field, value) => {
     console.log(`🏦 [CONFIG CHANGE] Campo: ${field}, Valor: "${value}", Tipo: ${typeof value}`);
     console.log(`🏦 [CONFIG CHANGE] Estado anterior:`, config[field]);
-    
+
     setConfig(prev => {
       const newState = {
         ...prev,
@@ -55,25 +56,16 @@ export default function AccountingConfiguration({ bankAccount, onConfigurationSa
 
     setLoading(true);
     try {
-      // Obtener el token de autenticación
-      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-      
-      const headers = {
-        'Content-Type': 'application/json'
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const response = await fetch(`/api/conciliacion-bancaria/accounting-config/${bankAccount.id}`, {
-        headers: headers
+      const data = response.data;
+      setConfig({
+        commission_account_id: data.commission_account_id || '',
+        interest_income_account_id: data.interest_income_account_id || '',
+        bank_charges_account_id: data.bank_charges_account_id || '',
+        adjustment_account_id: data.adjustment_account_id || '',
+        default_cost_center_id: data.default_cost_center_id || ''
       });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setConfig(data);
-      } else if (response.status === 404) {
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
         // No hay configuración existente, usar valores por defecto
         setConfig({
           commission_account_id: '',
@@ -83,8 +75,6 @@ export default function AccountingConfiguration({ bankAccount, onConfigurationSa
           default_cost_center_id: ''
         });
       }
-    } catch (error) {
-      console.error('Error cargando configuración:', error);
     } finally {
       setLoading(false);
     }
@@ -94,42 +84,12 @@ export default function AccountingConfiguration({ bankAccount, onConfigurationSa
   const loadAccounts = async () => {
     console.log(`📊 [LOAD ACCOUNTS] Iniciando carga de cuentas...`);
     try {
-      // Usar exactamente el mismo código que funciona en la prueba de emergencia
-      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-      console.log(`📊 [LOAD ACCOUNTS] Token encontrado:`, token ? 'Sí' : 'No');
-      
-      // Probar endpoint list-flat que sabemos que funciona
-      const response = await fetch('/api/plan-cuentas/list-flat', {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-      });
-      
-      console.log(`📊 [LOAD ACCOUNTS] Respuesta:`, response.status, response.statusText);
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`📊 [LOAD ACCOUNTS] Cuentas cargadas:`, data.length, 'cuentas');
-        console.log(`📊 [LOAD ACCOUNTS] Primeras 3 cuentas:`, data.slice(0, 3));
-        console.log(`📊 [LOAD ACCOUNTS] Estructura de cuenta ejemplo:`, data[0]);
-        
-        // Verificar que las cuentas tienen la estructura esperada
-        const validAccounts = data.filter(account => account.codigo && account.nombre);
-        console.log(`📊 [LOAD ACCOUNTS] Cuentas válidas:`, validAccounts.length);
-        
-        if (validAccounts.length === 0) {
-          console.log(`⚠️ [LOAD ACCOUNTS] No se encontraron cuentas válidas con código y nombre`);
-        }
-        
-        setAccounts(data);
-      } else {
-        console.log(`❌ [LOAD ACCOUNTS] Error en respuesta:`, response.status);
-        const errorText = await response.text();
-        console.log(`❌ [LOAD ACCOUNTS] Error text:`, errorText);
-        
-        // Si es error de autenticación, mostrar mensaje específico
-        if (response.status === 401) {
-          console.log(`🔐 [LOAD ACCOUNTS] Error de autenticación - token inválido o expirado`);
-        }
-      }
+      const response = await apiService.get('/plan-cuentas/list-flat');
+      const data = response.data;
+
+      console.log(`📊 [LOAD ACCOUNTS] Cuentas cargadas:`, data.length, 'cuentas');
+      const validAccounts = data.filter(account => account.codigo && account.nombre);
+      setAccounts(data);
     } catch (error) {
       console.error('💥 [LOAD ACCOUNTS] Error:', error);
     }
@@ -140,7 +100,7 @@ export default function AccountingConfiguration({ bankAccount, onConfigurationSa
     console.log(`💾 [SAVE CONFIG] Iniciando guardado de configuración contable...`);
     console.log(`💾 [SAVE CONFIG] Cuenta bancaria:`, bankAccount);
     console.log(`💾 [SAVE CONFIG] Configuración a guardar:`, config);
-    
+
     if (!bankAccount) {
       console.log(`❌ [SAVE CONFIG] Error: No hay cuenta bancaria seleccionada`);
       alert('No hay cuenta bancaria seleccionada');
@@ -149,11 +109,6 @@ export default function AccountingConfiguration({ bankAccount, onConfigurationSa
 
     setSaving(true);
     try {
-      // Obtener el token de autenticación
-      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-      console.log(`💾 [SAVE CONFIG] Token encontrado:`, token ? 'Sí' : 'No');
-      
-      // Limpiar los datos: convertir strings vacíos a null para campos integer
       const cleanConfig = {
         commission_account_id: config.commission_account_id || null,
         interest_income_account_id: config.interest_income_account_id || null,
@@ -161,47 +116,20 @@ export default function AccountingConfiguration({ bankAccount, onConfigurationSa
         adjustment_account_id: config.adjustment_account_id || null,
         default_cost_center_id: config.default_cost_center_id || null
       };
-      
-      console.log(`💾 [SAVE CONFIG] Configuración limpia:`, cleanConfig);
-      
-      const headers = {
-        'Content-Type': 'application/json'
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const url = `/api/conciliacion-bancaria/accounting-config/${bankAccount.id}`;
-      console.log(`💾 [SAVE CONFIG] URL:`, url);
-      console.log(`💾 [SAVE CONFIG] Payload:`, JSON.stringify(cleanConfig, null, 2));
-      
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: headers,
-        body: JSON.stringify(cleanConfig)
-      });
 
-      console.log(`💾 [SAVE CONFIG] Respuesta:`, response.status, response.statusText);
+      const response = await apiService.put(`/conciliacion-bancaria/accounting-config/${bankAccount.id}`, cleanConfig);
 
-      if (response.ok) {
-        const responseData = await response.json();
-        console.log(`✅ [SAVE CONFIG] Guardado exitoso:`, responseData);
-        alert('✅ Configuración guardada exitosamente');
-        onConfigurationSaved?.();
-      } else {
-        const error = await response.json();
-        console.log(`❌ [SAVE CONFIG] Error del servidor:`, error);
-        
-        if (response.status === 401) {
-          alert('🔐 Error de autenticación: Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
-        } else {
-          alert(`❌ Error: ${error.detail || 'Error desconocido'}`);
-        }
-      }
+      console.log(`✅ [SAVE CONFIG] Guardado exitoso:`, response.data);
+      alert('✅ Configuración guardada exitosamente');
+      onConfigurationSaved?.();
+
     } catch (error) {
       console.error('💥 [SAVE CONFIG] Error de conexión:', error);
-      alert('💥 Error de conexión al guardar la configuración');
+      if (error.response?.status === 401) {
+        alert('🔐 Error de autenticación: Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+      } else {
+        alert(`❌ Error al guardar: ${error.response?.data?.detail || error.message || 'Error desconocido'}`);
+      }
     } finally {
       setSaving(false);
     }
@@ -269,20 +197,20 @@ export default function AccountingConfiguration({ bankAccount, onConfigurationSa
                     // Probar sin autenticación primero
                     const response1 = await fetch('/api/plan-cuentas/');
                     console.log('🔧 [EMERGENCY TEST] Sin auth:', response1.status);
-                    
+
                     // Probar con autenticación
                     const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
                     const response2 = await fetch('/api/plan-cuentas/', {
                       headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                     });
                     console.log('🔧 [EMERGENCY TEST] Con auth:', response2.status);
-                    
+
                     // Probar endpoint alternativo
                     const response3 = await fetch('/api/plan-cuentas/list-flat', {
                       headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                     });
                     console.log('🔧 [EMERGENCY TEST] List-flat:', response3.status);
-                    
+
                     if (response3.ok) {
                       const data = await response3.json();
                       console.log('🔧 [EMERGENCY TEST] Datos obtenidos:', data.length);
@@ -310,12 +238,12 @@ export default function AccountingConfiguration({ bankAccount, onConfigurationSa
             <div className="text-sm">
               {accounts.length === 0 ? (
                 <>
-                  ⚠️ <strong>No se han cargado cuentas contables.</strong> Configure las cuentas contables que se utilizarán para generar automáticamente 
+                  ⚠️ <strong>No se han cargado cuentas contables.</strong> Configure las cuentas contables que se utilizarán para generar automáticamente
                   los asientos de ajuste para diferentes tipos de movimientos bancarios.
                 </>
               ) : (
                 <>
-                  ✅ <strong>{accounts.length} cuentas cargadas.</strong> Configure las cuentas contables que se utilizarán para generar automáticamente 
+                  ✅ <strong>{accounts.length} cuentas cargadas.</strong> Configure las cuentas contables que se utilizarán para generar automáticamente
                   los asientos de ajuste para diferentes tipos de movimientos bancarios.
                 </>
               )}
@@ -486,40 +414,40 @@ export default function AccountingConfiguration({ bankAccount, onConfigurationSa
               <div className="space-y-1 text-sm">
                 <div>
                   <strong>Comisiones:</strong> {
-                    config.commission_account_id ? 
-                    accounts.find(a => a.id == config.commission_account_id)?.codigo + ' - ' + 
-                    accounts.find(a => a.id == config.commission_account_id)?.nombre : 
-                    'No configurada'
+                    config.commission_account_id ?
+                      accounts.find(a => a.id == config.commission_account_id)?.codigo + ' - ' +
+                      accounts.find(a => a.id == config.commission_account_id)?.nombre :
+                      'No configurada'
                   }
                 </div>
                 <div>
                   <strong>Cargos:</strong> {
-                    config.bank_charges_account_id ? 
-                    accounts.find(a => a.id == config.bank_charges_account_id)?.codigo + ' - ' + 
-                    accounts.find(a => a.id == config.bank_charges_account_id)?.nombre : 
-                    'No configurada'
+                    config.bank_charges_account_id ?
+                      accounts.find(a => a.id == config.bank_charges_account_id)?.codigo + ' - ' +
+                      accounts.find(a => a.id == config.bank_charges_account_id)?.nombre :
+                      'No configurada'
                   }
                 </div>
               </div>
             </div>
-            
+
             <div>
               <h4 className="font-semibold text-green-600 mb-2">Cuentas de Ingresos:</h4>
               <div className="space-y-1 text-sm">
                 <div>
                   <strong>Intereses:</strong> {
-                    config.interest_income_account_id ? 
-                    accounts.find(a => a.id == config.interest_income_account_id)?.codigo + ' - ' + 
-                    accounts.find(a => a.id == config.interest_income_account_id)?.nombre : 
-                    'No configurada'
+                    config.interest_income_account_id ?
+                      accounts.find(a => a.id == config.interest_income_account_id)?.codigo + ' - ' +
+                      accounts.find(a => a.id == config.interest_income_account_id)?.nombre :
+                      'No configurada'
                   }
                 </div>
                 <div>
                   <strong>Ajustes:</strong> {
-                    config.adjustment_account_id ? 
-                    accounts.find(a => a.id == config.adjustment_account_id)?.codigo + ' - ' + 
-                    accounts.find(a => a.id == config.adjustment_account_id)?.nombre : 
-                    'No configurada'
+                    config.adjustment_account_id ?
+                      accounts.find(a => a.id == config.adjustment_account_id)?.codigo + ' - ' +
+                      accounts.find(a => a.id == config.adjustment_account_id)?.nombre :
+                      'No configurada'
                   }
                 </div>
               </div>
@@ -530,7 +458,7 @@ export default function AccountingConfiguration({ bankAccount, onConfigurationSa
 
       {/* Botón de guardar */}
       <div className="flex justify-end">
-        <Button 
+        <Button
           onClick={saveConfiguration}
           disabled={saving}
         >
