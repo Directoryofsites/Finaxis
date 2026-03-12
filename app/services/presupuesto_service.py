@@ -60,9 +60,9 @@ class PresupuestoService:
                 if mes in detail_map:
                     detalle = detail_map[mes]
                     detalle.valor_automatico = valor
-                    # Update valor_vigente ONLY if there's no manual edit
-                    if detalle.valor_editado is None:
-                        detalle.valor_vigente = valor
+                    # Reset manual edits when a new annual budget is registered
+                    detalle.valor_editado = None
+                    detalle.valor_vigente = valor
                     print(f"DEBUG BUDGET: Updated month {mes} for {request.codigo_cuenta}")
                 else:
                     detalle = PresupuestoDetalle(
@@ -460,29 +460,40 @@ class PresupuestoService:
                         # Clean currency symbols and spaces
                         clean_valor = raw_valor.replace('$', '').replace(' ', '').replace('\xa0', '').replace('usd', '')
                         
-                        # Logic to handle international number formats
+                        # Clean currency symbols and other text
+                        clean_valor = raw_valor.replace('$', '').replace(' ', '').replace('\xa0', '').replace('usd', '').replace('eur', '').replace('cop', '')
+                        
+                        # Aggressive cleaning for international formats:
+                        # 1. If there's a comma and it's near the end, treat as decimal.
+                        # 2. In any case, remove ALL dots (thousands) and finally treat comma as dot.
                         if '.' in clean_valor and ',' in clean_valor:
+                            # 1.200,50 -> 1200.50
                             clean_valor = clean_valor.replace('.', '').replace(',', '.')
                         elif clean_valor.count('.') > 1:
+                            # 1.000.000 -> 1000000
                             clean_valor = clean_valor.replace('.', '')
                         elif '.' in clean_valor:
+                            # 1.500 could be 1500 or 1.5
                             parts = clean_valor.split('.')
-                            if len(parts[-1]) == 3:
+                            if len(parts[-1]) == 3: # Likely thousands
                                 clean_valor = clean_valor.replace('.', '')
+                            # else it's likely a decimal (1.5), keep the dot
                         elif ',' in clean_valor:
+                            # 1200,50 -> 1200.50
                             clean_valor = clean_valor.replace(',', '.')
 
-                        # If cleaning resulted in empty string (e.g. only '$' was present)
+                        # Final safety: remove ANY remaining dots if they look like thousands? 
+                        # No, Decimal() handles one dot correctly.
+
+                        # If cleaning resulted in empty string
                         if not clean_valor:
                             valor_anual = Decimal('0')
                         else:
                             try:
                                 valor_anual = Decimal(clean_valor)
-                                # Check for non-finite values (NaN, Inf) which Pydantic rejects
                                 if not valor_anual.is_finite():
                                     valor_anual = Decimal('0')
                             except:
-                                # Fallback if cleaning failed to produce a valid decimal
                                 results["errors"].append(f"Fila {index+2}: Valor inválido '{raw_valor}'")
                                 continue
                     

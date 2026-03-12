@@ -73,14 +73,28 @@ const BudgetPage = () => {
         }
     };
 
+    const cleanNumericString = (val) => {
+        if (typeof val === 'number') return val;
+        if (!val) return 0;
+        // Remove all dots (thousands) and replace comma with dot (decimals)
+        const cleaned = val.toString().replace(/\./g, '').replace(',', '.');
+        return parseFloat(cleaned) || 0;
+    };
+
     const handleSaveAnnual = async () => {
         if (!selectedAccount || !annualInput) return;
         
+        const numericValue = cleanNumericString(annualInput);
+        if (isNaN(numericValue)) {
+            toast.error("Valor anual inválido");
+            return;
+        }
+
         try {
             await apiService.post(`/presupuesto/registrar`, {
                 anio: anio,
                 codigo_cuenta: selectedAccount.codigo,
-                valor_anual: parseFloat(annualInput)
+                valor_anual: numericValue
             });
             toast.success("Presupuesto anual registrado y distribuido");
             fetchPuc();
@@ -91,15 +105,16 @@ const BudgetPage = () => {
     };
 
     const handleEditMonth = async (detalleId, nuevoValor) => {
-        if (nuevoValor === "" || isNaN(parseFloat(nuevoValor))) return;
+        const numericValue = cleanNumericString(nuevoValor);
+        if (isNaN(numericValue)) return;
         
         try {
             await apiService.patch(`/presupuesto/editar-mes/${detalleId}`, { 
-                nuevo_valor: parseFloat(nuevoValor) 
+                nuevo_valor: numericValue
             });
             toast.success("Mes actualizado");
             // Local update to avoid full reload
-            setMonthlyDetails(prev => prev.map(d => d.id === detalleId ? { ...d, valor_vigente: nuevoValor, valor_editado: nuevoValor } : d));
+            setMonthlyDetails(prev => prev.map(d => d.id === detalleId ? { ...d, valor_vigente: numericValue, valor_editado: numericValue } : d));
         } catch (error) {
             console.error("Error updating month:", error);
             toast.error("Error al actualizar mes");
