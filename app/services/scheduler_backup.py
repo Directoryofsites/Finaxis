@@ -29,12 +29,17 @@ def get_global_backup_path() -> str:
 
 def load_config(empresa_id=None):
     """
-    Carga la configuración. 
+    Carga la configuración.
     Si empresa_id es None, devuelve TODO el JSON (estructura interna).
     Si empresa_id es int, devuelve la config específica de esa empresa (o default).
     Si empresa_id es 'global', devuelve la config global.
     """
-    default_config = {"enabled": False, "hora_ejecucion": "03:00", "ruta_local": "C:/Backups_Finaxis", "dias_retencion": 30, "last_run": None}
+    abs_config_path = os.path.abspath(CONFIG_FILE)
+    logger.info(f"[AutoBackup] LOADING CONFIG from: {abs_config_path}")
+    
+    if not os.path.exists(CONFIG_FILE):
+        logger.warning(f"[AutoBackup] Config file NOT FOUND at {abs_config_path}. Using defaults.")
+        # ...
     default_global = {"enabled": False, "hora_ejecucion": "00:00", "ruta_local": "C:/Backups_Finaxis", "dias_retencion": 7, "last_run": None}
     
     if not os.path.exists(CONFIG_FILE):
@@ -81,6 +86,10 @@ def save_config(config_data, empresa_id):
         config_data["last_run"] = current_saved["last_run"]
         
     full_config["companies"][str_id] = config_data
+    
+    abs_config_path = os.path.abspath(CONFIG_FILE)
+    logger.info(f"[AutoBackup] SAVING CONFIG for Company {empresa_id} to: {abs_config_path}")
+    logger.info(f"[AutoBackup] Config Data: {config_data}")
     
     with open(CONFIG_FILE, "w") as f:
         json.dump(full_config, f, indent=4)
@@ -320,24 +329,60 @@ def _apply_retention_policy(path, days, company_safe_name):
     except Exception as e:
         logger.warning(f"[AutoBackup] Retention policy error: {e}")
 
+def _parse_time(hora_str: str):
+    """
+    Intenta parsear la hora en diferentes formatos comunes.
+    Soporta: "HH:MM" (24h), "HH:MM AM/PM", "H:MM a. m.", etc.
+    """
+    hora_str = hora_str.strip().lower().replace(".", "").replace(" ", "") # Limpiar puntos y espacios: "a. m." -> "am"
+    
+    # Intentar 24h (HH:MM)
+    try:
+        return datetime.strptime(hora_str, "%H:%M").time()
+    except ValueError:
+        pass
+        
+    # Intentar 12h (HH:MM am/pm)
+    # Ajustamos formatos para manejar la cadena sin espacios que generamos arriba (ej: "09:41am")
+    formats = ["%I:%M%p", "%I:%M %p", "%H:%M%p", "%H:%M %p"]
+    for fmt in formats:
+        try:
+            return datetime.strptime(hora_str, fmt).time()
+        except ValueError:
+            continue
+            
+    # Si falla todo, loguear y retornar default
+    logger.error(f"[AutoBackup] No se pudo parsear el formato de hora: '{hora_str}'. Usando 03:00 por defecto.")
+    return datetime.strptime("03:00", "%H:%M").time()
+
 def _check_missed_job(cfg, job_callback, str_id, now, is_global=False):
     if not cfg.get("enabled", False):
         return
         
     try:
         hora_str = cfg.get("hora_ejecucion", "00:00")
-        h, m = map(int, hora_str.split(":"))
-        scheduled_time = now.replace(hour=h, minute=m, second=0, microsecond=0)
+        scheduled_time_obj = _parse_time(hora_str)
+        scheduled_time = now.replace(
+            hour=scheduled_time_obj.hour, 
+            minute=scheduled_time_obj.minute, 
+            second=0, 
+            microsecond=0
+        )
         
         last_run_str = cfg.get("last_run")
         last_run = datetime.fromisoformat(last_run_str) if last_run_str else None
         
+        logger.info(f"[AutoBackup] Checking {str_id}: Scheduled={scheduled_time}, LastRun={last_run}, Now={now}")
+        
         should_run = False
-        if not last_run and now > scheduled_time:
-            should_run = True
-        elif last_run:
+        if not last_run:
+            if now > scheduled_time:
+                should_run = True
+                logger.info(f"[AutoBackup] Case: No last_run and already passed scheduled time.")
+        else:
             if last_run.date() < now.date() and now > scheduled_time:
                 should_run = True
+                logger.info(f"[AutoBackup] Case: Last run was yesterday or before, and already passed scheduled time today.")
         
         if should_run:
             logger.warning(f"[AutoBackup] MISSED BACKUP DETECTED for {'GLOBAL' if is_global else 'Company ' + str_id}. Running NOW.")
@@ -347,7 +392,7 @@ def _check_missed_job(cfg, job_callback, str_id, now, is_global=False):
                 job_callback(int(str_id))
                 
     except Exception as e:
-        logger.error(f"[AutoBackup] Error checking missed backup for {str_id}: {e}")
+        logger.error(f"[AutoBackup] Error checking missed backup for {str_id}: {e}", exc_info=True)
 
 def check_missed_backups():
     """
@@ -381,7 +426,8 @@ def schedule_backup_jobs():
             try:
                 empresa_id = int(str_id)
                 time_str = cfg.get("hora_ejecucion", "03:00")
-                hour, minute = map(int, time_str.split(":"))
+                target_time = _parse_time(time_str)
+                hour, minute = target_time.hour, target_time.minute
                 
                 # Usamos un closure o partial para capturar el valor actual de empresa_id
                 job_id = f"backup_company_{empresa_id}"
@@ -402,7 +448,8 @@ def schedule_backup_jobs():
     if global_cfg.get("enabled", False):
         try:
             time_str = global_cfg.get("hora_ejecucion", "00:00")
-            hour, minute = map(int, time_str.split(":"))
+            target_time = _parse_time(time_str)
+            hour, minute = target_time.hour, target_time.minute
             
             scheduler.add_job(
                 run_global_backup, 

@@ -478,3 +478,5 @@ if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8002)
 
 # FORCE RELOAD TRIGGER - PH MODULE UPDATE
+#   R e s t a r t   t r i g g e r  
+ 

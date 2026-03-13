@@ -47,7 +47,7 @@ class ExportPaquetes(BaseModel):
 # --- Esquema de Configuración de Copias Automáticas ---
 class AutoBackupConfig(BaseModel):
     enabled: bool = False
-    hora_ejecucion: str = "03:00" # Formato HH:MM
+    hora_ejecucion: str = "03:00" # Soporta "HH:MM", "HH:MM AM/PM", "H:MM a. m."
     ruta_local: str = "C:/Backups_Finaxis"
     dias_retencion: int = 30 # Cuántos días guardar antes de borrar (opcional)
 

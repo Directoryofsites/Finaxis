@@ -89,7 +89,7 @@ export default function ExportacionForm({
     const loadConfig = async () => {
       try {
         const res = await apiService.get('/utilidades/backup-auto-config');
-        if (res.data) setAutoConfig(res.data);
+        if (res.data) setAutoConfig(prev => ({ ...prev, ...res.data }));
       } catch (e) {
         console.error("Error loading auto backup config", e);
       }
@@ -100,7 +100,7 @@ export default function ExportacionForm({
   const saveAutoConfig = async () => {
     try {
       await apiService.post('/utilidades/backup-auto-config', autoConfig);
-      alert("Configuración Guardada Exitosamente");
+      alert("Configuración de Copia Automática Guardada Exitosamente. El servidor procesará la hora indicada.");
       setShowAutoModal(false);
     } catch (e) {
       alert("Error guardando configuración");

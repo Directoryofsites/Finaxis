@@ -354,6 +354,7 @@ def get_backup_config(current_user: models_usuario.Usuario = Depends(has_permiss
 
 @router.post("/backup-auto-config")
 def update_backup_config(config: migracion_schemas.AutoBackupConfig, current_user: models_usuario.Usuario = Depends(has_permission("utilidades:migracion"))):
+    logger.info(f"[AutoBackup] Recibida nueva configuración para empresa {current_user.empresa_id}: {config.dict()}")
     scheduler_backup.save_config(config.dict(), empresa_id=current_user.empresa_id)
     return {"msg": "Configuración de copia automática actualizada correctamente."}
 
