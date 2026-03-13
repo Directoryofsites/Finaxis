@@ -1034,8 +1034,7 @@ function PanelCopiasSeguridad() {
                             value={config.ruta_local}
                             onChange={handleChange}
                             placeholder="Ej: C:/Backups_Finaxis"
-                            className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-gray-100"
-                            readOnly
+                            className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
                         />
                         <p className="text-xs text-gray-500 mt-1">El directorio donde se guarda el .zip</p>
                     </div>
