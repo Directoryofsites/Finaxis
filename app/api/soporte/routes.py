@@ -1,5 +1,5 @@
 # app/api/soporte/routes.py
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -123,27 +123,20 @@ def save_global_backup_config_route(data: schemas_soporte.GlobalBackupConfig):
     "/backups/global/run",
     dependencies=[Depends(has_permission("soporte:acceder_panel"))]
 )
-def run_global_backup_manually_route():
+def run_global_backup_manually_route(background_tasks: BackgroundTasks):
     """
-    Forzar manualmente la creación de un backup global en el servidor.
-    Se ejecuta de forma síncrona/inmediata en este request y descarga el archivo.
+    Inicia manualmente la creación de un backup global en segundo plano.
+    Evita timeouts en el servidor al no esperar el procesamiento de todas las empresas.
     """
-    from fastapi.responses import FileResponse
-    from fastapi import HTTPException
-    import os
     try:
-        zip_path = scheduler_backup.run_global_backup()
-        if zip_path and os.path.exists(zip_path):
-            filename = os.path.basename(zip_path)
-            return FileResponse(
-                path=zip_path,
-                media_type="application/zip",
-                filename=filename
-            )
-        else:
-            raise HTTPException(status_code=500, detail="El archivo ZIP no se generó correctamente, compruebe los logs.")
+        background_tasks.add_task(scheduler_backup.run_global_backup)
+        return {
+            "ok": True, 
+            "message": "Proceso de backup global iniciado en segundo plano. Podrá visualizar y descargar el archivo en la lista inferior una vez finalice."
+        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error ejecutando backup global: {str(e)}")
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"No se pudo iniciar el proceso de backup: {str(e)}")
 
 # --- Explorador de Archivos Nube ---
 
