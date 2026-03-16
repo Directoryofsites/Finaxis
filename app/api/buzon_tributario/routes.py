@@ -15,6 +15,8 @@ router = APIRouter()
 class BuzonTributarioRequest(BaseModel):
     email_addr: Optional[str] = None
     password_app: Optional[str] = None
+    # Estos campos ya no se usarían tanto individualmente si usamos la config de la BD,
+    # pero los mantenemos o los expandimos si se requiere sobrescribir manualmente.
     tipo_documento_id: Optional[int] = None
     cuenta_gasto_id: Optional[int] = None
     cuenta_caja_id: Optional[int] = None
@@ -26,37 +28,34 @@ def sincronizar_buzon(
     current_user: Usuario = Depends(get_current_user)
 ):
     """
-    Lee la bandeja de entrada, busca XML de factura electrónica 
-    y genera asientos contables de compra automáticamente.
+    Lee la bandeja de entrada, busca XML y genera asientos contables 
+    automáticamente (Compras, Ventas o Soporte).
     """
     try:
-        # Resolvemos los parámetros (del Request, o de la BD)
         config = db.query(EmpresaConfigBuzon).filter(EmpresaConfigBuzon.empresa_id == current_user.empresa_id).first()
         
         email_addr = request.email_addr or (config.email_addr if config else None)
         password_app = request.password_app or (config.password_app if config else None)
-        tipo_documento_id = request.tipo_documento_id or (config.tipo_documento_id if config else None)
-        cuenta_gasto_id = request.cuenta_gasto_id or (config.cuenta_gasto_id if config else None)
-        cuenta_caja_id = request.cuenta_caja_id or (config.cuenta_caja_id if config else None)
         
-        # Validaciones
+        # Validaciones básicas
         if not email_addr or not password_app:
             raise HTTPException(status_code=400, detail="Faltan credenciales del correo. Revise la configuración.")
-        if not tipo_documento_id or not cuenta_gasto_id or not cuenta_caja_id:
-            raise HTTPException(status_code=400, detail="Faltan parámetros contables. Revise la configuración.")
-            
+        
+        if not config:
+             raise HTTPException(status_code=400, detail="Debe configurar los parámetros contables primero.")
+
         resultado = procesar_buzon(
             db=db,
             empresa_id=current_user.empresa_id,
             user_id=current_user.id,
             email_addr=email_addr,
             password=password_app,
-            tipo_documento_id=tipo_documento_id,
-            cuenta_gasto_id=cuenta_gasto_id,
-            cuenta_caja_id=cuenta_caja_id
+            config=config # Pasamos el objeto de configuración completo
         )
         return resultado
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/config", response_model=BuzonConfigDTO)
@@ -76,9 +75,19 @@ def obtener_configuracion_buzon(
     return BuzonConfigDTO(
         email_addr=config.email_addr,
         password_app_masked=masked_pw,
+        # Compras
         tipo_documento_id=config.tipo_documento_id,
         cuenta_gasto_id=config.cuenta_gasto_id,
         cuenta_caja_id=config.cuenta_caja_id,
+        # Ventas
+        venta_tipo_documento_id=config.venta_tipo_documento_id,
+        venta_cuenta_ingreso_id=config.venta_cuenta_ingreso_id,
+        venta_cuenta_caja_id=config.venta_cuenta_caja_id,
+        # Soporte
+        soporte_tipo_documento_id=config.soporte_tipo_documento_id,
+        soporte_cuenta_gasto_id=config.soporte_cuenta_gasto_id,
+        soporte_cuenta_caja_id=config.soporte_cuenta_caja_id,
+        
         is_active=config.is_active
     )
 
@@ -96,13 +105,24 @@ def guardar_configuracion_buzon(
     if config:
         # Update
         if config_in.email_addr is not None: config.email_addr = config_in.email_addr
-        # Solo actualizamos la contraseña si nos envían una nueva que no sea asteriscos o vacía
         if config_in.password_app and config_in.password_app != "********":
             config.password_app = config_in.password_app
         
+        # Compras
         if config_in.tipo_documento_id is not None: config.tipo_documento_id = config_in.tipo_documento_id
         if config_in.cuenta_gasto_id is not None: config.cuenta_gasto_id = config_in.cuenta_gasto_id
         if config_in.cuenta_caja_id is not None: config.cuenta_caja_id = config_in.cuenta_caja_id
+        
+        # Ventas
+        if config_in.venta_tipo_documento_id is not None: config.venta_tipo_documento_id = config_in.venta_tipo_documento_id
+        if config_in.venta_cuenta_ingreso_id is not None: config.venta_cuenta_ingreso_id = config_in.venta_cuenta_ingreso_id
+        if config_in.venta_cuenta_caja_id is not None: config.venta_cuenta_caja_id = config_in.venta_cuenta_caja_id
+        
+        # Soporte
+        if config_in.soporte_tipo_documento_id is not None: config.soporte_tipo_documento_id = config_in.soporte_tipo_documento_id
+        if config_in.soporte_cuenta_gasto_id is not None: config.soporte_cuenta_gasto_id = config_in.soporte_cuenta_gasto_id
+        if config_in.soporte_cuenta_caja_id is not None: config.soporte_cuenta_caja_id = config_in.soporte_cuenta_caja_id
+        
         if config_in.is_active is not None: config.is_active = config_in.is_active
     else:
         # Create
@@ -110,9 +130,19 @@ def guardar_configuracion_buzon(
             empresa_id=current_user.empresa_id,
             email_addr=config_in.email_addr,
             password_app=config_in.password_app,
+            # Compras
             tipo_documento_id=config_in.tipo_documento_id,
             cuenta_gasto_id=config_in.cuenta_gasto_id,
             cuenta_caja_id=config_in.cuenta_caja_id,
+            # Ventas
+            venta_tipo_documento_id=config_in.venta_tipo_documento_id,
+            venta_cuenta_ingreso_id=config_in.venta_cuenta_ingreso_id,
+            venta_cuenta_caja_id=config_in.venta_cuenta_caja_id,
+            # Soporte
+            soporte_tipo_documento_id=config_in.soporte_tipo_documento_id,
+            soporte_cuenta_gasto_id=config_in.soporte_cuenta_gasto_id,
+            soporte_cuenta_caja_id=config_in.soporte_cuenta_caja_id,
+            
             is_active=config_in.is_active
         )
         db.add(config)

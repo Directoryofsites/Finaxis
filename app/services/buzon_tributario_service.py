@@ -6,6 +6,7 @@ import tempfile
 import re
 from datetime import datetime
 from email.header import decode_header
+from typing import Any
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
@@ -39,40 +40,47 @@ def extract_dian_data(xml_path):
         total_match = re.search(r'<cbc:PayableAmount[^>]*>(.*?)</cbc:PayableAmount>', content)
         total = float(total_match.group(1)) if total_match else 0.0
         
-        # Emisor / Proveedor (Enfocado en el Supplier Party para no extraer a Cadena u otros)
-        emisor_name = "PROVEEDOR DESCONOCIDO"
-        nit = "000000000"
+        # Tipo de Factura (01=Factura, 05=Doc Soporte, 91=Nota Credito, 92=Nota Debito)
+        type_code_match = re.search(r'<cbc:InvoiceTypeCode[^>]*>(.*?)</cbc:InvoiceTypeCode>', content)
+        invoice_type_code = type_code_match.group(1).strip() if type_code_match else "01"
+
+        # Emisor / Vendedor (AccountingSupplierParty)
+        emisor_name = "DESCONOCIDO"
+        nit_emisor = "000000000"
         
         supplier_match = re.search(r'<cac:AccountingSupplierParty>(.*?)</cac:AccountingSupplierParty>', content, re.DOTALL)
         if supplier_match:
             supplier_xml = supplier_match.group(1)
-            # Razón Social (La oficial es RegistrationName, pero probamos Name si no está)
             emisor_name_match = re.search(r'<cac:RegistrationName>\s*<cbc:Name>(.*?)</cbc:Name>\s*</cac:RegistrationName>', supplier_xml)
             if not emisor_name_match:
-                emisor_name_match = re.search(r'<cac:RegistrationName>(.*?)</cac:RegistrationName>', supplier_xml)
-            if not emisor_name_match:
                 emisor_name_match = re.search(r'<cbc:Name>(.*?)</cbc:Name>', supplier_xml)
-            
             if emisor_name_match:
                 emisor_name = emisor_name_match.group(1).strip()
             
-            # NIT (UBL 2.1 estándar de la DIAN guarda el NIT en cac:CompanyID o cbc:CompanyID)
             nit_match = re.search(r'<cbc:CompanyID[^>]*>(.*?)</cbc:CompanyID>', supplier_xml)
-            if not nit_match:
-                nit_match = re.search(r'<cac:CompanyID[^>]*>(.*?)</cac:CompanyID>', supplier_xml)
-            if not nit_match:
-                nit_match = re.search(r'<cbc:ID[^>]*schemeID="31"[^>]*>(.*?)</cbc:ID>', supplier_xml)
-            if not nit_match:
-                nit_match = re.search(r'<cbc:ID[^>]*>(.*?)</cbc:ID>', supplier_xml)
-
             if nit_match:
-                nit = nit_match.group(1).strip()
+                nit_emisor = nit_match.group(1).strip()
         
+        # Receptor / Comprador (AccountingCustomerParty)
+        receptor_name = "DESCONOCIDO"
+        nit_receptor = "000000000"
+        
+        customer_match = re.search(r'<cac:AccountingCustomerParty>(.*?)</cac:AccountingCustomerParty>', content, re.DOTALL)
+        if customer_match:
+            customer_xml = customer_match.group(1)
+            receptor_name_match = re.search(r'<cac:RegistrationName>\s*<cbc:Name>(.*?)</cbc:Name>\s*</cac:RegistrationName>', customer_xml)
+            if not receptor_name_match:
+                receptor_name_match = re.search(r'<cbc:Name>(.*?)</cbc:Name>', customer_xml)
+            if receptor_name_match:
+                receptor_name = receptor_name_match.group(1).strip()
+            
+            nit_rec_match = re.search(r'<cbc:CompanyID[^>]*>(.*?)</cbc:CompanyID>', customer_xml)
+            if nit_rec_match:
+                nit_receptor = nit_rec_match.group(1).strip()
+
         # Número de Factura
         num_match = re.search(r'<cbc:ID>(.*?)</cbc:ID>', content)
-        # El primer cbc:ID suele ser el número de factura en UBL
         numero_factura = num_match.group(1) if num_match else "0"
-        # Limpiar prefijos si los hay (ej: FE123 -> 123)
         numero_clean = re.sub(r'\D', '', numero_factura)
         numero_int = int(numero_clean) if numero_clean else 0
 
@@ -84,12 +92,15 @@ def extract_dian_data(xml_path):
             return None # XML inválido o no es factura
             
         return {
-            "nit": nit,
+            "nit": nit_emisor,
             "razon_social": emisor_name,
+            "nit_receptor": nit_receptor,
+            "razon_social_receptor": receptor_name,
             "total": total,
             "cufe": cufe,
             "numero": numero_int,
-            "fecha": fecha_emision
+            "fecha": fecha_emision,
+            "invoice_type_code": invoice_type_code
         }
     except Exception as e:
         print(f"Error procesando XML {xml_path}: {e}")
@@ -116,28 +127,32 @@ def procesar_buzon(
     user_id: int, 
     email_addr: str, 
     password: str, 
-    tipo_documento_id: int, 
-    cuenta_gasto_id: int, 
-    cuenta_caja_id: int
+    config: Any
 ):
     """
-    Se conecta al correo, extrae facturas XML y las contabiliza.
+    Se conecta al correo, extrae XML y los contabiliza (Compra, Venta o Soporte).
     """
+    from ..models.empresa import Empresa
+    from ..models.documento import Documento
+
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    nit_empresa = empresa.nit if empresa else ""
+    # Limpiar NIT de la empresa (solo números)
+    nit_empresa_clean = re.sub(r'\D', '', nit_empresa)
+
     mail = imaplib.IMAP4_SSL("imap.gmail.com")
     facturas_procesadas = []
     
     try:
-        # Se remueven espacios normales y "No-Breaking Spaces" (\xa0) comunes al copiar de html
         clean_email = ''.join(email_addr.split())
         clean_password = ''.join(password.split())
         mail.login(clean_email, clean_password)
         mail.select("inbox")
         
-        status, messages = mail.search(None, "UNSEEN") # Leer solo "no leídos"
+        status, messages = mail.search(None, "UNSEEN")
         if status != "OK" or not messages[0]:
             return {"status": "ok", "procesadas": 0, "total_correos": 0, "detalle": []}
             
-        # Revisar en ráfagas de hasta 50 correos no leídos por cada clic
         mail_ids = messages[0].split()[-50:]
         
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -161,7 +176,6 @@ def procesar_buzon(
                                         f.write(part.get_payload(decode=True))
                                         
                                     xml_to_process = None
-                                    
                                     if filename.endswith('.zip'):
                                         try:
                                             with zipfile.ZipFile(filepath, 'r') as zip_ref:
@@ -176,74 +190,119 @@ def procesar_buzon(
                                         
                                     if xml_to_process:
                                         data = extract_dian_data(xml_to_process)
-                                        if data: # Es una factura válida DIAN
-                                            # Validar si este CUFE ya existe para no duplicar
-                                            from ..models.documento import Documento
+                                        if data:
+                                            # Validar si este CUFE ya existe
                                             existe = db.query(Documento).filter(
                                                 Documento.empresa_id == empresa_id,
                                                 Documento.dian_cufe == data['cufe']
                                             ).first()
                                             
                                             if not existe:
-                                                # 1. Asegurar Proveedor
-                                                proveedor = find_or_create_proveedor(
-                                                    db, empresa_id, data['nit'], data['razon_social'], user_id
+                                                # --- LÓGICA DE CLASIFICACIÓN ---
+                                                nit_xml_emisor = re.sub(r'\D', '', str(data['nit']))
+                                                nit_xml_receptor = re.sub(r'\D', '', str(data['nit_receptor']))
+                                                
+                                                categoria = "COMPRA" # Default
+                                                if nit_xml_emisor == nit_empresa_clean:
+                                                    if data['invoice_type_code'] == '05':
+                                                        categoria = "SOPORTE"
+                                                    else:
+                                                        categoria = "VENTA"
+                                                elif nit_xml_receptor == nit_empresa_clean:
+                                                    categoria = "COMPRA"
+                                                else:
+                                                    categoria = "COMPRA"
+
+                                                # Selección de parámetros según categoría
+                                                tipo_doc_id = None
+                                                cta_principal_id = None 
+                                                cta_caja_id = None
+                                                label_concepto = ""
+
+                                                if categoria == "COMPRA":
+                                                    tipo_doc_id = config.tipo_documento_id
+                                                    cta_principal_id = config.cuenta_gasto_id
+                                                    cta_caja_id = config.cuenta_caja_id
+                                                    label_concepto = f"Compra: {data['razon_social']}"
+                                                elif categoria == "VENTA":
+                                                    tipo_doc_id = config.venta_tipo_documento_id
+                                                    cta_principal_id = config.venta_cuenta_ingreso_id
+                                                    cta_caja_id = config.venta_cuenta_caja_id
+                                                    label_concepto = f"Venta: {data['razon_social_receptor']}"
+                                                elif categoria == "SOPORTE":
+                                                    tipo_doc_id = config.soporte_tipo_documento_id
+                                                    cta_principal_id = config.soporte_cuenta_gasto_id
+                                                    cta_caja_id = config.soporte_cuenta_caja_id
+                                                    label_concepto = f"Doc. Soporte: {data['razon_social']}"
+
+                                                if not tipo_doc_id or not cta_principal_id or not cta_caja_id:
+                                                    continue
+
+                                                # --- CREACIÓN DEL DOCUMENTO ---
+                                                otro_nit = data['nit'] if categoria != "VENTA" else data['nit_receptor']
+                                                otra_razon = data['razon_social'] if categoria != "VENTA" else data['razon_social_receptor']
+                                                
+                                                tercero = find_or_create_proveedor(
+                                                    db, empresa_id, otro_nit, otra_razon, user_id
                                                 )
                                                 
-                                                # 2. DEFINIR CUENTA GASTO (PRIORIDAD TERCERO)
-                                                # Si el proveedor tiene una cuenta por defecto, la usamos. 
-                                                # Si no, usamos la cuenta global que envía el frontend.
-                                                cuenta_gasto_final = proveedor.cuenta_gasto_defecto_id if proveedor.cuenta_gasto_defecto_id else cuenta_gasto_id
+                                                if categoria == "VENTA":
+                                                    movimientos = [
+                                                        MovimientoContableCreate(
+                                                            cuenta_id=cta_caja_id,
+                                                            debito=data['total'], credito=0,
+                                                            concepto=label_concepto
+                                                        ),
+                                                        MovimientoContableCreate(
+                                                            cuenta_id=cta_principal_id,
+                                                            debito=0, credito=data['total'],
+                                                            concepto=label_concepto
+                                                        )
+                                                    ]
+                                                else:
+                                                    final_cta_gasto = tercero.cuenta_gasto_defecto_id if tercero.cuenta_gasto_defecto_id else cta_principal_id
+                                                    movimientos = [
+                                                        MovimientoContableCreate(
+                                                            cuenta_id=final_cta_gasto,
+                                                            debito=data['total'], credito=0,
+                                                            concepto=label_concepto
+                                                        ),
+                                                        MovimientoContableCreate(
+                                                            cuenta_id=cta_caja_id,
+                                                            debito=0, credito=data['total'],
+                                                            concepto=label_concepto
+                                                        )
+                                                    ]
                                                 
-                                                # 3. Crear Movimientos (Gasto al Débito, Caja al Crédito)
-                                                movimientos = [
-                                                    MovimientoContableCreate(
-                                                        cuenta_id=cuenta_gasto_final,
-                                                        debito=data['total'],
-                                                        credito=0,
-                                                        concepto=f"Compra escaneada: {data['razon_social']}"
-                                                    ),
-                                                    MovimientoContableCreate(
-                                                        cuenta_id=cuenta_caja_id,
-                                                        debito=0,
-                                                        credito=data['total'],
-                                                        concepto=f"Pago automático compra {data['razon_social']}"
-                                                    )
-                                                ]
-                                                
-                                                # Intentar usar la fecha del XML en lugar de hoy
                                                 try:
                                                     fecha_doc = datetime.strptime(data['fecha'], '%Y-%m-%d').date() if data.get('fecha') else datetime.now().date()
-                                                except (ValueError, TypeError):
+                                                except:
                                                     fecha_doc = datetime.now().date()
 
-                                                # 3. Crear Documento Borrador (estado 'ACTIVO' o 'BORRADOR')
                                                 doc_create = DocumentoCreate(
-                                                    tipo_documento_id=tipo_documento_id,
+                                                    tipo_documento_id=tipo_doc_id,
                                                     numero=data['numero'],
                                                     empresa_id=empresa_id,
-                                                    beneficiario_id=proveedor.id,
+                                                    beneficiario_id=tercero.id,
                                                     fecha=fecha_doc,
                                                     movimientos=movimientos
                                                 )
                                                 
                                                 nuevo_doc = create_documento(db, doc_create, user_id, commit=True)
-                                                
-                                                # Guardar el CUFE para evitar duplicados en el futuro
                                                 nuevo_doc.dian_cufe = data['cufe']
-                                                nuevo_doc.observaciones = "Importado automáticamente vía Buzón Tributario DIAN."
+                                                nuevo_doc.observaciones = f"Importado vía Buzón ({categoria})."
                                                 db.commit()
                                                 
                                                 facturas_procesadas.append({
                                                     "numero": data['numero'],
-                                                    "nit": data['nit'],
-                                                    "proveedor": data['razon_social'],
+                                                    "nit": otro_nit,
+                                                    "proveedor": otra_razon,
                                                     "total": data['total'],
+                                                    "tipo": categoria,
                                                     "documento_id": nuevo_doc.id
                                                 })
                                             
     except Exception as e:
-        print(f"Error procesando buzón: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))

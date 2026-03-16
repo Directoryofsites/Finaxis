@@ -25,6 +25,17 @@ export default function BuzonTributarioPage() {
     const [tipoDocumentoId, setTipoDocumentoId] = useState('');
     const [cuentaGastoId, setCuentaGastoId] = useState('');
     const [cuentaCajaId, setCuentaCajaId] = useState('');
+
+    // Facturas de Venta
+    const [ventaTipoDocumentoId, setVentaTipoDocumentoId] = useState('');
+    const [ventaCuentaIngresoId, setVentaCuentaIngresoId] = useState('');
+    const [ventaCuentaCajaId, setVentaCuentaCajaId] = useState('');
+
+    // Documentos Soporte
+    const [soporteTipoDocumentoId, setSoporteTipoDocumentoId] = useState('');
+    const [soporteCuentaGastoId, setSoporteCuentaGastoId] = useState('');
+    const [soporteCuentaCajaId, setSoporteCuentaCajaId] = useState('');
+
     const [configId, setConfigId] = useState(null); // Para saber si ya existe config
 
     // Catalogos
@@ -75,6 +86,16 @@ export default function BuzonTributarioPage() {
                     setTipoDocumentoId(cfg.tipo_documento_id ? String(cfg.tipo_documento_id) : '');
                     setCuentaGastoId(cfg.cuenta_gasto_id ? String(cfg.cuenta_gasto_id) : '');
                     setCuentaCajaId(cfg.cuenta_caja_id ? String(cfg.cuenta_caja_id) : '');
+
+                    // Ventas
+                    setVentaTipoDocumentoId(cfg.venta_tipo_documento_id ? String(cfg.venta_tipo_documento_id) : '');
+                    setVentaCuentaIngresoId(cfg.venta_cuenta_ingreso_id ? String(cfg.venta_cuenta_ingreso_id) : '');
+                    setVentaCuentaCajaId(cfg.venta_cuenta_caja_id ? String(cfg.venta_cuenta_caja_id) : '');
+
+                    // Soporte
+                    setSoporteTipoDocumentoId(cfg.soporte_tipo_documento_id ? String(cfg.soporte_tipo_documento_id) : '');
+                    setSoporteCuentaGastoId(cfg.soporte_cuenta_gasto_id ? String(cfg.soporte_cuenta_gasto_id) : '');
+                    setSoporteCuentaCajaId(cfg.soporte_cuenta_caja_id ? String(cfg.soporte_cuenta_caja_id) : '');
                 }
             } catch (errConfig) {
                 // Puede ser 404 si no hay config aún. No es un error crítico.
@@ -99,6 +120,14 @@ export default function BuzonTributarioPage() {
                 tipo_documento_id: tipoDocumentoId ? parseInt(tipoDocumentoId) : null,
                 cuenta_gasto_id: cuentaGastoId ? parseInt(cuentaGastoId) : null,
                 cuenta_caja_id: cuentaCajaId ? parseInt(cuentaCajaId) : null,
+
+                venta_tipo_documento_id: ventaTipoDocumentoId ? parseInt(ventaTipoDocumentoId) : null,
+                venta_cuenta_ingreso_id: ventaCuentaIngresoId ? parseInt(ventaCuentaIngresoId) : null,
+                venta_cuenta_caja_id: ventaCuentaCajaId ? parseInt(ventaCuentaCajaId) : null,
+
+                soporte_tipo_documento_id: soporteTipoDocumentoId ? parseInt(soporteTipoDocumentoId) : null,
+                soporte_cuenta_gasto_id: soporteCuentaGastoId ? parseInt(soporteCuentaGastoId) : null,
+                soporte_cuenta_caja_id: soporteCuentaCajaId ? parseInt(soporteCuentaCajaId) : null,
             };
 
             const res = await apiService.post('/buzon-tributario/config', payload);
@@ -199,56 +228,119 @@ export default function BuzonTributarioPage() {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {/* Credenciales */}
-                                    <div className="space-y-4">
-                                        <h3 className="font-bold text-gray-700 border-b pb-2 flex items-center gap-2">
-                                            <span className="bg-indigo-100 text-indigo-600 w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span>
-                                            Credenciales de Acceso
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    {/* SECCIÓN 1: CREDENCIALES */}
+                                    <div className="space-y-4 bg-gray-50/50 p-6 rounded-2xl border border-gray-100 shadow-sm">
+                                        <h3 className="font-bold text-gray-800 pb-2 flex items-center gap-2 text-lg">
+                                            <span className="bg-indigo-600 text-white w-7 h-7 flex items-center justify-center rounded-full text-sm">1</span>
+                                            Credenciales DIAN
                                         </h3>
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Correo de Recepción DIAN</label>
+                                            <label className="block text-[10px] font-black text-gray-400 uppercase mb-1 tracking-widest">Correo de Recepción</label>
                                             <div className="relative">
-                                                <FaEnvelope className="absolute left-3 top-3 text-gray-400" />
-                                                <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors" placeholder="facturacion@empresa.com" />
+                                                <FaEnvelope className="absolute left-3 top-3 text-indigo-300" />
+                                                <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none" placeholder="correo@empresa.com" />
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Clave de Aplicación (Gmail / IMAP)</label>
+                                            <label className="block text-[10px] font-black text-gray-400 uppercase mb-1 tracking-widest">Clave de Aplicación (IMAP)</label>
                                             <div className="relative">
-                                                <FaLock className="absolute left-3 top-3 text-gray-400" />
-                                                <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder={configId ? "******** (Clave guardada previamente)" : "ej: dscq zies jsrh oxiy"} className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors" />
+                                                <FaLock className="absolute left-3 top-3 text-indigo-300" />
+                                                <input type="password" value={password} onChange={e => setPassword(e.target.value)} required={!configId} placeholder={configId ? "******** (Clave guardada)" : "Clave de 16 caracteres"} className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none" />
                                             </div>
-                                            <p className="text-xs text-gray-400 mt-1 italic">Si ya fue guardada, no es necesario volver a digitarla a menos que cambie.</p>
                                         </div>
                                     </div>
 
-                                    {/* Contabilidad Base */}
-                                    <div className="space-y-4">
-                                        <h3 className="font-bold text-gray-700 border-b pb-2 flex items-center gap-2">
-                                            <span className="bg-indigo-100 text-indigo-600 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span>
-                                            Parámetros Contables Base
+                                    {/* SECCIÓN 2: FACTURAS DE COMPRA */}
+                                    <div className="space-y-4 bg-blue-50/30 p-6 rounded-2xl border border-blue-100 shadow-sm">
+                                        <h3 className="font-bold text-blue-800 pb-2 flex items-center gap-2 text-lg">
+                                            <span className="bg-blue-600 text-white w-7 h-7 flex items-center justify-center rounded-full text-sm">2</span>
+                                            Facturas de Compra
                                         </h3>
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tipo de Documento (Para asentar la compra)</label>
-                                            <select value={tipoDocumentoId} onChange={e => setTipoDocumentoId(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors">
-                                                <option value="">Seleccione tipo...</option>
+                                            <label className="block text-[10px] font-black text-blue-400 uppercase mb-1 tracking-widest">Tipo Documento</label>
+                                            <select value={tipoDocumentoId} onChange={e => setTipoDocumentoId(e.target.value)} required className="w-full px-4 py-2 bg-white border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none font-medium">
+                                                <option value="">Seleccione...</option>
                                                 {tiposDocumentos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
                                             </select>
                                         </div>
+                                        <div className="grid grid-cols-1 gap-4">
+                                            <div>
+                                                <label className="block text-[10px] font-black text-blue-400 uppercase mb-1 tracking-widest">Cuenta Gasto (Débito)</label>
+                                                <select value={cuentaGastoId} onChange={e => setCuentaGastoId(e.target.value)} required className="w-full px-4 py-2 bg-white border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none text-xs">
+                                                    <option value="">Seleccione...</option>
+                                                    {cuentasGasto.map(c => <option key={c.id} value={c.id}>({c.codigo}) {c.nombre}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-black text-blue-400 uppercase mb-1 tracking-widest">Cuenta Caja/Pasivo (Crédito)</label>
+                                                <select value={cuentaCajaId} onChange={e => setCuentaCajaId(e.target.value)} required className="w-full px-4 py-2 bg-white border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all outline-none text-xs">
+                                                    <option value="">Seleccione...</option>
+                                                    {cuentasCaja.map(c => <option key={c.id} value={c.id}>({c.codigo}) {c.nombre}</option>)}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* SECCIÓN 3: FACTURAS DE VENTA */}
+                                    <div className="space-y-4 bg-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-sm">
+                                        <h3 className="font-bold text-emerald-800 pb-2 flex items-center gap-2 text-lg">
+                                            <span className="bg-emerald-600 text-white w-7 h-7 flex items-center justify-center rounded-full text-sm">3</span>
+                                            Facturas de Venta
+                                        </h3>
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Cuenta de Gasto (Débito Base)</label>
-                                            <select value={cuentaGastoId} onChange={e => setCuentaGastoId(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors">
-                                                <option value="">Seleccione gasto general...</option>
-                                                {cuentasGasto.map(c => <option key={c.id} value={c.id}>({c.codigo}) {c.nombre}</option>)}
+                                            <label className="block text-[10px] font-black text-emerald-400 uppercase mb-1 tracking-widest">Tipo Documento</label>
+                                            <select value={ventaTipoDocumentoId} onChange={e => setVentaTipoDocumentoId(e.target.value)} required className="w-full px-4 py-2 bg-white border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all outline-none font-medium">
+                                                <option value="">Seleccione...</option>
+                                                {tiposDocumentos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
                                             </select>
                                         </div>
+                                        <div className="grid grid-cols-1 gap-4">
+                                            <div>
+                                                <label className="block text-[10px] font-black text-emerald-400 uppercase mb-1 tracking-widest">Cuenta Ingreso (Crédito)</label>
+                                                <select value={ventaCuentaIngresoId} onChange={e => setVentaCuentaIngresoId(e.target.value)} required className="w-full px-4 py-2 bg-white border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all outline-none text-xs">
+                                                    <option value="">Seleccione...</option>
+                                                    {cuentasGasto.map(c => <option key={c.id} value={c.id}>({c.codigo}) {c.nombre}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-black text-emerald-400 uppercase mb-1 tracking-widest">Cuenta Cartera/Caja (Débito)</label>
+                                                <select value={ventaCuentaCajaId} onChange={e => setVentaCuentaCajaId(e.target.value)} required className="w-full px-4 py-2 bg-white border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all outline-none text-xs">
+                                                    <option value="">Seleccione...</option>
+                                                    {cuentasCaja.map(c => <option key={c.id} value={c.id}>({c.codigo}) {c.nombre}</option>)}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* SECCIÓN 4: DOCUMENTO SOPORTE */}
+                                    <div className="space-y-4 bg-purple-50/30 p-6 rounded-2xl border border-purple-100 shadow-sm">
+                                        <h3 className="font-bold text-purple-800 pb-2 flex items-center gap-2 text-lg">
+                                            <span className="bg-purple-600 text-white w-7 h-7 flex items-center justify-center rounded-full text-sm">4</span>
+                                            Documento Soporte
+                                        </h3>
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Cuenta de Contrapartida (Crédito - Caja/CXP)</label>
-                                            <select value={cuentaCajaId} onChange={e => setCuentaCajaId(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors">
-                                                <option value="">Seleccione caja o pasivo...</option>
-                                                {cuentasCaja.map(c => <option key={c.id} value={c.id}>({c.codigo}) {c.nombre}</option>)}
+                                            <label className="block text-[10px] font-black text-purple-400 uppercase mb-1 tracking-widest">Tipo Documento</label>
+                                            <select value={soporteTipoDocumentoId} onChange={e => setSoporteTipoDocumentoId(e.target.value)} required className="w-full px-4 py-2 bg-white border border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 transition-all outline-none font-medium">
+                                                <option value="">Seleccione...</option>
+                                                {tiposDocumentos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
                                             </select>
+                                        </div>
+                                        <div className="grid grid-cols-1 gap-4">
+                                            <div>
+                                                <label className="block text-[10px] font-black text-purple-400 uppercase mb-1 tracking-widest">Cuenta Gasto (Débito)</label>
+                                                <select value={soporteCuentaGastoId} onChange={e => setSoporteCuentaGastoId(e.target.value)} required className="w-full px-4 py-2 bg-white border border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 transition-all outline-none text-xs">
+                                                    <option value="">Seleccione...</option>
+                                                    {cuentasGasto.map(c => <option key={c.id} value={c.id}>({c.codigo}) {c.nombre}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-black text-purple-400 uppercase mb-1 tracking-widest">Cuenta Pasivo (Crédito)</label>
+                                                <select value={soporteCuentaCajaId} onChange={e => setSoporteCuentaCajaId(e.target.value)} required className="w-full px-4 py-2 bg-white border border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 transition-all outline-none text-xs">
+                                                    <option value="">Seleccione...</option>
+                                                    {cuentasCaja.map(c => <option key={c.id} value={c.id}>({c.codigo}) {c.nombre}</option>)}
+                                                </select>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -335,7 +427,8 @@ export default function BuzonTributarioPage() {
                                                     <thead className="bg-white">
                                                         <tr>
                                                             <th className="px-5 py-3 text-left font-bold text-gray-500 uppercase">Documento #</th>
-                                                            <th className="px-5 py-3 text-left font-bold text-gray-500 uppercase">Proveedor</th>
+                                                            <th className="px-5 py-3 text-left font-bold text-gray-500 uppercase">Tipo</th>
+                                                            <th className="px-5 py-3 text-left font-bold text-gray-500 uppercase">Tercero</th>
                                                             <th className="px-5 py-3 text-right font-bold text-gray-500 uppercase">Total XML</th>
                                                             <th className="px-5 py-3 text-center font-bold text-gray-500 uppercase">Estado</th>
                                                         </tr>
@@ -343,7 +436,16 @@ export default function BuzonTributarioPage() {
                                                     <tbody className="bg-white divide-y divide-gray-100 font-medium text-gray-700">
                                                         {scanResults.detalle.map((comp, idx) => (
                                                             <tr key={idx} className="hover:bg-blue-50/50 transition-colors">
-                                                                <td className="px-5 py-3">{comp.numero}</td>
+                                                                <td className="px-5 py-3 font-bold text-indigo-600">{comp.numero}</td>
+                                                                <td className="px-5 py-3">
+                                                                    <span className={`px-2 py-1 rounded text-[10px] font-black uppercase ${
+                                                                        comp.tipo === 'VENTA' ? 'bg-emerald-100 text-emerald-700' :
+                                                                        comp.tipo === 'SOPORTE' ? 'bg-purple-100 text-purple-700' :
+                                                                        'bg-blue-100 text-blue-700'
+                                                                    }`}>
+                                                                        {comp.tipo}
+                                                                    </span>
+                                                                </td>
                                                                 <td className="px-5 py-3 flex flex-col">
                                                                     <span>{comp.proveedor}</span>
                                                                     <span className="text-xs text-gray-400 font-normal">NIT: {comp.nit}</span>
