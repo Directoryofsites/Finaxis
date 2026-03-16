@@ -10,7 +10,6 @@ os.environ['GIO_USE_VOLUME_MONITOR'] = 'dummy'
 # --- FIN DE LA CORRECCIÓN DEFINITIVA ---
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 
@@ -319,29 +318,57 @@ def ping_test():
     return {"status": "success", "message": "Server is alive and reloaded"}
 
 
-# --- CONFIGURACIÓN DE CORS ROBUSTA (Debe ser el último middleware añadido para ser el más externo) ---
-origins = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:8000",
-    "http://localhost:8002",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:8002",
-    "https://finaxis.com.co",
-    "https://www.finaxis.com.co",
-    "https://contapy-frontend.vercel.app",
-    "https://finaxis.onrender.com"
-]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?|https://.*\.officeapps\.live\.com|https://.*\.microsoft\.com|https://.*\.office\.com",
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["Content-Disposition"],
-)
+# --- INVESTIGACIÓN (ESPÍA) DE PETICIONES Y CORS ---
+@app.middleware("http")
+async def debug_cors_spy(request: Request, call_next):
+    origin = request.headers.get("origin")
+    method = request.method
+    path = request.url.path
+    print(f"DEBUG SPY: [{method}] {path} - Origin: {origin}")
+    
+    try:
+        response = await call_next(request)
+        # Log response status and if it has CORS headers
+        has_cors = "Access-Control-Allow-Origin" in response.headers
+        print(f"DEBUG SPY: Response {response.status_code} for {path}. Has CORS Header: {has_cors}")
+        return response
+    except Exception as e:
+        print(f"DEBUG SPY: ERROR en la petición {path}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise
+
+
+from fastapi import Response
+
+# --- NUCLEAR CORS FIX (FORZADO) ---
+@app.middleware("http")
+async def nuclear_cors_middleware(request: Request, call_next):
+    # Si es una petición OPTIONS (pre-flight), respondemos directamente con éxito y cabeceras
+    if request.method == "OPTIONS":
+        return Response(
+            status_code=204,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Credentials": "true",
+            }
+        )
+    
+    # Para peticiones normales, dejamos que siga y luego agregamos cabeceras
+    try:
+        response = await call_next(request)
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        return response
+    except Exception as e:
+        # Incluso en error, intentamos que la respuesta de error tenga CORS (si se llega a generar una respuesta)
+        print(f"ERROR en nuclear_cors_middleware: {e}")
+        raise
 
 # Inclusión de todos los routers
 app.include_router(auth_router.router, prefix="/api/auth", tags=["Autenticación"])
