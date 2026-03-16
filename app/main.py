@@ -123,28 +123,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-origins = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:8000",
-    "http://localhost:8002",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:8002",
-    "https://finaxis.com.co",
-    "https://www.finaxis.com.co",
-    "https://contapy-frontend.vercel.app",
-    "https://finaxis.onrender.com"
-]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_origin_regex=r"https://.*\.officeapps\.live\.com|https://.*\.microsoft\.com|https://.*\.office\.com",
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["Content-Disposition"],
-)
 
 # --- INICIO: REGISTRO DE RATE LIMITING (Bot Protection) ---
 from slowapi import _rate_limit_exceeded_handler
@@ -339,6 +318,31 @@ def read_root():
 def ping_test():
     return {"status": "success", "message": "Server is alive and reloaded"}
 
+
+# --- CONFIGURACIÓN DE CORS ROBUSTA (Debe ser el último middleware añadido para ser el más externo) ---
+origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:8000",
+    "http://localhost:8002",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8002",
+    "https://finaxis.com.co",
+    "https://www.finaxis.com.co",
+    "https://contapy-frontend.vercel.app",
+    "https://finaxis.onrender.com"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?|https://.*\.officeapps\.live\.com|https://.*\.microsoft\.com|https://.*\.office\.com",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
+)
+
 # Inclusión de todos los routers
 app.include_router(auth_router.router, prefix="/api/auth", tags=["Autenticación"])
 app.include_router(terceros_router.router, prefix="/api/terceros", tags=["Terceros"])
@@ -477,7 +481,7 @@ app.include_router(buzon_routes.router, prefix="/api/buzon-tributario", tags=["B
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8002)
+    uvicorn.run(app, host="0.0.0.0", port=8002)
 
 # FORCE RELOAD TRIGGER - PH MODULE UPDATE
 #
