@@ -41,6 +41,7 @@ export default function BuzonTributarioPage() {
     // Catalogos
     const [tiposDocumentos, setTiposDocumentos] = useState([]);
     const [cuentasGasto, setCuentasGasto] = useState([]);
+    const [cuentasIngreso, setCuentasIngreso] = useState([]);
     const [cuentasCaja, setCuentasCaja] = useState([]);
 
     // UI States
@@ -71,6 +72,7 @@ export default function BuzonTributarioPage() {
 
             const fl = cRes.data || [];
             setCuentasGasto(fl.filter(c => c.codigo.startsWith('5') || c.codigo.startsWith('6') || c.codigo.startsWith('7')));
+            setCuentasIngreso(fl.filter(c => c.codigo.startsWith('4')));
             setCuentasCaja(fl.filter(c => c.codigo.startsWith('11') || c.codigo.startsWith('23')));
 
             // Cargar Configuración Persistente
@@ -300,7 +302,7 @@ export default function BuzonTributarioPage() {
                                                 <label className="block text-[10px] font-black text-emerald-400 uppercase mb-1 tracking-widest">Cuenta Ingreso (Crédito)</label>
                                                 <select value={ventaCuentaIngresoId} onChange={e => setVentaCuentaIngresoId(e.target.value)} required className="w-full px-4 py-2 bg-white border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all outline-none text-xs">
                                                     <option value="">Seleccione...</option>
-                                                    {cuentasGasto.map(c => <option key={c.id} value={c.id}>({c.codigo}) {c.nombre}</option>)}
+                                                    {cuentasIngreso.map(c => <option key={c.id} value={c.id}>({c.codigo}) {c.nombre}</option>)}
                                                 </select>
                                             </div>
                                             <div>

@@ -123,6 +123,29 @@ app = FastAPI(
     version="1.0.0"
 )
 
+origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:8000",
+    "http://localhost:8002",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8002",
+    "https://finaxis.com.co",
+    "https://www.finaxis.com.co",
+    "https://contapy-frontend.vercel.app",
+    "https://finaxis.onrender.com"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_origin_regex=r"https://.*\.officeapps\.live\.com|https://.*\.microsoft\.com|https://.*\.office\.com",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
+)
+
 # --- INICIO: REGISTRO DE RATE LIMITING (Bot Protection) ---
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -179,28 +202,7 @@ if os.getenv("VERCEL") != "1":
         start_scheduler()
 # --- FIN: SCHEDULER ---
 
-origins = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:8000",
-    "http://localhost:8002",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:8002",
-    "https://finaxis.com.co",
-    "https://www.finaxis.com.co",
-    "https://contapy-frontend.vercel.app",
-    "https://finaxis.onrender.com"
-]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_origin_regex=r"https://.*\.officeapps\.live\.com|https://.*\.microsoft\.com|https://.*\.office\.com",
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["Content-Disposition"],
-)
 
 # --- INICIO: BYPASS DE EMERGENCIA PARA IMPRESIÓN SEGURA (EXISTENTE) ---
 import io
