@@ -159,6 +159,24 @@ def run_auto_migrations():
                 if col not in cols_indicadores:
                     migrations.append(('indicadores_economicos', col, col_type))
 
+            # empresa_config_buzon (Nuevas columnas de Ventas y Soporte)
+            cols_empresa_config_buzon = get_existing_columns('empresa_config_buzon')
+            if cols_empresa_config_buzon: # Solo si la tabla ya existe
+                empresa_config_buzon_cols = [
+                    ("venta_tipo_documento_id", "INTEGER"),
+                    ("venta_cuenta_ingreso_id", "INTEGER"),
+                    ("venta_cuenta_caja_id", "INTEGER"),
+                    ("soporte_tipo_documento_id", "INTEGER"),
+                    ("soporte_cuenta_gasto_id", "INTEGER"),
+                    ("soporte_cuenta_caja_id", "INTEGER"),
+                    ("is_active", "BOOLEAN DEFAULT TRUE")
+                ]
+                for col, col_type in empresa_config_buzon_cols:
+                    if col not in cols_empresa_config_buzon:
+                        migrations.append(('empresa_config_buzon', col, col_type))
+
+
+
             # 3. Ejecutar migraciones en un bloque BEGIN/COMMIT
             if migrations:
                 with engine.begin() as trans_conn:
