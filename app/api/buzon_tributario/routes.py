@@ -66,6 +66,7 @@ def obtener_configuracion_buzon(
     """
     Obtiene la configuración actual del buzón tributario de la empresa.
     """
+    print(f"DEBUG: Accediendo a GET /config - Empresa ID: {current_user.empresa_id}")
     config = db.query(EmpresaConfigBuzon).filter(EmpresaConfigBuzon.empresa_id == current_user.empresa_id).first()
     if not config:
         return BuzonConfigDTO()
@@ -100,6 +101,7 @@ def guardar_configuracion_buzon(
     """
     Crea o actualiza la configuración del buzón tributario de la empresa.
     """
+    print(f"DEBUG: Accediendo a POST /config - Empresa ID: {current_user.empresa_id}")
     config = db.query(EmpresaConfigBuzon).filter(EmpresaConfigBuzon.empresa_id == current_user.empresa_id).first()
     
     if config:
