@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estado de Resultados · Ene–Feb 2026 · Iglesia Bíblica Gracia y Vida</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cream:    #faf8f4;
+      --white:    #ffffff;
+      --warm1:    #f3ede3;
+      --warm2:    #e8dfd0;
+      --ink:      #1a1612;
+      --ink2:     #3d3529;
+      --muted:    #8a7e6f;
+      --rule:     #d9cfc0;
+      --gold:     #b5892a;
+      --gold-lt:  #f5ead4;
+      --green:    #2e7d52;
+      --green-lt: #e6f4ed;
+      --red:      #b53a2a;
+      --red-lt:   #faecea;
+      --blue:     #1e4f87;
+      --blue-lt:  #e8f0fb;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--cream);
+      color: var(--ink);
+      font-family: 'Lato', sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* ─── PAGE WRAPPER ─── */
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 60px 48px 80px;
+      background: var(--white);
+      box-shadow: 0 2px 40px rgba(90,60,20,.10);
+      min-height: 100vh;
+    }
+
+    /* ─── HEADER ─── */
+    .header {
+      border-top: 4px solid var(--ink);
+      padding-top: 28px;
+      margin-bottom: 40px;
+      position: relative;
+    }
+    .header::after {
+      content: '';
+      display: block;
+      height: 1px;
+      background: var(--rule);
+      margin-top: 28px;
+    }
+    .org-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: .01em;
+      color: var(--ink);
+    }
+    .org-meta {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .doc-title {
+      margin-top: 16px;
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-style: italic;
+      color: var(--gold);
+      font-weight: 400;
+    }
+    .doc-period {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 3px;
+      font-family: 'IBM Plex Mono', monospace;
+      letter-spacing: .06em;
+    }
+
+    /* ─── KPI STRIP ─── */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--rule);
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 48px;
+    }
+    .kpi-cell {
+      background: var(--white);
+      padding: 20px 22px;
+    }
+    .kpi-cell:hover { background: var(--warm1); }
+    .kpi-label {
+      font-size: 10px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      margin-bottom: 6px;
+    }
+    .kpi-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 20px;
+      font-weight: 500;
+    }
+    .kpi-value.green { color: var(--green); }
+    .kpi-value.red   { color: var(--red);   }
+    .kpi-value.gold  { color: var(--gold);  }
+    .kpi-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    /* ─── SECTION TITLE ─── */
+    .section-head {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 4px;
+    }
+    .section-head h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .section-head h2.income { color: var(--green); }
+    .section-head h2.expense { color: var(--red); }
+    .section-head::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--rule);
+    }
+
+    /* ─── TABLE ─── */
+    .tbl-wrap { margin-bottom: 36px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead tr {
+      border-bottom: 2px solid var(--rule);
+    }
+    thead th {
+      font-size: 10px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--muted);
+      font-weight: 500;
+      padding: 8px 10px 10px;
+    }
+    thead th:first-child { text-align: left; padding-left: 0; }
+    thead th:not(:first-child) { text-align: right; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--warm1);
+      transition: background .12s;
+    }
+    tbody tr:hover { background: var(--warm1); }
+
+    td {
+      padding: 11px 10px;
+      font-size: 14px;
+      vertical-align: middle;
+    }
+    td:first-child {
+      padding-left: 0;
+      color: var(--ink2);
+      font-weight: 400;
+    }
+    td:not(:first-child) {
+      text-align: right;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      color: var(--ink);
+    }
+
+    .code-cell {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      padding-right: 16px;
+    }
+
+    /* pct bar */
+    .bar-wrap { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+    .bar-track {
+      width: 80px; height: 5px;
+      background: var(--warm2);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .bar-fill { height: 100%; border-radius: 3px; }
+
+    /* subtotal / total rows */
+    tr.subtotal td {
+      border-top: 1.5px solid var(--rule);
+      border-bottom: 1.5px solid var(--rule);
+      font-weight: 700;
+      font-size: 14px;
+      background: var(--warm1);
+    }
+    tr.subtotal td:first-child { font-family: 'Lato', sans-serif; }
+    tr.subtotal td:not(:first-child) { font-family: 'IBM Plex Mono', monospace; }
+
+    tr.grand-total td {
+      border-top: 3px double var(--ink);
+      padding-top: 16px;
+      padding-bottom: 16px;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    tr.grand-total td:first-child {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+    }
+
+    .loss { color: var(--red) !important; }
+    .profit { color: var(--green) !important; }
+
+    /* badge */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: 'IBM Plex Mono', monospace;
+      letter-spacing: .05em;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    .badge.ing { background: var(--green-lt); color: var(--green); }
+    .badge.gasto { background: var(--red-lt); color: var(--red); }
+    .badge.info { background: var(--blue-lt); color: var(--blue); }
+
+    /* group header inside tbody */
+    tr.group-row td {
+      font-size: 11px;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      padding: 14px 0 4px;
+      border-bottom: none;
+      background: transparent;
+    }
+    tr.group-row:hover { background: transparent; }
+
+    /* ─── UTILIDAD BLOCK ─── */
+    .result-block {
+      margin-top: 8px;
+      border-radius: 10px;
+      padding: 24px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .result-block.loss { background: var(--red-lt); border: 1.5px solid #e8bdb8; }
+    .result-block.profit { background: var(--green-lt); border: 1.5px solid #a8d9bb; }
+    .result-label {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .result-label.loss  { color: var(--red); }
+    .result-label.profit { color: var(--green); }
+    .result-period { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .result-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 32px;
+      font-weight: 500;
+    }
+    .result-value.loss  { color: var(--red); }
+    .result-value.profit { color: var(--green); }
+
+    /* ─── DONUT CHART ─── */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin: 44px 0;
+    }
+    .chart-card {
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      padding: 22px;
+      background: var(--white);
+    }
+    .chart-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .donut-wrap { display: flex; align-items: center; gap: 16px; }
+    svg.donut { flex-shrink: 0; }
+    .legend-list { font-size: 12px; color: var(--ink2); }
+    .legend-list li {
+      display: flex; align-items: center; gap: 7px;
+      margin-bottom: 7px; list-style: none;
+    }
+    .leg-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink:0; }
+    .leg-name { flex: 1; }
+    .leg-pct { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+
+    /* ─── BAR CHART ─── */
+    .hbar-list { list-style: none; }
+    .hbar-item { margin-bottom: 10px; }
+    .hbar-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+    .hbar-name { font-family: 'Lato', sans-serif; color: var(--ink2); }
+    .hbar-val  { font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
+    .hbar-track { height: 8px; background: var(--warm2); border-radius: 4px; overflow: hidden; }
+    .hbar-fill  { height: 100%; border-radius: 4px; }
+
+    /* ─── FOOTER ─── */
+    .footer {
+      margin-top: 60px;
+      padding-top: 20px;
+      border-top: 1px solid var(--rule);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* ─── PRINT ─── */
+    @media print {
+      body { background: #fff; }
+      .page { box-shadow: none; padding: 30px 30px 50px; }
+      .kpi-cell:hover, tbody tr:hover { background: none; }
+    }
+
+    @media (max-width: 640px) {
+      .page { padding: 30px 20px 50px; }
+      .kpi-strip { grid-template-columns: 1fr; }
+      .charts-row { grid-template-columns: 1fr; }
+      .result-value { font-size: 24px; }
+    }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .page > * {
+      animation: fadeUp .5s ease both;
+    }
+    .page > *:nth-child(1) { animation-delay: .05s; }
+    .page > *:nth-child(2) { animation-delay: .12s; }
+    .page > *:nth-child(3) { animation-delay: .18s; }
+    .page > *:nth-child(4) { animation-delay: .24s; }
+    .page > *:nth-child(5) { animation-delay: .30s; }
+    .page > *:nth-child(6) { animation-delay: .36s; }
+    .page > *:nth-child(7) { animation-delay: .42s; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="org-name">Iglesia Bíblica Gracia y Vida</div>
+    <div class="org-meta">NIT: 901464119-7</div>
+    <div class="doc-title">Estado de Resultados</div>
+    <div class="doc-period">Período: 01 enero 2026 — 28 febrero 2026</div>
+  </header>
+
+  <!-- KPIs -->
+  <div class="kpi-strip">
+    <div class="kpi-cell">
+      <div class="kpi-label">Total Ingresos</div>
+      <div class="kpi-value green">$20.129.137</div>
+      <div class="kpi-sub">Ofrendas + Intereses</div>
+    </div>
+    <div class="kpi-cell">
+      <div class="kpi-label">Total Gastos</div>
+      <div class="kpi-value red">$32.434.246</div>
+      <div class="kpi-sub">Gastos operacionales</div>
+    </div>
+    <div class="kpi-cell">
+      <div class="kpi-label">Resultado del Período</div>
+      <div class="kpi-value red">−$12.305.109</div>
+      <div class="kpi-sub">Déficit operacional</div>
+    </div>
+  </div>
+
+  <!-- INGRESOS -->
+  <div class="tbl-wrap">
+    <div class="section-head"><h2 class="income">Ingresos Operacionales</h2></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Cuenta</th>
+          <th>Descripción</th>
+          <th>Valor</th>
+          <th>% s/Total Ing.</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="code-cell">41909001</td>
+          <td>Ofrendas Domingos <span class="badge ing">Principal</span></td>
+          <td>$16.342.700</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:81.2%; background:#2e7d52;"></div></div>
+              <span>81,2%</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="code-cell">41909003</td>
+          <td>Ofrendas por Banco</td>
+          <td>$3.783.000</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:18.8%; background:#5aab82;"></div></div>
+              <span>18,8%</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="code-cell">421005</td>
+          <td>Intereses Varios</td>
+          <td>$3.437</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:0.1%; background:#9ecfb5;"></div></div>
+              <span>0,0%</span>
+            </div>
+          </td>
+        </tr>
+        <tr class="subtotal">
+          <td colspan="2"><strong>TOTAL INGRESOS OPERACIONALES</strong></td>
+          <td><strong>$20.129.137</strong></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- GASTOS -->
+  <div class="tbl-wrap">
+    <div class="section-head"><h2 class="expense">Gastos Operacionales</h2></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Cuenta</th>
+          <th>Descripción</th>
+          <th>Valor</th>
+          <th>% s/Total Gtos.</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <!-- NÓMINA -->
+        <tr class="group-row"><td colspan="4">▸ Nómina y Carga Prestacional</td></tr>
+        <tr>
+          <td class="code-cell">510506</td>
+          <td>Sueldos <span class="badge gasto">Mayor gasto</span></td>
+          <td>$7.576.000</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:100%; background:#b53a2a;"></div></div>
+              <span>23,4%</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="code-cell">51059504</td>
+          <td>Cesantías</td>
+          <td>$3.699.996</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:48.8%; background:#d97060;"></div></div>
+              <span>11,4%</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="code-cell">51059501</td>
+          <td>Seguridad Social</td>
+          <td>$2.814.800</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:37.2%; background:#d97060;"></div></div>
+              <span>8,7%</span>
+            </div>
+          </td>
+        </tr>
+
+        <!-- OPERATIVOS -->
+        <tr class="group-row"><td colspan="4">▸ Gastos Operativos</td></tr>
+        <tr>
+          <td class="code-cell">511020</td>
+          <td>Cafetería</td>
+          <td>$3.982.350</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:52.5%; background:#c05a45;"></div></div>
+              <span>12,3%</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="code-cell">511004</td>
+          <td>Arrendamientos</td>
+          <td>$3.910.000</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:51.6%; background:#c05a45;"></div></div>
+              <span>12,1%</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="code-cell">511064</td>
+          <td>Auxilios y Donaciones</td>
+          <td>$2.270.000</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:29.9%; background:#c97060;"></div></div>
+              <span>7,0%</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="code-cell">519501</td>
+          <td>Equipos Varios <span class="badge info">No presupuestado</span></td>
+          <td>$3.062.117</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:40.4%; background:#1e4f87;"></div></div>
+              <span>9,4%</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="code-cell">51100101</td>
+          <td>Asesoría Financiera y Contable</td>
+          <td>$1.170.000</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:15.4%; background:#d08070;"></div></div>
+              <span>3,6%</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="code-cell">511066</td>
+          <td>Adecuación e Instalación</td>
+          <td>$767.000</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:10.1%; background:#d08070;"></div></div>
+              <span>2,4%</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="code-cell">513530</td>
+          <td>Combustibles y Lubricantes</td>
+          <td>$700.000</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:9.2%; background:#d08070;"></div></div>
+              <span>2,2%</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="code-cell">51359502</td>
+          <td>Labores Administrativas Generales</td>
+          <td>$680.000</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:8.9%; background:#d08070;"></div></div>
+              <span>2,1%</span>
+            </div>
+          </td>
+        </tr>
+
+        <!-- GENERALES -->
+        <tr class="group-row"><td colspan="4">▸ Gastos Generales y Tributarios</td></tr>
+        <tr>
+          <td class="code-cell">511028</td>
+          <td>Papelería y Útiles de Oficina</td>
+          <td>$514.500</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:6.8%; background:#d8958a;"></div></div>
+              <span>1,6%</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="code-cell">511068</td>
+          <td>Asistencia Técnica</td>
+          <td>$392.200</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:5.2%; background:#d8958a;"></div></div>
+              <span>1,2%</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="code-cell">51359501</td>
+          <td>Parqueadero</td>
+          <td>$300.000</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:3.9%; background:#d8a09a;"></div></div>
+              <span>0,9%</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="code-cell">511018</td>
+          <td>Aseo y Elementos</td>
+          <td>$189.999</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:2.5%; background:#d8a09a;"></div></div>
+              <span>0,6%</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="code-cell">511505</td>
+          <td>Industria y Comercio</td>
+          <td>$102.000</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:1.3%; background:#e0b0aa;"></div></div>
+              <span>0,3%</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="code-cell">511506</td>
+          <td>Retención en la Fuente</td>
+          <td>$89.000</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:1.2%; background:#e0b0aa;"></div></div>
+              <span>0,3%</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="code-cell">511595</td>
+          <td>Retención</td>
+          <td>$89.000</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:1.2%; background:#e0b0aa;"></div></div>
+              <span>0,3%</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="code-cell">511010</td>
+          <td>Mantenimiento y Reparaciones</td>
+          <td>$72.600</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:0.9%; background:#e8c0ba;"></div></div>
+              <span>0,2%</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="code-cell">511090</td>
+          <td>Flete y Transportes</td>
+          <td>$52.400</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:0.7%; background:#e8c0ba;"></div></div>
+              <span>0,2%</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="code-cell">530505</td>
+          <td>Gastos Bancarios</td>
+          <td>$284</td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar-track"><div class="bar-fill" style="width:0.1%; background:#f0d0cc;"></div></div>
+              <span>0,0%</span>
+            </div>
+          </td>
+        </tr>
+
+        <tr class="subtotal">
+          <td colspan="2"><strong>TOTAL GASTOS OPERACIONALES</strong></td>
+          <td><strong>$32.434.246</strong></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- RESULTADO -->
+  <div class="result-block loss">
+    <div>
+      <div class="result-label loss">Utilidad (Pérdida) del Ejercicio</div>
+      <div class="result-period">Período 01 enero – 28 febrero 2026</div>
+    </div>
+    <div class="result-value loss">−$12.305.109</div>
+  </div>
+
+  <!-- GRÁFICAS -->
+  <div class="charts-row">
+
+    <!-- Donut ingresos -->
+    <div class="chart-card">
+      <div class="chart-title">Composición de Ingresos</div>
+      <div class="donut-wrap">
+        <svg class="donut" width="90" height="90" viewBox="0 0 36 36">
+          <circle r="15.9155" cx="18" cy="18" fill="none" stroke="#e8dfd0" stroke-width="3.8"/>
+          <!-- Ofrendas Domingos 81.2% = 509.8 de 628.3 -->
+          <circle r="15.9155" cx="18" cy="18" fill="none" stroke="#2e7d52" stroke-width="3.8"
+            stroke-dasharray="81.2 18.8" stroke-dashoffset="25" stroke-linecap="round"/>
+          <!-- Ofrendas Banco 18.8% -->
+          <circle r="15.9155" cx="18" cy="18" fill="none" stroke="#5aab82" stroke-width="3.8"
+            stroke-dasharray="18.8 81.2" stroke-dashoffset="-56.2" stroke-linecap="round"/>
+        </svg>
+        <ul class="legend-list">
+          <li><div class="leg-swatch" style="background:#2e7d52"></div><span class="leg-name">Ofrendas Domingos</span><span class="leg-pct">81,2%</span></li>
+          <li><div class="leg-swatch" style="background:#5aab82"></div><span class="leg-name">Ofrendas Banco</span><span class="leg-pct">18,8%</span></li>
+          <li><div class="leg-swatch" style="background:#9ecfb5"></div><span class="leg-name">Intereses</span><span class="leg-pct">0,0%</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Barras top 5 gastos -->
+    <div class="chart-card">
+      <div class="chart-title">Top 5 Rubros de Gasto</div>
+      <ul class="hbar-list">
+        <li class="hbar-item">
+          <div class="hbar-meta"><span class="hbar-name">Sueldos</span><span class="hbar-val">$7.576.000 · 23,4%</span></div>
+          <div class="hbar-track"><div class="hbar-fill" style="width:100%; background:#b53a2a;"></div></div>
+        </li>
+        <li class="hbar-item">
+          <div class="hbar-meta"><span class="hbar-name">Cafetería</span><span class="hbar-val">$3.982.350 · 12,3%</span></div>
+          <div class="hbar-track"><div class="hbar-fill" style="width:52.5%; background:#c05a45;"></div></div>
+        </li>
+        <li class="hbar-item">
+          <div class="hbar-meta"><span class="hbar-name">Arrendamientos</span><span class="hbar-val">$3.910.000 · 12,1%</span></div>
+          <div class="hbar-track"><div class="hbar-fill" style="width:51.6%; background:#c87060;"></div></div>
+        </li>
+        <li class="hbar-item">
+          <div class="hbar-meta"><span class="hbar-name">Equipos Varios</span><span class="hbar-val">$3.062.117 · 9,4%</span></div>
+          <div class="hbar-track"><div class="hbar-fill" style="width:40.4%; background:#1e4f87;"></div></div>
+        </li>
+        <li class="hbar-item">
+          <div class="hbar-meta"><span class="hbar-name">Cesantías</span><span class="hbar-val">$3.699.996 · 11,4%</span></div>
+          <div class="hbar-track"><div class="hbar-fill" style="width:48.8%; background:#d97060;"></div></div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <span>Estado de Resultados · Ene–Feb 2026 · Iglesia Bíblica Gracia y Vida · NIT 901464119-7</span>
+    <span>Generado automáticamente · Solo lectura</span>
+  </footer>
+
+</div>
+</body>
+</html>

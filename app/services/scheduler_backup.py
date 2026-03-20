@@ -277,6 +277,9 @@ def run_backup_for_company(empresa_id: int):
 
         logger.info(f"[AutoBackup] Processing Company: {emp.razon_social} (ID: {emp.id})")
         
+        # 0. Update last_run FIRST to act as a lock and prevent concurrent catch-ups
+        _update_last_run(empresa_id)
+        
         # 1. Generate Backup
         backup_data = migracion_service.generar_backup_json(db, emp.id, filtros=None)
         
@@ -291,9 +294,6 @@ def run_backup_for_company(empresa_id: int):
         
         logger.info(f"[AutoBackup] Success! Saved to {full_path}")
         
-        # 3. Update last_run
-        _update_last_run(empresa_id)
-
         # 4. Retention Policy
         _apply_retention_policy(path, cfg.get("dias_retencion", 30), safe_name)
 

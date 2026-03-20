@@ -1,5 +1,5 @@
 from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -19,7 +19,7 @@ router = APIRouter()
 
 @router.post("/login", response_model=token_schema.Token)
 @limiter.limit("10/5minutes")
-def login_for_access_token(request: Request, db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
+def login_for_access_token(request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
     # 1. Verificar si la cuenta está en periodo de bloqueo (DoS distribuido)
     security.check_account_lockout(form_data.username)
 
@@ -44,6 +44,15 @@ def login_for_access_token(request: Request, db: Session = Depends(get_db), form
         data={"sub": user.email, "empresa_id": user.empresa_id, "roles": roles_list},
         expires_delta=access_token_expires
     )
+    
+    # Inyectar validación "Catch Up" de Backups en Segundo Plano
+    try:
+        from app.services.scheduler_backup import check_missed_backups
+        background_tasks.add_task(check_missed_backups)
+    except Exception as e:
+        import logging
+        logging.error(f"Error programando validacion de backups en login: {e}")
+        
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/soporte/login", response_model=token_schema.Token)

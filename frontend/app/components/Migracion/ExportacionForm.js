@@ -500,18 +500,22 @@ export default function ExportacionForm({
               </div>
 
               <div>
-                <label className={labelClass}>Ruta Local de Guardado</label>
+                <label className={labelClass}>Ruta (Directorio Destino de Servidor o Agente Local)</label>
                 <div className="relative">
                   <input
                     type="text"
                     value={autoConfig.ruta_local}
                     onChange={e => setAutoConfig({ ...autoConfig, ruta_local: e.target.value })}
                     className={inputClass}
-                    placeholder="C:/Backups_Finaxis"
+                    placeholder="Ej: C:/Backups_Finaxis"
+                    title="Por seguridad web, pegue la ruta manualmente"
                   />
-                  <FaFolderOpen className="absolute right-3 top-3 text-gray-400" />
+                  <FaFolderOpen 
+                    className="absolute right-3 top-3 text-indigo-400 cursor-help" 
+                    title="Por seguridad de los navegadores web, no es posible abrir el selector local. Ingrese y pegue la ruta manualmente."
+                  />
                 </div>
-                <p className="text-xs text-orange-500 mt-1">* Asegúrese que la carpeta exista y el usuario tenga permisos de escritura.</p>
+                <p className="text-xs text-orange-500 mt-1">* Por seguridad web, copie y pegue la ruta manualmente. Asegúrese de que exista y tenga permisos.</p>
               </div>
 
               <div>
