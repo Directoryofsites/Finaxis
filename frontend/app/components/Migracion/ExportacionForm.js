@@ -490,6 +490,16 @@ export default function ExportacionForm({
                 <span className="font-bold text-gray-700">Habilitar Copia Automática</span>
               </label>
 
+              <div>
+                <label className={labelClass}>Hora de Ejecución (Formato 24h)</label>
+                <input
+                  type="time"
+                  value={autoConfig.hora_ejecucion}
+                  onChange={e => setAutoConfig({ ...autoConfig, hora_ejecucion: e.target.value })}
+                  className={inputClass}
+                />
+              </div>
+
               <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-lg mt-4 flex flex-col items-center text-center">
                 <FaArchive className="text-3xl text-indigo-300 mb-2" />
                 <p className="text-sm font-bold text-indigo-800">Almacenamiento Seguro Garantizado</p>
