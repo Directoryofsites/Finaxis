@@ -431,7 +431,7 @@ def schedule_backup_jobs():
                 
                 scheduler.add_job(
                     run_backup_for_company, 
-                    CronTrigger(hour=hour, minute=minute), 
+                    CronTrigger(hour=hour, minute=minute, timezone=BOGOTA_TZ), 
                     args=[empresa_id],
                     id=job_id,
                     replace_existing=True
@@ -450,7 +450,7 @@ def schedule_backup_jobs():
             
             scheduler.add_job(
                 run_global_backup, 
-                CronTrigger(hour=hour, minute=minute), 
+                CronTrigger(hour=hour, minute=minute, timezone=BOGOTA_TZ), 
                 id="backup_global",
                 replace_existing=True
             )
