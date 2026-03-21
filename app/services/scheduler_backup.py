@@ -7,6 +7,10 @@ from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy.orm import Session
+import pytz
+
+# Zona Horaria Estricta Colombia
+BOGOTA_TZ = pytz.timezone('America/Bogota')
 
 from app.core.database import SessionLocal
 from app.services import migracion as migracion_service
@@ -36,7 +40,7 @@ def _save_to_db(full_config):
     finally:
         db.close()
 
-scheduler = BackgroundScheduler()
+scheduler = BackgroundScheduler(timezone=BOGOTA_TZ)
 
 def get_global_backup_path() -> str:
     """Devuelve la ruta configurada para los backups globales"""
@@ -145,7 +149,7 @@ def run_global_backup():
             logger.info("[AutoBackup] No hay empresas registradas para respaldar.")
             return
             
-        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        timestamp = datetime.now(BOGOTA_TZ).strftime('%Y-%m-%d_%H-%M-%S')
         zip_filename = f"BACKUP_GLOBAL_{timestamp}.zip"
         
         in_memory_zip = io.BytesIO()
@@ -180,7 +184,7 @@ def run_global_backup():
         full_config = load_config(empresa_id=None)
         if "global" not in full_config:
             full_config["global"] = {}
-        full_config["global"]["last_run"] = datetime.now().isoformat()
+        full_config["global"]["last_run"] = datetime.now(BOGOTA_TZ).isoformat()
         _save_to_db(full_config)
             
         cfg = load_config("global")
@@ -243,7 +247,7 @@ def delete_global_backup_file(filename: str) -> bool:
 def _apply_global_retention_policy_db(db, days):
     from app.models.copia_seguridad import CopiaSeguridad
     try:
-        cutoff = datetime.now() - timedelta(days=days)
+        cutoff = datetime.now(BOGOTA_TZ) - timedelta(days=days)
         viejos = db.query(CopiaSeguridad).filter(CopiaSeguridad.empresa_id == None, CopiaSeguridad.fecha < cutoff).all()
         for v in viejos:
             db.delete(v)
@@ -275,7 +279,7 @@ def run_backup_for_company(empresa_id: int):
         backup_data = migracion_service.generar_backup_json(db, emp.id, filtros=None)
         
         safe_name = "".join([c for c in emp.razon_social if c.isalnum() or c in (' ', '-', '_')]).strip()
-        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        timestamp = datetime.now(BOGOTA_TZ).strftime('%Y-%m-%d_%H-%M-%S')
         filename = f"BACKUP_AUTO_{safe_name}_{timestamp}.json"
         
         json_str = json.dumps(backup_data, default=str, ensure_ascii=False)
@@ -304,7 +308,7 @@ def _update_last_run(empresa_id):
     full_config = load_config(empresa_id=None)
     str_id = str(empresa_id)
     if str_id in full_config.get("companies", {}):
-        full_config["companies"][str_id]["last_run"] = datetime.now().isoformat()
+        full_config["companies"][str_id]["last_run"] = datetime.now(BOGOTA_TZ).isoformat()
         _save_to_db(full_config)
 
 def _apply_retention_policy_db(db, days, empresa_id):
@@ -313,7 +317,7 @@ def _apply_retention_policy_db(db, days, empresa_id):
     """
     from app.models.copia_seguridad import CopiaSeguridad
     try:
-        cutoff = datetime.now() - timedelta(days=days)
+        cutoff = datetime.now(BOGOTA_TZ) - timedelta(days=days)
         viejos = db.query(CopiaSeguridad).filter(CopiaSeguridad.empresa_id == empresa_id, CopiaSeguridad.fecha < cutoff).all()
         for v in viejos:
             db.delete(v)
@@ -398,7 +402,7 @@ def check_missed_backups():
     companies = full_config.get("companies", {})
     global_cfg = full_config.get("global", {})
     
-    now = datetime.now()
+    now = datetime.now(BOGOTA_TZ)
     
     _check_missed_job(global_cfg, run_global_backup, "GLOBAL", now, is_global=True)
     
@@ -464,7 +468,7 @@ def start_scheduler():
         
     # 2. Verificar backups perdidos DE FORMA ASÍNCRONA (Job)
     # No bloquear el arranque. Programar para dentro de 60 segundos.
-    run_date = datetime.now() + timedelta(seconds=60)
+    run_date = datetime.now(BOGOTA_TZ) + timedelta(seconds=60)
     scheduler.add_job(
         check_missed_backups, 
         'date', 
