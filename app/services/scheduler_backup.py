@@ -13,9 +13,28 @@ from app.services import migracion as migracion_service
 from app.models.empresa import Empresa
 
 # Config
-CONFIG_FILE = "backup_config.json"
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+from app.models.configuracion_sistema import ConfiguracionSistema
+
+def _save_to_db(full_config):
+    db: Session = SessionLocal()
+    try:
+        conf = db.query(ConfiguracionSistema).filter(ConfiguracionSistema.clave == "backup_config").first()
+        val = json.dumps(full_config, indent=4)
+        if conf:
+            conf.valor = val
+        else:
+            conf = ConfiguracionSistema(clave="backup_config", valor=val)
+            db.add(conf)
+        db.commit()
+    except Exception as e:
+        logger.error(f"[AutoBackup] Error saving to DB: {e}")
+        db.rollback()
+    finally:
+        db.close()
 
 scheduler = BackgroundScheduler()
 
@@ -34,30 +53,31 @@ def load_config(empresa_id=None):
     Si empresa_id es int, devuelve la config específica de esa empresa (o default).
     Si empresa_id es 'global', devuelve la config global.
     """
-    abs_config_path = os.path.abspath(CONFIG_FILE)
-    logger.info(f"[AutoBackup] LOADING CONFIG from: {abs_config_path}")
+    logger.info(f"[AutoBackup] LOADING CONFIG from DATABASE")
     
-    if not os.path.exists(CONFIG_FILE):
-        logger.warning(f"[AutoBackup] Config file NOT FOUND at {abs_config_path}. Using defaults.")
-        # ...
     default_global = {"enabled": False, "hora_ejecucion": "00:00", "ruta_local": "C:/Backups_Finaxis", "dias_retencion": 7, "last_run": None}
+    default_config = {"enabled": False, "hora_ejecucion": "02:00", "ruta_local": "C:/Backups_Finaxis", "dias_retencion": 30}
     
-    if not os.path.exists(CONFIG_FILE):
-        full_config = {"companies": {}, "global": default_global}
-    else:
-        try:
-            with open(CONFIG_FILE, "r") as f:
-                full_config = json.load(f)
-            
-            if "companies" not in full_config:
-                logger.info("[AutoBackup] Migrating legacy config to multi-tenant format...")
-                full_config["companies"] = {} 
-            
-            if "global" not in full_config:
-                full_config["global"] = default_global
-                
-        except:
+    from app.models.configuracion_sistema import ConfiguracionSistema
+    db: Session = SessionLocal()
+    try:
+        conf = db.query(ConfiguracionSistema).filter(ConfiguracionSistema.clave == "backup_config").first()
+        if conf and conf.valor:
+            full_config = json.loads(conf.valor)
+        else:
             full_config = {"companies": {}, "global": default_global}
+    except Exception as e:
+        logger.error(f"[AutoBackup] Error loading from DB: {e}")
+        full_config = {"companies": {}, "global": default_global}
+    finally:
+        db.close()
+
+    if "companies" not in full_config:
+        logger.info("[AutoBackup] Migrating legacy config to multi-tenant format...")
+        full_config["companies"] = {} 
+    
+    if "global" not in full_config:
+        full_config["global"] = default_global
 
     if empresa_id is None:
         return full_config
@@ -87,12 +107,10 @@ def save_config(config_data, empresa_id):
         
     full_config["companies"][str_id] = config_data
     
-    abs_config_path = os.path.abspath(CONFIG_FILE)
-    logger.info(f"[AutoBackup] SAVING CONFIG for Company {empresa_id} to: {abs_config_path}")
+    logger.info(f"[AutoBackup] SAVING CONFIG for Company {empresa_id} to DATABASE")
     logger.info(f"[AutoBackup] Config Data: {config_data}")
     
-    with open(CONFIG_FILE, "w") as f:
-        json.dump(full_config, f, indent=4)
+    _save_to_db(full_config)
         
     # Recargar scheduler para aplicar cambios
     logger.info(f"[AutoBackup] Config updated for Company {empresa_id}. Reloading scheduler.")
@@ -105,8 +123,7 @@ def save_global_config(config_data):
         config_data["last_run"] = current_global["last_run"]
     
     full_config["global"] = config_data
-    with open(CONFIG_FILE, "w") as f:
-        json.dump(full_config, f, indent=4)
+    _save_to_db(full_config)
         
     logger.info(f"[AutoBackup] Global config updated. Reloading scheduler.")
     schedule_backup_jobs()
@@ -160,8 +177,7 @@ def run_global_backup():
         if "global" not in full_config:
             full_config["global"] = {}
         full_config["global"]["last_run"] = datetime.now().isoformat()
-        with open(CONFIG_FILE, "w") as f:
-            json.dump(full_config, f, indent=4)
+        _save_to_db(full_config)
             
         # Retention Policy
         _apply_global_retention_policy(path, cfg.get("dias_retencion", 7))
@@ -307,8 +323,7 @@ def _update_last_run(empresa_id):
     str_id = str(empresa_id)
     if str_id in full_config.get("companies", {}):
         full_config["companies"][str_id]["last_run"] = datetime.now().isoformat()
-        with open(CONFIG_FILE, "w") as f:
-            json.dump(full_config, f, indent=4)
+        _save_to_db(full_config)
 
 def _apply_retention_policy(path, days, company_safe_name):
     """
