@@ -16,8 +16,7 @@ import {
   FaFolderOpen,
   FaArchive
 } from 'react-icons/fa';
-import { exportarDatos, apiService } from '../../../lib/apiService';
-// Note: apiService used for config, exportarDatos usually in utilidadesService but we can use apiService directly or keep import if invalid. 
+import { apiService } from '../../../lib/apiService';
 // Correcting imports based on context:
 import { exportarDatos as exportarDatosService } from '../../../lib/utilidadesService';
 
@@ -99,12 +98,17 @@ export default function ExportacionForm({
   }, []);
 
   const saveAutoConfig = async () => {
+    alert("Iniciando guardado con configuración: " + JSON.stringify(autoConfig));
     try {
-      await apiService.post('/utilidades/backup-auto-config', autoConfig);
-      alert("Configuración de Copia Automática Guardada Exitosamente. El servidor procesará la hora indicada.");
+      const res = await apiService.post('/utilidades/backup-auto-config', autoConfig);
+      alert("¡ÉXITO! Respuesta del servidor: " + JSON.stringify(res.data));
       setShowAutoModal(false);
     } catch (e) {
-      alert("Error guardando configuración");
+      let errMsg = e.message;
+      if (e.response && e.response.data) {
+          errMsg = JSON.stringify(e.response.data);
+      }
+      alert("Error crítico guardando configuración: " + errMsg);
     }
   };
 
