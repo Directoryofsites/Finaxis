@@ -13,7 +13,8 @@ import {
   FaClock,
   FaSave,
   FaTimes,
-  FaFolderOpen
+  FaFolderOpen,
+  FaArchive
 } from 'react-icons/fa';
 import { exportarDatos, apiService } from '../../../lib/apiService';
 // Note: apiService used for config, exportarDatos usually in utilidadesService but we can use apiService directly or keep import if invalid. 
