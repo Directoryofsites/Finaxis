@@ -11,6 +11,7 @@ import RestauracionForm from '../../../components/Migracion/RestauracionForm';
 import TransformacionForm from '../../../components/Migracion/TransformacionForm';
 import LegacyImportForm from '../../../components/Migracion/LegacyImportForm';
 import UniversalImportForm from '../../../components/Migracion/UniversalImportForm';
+import HistorialBackups from '../../../components/Migracion/HistorialBackups';
 
 export default function MigracionDatosPage() {
   const { user, authLoading } = useAuth();
@@ -194,6 +195,13 @@ export default function MigracionDatosPage() {
               setError={setError}
             />
           </section>
+
+          {/* Sección 1.5: Historial de Backups Automáticos (SOLO ADMINS o SOPORTE) */}
+          {(user?.role === 'ADMIN' || user?.rol === 'ADMIN' || user?.is_superadmin || user?.roles?.some(r => r.nombre === 'ADMIN')) && (
+            <section className="animate-fadeIn delay-150">
+                <HistorialBackups />
+            </section>
+          )}
 
           {/* Sección 2: Restauración */}
           <section className="animate-fadeIn" style={{ animationDelay: '0.2s' }}>

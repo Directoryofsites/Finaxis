@@ -345,6 +345,57 @@ def backup_rapido(current_user: models_usuario.Usuario = Depends(has_permission(
     return migracion_service.generar_backup_json(db=db, empresa_id=current_user.empresa_id, filtros=None)
 
 
+# --- RUTAS DE DESCARGA DE BACKUPS POR EMPRESA ---
+from app.models.copia_seguridad import CopiaSeguridad
+from fastapi.responses import StreamingResponse
+import io
+import re
+
+@router.get("/backups")
+def list_company_backups(db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(has_permission("utilidades:migracion"))):
+    archivos = []
+    try:
+        backups = db.query(CopiaSeguridad).filter(CopiaSeguridad.empresa_id == current_user.empresa_id).order_by(CopiaSeguridad.fecha.desc()).all()
+        for b in backups:
+            archivos.append({
+                "filename": b.nombre_archivo,
+                "size_mb": float(b.tamanio_mb) if b.tamanio_mb else 0.0,
+                "created_at": b.fecha.isoformat()
+            })
+        return archivos
+    except Exception as e:
+        import logging
+        logging.error(f"Error listando backups empresa DB: {e}")
+        return []
+
+@router.get("/backups/{filename}/download")
+def download_company_backup(filename: str, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(has_permission("utilidades:migracion"))):
+    # Validar filename básico (anti path-traversal)
+    if not re.match(r"^[\w\-. ]+$", filename):
+        raise HTTPException(status_code=400, detail="Nombre de archivo inválido.")
+        
+    backup = db.query(CopiaSeguridad).filter(
+        CopiaSeguridad.nombre_archivo == filename, 
+        CopiaSeguridad.empresa_id == current_user.empresa_id
+    ).first()
+    
+    if not backup:
+        raise HTTPException(status_code=404, detail="El archivo de copia de seguridad no existe o no tienes acceso.")
+
+    try:
+        if not backup.datos_json:
+            raise HTTPException(status_code=404, detail="El binario está vacío.")
+
+        file_stream = io.BytesIO(backup.datos_json)
+        
+        return StreamingResponse(
+            file_stream, 
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error al leer el backup.")
+
 # --- RUTAS PARA COPIA AUTOMÁTICA ---
 from app.services import scheduler_backup
 
