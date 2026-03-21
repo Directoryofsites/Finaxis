@@ -112,9 +112,15 @@ def save_config(config_data, empresa_id):
     full_config["companies"][str_id] = config_data
     
     logger.info(f"[AutoBackup] SAVING CONFIG for Company {empresa_id} to DATABASE")
-    logger.info(f"[AutoBackup] Config Data: {config_data}")
+    # Log the first few chars of the full config to verify companies isn't being wiped
+    logger.info(f"[AutoBackup] Full Config Keys: {list(full_config.keys())}")
+    logger.info(f"[AutoBackup] Companies in Config: {list(full_config.get('companies', {}).keys())}")
     
     _save_to_db(full_config)
+    
+    # Verify immediately
+    verify = load_config(empresa_id=None)
+    logger.info(f"[AutoBackup] VERIFICATION after save - Companies: {list(verify.get('companies', {}).keys())}")
         
     # Recargar scheduler para aplicar cambios
     logger.info(f"[AutoBackup] Config updated for Company {empresa_id}. Reloading scheduler.")

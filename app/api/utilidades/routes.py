@@ -399,18 +399,35 @@ def download_company_backup(filename: str, db: Session = Depends(get_db), curren
 # --- RUTAS PARA COPIA AUTOMÁTICA ---
 from app.services import scheduler_backup
 
+import logging
+logger = logging.getLogger(__name__)
+
 @router.get("/backup-auto-config", response_model=migracion_schemas.AutoBackupConfig)
 def get_backup_config(current_user: models_usuario.Usuario = Depends(has_permission("utilidades:migracion"))):
     return scheduler_backup.load_config(empresa_id=current_user.empresa_id)
-
-import logging
-logger = logging.getLogger(__name__)
 
 @router.post("/backup-auto-config")
 def update_backup_config(config: migracion_schemas.AutoBackupConfig, current_user: models_usuario.Usuario = Depends(has_permission("utilidades:migracion"))):
     logger.info(f"[AutoBackup] Recibida nueva configuración para empresa {current_user.empresa_id}: {config.dict()}")
     scheduler_backup.save_config(config.dict(), empresa_id=current_user.empresa_id)
     return {"msg": "Configuración de copia automática actualizada correctamente."}
+
+@router.post("/backup-auto-run")
+def run_backup_now(current_user: models_usuario.Usuario = Depends(has_permission("utilidades:migracion"))):
+    """
+    Dispara inmediatamente el backup para la empresa del usuario.
+    """
+    logger.info(f"[AutoBackup] Disparo MANUAL solicitado por usuario {current_user.email} para empresa {current_user.empresa_id}")
+    # Ejecutamos en segundo plano para no bloquear la respuesta
+    from fastapi import BackgroundTasks
+    # No podemos inyectar BackgroundTasks aquí directamente si usamos Depends(has_permission),
+    # pero podemos llamar a la función directamente o usar un hilo.
+    # Usemos un simple hilo para esta prueba rápida.
+    import threading
+    thread = threading.Thread(target=scheduler_backup.run_backup_for_company, args=(current_user.empresa_id,))
+    thread.start()
+    
+    return {"msg": "Tarea de copia de seguridad iniciada en segundo plano. Revise el historial en unos instantes."}
 
 @router.post("/analizar-backup", response_model=migracion_schemas.AnalysisReport)
 def analizar_backup(analysis_request: migracion_schemas.AnalysisRequest, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(has_permission("utilidades:migracion"))): # <-- CAMBIO AQUÍ

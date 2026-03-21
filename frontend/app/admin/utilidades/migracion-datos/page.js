@@ -197,11 +197,10 @@ export default function MigracionDatosPage() {
           </section>
 
           {/* Sección 1.5: Historial de Backups Automáticos (SOLO ADMINS o SOPORTE) */}
-          {(user?.role === 'ADMIN' || user?.rol === 'ADMIN' || user?.is_superadmin || user?.roles?.some(r => r.nombre === 'ADMIN')) && (
-            <section className="animate-fadeIn delay-150">
-                <HistorialBackups />
-            </section>
-          )}
+          {/* Historial de Copias (Visible para todos los que tengan acceso a esta página) */}
+          <section className="animate-fadeIn delay-150">
+              <HistorialBackups />
+          </section>
 
           {/* Sección 2: Restauración */}
           <section className="animate-fadeIn" style={{ animationDelay: '0.2s' }}>

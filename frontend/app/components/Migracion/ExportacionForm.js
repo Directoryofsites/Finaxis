@@ -125,6 +125,26 @@ export default function ExportacionForm({
     }
   };
 
+  const runManualBackup = async () => {
+    if (!confirm("¿Deseas ejecutar un backup completo ahora mismo? Esto tomará unos segundos en segundo plano.")) return;
+    
+    try {
+      const token = localStorage.getItem('authToken');
+      const urlEnv = process.env.NEXT_PUBLIC_API_URL || 'https://finaxis.onrender.com';
+      const response = await fetch(`${urlEnv}/api/utilidades/backup-auto-run`, {
+          method: 'POST',
+          headers: {
+              'Authorization': `Bearer ${token}`
+          }
+      });
+      
+      const data = await response.json();
+      alert("🚀 " + data.msg);
+    } catch (e) {
+      alert("❌ Error disparando backup manual: " + e.message);
+    }
+  };
+
   const handleFiltroChange = (e) => {
     const { name, value } = e.target;
     setFiltros(prev => ({ ...prev, [name]: value }));
@@ -524,15 +544,25 @@ export default function ExportacionForm({
                   Sus copias automáticas ahora se guardan directamente en la bóveda cifrada en la Nube (PostgreSQL), sin necesidad de rutas locales de servidor ni de preocuparse por retenciones (máx 30 días automático).
                 </p>
                 
-                <button 
-                  onClick={() => {
-                    setShowAutoModal(false);
-                    document.getElementById('historial-backups')?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="mt-4 px-4 py-2 bg-white text-indigo-600 font-bold border border-indigo-200 rounded-lg hover:bg-indigo-50 transition shadow-sm text-sm"
-                >
-                  Ir al Historial de Descargas
-                </button>
+                <div className="flex gap-2 mt-4">
+                  <button 
+                    onClick={runManualBackup}
+                    className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition shadow-md text-sm flex items-center gap-2"
+                  >
+                    🚀 Ejecutar Copia Ahora
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowAutoModal(false);
+                      setTimeout(() => {
+                        document.getElementById('historial-backups')?.scrollIntoView({ behavior: 'smooth' });
+                      }, 100);
+                    }}
+                    className="px-4 py-2 bg-white text-indigo-600 font-bold border border-indigo-200 rounded-lg hover:bg-indigo-50 transition shadow-sm text-sm"
+                  >
+                    Ir al Historial
+                  </button>
+                </div>
               </div>
 
             </div>
