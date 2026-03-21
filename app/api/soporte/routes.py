@@ -155,17 +155,18 @@ def list_global_backup_files_route():
 )
 def download_specific_backup_route(filename: str):
     """Descarga un .zip específico validado por nombre."""
-    from fastapi.responses import FileResponse
+    from fastapi.responses import StreamingResponse
     from fastapi import HTTPException
+    import io
     
-    file_path = scheduler_backup.get_global_backup_file_path(filename)
-    if not file_path:
+    backup_record = scheduler_backup.get_global_backup_by_name(filename)
+    if not backup_record:
         raise HTTPException(status_code=404, detail="Archivo no encontrado o inválido.")
         
-    return FileResponse(
-        path=file_path,
+    return StreamingResponse(
+        io.BytesIO(backup_record.datos_json),
         media_type="application/zip",
-        filename=filename
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
 

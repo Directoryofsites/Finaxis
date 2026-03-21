@@ -130,20 +130,14 @@ def save_global_config(config_data):
 
 def run_global_backup():
     """
-    Ejecuta el backup global de todas las empresas y las comprime en un ZIP.
+    Ejecuta el backup global de todas las empresas y las comprime en un ZIP EN MEMORIA,
+    para luego guardar todo nativamente en PostgreSQL mediante CopiaSeguridad.
     Puede ser invocado manualmente o por el scheduler.
     """
     logger.info("[AutoBackup] Iniciando Backup Global...")
-    cfg = load_config("global")
-    path = cfg.get("ruta_local", "C:/Backups_Finaxis")
+    import io
+    from app.models.copia_seguridad import CopiaSeguridad
     
-    if not os.path.exists(path):
-        try:
-            os.makedirs(path)
-        except Exception as e:
-            logger.error(f"[AutoBackup] Error creando directorio {path}: {e}")
-            return
-            
     db: Session = SessionLocal()
     try:
         empresas = db.query(Empresa).all()
@@ -153,9 +147,9 @@ def run_global_backup():
             
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         zip_filename = f"BACKUP_GLOBAL_{timestamp}.zip"
-        zip_full_path = os.path.join(path, zip_filename)
         
-        with zipfile.ZipFile(zip_full_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        in_memory_zip = io.BytesIO()
+        with zipfile.ZipFile(in_memory_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
             for emp in empresas:
                 try:
                     logger.info(f"[AutoBackup] Respaldando empresa: {emp.razon_social} (ID: {emp.id})")
@@ -164,126 +158,109 @@ def run_global_backup():
                     safe_name = "".join([c for c in emp.razon_social if c.isalnum() or c in (' ', '-', '_')]).strip()
                     json_filename = f"{emp.id}_{safe_name}.json"
                     
-                    # Agregar al zip sin guardar archivo intermedio
                     json_str = json.dumps(backup_data, default=str, ensure_ascii=False)
                     zipf.writestr(json_filename, json_str.encode('utf-8'))
                 except Exception as e:
                     logger.error(f"[AutoBackup] Error en empresa {emp.id}: {e}")
                     
-        logger.info(f"[AutoBackup] Backup Global Exitoso! Guardado en: {zip_full_path}")
+        in_memory_zip.seek(0)
+        zip_bytes = in_memory_zip.read()
+        tamano_mb = str(round(len(zip_bytes) / (1024 * 1024), 2))
         
-        # Update last_run
+        backup_record = CopiaSeguridad(
+            empresa_id=None,
+            nombre_archivo=zip_filename,
+            datos_json=zip_bytes,
+            tamanio_mb=tamano_mb
+        )
+        db.add(backup_record)
+        db.commit()
+        logger.info(f"[AutoBackup] Backup Global Exitoso guardado en BD!")
+        
         full_config = load_config(empresa_id=None)
         if "global" not in full_config:
             full_config["global"] = {}
         full_config["global"]["last_run"] = datetime.now().isoformat()
         _save_to_db(full_config)
             
-        # Retention Policy
-        _apply_global_retention_policy(path, cfg.get("dias_retencion", 7))
+        cfg = load_config("global")
+        _apply_global_retention_policy_db(db, cfg.get("dias_retencion", 7))
         
-        return zip_full_path
+        return True
         
     except Exception as e:
         logger.error(f"[AutoBackup] Error fatal en Backup Global: {e}")
-        return None
+        return False
     finally:
         db.close()
 
 def get_global_backup_files():
-    """
-    Lista todos los archivos ZIP generados en el directorio de backups globales.
-    Devuelve su nombre, tamaño y fecha.
-    """
-    import datetime
-    
-    path = get_global_backup_path()
-    if not os.path.exists(path):
-        return []
-        
+    """Lista todos los backups globales almacenados en la base de datos."""
+    from app.models.copia_seguridad import CopiaSeguridad
+    db: Session = SessionLocal()
     archivos = []
     try:
-        # Filtrar solo zips creados por el servicio (prefijo)
-        for i in os.listdir(path):
-            if i.startswith("BACKUP_GLOBAL_") and i.endswith(".zip"):
-                f_path = os.path.join(path, i)
-                if os.path.isfile(f_path):
-                    stats = os.stat(f_path)
-                    
-                    # Size en megabytes
-                    tamano_mb = round(stats.st_size / (1024 * 1024), 2)
-                    fecha_creacion = datetime.datetime.fromtimestamp(stats.st_ctime).isoformat()
-                    
-                    archivos.append({
-                        "filename": i,
-                        "size_mb": tamano_mb,
-                        "created_at": fecha_creacion
-                    })
-        # Ordenar los más nuevos primero
-        archivos.sort(key=lambda x: x["created_at"], reverse=True)
+        backups = db.query(CopiaSeguridad).filter(CopiaSeguridad.empresa_id == None).order_by(CopiaSeguridad.fecha.desc()).all()
+        for b in backups:
+            archivos.append({
+                "filename": b.nombre_archivo,
+                "size_mb": float(b.tamanio_mb) if b.tamanio_mb else 0.0,
+                "created_at": b.fecha.isoformat()
+            })
         return archivos
     except Exception as e:
-        logger.error(f"Error listando backups en {path}: {e}")
+        logger.error(f"Error listando backups DB: {e}")
         return []
+    finally:
+        db.close()
 
-def get_global_backup_file_path(filename: str) -> str:
-    """Valida y obtiene la ruta absoluta de un archivo de backup para descarga segura."""
-    if not filename.startswith("BACKUP_GLOBAL_") or not filename.endswith(".zip"):
-        return None
-        
-    # Prevenir path traversal asegurando solo basenames
-    safe_filename = os.path.basename(filename)
-    path = get_global_backup_path()
-    full_path = os.path.join(path, safe_filename)
-    
-    if os.path.exists(full_path) and os.path.isfile(full_path):
-        return full_path
-    return None
+def get_global_backup_by_name(filename: str):
+    from app.models.copia_seguridad import CopiaSeguridad
+    db: Session = SessionLocal()
+    try:
+        return db.query(CopiaSeguridad).filter(CopiaSeguridad.nombre_archivo == filename, CopiaSeguridad.empresa_id == None).first()
+    finally:
+        db.close()
 
 def delete_global_backup_file(filename: str) -> bool:
-    """Borra físicamente un archivo de backup validado"""
-    full_path = get_global_backup_file_path(filename)
-    if not full_path:
-        return False
-        
+    """Borra físicamente un archivo de backup en BD"""
+    from app.models.copia_seguridad import CopiaSeguridad
+    db: Session = SessionLocal()
     try:
-        os.remove(full_path)
-        logger.info(f"[AutoBackup] Usuario eliminó backup manualmente: {full_path}")
-        return True
+        backup = db.query(CopiaSeguridad).filter(CopiaSeguridad.nombre_archivo == filename, CopiaSeguridad.empresa_id == None).first()
+        if backup:
+            db.delete(backup)
+            db.commit()
+            logger.info(f"[AutoBackup] Usuario eliminó backup de BD: {filename}")
+            return True
+        return False
     except Exception as e:
-        logger.error(f"[AutoBackup] Error eliminando {full_path}: {e}")
+        logger.error(f"[AutoBackup] Error eliminando {filename}: {e}")
         return False
+    finally:
+        db.close()
 
-def _apply_global_retention_policy(path, days):
+def _apply_global_retention_policy_db(db, days):
+    from app.models.copia_seguridad import CopiaSeguridad
     try:
-        now = datetime.now()
-        prefix = "BACKUP_GLOBAL_"
-        for f in os.listdir(path):
-            if f.startswith(prefix) and f.endswith(".zip"):
-                fpath = os.path.join(path, f)
-                mtime = datetime.fromtimestamp(os.path.getmtime(fpath))
-                if (now - mtime).days > days:
-                    os.remove(fpath)
-                    logger.info(f"[AutoBackup] Deleted old global backup: {f}")
+        cutoff = datetime.now() - timedelta(days=days)
+        viejos = db.query(CopiaSeguridad).filter(CopiaSeguridad.empresa_id == None, CopiaSeguridad.fecha < cutoff).all()
+        for v in viejos:
+            db.delete(v)
+            logger.info(f"[AutoBackup] Deleted old global backup from DB: {v.nombre_archivo}")
+        db.commit()
     except Exception as e:
         logger.warning(f"[AutoBackup] Global retention policy error: {e}")
 
 def run_backup_for_company(empresa_id: int):
     """
-    Ejecuta el backup para una empresa específica.
+    Ejecuta el backup para una empresa específica en BD.
     """
     cfg = load_config(empresa_id)
     if not cfg.get("enabled", False):
         return
 
-    path = cfg.get("ruta_local", "C:/Backups_Finaxis")
-    if not os.path.exists(path):
-        try:
-            os.makedirs(path)
-        except Exception as e:
-            logger.error(f"[AutoBackup] Failed to create directory {path}: {e}")
-            return
-
+    from app.models.copia_seguridad import CopiaSeguridad
     db: Session = SessionLocal()
     try:
         emp = db.query(Empresa).filter(Empresa.id == empresa_id).first()
@@ -293,25 +270,30 @@ def run_backup_for_company(empresa_id: int):
 
         logger.info(f"[AutoBackup] Processing Company: {emp.razon_social} (ID: {emp.id})")
         
-        # 0. Update last_run FIRST to act as a lock and prevent concurrent catch-ups
         _update_last_run(empresa_id)
         
-        # 1. Generate Backup
         backup_data = migracion_service.generar_backup_json(db, emp.id, filtros=None)
         
-        # 2. Save File
         safe_name = "".join([c for c in emp.razon_social if c.isalnum() or c in (' ', '-', '_')]).strip()
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         filename = f"BACKUP_AUTO_{safe_name}_{timestamp}.json"
-        full_path = os.path.join(path, filename)
         
-        with open(full_path, "w", encoding="utf-8") as f:
-            json.dump(backup_data, f, default=str)
+        json_str = json.dumps(backup_data, default=str, ensure_ascii=False)
+        json_bytes = json_str.encode('utf-8')
+        tamano_mb = str(round(len(json_bytes) / (1024 * 1024), 2))
         
-        logger.info(f"[AutoBackup] Success! Saved to {full_path}")
+        backup_record = CopiaSeguridad(
+            empresa_id=empresa_id,
+            nombre_archivo=filename,
+            datos_json=json_bytes,
+            tamanio_mb=tamano_mb
+        )
+        db.add(backup_record)
+        db.commit()
         
-        # 4. Retention Policy
-        _apply_retention_policy(path, cfg.get("dias_retencion", 30), safe_name)
+        logger.info(f"[AutoBackup] Success! Saved to Database {filename}")
+        
+        _apply_retention_policy_db(db, cfg.get("dias_retencion", 30), empresa_id)
 
     except Exception as e:
         logger.error(f"[AutoBackup] Error backing up company {empresa_id}: {e}")
@@ -325,24 +307,20 @@ def _update_last_run(empresa_id):
         full_config["companies"][str_id]["last_run"] = datetime.now().isoformat()
         _save_to_db(full_config)
 
-def _apply_retention_policy(path, days, company_safe_name):
+def _apply_retention_policy_db(db, days, empresa_id):
     """
-    Elimina backups viejos, PERO SOLO de esta empresa (basado en el nombre).
-    Esto es importante para no borrar backups de otras empresas si comparten carpeta.
+    Elimina backups viejos nativamente en BD.
     """
+    from app.models.copia_seguridad import CopiaSeguridad
     try:
-        now = datetime.now()
-        prefix = f"BACKUP_AUTO_{company_safe_name}_"
-        
-        for f in os.listdir(path):
-            if f.startswith(prefix) and f.endswith(".json"):
-                fpath = os.path.join(path, f)
-                mtime = datetime.fromtimestamp(os.path.getmtime(fpath))
-                if (now - mtime).days > days:
-                    os.remove(fpath)
-                    logger.info(f"[AutoBackup] Deleted old backup: {f}")
+        cutoff = datetime.now() - timedelta(days=days)
+        viejos = db.query(CopiaSeguridad).filter(CopiaSeguridad.empresa_id == empresa_id, CopiaSeguridad.fecha < cutoff).all()
+        for v in viejos:
+            db.delete(v)
+            logger.info(f"[AutoBackup] Deleted old company backup: {v.nombre_archivo}")
+        db.commit()
     except Exception as e:
-        logger.warning(f"[AutoBackup] Retention policy error: {e}")
+        logger.warning(f"[AutoBackup] Retention policy error DB: {e}")
 
 def _parse_time(hora_str: str):
     """

@@ -17,10 +17,35 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setAuthToken(null);
     if (typeof window !== 'undefined') {
-      // FIX SEGURIDAD: Limpieza profunda (Deep Logout)
-      // Se eliminan por completo los rastros de la sesión actual en el navegador
+      // FIX SEGURIDAD: Limpieza profunda (Deep Logout) conservando Preferencias
+      // Se extraen las llaves permitidas para historiales e indicadores
+      const keysToKeep = ['app_history', 'smart_hub_notes', 'theme', 'voice_history'];
+      const savedData = {};
+      
+      try {
+        keysToKeep.forEach(key => {
+          const val = localStorage.getItem(key);
+          if (val) savedData[key] = val;
+        });
+
+        for (let i = 0; i < localStorage.length; i++) {
+           const key = localStorage.key(i);
+           // Conservar indicadores económicos
+           if (key && key.startsWith('indicadores_')) {
+               savedData[key] = localStorage.getItem(key);
+           }
+        }
+      } catch (e) {
+        console.error("Error salvaguardando localStorage", e);
+      }
+
       localStorage.clear();
       sessionStorage.clear();
+
+      // Restaurar permitidos
+      Object.keys(savedData).forEach(key => {
+        localStorage.setItem(key, savedData[key]);
+      });
       window.location.href = '/login';
     }
   }, []);
