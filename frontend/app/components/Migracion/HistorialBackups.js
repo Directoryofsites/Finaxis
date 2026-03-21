@@ -50,7 +50,7 @@ export default function HistorialBackups() {
     };
 
     return (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mt-6 relative overflow-hidden">
+        <div id="historial-backups" className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mt-6 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
                 <FaArchive className="text-8xl" />
             </div>
