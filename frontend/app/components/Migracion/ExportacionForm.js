@@ -98,17 +98,30 @@ export default function ExportacionForm({
   }, []);
 
   const saveAutoConfig = async () => {
-    alert("Iniciando guardado con configuración: " + JSON.stringify(autoConfig));
+    alert("Intentando Guardar (Motor V3)... " + autoConfig.hora_ejecucion);
     try {
-      const res = await apiService.post('/utilidades/backup-auto-config', autoConfig);
-      alert("¡ÉXITO! Respuesta del servidor: " + JSON.stringify(res.data));
+      const token = localStorage.getItem('authToken');
+      const urlEnv = process.env.NEXT_PUBLIC_API_URL || 'https://finaxis.onrender.com';
+      const response = await fetch(`${urlEnv}/api/utilidades/backup-auto-config`, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(autoConfig)
+      });
+      
+      let data = {};
+      try { data = await response.json(); } catch(err){}
+
+      if (!response.ok) {
+          throw new Error(`Servidor rechazó con HTTP ${response.status}: ${JSON.stringify(data)}`);
+      }
+      
+      alert("✅ ¡GUARDADO EXITOSAMENTE EN LA DB! Respuesta: " + JSON.stringify(data));
       setShowAutoModal(false);
     } catch (e) {
-      let errMsg = e.message;
-      if (e.response && e.response.data) {
-          errMsg = JSON.stringify(e.response.data);
-      }
-      alert("Error crítico guardando configuración: " + errMsg);
+      alert("❌ ERROR FALTAL DE RED: " + e.message + " (El navegador o firewall bloqueó la petición antes de llegar al servidor)");
     }
   };
 
