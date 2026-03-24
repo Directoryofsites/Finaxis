@@ -671,70 +671,52 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
     if not db_doc:
         raise HTTPException(status_code=404, detail="Documento no encontrado.")
 
-    # 2. SELECCIÓN DE PLANTILLA
-    tipo_codigo = db_doc.tipo_documento.codigo.lower() if db_doc.tipo_documento else "unknown"
-    
-    es_factura_venta = (tipo_codigo == 'fv' or 
-                        (db_doc.tipo_documento and db_doc.tipo_documento.funcion_especial in ['FACTURA_VENTA']))
+    # 2. SELECCIÓN DE PLANTILLA (Refactorizado para priorizar diseños de usuario)
+    html_content = None
+    tipo_doc = db_doc.tipo_documento
+    tipo_codigo = tipo_doc.codigo.lower() if tipo_doc else "unknown"
+    func_especial = tipo_doc.funcion_especial if tipo_doc else None
 
     print(f"================ DEPURACIÓN PDF ==================")
-    print(f"DOC_ID: {db_doc.id} | NUMERO: {db_doc.numero} | TIPO: {tipo_codigo} | FUNCION: {db_doc.tipo_documento.funcion_especial if db_doc.tipo_documento else 'N/A'}")
+    print(f"DOC_ID: {db_doc.id} | NUMERO: {db_doc.numero} | TIPO: {tipo_codigo} | FUNCION: {func_especial}")
     print(f"DIAN_CUFE: '{db_doc.dian_cufe}' | ESTADO DIAN: '{db_doc.dian_estado}'")
     print(f"==================================================")
 
-    # PRIORIDAD 1: SI ES FACTURA DE VENTA Y TIENE CUFE, USAR PREMIUM FE SIEMPRE
-    if es_factura_venta and db_doc.dian_cufe:
-        print(f"🟢 [PDF] -> TIENE CUFE. Abriendo: premium_fe_template.html (Prioridad Máxima)")
-        try:
-            with open('app/templates/reports/premium_fe_template.html', 'r', encoding='utf-8') as f:
-                html_content = f.read()
-        except Exception as e:
-            print(f"🔴 [PDF ERROR FATAL] falló lectura de HTML: {e}")
-            html_content = "<html><body><h1>Error de Sistema</h1><p>No se pudo leer la plantilla HTML Premium FE.</p></body></html>"
-    else:
-        # PRIORIDAD 2: PLANTILLA EN BASE DE DATOS PARA EL TIPO DE DOCUMENTO
-        print(f"--- DEBUG PDF: Buscando plantilla en BD para Documento {documento_id} --")
-        plantilla = db.query(models_formato).filter(
+    # PRIORIDAD 1: FACTURA ELECTRÓNICA CON CUFE (Formato Estándar Premium)
+    if func_especial == 'FACTURA_VENTA' and db_doc.dian_cufe:
+        print(f"🟢 [PDF] -> TIENE CUFE. Usando premium_fe_template.html")
+        html_content = TEMPLATES_EMPAQUETADOS.get('reports/premium_fe_template.html')
+
+    # PRIORIDAD 2: PLANTILLA PERSONALIZADA EN BASE DE DATOS (Diseñada por el usuario)
+    if not html_content:
+        plantilla_db = db.query(models_formato).filter(
             models_formato.empresa_id == empresa_id, 
             models_formato.tipo_documento_id == db_doc.tipo_documento_id
         ).first()
         
-        if plantilla:
-            print(f"   -> PLANTILLA BD ENCONTRADA: ID {plantilla.id} - {plantilla.nombre}")
-            html_content = plantilla.contenido_html
-        else:
-            print("   -> PLANTILLA BD NO ENCONTRADA. Buscando fallback local...")
-            
-            # Intentamos buscar por código de tipo de documento
-            tipo_codigo = db_doc.tipo_documento.codigo.lower() if db_doc.tipo_documento else "unknown"
-            mapa_plantillas = {
-                'ce': 'reports/comprobante_egreso_template.html',
-                'rc': 'reports/auxiliar_por_recibos_report.html',
-                'fv': 'reports/invoice_template.html',  # FIXED: Nueva plantilla moderna
-            }
-    # --- SELECCIÓN DE PLANTILLA ---
-    # Detectar si es Factura de Venta para aplicar el diseño del Exito solo en el PDF
-    es_factura_venta = False
-    func_especial = db_doc.tipo_documento.funcion_especial
-    if func_especial in ['FACTURA_VENTA', 'cartera_cliente']:
-        es_factura_venta = True
-    elif any(getattr(m.cuenta, 'codigo', '').startswith('4') for m in db_doc.movimientos):
-        es_factura_venta = True
+        if plantilla_db:
+            print(f"🟢 [PDF] -> Usando plantilla personalizada de BD: {plantilla_db.nombre}")
+            html_content = plantilla_db.contenido_html
 
-    # Usar la nueva plantilla del Exito si es venta, de lo contrario la Premium estándar
-    template_key = 'reports/exito_fe_template.html' if es_factura_venta else 'reports/premium_fe_template.html'
-    html_content = TEMPLATES_EMPAQUETADOS.get(template_key)
-
-    # Fallback si por alguna razón no está en el empaquetado (ej. desarrollo local)
+    # PRIORIDAD 3: FALLBACK A PLANTILLAS EMPAQUETADAS SEGÚN COMPORTAMIENTO
     if not html_content:
-        import os
-        template_path = os.path.join(os.path.dirname(__file__), '..', 'templates', 'reports', os.path.basename(template_key))
-        if os.path.exists(template_path):
-            with open(template_path, 'r', encoding='utf-8') as f:
-                html_content = f.read()
-        else:
-            # Fallback final a la plantilla premium que siempre debe existir
-            html_content = TEMPLATES_EMPAQUETADOS.get('reports/premium_fe_template.html', '')
+        # Solo detectamos como venta para el fallback visual si la función especial es explícitamente de venta
+        es_factura_venta = func_especial in ['FACTURA_VENTA', 'cartera_cliente']
+        
+        # Mapeo de plantillas por defecto si no hay diseño personalizado
+        template_key = 'reports/exito_fe_template.html' if es_factura_venta else 'reports/premium_fe_template.html'
+        print(f"🟡 [PDF] -> No hay diseño en BD. Usando fallback: {template_key}")
+        html_content = TEMPLATES_EMPAQUETADOS.get(template_key)
+
+        # Fallback extra por si el empaquetado falla (ej: desarrollo local)
+        if not html_content:
+            template_path = os.path.join(os.path.dirname(__file__), '..', 'templates', 'reports', os.path.basename(template_key))
+            if os.path.exists(template_path):
+                with open(template_path, 'r', encoding='utf-8') as f:
+                    html_content = f.read()
+            else:
+                html_content = TEMPLATES_EMPAQUETADOS.get('reports/premium_fe_template.html', '')
+
     
     # 3. Empresa
     empresa = db.query(models_empresa).filter(models_empresa.id == empresa_id).first()
@@ -771,8 +753,8 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
     if func_especial in funcs_venta: modo_operacion = 'VENTA'
     elif func_especial in funcs_compra: modo_operacion = 'COMPRA'
     
-    # Detección por cuentas si no hay función especial
-    if modo_operacion == 'GENERAL':
+    # Detección por cuentas si no hay función especial (Solo si no es un Comprobante de Contabilidad explícito)
+    if modo_operacion == 'GENERAL' and tipo_codigo != 'cc':
         if any(getattr(m.cuenta, 'codigo', '').startswith('4') for m in db_doc.movimientos):
             modo_operacion = 'VENTA'
         # Si toca inventario (14) o costo (6) al débito
