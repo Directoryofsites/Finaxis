@@ -700,11 +700,20 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
 
     # PRIORIDAD 3: FALLBACK A PLANTILLAS EMPAQUETADAS SEGÚN COMPORTAMIENTO
     if not html_content:
-        # Solo detectamos como venta para el fallback visual si la función especial es explícitamente de venta
+        # Detectar el tipo de plantilla por función especial del documento
         es_factura_venta = func_especial in ['FACTURA_VENTA', 'cartera_cliente']
+        es_factura_compra = func_especial in ['FACTURA_COMPRA', 'cxp_proveedor', 'compras']
         
-        # Mapeo de plantillas por defecto si no hay diseño personalizado
-        template_key = 'reports/exito_fe_template.html' if es_factura_venta else 'reports/premium_fe_template.html'
+        # Seleccionar la plantilla de fallback correcta
+        if es_factura_venta:
+            template_key = 'reports/exito_fe_template.html'
+        elif es_factura_compra:
+            # Facturas de compra también son comerciales (con artículos/cantidades)
+            template_key = 'reports/generic_document_template.html'
+        else:
+            # Documentos CONTABLES (CC, notas, ajustes, etc.) -> formato de Débito/Crédito
+            template_key = 'reports/generic_document_template.html'
+        
         print(f"🟡 [PDF] -> No hay diseño en BD. Usando fallback: {template_key}")
         html_content = TEMPLATES_EMPAQUETADOS.get(template_key)
 
@@ -715,7 +724,7 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
                 with open(template_path, 'r', encoding='utf-8') as f:
                     html_content = f.read()
             else:
-                html_content = TEMPLATES_EMPAQUETADOS.get('reports/premium_fe_template.html', '')
+                html_content = TEMPLATES_EMPAQUETADOS.get('reports/generic_document_template.html', '')
 
     
     # 3. Empresa
