@@ -153,7 +153,7 @@ function GestionarConceptosContent() {
     }
   };
 
-  // --- FIX 3: handleDeleteSelected (Eliminación - Ruta Corregida y Payload Limpio) ---
+  // --- FIX 3: handleDeleteSelected (Eliminación por ID individual - más robusto) ---
   const handleDeleteSelected = async () => {
     if (seleccionados.length === 0) return;
 
@@ -166,15 +166,20 @@ function GestionarConceptosContent() {
     setMensaje('');
 
     try {
-      // FIX CRÍTICO: Eliminamos empresa_id del payload.
-      // FIX RUTA: Cambiamos /conceptos/ a /conceptos-favoritos/
-      const payload = {
-        ids: seleccionados,
-      };
+      // Eliminamos uno por uno usando DELETE /{id} (más confiable que DELETE con body)
+      const resultados = await Promise.allSettled(
+        seleccionados.map(id => apiService.delete(`/conceptos-favoritos/${id}`))
+      );
 
-      const response = await apiService.delete('/conceptos-favoritos/', { data: payload });
+      const exitosos = resultados.filter(r => r.status === 'fulfilled').length;
+      const fallidos = resultados.filter(r => r.status === 'rejected').length;
 
-      setMensaje(response.data.detail);
+      if (fallidos > 0) {
+        setError(`Se eliminaron ${exitosos} concepto(s), pero ${fallidos} no se pudieron eliminar.`);
+      } else {
+        setMensaje(`${exitosos} concepto(s) favorito(s) eliminado(s) exitosamente.`);
+      }
+
       setSeleccionados([]);
       fetchConceptos();
     } catch (err) {

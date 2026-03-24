@@ -94,3 +94,25 @@ def delete_conceptos_favoritos(
     if cantidad == 0:
         raise HTTPException(status_code=404, detail="No se encontraron conceptos para eliminar.")
     return {"detail": f"{cantidad} concepto(s) favorito(s) eliminado(s) exitosamente."}
+
+
+@router.delete("/{concepto_id}")
+def delete_concepto_favorito_by_id(
+    concepto_id: int,
+    db: Session = Depends(get_db),
+    current_user: models_usuario.Usuario = Depends(get_current_user)
+):
+    """
+    Elimina un concepto favorito por su ID.
+    """
+    if not current_user.empresa_id:
+        raise HTTPException(status_code=400, detail="Usuario no tiene empresa asignada.")
+
+    cantidad = service.delete_conceptos_favoritos(
+        db=db,
+        ids=[concepto_id],
+        empresa_id=current_user.empresa_id
+    )
+    if cantidad == 0:
+        raise HTTPException(status_code=404, detail="Concepto favorito no encontrado.")
+    return {"detail": "Concepto favorito eliminado exitosamente."}
