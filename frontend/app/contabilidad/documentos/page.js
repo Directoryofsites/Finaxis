@@ -505,23 +505,21 @@ export default function NuevoDocumentoPage() {
   };
 
   const handleImprimirDocumento = async (docId) => {
-    setMensaje("Generando URL de impresión segura...");
+    setMensaje("Generando PDF del documento...");
     setError('');
     setIsSubmitting(true);
     try {
-      const response = await apiService.post(`/documentos/${docId}/solicitar-impresion`);
-      const { signed_url } = response.data;
-
-      if (signed_url) {
-        // Soporte para URLs relativas del backend
-        const absoluteUrl = signed_url.startsWith('http') ? signed_url : `${API_URL}${signed_url}`;
-        console.log("Abriendo URL de impresión:", absoluteUrl);
-        window.open(absoluteUrl, '_blank');
-        setMensaje("Documento listo para imprimir.");
-      } else {
-        setError("No se recibió una URL de impresión válida.");
-      }
-
+      // Usamos el endpoint /pdf directamente con responseType blob
+      // para evitar la dependencia de API_URL y del endpoint de token firmado (comentado en backend)
+      const response = await apiService.get(`/documentos/${docId}/pdf`, {
+        responseType: 'blob'
+      });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+      // Liberar el objeto URL después de abrirlo
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+      setMensaje("Documento listo para imprimir.");
     } catch (err) {
       setError(err.response?.data?.detail || "Error al solicitar la impresión del documento.");
     } finally {
