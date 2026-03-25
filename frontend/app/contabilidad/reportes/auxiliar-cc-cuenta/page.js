@@ -56,21 +56,18 @@ export default function AuxiliarCcCuentaPage() {
         }
     }, [user, authLoading, router]);
 
-    // Carga de maestros
+    // Carga de maestros - Solo CC al inicio, cuentas se cargan en paralelo pero con prioridad al CC
     useEffect(() => {
         if (isPageReady) {
             const fetchMaestros = async () => {
                 try {
-                    const [resCC, resCuentas] = await Promise.all([
-                        apiService.get(`/centros-costo/get-flat`),
-                        apiService.get(`/plan-cuentas/`)
-                    ]);
-
-                    // Filtramos solo los que permiten movimiento (Hijos)
+                    // Cargar CC primero (pequeño, siempre necesario)
+                    const resCC = await apiService.get(`/centros-costo/get-flat`);
                     const ccFiltrados = resCC.data.filter(cc => cc.permite_movimiento);
                     setCentrosCosto(ccFiltrados);
 
-                    // Aplanar cuentas
+                    // Luego cargar cuentas (puede ser grande, no bloquea la UI)
+                    const resCuentas = await apiService.get(`/plan-cuentas/`);
                     const aplanarCuentas = (cuentasArray) => {
                         let listaPlana = [];
                         cuentasArray.forEach(cuenta => {

@@ -1909,17 +1909,27 @@ def generate_auxiliar_cc_cuenta_report(
     movimientos_data = movimientos_rango_query.order_by(models_mov.cuenta_id, models_doc.fecha, models_doc.numero, models_mov.id).all()
     movimientos_data_dicts = [row._asdict() for row in movimientos_data]
     all_affected_account_ids = set(mov['cuenta_id'] for mov in movimientos_data_dicts)
-    saldos_iniciales_por_cuenta = {}
 
-    for c_id in all_affected_account_ids:
-        saldo_query_cuenta = base_mov_query.filter(
-            models_mov.cuenta_id == c_id,
+    # OPTIMIZADO: Una sola query GROUP BY en vez de N queries (una por cuenta)
+    # Esto evita el problema de N+1 queries que causaba lentitud en produccion
+    saldos_iniciales_por_cuenta = {}
+    if all_affected_account_ids:
+        saldo_inicial_por_cuenta_result = base_mov_query.filter(
+            models_mov.cuenta_id.in_(all_affected_account_ids),
             models_doc.fecha < fecha_inicio
         ).with_entities(
+            models_mov.cuenta_id,
             func.sum(models_mov.debito).label('total_debito'),
             func.sum(models_mov.credito).label('total_credito')
-        ).first()
-        saldos_iniciales_por_cuenta[c_id] = float((saldo_query_cuenta.total_debito or 0) - (saldo_query_cuenta.total_credito or 0))
+        ).group_by(models_mov.cuenta_id).all()
+
+        for row in saldo_inicial_por_cuenta_result:
+            saldos_iniciales_por_cuenta[row.cuenta_id] = float((row.total_debito or 0) - (row.total_credito or 0))
+
+        # Cuentas sin movimientos previos tienen saldo inicial 0
+        for c_id in all_affected_account_ids:
+            if c_id not in saldos_iniciales_por_cuenta:
+                saldos_iniciales_por_cuenta[c_id] = 0.0
 
     current_running_balances_per_account = saldos_iniciales_por_cuenta.copy() 
     final_formatted_movimientos = []
