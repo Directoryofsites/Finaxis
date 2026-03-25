@@ -221,6 +221,7 @@ class CashFlowService:
 
     @staticmethod
     def generate_pdf_statement(db: Session, empresa_id: int, fecha_inicio: date, fecha_fin: date):
+        import os
         from app.models.empresa import Empresa
         from app.services._templates_empaquetados import TEMPLATES_EMPAQUETADOS
         from weasyprint import HTML
@@ -229,12 +230,28 @@ class CashFlowService:
         # 1. Obtener Datos
         data = CashFlowService.calculate_statement(db, empresa_id, fecha_inicio, fecha_fin)
         
-        # 2. Información Empresa
+        # 2. Informacion Empresa
         empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
         
-        # 3. Preparar Contexto
+        # 3. Obtener plantilla (con fallback al archivo en disco si no esta empaquetada)
+        template_key = 'reports/cash_flow_report.html'
+        template_str = TEMPLATES_EMPAQUETADOS.get(template_key)
+        
+        if not template_str:
+            # Intentar leer del archivo en disco
+            template_path = os.path.join(
+                os.path.dirname(__file__), '..', 'templates', 'reports', 'cash_flow_report.html'
+            )
+            if os.path.exists(template_path):
+                with open(template_path, 'r', encoding='utf-8') as f:
+                    template_str = f.read()
+            else:
+                # Fallback: usar la plantilla generica contable
+                template_str = TEMPLATES_EMPAQUETADOS.get('reports/generic_document_template.html', '')
+                print(f"[WARN] cash_flow_report.html no encontrado. Usando plantilla generica.")
+        
+        # 4. Preparar Contexto
         env = Environment(loader=None, autoescape=select_autoescape(['html', 'xml']))
-        template_str = TEMPLATES_EMPAQUETADOS['reports/cash_flow_report.html']
         template = env.from_string(template_str)
         
         context = {
@@ -246,6 +263,6 @@ class CashFlowService:
             "data": data
         }
         
-        # 4. Renderizar PDF
+        # 5. Renderizar PDF
         html_out = template.render(context)
         return HTML(string=html_out).write_pdf()

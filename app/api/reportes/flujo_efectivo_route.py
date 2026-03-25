@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import date
 from app.core.database import get_db
+from app.core.security import get_current_user
+from app.models import usuario as models_usuario
 from app.services.flujo_efectivo import CashFlowService
-# Asumiendo un sistema de autenticación existente
-# from app.core.auth import get_current_user 
 
 router = APIRouter()
 
@@ -18,13 +19,33 @@ def get_cash_flow_statement(
 ):
     """
     Obtiene el reporte de Estado de Flujos de Efectivo (Método Directo Simulado).
-    Clasifica movimientos de cuentas del Grupo 11 (Disponible) en Operación, Inversión y Financiación
-    basado en su contrapartida.
     """
     result = CashFlowService.calculate_statement(db, empresa_id, fecha_inicio, fecha_fin)
     return result
 
-# --- PUNTOS DE ACCESO PARA PDF ---
+
+@router.get("/flujo-efectivo/pdf", summary="Genera el PDF del flujo de efectivo (autenticado)")
+def get_cash_flow_pdf(
+    fecha_inicio: date,
+    fecha_fin: date,
+    db: Session = Depends(get_db),
+    current_user: models_usuario.Usuario = Depends(get_current_user)
+):
+    """
+    Genera y retorna el PDF del Estado de Flujos de Efectivo.
+    Usa autenticación JWT estándar, sin tokens firmados.
+    """
+    empresa_id = current_user.empresa_id
+    pdf_content = CashFlowService.generate_pdf_statement(db, empresa_id, fecha_inicio, fecha_fin)
+    filename = f"Flujo_Efectivo_{fecha_inicio}_{fecha_fin}.pdf"
+    return Response(
+        content=pdf_content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename={filename}"}
+    )
+
+
+# --- Endpoints legacy de token firmado (mantenidos por compatibilidad pero redirigen al nuevo flujo) ---
 
 @router.get("/flujo-efectivo/get-signed-url")
 def get_signed_cash_flow_url(
@@ -37,7 +58,6 @@ def get_signed_cash_flow_url(
     
     pdf_endpoint = "/api/analisis/flujo-efectivo/imprimir"
     
-    # Generar Token
     signed_token = reports_service.generate_signed_report_url(
         endpoint=pdf_endpoint,
         expiration_seconds=60,
@@ -54,10 +74,8 @@ def print_cash_flow_pdf(
     db: Session = Depends(get_db)
 ):
     from app.services import reports as reports_service
-    from fastapi.responses import Response
     from fastapi import HTTPException, status
     
-    # 1. Verificar Token
     verified_params = reports_service.verify_signed_report_url(
         signed_token, 
         "/api/analisis/flujo-efectivo/imprimir"
@@ -69,14 +87,11 @@ def print_cash_flow_pdf(
             detail="URL expirada o inválida"
         )
         
-    # 2. Extraer parámetros seguros
     fecha_inicio = date.fromisoformat(verified_params["fecha_inicio"])
     fecha_fin = date.fromisoformat(verified_params["fecha_fin"])
     empresa_id = verified_params["empresa_id"]
     
-    # 3. Generar PDF
     pdf_content = CashFlowService.generate_pdf_statement(db, empresa_id, fecha_inicio, fecha_fin)
-    
     filename = f"Flujo_Efectivo_{fecha_inicio}_{fecha_fin}.pdf"
     
     return Response(

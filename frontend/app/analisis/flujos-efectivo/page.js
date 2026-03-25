@@ -55,25 +55,27 @@ export default function FlujoEfectivoPage() {
         }
 
         try {
-            // 1. Obtener URL Firmada
-            const signRes = await apiService.get('/analisis/flujo-efectivo/get-signed-url', {
+            toast.info("Generando PDF...");
+            // Usar endpoint autenticado directo con blob (sin tokens firmados)
+            const res = await apiService.get('/analisis/flujo-efectivo/pdf', {
                 params: {
                     fecha_inicio: fechaInicio,
-                    fecha_fin: fechaFin,
-                    empresa_id: user.empresaId
-                }
+                    fecha_fin: fechaFin
+                },
+                responseType: 'blob'
             });
 
-            const token = signRes.data.signed_url_token;
-
-            // 2. Abrir en nueva pestaña
-            const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
-            const pdfUrl = `${baseUrl}/api/analisis/flujo-efectivo/imprimir?signed_token=${token}`;
-            window.open(pdfUrl, '_blank');
-
+            const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Flujo_Efectivo_${fechaInicio}_${fechaFin}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error("Error Export PDF:", error);
-            toast.error("No se pudo iniciar la descarga del PDF.");
+            toast.error("No se pudo generar el PDF.");
         }
     };
 
