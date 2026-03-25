@@ -9,6 +9,7 @@ class FiltrosBalancePrueba(BaseModel):
     centro_costo_id: Optional[int] = None
     nivel_maximo: int
     filtro_cuentas: str # Valores esperados: 'TODAS', 'CON_MOVIMIENTO', 'CON_SALDO_O_MOVIMIENTO'
+    cuenta_prefijo: Optional[str] = None
 
 class CuentaBalancePrueba(BaseModel):
     """ Define la estructura de una fila individual en el reporte. """

@@ -75,8 +75,12 @@ def decode_signed_report_token(signed_token: str, max_age_seconds: int = 300) ->
 
 # --- LÓGICA PARA EL BALANCE DE PRUEBA POR CUENTAS (Sin cambios) ---
 def generate_balance_de_prueba_report(db: Session, empresa_id: int, filtros: schemas_bce.FiltrosBalancePrueba) -> Dict[str, Any]:
-    # (El código de esta función no necesita cambios, ya que solo prepara datos)
-    cuentas = db.query(PlanCuenta).filter(PlanCuenta.empresa_id == empresa_id).order_by(PlanCuenta.codigo).all()
+    # Filtrar cuentas base si hay prefijo
+    q_cuentas = db.query(PlanCuenta).filter(PlanCuenta.empresa_id == empresa_id)
+    if getattr(filtros, 'cuenta_prefijo', None):
+        q_cuentas = q_cuentas.filter(PlanCuenta.codigo.startswith(filtros.cuenta_prefijo))
+    cuentas = q_cuentas.order_by(PlanCuenta.codigo).all()
+
     cuentas_map = {c.id: {
         "data": schemas_bce.CuentaBalancePrueba(
             codigo=c.codigo, nombre=c.nombre, nivel=c.nivel,
@@ -87,9 +91,8 @@ def generate_balance_de_prueba_report(db: Session, empresa_id: int, filtros: sch
     } for c in cuentas}
     root_cuentas = []
     for c_id, c_node in cuentas_map.items():
-        if c_node['parent_id']:
-            if c_node['parent_id'] in cuentas_map:
-                cuentas_map[c_node['parent_id']]['children'].append(c_id)
+        if c_node['parent_id'] and c_node['parent_id'] in cuentas_map:
+            cuentas_map[c_node['parent_id']]['children'].append(c_id)
         else:
             root_cuentas.append(c_id)
     saldos_iniciales_q = db.query(
@@ -100,6 +103,8 @@ def generate_balance_de_prueba_report(db: Session, empresa_id: int, filtros: sch
         Documento.fecha < filtros.fecha_inicio,
         Documento.anulado == False
     )
+    if getattr(filtros, 'cuenta_prefijo', None):
+        saldos_iniciales_q = saldos_iniciales_q.join(PlanCuenta, MovimientoContable.cuenta_id == PlanCuenta.id).filter(PlanCuenta.codigo.startswith(filtros.cuenta_prefijo))
     if filtros.centro_costo_id:
         saldos_iniciales_q = saldos_iniciales_q.filter(MovimientoContable.centro_costo_id == filtros.centro_costo_id)
     saldos_iniciales_q = saldos_iniciales_q.group_by(MovimientoContable.cuenta_id).all()
@@ -115,6 +120,8 @@ def generate_balance_de_prueba_report(db: Session, empresa_id: int, filtros: sch
         Documento.fecha.between(filtros.fecha_inicio, filtros.fecha_fin),
         Documento.anulado == False
     )
+    if getattr(filtros, 'cuenta_prefijo', None):
+        movimientos_periodo_q = movimientos_periodo_q.join(PlanCuenta, MovimientoContable.cuenta_id == PlanCuenta.id).filter(PlanCuenta.codigo.startswith(filtros.cuenta_prefijo))
     if filtros.centro_costo_id:
         movimientos_periodo_q = movimientos_periodo_q.filter(MovimientoContable.centro_costo_id == filtros.centro_costo_id)
     movimientos_periodo_q = movimientos_periodo_q.group_by(MovimientoContable.cuenta_id).all()

@@ -47,7 +47,8 @@ function BalancePruebaContent() {
     fecha_fin: new Date().toISOString().split('T')[0],
     centro_costo_id: '',
     nivel_maximo: 7, // DIVORCIO DEL NIVEL 1: Por defecto detalle máximo por petición del usuario (Juez)
-    filtro_cuentas: 'CON_SALDO_O_MOVIMIENTO'
+    filtro_cuentas: 'CON_SALDO_O_MOVIMIENTO',
+    cuenta_prefijo: ''
   });
 
   const [reportData, setReportData] = useState(null);
@@ -235,7 +236,7 @@ function BalancePruebaContent() {
             <h2 className="text-lg font-bold text-gray-700">Configuración del Reporte</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
             {/* Fecha Inicio */}
             <div>
               <label className={labelClass}>Desde</label>
@@ -293,6 +294,23 @@ function BalancePruebaContent() {
                   <option value="TODAS">Todas las Cuentas</option>
                 </select>
                 <FaFilter className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Código de Cuenta a Filtrar */}
+            <div>
+              <label className={labelClass}>Código Cuenta</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  name="cuenta_prefijo"
+                  value={filtros.cuenta_prefijo}
+                  onChange={handleFiltroChange}
+                  placeholder="Ej: 1, 3, 2408"
+                  className={inputClass}
+                  autoComplete="off"
+                />
+                <FaSearch className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
               </div>
             </div>
           </div>
