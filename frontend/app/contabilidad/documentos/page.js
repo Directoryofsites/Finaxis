@@ -173,6 +173,10 @@ export default function NuevoDocumentoPage() {
     return parseFloat(valorAAbonar) || 0;
   }, [valorAAbonar]);
 
+  const totalFacturasPendientes = useMemo(() => {
+    return facturasPendientes.reduce((sum, f) => sum + (parseFloat(f.saldo_pendiente) || 0), 0);
+  }, [facturasPendientes]);
+
   // Identificar si el tipo de documento seleccionado es electrónico (DS o FE)
   const isDocElectronico = useMemo(() => {
     const td = maestros.tiposDocumento.find(t => t.id === parseInt(tipoDocumentoId));
@@ -1356,6 +1360,10 @@ export default function NuevoDocumentoPage() {
                       </tbody>
                     </table>
                     <div className="bg-slate-50 px-6 py-4 flex justify-end gap-8 border-t border-gray-200">
+                      <div className="text-right border-r border-gray-200 pr-8">
+                        <p className="text-xs font-bold text-indigo-500 uppercase">Total Adeudado</p>
+                        <p className="font-mono text-xl font-bold text-indigo-700">${totalFacturasPendientes.toLocaleString('es-CO', { minimumFractionDigits: 2 })}</p>
+                      </div>
                       <div className="text-right">
                         <p className="text-xs font-bold text-gray-500 uppercase">Total a Abonar</p>
                         <p className="font-mono text-xl font-bold text-gray-800">${totalAbono.toLocaleString('es-CO', { minimumFractionDigits: 2 })}</p>
