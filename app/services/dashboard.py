@@ -624,52 +624,47 @@ def get_unified_saldos(db: Session, empresa_id: int, fecha_start: date, fecha_en
 
 def build_hierarchical_data(saldos: Dict[str, float], names_map: Dict[str, str]) -> Dict[str, float]:
     """
-    Genera saldos para los padres sumando los hijos.
-    Retorna un dict expandido {codigo: saldo} que incluye Clases, Grupos, Cuentas.
+    Genera saldos en las cuentas padre sumando recursivamente los hijos (mayorizacion PUC).
+
+    CORRECCION: La version anterior tenia doble conteo porque:
+      1. Leia expanded_saldos[code] mientras modificaba ese mismo dict.
+      2. El while tenia DOS recortes por iteracion, saltando niveles.
+
+    Esta version itera sobre el dict ORIGINAL invariable y sube UN nivel a la vez.
+    Jerarquia PUC Colombia: Auxiliar(6+) -> Subcuenta(6) -> Cuenta(4) -> Grupo(2) -> Clase(1)
     """
-    expanded_saldos = saldos.copy()
-    
-    # Identificar todos los códigos posibles padres
-    # Iteramos sobre las cuentas con saldo
-    keys = list(expanded_saldos.keys()) 
-    
-    for code in keys:
-        val = expanded_saldos[code]
-        # Propagar hacia arriba
-        # Ej: 110505 -> 1105 -> 11 -> 1
-        current = code
-        while len(current) > 1:
-            # Recortar (siguiente nivel padre estándar Colombia: 6->4->2->1)
-            if len(current) > 6: current = current[:6] # Subcuenta (o auxiliar largo)
-            elif len(current) > 4: current = current[:4] # Cuenta
-            elif len(current) > 2: current = current[:2] # Grupo
-            elif len(current) > 1: current = current[:1] # Clase
-            
-            # Si cortamos y es lo mismo (caso borde), break
-            if current == code: break ## Evitar loop si la logica de recorte falla
-            
-            # Acumular
-            expanded_saldos[current] = expanded_saldos.get(current, 0.0) + val
-            
-            # Preparar siguiente iteración padre
-            # Un paso a la vez hacia arriba? 
-            # El while con lógica de recorte asegura ir subiendo.
-            # Pero debemos tener cuidado de no sumar doble si la DB ya tenía saldos en niveles intermedios 
-            # (normalmente Contapy guarda movimientos solo en auxiliares, así que esto es seguro).
-            
-            # Ajuste de steps para loop:
-            if len(current) <= 1: break # Ya llegamos a la clase
-            
-            # Próximo recorte manual para el while
-            prev_len = len(current)
-            if prev_len > 6: current = current[:6]
-            elif prev_len > 4: current = current[:4]
-            elif prev_len > 2: current = current[:2]
-            else: current = current[:1]
-            
-            if len(current) == prev_len: break # Safety
+    # 1. Comenzar con los saldos originales (cuentas con movimientos reales)
+    expanded_saldos = dict(saldos)
+
+    # 2. CRITICO: iteramos sobre 'saldos' (original inmutable), NO sobre 'expanded_saldos'
+    for code, val in saldos.items():
+        if not val:
+            continue
+
+        current = str(code)
+
+        # Subir UN nivel a la vez hasta la Clase (1 digito)
+        while True:
+            n = len(current)
+            if n > 6:
+                parent = current[:6]      # Auxiliar largo -> Subcuenta (6 digitos)
+            elif n > 4:
+                parent = current[:4]      # Subcuenta     -> Cuenta    (4 digitos)
+            elif n > 2:
+                parent = current[:2]      # Cuenta        -> Grupo     (2 digitos)
+            elif n > 1:
+                parent = current[:1]      # Grupo         -> Clase     (1 digito)
+            else:
+                break  # Ya estamos en Clase (1 digito), no hay padre
+
+            # Acumular el valor de la hoja en el padre
+            expanded_saldos[parent] = expanded_saldos.get(parent, 0.0) + val
+
+            # El padre se convierte en el siguiente "current"
+            current = parent
 
     return expanded_saldos
+
 
 def get_horizontal_analysis(db: Session, empresa_id: int, p1_start: date, p1_end: date, p2_start: date, p2_end: date):
     # 1. Obtener saldos crudos
