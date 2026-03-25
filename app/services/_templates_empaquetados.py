@@ -3528,7 +3528,7 @@ TEMPLATES_EMPAQUETADOS = {
             </td>
             <td width="40%" valign="top" align="right">
                 <div class="doc-type-box">{{documento.tipo_nombre}}</div>
-                <div class="doc-number">NÂ° {{documento.consecutivo}}</div>
+                <div class="doc-number">N° {{documento.consecutivo}}</div>
                 <div style="text-align: right; margin-top: 5px;">Fecha: <strong>{{documento.fecha_emision}}</strong>
                 </div>
             </td>
@@ -3557,9 +3557,9 @@ TEMPLATES_EMPAQUETADOS = {
         <thead>
             <tr>
                 <th width="15%">Cuenta</th>
-                <th width="45%">DescripciÃ³n</th>
-                <th width="20%" class="text-right">DÃ©bito</th>
-                <th width="20%" class="text-right">CrÃ©dito</th>
+                <th width="45%">Descripción</th>
+                <th width="20%" class="text-right">Débito</th>
+                <th width="20%" class="text-right">Crédito</th>
             </tr>
         </thead>
         <tbody>
@@ -3584,29 +3584,29 @@ TEMPLATES_EMPAQUETADOS = {
 
     <div class="signatures">
         <div class="sig-col">
-            <div class="sig-line">ElaborÃ³</div>
+            <div class="sig-line">Elaboró</div>
         </div>
         <div class="sig-col">
-            <div class="sig-line">RevisÃ³</div>
+            <div class="sig-line">Revisó</div>
         </div>
         <div class="sig-col">
-            <div class="sig-line">AprobÃ³</div>
+            <div class="sig-line">Aprobó</div>
         </div>
         <div class="sig-col">
-            <div class="sig-line">ContabilizÃ³</div>
+            <div class="sig-line">Contabilizó</div>
         </div>
     </div>
 
     {% if documento.dian_cufe %}
     <div style="margin-top: 30px; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 9px; color: #555;">
-        <strong>InformaciÃ³n Fiscal (DIAN/Proveedor):</strong><br>
+        <strong>Información Fiscal (DIAN/Proveedor):</strong><br>
         <strong>{% if 'SOPORTE' in documento.tipo_nombre.upper() %}CUDS{% else %}CUFE{% endif %}:</strong> <span
             style="font-family: monospace;">{{documento.dian_cufe}}</span><br>
         <strong>Estado DIAN:</strong> {{documento.dian_estado}}<br>
         {% if not documento.dian_xml_url %}
         <br>
-        <em>Nota: Documento generado en entorno de Pruebas/HabilitaciÃ³n (Sin URL pÃºblica directa). Este documento es
-            vÃ¡lido como soporte interno.</em>
+        <em>Nota: Documento generado en entorno de Pruebas/Habilitación (Sin URL pública directa). Este documento es
+            válido como soporte interno.</em>
         {% endif %}
     </div>
     {% endif %}
