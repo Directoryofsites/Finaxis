@@ -232,37 +232,158 @@ class CashFlowService:
         
         # 2. Informacion Empresa
         empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+        empresa_nombre = empresa.razon_social if empresa else "EMPRESA DESCONOCIDA"
+        empresa_nit = empresa.nit if empresa else "N/A"
+        empresa_dir = getattr(empresa, 'direccion', '') or ''
+        empresa_tel = getattr(empresa, 'telefono', '') or ''
         
-        # 3. Obtener plantilla (con fallback al archivo en disco si no esta empaquetada)
+        # 3. Obtener plantilla (con fallback a template inline si no esta en disco ni empaquetada)
         template_key = 'reports/cash_flow_report.html'
         template_str = TEMPLATES_EMPAQUETADOS.get(template_key)
         
         if not template_str:
-            # Intentar leer del archivo en disco
             template_path = os.path.join(
                 os.path.dirname(__file__), '..', 'templates', 'reports', 'cash_flow_report.html'
             )
             if os.path.exists(template_path):
                 with open(template_path, 'r', encoding='utf-8') as f:
                     template_str = f.read()
-            else:
-                # Fallback: usar la plantilla generica contable
-                template_str = TEMPLATES_EMPAQUETADOS.get('reports/generic_document_template.html', '')
-                print(f"[WARN] cash_flow_report.html no encontrado. Usando plantilla generica.")
+        
+        if not template_str:
+            # Generar template inline para flujo de efectivo
+            template_str = CashFlowService._get_inline_template()
         
         # 4. Preparar Contexto
         env = Environment(loader=None, autoescape=select_autoescape(['html', 'xml']))
         template = env.from_string(template_str)
         
         context = {
-            "empresa_nombre": empresa.razon_social if empresa else "EMPRESA DESCONOCIDA",
-            "empresa_nit": empresa.nit if empresa else "N/A",
-            "fecha_inicio": fecha_inicio.strftime('%Y-%m-%d'),
-            "fecha_fin": fecha_fin.strftime('%Y-%m-%d'),
-            "fecha_generacion": date.today().strftime('%Y-%m-%d'),
+            # Variables de string directo (para template inline)
+            "empresa_nombre": empresa_nombre,
+            "empresa_nit": empresa_nit,
+            "empresa_dir": empresa_dir,
+            "empresa_tel": empresa_tel,
+            # Objeto empresa (para templates genericos que lo usen)
+            "empresa": type('EmpresaProxy', (), {
+                'razon_social': empresa_nombre,
+                'nit': empresa_nit,
+                'direccion': empresa_dir,
+                'telefono': empresa_tel,
+                'logo_url': getattr(empresa, 'logo_url', None) if empresa else None,
+                'email': getattr(empresa, 'email', '') if empresa else '',
+            })(),
+            "fecha_inicio": fecha_inicio.strftime('%d/%m/%Y'),
+            "fecha_fin": fecha_fin.strftime('%d/%m/%Y'),
+            "fecha_generacion": date.today().strftime('%d/%m/%Y'),
             "data": data
         }
         
         # 5. Renderizar PDF
         html_out = template.render(context)
         return HTML(string=html_out).write_pdf()
+
+    @staticmethod
+    def _get_inline_template():
+        """Plantilla HTML inline para el Estado de Flujos de Efectivo."""
+        return '''
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { size: letter; margin: 2cm; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 10pt; color: #333; }
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .header h1 { font-size: 14pt; text-transform: uppercase; margin: 0 0 4px 0; }
+        .header h2 { font-size: 12pt; margin: 0 0 4px 0; color: #444; }
+        .header p { margin: 2px 0; font-size: 9pt; color: #666; }
+        .section { margin-bottom: 20px; }
+        .section-title { background: #2c3e50; color: white; padding: 6px 10px; font-size: 10pt; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 0; }
+        th { background: #ecf0f1; padding: 5px 10px; font-size: 9pt; border-bottom: 1px solid #bdc3c7; }
+        td { padding: 5px 10px; font-size: 9pt; border-bottom: 1px solid #eee; }
+        .text-right { text-align: right; font-family: monospace; }
+        .total-row td { font-weight: bold; border-top: 1px solid #333; background: #f8f9fa; }
+        .summary { margin-top: 20px; border: 1px solid #333; }
+        .summary tr:last-child td { font-weight: bold; font-size: 11pt; background: #2c3e50; color: white; }
+        .positive { color: #27ae60; } .negative { color: #c0392b; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa_nombre }}</h1>
+        <h2>NIT: {{ empresa_nit }}</h2>
+        {% if empresa_dir %}<p>{{ empresa_dir }} &nbsp;|&nbsp; Tel: {{ empresa_tel }}</p>{% endif %}
+        <h2 style="margin-top:8px;color:#2c3e50;">Estado de Flujos de Efectivo</h2>
+        <p>Periodo: {{ fecha_inicio }} al {{ fecha_fin }} &nbsp;&nbsp; Generado: {{ fecha_generacion }}</p>
+    </div>
+
+    {% macro fmt(val) %}
+        {% if val is number and val < 0 %}
+            <span class="negative">({{ "${:,.0f}".format(val|abs) }})</span>
+        {% elif val is number %}
+            {{ "${:,.0f}".format(val) }}
+        {% else %}
+            {{ val }}
+        {% endif %}
+    {% endmacro %}
+
+    <!-- Actividades de Operacion -->
+    <div class="section">
+        <div class="section-title">ACTIVIDADES DE OPERACION</div>
+        <table>
+            <thead><tr><th class="text-left">Concepto</th><th class="text-right">Valor</th></tr></thead>
+            <tbody>
+            {% for item in data.flujos_operacion.detalles %}
+            <tr><td>{{ item.concepto }}</td><td class="text-right">{{ "${:,.0f}".format(item.valor|float) }}</td></tr>
+            {% else %}
+            <tr><td colspan="2" style="text-align:center;color:#999;font-style:italic;">Sin movimientos</td></tr>
+            {% endfor %}
+            <tr class="total-row"><td>Flujo Neto de Operacion</td><td class="text-right">{{ "${:,.0f}".format(data.flujos_operacion.total|float) }}</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Actividades de Inversion -->
+    <div class="section">
+        <div class="section-title">ACTIVIDADES DE INVERSION</div>
+        <table>
+            <thead><tr><th class="text-left">Concepto</th><th class="text-right">Valor</th></tr></thead>
+            <tbody>
+            {% for item in data.flujos_inversion.detalles %}
+            <tr><td>{{ item.concepto }}</td><td class="text-right">{{ "${:,.0f}".format(item.valor|float) }}</td></tr>
+            {% else %}
+            <tr><td colspan="2" style="text-align:center;color:#999;font-style:italic;">Sin movimientos</td></tr>
+            {% endfor %}
+            <tr class="total-row"><td>Flujo Neto de Inversion</td><td class="text-right">{{ "${:,.0f}".format(data.flujos_inversion.total|float) }}</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Actividades de Financiacion -->
+    <div class="section">
+        <div class="section-title">ACTIVIDADES DE FINANCIACION</div>
+        <table>
+            <thead><tr><th class="text-left">Concepto</th><th class="text-right">Valor</th></tr></thead>
+            <tbody>
+            {% for item in data.flujos_financiacion.detalles %}
+            <tr><td>{{ item.concepto }}</td><td class="text-right">{{ "${:,.0f}".format(item.valor|float) }}</td></tr>
+            {% else %}
+            <tr><td colspan="2" style="text-align:center;color:#999;font-style:italic;">Sin movimientos</td></tr>
+            {% endfor %}
+            <tr class="total-row"><td>Flujo Neto de Financiacion</td><td class="text-right">{{ "${:,.0f}".format(data.flujos_financiacion.total|float) }}</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Conciliacion -->
+    <table class="summary">
+        <tr><td style="padding:6px 10px;">Saldo Inicial de Efectivo</td><td class="text-right" style="padding:6px 10px;">{{ "${:,.0f}".format(data.saldo_inicial|float) }}</td></tr>
+        <tr><td style="padding:6px 10px;">(+) Flujos Netos del Periodo</td><td class="text-right" style="padding:6px 10px;">{{ "${:,.0f}".format(data.flujos_netos_totales|float) }}</td></tr>
+        <tr><td style="padding:8px 10px;">SALDO FINAL DE EFECTIVO</td><td class="text-right" style="padding:8px 10px;">{{ "${:,.0f}".format(data.saldo_final_calculado|float) }}</td></tr>
+    </table>
+
+    <div style="text-align:center;font-size:8pt;color:#aaa;margin-top:20px;">Generado por Finaxis Cloud</div>
+</body>
+</html>
+        '''
