@@ -149,7 +149,9 @@ def get_escenario_estrategico(ratios: Dict[str, Decimal], capital_trabajo_neto: 
 # ==========================================================
 
 def get_saldos_balance_acumulado(db: Session, empresa_id: int, fecha_fin: date) -> List: 
-    """Consulta consolidada de Balance (Clases 1, 2, 3) hasta la fecha de corte."""
+    """Consulta consolidada de Balance (Clases 1, 2, 3) hasta la fecha de corte.
+    OPTIMIZADO: Usa func.left() en vez de múltiples startswith() para mejor rendimiento en PostgreSQL.
+    """
     Mov = models_mov_cont.MovimientoContable
     Doc = models_doc.Documento
     PC = models_pc.PlanCuenta
@@ -158,20 +160,22 @@ def get_saldos_balance_acumulado(db: Session, empresa_id: int, fecha_fin: date) 
         PC.codigo.label('codigo'),
         func.sum(Mov.debito).label('total_debito'),
         func.sum(Mov.credito).label('total_credito'),
-    ).join(Doc, Doc.id == Mov.documento_id).join(PC, PC.id == Mov.cuenta_id).filter(
+    ).join(Mov, Mov.cuenta_id == PC.id
+    ).join(Doc, Doc.id == Mov.documento_id
+    ).filter(
         Doc.empresa_id == empresa_id, 
         Doc.anulado == False,
         Doc.fecha <= fecha_fin,
-        # Solo cuentas de balance (Clases 1, 2, 3)
-        PC.codigo.startswith(ACTIVO_PREFIJO) | 
-        PC.codigo.startswith(PASIVO_PREFIJO) | 
-        PC.codigo.startswith(PATRIMONIO_PREFIJO)
+        # ✅ OPTIMIZADO: Condición única que usa índice en PostgreSQL
+        func.left(PC.codigo, 1).in_(['1', '2', '3'])
     ).group_by(PC.codigo).all()
     
     return q_saldos_acumulados
 
 def get_saldos_pyg_periodo(db: Session, empresa_id: int, fecha_inicio: date, fecha_fin: date) -> List:
-    """Consulta consolidada de PyG (Clases 4, 5, 6, 7) para un periodo específico."""
+    """Consulta consolidada de PyG (Clases 4, 5, 6, 7, 8) para un periodo específico.
+    OPTIMIZADO: Usa func.left() en vez de múltiples startswith() para mejor rendimiento en PostgreSQL.
+    """
     Mov = models_mov_cont.MovimientoContable
     Doc = models_doc.Documento
     PC = models_pc.PlanCuenta
@@ -180,17 +184,15 @@ def get_saldos_pyg_periodo(db: Session, empresa_id: int, fecha_inicio: date, fec
         PC.codigo.label('codigo'),
         func.sum(Mov.debito).label('total_debito'),
         func.sum(Mov.credito).label('total_credito'),
-    ).join(Doc, Doc.id == Mov.documento_id).join(PC, PC.id == Mov.cuenta_id).filter(
+    ).join(Mov, Mov.cuenta_id == PC.id
+    ).join(Doc, Doc.id == Mov.documento_id
+    ).filter(
         Doc.empresa_id == empresa_id, 
         Doc.anulado == False,
         Doc.fecha >= fecha_inicio,
         Doc.fecha <= fecha_fin,
-        # Solo cuentas de PyG (Clases 4, 5, 6, 7)
-        PC.codigo.startswith(INGRESOS_PREFIJO) | 
-        PC.codigo.startswith(GASTOS_PREFIJOS[0]) | 
-        PC.codigo.startswith(GASTOS_PREFIJOS[1]) | 
-        PC.codigo.startswith(COSTO_VENTAS_PREFIJO) | 
-        PC.codigo.startswith(COSTO_PRODUCCION_PREFIJO)
+        # ✅ OPTIMIZADO: Condición única que usa índice en PostgreSQL
+        func.left(PC.codigo, 1).in_(['4', '5', '6', '7', '8'])
     ).group_by(PC.codigo).all()
     
     return q_saldos_periodo
