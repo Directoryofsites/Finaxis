@@ -301,6 +301,19 @@ def recalcular_saldos_masivo_route(db: Session = Depends(get_db), current_user: 
 
 
 # ==============================================================================
+# === ENDPOINTS CRUD PARA MOVIMIENTOS DIRECTOS DE KARDEX (HUÉRFANOS) ===
+# ==============================================================================
+
+@router.put("/movimientos-kardex/{movimiento_id}", dependencies=[Depends(has_permission("inventario:kardex"))])
+def update_movimiento_kardex_route(movimiento_id: int, update_data: schemas.MovimientoInventarioUpdate, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
+    return service_inventario.update_movimiento_inventario_directo(db=db, movimiento_id=movimiento_id, update_data=update_data, empresa_id=current_user.empresa_id)
+
+@router.delete("/movimientos-kardex/{movimiento_id}", dependencies=[Depends(has_permission("inventario:kardex"))])
+def delete_movimiento_kardex_route(movimiento_id: int, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
+    return service_inventario.delete_movimiento_inventario_directo(db=db, movimiento_id=movimiento_id, empresa_id=current_user.empresa_id)
+
+
+# ==============================================================================
 # === ZONA DE REPORTES PDF (CON INSTRUMENTACIÓN DEBUG) ===
 # ==============================================================================
 

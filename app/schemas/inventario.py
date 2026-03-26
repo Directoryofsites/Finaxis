@@ -275,3 +275,9 @@ class PrecioVentaCalculado(BaseModel):
 
 # Alias para compatibilidad
 ProductoResponse = Producto
+
+# --- SCHEMA PARA ACTUALIZAR MOVIMIENTO DIRECTO (KARDEX) ---
+class MovimientoInventarioUpdate(BaseModel):
+    fecha: Optional[datetime] = None
+    cantidad: Optional[float] = Field(None, ge=0)
+    costo_unitario: Optional[float] = Field(None, ge=0)

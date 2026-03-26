@@ -11,10 +11,12 @@ import {
     FaExclamationTriangle,
     FaHistory,
     FaBook,
+    FaEdit,
+    FaTrash,
 } from 'react-icons/fa';
 
 import { getKardexPorProducto, generarPdfKardex } from '@/lib/reportesInventarioService';
-import { getBodegas } from '@/lib/bodegaService';
+import { getBodegas, updateMovimientoKardex, deleteMovimientoKardex } from '@/lib/inventarioService';
 
 
 // Estilos Reusables
@@ -46,6 +48,11 @@ const KardexContent = () => {
     const [isExportingPdf, setIsExportingPdf] = useState(false);
     const [bodegas, setBodegas] = useState([]);
     const [bodegaSeleccionadaId, setBodegaSeleccionadaId] = useState('');
+
+    // --- ESTADO PARA MODAL DE EDICIÓN DE MOV DIRECTO ---
+    const [editingMovement, setEditingMovement] = useState(null);
+    const [editForm, setEditForm] = useState({ fecha: '', cantidad: '', costo_unitario: '' });
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
 
     // --- LÓGICA DE DATOS (INTACTA) ---
 
@@ -171,6 +178,51 @@ const KardexContent = () => {
         await fetchKardex(newBodegaId);
     };
 
+    // --- FUNCIONES DE EDICIÓN/ELIMINACIÓN DE MOVIMIENTOS HUÉRFANOS ---
+    const handleEditClick = (item) => {
+        setEditingMovement(item);
+        // La fecha en BD viene con hora, se necesita extraer YYYY-MM-DD local
+        const dateObj = new Date(item.fecha);
+        const yyyy = dateObj.getUTCFullYear();
+        const mm = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+        const dd = String(dateObj.getUTCDate()).padStart(2, '0');
+        const formattedDate = `${yyyy}-${mm}-${dd}`;
+
+        setEditForm({
+            fecha: formattedDate,
+            cantidad: item.entrada_cantidad || item.salida_cantidad || 0,
+            costo_unitario: item.entrada_costo_unit || item.salida_costo_unit || 0
+        });
+    };
+
+    const handleDeleteClick = async (item) => {
+        if (!window.confirm("¿Está seguro de eliminar este Movimiento Directo? Esto afectará los saldos posteriores.")) return;
+        try {
+            await deleteMovimientoKardex(item.id);
+            await fetchKardex(bodegaSeleccionadaId); // Refrescar kardex
+        } catch (err) {
+            alert(err.response?.data?.detail || "Error al eliminar el movimiento");
+        }
+    };
+
+    const submitEditForm = async (e) => {
+        e.preventDefault();
+        setIsSavingEdit(true);
+        try {
+            await updateMovimientoKardex(editingMovement.id, {
+                fecha: new Date(editForm.fecha + 'T00:00:00Z').toISOString(),
+                cantidad: parseFloat(editForm.cantidad),
+                costo_unitario: parseFloat(editForm.costo_unitario)
+            });
+            setEditingMovement(null);
+            await fetchKardex(bodegaSeleccionadaId);
+        } catch (err) {
+            alert(err.response?.data?.detail || "Error al actualizar el movimiento");
+        } finally {
+            setIsSavingEdit(false);
+        }
+    };
+
     // --- RENDERIZADO ---
 
     if (loading) {
@@ -277,7 +329,8 @@ const KardexContent = () => {
                                             <th className="py-3 px-4 text-left border-r border-gray-200">Bodega</th>
                                             <th colSpan="2" className="py-2 text-center border-r border-emerald-200 bg-emerald-50 text-emerald-700">Entradas</th>
                                             <th colSpan="3" className="py-2 text-center border-r border-rose-200 bg-rose-50 text-rose-700">Salidas</th>
-                                            <th colSpan="3" className="py-2 text-center bg-indigo-50 text-indigo-700">Saldo</th>
+                                            <th colSpan="3" className="py-2 text-center border-r border-indigo-200 bg-indigo-50 text-indigo-700">Saldo</th>
+                                            <th className="py-2 text-center font-bold text-gray-700 bg-slate-100 w-24">Acciones</th>
                                         </tr>
                                         <tr className="text-[10px] font-bold uppercase text-gray-500 border-b border-gray-200">
                                             <th colSpan="4" className="bg-slate-50 border-r border-gray-200"></th>
@@ -291,7 +344,9 @@ const KardexContent = () => {
                                             {/* Saldos */}
                                             <th className="text-right px-2 py-1 bg-indigo-50/50 border-r border-indigo-100 w-20">Cant.</th>
                                             <th className="text-right px-2 py-1 bg-indigo-50/50 border-r border-indigo-100 w-24">Costo Prom.</th>
-                                            <th className="text-right px-2 py-1 bg-indigo-50/50 w-28">Valor Total</th>
+                                            <th className="text-right px-2 py-1 bg-indigo-50/50 border-r border-indigo-200 w-28">Valor Total</th>
+                                            {/* Acciones */}
+                                            <th className="bg-slate-50"></th>
                                         </tr>
                                     </thead>
 
@@ -305,9 +360,10 @@ const KardexContent = () => {
                                                 {formatNumber(totales?.saldo_inicial_cantidad)}
                                             </td>
                                             <td className="px-2 py-2 bg-yellow-50 border-r border-yellow-200"></td>
-                                            <td className="px-2 py-2 text-right font-mono font-bold text-yellow-900 bg-yellow-100/50">
+                                            <td className="px-2 py-2 text-right font-mono font-bold text-yellow-900 border-r border-yellow-200 bg-yellow-100/50">
                                                 {formatCurrency(totales?.saldo_inicial_valor, 0)}
                                             </td>
+                                            <td className="px-2 py-2 bg-yellow-50"></td>
                                         </tr>
 
                                         {kardexData.items.map((item, index) => (
@@ -349,8 +405,27 @@ const KardexContent = () => {
                                                 <td className="px-2 py-2 text-right font-mono text-gray-600 bg-indigo-50/10 border-r border-indigo-50">
                                                     {formatCurrency(item.saldo_costo_promedio)}
                                                 </td>
-                                                <td className="px-2 py-2 text-right font-mono font-bold text-indigo-700 bg-indigo-50/10">
+                                                <td className="px-2 py-2 text-right font-mono font-bold text-indigo-700 border-r border-indigo-100 bg-indigo-50/10">
                                                     {formatCurrency(item.saldo_valor_total, 0)}
+                                                </td>
+                                                {/* Botones de acción (sólo si es huérfano) */}
+                                                <td className="px-2 py-2 text-center">
+                                                    {(item.documento_ref === 'MOV. DIRECTO' || item.tipo_movimiento === 'ENTRADA_INICIAL') ? (
+                                                        <div className="flex justify-center gap-2">
+                                                            <button 
+                                                                onClick={() => handleEditClick(item)} 
+                                                                className="text-blue-500 hover:text-blue-700 transition" 
+                                                                title="Editar Movimiento Directo">
+                                                                <FaEdit />
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => handleDeleteClick(item)} 
+                                                                className="text-red-500 hover:text-red-700 transition" 
+                                                                title="Eliminar Movimiento Directo">
+                                                                <FaTrash />
+                                                            </button>
+                                                        </div>
+                                                    ) : null}
                                                 </td>
                                             </tr>
                                         ))}
@@ -359,6 +434,75 @@ const KardexContent = () => {
                             </div>
                         </div>
                     </>
+                )}
+
+                {/* MODAL DE EDICIÓN DE MOVIMIENTO DIRECTO */}
+                {editingMovement && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 transform transition-all animate-fadeIn">
+                            <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Editar Ajuste Inicial</h2>
+                            <form onSubmit={submitEditForm} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Fecha</label>
+                                    <input 
+                                        type="date" 
+                                        required
+                                        value={editForm.fecha} 
+                                        onChange={(e) => setEditForm({...editForm, fecha: e.target.value})}
+                                        className={selectClass} 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Cantidad</label>
+                                    <input 
+                                        type="number" 
+                                        step="0.01"
+                                        required
+                                        min="0"
+                                        value={editForm.cantidad} 
+                                        onChange={(e) => setEditForm({...editForm, cantidad: e.target.value})}
+                                        className={selectClass} 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Costo Unitario</label>
+                                    <input 
+                                        type="number" 
+                                        step="0.01"
+                                        required
+                                        min="0"
+                                        value={editForm.costo_unitario} 
+                                        onChange={(e) => setEditForm({...editForm, costo_unitario: e.target.value})}
+                                        className={selectClass} 
+                                    />
+                                </div>
+                                
+                                <div className="p-3 bg-blue-50 text-blue-800 text-xs rounded-lg flex items-start gap-2">
+                                    <FaExclamationTriangle className="mt-0.5" />
+                                    <span>Al guardar, el Kardex se recalculará automáticamente corrigiendo los saldos futuros.</span>
+                                </div>
+
+                                <div className="flex justify-end gap-3 mt-6">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setEditingMovement(null)}
+                                        className="px-4 py-2 font-medium text-gray-600 bg-gray-100 border border-gray-200 hover:bg-gray-200 rounded-lg transition"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isSavingEdit}
+                                        className="px-4 py-2 font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition flex items-center gap-2"
+                                    >
+                                        {isSavingEdit ? (
+                                            <><span className="loading loading-spinner loading-xs"></span> Guardando...</>
+                                        ) : "Guardar Cambios"}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>

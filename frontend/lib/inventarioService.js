@@ -228,4 +228,28 @@ export const generarPdfListaProductos = async (filtros) => {
   }
 };
 
+// ==============================================================================
+// === FUNCIONES PARA EDITAR/ELIMINAR MOVIMIENTOS KARDEX (MOV DIRECTO) ===
+// ==============================================================================
+
+export const updateMovimientoKardex = async (movimientoId, updateData) => {
+  try {
+    const response = await apiService.put(`/inventario/movimientos-kardex/${movimientoId}`, updateData);
+    return response.data;
+  } catch (error) {
+    console.error(`Error al actualizar movimiento de kardex ${movimientoId}:`, error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const deleteMovimientoKardex = async (movimientoId) => {
+  try {
+    const response = await apiService.delete(`/inventario/movimientos-kardex/${movimientoId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error al eliminar movimiento de kardex ${movimientoId}:`, error.response?.data || error.message);
+    throw error;
+  }
+};
+
 // End of file

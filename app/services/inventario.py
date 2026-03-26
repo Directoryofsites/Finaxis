@@ -283,6 +283,59 @@ def recalcular_todo_inventario(db: Session, empresa_id: int):
     return {"message": f"Recálculo completado. Productos procesados: {count}", "total": count}
 
 
+# --- AJUSTES Y CORRECCIONES DE MOVIMIENTOS HUÉRFANOS (KARDEX MANUAL) ---
+def update_movimiento_inventario_directo(db: Session, movimiento_id: int, update_data: schemas.MovimientoInventarioUpdate, empresa_id: int):
+    # Validar que exista el movimiento, pertenezca a un producto de la empresa y SEA HUÉRFANO (documento_id is null)
+    movimiento = db.query(models_producto.MovimientoInventario).join(
+        models_producto.Producto, models_producto.MovimientoInventario.producto_id == models_producto.Producto.id
+    ).filter(
+        models_producto.MovimientoInventario.id == movimiento_id,
+        models_producto.Producto.empresa_id == empresa_id
+    ).first()
+    
+    if not movimiento:
+        raise HTTPException(status_code=404, detail="Movimiento no encontrado o no pertenece a la empresa.")
+        
+    if movimiento.documento_id is not None:
+        raise HTTPException(status_code=403, detail="No se puede modificar directamente un movimiento asociado a un documento contable. Modifique el documento padre.")
+        
+    if update_data.fecha: movimiento.fecha = update_data.fecha
+    if update_data.cantidad is not None: 
+        movimiento.cantidad = update_data.cantidad
+        movimiento.costo_total = update_data.cantidad * (movimiento.costo_unitario or 0.0)
+    if update_data.costo_unitario is not None: 
+        movimiento.costo_unitario = update_data.costo_unitario
+        movimiento.costo_total = (movimiento.cantidad or 0.0) * update_data.costo_unitario
+
+    producto_id = movimiento.producto_id
+    db.commit()
+    
+    # Recalculamos el producto para propagar el cambio
+    recalcular_saldos_producto(db, producto_id)
+    return True
+
+def delete_movimiento_inventario_directo(db: Session, movimiento_id: int, empresa_id: int):
+    movimiento = db.query(models_producto.MovimientoInventario).join(
+        models_producto.Producto, models_producto.MovimientoInventario.producto_id == models_producto.Producto.id
+    ).filter(
+        models_producto.MovimientoInventario.id == movimiento_id,
+        models_producto.Producto.empresa_id == empresa_id
+    ).first()
+    
+    if not movimiento:
+        raise HTTPException(status_code=404, detail="Movimiento no encontrado o no pertenece a la empresa.")
+        
+    if movimiento.documento_id is not None:
+        raise HTTPException(status_code=403, detail="No se puede eliminar directamente un movimiento asociado a un documento contable. Elimine el documento padre.")
+        
+    producto_id = movimiento.producto_id
+    db.delete(movimiento)
+    db.commit()
+    
+    recalcular_saldos_producto(db, producto_id)
+    return True
+
+
 # --- FUNCIÓN CLAVE: CREAR TRASLADO ENTRE BODEGAS (FIXED) ---
 def crear_traslado_entre_bodegas(db: Session, traslado: schemas_traslado.TrasladoInventarioCreate, empresa_id: int, user_id: int) -> models_doc.Documento:
     """
