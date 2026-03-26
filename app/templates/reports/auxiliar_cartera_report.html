@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <title>Auxiliar de Cartera Detallado</title>
@@ -58,9 +58,9 @@
                         <td colspan="4" class="detalle-app">
                         {% for app in mov.detalle_aplicaciones %}
                             {% if app.afectado_por %}
-                                <span>↳ Abonado por {{ app.afectado_por }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
+                                <span>Abonado por {{ app.afectado_por }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
                             {% elif app.afecta_a %}
-                                <span>↳ Abona a {{ app.afecta_a }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
+                                <span>Abona a {{ app.afecta_a }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
                             {% endif %}
                         {% endfor %}
                         </td>

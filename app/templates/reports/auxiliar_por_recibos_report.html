@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <title>Auxiliar por Recibos de Caja</title>
@@ -42,7 +42,7 @@
             <tr>
                 <td></td><td colspan="2" class="detalle-app">
                 {% for f in r.facturas_afectadas %}
-                    <span>↳ Abona a {{ f.documento }} por valor de {{ '{:,.2f}'.format(f.valor) }}</span><br>
+                    <span>Abona a {{ f.documento }} por valor de {{ '{:,.2f}'.format(f.valor) }}</span><br>
                 {% endfor %}
                 </td>
             </tr>

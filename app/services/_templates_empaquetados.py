@@ -481,9 +481,9 @@ TEMPLATES_EMPAQUETADOS = {
                         <td colspan="4" class="detalle-app">
                         {% for app in mov.detalle_aplicaciones %}
                             {% if app.afectado_por %}
-                                <span>â†³ Abonado por {{ app.afectado_por }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
+                                <span>Abonado por {{ app.afectado_por }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
                             {% elif app.afecta_a %}
-                                <span>â†³ Abona a {{ app.afecta_a }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
+                                <span>Abona a {{ app.afecta_a }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
                             {% endif %}
                         {% endfor %}
                         </td>
@@ -647,7 +647,7 @@ TEMPLATES_EMPAQUETADOS = {
             <tr>
                 <td></td><td colspan="4" class="detalle-app">
                 {% for abono in f.abonos_detalle %}
-                    <span>â†³ Abonado por {{ abono.documento }} por valor de {{ '{:,.2f}'.format(abono.valor) }}</span><br>
+                    <span>Abonado por {{ abono.documento }} por valor de {{ '{:,.2f}'.format(abono.valor) }}</span><br>
                 {% endfor %}
                 </td>
             </tr>
@@ -712,7 +712,7 @@ TEMPLATES_EMPAQUETADOS = {
             <tr>
                 <td></td><td colspan="2" class="detalle-app">
                 {% for f in r.facturas_afectadas %}
-                    <span>â†³ Abona a {{ f.documento }} por valor de {{ '{:,.2f}'.format(f.valor) }}</span><br>
+                    <span>Abona a {{ f.documento }} por valor de {{ '{:,.2f}'.format(f.valor) }}</span><br>
                 {% endfor %}
                 </td>
             </tr>
@@ -779,7 +779,7 @@ TEMPLATES_EMPAQUETADOS = {
             <tr>
                 <td></td><td colspan="4" class="detalle-app">
                 {% for abono in f.abonos_detalle %}
-                    <span>â†³ Pagado por {{ abono.documento }} por valor de {{ '{:,.2f}'.format(abono.valor) }}</span><br>
+                    <span>Pagado por {{ abono.documento }} por valor de {{ '{:,.2f}'.format(abono.valor) }}</span><br>
                 {% endfor %}
                 </td>
             </tr>
@@ -844,7 +844,7 @@ TEMPLATES_EMPAQUETADOS = {
             <tr>
                 <td></td><td colspan="2" class="detalle-app">
                 {% for f in r.facturas_afectadas %}
-                    <span>â†³ Paga a {{ f.documento }} por valor de {{ '{:,.2f}'.format(f.valor) }}</span><br>
+                    <span>Paga a {{ f.documento }} por valor de {{ '{:,.2f}'.format(f.valor) }}</span><br>
                 {% endfor %}
                 </td>
             </tr>
@@ -921,9 +921,9 @@ TEMPLATES_EMPAQUETADOS = {
                         <td colspan="4" class="detalle-app">
                         {% for app in mov.detalle_aplicaciones %}
                             {% if app.afectado_por %}
-                                <span>â†³ Pagado por {{ app.afectado_por }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
+                                <span>Pagado por {{ app.afectado_por }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
                             {% elif app.afecta_a %}
-                                <span>â†³ Paga a {{ app.afecta_a }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
+                                <span>Paga a {{ app.afecta_a }} por valor de {{ '{:,.2f}'.format(app.valor) }}</span><br>
                             {% endif %}
                         {% endfor %}
                         </td>
@@ -8294,7 +8294,7 @@ TEMPLATES_EMPAQUETADOS = {
         }
 
         @page {
-            size: A4 landscape;
+            size: A4 portrait;
             margin: 0;
         }
 
@@ -8309,8 +8309,8 @@ TEMPLATES_EMPAQUETADOS = {
         }
 
         .page-container {
-            width: 297mm;
-            min-height: 210mm;
+            width: 210mm;
+            min-height: 297mm;
             margin: 0 auto;
             position: relative;
             box-sizing: border-box;
@@ -8333,7 +8333,7 @@ TEMPLATES_EMPAQUETADOS = {
         }
 
         header {
-            padding: 30px 40px 15px 40px;
+            padding: 30px 30px 15px 30px;
             display: table;
             width: 100%;
             box-sizing: border-box;
@@ -8343,7 +8343,7 @@ TEMPLATES_EMPAQUETADOS = {
         .header-right { display: table-cell; vertical-align: middle; text-align: right; }
 
         .badge-premium {
-            font-size: 8px;
+            font-size: 10px;
             font-weight: 700;
             color: var(--green-inst);
             text-transform: uppercase;
@@ -8355,14 +8355,14 @@ TEMPLATES_EMPAQUETADOS = {
 
         .company-name {
             font-family: 'Cormorant Garamond', serif;
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 700;
             line-height: 1;
             margin: 0;
             color: var(--green-inst);
         }
         .company-nit {
-            font-size: 9px;
+            font-size: 11px;
             color: #888;
             margin-top: 2px;
             letter-spacing: 1px;
@@ -8373,7 +8373,7 @@ TEMPLATES_EMPAQUETADOS = {
         }
         .doc-title {
             font-family: 'Cormorant Garamond', serif;
-            font-size: 20px;
+            font-size: 24px;
             font-style: italic;
             color: #444;
             margin-bottom: 6px;
@@ -8384,18 +8384,18 @@ TEMPLATES_EMPAQUETADOS = {
             padding: 4px 10px;
             border-radius: 2px;
         }
-        .date-range-text { font-size: 11px; font-weight: 700; color: var(--green-inst); }
+        .date-range-text { font-size: 13px; font-weight: 700; color: var(--green-inst); }
 
         .tercero-ribbon {
             background-color: var(--green-inst);
             color: var(--white);
-            padding: 12px 40px;
-            font-size: 11px;
+            padding: 12px 30px;
+            font-size: 13px;
             margin-bottom: 20px;
         }
         .tercero-ribbon strong { color: var(--gold-soft); }
 
-        main { padding: 0 40px; }
+        main { padding: 0 30px; }
 
         table {
             width: 100%;
@@ -8406,7 +8406,7 @@ TEMPLATES_EMPAQUETADOS = {
         thead th {
             background-color: #F8F9F7;
             color: var(--text-labels);
-            font-size: 8px;
+            font-size: 10px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -8417,7 +8417,7 @@ TEMPLATES_EMPAQUETADOS = {
 
         tbody td {
             padding: 8px;
-            font-size: 9px;
+            font-size: 11px;
             border-bottom: 1px solid #EEE;
             color: #333;
             vertical-align: middle;
@@ -8431,23 +8431,23 @@ TEMPLATES_EMPAQUETADOS = {
             background-color: #F4F6F2;
             font-weight: 700;
             color: var(--green-inst);
-            font-size: 10px;
+            font-size: 12px;
         }
 
         .saldo-ant-row {
             font-style: italic;
             color: #666;
-            font-size: 8px;
+            font-size: 10px;
         }
 
         .total-section {
             background-color: var(--green-inst);
             color: var(--white);
             font-weight: 700;
-            font-size: 10px;
+            font-size: 12px;
         }
         .total-section td { border: none; padding: 12px 8px; color: var(--white) !important; }
-        .gold-label { color: var(--gold-soft); text-transform: uppercase; letter-spacing: 1px; font-size: 8px; }
+        .gold-label { color: var(--gold-soft); text-transform: uppercase; letter-spacing: 1px; font-size: 10px; }
     </style>
 </head>
 <body>

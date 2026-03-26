@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <title>Auxiliar por Facturas de Compra</title>
@@ -46,7 +46,7 @@
             <tr>
                 <td></td><td colspan="4" class="detalle-app">
                 {% for abono in f.abonos_detalle %}
-                    <span>↳ Pagado por {{ abono.documento }} por valor de {{ '{:,.2f}'.format(abono.valor) }}</span><br>
+                    <span>Pagado por {{ abono.documento }} por valor de {{ '{:,.2f}'.format(abono.valor) }}</span><br>
                 {% endfor %}
                 </td>
             </tr>
