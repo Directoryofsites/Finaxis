@@ -1094,7 +1094,7 @@ def get_super_informe_inventarios(db: Session, empresa_id: int, filtros: schemas
         ]
         
         query_mov = query.with_entities(*select_entities)\
-                     .order_by(models_producto.MovimientoInventario.fecha.desc(), models_producto.MovimientoInventario.id)
+                     .order_by(models_producto.MovimientoInventario.fecha.asc(), models_producto.MovimientoInventario.id)
 
        
 # 6. Paginación y Ejecución
@@ -1357,7 +1357,7 @@ def generar_pdf_super_informe_reportlab(
         models_producto.MovimientoInventario.cantidad,
         models_producto.MovimientoInventario.costo_unitario,
         models_producto.MovimientoInventario.costo_total
-    ).order_by(models_producto.MovimientoInventario.fecha.desc(), models_producto.MovimientoInventario.id)
+    ).order_by(models_producto.MovimientoInventario.fecha.asc(), models_producto.MovimientoInventario.id)
 
     # EJECUCIÓN NORMAL (Sin Streaming) - Revertido por performance en Producción
     print("--- [ReportLab] Ejecutando Query con .all()... ---")

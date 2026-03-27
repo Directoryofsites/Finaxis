@@ -216,6 +216,12 @@ def recalcular_saldos_producto(db: Session, producto_id: int):
             stocks_por_bodega[bodega_id] -= cantidad
             stock_total_global -= cantidad
             
+            # FIX CRÍTICO: Sincronizar costo en DB con el costo promedio vigente al momento
+            # Esto evita que el Movimiento Analítico y Super Informe difieran del Kardex dinámico
+            mov.costo_unitario = nuevo_costo_promedio
+            mov.costo_total = cantidad * nuevo_costo_promedio
+            db.add(mov)
+            
     # 5. Aplicar cambios a la Base de Datos
     
     # A. Actualizar Producto
