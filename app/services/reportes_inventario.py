@@ -768,6 +768,125 @@ def get_reporte_topes_inventario(db: Session, empresa_id: int, filtros: schemas_
         totales_topes=totales_topes
     )
 
+def generar_pdf_reporte_topes_por_token(db: Session, empresa_id: int, filtros: schemas_reportes.ReporteTopesFiltros) -> Tuple[bytes, str]:
+    """
+    Genera el PDF de Gestión de Topes usando ReportLab para alto rendimiento,
+    basado en los mismos datos de la UI.
+    """
+    from io import BytesIO
+    from datetime import datetime
+    
+    # 1. Obtener Datos Base
+    response = get_reporte_topes_inventario(db, empresa_id, filtros)
+    items = response.items
+    
+    # 2. Setup PDF Config
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, pagesize=landscape(letter),
+        rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30
+    )
+    elements = []
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'TitleStyle',
+        parent=styles['Heading1'],
+        fontName='Helvetica-Bold',
+        fontSize=15,
+        alignment=TA_CENTER
+    )
+    
+    # Encabezado (Compañía y Título)
+    empresa = db.query(models_empresa.Empresa).filter(models_empresa.Empresa.id == empresa_id).first()
+    nombre_empresa = empresa.razon_social if empresa else "EMPRESA"
+    
+    elements.append(Paragraph(f"{nombre_empresa}", title_style))
+    elements.append(Paragraph(f"REPORTE GESTIÓN DE TOPES DE INVENTARIO", title_style))
+    elements.append(Spacer(1, 10))
+    
+    # Subtítulo (Filtros)
+    str_fecha = filtros.fecha_corte.strftime('%d/%m/%Y')
+    subtitle = f"<b>Filtro Alerta:</b> {filtros.tipo_alerta} &nbsp;&nbsp;&nbsp; <b>Fecha Corte:</b> {str_fecha}"
+    elements.append(Paragraph(subtitle, styles['Normal']))
+    
+    totales_str = f"Mínimo: {response.totales_topes.get('MINIMO', 0)} | Máximo: {response.totales_topes.get('MAXIMO', 0)} | OK: {response.totales_topes.get('OK', 0)}"
+    elements.append(Paragraph(f"<b>Resumen de Topes:</b> {totales_str}", styles['Normal']))
+    elements.append(Spacer(1, 12))
+    
+    # 3. Construir Tabla
+    data = [["Código", "Producto", "Bodega", "Stock Min.", "Stock Max.", "Saldo Actual", "Estado", "Diferencia"]]
+    
+    for row in items:
+        diferencia_fmt = f"{row.diferencia:,.2f}"
+        
+        nombre_prod = (row.producto_nombre[:45] + '...') if len(row.producto_nombre) > 45 else row.producto_nombre
+        nombre_bod = (row.bodega_nombre[:20] + '...') if len(row.bodega_nombre) > 20 else row.bodega_nombre
+        
+        datos_fila = [
+            row.producto_codigo,
+            nombre_prod,
+            nombre_bod,
+            f"{row.stock_minimo:,.2f}",
+            f"{row.stock_maximo:,.2f}",
+            f"{row.saldo_actual:,.2f}",
+            row.estado_tope,
+            diferencia_fmt
+        ]
+        data.append(datos_fila)
+        
+    # Anchos para Landscape letter (disponible ~732)
+    colwidths = [70, 212, 110, 60, 60, 65, 55, 100]
+    
+    table = LongTable(data, colWidths=colwidths, repeatRows=1)
+    
+    # 4. Estilos Visuales de Tabla
+    style = TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0e1726')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('ALIGN', (0,0), (-1,0), 'CENTER'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,0), 9),
+        ('BOTTOMPADDING', (0,0), (-1,0), 5),
+        ('TOPPADDING', (0,0), (-1,0), 5),
+        
+        # Cuerpo
+        ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+        ('FONTSIZE', (0,1), (-1,-1), 8),
+        ('ALIGN', (3,1), (-1,-1), 'RIGHT'), # Valores y saldos a la derecha
+        ('ALIGN', (6,1), (6,-1), 'CENTER'), # Estado Centrado
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    ])
+    
+    # Alternar color y colorear estados
+    for i in range(1, len(data)):
+        if i % 2 == 0:
+            style.add('BACKGROUND', (0, i), (-1, i), colors.HexColor('#f8f9fa'))
+            
+        estado = data[i][6]
+        if estado == "MINIMO":
+            style.add('TEXTCOLOR', (6, i), (6, i), colors.HexColor('#dc3545'))
+            style.add('TEXTCOLOR', (7, i), (7, i), colors.HexColor('#dc3545'))
+        elif estado == "MAXIMO":
+            style.add('TEXTCOLOR', (6, i), (6, i), colors.HexColor('#fd7e14'))
+            style.add('TEXTCOLOR', (7, i), (7, i), colors.HexColor('#fd7e14'))
+        elif estado == "OK":
+            style.add('TEXTCOLOR', (6, i), (6, i), colors.HexColor('#198754'))
+            
+    table.setStyle(style)
+    elements.append(table)
+    
+    # 5. Generar Archivo Final
+    doc.build(elements)
+    pdf_bytes = buffer.getvalue()
+    buffer.close()
+    
+    fecha_str = datetime.now().strftime("%Y%m%d%H%M")
+    filename = f"Analisis_Gestion_Topes_{fecha_str}.pdf"
+    
+    return pdf_bytes, filename
+
+
 # ... (Resto de funciones: get_reporte_analitico_movimientos, get_reporte_estado_general, etc.) ...
 def get_reporte_analitico_movimientos(db: Session, empresa_id: int, filtros: schemas_reportes.ReporteAnaliticoFiltros):
     # ... (Lógica existente) ...

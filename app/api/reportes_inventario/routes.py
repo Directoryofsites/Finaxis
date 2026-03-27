@@ -101,7 +101,10 @@ def crear_token_topes_pdf_route(
     current_user: models_usuario.Usuario = Depends(security.get_current_user)
 ):
     try:
-        token_payload_str = filtros.model_dump_json()
+        import json
+        payload_dict = filtros.model_dump()
+        payload_dict["empresa_id"] = current_user.empresa_id
+        token_payload_str = json.dumps(payload_dict, default=str)
         token = security.create_signed_token(token_payload_str, salt='pdf-topes-v1', max_age=600) 
         return {"token": token}
     except Exception as e:
@@ -123,14 +126,12 @@ def generar_reporte_topes_pdf_token_route(
         if not payload_str:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token de descarga inválido o expirado. Vuelva a solicitar el PDF.")
 
-        filtros = schemas_reportes.ReporteTopesFiltros.model_validate_json(payload_str)
-        # Nota: Asumimos que existe una función generar_pdf_reporte_topes_por_token o similar. 
-        # Si no existe, usar la lógica directa. Aquí mantenemos la estructura original del archivo enviado.
-        if hasattr(service_reportes, 'generar_pdf_reporte_topes_por_token'):
-             pdf_bytes, filename = service_reportes.generar_pdf_reporte_topes_por_token(db=db, filtros=filtros)
-        else:
-             # Fallback a lógica directa si la función específica de token no está exportada
-             raise HTTPException(status_code=501, detail="Función de generación de PDF por token no implementada en servicio.")
+        import json
+        payload_dict = json.loads(payload_str)
+        empresa_id = payload_dict.pop("empresa_id")
+        filtros = schemas_reportes.ReporteTopesFiltros(**payload_dict)
+        
+        pdf_bytes, filename = service_reportes.generar_pdf_reporte_topes_por_token(db=db, empresa_id=empresa_id, filtros=filtros)
         
         from fastapi.responses import Response
         return Response(
