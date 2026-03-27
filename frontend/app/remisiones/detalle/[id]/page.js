@@ -56,10 +56,10 @@ export default function DetalleRemisionPage({ params }) {
     };
 
     const handleAnular = async () => {
-        if (!confirm("¿Está seguro de anular? Se liberará cualquier reserva de stock.")) return;
+        if (!confirm("¿Está seguro de anular/cerrar? Se devolverá al inventario cualquier mercancía que NO haya sido facturada.")) return;
         try {
             await apiService.put(`/remisiones/${id}/anular`);
-            setMensaje("Remisión Anulada. Stock liberado.");
+            setMensaje("Operación exitosa. Stock remanente devuelto al inventario.");
             fetchRemision(); // Refresh
         } catch (err) {
             setError(err.response?.data?.detail || "Error al anular.");
@@ -116,9 +116,9 @@ export default function DetalleRemisionPage({ params }) {
                             Aprobar y Reservar
                         </button>
                     )}
-                    {(remision.estado === 'BORRADOR' || remision.estado === 'APROBADA') && (
+                    {(remision.estado === 'BORRADOR' || remision.estado === 'APROBADA' || remision.estado === 'FACTURADA_PARCIAL') && (
                         <button onClick={handleAnular} className="bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700">
-                            Anular
+                            {remision.estado === 'FACTURADA_PARCIAL' ? 'Dejar de facturar remanente y devolver stock' : 'Anular'}
                         </button>
                     )}
                 </div>
