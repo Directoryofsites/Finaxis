@@ -177,12 +177,22 @@ def recalcular_saldos_producto(db: Session, producto_id: int):
     
     # 3. Obtener TODOS los movimientos ordenados cronológicamente
     # El orden es VITAL para el promedio ponderado.
-    movimientos = db.query(models_producto.MovimientoInventario).filter(
-        models_producto.MovimientoInventario.producto_id == producto_id
-    ).order_by(
-        models_producto.MovimientoInventario.fecha.asc(),
-        models_producto.MovimientoInventario.id.asc()
-    ).all()
+    # IMPORTANTE: Filtrar movimientos de documentos ANULADOS para que no corrompan el stock.
+    from app.models.documento import Documento as models_doc
+    from sqlalchemy import or_
+
+    movimientos = db.query(models_producto.MovimientoInventario)\
+        .outerjoin(models_doc, models_producto.MovimientoInventario.documento_id == models_doc.id)\
+        .filter(
+            models_producto.MovimientoInventario.producto_id == producto_id,
+            or_(
+                models_producto.MovimientoInventario.documento_id == None,
+                models_doc.anulado == False
+            )
+        ).order_by(
+            models_producto.MovimientoInventario.fecha.asc(),
+            models_producto.MovimientoInventario.id.asc()
+        ).all()
 
     stock_total_global = 0.0
     
@@ -197,7 +207,12 @@ def recalcular_saldos_producto(db: Session, producto_id: int):
         
         if mov.tipo_movimiento.startswith('ENTRADA'):
             # --- NUEVA LÓGICA: Entradas Internas ---
-            entradas_internas = ['ENTRADA_TRASLADO', 'ENTRADA_ANULACION_REMISION', 'ENTRADA_DEVOLUCION_VENTA']
+            entradas_internas = [
+                'ENTRADA_TRASLADO', 
+                'ENTRADA_ANULACION_REMISION', 
+                'ENTRADA_DEVOLUCION_VENTA',
+                'ENTRADA_AJUSTE'
+            ]
             if mov.tipo_movimiento in entradas_internas:
                 # Estas entradas no tienen un costo real de compra, adoptan el costo promedio actual.
                 # Al hacerlo, se garantiza que reingresen al mismo valor,
@@ -267,9 +282,7 @@ def recalcular_saldos_producto(db: Session, producto_id: int):
     # C. Limpieza de StockBodega huerfanos (opcional, si queremos borrar los q quedaron en 0)
     # Por ahora mejor no borrar para no perder historial de qué bodegas se usaron.
     
-    db.flush() # Confirmar cambios en esta transacción
-    print(f"[RECALCULO FINALIZADO] ID {producto_id} -> Stock Global: {stock_total_global}, Costo Prom: {nuevo_costo_promedio}")
-
+    db.commit() # PERSISTENCIA CRÍTICA: Asegurar que el recálculo se guarde en la BD
     print(f"[RECALCULO FINALIZADO] ID {producto_id} -> Stock Global: {stock_total_global}, Costo Prom: {nuevo_costo_promedio}")
 
 
