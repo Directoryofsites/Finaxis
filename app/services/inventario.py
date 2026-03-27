@@ -196,6 +196,18 @@ def recalcular_saldos_producto(db: Session, producto_id: int):
         if bodega_id not in stocks_por_bodega: stocks_por_bodega[bodega_id] = 0.0
         
         if mov.tipo_movimiento.startswith('ENTRADA'):
+            # --- NUEVA LÓGICA: Entradas Internas ---
+            entradas_internas = ['ENTRADA_TRASLADO', 'ENTRADA_ANULACION_REMISION', 'ENTRADA_DEVOLUCION_VENTA']
+            if mov.tipo_movimiento in entradas_internas:
+                # Estas entradas no tienen un costo real de compra, adoptan el costo promedio actual.
+                # Al hacerlo, se garantiza que reingresen al mismo valor,
+                # y matemáticamente no alteran (ni corrompen) el costo promedio global.
+                costo_mov = nuevo_costo_promedio
+                mov.costo_unitario = costo_mov
+                mov.costo_total = cantidad * costo_mov
+                db.add(mov)
+            # ---------------------------------------
+
             # Lógica de Promedio Ponderado
             # Valor Anterior Total = Stock Total * Costo Promedio Actual
             valor_anterior = stock_total_global * nuevo_costo_promedio
