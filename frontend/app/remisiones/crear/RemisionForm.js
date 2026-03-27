@@ -8,7 +8,7 @@ import { FaSave, FaPlus, FaTrash, FaCalendarAlt, FaUserTag, FaBoxOpen, FaWarehou
 
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../../lib/apiService';
-
+import Select from 'react-select';
 
 const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 text-sm outline-none";
 const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 text-sm outline-none bg-white";
@@ -307,20 +307,35 @@ export default function CreateRemisionPage() {
                             <FaCalendarAlt className="absolute right-3 top-3 text-gray-400" />
                         </div>
                     </div>
-                    <div className="col-span-2">
+                    <div className="col-span-2 z-50">
                         <label className="block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide">Cliente / Tercero</label>
                         <div className="relative">
-                            <select
-                                value={terceroId}
-                                onChange={(e) => setTerceroId(e.target.value)}
-                                className={selectClass}
-                            >
-                                <option value="">Seleccione un cliente...</option>
-                                {maestros.terceros.map(t => (
-                                    <option key={t.id} value={t.id}>{t.numero_identificacion} - {t.razon_social}</option>
-                                ))}
-                            </select>
-                            <FaUserTag className="absolute right-8 top-3 text-gray-400 pointer-events-none" />
+                            <Select
+                                value={terceroId ? {
+                                    value: terceroId,
+                                    label: maestros.terceros.find(t => t.id == terceroId)
+                                        ? `${maestros.terceros.find(t => t.id == terceroId).numero_identificacion} - ${maestros.terceros.find(t => t.id == terceroId).razon_social}`
+                                        : "Cargando..."
+                                } : null}
+                                onChange={(opt) => setTerceroId(opt ? opt.value : '')}
+                                options={maestros.terceros.map(t => ({
+                                    value: t.id,
+                                    label: `${t.numero_identificacion} - ${t.razon_social}`
+                                }))}
+                                placeholder="Escriba 3 letras para buscar..."
+                                isClearable
+                                className="text-sm"
+                                styles={{
+                                    control: (base, state) => ({
+                                        ...base,
+                                        borderColor: state.isFocused ? '#6366f1' : '#d1d5db',
+                                        boxShadow: state.isFocused ? '0 0 0 2px rgba(99, 102, 241, 0.2)' : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                                        borderRadius: '0.5rem',
+                                        padding: '2px'
+                                    }),
+                                    menu: base => ({ ...base, zIndex: 9999 })
+                                }}
+                            />
                         </div>
                     </div>
                     <div>
