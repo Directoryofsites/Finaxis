@@ -1284,6 +1284,12 @@ def generar_pdf_super_informe_reportlab(
      .outerjoin(models_tipo_doc.TipoDocumento, models_doc.Documento.tipo_documento_id == models_tipo_doc.TipoDocumento.id)\
      .outerjoin(models_tercero.Tercero, models_doc.Documento.beneficiario_id == models_tercero.Tercero.id)
 
+    # --- Joins adicionales según filtros contables ---
+    needs_mov_con_join = filtros.cuenta_id or filtros.centro_costo_id or filtros.vista_reporte == schemas_reportes.VistaSuperInformeEnum.RENTABILIDAD
+    MovimientoContableAlias = aliased(models_mov_con.MovimientoContable)
+    if needs_mov_con_join:
+        query = query.outerjoin(MovimientoContableAlias, MovimientoContableAlias.documento_id == models_doc.Documento.id)
+
     conditions = [
         models_producto.Producto.empresa_id == empresa_id,
         or_(models_doc.Documento.anulado == False, models_doc.Documento.id == None) 
@@ -1313,6 +1319,27 @@ def generar_pdf_super_informe_reportlab(
 
     if filtros.grupo_ids:
         conditions.append(models_producto.Producto.grupo_id.in_(filtros.grupo_ids))
+
+    if filtros.es_servicio is not None:
+        conditions.append(models_producto.Producto.es_servicio == filtros.es_servicio)
+
+    # Filtros de Documento/Tercero
+    if filtros.tercero_id:
+        conditions.append(models_doc.Documento.beneficiario_id == filtros.tercero_id)
+        
+    if filtros.search_term_doc:
+        ref_like = f"%{filtros.search_term_doc}%"
+        conditions.append(func.concat(models_tipo_doc.TipoDocumento.codigo, '-', cast(models_doc.Documento.numero, SAString)).ilike(ref_like))
+
+    # Filtros Contables
+    if needs_mov_con_join:
+        if filtros.cuenta_id:
+            conditions.append(MovimientoContableAlias.cuenta_id == filtros.cuenta_id)
+        if filtros.centro_costo_id:
+            conditions.append(or_(
+                 models_doc.Documento.centro_costo_id == filtros.centro_costo_id,
+                 MovimientoContableAlias.centro_costo_id == filtros.centro_costo_id
+             ))
 
     if conditions:
         query = query.filter(and_(*conditions))
