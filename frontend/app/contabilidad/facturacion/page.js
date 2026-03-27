@@ -291,9 +291,9 @@ export default function NuevaFacturaPage() {
     const fetchRemisiones = async () => {
         try {
             const res = await apiService.get('/remisiones/');
-            // Filtramos solo las que se pueden facturar
+            // Filtramos solo las que se pueden facturar (excluyendo BORRADOR para proteger inventario)
             const disponibles = res.data.remisiones.filter(r =>
-                r.estado === 'APROBADA' || r.estado === 'FACTURADA_PARCIAL' || r.estado === 'BORRADOR'
+                r.estado === 'APROBADA' || r.estado === 'FACTURADA_PARCIAL'
             );
             setRemisionesDisponibles(disponibles);
         } catch (error) {

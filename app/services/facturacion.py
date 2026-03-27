@@ -43,6 +43,16 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
         log_debug(f"Error logging payload: {e}")
     # ---------------------------
     
+    # --- 0.1 VALIDACIÓN DE ESTADO DE REMISIÓN ---
+    if factura.remision_id:
+        from ..models import remision as models_remision
+        remision_db = db.query(models_remision.Remision).get(factura.remision_id)
+        if not remision_db:
+            raise HTTPException(status_code=404, detail="La remisión indicada no existe.")
+        if remision_db.estado not in ['APROBADA', 'FACTURADA_PARCIAL']:
+            raise HTTPException(status_code=400, detail=f"No se puede facturar la remisión porque está en estado {remision_db.estado}. Debe ser APROBADA.")
+    # --------------------------------------------
+
     # --- 0. VALIDACIÓN WALLET (MODO EXPRESS) ---
 
     empresa_db = db.query(models_empresa.Empresa).filter(models_empresa.Empresa.id == empresa_id).first()
