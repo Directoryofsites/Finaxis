@@ -352,25 +352,26 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
 
         # Kardex
         if tipo_doc.afecta_inventario and bodega_db:
-            for item in factura.items:
-                p_db = productos_map.get(item.producto_id)
-                # Kardex solo si NO es servicio y SI controla inv
-                if p_db and not p_db.es_servicio and p_db.controlar_inventario:
-                    
-                    tipo_mov_kardex = 'SALIDA_VENTA'
-                    if es_nota_credito: tipo_mov_kardex = 'ENTRADA_DEVOLUCION_VENTA'
-                    if es_nota_debito: continue # Nota Débito financiera no mueve stock físico usualmente
-                    
-                    service_inventario.registrar_movimiento_inventario(
-                        db=db,
-                        producto_id=item.producto_id,
-                        bodega_id=factura.bodega_id,
-                        tipo_movimiento=tipo_mov_kardex,
-                        cantidad=item.cantidad,
-                        costo_unitario=(p_db.costo_promedio or 0.0),
-                        documento_id=nuevo_documento.id,
-                        fecha=fecha_factura_dt
-                    )
+            if not factura.remision_id: # <--- IMPORTANTE: No doble deducir si viene de remisión
+                for item in factura.items:
+                    p_db = productos_map.get(item.producto_id)
+                    # Kardex solo si NO es servicio y SI controla inv
+                    if p_db and not p_db.es_servicio and p_db.controlar_inventario:
+                        
+                        tipo_mov_kardex = 'SALIDA_VENTA'
+                        if es_nota_credito: tipo_mov_kardex = 'ENTRADA_DEVOLUCION_VENTA'
+                        if es_nota_debito: continue # Nota Débito financiera no mueve stock físico usualmente
+                        
+                        service_inventario.registrar_movimiento_inventario(
+                            db=db,
+                            producto_id=item.producto_id,
+                            bodega_id=factura.bodega_id,
+                            tipo_movimiento=tipo_mov_kardex,
+                            cantidad=item.cantidad,
+                            costo_unitario=(p_db.costo_promedio or 0.0),
+                            documento_id=nuevo_documento.id,
+                            fecha=fecha_factura_dt
+                        )
 
         # --- INTEGRACIÓN REMISIONES ---
         if factura.remision_id:

@@ -61,36 +61,36 @@ def aprobar_remision(db: Session, remision_id: int, empresa_id: int):
     if remision.estado != 'BORRADOR':
         raise HTTPException(status_code=400, detail="Solo se pueden aprobar remisiones en Borrador.")
 
-    # Validar Disponibilidad y Comprometer Stock
+    # Validar Disponibilidad y Sacar Físicamente del Stock
+    from app.services import inventario as service_inventario
+    from datetime import datetime
     for det in remision.detalles:
-        stock_record = db.query(StockBodega).filter(
-            StockBodega.producto_id == det.producto_id,
-            StockBodega.bodega_id == remision.bodega_id
-        ).with_for_update().first() # Importante: Bloqueo de fila
-        
-        if not stock_record:
-            # Si no existe registro de stock, asumimos 0
-            stock_record = StockBodega(
+        producto = db.query(Producto).get(det.producto_id)
+        if producto and not producto.es_servicio and producto.controlar_inventario:
+            stock_record = db.query(StockBodega).filter(
+                StockBodega.producto_id == det.producto_id,
+                StockBodega.bodega_id == remision.bodega_id
+            ).first() 
+            
+            stock_fisico = stock_record.stock_actual if stock_record else 0
+            if stock_fisico < det.cantidad_solicitada:
+                 raise HTTPException(
+                     status_code=409, 
+                     detail=f"Stock físico insuficiente para despachar {producto.nombre}. Disponible: {stock_fisico}"
+                 )
+                 
+            # Sacar físicamente
+            dt = remision.fecha if isinstance(remision.fecha, datetime) else datetime.combine(remision.fecha, datetime.min.time())
+            service_inventario.registrar_movimiento_inventario(
+                db=db,
                 producto_id=det.producto_id,
                 bodega_id=remision.bodega_id,
-                stock_actual=0,
-                stock_comprometido=0
+                tipo_movimiento='SALIDA_REMISION',
+                cantidad=det.cantidad_solicitada,
+                costo_unitario=producto.costo_promedio or 0.0,
+                fecha=dt,
+                documento_id=None
             )
-            db.add(stock_record)
-        
-        stock_disponible = stock_record.stock_actual - stock_record.stock_comprometido
-        if stock_disponible < det.cantidad_solicitada:
-             # Aquí decidimos si ser estrictos o permitir negativo.
-             # Para "Profesionalidad", deberíamos alertar, pero permitiremos aprobar con warning si el usuario lo decide (TODO).
-             # Por ahora, estricto: No deja aprobar si no hay stock LIBRE.
-             producto = db.query(Producto).get(det.producto_id)
-             raise HTTPException(
-                 status_code=409, 
-                 detail=f"Stock insuficiente para reservar {producto.nombre}. Disponible Real: {stock_disponible}"
-             )
-             
-        # Comprometer
-        stock_record.stock_comprometido += det.cantidad_solicitada
     
     remision.estado = 'APROBADA'
     db.commit()
@@ -105,18 +105,25 @@ def anular_remision(db: Session, remision_id: int, empresa_id: int):
     if remision.estado in ['ANULADA', 'FACTURADA_TOTAL']:
         raise HTTPException(status_code=400, detail="No se puede anular en el estado actual.")
 
-    # Solo si estaba aprobada o parcial liberamos lo pendiente
+    # Solo si estaba aprobada o parcial reversamos lo pendiente
+    from app.services import inventario as service_inventario
+    from datetime import datetime
     if remision.estado in ['APROBADA', 'FACTURADA_PARCIAL']:
         for det in remision.detalles:
             if det.cantidad_pendiente > 0:
-                stock_record = db.query(StockBodega).filter(
-                    StockBodega.producto_id == det.producto_id,
-                    StockBodega.bodega_id == remision.bodega_id
-                ).first()
-                if stock_record:
-                    stock_record.stock_comprometido -= det.cantidad_pendiente
-                    # Safety check
-                    if stock_record.stock_comprometido < 0: stock_record.stock_comprometido = 0
+                producto = db.query(Producto).get(det.producto_id)
+                if producto and not producto.es_servicio and producto.controlar_inventario:
+                    dt = remision.fecha if isinstance(remision.fecha, datetime) else datetime.combine(remision.fecha, datetime.min.time())
+                    service_inventario.registrar_movimiento_inventario(
+                        db=db,
+                        producto_id=det.producto_id,
+                        bodega_id=remision.bodega_id,
+                        tipo_movimiento='ENTRADA_ANULACION_REMISION',
+                        cantidad=det.cantidad_pendiente,
+                        costo_unitario=producto.costo_promedio or 0.0,
+                        fecha=dt,
+                        documento_id=None
+                    )
                     
     remision.estado = 'ANULADA'
     db.commit()
@@ -196,17 +203,10 @@ def procesar_facturacion_remision(db: Session, remision_id: int, items_facturado
             det.cantidad_pendiente -= cant_facturar
             if det.cantidad_pendiente < 0: det.cantidad_pendiente = 0 # Safety
             
-            # 2. Liberar Stock Comprometido
-            # NOTA: La factura ya redujo Stock Físico (stock_actual).
-            # Aquí solo debemos quitar la reserva (stock_comprometido).
-            stock_record = db.query(StockBodega).filter(
-                StockBodega.producto_id == det.producto_id,
-                StockBodega.bodega_id == remision.bodega_id
-            ).first()
-            
-            if stock_record:
-                stock_record.stock_comprometido -= cant_facturar
-                if stock_record.stock_comprometido < 0: stock_record.stock_comprometido = 0
+            # 2. La Factura ya no requiere liberar reserva de Remisión
+            # porque la remisión saca stock físico directamente. Al Iniciar de una remisión, 
+            # el módulo de venta omitirá el descuento de kardex (ver facturacion.py).
+            pass
                 
             # Consumimos del mapa para evitar doble conteo si hubiera items repetidos (raro)
             facturado_map[det.producto_id] = 0
