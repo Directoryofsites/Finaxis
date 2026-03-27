@@ -685,3 +685,59 @@ def migrar_busquedas_emergencia(db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error crítico en migración: {str(e)}")
+
+
+@router.get("/reparacion-critica-inventario")
+def reparacion_critica_inventario(
+    key: str,
+    db: Session = Depends(get_db)
+):
+    """
+    ENDPOINT DE EMERGENCIA: 
+    1. Agrega permisos de traslados a roles admin/contador/soporte
+    2. Recalcula todos los costos y saldos de todos los productos en la base de datos
+    """
+    if key != "finaxis2026":
+        raise HTTPException(status_code=403, detail="Llave incorrecta.")
+        
+    from app.models.permiso import Permiso, Rol
+    from app.models.producto import Producto
+    from app.services.inventario import recalcular_saldos_producto
+    
+    mensajes = []
+    try:
+        # --- 1. ARREGLAR PERMISOS DE TRASLADO ---
+        permiso_nombre = "inventario:crear_traslado"
+        permiso_db = db.query(Permiso).filter_by(nombre=permiso_nombre).first()
+        
+        if not permiso_db:
+            permiso_db = Permiso(nombre=permiso_nombre, descripcion="Permiso para crear traslados de inventario")
+            db.add(permiso_db)
+            db.flush()
+            mensajes.append("Permiso 'inventario:crear_traslado' creado en la BD.")
+            
+        roles_necesitados = ["Administrador", "contador", "soporte"]
+        for r_name in roles_necesitados:
+            rol = db.query(Rol).filter_by(nombre=r_name).first()
+            if rol:
+                # Chequear si ya lo tiene
+                if permiso_db not in rol.permisos:
+                    rol.permisos.append(permiso_db)
+                    mensajes.append(f"Permiso asignado al rol: {r_name}")
+        db.commit()
+        
+        # --- 2. RECALCULAR COSTOS DE SALIDAS (FIX KARDEX VS SUPER INFORME) ---
+        productos = db.query(Producto).all()
+        for p in productos:
+            recalcular_saldos_producto(db, p.id)
+        db.commit()
+        mensajes.append(f"Saldos y costos históricos recalculados para {len(productos)} productos.")
+        
+        return {
+            "estado": "EXITO",
+            "detalles": mensajes
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Fallo en la reparación: {str(e)}")
