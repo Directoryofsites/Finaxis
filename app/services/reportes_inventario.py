@@ -345,9 +345,10 @@ def get_kardex_por_producto(db: Session, empresa_id: int, filtros: schemas_repor
         movimientos_periodo_filters.append(bodega_filter_condition)
 
     # --- 3. CALCULO DEL SALDO INICIAL USANDO LÓGICA HISTÓRICA ---
-    from app.services import inventario as service_inventario 
-    db_producto_completo = service_inventario.get_producto_by_id(db, producto_id, empresa_id, load_all=False)
-    costo_promedio_global_actual = db_producto_completo.costo_promedio or 0.0
+    # FIX: No usamos el costo promedio actual de la ficha para calcular el saldo anterior,
+    # ya que ese costo puede estar "contaminado" por compras futuras.
+    
+    # Calculamos cantidad inicial
     if bodega_id:
         saldo_inicial_cantidad = service_inventario.get_stock_historico(
             db=db, producto_id=producto_id, bodega_id=bodega_id, fecha=fecha_inicio_dt
@@ -358,7 +359,26 @@ def get_kardex_por_producto(db: Session, empresa_id: int, filtros: schemas_repor
              saldo_inicial_cantidad += service_inventario.get_stock_historico(
                 db=db, producto_id=producto_id, bodega_id=b_id, fecha=fecha_inicio_dt
              )
-    saldo_inicial_valor = saldo_inicial_cantidad * costo_promedio_global_actual
+
+    # NUEVO: Calculamos VALOR inicial sumando el costo_total histórico antes de la fecha inicio
+    documentos_validos = db.query(models_doc.Documento.id).filter(models_doc.Documento.anulado == False).subquery()
+    valor_query = db.query(func.sum(case(
+        (models_producto.MovimientoInventario.tipo_movimiento.startswith('ENTRADA'), models_producto.MovimientoInventario.costo_total),
+        (models_producto.MovimientoInventario.tipo_movimiento.startswith('SALIDA'), -models_producto.MovimientoInventario.costo_total),
+        else_=Decimal('0.0')
+    )).label("valor_total"))\
+        .outerjoin(documentos_validos, models_producto.MovimientoInventario.documento_id == documentos_validos.c.id)\
+        .filter(
+            models_producto.MovimientoInventario.producto_id == producto_id,
+            models_producto.MovimientoInventario.fecha < fecha_inicio_dt,
+            or_(models_producto.MovimientoInventario.documento_id == None, documentos_validos.c.id != None)
+        )
+    
+    if bodega_id:
+        valor_query = valor_query.filter(models_producto.MovimientoInventario.bodega_id == bodega_id)
+    
+    saldo_inicial_valor_res = valor_query.scalar()
+    saldo_inicial_valor = float(saldo_inicial_valor_res or 0.0)
     
     # --- 4. CONSULTA DE MOVIMIENTOS Y SALDOS (REFACTORIZACIÓN ORM CRÍTICA) ---
     
@@ -389,8 +409,12 @@ def get_kardex_por_producto(db: Session, empresa_id: int, filtros: schemas_repor
     # 5. Calcular saldos y formatear
     saldo_cantidad_actual = Decimal(str(saldo_inicial_cantidad)) 
     saldo_valor_actual = Decimal(str(saldo_inicial_valor)) 
-    costo_promedio_global_actual_float = db.query(models_producto.Producto.costo_promedio).filter(models_producto.Producto.id == producto_id).scalar()
-    costo_promedio_global_actual_dec = Decimal(str(costo_promedio_global_actual_float or 0.0))
+    
+    # FIX: El costo promedio inicial del reporte debe ser el histórico en ese momento, no el promedio final de hoy.
+    costo_promedio_global_actual_dec = Decimal('0.0')
+    if saldo_cantidad_actual.is_normal() and saldo_cantidad_actual > 0:
+        costo_promedio_global_actual_dec = saldo_valor_actual / saldo_cantidad_actual
+    
     items_kardex = []
     total_entradas_cant = Decimal('0.0'); total_salidas_cant = Decimal('0.0')
     total_entradas_val = Decimal('0.0'); total_salidas_val = Decimal('0.0')
@@ -421,8 +445,9 @@ def get_kardex_por_producto(db: Session, empresa_id: int, filtros: schemas_repor
             saldo_parcial_cantidad = saldo_cantidad_actual + mov_cantidad
             saldo_parcial_valor = saldo_valor_actual + mov_costo_total_entrada
             
-            # Actualizar costo promedio (lógica simplificada para el Kardex)
-            if not bodega_id and saldo_parcial_cantidad.is_normal(): 
+            # Actualizar costo promedio (lógica dinámica para el Kardex)
+            # FIX: El recálculo del promedio debe ocurrir SIEMPRE para reflejar la realidad en el reporte filtrado.
+            if saldo_parcial_cantidad.is_normal() and saldo_parcial_cantidad > 0: 
                 costo_promedio_global_actual_dec = saldo_parcial_valor / saldo_parcial_cantidad
             
             item_data.update({
