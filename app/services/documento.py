@@ -515,7 +515,7 @@ def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id:
             from app.services.inventario import recalcular_saldos_producto
             print(f"[ELIMINACION MASIVA] Recalculando inventario para {len(productos_afectados_ids)} productos afectados...")
             for pid in productos_afectados_ids:
-                recalcular_saldos_producto(db, pid)
+                recalcular_saldos_producto(db, pid, commit=False)
         
         # F. REVERSIÓN DE CONSUMO (Movido al inicio - Deprecado aquí)
         # La reversión ya se ejecutó al principio para evitar FK constraints.

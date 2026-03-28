@@ -126,6 +126,16 @@ def anular_remision(db: Session, remision_id: int, empresa_id: int):
                     )
                     
     remision.estado = 'ANULADA'
+    
+    # NUEVO: Recalcular inventario tras la entrada por anulación
+    if remision.estado == 'ANULADA':
+        from app.services.inventario import recalcular_saldos_producto
+        # Usamos set() para no recalcular varias veces el mismo producto
+        productos_recalc = {det.producto_id for det in remision.detalles 
+                           if det.producto and not det.producto.es_servicio and det.producto.controlar_inventario}
+        for pid in productos_recalc:
+            recalcular_saldos_producto(db, pid, commit=False)
+
     db.commit()
     return remision
 

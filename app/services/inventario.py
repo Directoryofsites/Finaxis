@@ -149,7 +149,7 @@ def get_stock_historico(db: Session, producto_id: int, bodega_id: Optional[int],
     return float(saldo_result or Decimal('0.0'))
 
 
-def recalcular_saldos_producto(db: Session, producto_id: int):
+def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = True):
     """
     Reconstruye TOTALMENTE el Stock y Costo Promedio del producto basándose
     en todos los movimientos existentes en la base de datos.
@@ -282,7 +282,10 @@ def recalcular_saldos_producto(db: Session, producto_id: int):
     # C. Limpieza de StockBodega huerfanos (opcional, si queremos borrar los q quedaron en 0)
     # Por ahora mejor no borrar para no perder historial de qué bodegas se usaron.
     
-    db.commit() # PERSISTENCIA CRÍTICA: Asegurar que el recálculo se guarde en la BD
+    if commit:
+        db.commit() # PERSISTENCIA CRÍTICA: Solo si se solicita commit directo
+    else:
+        db.flush() # Importante: Sincronizar cambios en la sesión sin cerrar transacción
     print(f"[RECALCULO FINALIZADO] ID {producto_id} -> Stock Global: {stock_total_global}, Costo Prom: {nuevo_costo_promedio}")
 
 
