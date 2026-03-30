@@ -98,7 +98,7 @@ def _documento_afecta_cuentas(db: Session, documento_id: int, cuentas_ids: List[
     ).first()
     return movimiento_existente is not None
 
-def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: int):
+def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: int, commit: bool = True):
     filter_condition = models_doc.beneficiario_id == tercero_id
     
     try:
@@ -242,7 +242,10 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
                             factura_data['saldo'] -= valor_a_aplicar
                             valor_pago -= valor_a_aplicar
         
-        db.commit() # IMPORTANTE: Persistir los cambios
+        if commit:
+            db.commit() # IMPORTANTE: Persistir los cambios
+        else:
+            db.flush()
         return {"status": "ok", "message": "Recálculo de cartera y proveedores completado."}
 
     except Exception as e:

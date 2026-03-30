@@ -512,10 +512,14 @@ def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id:
         # E. RECALCULAR SALDOS (Integridad de Inventario)
         # Importamos aquí para evitar Circular Import (documento <-> inventario)
         if productos_afectados_ids:
-            from app.services.inventario import recalcular_saldos_producto
+            from app.services.inventario import recalcular_saldos_producto, SaldoNegativoException
             print(f"[ELIMINACION MASIVA] Recalculando inventario para {len(productos_afectados_ids)} productos afectados...")
-            for pid in productos_afectados_ids:
-                recalcular_saldos_producto(db, pid, commit=False)
+            try:
+                for pid in productos_afectados_ids:
+                    recalcular_saldos_producto(db, pid, commit=False, validar_negativos=True)
+            except SaldoNegativoException as sne:
+                db.rollback()
+                raise HTTPException(status_code=400, detail=sne.mensaje)
         
         # F. REVERSIÓN DE CONSUMO (Movido al inicio - Deprecado aquí)
         # La reversión ya se ejecutó al principio para evitar FK constraints.
@@ -2300,7 +2304,9 @@ def eliminar_documentos_masivamente(db: Session, payload: schemas_doc.DocumentoA
         terceros_afectados_ids = {doc.beneficiario_id for doc in docs_a_eliminar if doc.beneficiario_id}
 
         for tercero_id in terceros_afectados_ids:
-            cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=tercero_id, empresa_id=empresa_id)
+            cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=tercero_id, empresa_id=empresa_id, commit=False)
+        
+        db.commit() # Commit final de cartera
 
         mensaje = f"{eliminados_count} documento(s) eliminado(s) exitosamente."
         if fallidos_ids:

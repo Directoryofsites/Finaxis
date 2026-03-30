@@ -17,6 +17,17 @@ from weasyprint import HTML # Necesario para la generación de PDF
 from jinja2 import Environment, FileSystemLoader # Necesario para la generación de PDF
 
 
+# --- EXCEPCIONES PERSONALIZADAS ---
+class SaldoNegativoException(Exception):
+    def __init__(self, mensaje: str, producto_id: int, bodega_id: int, fecha: datetime, cantidad_faltante: float):
+        self.mensaje = mensaje
+        self.producto_id = producto_id
+        self.bodega_id = bodega_id
+        self.fecha = fecha
+        self.cantidad_faltante = cantidad_faltante
+        super().__init__(self.mensaje)
+
+
 # --- Importaciones de Modelos ---
 from ..models import (
     producto as models_producto,
@@ -149,7 +160,7 @@ def get_stock_historico(db: Session, producto_id: int, bodega_id: Optional[int],
     return float(saldo_result or Decimal('0.0'))
 
 
-def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = True):
+def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = True, validar_negativos: bool = True):
     """
     Reconstruye TOTALMENTE el Stock y Costo Promedio del producto basándose
     en todos los movimientos existentes en la base de datos.
@@ -248,6 +259,26 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
             mov.costo_unitario = nuevo_costo_promedio
             mov.costo_total = cantidad * nuevo_costo_promedio
             db.add(mov)
+
+        # --- VALIDACIÓN DE STOCK NEGATIVO (OBLIGATORIA) ---
+        if validar_negativos and stocks_por_bodega[bodega_id] < -0.00001:
+            from ..models.bodega import Bodega
+            bodega_obj = db.query(Bodega).get(bodega_id)
+            nombre_bodega = bodega_obj.nombre if bodega_obj else f"ID {bodega_id}"
+            fecha_str = mov.fecha.strftime('%Y-%m-%d')
+            cantidad_faltante = abs(stocks_por_bodega[bodega_id])
+            
+            raise SaldoNegativoException(
+                mensaje=(
+                    f"El producto '{producto.nombre}' quedaría con saldo negativo ({stocks_por_bodega[bodega_id]:.2f}) "
+                    f"en la bodega '{nombre_bodega}' el día {fecha_str}. "
+                    f"Faltan {cantidad_faltante:.2f} unidades para cubrir la operación."
+                ),
+                producto_id=producto_id,
+                bodega_id=bodega_id,
+                fecha=mov.fecha,
+                cantidad_faltante=cantidad_faltante
+            )
             
     # 5. Aplicar cambios a la Base de Datos
     
