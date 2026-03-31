@@ -7244,52 +7244,66 @@ TEMPLATES_EMPAQUETADOS = {
     <meta charset="UTF-8">
     <title>Rentabilidad por Documento</title>
     <style>
-        body { font-family: Arial, sans-serif; font-size: 10pt; }
-        .header { text-align: center; margin-bottom: 20px; }
-        .header h1 { font-size: 16pt; margin-bottom: 5px; }
-        .header p { font-size: 10pt; margin: 0; }
-        .info-box { border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 5px; background-color: #f9f9f9; }
-        .info-box p { margin: 3px 0; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #eee; font-weight: bold; }
+        @page { size: letter landscape; margin: 1cm; }
+        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 9pt; color: #333; line-height: 1.4; }
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #444; padding-bottom: 10px; }
+        .header h1 { font-size: 18pt; margin: 0; color: #000; }
+        .header p { font-size: 10pt; margin: 2px 0; color: #666; }
+        
+        .header-section { text-align: center; margin-bottom: 15px; }
+        .header-section h1 { font-size: 16pt; color: #2c3e50; text-transform: uppercase; margin: 0; }
+
+        .info-box { display: table; width: 100%; border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 5px; background-color: #fcfcfc; }
+        .info-box div { display: table-cell; width: 50%; vertical-align: top; }
+        .info-box p { margin: 3px 0; font-size: 9pt; }
+        
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
+        th, td { border: 1px solid #ccc; padding: 6px 4px; text-align: left; word-wrap: break-word; }
+        th { background-color: #f2f2f2; font-weight: bold; font-size: 8pt; text-transform: uppercase; color: #444; text-align: center; }
+        td { font-size: 8pt; }
+        
         .right { text-align: right; }
-        .mono { font-family: 'Courier New', monospace; }
-        .footer { margin-top: 30px; border-top: 1px solid #ccc; padding-top: 10px; font-size: 9pt; }
-        .totals-row td { font-weight: bold; background-color: #e0e0e0; }
-        .negative { color: red; }
+        .center { text-align: center; }
+        .mono { font-family: 'Courier New', monospace; font-weight: bold; }
+        .footer { margin-top: 30px; border-top: 1px solid #ccc; padding-top: 10px; font-size: 8pt; color: #777; text-align: center; }
+        .totals-row td { font-weight: bold; background-color: #eee; font-size: 9pt; border-top: 2px solid #444; }
+        .negative { color: #d9534f; background-color: #f9f2f2; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>{{ empresa.razon_social }}</h1>
         <p>NIT: {{ empresa.nit }}</p>
-        <p>Reporte Generado: {{ now()|date("d/m/Y H:i") }}</p>
+        <p>Reporte Generado: {{ now()|date("%d/%m/%Y %H:%M") }}</p>
     </div>
 
     <div class="header-section">
-        <h1>AnÃ¡lisis de Rentabilidad por Documento</h1>
+        <h1>Análisis de Rentabilidad por Documento</h1>
     </div>
 
     <div class="info-box">
-        <p><strong>Documento Auditado:</strong> {{ data.documento_ref }}</p>
-        <p><strong>Tercero:</strong> {{ data.tercero_nombre }}</p>
-        <p><strong>Fecha de Documento:</strong> {{ data.fecha|date("d/m/Y") }}</p>
-        <p><strong>Filtro Usado:</strong> CÃ³digo {{ filtros.tipo_documento_codigo|default('N/A') }} y NÃºmero {{ filtros.numero_documento|default('N/A') }}</p>
+        <div>
+            <p><strong>Documento Auditado:</strong> {{ data.documento_ref }}</p>
+            <p><strong>Tercero:</strong> {{ data.tercero_nombre }}</p>
+        </div>
+        <div>
+            <p><strong>Fecha de Documento:</strong> {{ data.fecha|date("%d/%m/%Y") }}</p>
+            <p><strong>Filtro Usado:</strong> Rango de fechas: {{ filtros.fecha_inicio|default('N/A') }} al {{ filtros.fecha_fin|default('N/A') }}</p>
+        </div>
     </div>
 
     <table>
         <thead>
             <tr>
-                <th style="width: 15%;">CÃ“DIGO</th>
-                <th style="width: 25%;">ARTÃCULO</th>
-                <th class="right" style="width: 8%;">CANT.</th>
-                <th class="right" style="width: 10%;">VTA. UNIT.</th>
-                <th class="right" style="width: 10%;">COSTO UNIT.</th>
-                <th class="right" style="width: 10%;">VTA. TOTAL</th>
-                <th class="right" style="width: 10%;">COSTO TOTAL</th>
-                <th class="right" style="width: 10%;">UTILIDAD BRUTA</th>
-                <th class="right" style="width: 7%;">MARGEN %</th>
+                <th style="width: 10%;">CÓDIGO</th>
+                <th style="width: 25%;">ARTÍCULO</th>
+                <th class="right" style="width: 7%;">CANT.</th>
+                <th class="right" style="width: 9%;">VTA. UNIT.</th>
+                <th class="right" style="width: 9%;">COSTO UNIT.</th>
+                <th class="right" style="width: 12%;">VTA. TOTAL</th>
+                <th class="right" style="width: 12%;">COSTO TOTAL</th>
+                <th class="right" style="width: 10%;">UTILIDAD</th>
+                <th class="right" style="width: 6%;">MARGEN%</th>
             </tr>
         </thead>
         <tbody>
@@ -7336,7 +7350,7 @@ TEMPLATES_EMPAQUETADOS = {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>AnÃ¡lisis de Rentabilidad de Factura</title>
+    <title>Análisis de Rentabilidad de Factura</title>
     <style>
         body { font-family: sans-serif; font-size: 10px; }
         .container { width: 100%; margin: 0 auto; }
@@ -7362,18 +7376,18 @@ TEMPLATES_EMPAQUETADOS = {
         <div class="header">
             <h1>{{ empresa.nombre }}</h1>
             <p>NIT: {{ empresa.nit }}</p>
-            <h2>AnÃ¡lisis de Rentabilidad de Factura</h2>
+            <h2>Análisis de Rentabilidad de Factura</h2>
         </div>
 
         <table class="info-table">
             <tr>
                 <td width="15%"><strong class="label">Documento:</strong></td>
-                <td width="35%">{{ doc.tipo_documento.nombre }} NÂ° {{ doc.numero }}</td>
+                <td width="35%">{{ doc.tipo_documento.nombre }} N° {{ doc.numero }}</td>
                 <td width="15%"><strong class="label">Cliente:</strong></td>
                 <td width="35%">{{ doc.beneficiario.razon_social }}</td>
             </tr>
             <tr>
-                <td><strong class="label">Fecha EmisiÃ³n:</strong></td>
+                <td><strong class="label">Fecha Emisión:</strong></td>
                 <td>{{ doc.fecha.strftime('%Y-%m-%d') }}</td>
                 <td><strong class="label">NIT Cliente:</strong></td>
                 <td>{{ doc.beneficiario.nit }}</td>
@@ -7525,8 +7539,8 @@ TEMPLATES_EMPAQUETADOS = {
 
     <div class="info">
         <p><strong>Producto:</strong> {{ producto_info.codigo }} - {{ producto_info.nombre }}</p>
-        <p><strong>PerÃ­odo Analizado:</strong> {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
-        <p><strong>Fecha de GeneraciÃ³n:</strong> {{ fecha_generacion }}</p>
+        <p><strong>Período Analizado:</strong> {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
+        <p><strong>Fecha de Generación:</strong> {{ fecha_generacion }}</p>
     </div>
 
     <table>
@@ -7558,7 +7572,7 @@ TEMPLATES_EMPAQUETADOS = {
             </tr>
             {% else %}
             <tr>
-                <td colspan="9" style="text-align:center;">No se encontraron ventas para este producto en el perÃ­odo seleccionado.</td>
+                <td colspan="9" style="text-align:center;">No se encontraron ventas para este producto en el período seleccionado.</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -7592,7 +7606,7 @@ TEMPLATES_EMPAQUETADOS = {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>AnÃ¡lisis de Rentabilidad por Producto/Grupo</title>
+    <title>Análisis de Rentabilidad por Producto/Grupo</title>
     <style>
         @page {
             size: letter landscape; /* Paisaje para mÃ¡s columnas */
@@ -7609,8 +7623,8 @@ TEMPLATES_EMPAQUETADOS = {
             padding-bottom: 10px;
             margin-bottom: 15px; /* Reducido margen */
         }
-        .header h1 { margin: 0; font-size: 14pt; } /* Reducido tamaÃ±o */
-        .header h2 { margin: 0; font-size: 11pt; font-weight: normal; } /* Reducido tamaÃ±o */
+        .header h1 { margin: 0; font-size: 14pt; }
+        .header h2 { margin: 0; font-size: 11pt; font-weight: normal; }
         .info {
             margin-bottom: 15px; /* Reducido margen */
             text-align: center;
@@ -7649,7 +7663,7 @@ TEMPLATES_EMPAQUETADOS = {
 
     <div class="header">
         <h1>{{ empresa.razon_social if empresa else 'Empresa Desconocida' }}</h1>
-        <h2>{{ titulo_reporte | default('AnÃ¡lisis de Rentabilidad') }}</h2>
+        <h2>{{ titulo_reporte | default('Análisis de Rentabilidad') }}</h2>
     </div>
 
     <div class="info">
@@ -7666,7 +7680,7 @@ TEMPLATES_EMPAQUETADOS = {
     <table>
         <thead>
             <tr>
-                <th class="nowrap">CÃ³digo</th>
+                <th class="nowrap">Código</th>
                 <th>Producto</th>
                 <th class="currency">Venta Total</th>
                 <th class="currency">Costo Total</th>
@@ -7733,10 +7747,10 @@ TEMPLATES_EMPAQUETADOS = {
         <h1>{{ empresa.razon_social }}</h1>
         <h3>NIT: {{ empresa.nit }}</h3>
         <h2>Explorador de Transacciones de {{ filtros.tipo_reporte.capitalize() }}</h2>
-        <p>PerÃ­odo del {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
+        <p>Período del {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
     </div>
 
-    <h4>Resumen del PerÃ­odo</h4>
+    <h4>Resumen del Período</h4>
     <table class="kpi-table">
         <tr>
             <td>{{ 'Total Facturado' if filtros.tipo_reporte == 'ventas' else 'Total Comprado' }}</td>
