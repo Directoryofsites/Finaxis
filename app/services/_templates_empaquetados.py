@@ -7303,7 +7303,7 @@ TEMPLATES_EMPAQUETADOS = {
                 <th class="right" style="width: 15%;">VTA. TOTAL</th>
                 <th class="right" style="width: 15%;">COSTO TOTAL</th>
                 <th class="right" style="width: 12%;">UTILIDAD</th>
-                <th class="right" style="width: 16%;">MARGEN%</th>
+                <th class="center" style="width: 16%;">MARGEN%</th>
             </tr>
         </thead>
         <tbody>
@@ -7317,7 +7317,7 @@ TEMPLATES_EMPAQUETADOS = {
                 <td class="right mono">{{ item.valor_venta_total|format_currency(0) }}</td>
                 <td class="right mono">{{ item.costo_total|format_currency(0) }}</td>
                 <td class="right mono">{{ item.utilidad_bruta_valor|format_currency(0) }}</td>
-                <td class="right mono">{{ item.utilidad_bruta_porcentaje|format_decimal(2) }}%</td>
+                <td class="center mono">{{ item.utilidad_bruta_porcentaje|format_decimal(2) }}%</td>
             </tr>
             {% endfor %}
             {% if not data.detalle %}
@@ -7332,7 +7332,7 @@ TEMPLATES_EMPAQUETADOS = {
                 <td class="right mono">{{ data.totales.total_venta|default(0)|format_currency(0) }}</td>
                 <td class="right mono">{{ data.totales.total_costo|default(0)|format_currency(0) }}</td>
                 <td class="right mono">{{ data.totales.total_utilidad_bruta_valor|default(0)|format_currency(0) }}</td>
-                <td class="right mono">{{ data.totales.total_utilidad_bruta_porcentaje|default(0)|format_decimal(2) }}%</td>
+                <td class="center mono">{{ data.totales.total_utilidad_bruta_porcentaje|default(0)|format_decimal(2) }}%</td>
             </tr>
         </tfoot>
     </table>
