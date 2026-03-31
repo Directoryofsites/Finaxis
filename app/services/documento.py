@@ -339,12 +339,17 @@ def anular_documento(db: Session, documento_id: int, empresa_id: int, user_id: i
         # ----------------------------
 
         # Reversión de Inventario
+        productos_afectados = set()
         if db_documento.tipo_documento and db_documento.tipo_documento.afecta_inventario:
+            # Import local para evitar importaciones circulares
+            from app.services import inventario as service_inventario
+            
             movimientos_inventario_originales = db.query(models_producto.MovimientoInventario).filter(
                 models_producto.MovimientoInventario.documento_id == db_documento.id
             ).all()
 
             for mov_inv in movimientos_inventario_originales:
+                productos_afectados.add(mov_inv.producto_id)
                 tipo_movimiento_reverso = ''
                 if mov_inv.tipo_movimiento.startswith('SALIDA'):
                     tipo_movimiento_reverso = 'ENTRADA_ANULACION'
@@ -365,6 +370,16 @@ def anular_documento(db: Session, documento_id: int, empresa_id: int, user_id: i
         
         db.commit()
         db.refresh(db_documento)
+
+        # --- GATILLO AUTOMÁTICO DE RECÁLCULO (NUEVO) ---
+        # Recalculamos cada producto afectado para que el Kárdex y la Contabilidad (Cuenta 6) 
+        # se sincronicen inmediatamente tras la anulación.
+        if productos_afectados:
+            from app.services import inventario as service_inventario
+            for p_id in productos_afectados:
+                service_inventario.recalcular_saldos_producto(db, p_id)
+            db.commit() # Confirmamos los cambios del recálculo (sincronización contable cascada)
+
 
         # Recálculo de Cartera
         funciones_relevantes = [
@@ -525,8 +540,9 @@ def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id:
         # La reversión ya se ejecutó al principio para evitar FK constraints.
         # ----------------------------------
         
-        # Commit final se maneja usualmente en el router o aquí si no hay transacción externa
-        # db.commit() # Descomentar si la ruta no hace commit
+        # Commit final para persistir la eliminación y los recálculos de inventario asociados
+        db.commit() 
+
         
         return {"message": "Documento preparado para mover a la papelera."}
 
@@ -649,9 +665,25 @@ def reactivar_documento(db: Session, documento_id: int, empresa_id: int):
 
         db_documento.anulado = False
         db_documento.estado = 'ACTIVO'
+        
+        # --- GATILLO AUTOMÁTICO DE RECÁLCULO (NUEVO) ---
+        # Si el documento afecta inventario, al reactivarlo debemos recalcular
+        productos_afectados = set()
+        if db_documento.tipo_documento and db_documento.tipo_documento.afecta_inventario:
+            # Capturamos los productos antes de confirmar para el disparador
+            productos_afectados = {m.producto_id for m in db_documento.movimientos_inventario}
+        
         db.commit()
         db.refresh(db_documento)
+
+        if productos_afectados:
+            from app.services import inventario as service_inventario
+            for p_id in productos_afectados:
+                service_inventario.recalcular_saldos_producto(db, p_id)
+            db.commit()
+
         return db_documento
+
     except HTTPException as e:
         db.rollback()
         raise e
@@ -2360,6 +2392,9 @@ def update_documento(db: Session, documento_id: int, documento_update: schemas_d
                 raise HTTPException(status_code=400, detail="No se puede modificar un documento anulado.")
 
             beneficiario_original_id = db_documento.beneficiario_id
+            
+            # Capturamos productos originales ANTES de eliminar movimientos
+            productos_afectados_final = {m.producto_id for m in db_documento.movimientos if m.producto_id}
 
             total_debito = sum(mov.debito for mov in documento_update.movimientos)
             total_credito = sum(mov.credito for mov in documento_update.movimientos)
@@ -2415,11 +2450,21 @@ def update_documento(db: Session, documento_id: int, documento_update: schemas_d
             detalle_documento_json=[{"id": db_documento.id, "tipo_documento": db_documento.tipo_documento.codigo, "numero": db_documento.numero}]
         )
 
-        db.add(log_entry_modificacion)
-        db.commit()
-        db.refresh(db_documento)
+        # --- GATILLO AUTOMÁTICO DE RECÁLCULO (NUEVO) ---
+        # Si el documento o los nuevos movimientos involucran productos, disparamos el recálculo.
+        # Añadimos los productos del payload por si cambiaron o se agregaron.
+        for mov in documento_update.movimientos:
+            if mov.producto_id:
+                productos_afectados_final.add(mov.producto_id)
+        
+        if productos_afectados_final:
+            from app.services import inventario as service_inventario
+            for p_id in productos_afectados_final:
+                service_inventario.recalcular_saldos_producto(db, p_id)
+            db.commit()
 
         return db_documento
+
 
     except Exception as e:
         db.rollback()
