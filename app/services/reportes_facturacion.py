@@ -903,13 +903,17 @@ def get_rentabilidad_por_documento(
     for row in resultados:
         cantidad = Decimal(str(row.cantidad or '0.0'))
         # Nota: El costo unitario puede venir de inventario, o inferirse si cant > 0
-        costo_unitario_ref = Decimal(str(row.costo_unitario or '0.0'))
-        
         costo_total = Decimal(str(row.costo_total or '0.0'))
         venta_total = Decimal(str(row.valor_venta_total or '0.0'))
-        
-        if cantidad > 0 and costo_unitario_ref == 0:
+
+        if cantidad > 0:
+            # Forzamos que el unitario sea el resultado del total contable / cantidad
+            # para que el reporte sea matemáticamente cerrado y consistente.
             costo_unitario_ref = costo_total / cantidad if cantidad else Decimal('0.0')
+        else:
+            costo_unitario_ref = Decimal(str(row.costo_unitario or '0.0'))
+
+
 
         if venta_total == Decimal('0.0'):
              utilidad = -costo_total # Pérdida pura si hay costo sin venta

@@ -260,6 +260,36 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
             mov.costo_total = cantidad * nuevo_costo_promedio
             db.add(mov)
 
+            # --- SINCRONIZACIÓN CON CONTABILIDAD (PUENTE CASCADA) ---
+            # Si el movimiento está vinculado a un documento, actualizamos su asiento de costo
+            if mov.documento_id:
+                grupo = producto.grupo_inventario
+                if grupo and grupo.cuenta_costo_venta_id and grupo.cuenta_inventario_id:
+                    # Buscamos las líneas contables de este producto en este documento
+                    # Filtramos por las cuentas específicas de costo e inventario del grupo
+                    asientos = db.query(models_mov.MovimientoContable).filter(
+                        models_mov.MovimientoContable.documento_id == mov.documento_id,
+                        models_mov.MovimientoContable.producto_id == producto_id,
+                        models_mov.MovimientoContable.cuenta_id.in_([
+                            grupo.cuenta_costo_venta_id, 
+                            grupo.cuenta_inventario_id
+                        ])
+                    ).all()
+                    
+                    for asiento in asientos:
+                        # Actualizar el valor basado en el nuevo costo total calculado
+                        if asiento.cuenta_id == grupo.cuenta_costo_venta_id:
+                            asiento.debito = Decimal(str(mov.costo_total)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                            asiento.credito = Decimal('0.0')
+                        elif asiento.cuenta_id == grupo.cuenta_inventario_id:
+                            asiento.credito = Decimal(str(mov.costo_total)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                            asiento.debito = Decimal('0.0')
+                        
+                        # Sincronizamos también la cantidad por si hubo cambios
+                        asiento.cantidad = Decimal(str(mov.cantidad))
+                        db.add(asiento)
+
+
         # --- VALIDACIÓN DE STOCK NEGATIVO (OBLIGATORIA) ---
         if validar_negativos and stocks_por_bodega[bodega_id] < -0.00001:
             from ..models.bodega import Bodega
