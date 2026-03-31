@@ -7295,15 +7295,15 @@ TEMPLATES_EMPAQUETADOS = {
     <table>
         <thead>
             <tr>
-                <th style="width: 7%;">CÓDIGO</th>
-                <th style="width: 18%;">ARTÍCULO</th>
-                <th class="right" style="width: 7%;">CANT.</th>
-                <th class="right" style="width: 10%;">VTA. UNIT.</th>
-                <th class="right" style="width: 10%;">COSTO UNIT.</th>
-                <th class="right" style="width: 13%;">VTA. TOTAL</th>
-                <th class="right" style="width: 13%;">COSTO TOTAL</th>
-                <th class="right" style="width: 15%;">UTILIDAD</th>
-                <th class="right" style="width: 7%;">MARGEN%</th>
+                <th style="width: 6%;">CÓDIGO</th>
+                <th style="width: 15%;">ARTÍCULO</th>
+                <th class="right" style="width: 5%;">CANT.</th>
+                <th class="right" style="width: 8%;">VTA. UNIT.</th>
+                <th class="right" style="width: 8%;">COSTO UNIT.</th>
+                <th class="right" style="width: 15%;">VTA. TOTAL</th>
+                <th class="right" style="width: 15%;">COSTO TOTAL</th>
+                <th class="right" style="width: 20%;">UTILIDAD</th>
+                <th class="right" style="width: 8%;">MARGEN%</th>
             </tr>
         </thead>
         <tbody>
@@ -7311,12 +7311,12 @@ TEMPLATES_EMPAQUETADOS = {
             <tr class="{% if item.utilidad_bruta_valor|default(0) < 0 %}negative{% endif %}">
                 <td class="mono">{{ item.producto_codigo }}</td>
                 <td>{{ item.producto_nombre }}</td>
-                <td class="right mono">{{ item.cantidad|format_decimal(2) }}</td>
-                <td class="right mono">{{ item.valor_venta_unitario|format_currency }}</td>
-                <td class="right mono">{{ item.costo_unitario|format_currency }}</td>
-                <td class="right mono">{{ item.valor_venta_total|format_currency }}</td>
-                <td class="right mono">{{ item.costo_total|format_currency }}</td>
-                <td class="right mono">{{ item.utilidad_bruta_valor|format_currency }}</td>
+                <td class="right mono">{{ item.cantidad|format_decimal(0) }}</td>
+                <td class="right mono">{{ item.valor_venta_unitario|format_currency(0) }}</td>
+                <td class="right mono">{{ item.costo_unitario|format_currency(0) }}</td>
+                <td class="right mono">{{ item.valor_venta_total|format_currency(0) }}</td>
+                <td class="right mono">{{ item.costo_total|format_currency(0) }}</td>
+                <td class="right mono">{{ item.utilidad_bruta_valor|format_currency(0) }}</td>
                 <td class="right mono">{{ item.utilidad_bruta_porcentaje|format_decimal(2) }}%</td>
             </tr>
             {% endfor %}
@@ -7329,9 +7329,9 @@ TEMPLATES_EMPAQUETADOS = {
         <tfoot>
             <tr class="totals-row">
                 <td colspan="5" class="right">TOTALES ACUMULADOS:</td>
-                <td class="right mono">{{ data.totales.total_venta|default(0)|format_currency }}</td>
-                <td class="right mono">{{ data.totales.total_costo|default(0)|format_currency }}</td>
-                <td class="right mono">{{ data.totales.total_utilidad_bruta_valor|default(0)|format_currency }}</td>
+                <td class="right mono">{{ data.totales.total_venta|default(0)|format_currency(0) }}</td>
+                <td class="right mono">{{ data.totales.total_costo|default(0)|format_currency(0) }}</td>
+                <td class="right mono">{{ data.totales.total_utilidad_bruta_valor|default(0)|format_currency(0) }}</td>
                 <td class="right mono">{{ data.totales.total_utilidad_bruta_porcentaje|default(0)|format_decimal(2) }}%</td>
             </tr>
         </tfoot>
@@ -7548,13 +7548,13 @@ TEMPLATES_EMPAQUETADOS = {
             <tr>
                 <th style="width: 10%;">Fecha</th>
                 <th style="width: 13%;">Documento</th>
-                <th class="text-right" style="width: 6%;">Cant.</th>
-                <th class="text-right" style="width: 10%;">Venta Unit.</th>
-                <th class="text-right" style="width: 12%;">Venta Total</th>
-                <th class="text-right" style="width: 10%;">Costo Unit.</th>
-                <th class="text-right" style="width: 12%;">Costo Total</th>
-                <th class="text-right" style="width: 15%;">Utilidad Bruta</th>
-                <th class="text-right" style="width: 7%;">% Margen</th>
+                <th class="text-right" style="width: 5%;">Cant.</th>
+                <th class="text-right" style="width: 8%;">Venta Unit.</th>
+                <th class="text-right" style="width: 15%;">Venta Total</th>
+                <th class="text-right" style="width: 8%;">Costo Unit.</th>
+                <th class="text-right" style="width: 15%;">Costo Total</th>
+                <th class="text-right" style="width: 18%;">Utilidad Bruta</th>
+                <th class="text-right" style="width: 8%;">% Margen</th>
             </tr>
         </thead>
         <tbody>
