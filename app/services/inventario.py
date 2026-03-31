@@ -378,9 +378,9 @@ def recalcular_todo_inventario(db: Session, empresa_id: int):
     return {"message": f"Recálculo completado. Productos procesados: {count}", "total": count}
 
 
-# --- AJUSTES Y CORRECCIONES DE MOVIMIENTOS HUÉRFANOS (KARDEX MANUAL) ---
+# --- AJUSTES Y CORRECCIONES DE MOVIMIENTOS (KARDEX ADMIN) ---
 def update_movimiento_inventario_directo(db: Session, movimiento_id: int, update_data: schemas.MovimientoInventarioUpdate, empresa_id: int):
-    # Validar que exista el movimiento, pertenezca a un producto de la empresa y SEA HUÉRFANO (documento_id is null)
+    # Función original para movimientos huérfanos (se mantiene para compatibilidad)
     movimiento = db.query(models_producto.MovimientoInventario).join(
         models_producto.Producto, models_producto.MovimientoInventario.producto_id == models_producto.Producto.id
     ).filter(
@@ -389,10 +389,10 @@ def update_movimiento_inventario_directo(db: Session, movimiento_id: int, update
     ).first()
     
     if not movimiento:
-        raise HTTPException(status_code=404, detail="Movimiento no encontrado o no pertenece a la empresa.")
+        raise HTTPException(status_code=404, detail="Movimiento no encontrado.")
         
     if movimiento.documento_id is not None:
-        raise HTTPException(status_code=403, detail="No se puede modificar directamente un movimiento asociado a un documento contable. Modifique el documento padre.")
+        raise HTTPException(status_code=403, detail="Use la función de edición administrativa para movimientos con documento.")
         
     if update_data.fecha: movimiento.fecha = update_data.fecha
     if update_data.cantidad is not None: 
@@ -402,12 +402,87 @@ def update_movimiento_inventario_directo(db: Session, movimiento_id: int, update
         movimiento.costo_unitario = update_data.costo_unitario
         movimiento.costo_total = (movimiento.cantidad or 0.0) * update_data.costo_unitario
 
-    producto_id = movimiento.producto_id
-    db.commit()
-    
-    # Recalculamos el producto para propagar el cambio
-    recalcular_saldos_producto(db, producto_id)
+    db.add(movimiento)
+    db.flush()
+    recalcular_saldos_producto(db, movimiento.producto_id)
     return True
+
+def editar_movimiento_kardex_admin(db: Session, movimiento_id: int, update_data: schemas.MovimientoInventarioUpdate, empresa_id: int):
+    """
+    FUNCIÓN DE EXPERTO: Permite a un administrador editar CUALQUIER movimiento de kárdex,
+    sincronizando automáticamente la contabilidad si el movimiento pertenece a un documento (FC).
+    """
+    movimiento = db.query(models_producto.MovimientoInventario).join(
+        models_producto.Producto, models_producto.MovimientoInventario.producto_id == models_producto.Producto.id
+    ).filter(
+        models_producto.MovimientoInventario.id == movimiento_id,
+        models_producto.Producto.empresa_id == empresa_id
+    ).first()
+
+    if not movimiento:
+        raise HTTPException(status_code=404, detail="Movimiento de inventario no encontrado.")
+
+    # Guardar valores viejos para calcular diferencia contable
+    viejo_costo_total = Decimal(str(movimiento.costo_total))
+    producto_id = movimiento.producto_id
+    documento_id = movimiento.documento_id
+
+    # 1. ACTUALIZAR MOVIMIENTO DE INVENTARIO
+    if update_data.fecha: 
+        movimiento.fecha = update_data.fecha
+    if update_data.cantidad is not None: 
+        movimiento.cantidad = update_data.cantidad
+    if update_data.costo_unitario is not None: 
+        movimiento.costo_unitario = update_data.costo_unitario
+    
+    # Recalcular total del renglón
+    movimiento.costo_total = float(movimiento.cantidad) * float(movimiento.costo_unitario)
+    nuevo_costo_total = Decimal(str(movimiento.costo_total))
+    diferencia = nuevo_costo_total - viejo_costo_total
+
+    db.add(movimiento)
+
+    # 2. SINCRONIZACIÓN CONTABLE (Si tiene documento asociado)
+    if documento_id and diferencia != 0:
+        # A. Localizar el asiento de Inventario (Cuenta 14) vinculado a este producto
+        asiento_inv = db.query(models_mov.MovimientoContable).filter(
+            models_mov.MovimientoContable.documento_id == documento_id,
+            models_mov.MovimientoContable.producto_id == producto_id
+        ).first()
+
+        if asiento_inv:
+            asiento_inv.debito = Decimal(asiento_inv.debito) + diferencia
+            asiento_inv.cantidad = Decimal(str(movimiento.cantidad))
+            db.add(asiento_inv)
+
+        # B. Localizar el asiento del Proveedor (Cuenta 22 o similar)
+        # Buscamos por tercero_id (el del documento) y que NO tenga producto_id (es el total)
+        asiento_prov = db.query(models_mov.MovimientoContable).filter(
+            models_mov.MovimientoContable.documento_id == documento_id,
+            models_mov.MovimientoContable.producto_id == None,
+            models_mov.MovimientoContable.tercero_id != None
+        ).first()
+
+        if asiento_prov:
+            asiento_prov.credito = Decimal(asiento_prov.credito) + diferencia
+            db.add(asiento_prov)
+
+        # C. Actualizar el valor total del documento para que coincida con la sumatoria
+        documento = db.query(models_doc.Documento).get(documento_id)
+        if documento:
+            documento.valor_total = float(Decimal(str(documento.valor_total)) + diferencia)
+            db.add(documento)
+
+    # 3. GUARDAR Y RECALCULAR
+    try:
+        db.flush()
+        # Disparamos el motor de recálculo masivo para este producto
+        recalcular_saldos_producto(db, producto_id, commit=False)
+        db.commit()
+        return {"status": "success", "message": "Movimiento y contabilidad actualizados, kárdex recalculado."}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al sincronizar: {str(e)}")
 
 def delete_movimiento_inventario_directo(db: Session, movimiento_id: int, empresa_id: int):
     movimiento = db.query(models_producto.MovimientoInventario).join(

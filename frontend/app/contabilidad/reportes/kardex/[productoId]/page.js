@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
+import { useAuth } from '../../../../context/AuthContext'; // CORRECCIÓN DEFINITIVA DE RUTA RELATIVA
 import {
     FaCube,
     FaCalendarAlt,
@@ -36,6 +37,9 @@ const KardexContent = () => {
     const params = useParams();
     const searchParams = useSearchParams();
     const router = useRouter();
+    const { user } = useAuth(); // Obtener usuario y roles
+
+    const isAdmin = user?.roles?.some(r => ['administrador', 'soporte'].includes(r.nombre?.toLowerCase()));
 
     const productoId = params.productoId;
     const fecha_inicio = searchParams.get('desde');
@@ -408,22 +412,25 @@ const KardexContent = () => {
                                                 <td className="px-2 py-2 text-right font-mono font-bold text-indigo-700 border-r border-indigo-100 bg-indigo-50/10">
                                                     {formatCurrency(item.saldo_valor_total, 0)}
                                                 </td>
-                                                {/* Botones de acción (sólo si es huérfano) */}
+                                                {/* Botones de acción (Admin puede editar TODO, Usuario normal solo directos) */}
                                                 <td className="px-2 py-2 text-center">
-                                                    {(item.documento_ref === 'MOV. DIRECTO' || item.tipo_movimiento === 'ENTRADA_INICIAL') ? (
+                                                    {(isAdmin || item.documento_ref === 'MOV. DIRECTO' || item.tipo_movimiento === 'ENTRADA_INICIAL') ? (
                                                         <div className="flex justify-center gap-2">
                                                             <button 
                                                                 onClick={() => handleEditClick(item)} 
-                                                                className="text-blue-500 hover:text-blue-700 transition" 
-                                                                title="Editar Movimiento Directo">
+                                                                className="text-blue-500 hover:text-blue-700 transition p-1 hover:bg-blue-50 rounded" 
+                                                                title={item.documento_id ? "Edición Administrativa (Afecta Contabilidad)" : "Editar Movimiento Directo"}>
                                                                 <FaEdit />
                                                             </button>
-                                                            <button 
-                                                                onClick={() => handleDeleteClick(item)} 
-                                                                className="text-red-500 hover:text-red-700 transition" 
-                                                                title="Eliminar Movimiento Directo">
-                                                                <FaTrash />
-                                                            </button>
+                                                            {/* Eliminar solo permitimos en directos por ahora para evitar descuadres contables accidentales masivos */}
+                                                            {(item.documento_ref === 'MOV. DIRECTO' || item.tipo_movimiento === 'ENTRADA_INICIAL') && (
+                                                                <button 
+                                                                    onClick={() => handleDeleteClick(item)} 
+                                                                    className="text-red-500 hover:text-red-700 transition p-1 hover:bg-red-50 rounded" 
+                                                                    title="Eliminar Movimiento Directo">
+                                                                    <FaTrash />
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     ) : null}
                                                 </td>
@@ -436,11 +443,17 @@ const KardexContent = () => {
                     </>
                 )}
 
-                {/* MODAL DE EDICIÓN DE MOVIMIENTO DIRECTO */}
+                {/* MODAL DE EDICIÓN (ADAPTADA PARA ADMIN) */}
                 {editingMovement && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                         <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 transform transition-all animate-fadeIn">
-                            <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Editar Ajuste Inicial</h2>
+                            <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2">
+                                <FaEdit className="text-blue-600" />
+                                {editingMovement.documento_id ? 'Edición Administrativa' : 'Editar Movimiento'}
+                            </h2>
+                            <div className="mb-4 text-xs bg-gray-100 p-2 rounded text-gray-600 font-mono">
+                                {editingMovement.documento_ref} - {editingMovement.tipo_movimiento}
+                            </div>
                             <form onSubmit={submitEditForm} className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-1">Fecha</label>
@@ -478,8 +491,12 @@ const KardexContent = () => {
                                 </div>
                                 
                                 <div className="p-3 bg-blue-50 text-blue-800 text-xs rounded-lg flex items-start gap-2">
-                                    <FaExclamationTriangle className="mt-0.5" />
-                                    <span>Al guardar, el Kardex se recalculará automáticamente corrigiendo los saldos futuros.</span>
+                                    <FaExclamationTriangle className="mt-0.5 text-blue-600" />
+                                    <span>
+                                        {editingMovement.documento_id 
+                                            ? "ATENCIÓN: Esta edición sincronizará automáticamente la Contabilidad (Cta 14 vs Cta 22) y recalculará los costos promedio históricos."
+                                            : "Al guardar, el Kardex se recalculará automáticamente corrigiendo los saldos futuros."}
+                                    </span>
                                 </div>
 
                                 <div className="flex justify-end gap-3 mt-6">

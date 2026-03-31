@@ -306,7 +306,25 @@ def recalcular_saldos_masivo_route(db: Session = Depends(get_db), current_user: 
 
 @router.put("/movimientos-kardex/{movimiento_id}", dependencies=[Depends(has_permission("inventario:kardex"))])
 def update_movimiento_kardex_route(movimiento_id: int, update_data: schemas.MovimientoInventarioUpdate, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
-    return service_inventario.update_movimiento_inventario_directo(db=db, movimiento_id=movimiento_id, update_data=update_data, empresa_id=current_user.empresa_id)
+    # 1. Extraer nombres de roles para validación simple
+    user_roles = {rol.nombre for rol in current_user.roles}
+    
+    # 2. Si es Administrador, permitimos la edición inteligente (Sincronización Contable + Recálculo)
+    if "Administrador" in user_roles or "soporte" in user_roles:
+        return service_inventario.editar_movimiento_kardex_admin(
+            db=db, 
+            movimiento_id=movimiento_id, 
+            update_data=update_data, 
+            empresa_id=current_user.empresa_id
+        )
+    
+    # 3. Si es un usuario normal, usamos la función restrictiva (Solo movimientos huérfanos)
+    return service_inventario.update_movimiento_inventario_directo(
+        db=db, 
+        movimiento_id=movimiento_id, 
+        update_data=update_data, 
+        empresa_id=current_user.empresa_id
+    )
 
 @router.delete("/movimientos-kardex/{movimiento_id}", dependencies=[Depends(has_permission("inventario:kardex"))])
 def delete_movimiento_kardex_route(movimiento_id: int, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
