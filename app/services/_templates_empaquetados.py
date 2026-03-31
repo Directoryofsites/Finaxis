@@ -7295,15 +7295,15 @@ TEMPLATES_EMPAQUETADOS = {
     <table>
         <thead>
             <tr>
-                <th style="width: 10%;">CÓDIGO</th>
-                <th style="width: 25%;">ARTÍCULO</th>
+                <th style="width: 7%;">CÓDIGO</th>
+                <th style="width: 18%;">ARTÍCULO</th>
                 <th class="right" style="width: 7%;">CANT.</th>
-                <th class="right" style="width: 9%;">VTA. UNIT.</th>
-                <th class="right" style="width: 9%;">COSTO UNIT.</th>
-                <th class="right" style="width: 12%;">VTA. TOTAL</th>
-                <th class="right" style="width: 12%;">COSTO TOTAL</th>
-                <th class="right" style="width: 10%;">UTILIDAD</th>
-                <th class="right" style="width: 6%;">MARGEN%</th>
+                <th class="right" style="width: 10%;">VTA. UNIT.</th>
+                <th class="right" style="width: 10%;">COSTO UNIT.</th>
+                <th class="right" style="width: 13%;">VTA. TOTAL</th>
+                <th class="right" style="width: 13%;">COSTO TOTAL</th>
+                <th class="right" style="width: 15%;">UTILIDAD</th>
+                <th class="right" style="width: 7%;">MARGEN%</th>
             </tr>
         </thead>
         <tbody>
@@ -7546,15 +7546,15 @@ TEMPLATES_EMPAQUETADOS = {
     <table>
         <thead>
             <tr>
-                <th>Fecha</th>
-                <th>Documento</th>
-                <th class="text-right">Cant.</th>
-                <th class="text-right">Venta Unit.</th>
-                <th class="text-right">Venta Total</th>
-                <th class="text-right">Costo Unit.</th>
-                <th class="text-right">Costo Total</th>
-                <th class="text-right">Utilidad Bruta</th>
-                <th class="text-right">% Margen</th>
+                <th style="width: 10%;">Fecha</th>
+                <th style="width: 13%;">Documento</th>
+                <th class="text-right" style="width: 6%;">Cant.</th>
+                <th class="text-right" style="width: 10%;">Venta Unit.</th>
+                <th class="text-right" style="width: 12%;">Venta Total</th>
+                <th class="text-right" style="width: 10%;">Costo Unit.</th>
+                <th class="text-right" style="width: 12%;">Costo Total</th>
+                <th class="text-right" style="width: 15%;">Utilidad Bruta</th>
+                <th class="text-right" style="width: 7%;">% Margen</th>
             </tr>
         </thead>
         <tbody>
