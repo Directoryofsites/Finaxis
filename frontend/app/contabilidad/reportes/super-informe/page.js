@@ -8,7 +8,7 @@ import { apiService } from '../../../../lib/apiService';
 import Paginacion from '../../../components/ui/Paginacion';
 import MultiSelect from '../../../components/ui/MultiSelect';
 import VerticalTransactionCard from '../../../components/Reportes/VerticalTransactionCard'; // NEW
-import { FaSearch, FaFilePdf, FaFilter, FaChevronDown, FaChevronUp, FaEraser, FaTable, FaBook, FaThList } from 'react-icons/fa';
+import { FaSearch, FaFilePdf, FaFileExcel, FaFilter, FaChevronDown, FaChevronUp, FaEraser, FaTable, FaBook, FaThList } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
 const formatCurrency = (value) => {
@@ -422,6 +422,33 @@ function SuperInformeContent() {
     }
   }, [resultados, filtros]);
 
+  const handleExportCSV = useCallback(async () => {
+    if (resultados.length === 0) return alert("No hay datos para exportar a CSV.");
+    setIsSearching(true);
+    setError(null);
+    try {
+      const payloadSinPagina = { ...filtros, traerTodo: true };
+      const payloadLimpio = preparePayload(payloadSinPagina);
+      const response = await apiService.post('/reports/super-informe/get-signed-url-csv', payloadLimpio);
+      const signedToken = response.data.signed_url_token;
+      if (!signedToken) throw new Error("No se recibió token de descarga para CSV.");
+      const csvUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/reports/super-informe/exportar-csv?signed_token=${signedToken}`;
+      const link = document.createElement('a');
+      link.href = csvUrl;
+      link.setAttribute('download', `Super_Informe.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.detail || "Error al iniciar la descarga del CSV.");
+    } finally {
+      setIsSearching(false);
+    }
+  }, [resultados, filtros]);
+
+
+
   // AUTO PDF TRIGGER EFFECT
   useEffect(() => {
     if (autoPdfTrigger && !isSearching && resultados.length > 0) {
@@ -603,7 +630,7 @@ function SuperInformeContent() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 mt-6 pt-4 border-t border-gray-100">
             <div className="flex items-center">
               <input id="traerTodo" name="traerTodo" type="checkbox" checked={filtros.traerTodo} onChange={handleFiltroChange} className="checkbox checkbox-sm checkbox-primary mr-2 cursor-pointer" />
-              <label htmlFor="traerTodo" className="text-sm font-medium text-gray-600 cursor-pointer select-none">Traer TODO para Exportar PDF (Puede ser lento)</label>
+              <label htmlFor="traerTodo" className="text-sm font-medium text-gray-600 cursor-pointer select-none">Traer TODO para Exportar PDF/Excel (Puede ser lento)</label>
             </div>
 
             <div className="flex gap-3">
@@ -637,6 +664,9 @@ function SuperInformeContent() {
                   <button onClick={() => setViewMode('table')} className={`p-2 rounded-md transition-all ${viewMode === 'table' ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`} title="Vista Tabla"><FaTable /></button>
                   <button onClick={() => setViewMode('cards')} className={`p-2 rounded-md transition-all ${viewMode === 'cards' ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`} title="Vista Tarjetas (Vertical)"><FaThList /></button>
                 </div>
+                <button onClick={handleExportCSV} className="flex items-center gap-2 px-4 py-2 bg-white border border-green-600 text-green-700 rounded-lg hover:bg-green-50 font-medium transition-colors shadow-sm text-sm" disabled={isSearching}>
+                  <FaFileExcel /> EXCEL
+                </button>
                 <button onClick={handleExportPDF} className="flex items-center gap-2 px-4 py-2 bg-white border border-red-500 text-red-600 rounded-lg hover:bg-red-50 font-medium transition-colors shadow-sm text-sm" disabled={isSearching}>
                   <FaFilePdf /> PDF
                 </button>

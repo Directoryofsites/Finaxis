@@ -506,3 +506,68 @@ def generate_super_informe_pdf(db: Session, filtros: schemas_doc.DocumentoGestio
     
     print(f"--- [ReportLab] Tiempo Total: {time_module.time() - start_time:.4f}s ---")
     return pdf_bytes
+
+
+def generate_super_informe_csv(db: Session, filtros: schemas_doc.DocumentoGestionFiltros, empresa_id: int):
+    """
+    Genera un archivo CSV con los resultados del Super Informe.
+    Compatible con Excel (Delimitador ';' y UTF-8 con BOM).
+    """
+    import csv
+    import io
+
+    # Forzamos traer todos los datos para el informe
+    filtros.traerTodo = True
+    
+    # Obtenemos los datos JSON del informe
+    # Usamos la función interna de generación de datos
+    inf_data = generate_super_informe(db, filtros, empresa_id)
+    resultados = inf_data.get('resultados', [])
+
+    # Preparar el archivo CSV en memoria
+    output = io.StringIO()
+    output.write('\ufeff') # UTF-8 BOM para Excel
+    writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+
+    if not resultados:
+        writer.writerow(["No se encontraron resultados"])
+        return output.getvalue().encode('utf-8-sig')
+
+    # Identificar encabezados dinámicos basándose en la primera fila (como en el frontend)
+    technical_keys = [
+        'estado', 'anulado', 'documento_id', 'movimiento_id', 'usuario_creador_id', 'usuario_operacion_id',
+        'producto_codigo', 'producto_nombre', 'cantidad_movimiento', 'beneficiario_doc', 'beneficiario_mov',
+        'usuario_creador_nombre', 'usuario_operacion_nombre'
+    ]
+    
+    headers = [key for key in resultados[0].keys() if key not in technical_keys]
+    
+    # Reordenar beneficiario después de cuenta_nombre para mayor claridad
+    if 'beneficiario' in headers and 'cuenta_nombre' in headers:
+        headers.remove('beneficiario')
+        idx = headers.index('cuenta_nombre') + 1
+        headers.insert(idx, 'beneficiario')
+
+    # Escribir encabezados human-readable (Uppercase y sin guiones bajos)
+    writer.writerow([h.replace('_', ' ').upper() for h in headers])
+    
+    # Escribir filas decorando valores según tipo
+    for r in resultados:
+        row = []
+        for h in headers:
+            val = r.get(h)
+            if val is None:
+                row.append('')
+            elif isinstance(val, bool):
+                row.append('SÍ' if val else 'NO')
+            elif isinstance(val, (int, float)):
+                # Para Excel, evitar formateo con miles (,) para que sea tratable como número
+                row.append(str(val))
+            else:
+                row.append(str(val))
+        writer.writerow(row)
+
+    csv_text = output.getvalue()
+    output.close()
+    
+    return csv_text.encode('utf-8-sig')

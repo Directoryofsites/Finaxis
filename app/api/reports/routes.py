@@ -1798,6 +1798,66 @@ def get_super_informe_pdf(
     )
 
 
+@router.post("/super-informe/get-signed-url-csv", response_model=Dict[str, str])
+def get_signed_super_informe_csv_url(
+    filtros: schemas_doc.DocumentoGestionFiltros,
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    """
+    Genera una URL firmada para la descarga del CSV del Super Informe.
+    """
+    csv_endpoint = "/api/reports/super-informe/exportar-csv"
+    
+    # Pydantic model to dict para incluirlo en el token
+    filtros_dict = filtros.model_dump(mode='json')
+    
+    signed_token = reports_service.generate_signed_report_url(
+        endpoint=csv_endpoint,
+        expiration_seconds=60,
+        empresa_id=current_user.empresa_id,
+        filtros=filtros_dict
+    )
+    return {"signed_url_token": signed_token}
+
+
+@router.get("/super-informe/exportar-csv")
+def get_super_informe_csv(
+    signed_token: str = Query(..., description="Token de URL firmada"),
+    db: Session = Depends(get_db)
+):
+    """
+    SIRVE el Super Informe en formato CSV (Excel compatible).
+    """
+    verified_params = reports_service.verify_signed_report_url(
+        signed_token, "/api/reports/super-informe/exportar-csv", 90
+    )
+    if not verified_params:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="URL inválida o expirada.")
+
+    empresa_id = verified_params["empresa_id"]
+    filtros_dict = verified_params["filtros"]
+    
+    # Reconstruir objeto de filtros
+    filtros = schemas_doc.DocumentoGestionFiltros(**filtros_dict)
+    
+    csv_content = super_informe_service.generate_super_informe_csv(
+        db, filtros=filtros, empresa_id=empresa_id
+    )
+    
+    from fastapi.responses import Response
+    filename = f"Super_Informe_{date.today().strftime('%Y%m%d')}.csv"
+    
+    return Response(
+        content=csv_content, 
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}",
+            "Cache-Control": "no-cache"
+        }
+    )
+
+
+
 
 # --- INICIO: NUEVO ENDPOINT PARA RECÁLCULO MANUAL DE CARTERA/PROVEEDORES ---
 
