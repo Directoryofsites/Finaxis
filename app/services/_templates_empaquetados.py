@@ -7288,7 +7288,7 @@ TEMPLATES_EMPAQUETADOS = {
         </div>
         <div>
             <p><strong>Fecha de Documento:</strong> {{ data.fecha|date("%d/%m/%Y") }}</p>
-            <p><strong>Filtro Usado:</strong> Rango de fechas: {{ filtros.fecha_inicio|default('N/A') }} al {{ filtros.fecha_fin|default('N/A') }}</p>
+            <p><strong>Filtro Usado:</strong> Código {{ filtros.tipo_documento_codigo|default('N/A') }} y Número {{ filtros.numero_documento|default('N/A') }}</p>
         </div>
     </div>
 
@@ -7302,8 +7302,8 @@ TEMPLATES_EMPAQUETADOS = {
                 <th class="right" style="width: 8%;">COSTO UNIT.</th>
                 <th class="right" style="width: 15%;">VTA. TOTAL</th>
                 <th class="right" style="width: 15%;">COSTO TOTAL</th>
-                <th class="right" style="width: 20%;">UTILIDAD</th>
-                <th class="right" style="width: 8%;">MARGEN%</th>
+                <th class="right" style="width: 12%;">UTILIDAD</th>
+                <th class="right" style="width: 16%;">MARGEN%</th>
             </tr>
         </thead>
         <tbody>
@@ -7553,8 +7553,8 @@ TEMPLATES_EMPAQUETADOS = {
                 <th class="text-right" style="width: 15%;">Venta Total</th>
                 <th class="text-right" style="width: 8%;">Costo Unit.</th>
                 <th class="text-right" style="width: 15%;">Costo Total</th>
-                <th class="text-right" style="width: 18%;">Utilidad Bruta</th>
-                <th class="text-right" style="width: 8%;">% Margen</th>
+                <th class="text-right" style="width: 11%;">Utilidad Bruta</th>
+                <th class="text-right" style="width: 15%;">% Margen</th>
             </tr>
         </thead>
         <tbody>
