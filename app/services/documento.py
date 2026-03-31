@@ -406,7 +406,7 @@ def anular_documento(db: Session, documento_id: int, empresa_id: int, user_id: i
 
 # REEMPLAZO PARA app/services/documento.py (Función eliminar_documento)
 
-def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id: int, razon: str):
+def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id: int, razon: str, commit: bool = True):
     # 1. Buscamos el documento (Lectura simple)
     # Usamos query directa para no cargar relaciones pesadas si va a fallar
     db_documento_check = db.query(models_doc).filter(
@@ -541,7 +541,8 @@ def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id:
         # ----------------------------------
         
         # Commit final para persistir la eliminación y los recálculos de inventario asociados
-        db.commit() 
+        if commit:
+            db.commit() 
 
         
         return {"message": "Documento preparado para mover a la papelera."}
@@ -2321,7 +2322,7 @@ def eliminar_documentos_masivamente(db: Session, payload: schemas_doc.DocumentoA
             for doc in docs_a_eliminar:
                 beneficiario_id_afectado = doc.beneficiario_id
 
-                eliminar_documento(db=db, documento_id=doc.id, empresa_id=empresa_id, user_id=user_id, razon=payload.razon)
+                eliminar_documento(db=db, documento_id=doc.id, empresa_id=empresa_id, user_id=user_id, razon=payload.razon, commit=False)
 
                 tipo_doc = db.query(models_tipo).filter(models_tipo.id == doc.tipo_documento_id).with_for_update().first()
 
