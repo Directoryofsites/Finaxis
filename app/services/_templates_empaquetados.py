@@ -8649,4 +8649,113 @@ TEMPLATES_EMPAQUETADOS = {
 </html>
 ''',
 
+    'reports/ventas_cliente_report.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte Integral de Ventas por Cliente</title>
+    <style>
+        @page { size: letter landscape; margin: 1cm; }
+        body { font-family: 'Helvetica', sans-serif; font-size: 9pt; color: #333; }
+        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
+        .header h1 { margin: 0; font-size: 14pt; }
+        .header h2 { margin: 2px 0; font-size: 11pt; font-weight: normal; }
+        .info { margin-bottom: 15px; text-align: center; font-size: 9pt; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ccc; padding: 4px; text-align: left; }
+        th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .bg-totals { background-color: #e8e8e8; font-weight: bold; border-top: 2px solid #333; }
+        .client-header { background-color: #d9edf7; font-weight: bold; }
+        .detail-table { width: 95%; margin: 5px auto; font-size: 8pt; background-color: #fcfcfc;}
+        .detail-table th { background-color: #e0e0e0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <h2>Reporte Integral de Ventas por Cliente</h2>
+    </div>
+
+    <div class="info">
+        <p><strong>Período:</strong> {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 10%">NIT</th>
+                <th style="width: 25%">Cliente</th>
+                <th style="width: 10%">Venta Total</th>
+                <th style="width: 10%">Costo Total</th>
+                <th style="width: 10%">Utilidad Total</th>
+                <th style="width: 5%">Margen</th>
+                <th style="width: 10%">Cant. Ítems</th>
+                <th style="width: 10%">Facturas</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data.items %}
+            <tr class="client-header">
+                <td>{{ item.tercero_identificacion }}</td>
+                <td>{{ item.tercero_nombre }}</td>
+                <td class="text-right">${{ "{:,.0f}".format(item.total_venta) }}</td>
+                <td class="text-right">${{ "{:,.0f}".format(item.total_costo) }}</td>
+                <td class="text-right">${{ "{:,.0f}".format(item.total_utilidad) }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.margen_porcentaje) }}%</td>
+                <td class="text-right">{{ "%.2f"|format(item.cantidad_items) }}</td>
+                <td class="text-center">{{ item.conteo_documentos }}</td>
+            </tr>
+            {% if item.tercero_id in filtros.clientes_expandidos and item.detalle_productos %}
+            <tr>
+                <td colspan="8" style="padding: 0;">
+                    <table class="detail-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%">Código</th>
+                                <th style="width: 30%">Producto</th>
+                                <th style="width: 10%">Cantidad</th>
+                                <th style="width: 15%">Venta Total</th>
+                                <th style="width: 15%">Costo Total</th>
+                                <th style="width: 15%">Utilidad</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for prod in item.detalle_productos %}
+                            <tr>
+                                <td>{{ prod.producto_codigo }}</td>
+                                <td>{{ prod.producto_nombre }}</td>
+                                <td class="text-right">{{ "%.2f"|format(prod.cantidad) }}</td>
+                                <td class="text-right">${{ "{:,.0f}".format(prod.total_venta) }}</td>
+                                <td class="text-right">${{ "{:,.0f}".format(prod.total_costo) }}</td>
+                                <td class="text-right">${{ "{:,.0f}".format(prod.utilidad) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+            {% endif %}
+            {% else %}
+            <tr>
+                <td colspan="8" class="text-center">No se encontraron ventas para los filtros seleccionados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="bg-totals">
+                <td colspan="2" class="text-right">TOTALES GENERALES</td>
+                <td class="text-right">${{ "{:,.0f}".format(data.gran_total_venta) }}</td>
+                <td class="text-right">${{ "{:,.0f}".format(data.gran_total_costo) }}</td>
+                <td class="text-right">${{ "{:,.0f}".format(data.gran_total_utilidad) }}</td>
+                <td class="text-right">{{ "%.2f"|format(data.margen_global_porcentaje) }}%</td>
+                <td colspan="2"></td>
+            </tr>
+        </tfoot>
+    </table>
+</body>
+</html>
+'''
 }
