@@ -535,30 +535,48 @@ def editar_movimiento_kardex_admin(db: Session, movimiento_id: int, update_data:
                         asiento_iva.credito = Decimal(asiento_iva.credito) + dif_iva
                     db.add(asiento_iva)
 
-            # C. Sincronizar Proveedor (Cuenta 22/23)
+            # C. Sincronizar Proveedor (CXP - Cuenta 22/23)
+            # Estrategia de búsqueda en 3 niveles para máxima robustez:
+            asiento_prov = None
             cuenta_balance_id = None
             if db_tipo and db_tipo.es_compra:
                 cuenta_balance_id = db_tipo.cuenta_credito_cxp_id or db_tipo.cuenta_debito_cxp_id
 
-            query_prov = db.query(models_mov.MovimientoContable).filter(
-                models_mov.MovimientoContable.documento_id == documento_id,
-                models_mov.MovimientoContable.producto_id == None
-            )
-
+            # NIVEL 1: Buscar por cuenta CXP exacta del tipo de documento (más preciso)
             if cuenta_balance_id:
-                asiento_prov = query_prov.filter(models_mov.MovimientoContable.cuenta_id == cuenta_balance_id).first()
-            
+                asiento_prov = db.query(models_mov.MovimientoContable).filter(
+                    models_mov.MovimientoContable.documento_id == documento_id,
+                    models_mov.MovimientoContable.cuenta_id == cuenta_balance_id,
+                    models_mov.MovimientoContable.producto_id.is_(None)
+                ).first()
+
+            # NIVEL 2: Buscar cualquier cuenta 22/23 en el documento sin producto (sin filtrar tercero)
             if not asiento_prov:
-                asiento_prov = query_prov.join(models_puc.PlanCuenta, models_mov.MovimientoContable.cuenta_id == models_puc.PlanCuenta.id).filter(
-                    models_mov.MovimientoContable.tercero_id == db_doc.beneficiario_id,
-                    or_(models_puc.PlanCuenta.codigo.like('22%'), models_puc.PlanCuenta.codigo.like('23%'))
+                asiento_prov = db.query(models_mov.MovimientoContable).join(
+                    models_puc.PlanCuenta,
+                    models_mov.MovimientoContable.cuenta_id == models_puc.PlanCuenta.id
+                ).filter(
+                    models_mov.MovimientoContable.documento_id == documento_id,
+                    models_mov.MovimientoContable.producto_id.is_(None),
+                    or_(
+                        models_puc.PlanCuenta.codigo.like('22%'),
+                        models_puc.PlanCuenta.codigo.like('23%')
+                    )
+                ).first()
+
+            # NIVEL 3: Cualquier asiento sin producto (último recurso si la cuenta no inicia con 22/23)
+            if not asiento_prov:
+                asiento_prov = db.query(models_mov.MovimientoContable).filter(
+                    models_mov.MovimientoContable.documento_id == documento_id,
+                    models_mov.MovimientoContable.producto_id.is_(None),
+                    models_mov.MovimientoContable.credito > 0  # En compras, proveedor siempre es crédito
                 ).first()
 
             if asiento_prov:
                 if asiento_prov.credito > 0:
-                    asiento_prov.credito = Decimal(asiento_prov.credito) + dif_total
+                    asiento_prov.credito = Decimal(str(asiento_prov.credito)) + dif_total
                 else:
-                    asiento_prov.debito = Decimal(asiento_prov.debito) + dif_total
+                    asiento_prov.debito = Decimal(str(asiento_prov.debito)) + dif_total
                 db.add(asiento_prov)
 
 
