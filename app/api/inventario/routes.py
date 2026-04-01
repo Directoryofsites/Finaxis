@@ -3,7 +3,7 @@
 from typing import List, Optional, Dict, Any
 import traceback # AGREGADO: Para ver errores en consola
 
-from fastapi import APIRouter, Depends, Query, status, HTTPException
+from fastapi import APIRouter, Depends, Query, status, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from fastapi.responses import StreamingResponse
 from io import BytesIO 
@@ -327,8 +327,30 @@ def update_movimiento_kardex_route(movimiento_id: int, update_data: schemas.Movi
     )
 
 @router.delete("/movimientos-kardex/{movimiento_id}", dependencies=[Depends(has_permission("inventario:kardex"))])
-def delete_movimiento_kardex_route(movimiento_id: int, db: Session = Depends(get_db), current_user: models_usuario.Usuario = Depends(get_current_user)):
-    return service_inventario.delete_movimiento_inventario_directo(db=db, movimiento_id=movimiento_id, empresa_id=current_user.empresa_id)
+def delete_movimiento_kardex_route(
+    movimiento_id: int, 
+    background_tasks: BackgroundTasks, 
+    db: Session = Depends(get_db), 
+    current_user: models_usuario.Usuario = Depends(get_current_user)
+):
+    # 1. Eliminar movimiento silenciando el recálculo pesado
+    res = service_inventario.delete_movimiento_inventario_directo(
+        db=db, 
+        movimiento_id=movimiento_id, 
+        empresa_id=current_user.empresa_id,
+        recalc=False
+    )
+    
+    # 2. Lanzar recálculo de inventario en segundo plano para evitar timeout HTTP
+    if res and "producto_id_afectado" in res:
+        background_tasks.add_task(
+            service_inventario.recalcular_saldos_producto, 
+            db, 
+            res["producto_id_afectado"], 
+            commit=True
+        )
+        
+    return res
 
 
 # ==============================================================================

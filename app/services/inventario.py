@@ -481,7 +481,7 @@ def editar_movimiento_kardex_admin(db: Session, movimiento_id: int, update_data:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error al sincronizar: {str(e)}")
 
-def delete_movimiento_inventario_directo(db: Session, movimiento_id: int, empresa_id: int):
+def delete_movimiento_inventario_directo(db: Session, movimiento_id: int, empresa_id: int, recalc: bool = True):
     movimiento = db.query(models_producto.MovimientoInventario).join(
         models_producto.Producto, models_producto.MovimientoInventario.producto_id == models_producto.Producto.id
     ).filter(
@@ -499,8 +499,10 @@ def delete_movimiento_inventario_directo(db: Session, movimiento_id: int, empres
     db.delete(movimiento)
     db.commit()
     
-    recalcular_saldos_producto(db, producto_id)
-    return True
+    if recalc:
+        recalcular_saldos_producto(db, producto_id, commit=True)
+        
+    return {"ok": True, "producto_id_afectado": producto_id}
 
 
 # --- FUNCIÓN CLAVE: CREAR TRASLADO ENTRE BODEGAS (FIXED) ---
