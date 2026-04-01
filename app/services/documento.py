@@ -344,8 +344,8 @@ def anular_documento(db: Session, documento_id: int, empresa_id: int, user_id: i
             # Import local para evitar importaciones circulares
             from app.services import inventario as service_inventario
             
-            movimientos_inventario_originales = db.query(models_producto.MovimientoInventario).filter(
-                models_producto.MovimientoInventario.documento_id == db_documento.id
+            movimientos_inventario_originales = db.query(models_mov_inv).filter(
+                models_mov_inv.documento_id == db_documento.id
             ).all()
 
             for mov_inv in movimientos_inventario_originales:
