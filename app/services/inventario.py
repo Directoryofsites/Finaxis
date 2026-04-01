@@ -425,6 +425,7 @@ def editar_movimiento_kardex_admin(db: Session, movimiento_id: int, update_data:
 
     # Guardar valores viejos para calcular diferencia contable
     viejo_costo_total = Decimal(str(movimiento.costo_total))
+    producto = movimiento.producto
     producto_id = movimiento.producto_id
     documento_id = movimiento.documento_id
 
