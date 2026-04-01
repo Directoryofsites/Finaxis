@@ -406,7 +406,7 @@ def anular_documento(db: Session, documento_id: int, empresa_id: int, user_id: i
 
 # REEMPLAZO PARA app/services/documento.py (Función eliminar_documento)
 
-def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id: int, razon: str, commit: bool = True):
+def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id: int, razon: str, commit: bool = True, recalc: bool = True):
     # 1. Buscamos el documento (Lectura simple)
     # Usamos query directa para no cargar relaciones pesadas si va a fallar
     db_documento_check = db.query(models_doc).filter(
@@ -526,9 +526,9 @@ def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id:
 
         # E. RECALCULAR SALDOS (Integridad de Inventario)
         # Importamos aquí para evitar Circular Import (documento <-> inventario)
-        if productos_afectados_ids:
+        if recalc and productos_afectados_ids:
             from app.services.inventario import recalcular_saldos_producto, SaldoNegativoException
-            print(f"[ELIMINACION MASIVA] Recalculando inventario para {len(productos_afectados_ids)} productos afectados...")
+            print(f"[ELIMINACION] Recalculando inventario para {len(productos_afectados_ids)} productos afectados en eliminación individual...")
             try:
                 for pid in productos_afectados_ids:
                     recalcular_saldos_producto(db, pid, commit=False, validar_negativos=True)
@@ -544,8 +544,10 @@ def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id:
         if commit:
             db.commit() 
 
-        
-        return {"message": "Documento preparado para mover a la papelera."}
+        return {
+            "message": "Documento preparado para mover a la papelera.",
+            "productos_afectados_ids": productos_afectados_ids
+        }
 
     except HTTPException as e:
         # No hacemos rollback global aquí porque no iniciamos la transacción, 
@@ -2307,6 +2309,7 @@ def anular_documentos_masivamente(db: Session, payload: schemas_doc.DocumentoAcc
 def eliminar_documentos_masivamente(db: Session, payload: schemas_doc.DocumentoAccionMasivaPayload, empresa_id: int, user_id: int):
     eliminados_count = 0
     fallidos_ids = []
+    productos_totales_afectados = set()
 
     try:
         docs_a_eliminar = db.query(models_doc).filter(
@@ -2320,9 +2323,18 @@ def eliminar_documentos_masivamente(db: Session, payload: schemas_doc.DocumentoA
 
         with db.begin_nested():
             for doc in docs_a_eliminar:
-                beneficiario_id_afectado = doc.beneficiario_id
-
-                eliminar_documento(db=db, documento_id=doc.id, empresa_id=empresa_id, user_id=user_id, razon=payload.razon, commit=False)
+                # 1. Eliminar documento silenciando el recálculo individual (recalc=False)
+                # Esto es la CLAVE de la optimización de rendimiento.
+                res = eliminar_documento(
+                    db=db, documento_id=doc.id, empresa_id=empresa_id, 
+                    user_id=user_id, razon=payload.razon, 
+                    commit=False, recalc=False
+                )
+                
+                # 2. Colectar productos afectados para recalcular al final
+                if res and "productos_afectados_ids" in res:
+                    for pid in res["productos_afectados_ids"]:
+                        productos_totales_afectados.add(pid)
 
                 tipo_doc = db.query(models_tipo).filter(models_tipo.id == doc.tipo_documento_id).with_for_update().first()
 
@@ -2334,12 +2346,19 @@ def eliminar_documentos_masivamente(db: Session, payload: schemas_doc.DocumentoA
 
         db.commit()
 
+        # 3. RECALCULO ÚNICO POST-LOTE (Integridad de Inventario Optimizado)
+        if productos_totales_afectados:
+            from app.services.inventario import recalcular_saldos_producto, SaldoNegativoException
+            print(f"[ELIMINACION MASIVA] Iniciando recálculo final para {len(productos_totales_afectados)} productos únicos...")
+            for pid in productos_totales_afectados:
+                recalcular_saldos_producto(db, pid, commit=False, validar_negativos=True)
+
         terceros_afectados_ids = {doc.beneficiario_id for doc in docs_a_eliminar if doc.beneficiario_id}
 
         for tercero_id in terceros_afectados_ids:
             cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=tercero_id, empresa_id=empresa_id, commit=False)
         
-        db.commit() # Commit final de cartera
+        db.commit() # Commit final de inventario y cartera
 
         mensaje = f"{eliminados_count} documento(s) eliminado(s) exitosamente."
         if fallidos_ids:
