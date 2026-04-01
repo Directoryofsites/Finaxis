@@ -42,7 +42,8 @@ from ..models import (
     regla_precio_grupo as models_regla_precio,
     tercero as models_tercero,
     # === FIX: Asegurar que todos los modelos necesarios se importen
-    empresa as models_empresa
+    empresa as models_empresa,
+    plan_cuenta as models_puc
 )
 
 # --- Importaciones de Schemas y Servicios NECESARIAS ---
@@ -444,31 +445,77 @@ def editar_movimiento_kardex_admin(db: Session, movimiento_id: int, update_data:
 
     # 2. SINCRONIZACIÓN CONTABLE (Si tiene documento asociado)
     if documento_id and diferencia != 0:
-        # A. Localizar el asiento de Inventario (Cuenta 14) vinculado a este producto
-        asiento_inv = db.query(models_mov.MovimientoContable).filter(
-            models_mov.MovimientoContable.documento_id == documento_id,
-            models_mov.MovimientoContable.producto_id == producto_id
-        ).first()
+        db_doc = db.query(models_doc.Documento).filter(models_doc.Documento.id == documento_id).first()
+        db_tipo = db_doc.tipo_documento if db_doc else None
 
-        if asiento_inv:
-            asiento_inv.debito = Decimal(asiento_inv.debito) + diferencia
-            asiento_inv.cantidad = Decimal(str(movimiento.cantidad))
-            db.add(asiento_inv)
+        if db_doc:
+            # A. Localizar el asiento de Inventario (Cuenta 14) vinculado a este producto
+            asiento_inv = db.query(models_mov.MovimientoContable).filter(
+                models_mov.MovimientoContable.documento_id == documento_id,
+                models_mov.MovimientoContable.producto_id == producto_id
+            ).first()
 
-        # B. Localizar el asiento del Proveedor (Cuenta 22 o similar)
-        # Buscamos por tercero_id (el del documento) y que NO tenga producto_id (es el total)
-        asiento_prov = db.query(models_mov.MovimientoContable).filter(
-            models_mov.MovimientoContable.documento_id == documento_id,
-            models_mov.MovimientoContable.producto_id == None,
-            models_mov.MovimientoContable.tercero_id != None
-        ).first()
+            if asiento_inv:
+                # Ajustamos según el lado que tenga valor (Débito o Crédito)
+                if asiento_inv.debito > 0:
+                    asiento_inv.debito = Decimal(asiento_inv.debito) + diferencia
+                else:
+                    asiento_inv.credito = Decimal(asiento_inv.credito) + diferencia
+                
+                asiento_inv.cantidad = Decimal(str(movimiento.cantidad))
+                db.add(asiento_inv)
 
-        if asiento_prov:
-            asiento_prov.credito = Decimal(asiento_prov.credito) + diferencia
-            db.add(asiento_prov)
+            # B. Localizar el asiento de Contrapartida (Proveedor/Cliente/Costo)
+            # Primero intentamos identificar la cuenta específica según el tipo de documento
+            cuenta_balance_id = None
+            if db_tipo:
+                if db_tipo.es_compra:
+                    # En compras, buscamos la cuenta de pasivo (CXP)
+                    cuenta_balance_id = db_tipo.cuenta_credito_cxp_id or db_tipo.cuenta_debito_cxp_id
+                elif db_tipo.es_venta:
+                    # En ventas, usualmente el cambio de costo afecta al Costo de Ventas (Clase 6)
+                    # pero el usuario menciona que "se le descontrola proveedores/cartera".
+                    # Si es una factura de venta, el balancing del Kardex es contra la 6135 (Costo)
+                    pass
 
-        # C. El valor total del documento es dinámico (se deriva de los movimientos contables)
-        # o está en otros modelos específicos de factura, por lo que no lo actualizamos aquí.
+            # Búsqueda Robusta del Asiento de Contrapartida
+            query_prov = db.query(models_mov.MovimientoContable).filter(
+                models_mov.MovimientoContable.documento_id == documento_id,
+                models_mov.MovimientoContable.producto_id == None
+            )
+
+            if cuenta_balance_id:
+                # Si tenemos la cuenta configurada, es la prioridad absoluta
+                asiento_prov = query_prov.filter(models_mov.MovimientoContable.cuenta_id == cuenta_balance_id).first()
+            else:
+                # Fallback: Buscamos una línea con el tercero del documento que no sea inventario
+                # Priorizamos cuentas de clase 2 (Pasivo) o 13 (Cartera)
+                asiento_prov = query_prov.join(models_puc.PlanCuenta, models_mov.MovimientoContable.cuenta_id == models_puc.PlanCuenta.id).filter(
+                    models_mov.MovimientoContable.tercero_id == db_doc.beneficiario_id,
+                    or_(
+                        models_puc.PlanCuenta.codigo.like('22%'),
+                        models_puc.PlanCuenta.codigo.like('23%'),
+                        models_puc.PlanCuenta.codigo.like('13%')
+                    )
+                ).first()
+
+            if asiento_prov:
+                # Aplicamos la misma diferencia al lado opuesto para mantener el equilibrio
+                if asiento_prov.credito > 0:
+                    asiento_prov.credito = Decimal(asiento_prov.credito) + diferencia
+                else:
+                    asiento_prov.debito = Decimal(asiento_prov.debito) + diferencia
+                db.add(asiento_prov)
+            else:
+                # Si aún no lo encontramos, buscamos CUALQUIER línea que balancee el comprobante
+                # para evitar el error de descuadre masivo que reporta el usuario.
+                asiento_fallback = query_prov.filter(models_mov.MovimientoContable.tercero_id != None).first()
+                if asiento_fallback:
+                    if asiento_fallback.credito > 0:
+                        asiento_fallback.credito = Decimal(asiento_fallback.credito) + diferencia
+                    else:
+                        asiento_fallback.debito = Decimal(asiento_fallback.debito) + diferencia
+                    db.add(asiento_fallback)
 
     # 3. GUARDAR Y RECALCULAR
     try:
