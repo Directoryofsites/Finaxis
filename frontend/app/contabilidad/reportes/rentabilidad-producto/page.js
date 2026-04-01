@@ -9,7 +9,7 @@ import { useAuth } from '../../../context/AuthContext';
 import {
     FaChartLine, FaSearch, FaTags, FaFileInvoice,
     FaEye, FaMinusCircle, FaFilter, FaChevronDown, FaChevronUp, FaPrint,
-    FaCalendarAlt, FaEraser, FaBook, FaFilePdf, FaArrowRight, FaExclamationTriangle
+    FaCalendarAlt, FaEraser, FaBook, FaFilePdf, FaArrowRight, FaExclamationTriangle, FaFileCsv
 } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -20,6 +20,7 @@ import { getGruposInventario, searchProductosAutocomplete } from '../../../../li
 import { getRentabilidadPorGrupo, generarPdfRentabilidad, getRentabilidadPorDocumento } from '../../../../lib/reportesFacturacionService';
 import { getListasPrecio } from '../../../../lib/listaPrecioService';
 import { getTerceros } from '../../../../lib/terceroService';
+import { apiService } from '../../../../lib/apiService';
 
 
 // --- ESTILOS REUSABLES (Manual v2.0) ---
@@ -163,9 +164,8 @@ export default function RentabilidadProductoPage() {
         };
 
         if (filtrosParaApi.grupo_ids.length === 0 && filtrosParaApi.producto_ids.length === 0) {
-            toast.warning("Debe seleccionar al menos un Grupo o un Producto.");
-            setIsSearching(false);
-            return;
+            // Sin grupos ni productos = Todo el inventario (sin restricción)
+            console.log('Sin filtros de grupo/producto: obteniendo todo el inventario con movimiento.');
         }
 
         try {
@@ -339,6 +339,44 @@ export default function RentabilidadProductoPage() {
         }
     };
 
+    const handleExportarCSV = async () => {
+        if (reporteData.items.length === 0) return toast.warning("Genere el reporte primero.");
+        setIsSearching(true);
+        try {
+            const grupoIdsFiltrados = filtros.grupo_ids.filter(g => g.value !== 'all').map(g => g.value);
+            const filtrosParaApi = {
+                fecha_inicio: filtros.fecha_inicio.toISOString().split('T')[0],
+                fecha_fin: filtros.fecha_fin.toISOString().split('T')[0],
+                grupo_ids: grupoIdsFiltrados,
+                producto_ids: filtros.producto_ids.map(p => p.value),
+                tercero_ids: filtros.tercero_ids.map(t => t.value),
+                lista_precio_ids: filtros.lista_precio_ids.map(lp => lp.value),
+                margen_minimo_porcentaje: safeFloat(filtros.margen_minimo) || null,
+                mostrar_solo_perdidas: filtros.mostrar_solo_perdidas,
+            };
+            const response = await apiService.post(
+                '/reportes-facturacion/rentabilidad-producto/exportar-csv',
+                filtrosParaApi,
+                { responseType: 'blob' }
+            );
+            const filename = `rentabilidad_${filtrosParaApi.fecha_inicio}_a_${filtrosParaApi.fecha_fin}.csv`;
+            const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv;charset=utf-8;' }));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            toast.success('CSV descargado correctamente.');
+        } catch (error) {
+            console.error("Error al exportar CSV:", error);
+            toast.error("Error al generar el archivo CSV.");
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
     if (pageIsLoading || authLoading) {
         return (
             <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
@@ -424,16 +462,42 @@ export default function RentabilidadProductoPage() {
                                 </div>
                                 {/* Grupos */}
                                 <div className="md:col-span-6">
-                                    <label className={labelClass}>Grupos de Inventario</label>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className={labelClass}>Grupos de Inventario</label>
+                                        <div className="flex gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleFilterChange('grupo_ids', [SELECT_ALL_OPTION, ...maestros.grupos])}
+                                                className="text-xs text-indigo-600 font-bold hover:underline hover:text-indigo-800 transition-colors"
+                                                title="Seleccionar todos los grupos"
+                                            >
+                                                Todos
+                                            </button>
+                                            <span className="text-gray-300 text-xs">|</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleFilterChange('grupo_ids', [])}
+                                                className="text-xs text-gray-400 font-bold hover:underline hover:text-gray-600 transition-colors"
+                                                title="Limpiar selección de grupos"
+                                            >
+                                                Ninguno
+                                            </button>
+                                        </div>
+                                    </div>
                                     <Select
                                         isMulti
                                         options={grupoOptions}
                                         value={filtros.grupo_ids}
-                                        onChange={s => handleFilterChange('grupo_ids', s)}
-                                        placeholder="Seleccione..."
+                                        onChange={s => handleFilterChange('grupo_ids', s || [])}
+                                        placeholder="Seleccione grupos (vacío = todos los grupos)..."
                                         components={{ ValueContainer: CustomValueContainer }}
                                         styles={selectStyles}
                                     />
+                                    {filtros.grupo_ids.length === 0 && (
+                                        <p className="text-xs text-indigo-500 mt-1 flex items-center gap-1">
+                                            <span>ℹ️</span> Sin selección: se consultarán todos los grupos del inventario.
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
@@ -526,6 +590,17 @@ export default function RentabilidadProductoPage() {
                                         ${fmtMoneda(totalUtilidad)}
                                     </p>
                                 </div>
+                                {/* Botón Exportar CSV */}
+                                {modoReporte === 'producto' && (
+                                    <button
+                                        onClick={handleExportarCSV}
+                                        className="btn btn-outline btn-sm gap-2 shadow-sm bg-white hover:bg-green-50 border-green-200 text-green-700"
+                                        disabled={isSearching}
+                                        title="Descargar datos en Excel/CSV"
+                                    >
+                                        <FaFileCsv /> Exportar CSV
+                                    </button>
+                                )}
                                 <button onClick={handleGenerarPDFGlobal} className="btn btn-outline btn-error btn-sm gap-2 shadow-sm bg-white hover:bg-red-50 border-red-200 text-red-600">
                                     <FaFilePdf /> Exportar PDF
                                 </button>

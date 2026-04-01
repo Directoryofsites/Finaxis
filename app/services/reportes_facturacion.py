@@ -683,6 +683,72 @@ def get_rentabilidad_por_producto(db: Session, empresa_id: int, filtros: schemas
     return get_rentabilidad_por_grupo(db=db, empresa_id=empresa_id, filtros=filtros_para_individual)
 
 
+# =================================================================================
+# === NUEVA FUNCIÓN: GENERADOR DE CSV PARA EL REPORTE DE RENTABILIDAD ===
+# =================================================================================
+
+def generar_csv_rentabilidad_producto(db: Session, empresa_id: int, filtros: schemas_rentabilidad.RentabilidadProductoFiltros) -> bytes:
+    """
+    Genera un archivo CSV con los datos de rentabilidad por producto.
+    Reutiliza get_rentabilidad_por_grupo y serializa a CSV.
+    Devuelve bytes con BOM UTF-8 para compatibilidad con Excel en español (Colombia).
+    """
+    import csv
+    import io as _io
+
+    # 1. Obtener los datos usando el motor de BI existente
+    report_data = get_rentabilidad_por_grupo(db=db, empresa_id=empresa_id, filtros=filtros)
+
+    # 2. Construir el CSV en memoria
+    output = _io.StringIO()
+    writer = csv.writer(output, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+    # 3. Encabezados del reporte
+    writer.writerow([f"Reporte de Rentabilidad por Producto"])
+    writer.writerow([f"Período: {filtros.fecha_inicio} al {filtros.fecha_fin}"])
+    writer.writerow([])  # Línea en blanco
+
+    # 4. Encabezados de columnas
+    writer.writerow([
+        "Código",
+        "Producto",
+        "Cantidad Vendida",
+        "Venta Total",
+        "Costo Total",
+        "Utilidad Bruta",
+        "Margen %",
+    ])
+
+    # 5. Filas de datos
+    for item in report_data.items:
+        writer.writerow([
+            item.producto_codigo,
+            item.producto_nombre,
+            f"{item.total_cantidad:.2f}".replace('.', ','),
+            f"{item.total_venta:.2f}".replace('.', ','),
+            f"{item.total_costo:.2f}".replace('.', ','),
+            f"{item.total_utilidad:.2f}".replace('.', ','),
+            f"{item.margen_rentabilidad_porcentaje:.2f}".replace('.', ','),
+        ])
+
+    # 6. Línea de totales
+    totales = report_data.totales
+    writer.writerow([])
+    writer.writerow([
+        "TOTALES",
+        "",
+        "",
+        f"{totales.total_venta_general:.2f}".replace('.', ','),
+        f"{totales.total_costo_general:.2f}".replace('.', ','),
+        f"{totales.total_utilidad_general:.2f}".replace('.', ','),
+        f"{totales.margen_general_porcentaje:.2f}".replace('.', ','),
+    ])
+
+    # 7. Retornar bytes con BOM UTF-8 (para Excel en español)
+    csv_string = output.getvalue()
+    return ('\ufeff' + csv_string).encode('utf-8')
+
+
 def generar_pdf_rentabilidad_documento(db: Session, empresa_id: int, filtros: schemas_reportes.ReporteRentabilidadDocumentoFiltros):
     """Genera el PDF del reporte de rentabilidad por documento."""
     
