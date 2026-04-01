@@ -133,6 +133,47 @@ def generar_pdf_rentabilidad_directo(
             detail="Error al generar el PDF del Reporte de Rentabilidad."
         )
 
+# --- 2.1b CSV Rentabilidad (Generación Directa) ---
+@router.post(
+    "/rentabilidad-producto/exportar-csv",
+    summary="Exporta el reporte de rentabilidad por producto/grupo en formato CSV.",
+)
+def exportar_csv_rentabilidad_producto(
+    filtros: schemas_rentabilidad.RentabilidadProductoFiltros,
+    db: Session = Depends(get_db),
+    current_user: models_usuario = Depends(has_permission("reportes:rentabilidad_producto"))
+):
+    """
+    Genera y devuelve un archivo CSV con los datos del reporte de rentabilidad.
+    Respeta todos los filtros de grupos, fechas, terceros, etc.
+    """
+    try:
+        csv_bytes = service.generar_csv_rentabilidad_producto(
+            db=db,
+            empresa_id=current_user.empresa_id,
+            filtros=filtros
+        )
+        filename = f"rentabilidad_{filtros.fecha_inicio}_a_{filtros.fecha_fin}.csv"
+        headers = {
+            'Content-Disposition': f'attachment; filename="{filename}"',
+            'Access-Control-Expose-Headers': 'Content-Disposition'
+        }
+        return StreamingResponse(
+            io.BytesIO(csv_bytes),
+            media_type="text/csv; charset=utf-8-sig",
+            headers=headers
+        )
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        print(f"Error en exportar_csv_rentabilidad_producto: {e}")
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al generar el CSV del Reporte de Rentabilidad."
+        )
+
+
 # --- 2.2 PDF Detallado de Facturación (Generación Directa) ---
 @router.post(
     "/generar-pdf-detallado",
@@ -274,50 +315,6 @@ def generar_reporte_ventas_cliente(
         empresa_id=current_user.empresa_id,
         filtros=filtros
     )
-
-
-# =================================================================================
-# === 5. NUEVO ENDPOINT: EXPORTAR CSV RENTABILIDAD POR PRODUCTO ===
-# =================================================================================
-
-@router.post(
-    "/rentabilidad-producto/exportar-csv",
-    summary="Exporta el reporte de rentabilidad por producto/grupo en formato CSV.",
-)
-def exportar_csv_rentabilidad_producto(
-    filtros: schemas_rentabilidad.RentabilidadProductoFiltros,
-    db: Session = Depends(get_db),
-    current_user: models_usuario = Depends(has_permission("reportes:rentabilidad_producto"))
-):
-    """
-    Genera y devuelve un archivo CSV con los datos del reporte de rentabilidad.
-    Respeta todos los filtros de grupos, fechas, terceros, etc.
-    """
-    try:
-        csv_bytes = service.generar_csv_rentabilidad_producto(
-            db=db,
-            empresa_id=current_user.empresa_id,
-            filtros=filtros
-        )
-        filename = f"rentabilidad_{filtros.fecha_inicio}_a_{filtros.fecha_fin}.csv"
-        headers = {
-            'Content-Disposition': f'attachment; filename="{filename}"',
-            'Access-Control-Expose-Headers': 'Content-Disposition'
-        }
-        return StreamingResponse(
-            io.BytesIO(csv_bytes),
-            media_type="text/csv; charset=utf-8-sig",
-            headers=headers
-        )
-    except HTTPException as http_exc:
-        raise http_exc
-    except Exception as e:
-        print(f"Error en exportar_csv_rentabilidad_producto: {e}")
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error al generar el CSV del Reporte de Rentabilidad."
-        )
 
 
 @router.post(
