@@ -343,30 +343,47 @@ def anular_documento(db: Session, documento_id: int, empresa_id: int, user_id: i
         if db_documento.tipo_documento and db_documento.tipo_documento.afecta_inventario:
             # Import local para evitar importaciones circulares
             from app.services import inventario as service_inventario
+            from app.services.inventario import SaldoNegativoException
             
             movimientos_inventario_originales = db.query(models_mov_inv).filter(
                 models_mov_inv.documento_id == db_documento.id
             ).all()
 
-            for mov_inv in movimientos_inventario_originales:
-                productos_afectados.add(mov_inv.producto_id)
-                tipo_movimiento_reverso = ''
-                if mov_inv.tipo_movimiento.startswith('SALIDA'):
-                    tipo_movimiento_reverso = 'ENTRADA_ANULACION'
-                elif mov_inv.tipo_movimiento.startswith('ENTRADA'):
-                    tipo_movimiento_reverso = 'SALIDA_ANULACION'
+            try:
+                for mov_inv in movimientos_inventario_originales:
+                    productos_afectados.add(mov_inv.producto_id)
+                    tipo_movimiento_reverso = ''
+                    if mov_inv.tipo_movimiento.startswith('SALIDA'):
+                        tipo_movimiento_reverso = 'ENTRADA_ANULACION'
+                    elif mov_inv.tipo_movimiento.startswith('ENTRADA'):
+                        tipo_movimiento_reverso = 'SALIDA_ANULACION'
 
-                if tipo_movimiento_reverso:
-                    service_inventario.registrar_movimiento_inventario(
-                        db=db,
-                        producto_id=mov_inv.producto_id,
-                        bodega_id=mov_inv.bodega_id,
-                        tipo_movimiento=tipo_movimiento_reverso,
-                        cantidad=mov_inv.cantidad,
-                        costo_unitario=mov_inv.costo_unitario,
-                        fecha=datetime.utcnow(),
-                        documento_id=db_documento.id
+                    if tipo_movimiento_reverso:
+                        service_inventario.registrar_movimiento_inventario(
+                            db=db,
+                            producto_id=mov_inv.producto_id,
+                            bodega_id=mov_inv.bodega_id,
+                            tipo_movimiento=tipo_movimiento_reverso,
+                            cantidad=mov_inv.cantidad,
+                            costo_unitario=mov_inv.costo_unitario,
+                            fecha=datetime.utcnow(),
+                            documento_id=db_documento.id
+                        )
+            except SaldoNegativoException as e:
+                db.rollback()
+                # Buscamos el nombre del producto para un mensaje más humano
+                producto_obj = db.query(models_producto).filter(models_producto.id == e.producto_id).first()
+                nombre_p = producto_obj.nombre if producto_obj else f"Producto ID {e.producto_id}"
+                
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"BLOQUEO DE SEGURIDAD: No se puede anular este documento porque el producto '{nombre_p}' "
+                        f"ya no tiene suficientes existencias (faltan {abs(e.cantidad_faltante)} unidades). "
+                        "El stock original fue consumido por ventas o traslados posteriores. "
+                        "Para corregir esto, debe anular primero los movimientos de salida posteriores."
                     )
+                )
         
         db.commit()
         db.refresh(db_documento)

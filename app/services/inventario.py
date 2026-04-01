@@ -428,6 +428,53 @@ def editar_movimiento_kardex_admin(db: Session, movimiento_id: int, update_data:
     producto_id = movimiento.producto_id
     documento_id = movimiento.documento_id
 
+    # --- PROTECCIONES DE INTEGRIDAD (ADMIN EDIT) ---
+    db_doc = None
+    db_tipo = None
+    if documento_id:
+        db_doc = db.query(models_doc.Documento).filter(models_doc.Documento.id == documento_id).first()
+        db_tipo = db_doc.tipo_documento if db_doc else None
+
+    if db_tipo:
+        # 1. Bloquear edición de facturas de VENTA (Protección DIAN/Electrónica)
+        if db_tipo.es_venta:
+            raise HTTPException(
+                status_code=400, 
+                detail="Las FACTURAS DE VENTA no pueden editarse directamente desde el Kárdex por integridad legal. Utilice Notas Crédito o Anulación."
+            )
+        
+        # 2. Bloquear cambio de CANTIDAD en facturas (Excepto Compras con Sonda de Saldo)
+        if update_data.cantidad is not None and float(update_data.cantidad) != float(movimiento.cantidad):
+             if not db_tipo.es_compra:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="No está permitido cambiar CANTIDADES en VENTAS facturadas. Si la cantidad está mal, debe generar NOTA CRÉDITO o ANULAR."
+                )
+             if float(update_data.cantidad) <= 0:
+                raise HTTPException(status_code=400, detail="La cantidad debe ser mayor a cero.")
+    # -----------------------------------------------
+
+    # PRE-CÁLCULO DE DIFERENCIALES (INCLUIDO IVA)
+    # Buscamos la tasa de IVA (Prioridad: Producto -> GrupoInventario -> Exento)
+    tasa_obj = None
+    if producto.impuesto_iva:
+        tasa_obj = producto.impuesto_iva
+    elif producto.grupo_inventario and producto.grupo_inventario.impuesto_predeterminado:
+        tasa_obj = producto.grupo_inventario.impuesto_predeterminado
+    
+    tasa_valor = float(tasa_obj.tasa) if tasa_obj else 0.0
+    cuenta_iva_id = tasa_obj.cuenta_iva_descontable_id if tasa_obj else None
+
+    nueva_cantidad = float(update_data.cantidad) if update_data.cantidad is not None else float(movimiento.cantidad)
+    nuevo_costo_unitario = float(update_data.costo_unitario) if update_data.costo_unitario is not None else float(movimiento.costo_unitario)
+    
+    vieja_base = float(movimiento.cantidad) * float(movimiento.costo_unitario)
+    nueva_base = nueva_cantidad * nuevo_costo_unitario
+    
+    dif_base = Decimal(str(nueva_base)) - viejo_costo_total # viejo_costo_total es Decimal
+    dif_iva = (dif_base * Decimal(str(tasa_valor))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    dif_total = dif_base + dif_iva
+
     # 1. ACTUALIZAR MOVIMIENTO DE INVENTARIO
     if update_data.fecha: 
         movimiento.fecha = update_data.fecha
@@ -436,97 +483,128 @@ def editar_movimiento_kardex_admin(db: Session, movimiento_id: int, update_data:
     if update_data.costo_unitario is not None: 
         movimiento.costo_unitario = update_data.costo_unitario
     
-    # Recalcular total del renglón
-    movimiento.costo_total = float(movimiento.cantidad) * float(movimiento.costo_unitario)
-    nuevo_costo_total = Decimal(str(movimiento.costo_total))
-    diferencia = nuevo_costo_total - viejo_costo_total
-
+    movimiento.costo_total = float(nueva_base)
     db.add(movimiento)
 
     # 2. SINCRONIZACIÓN CONTABLE (Si tiene documento asociado)
-    if documento_id and diferencia != 0:
-        db_doc = db.query(models_doc.Documento).filter(models_doc.Documento.id == documento_id).first()
-        db_tipo = db_doc.tipo_documento if db_doc else None
-
+    asiento_prov = None
+    if documento_id and dif_total != 0:
         if db_doc:
-            # A. Localizar el asiento de Inventario (Cuenta 14) vinculado a este producto
+            # A. Sincronizar Inventario (Cuenta 14)
             asiento_inv = db.query(models_mov.MovimientoContable).filter(
                 models_mov.MovimientoContable.documento_id == documento_id,
-                models_mov.MovimientoContable.producto_id == producto_id
+                models_mov.MovimientoContable.producto_id == producto_id,
+                models_mov.MovimientoContable.cuenta_id == (producto.grupo_inventario.cuenta_inventario_id if producto.grupo_inventario else None)
             ).first()
 
+            if not asiento_inv:
+                # Fallback: Por producto_id
+                asiento_inv = db.query(models_mov.MovimientoContable).filter(
+                    models_mov.MovimientoContable.documento_id == documento_id,
+                    models_mov.MovimientoContable.producto_id == producto_id
+                ).first()
+
             if asiento_inv:
-                # Ajustamos según el lado que tenga valor (Débito o Crédito)
                 if asiento_inv.debito > 0:
-                    asiento_inv.debito = Decimal(asiento_inv.debito) + diferencia
+                    asiento_inv.debito = Decimal(asiento_inv.debito) + dif_base
                 else:
-                    asiento_inv.credito = Decimal(asiento_inv.credito) + diferencia
-                
-                asiento_inv.cantidad = Decimal(str(movimiento.cantidad))
+                    asiento_inv.credito = Decimal(asiento_inv.credito) + dif_base
+                asiento_inv.cantidad = Decimal(str(nueva_cantidad))
                 db.add(asiento_inv)
 
-            # B. Localizar el asiento de Contrapartida (Proveedor/Cliente/Costo)
-            # Primero intentamos identificar la cuenta específica según el tipo de documento
-            cuenta_balance_id = None
-            if db_tipo:
-                if db_tipo.es_compra:
-                    # En compras, buscamos la cuenta de pasivo (CXP)
-                    cuenta_balance_id = db_tipo.cuenta_credito_cxp_id or db_tipo.cuenta_debito_cxp_id
-                elif db_tipo.es_venta:
-                    # En ventas, usualmente el cambio de costo afecta al Costo de Ventas (Clase 6)
-                    # pero el usuario menciona que "se le descontrola proveedores/cartera".
-                    # Si es una factura de venta, el balancing del Kardex es contra la 6135 (Costo)
-                    pass
+            # B. Sincronizar IVA (Cuenta 2408)
+            if dif_iva != 0 and cuenta_iva_id:
+                asiento_iva = db.query(models_mov.MovimientoContable).filter(
+                    models_mov.MovimientoContable.documento_id == documento_id,
+                    models_mov.MovimientoContable.cuenta_id == cuenta_iva_id,
+                    models_mov.MovimientoContable.producto_id == producto_id
+                ).first()
+                
+                if not asiento_iva:
+                    # Fallback: Solo por cuenta en este documento
+                    asiento_iva = db.query(models_mov.MovimientoContable).filter(
+                        models_mov.MovimientoContable.documento_id == documento_id,
+                        models_mov.MovimientoContable.cuenta_id == cuenta_iva_id
+                    ).first()
+                
+                if asiento_iva:
+                    if asiento_iva.debito > 0:
+                        asiento_iva.debito = Decimal(asiento_iva.debito) + dif_iva
+                    else:
+                        asiento_iva.credito = Decimal(asiento_iva.credito) + dif_iva
+                    db.add(asiento_iva)
 
-            # Búsqueda Robusta del Asiento de Contrapartida
+            # C. Sincronizar Proveedor (Cuenta 22/23)
+            cuenta_balance_id = None
+            if db_tipo and db_tipo.es_compra:
+                cuenta_balance_id = db_tipo.cuenta_credito_cxp_id or db_tipo.cuenta_debito_cxp_id
+
             query_prov = db.query(models_mov.MovimientoContable).filter(
                 models_mov.MovimientoContable.documento_id == documento_id,
                 models_mov.MovimientoContable.producto_id == None
             )
 
             if cuenta_balance_id:
-                # Si tenemos la cuenta configurada, es la prioridad absoluta
                 asiento_prov = query_prov.filter(models_mov.MovimientoContable.cuenta_id == cuenta_balance_id).first()
-            else:
-                # Fallback: Buscamos una línea con el tercero del documento que no sea inventario
-                # Priorizamos cuentas de clase 2 (Pasivo) o 13 (Cartera)
+            
+            if not asiento_prov:
                 asiento_prov = query_prov.join(models_puc.PlanCuenta, models_mov.MovimientoContable.cuenta_id == models_puc.PlanCuenta.id).filter(
                     models_mov.MovimientoContable.tercero_id == db_doc.beneficiario_id,
-                    or_(
-                        models_puc.PlanCuenta.codigo.like('22%'),
-                        models_puc.PlanCuenta.codigo.like('23%'),
-                        models_puc.PlanCuenta.codigo.like('13%')
-                    )
+                    or_(models_puc.PlanCuenta.codigo.like('22%'), models_puc.PlanCuenta.codigo.like('23%'))
                 ).first()
 
             if asiento_prov:
-                # Aplicamos la misma diferencia al lado opuesto para mantener el equilibrio
                 if asiento_prov.credito > 0:
-                    asiento_prov.credito = Decimal(asiento_prov.credito) + diferencia
+                    asiento_prov.credito = Decimal(asiento_prov.credito) + dif_total
                 else:
-                    asiento_prov.debito = Decimal(asiento_prov.debito) + diferencia
+                    asiento_prov.debito = Decimal(asiento_prov.debito) + dif_total
                 db.add(asiento_prov)
-            else:
-                # Si aún no lo encontramos, buscamos CUALQUIER línea que balancee el comprobante
-                # para evitar el error de descuadre masivo que reporta el usuario.
-                asiento_fallback = query_prov.filter(models_mov.MovimientoContable.tercero_id != None).first()
-                if asiento_fallback:
-                    if asiento_fallback.credito > 0:
-                        asiento_fallback.credito = Decimal(asiento_fallback.credito) + diferencia
-                    else:
-                        asiento_fallback.debito = Decimal(asiento_fallback.debito) + diferencia
-                    db.add(asiento_fallback)
 
-    # 3. GUARDAR Y RECALCULAR
+            # D. Actualizar Total del Documento
+            db_doc.valor_total = Decimal(str(db_doc.valor_total)) + dif_total
+
+            # --- GARANTÍA DE PARTIDA DOBLE (RESIDUAL) ---
+            if asiento_prov:
+                db.flush()
+                balance = db.query(
+                    func.sum(models_mov.MovimientoContable.debito) - func.sum(models_mov.MovimientoContable.credito)
+                ).filter(models_mov.MovimientoContable.documento_id == documento_id).scalar() or 0
+                
+                if abs(balance) > 0.001:
+                    adj = Decimal(str(balance))
+                    if asiento_prov.credito > 0:
+                        asiento_prov.credito = Decimal(asiento_prov.credito) + adj
+                    else:
+                        asiento_prov.debito = Decimal(asiento_prov.debito) - adj
+                    db.add(asiento_prov)
+            # ---------------------------------------------
+
+
+    # 3. GUARDAR Y RECALCULAR CON GUARDIA DE SALDO
     try:
         db.flush()
         # Disparamos el motor de recálculo masivo para este producto
-        recalcular_saldos_producto(db, producto_id, commit=False)
+        recalcular_saldos_producto(db, producto_id, commit=False, validar_negativos=True)
         db.commit()
-        return {"status": "success", "message": "Movimiento y contabilidad actualizados, kárdex recalculado."}
+        
+        msg = f"Corrección Atómica exitosa. Cantidad: {nueva_cantidad}, Costo: {nuevo_costo_unitario}."
+        if dif_iva != 0:
+            msg += f" IVA sincronizado ({dif_iva:+.2f})."
+        if asiento_prov:
+            msg += f" Proveedor: {asiento_prov.cuenta.codigo}."
+        
+        return {"status": "success", "message": msg}
+        
+    except SaldoNegativoException as e:
+        db.rollback()
+        # Entregamos el mensaje descriptivo que pide el usuario
+        raise HTTPException(
+            status_code=400, 
+            detail=f"|BLOQUEO POR SALDO NEGATIVO| {str(e)} Revise sus ventas posteriores antes de reducir esta entrada."
+        )
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error al sincronizar: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error en sincronización atómica: {str(e)}")
 
 def delete_movimiento_inventario_directo(db: Session, movimiento_id: int, empresa_id: int, recalc: bool = True):
     movimiento = db.query(models_producto.MovimientoInventario).join(
