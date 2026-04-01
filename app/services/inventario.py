@@ -497,12 +497,12 @@ def delete_movimiento_inventario_directo(db: Session, movimiento_id: int, empres
         
     producto_id = movimiento.producto_id
     db.delete(movimiento)
-    db.commit()
     
     if recalc:
-        recalcular_saldos_producto(db, producto_id, commit=True)
+        recalcular_saldos_producto(db, producto_id, commit=False)
         
-    return {"ok": True, "producto_id_afectado": producto_id}
+    db.commit()
+    return {"ok": True, "message": "Movimiento eliminado.", "producto_id_afectado": producto_id}
 
 
 # --- FUNCIÓN CLAVE: CREAR TRASLADO ENTRE BODEGAS (FIXED) ---
