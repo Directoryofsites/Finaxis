@@ -467,11 +467,8 @@ def editar_movimiento_kardex_admin(db: Session, movimiento_id: int, update_data:
             asiento_prov.credito = Decimal(asiento_prov.credito) + diferencia
             db.add(asiento_prov)
 
-        # C. Actualizar el valor total del documento para que coincida con la sumatoria
-        documento = db.query(models_doc.Documento).get(documento_id)
-        if documento:
-            documento.valor_total = float(Decimal(str(documento.valor_total)) + diferencia)
-            db.add(documento)
+        # C. El valor total del documento es dinámico (se deriva de los movimientos contables)
+        # o está en otros modelos específicos de factura, por lo que no lo actualizamos aquí.
 
     # 3. GUARDAR Y RECALCULAR
     try:
