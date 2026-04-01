@@ -561,8 +561,6 @@ def editar_movimiento_kardex_admin(db: Session, movimiento_id: int, update_data:
                     asiento_prov.debito = Decimal(asiento_prov.debito) + dif_total
                 db.add(asiento_prov)
 
-            # D. Actualizar Total del Documento
-            db_doc.valor_total = Decimal(str(db_doc.valor_total)) + dif_total
 
             # --- GARANTÍA DE PARTIDA DOBLE (RESIDUAL) ---
             if asiento_prov:
@@ -579,6 +577,7 @@ def editar_movimiento_kardex_admin(db: Session, movimiento_id: int, update_data:
                         asiento_prov.debito = Decimal(asiento_prov.debito) - adj
                     db.add(asiento_prov)
             # ---------------------------------------------
+
 
 
     # 3. GUARDAR Y RECALCULAR CON GUARDIA DE SALDO
