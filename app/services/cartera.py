@@ -99,32 +99,57 @@ def _documento_afecta_cuentas(db: Session, documento_id: int, cuentas_ids: List[
     return movimiento_existente is not None
 
 def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: int, commit: bool = True):
-    filter_condition = models_doc.beneficiario_id == tercero_id
-    
+    # CORRECCIÓN CRÍTICA: Buscamos documentos donde el tercero aparece en el encabezado
+    # O en los movimientos contables de las cuentas CXC/CXP (el caso de los CE/RC).
     try:
-        documento_ids_del_tercero_subquery = select(models_doc.id).where(
-            filter_condition,
+        cuentas_cxc_ids = get_cuentas_especiales_ids(db, empresa_id, 'cxc')
+        cuentas_cxp_ids = get_cuentas_especiales_ids(db, empresa_id, 'cxp')
+        todas_cuentas_ids = list(set(cuentas_cxc_ids + cuentas_cxp_ids))
+
+        # IDs de docs donde el tercero está en el ENCABEZADO
+        ids_por_encabezado = select(models_doc.id).where(
+            models_doc.beneficiario_id == tercero_id,
             models_doc.empresa_id == empresa_id
+        )
+
+        # IDs de docs donde el tercero está en un MOVIMIENTO sobre cuentas CXC/CXP
+        ids_por_movimiento = select(models_mov.documento_id).where(
+            models_mov.tercero_id == tercero_id,
+            models_mov.cuenta_id.in_(todas_cuentas_ids) if todas_cuentas_ids else False
+        ).join(models_doc, models_mov.documento_id == models_doc.id).where(
+            models_doc.empresa_id == empresa_id
+        )
+
+        # UNIÓN de ambos conjuntos para obtener todos los IDs relevantes
+        todos_ids_subquery = select(models_doc.id).where(
+            models_doc.empresa_id == empresa_id,
+            or_(
+                models_doc.beneficiario_id == tercero_id,
+                models_doc.id.in_(ids_por_movimiento)
+            )
         ).scalar_subquery()
 
+        # Eliminar aplicaciones existentes de TODOS los documentos relevantes
         db.query(models_aplica).where(
             or_(
-                models_aplica.documento_factura_id.in_(documento_ids_del_tercero_subquery),
-                models_aplica.documento_pago_id.in_(documento_ids_del_tercero_subquery)
+                models_aplica.documento_factura_id.in_(todos_ids_subquery),
+                models_aplica.documento_pago_id.in_(todos_ids_subquery)
             )
         ).delete(synchronize_session=False)
 
-        cuentas_cxc_ids = get_cuentas_especiales_ids(db, empresa_id, 'cxc')
-        cuentas_cxp_ids = get_cuentas_especiales_ids(db, empresa_id, 'cxp')
-
+        # Cargar documentos usando la condición extendida
         documentos_potenciales = db.query(models_doc).options(
             joinedload(models_doc.tipo_documento),
             selectinload(models_doc.movimientos)
         ).filter(
-            filter_condition,
             models_doc.empresa_id == empresa_id,
-            models_doc.anulado == False
+            models_doc.anulado == False,
+            or_(
+                models_doc.beneficiario_id == tercero_id,
+                models_doc.id.in_(ids_por_movimiento)
+            )
         ).order_by(models_doc.fecha, models_doc.id).all()
+
 
 
         # --- NUEVA LÓGICA ROBUSTA ---
