@@ -121,6 +121,53 @@ def _documento_afecta_cuentas(db: Session, documento_id: int, cuentas_ids: List[
 
 # --- FIN: FUNCIONES AUXILIARES ---
 
+def trigger_recalc_if_cxc_cxp(db: Session, documento_id: int, empresa_id: int):
+    """
+    Gatillo automático: Identifica si un documento afecta cuentas de Cartera/Proveedores
+    y dispara el recálculo para los terceros involucrados.
+    """
+    try:
+        # 1. Obtener cuentas configuradas
+        cuentas_cxc = _get_cuentas_especiales_ids(db, empresa_id, 'cxc')
+        cuentas_cxp = _get_cuentas_especiales_ids(db, empresa_id, 'cxp')
+        todas_cuentas = cuentas_cxc + cuentas_cxp
+
+        if not todas_cuentas:
+            return
+
+        # 2. Verificar si el documento afecta estas cuentas
+        afecta = db.query(models_mov.id).filter(
+            models_mov.documento_id == documento_id,
+            models_mov.cuenta_id.in_(todas_cuentas)
+        ).first()
+
+        if afecta:
+            # 3. Identificar terceros involucrados (del encabezado y de los movimientos)
+            terceros_ids = set()
+            
+            # Tercero del encabezado
+            doc = db.query(models_doc).filter(models_doc.id == documento_id).first()
+            if doc and doc.beneficiario_id:
+                terceros_ids.add(doc.beneficiario_id)
+            
+            # Terceros de los movimientos (importante para documentos multiterceados)
+            movs_terceros = db.query(models_mov.tercero_id).filter(
+                models_mov.documento_id == documento_id,
+                models_mov.tercero_id.isnot(None),
+                models_mov.cuenta_id.in_(todas_cuentas)
+            ).distinct().all()
+            
+            for m in movs_terceros:
+                terceros_ids.add(m.tercero_id)
+
+            # 4. Disparar recálculo para cada tercero
+            for t_id in terceros_ids:
+                cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=t_id, empresa_id=empresa_id)
+    except Exception as e:
+        print(f"⚠️ Error en trigger_recalc_if_cxc_cxp: {str(e)}")
+
+
+
 # Dentro de app/services/documento.py
 
 def create_documento(db: Session, documento: schemas_doc.DocumentoCreate, user_id: int, commit: bool = True):
@@ -253,21 +300,11 @@ def create_documento(db: Session, documento: schemas_doc.DocumentoCreate, user_i
             # Si commit=False (test/dry-run), mantenemos el estado flushed pero sin commit final
             pass
         
-        funciones_relevantes = [
-            FuncionEspecial.RC_CLIENTE, 
-            FuncionEspecial.PAGO_PROVEEDOR, 
-            FuncionEspecial.CARTERA_CLIENTE, 
-            FuncionEspecial.CXP_PROVEEDOR
-        ]
+        # --- GATILLO AUTOMÁTICO DE RECÁLCULO CARTERA/PROVEEDORES ---
+        trigger_recalc_if_cxc_cxp(db, db_documento.id, db_documento.empresa_id)
+        if commit:
+            db.commit()
 
-        if tipo_doc.funcion_especial in funciones_relevantes and db_documento.beneficiario_id:
-            cartera_service.recalcular_aplicaciones_tercero(
-                db,
-                tercero_id=db_documento.beneficiario_id,
-                empresa_id=db_documento.empresa_id
-            )
-            if commit:
-                db.commit()
 
         return db_documento
     except Exception as e:
@@ -398,17 +435,11 @@ def anular_documento(db: Session, documento_id: int, empresa_id: int, user_id: i
             db.commit() # Confirmamos los cambios del recálculo (sincronización contable cascada)
 
 
-        # Recálculo de Cartera
-        funciones_relevantes = [
-            FuncionEspecial.CARTERA_CLIENTE, 
-            FuncionEspecial.RC_CLIENTE, 
-            FuncionEspecial.CXP_PROVEEDOR, 
-            FuncionEspecial.PAGO_PROVEEDOR
-        ]
-        if db_documento.tipo_documento and db_documento.tipo_documento.funcion_especial in funciones_relevantes:
-            if db_documento.beneficiario_id:
-                cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=db_documento.beneficiario_id, empresa_id=empresa_id)
-                db.commit()
+        # --- GATILLO AUTOMÁTICO DE RECÁLCULO CARTERA/PROVEEDORES ---
+        trigger_recalc_if_cxc_cxp(db, db_documento.id, empresa_id)
+        if commit:
+            db.commit()
+
 
         return db_documento
 
@@ -535,11 +566,30 @@ def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id:
         # A. Eliminar Movimientos de Inventario (Si existen)
         db.query(models_mov_inv).filter(models_mov_inv.documento_id == documento_id).delete(synchronize_session=False)
 
+        # GATILLO CARTERA: Capturar terceros antes de borrar
+        terceros_recalc = set()
+        if db_documento.beneficiario_id:
+            terceros_recalc.add(db_documento.beneficiario_id)
+        
+        cuentas_cxc = _get_cuentas_especiales_ids(db, empresa_id, 'cxc')
+        cuentas_cxp = _get_cuentas_especiales_ids(db, empresa_id, 'cxp')
+        todas_cuentas = cuentas_cxc + cuentas_cxp
+        
+        if todas_cuentas:
+            movs_t = db.query(models_mov.tercero_id).filter(
+                models_mov.documento_id == documento_id,
+                models_mov.cuenta_id.in_(todas_cuentas),
+                models_mov.tercero_id.isnot(None)
+            ).distinct().all()
+            for mt in movs_t:
+                terceros_recalc.add(mt.tercero_id)
+
         # C. Eliminar Movimientos Contables
         db.query(models_mov).filter(models_mov.documento_id == documento_id).delete(synchronize_session=False)
         
         # D. Finalmente, Eliminar el Documento
         db.delete(db_documento)
+
 
         # E. RECALCULAR SALDOS (Integridad de Inventario)
         # Importamos aquí para evitar Circular Import (documento <-> inventario)
@@ -560,6 +610,13 @@ def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id:
         # Commit final para persistir la eliminación y los recálculos de inventario asociados
         if commit:
             db.commit() 
+        
+        # G. RECALCULAR CARTERA (Post-Eliminación)
+        for t_id in terceros_recalc:
+            cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=t_id, empresa_id=empresa_id)
+        
+        if commit and terceros_recalc:
+            db.commit()
 
         return {
             "message": "Documento preparado para mover a la papelera.",
@@ -701,6 +758,11 @@ def reactivar_documento(db: Session, documento_id: int, empresa_id: int):
             for p_id in productos_afectados:
                 service_inventario.recalcular_saldos_producto(db, p_id)
             db.commit()
+
+        # --- GATILLO AUTOMÁTICO DE RECÁLCULO CARTERA/PROVEEDORES ---
+        trigger_recalc_if_cxc_cxp(db, db_documento.id, empresa_id)
+        db.commit()
+
 
         return db_documento
 
@@ -2468,24 +2530,10 @@ def update_documento(db: Session, documento_id: int, documento_update: schemas_d
 
             db.flush()
 
-        # Recálculos post-update
-        terceros_a_recalcular = set()
-        if beneficiario_original_id:
-            terceros_a_recalcular.add(beneficiario_original_id)
-        if db_documento.beneficiario_id:
-            terceros_a_recalcular.add(db_documento.beneficiario_id)
+        # --- GATILLO AUTOMÁTICO DE RECÁLCULO CARTERA/PROVEEDORES ---
+        trigger_recalc_if_cxc_cxp(db, db_documento.id, empresa_id)
+        db.commit()
 
-        if terceros_a_recalcular:
-            tipo_doc = db.query(models_tipo).filter(models_tipo.id == db_documento.tipo_documento_id).first()
-            funciones_relevantes = [
-                FuncionEspecial.CARTERA_CLIENTE, 
-                FuncionEspecial.RC_CLIENTE, 
-                FuncionEspecial.CXP_PROVEEDOR, 
-                FuncionEspecial.PAGO_PROVEEDOR
-            ]
-            if tipo_doc and tipo_doc.funcion_especial in funciones_relevantes:
-                for tercero_id in terceros_a_recalcular:
-                    cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=tercero_id, empresa_id=empresa_id)
         
         log_entry_modificacion = models_log(
             empresa_id=db_documento.empresa_id,

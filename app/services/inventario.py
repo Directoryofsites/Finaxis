@@ -605,6 +605,16 @@ def editar_movimiento_kardex_admin(db: Session, movimiento_id: int, update_data:
         recalcular_saldos_producto(db, producto_id, commit=False, validar_negativos=True)
         db.commit()
         
+        # --- GATILLO AUTOMÁTICO DE RECÁLCULO CARTERA/PROVEEDORES (NUEVO) ---
+        if documento_id:
+            try:
+                from app.services import documento as service_doc
+                service_doc.trigger_recalc_if_cxc_cxp(db, documento_id, empresa_id)
+                db.commit()
+            except Exception as e_cartera:
+                print(f"⚠️ Error en recálculo automático de cartera (Kardex Admin Edit): {str(e_cartera)}")
+
+        
         msg = f"Corrección Atómica exitosa. Cantidad: {nueva_cantidad}, Costo: {nuevo_costo_unitario}."
         if dif_iva != 0:
             msg += f" IVA sincronizado ({dif_iva:+.2f})."
