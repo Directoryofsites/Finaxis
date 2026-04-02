@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
 import os
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, and_, or_
 import math
 
 # --- INICIO: CORRECCIÓN ---
@@ -680,11 +680,11 @@ def generate_auxiliar_inverso_report(db: Session, empresa_id: int, filtros: Dict
         MovimientoContable,
         Documento,
         Tercero.razon_social.label("tercero_nombre"),
-        Tercero.id.label("tercero_id_real"),
+        func.coalesce(MovimientoContable.tercero_id, Documento.beneficiario_id).label("tercero_id_real"),
         Tercero.nit.label("tercero_nit") # Agregado para el PDF
     ).select_from(MovimientoContable)\
      .join(Documento, MovimientoContable.documento_id == Documento.id)\
-     .outerjoin(Tercero, Documento.beneficiario_id == Tercero.id)\
+     .outerjoin(Tercero, func.coalesce(MovimientoContable.tercero_id, Documento.beneficiario_id) == Tercero.id)\
      .filter(
         Documento.empresa_id == empresa_id,
         Documento.fecha.between(filtros['fecha_inicio'], filtros['fecha_fin']),
@@ -693,7 +693,12 @@ def generate_auxiliar_inverso_report(db: Session, empresa_id: int, filtros: Dict
     )
     
     if filtros.get('tercero_ids'):
-        query = query.filter(Documento.beneficiario_id.in_(filtros['tercero_ids']))
+        query = query.filter(
+            or_(
+                MovimientoContable.tercero_id.in_(filtros['tercero_ids']),
+                and_(MovimientoContable.tercero_id.is_(None), Documento.beneficiario_id.in_(filtros['tercero_ids']))
+            )
+        )
         
     query = query.order_by(Tercero.razon_social, Documento.fecha, Documento.numero) # Agrupar visualmente por tercero
     
@@ -701,8 +706,9 @@ def generate_auxiliar_inverso_report(db: Session, empresa_id: int, filtros: Dict
     
     # 2. Calcular Saldos Iniciales por Tercero
     # Query de saldo inicial filtrado por cuenta y agrupado por tercero
+    current_tercero_id = func.coalesce(MovimientoContable.tercero_id, Documento.beneficiario_id).label("tid")
     q_saldos = db.query(
-        Documento.beneficiario_id,
+        current_tercero_id,
         func.sum(MovimientoContable.debito - MovimientoContable.credito).label("saldo")
     ).select_from(MovimientoContable)\
      .join(Documento, MovimientoContable.documento_id == Documento.id)\
@@ -714,10 +720,15 @@ def generate_auxiliar_inverso_report(db: Session, empresa_id: int, filtros: Dict
     )
     
     if filtros.get('tercero_ids'):
-        q_saldos = q_saldos.filter(Documento.beneficiario_id.in_(filtros['tercero_ids']))
+        q_saldos = q_saldos.filter(
+            or_(
+                MovimientoContable.tercero_id.in_(filtros['tercero_ids']),
+                and_(MovimientoContable.tercero_id.is_(None), Documento.beneficiario_id.in_(filtros['tercero_ids']))
+            )
+        )
         
-    q_saldos = q_saldos.group_by(Documento.beneficiario_id).all()
-    saldos_iniciales_map = { (r.beneficiario_id or 0): float(r.saldo or 0) for r in q_saldos }
+    q_saldos = q_saldos.group_by(current_tercero_id).all()
+    saldos_iniciales_map = { (r.tid or 0): float(r.saldo or 0) for r in q_saldos }
     
     # 3. Construir Respuesta
     # Reusamos la estructura de 'movimientos' plana, pero el frontend agrupará.

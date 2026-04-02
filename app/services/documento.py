@@ -1180,7 +1180,7 @@ def generate_account_ledger_report(
         models_centro_costo.nombre.label("centro_costo_nombre")
     ).join(models_doc, models_mov.documento_id == models_doc.id) \
     .join(models_tipo, models_doc.tipo_documento_id == models_tipo.id) \
-    .outerjoin(models_tercero, models_doc.beneficiario_id == models_tercero.id) \
+    .outerjoin(models_tercero, func.coalesce(models_mov.tercero_id, models_doc.beneficiario_id) == models_tercero.id) \
     .outerjoin(models_centro_costo, models_doc.centro_costo_id == models_centro_costo.id) \
     .filter(
         models_doc.empresa_id == empresa_id,
@@ -1309,7 +1309,10 @@ def generate_tercero_account_ledger_report(
     ).join(models_doc, models_mov.documento_id == models_doc.id) \
     .filter(
         models_doc.empresa_id == empresa_id,
-        models_doc.beneficiario_id == tercero_id,
+        or_(
+            models_mov.tercero_id == tercero_id,
+            and_(models_mov.tercero_id.is_(None), models_doc.beneficiario_id == tercero_id)
+        ),
         models_doc.fecha < fecha_inicio,
         models_doc.anulado == False
     )
@@ -1339,11 +1342,14 @@ def generate_tercero_account_ledger_report(
     ).join(models_mov, models_doc.id == models_mov.documento_id) \
     .join(models_tipo, models_doc.tipo_documento_id == models_tipo.id) \
     .join(models_plan, models_mov.cuenta_id == models_plan.id) \
-    .join(models_tercero, models_doc.beneficiario_id == models_tercero.id) \
+    .join(models_tercero, func.coalesce(models_mov.tercero_id, models_doc.beneficiario_id) == models_tercero.id) \
     .outerjoin(models_centro_costo, models_doc.centro_costo_id == models_centro_costo.id) \
     .filter(
         models_doc.empresa_id == empresa_id,
-        models_doc.beneficiario_id == tercero_id,
+        or_(
+            models_mov.tercero_id == tercero_id,
+            and_(models_mov.tercero_id.is_(None), models_doc.beneficiario_id == tercero_id)
+        ),
         models_doc.fecha.between(fecha_inicio, fecha_fin),
         models_doc.anulado == False
     )
@@ -1370,7 +1376,10 @@ def generate_tercero_account_ledger_report(
             ).join(models_doc, models_mov.documento_id == models_doc.id) \
             .filter(
                 models_doc.empresa_id == empresa_id,
-                models_doc.beneficiario_id == tercero_id,
+                or_(
+                    models_mov.tercero_id == tercero_id,
+                    and_(models_mov.tercero_id.is_(None), models_doc.beneficiario_id == tercero_id)
+                ),
                 models_mov.cuenta_id == c_id,
                 models_doc.fecha < fecha_inicio,
                 models_doc.anulado == False
