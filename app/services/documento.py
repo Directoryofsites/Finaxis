@@ -106,10 +106,11 @@ def _documento_afecta_cuentas(db: Session, documento_id: int, cuentas_ids: List[
 
 # --- FIN: FUNCIONES AUXILIARES ---
 
-def trigger_recalc_if_cxc_cxp(db: Session, documento_id: int, empresa_id: int):
+def trigger_recalc_if_cxc_cxp(db: Session, documento_id: int, empresa_id: int, commit: bool = False):
     """
     Gatillo automático: Identifica si un documento afecta cuentas de Cartera/Proveedores
     y dispara el recálculo para los terceros involucrados.
+    Nota: commit=False por defecto para que el caller controle la transacción.
     """
     try:
         # 1. Obtener cuentas configuradas
@@ -145,9 +146,9 @@ def trigger_recalc_if_cxc_cxp(db: Session, documento_id: int, empresa_id: int):
             for m in movs_terceros:
                 terceros_ids.add(m.tercero_id)
 
-            # 4. Disparar recálculo para cada tercero
+            # 4. Disparar recálculo para cada tercero (sin commit individual)
             for t_id in terceros_ids:
-                cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=t_id, empresa_id=empresa_id)
+                cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=t_id, empresa_id=empresa_id, commit=commit)
     except Exception as e:
         print(f"⚠️ Error en trigger_recalc_if_cxc_cxp: {str(e)}")
 
@@ -2516,10 +2517,24 @@ def update_documento(db: Session, documento_id: int, documento_update: schemas_d
             db.flush()
 
         # --- GATILLO AUTOMÁTICO DE RECÁLCULO CARTERA/PROVEEDORES ---
-        trigger_recalc_if_cxc_cxp(db, db_documento.id, empresa_id)
-        db.commit()
-
+        # Se identifica el beneficiario DESPUÉS de la actualización (puede haber cambiado)
+        nuevo_beneficiario_id = db_documento.beneficiario_id
         
+        # Recolectar TODOS los terceros afectados (original + nuevo si cambió)
+        terceros_a_recalcular = set()
+        if beneficiario_original_id:
+            terceros_a_recalcular.add(beneficiario_original_id)
+        if nuevo_beneficiario_id:
+            terceros_a_recalcular.add(nuevo_beneficiario_id)
+        
+        # Disparar el trigger que además detecta terceros en movimientos CXC/CXP
+        trigger_recalc_if_cxc_cxp(db, db_documento.id, empresa_id, commit=False)
+        
+        # Recalcular también el beneficiario original (si cambió y el trigger no lo capturó)
+        for t_id in terceros_a_recalcular:
+            cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=t_id, empresa_id=empresa_id, commit=False)
+
+        # Log de auditoría
         log_entry_modificacion = models_log(
             empresa_id=db_documento.empresa_id,
             usuario_id=user_id,
@@ -2528,10 +2543,9 @@ def update_documento(db: Session, documento_id: int, documento_update: schemas_d
             fecha_operacion=datetime.utcnow(), 
             detalle_documento_json=[{"id": db_documento.id, "tipo_documento": db_documento.tipo_documento.codigo, "numero": db_documento.numero}]
         )
+        db.add(log_entry_modificacion)
 
-        # --- GATILLO AUTOMÁTICO DE RECÁLCULO (NUEVO) ---
-        # Si el documento o los nuevos movimientos involucran productos, disparamos el recálculo.
-        # Añadimos los productos del payload por si cambiaron o se agregaron.
+        # Recálculo de inventario si hay productos afectados
         for mov in documento_update.movimientos:
             if mov.producto_id:
                 productos_afectados_final.add(mov.producto_id)
@@ -2539,8 +2553,10 @@ def update_documento(db: Session, documento_id: int, documento_update: schemas_d
         if productos_afectados_final:
             from app.services import inventario as service_inventario
             for p_id in productos_afectados_final:
-                service_inventario.recalcular_saldos_producto(db, p_id)
-            db.commit()
+                service_inventario.recalcular_saldos_producto(db, p_id, commit=False)
+
+        # Commit único al final de TODO
+        db.commit()
 
         return db_documento
 
