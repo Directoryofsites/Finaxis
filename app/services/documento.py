@@ -86,25 +86,10 @@ from app.schemas import documento as schemas_doc
 def _get_cuentas_especiales_ids(db: Session, empresa_id: int, tipo: str) -> List[int]:
     """
     Obtiene dinámicamente los IDs de las cuentas parametrizadas para Cartera (cxc) o Proveedores (cxp).
+    Delegamos al motor principal (cartera_service) para que el gatillo reconozca exactamente
+    las mismas cuentas que el recálculo (ej. excepciones, prefijos y configuraciones de PH).
     """
-    cuentas_ids = set()
-    query = db.query(
-        models_tipo.cuenta_debito_cxc_id,
-        models_tipo.cuenta_credito_cxc_id,
-        models_tipo.cuenta_debito_cxp_id,
-        models_tipo.cuenta_credito_cxp_id
-    ).filter(models_tipo.empresa_id == empresa_id).distinct()
-
-    if tipo == 'cxc':
-        for row in query.all():
-            if row.cuenta_debito_cxc_id: cuentas_ids.add(row.cuenta_debito_cxc_id)
-            if row.cuenta_credito_cxc_id: cuentas_ids.add(row.cuenta_credito_cxc_id)
-    elif tipo == 'cxp':
-        for row in query.all():
-            if row.cuenta_debito_cxp_id: cuentas_ids.add(row.cuenta_debito_cxp_id)
-            if row.cuenta_credito_cxp_id: cuentas_ids.add(row.cuenta_credito_cxp_id)
-
-    return list(cuentas_ids)
+    return cartera_service.get_cuentas_especiales_ids(db, empresa_id, tipo)
 
 def _documento_afecta_cuentas(db: Session, documento_id: int, cuentas_ids: List[int]) -> bool:
     """
