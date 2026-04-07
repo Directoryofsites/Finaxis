@@ -6,6 +6,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { getReporteGestionVentas } from '../../../../lib/gestionVentasService';
 import { getTerceros } from '../../../../lib/terceroService';
 import { solicitarUrlImpresionRentabilidad } from '../../../../lib/documentoService';
+import { API_URL } from '../../../../lib/apiService';
 import { useReactTable, getCoreRowModel, flexRender } from '@tanstack/react-table';
 import { FaSearch, FaFilePdf, FaCalendarAlt, FaUser, FaFileInvoiceDollar } from 'react-icons/fa';
 import Select from 'react-select';
@@ -85,13 +86,20 @@ export default function GestionVentasPage() {
         setLoadingPdfId(documentoId);
         try {
             const response = await solicitarUrlImpresionRentabilidad(documentoId);
-            window.open(response.signed_url, '_blank');
+            // Aseguramos que la URL abierta sea completa y apunte al servidor de FastAPI (Puerto 8002)
+            const relativeUrl = response.signed_url;
+            const absoluteUrl = relativeUrl.startsWith('http') 
+              ? relativeUrl 
+              : `${API_URL}${relativeUrl}`;
+              
+            window.open(absoluteUrl, '_blank');
         } catch (err) {
             toast.error('Error al generar PDF. Intente nuevamente.');
         } finally {
             setLoadingPdfId(null);
         }
     };
+
 
     // --- Configuración Tabla ---
     const columns = useMemo(() => [
