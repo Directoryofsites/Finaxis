@@ -111,46 +111,54 @@ def trigger_recalc_if_cxc_cxp(db: Session, documento_id: int, empresa_id: int, c
     Gatillo automático: Identifica si un documento afecta cuentas de Cartera/Proveedores
     y dispara el recálculo para los terceros involucrados.
     Nota: commit=False por defecto para que el caller controle la transacción.
+    IMPORTANTE: Las excepciones se propagan al caller para que pueda hacer rollback.
     """
-    try:
-        # 1. Obtener cuentas configuradas
-        cuentas_cxc = _get_cuentas_especiales_ids(db, empresa_id, 'cxc')
-        cuentas_cxp = _get_cuentas_especiales_ids(db, empresa_id, 'cxp')
-        todas_cuentas = cuentas_cxc + cuentas_cxp
+    # 1. Obtener cuentas configuradas
+    cuentas_cxc = _get_cuentas_especiales_ids(db, empresa_id, 'cxc')
+    cuentas_cxp = _get_cuentas_especiales_ids(db, empresa_id, 'cxp')
+    todas_cuentas = list(set(cuentas_cxc + cuentas_cxp))
 
-        if not todas_cuentas:
-            return
+    if not todas_cuentas:
+        print(f"[TRIGGER CXC/CXP] Doc {documento_id}: No hay cuentas CXC/CXP configuradas. Omitiendo recalculo.")
+        return
 
-        # 2. Verificar si el documento afecta estas cuentas
-        afecta = db.query(models_mov.id).filter(
-            models_mov.documento_id == documento_id,
-            models_mov.cuenta_id.in_(todas_cuentas)
-        ).first()
+    # 2. Verificar si el documento afecta estas cuentas
+    afecta = db.query(models_mov.id).filter(
+        models_mov.documento_id == documento_id,
+        models_mov.cuenta_id.in_(todas_cuentas)
+    ).first()
 
-        if afecta:
-            # 3. Identificar terceros involucrados (del encabezado y de los movimientos)
-            terceros_ids = set()
-            
-            # Tercero del encabezado
-            doc = db.query(models_doc).filter(models_doc.id == documento_id).first()
-            if doc and doc.beneficiario_id:
-                terceros_ids.add(doc.beneficiario_id)
-            
-            # Terceros de los movimientos (importante para documentos multiterceados)
-            movs_terceros = db.query(models_mov.tercero_id).filter(
-                models_mov.documento_id == documento_id,
-                models_mov.tercero_id.isnot(None),
-                models_mov.cuenta_id.in_(todas_cuentas)
-            ).distinct().all()
-            
-            for m in movs_terceros:
-                terceros_ids.add(m.tercero_id)
+    if not afecta:
+        print(f"[TRIGGER CXC/CXP] Doc {documento_id}: No afecta cuentas CXC/CXP. Omitiendo recalculo.")
+        return
 
-            # 4. Disparar recálculo para cada tercero (sin commit individual)
-            for t_id in terceros_ids:
-                cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=t_id, empresa_id=empresa_id, commit=commit)
-    except Exception as e:
-        print(f"⚠️ Error en trigger_recalc_if_cxc_cxp: {str(e)}")
+    # 3. Identificar terceros involucrados (del encabezado y de los movimientos)
+    terceros_ids = set()
+    
+    # Tercero del encabezado
+    doc = db.query(models_doc).filter(models_doc.id == documento_id).first()
+    if doc and doc.beneficiario_id:
+        terceros_ids.add(doc.beneficiario_id)
+    
+    # Terceros de los movimientos (importante para documentos multiterceados)
+    movs_terceros = db.query(models_mov.tercero_id).filter(
+        models_mov.documento_id == documento_id,
+        models_mov.tercero_id.isnot(None),
+        models_mov.cuenta_id.in_(todas_cuentas)
+    ).distinct().all()
+    
+    for m in movs_terceros:
+        terceros_ids.add(m.tercero_id)
+
+    if not terceros_ids:
+        print(f"[TRIGGER CXC/CXP] Doc {documento_id}: Afecta CXC/CXP pero no se identificaron terceros. Omitiendo.")
+        return
+
+    print(f"[TRIGGER CXC/CXP] Doc {documento_id}: Recalculando cartera para terceros: {terceros_ids}")
+    # 4. Disparar recálculo para cada tercero (las excepciones se propagan al caller)
+    for t_id in terceros_ids:
+        cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=t_id, empresa_id=empresa_id, commit=commit)
+    print(f"[TRIGGER CXC/CXP] Doc {documento_id}: Recalculo completado exitosamente.")
 
 
 
@@ -2516,25 +2524,7 @@ def update_documento(db: Session, documento_id: int, documento_update: schemas_d
 
             db.flush()
 
-        # --- GATILLO AUTOMÁTICO DE RECÁLCULO CARTERA/PROVEEDORES ---
-        # Se identifica el beneficiario DESPUÉS de la actualización (puede haber cambiado)
-        nuevo_beneficiario_id = db_documento.beneficiario_id
-        
-        # Recolectar TODOS los terceros afectados (original + nuevo si cambió)
-        terceros_a_recalcular = set()
-        if beneficiario_original_id:
-            terceros_a_recalcular.add(beneficiario_original_id)
-        if nuevo_beneficiario_id:
-            terceros_a_recalcular.add(nuevo_beneficiario_id)
-        
-        # Disparar el trigger que además detecta terceros en movimientos CXC/CXP
-        trigger_recalc_if_cxc_cxp(db, db_documento.id, empresa_id, commit=False)
-        
-        # Recalcular también el beneficiario original (si cambió y el trigger no lo capturó)
-        for t_id in terceros_a_recalcular:
-            cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=t_id, empresa_id=empresa_id, commit=False)
-
-        # Log de auditoría
+        # Log de auditoría (se guarda con el commit principal)
         log_entry_modificacion = models_log(
             empresa_id=db_documento.empresa_id,
             usuario_id=user_id,
@@ -2555,8 +2545,36 @@ def update_documento(db: Session, documento_id: int, documento_update: schemas_d
             for p_id in productos_afectados_final:
                 service_inventario.recalcular_saldos_producto(db, p_id, commit=False)
 
-        # Commit único al final de TODO
+        # Commit del documento (garantizado - siempre se guarda)
         db.commit()
+
+        # --- GATILLO AUTOMÁTICO DE RECÁLCULO CARTERA/PROVEEDORES ---
+        # Se ejecuta DESPUÉS del commit del documento para que el documento quede
+        # guardado independientemente de que el recálculo de cartera funcione o no.
+        # Si falla el recálculo, el usuario puede hacerlo manualmente después.
+        try:
+            nuevo_beneficiario_id = db_documento.beneficiario_id
+            
+            # Recolectar TODOS los terceros afectados (original + nuevo si cambió)
+            terceros_a_recalcular = set()
+            if beneficiario_original_id:
+                terceros_a_recalcular.add(beneficiario_original_id)
+            if nuevo_beneficiario_id:
+                terceros_a_recalcular.add(nuevo_beneficiario_id)
+            
+            # Disparar el trigger (detecta terceros en movimientos CXC/CXP)
+            trigger_recalc_if_cxc_cxp(db, db_documento.id, empresa_id, commit=False)
+            
+            # Recalcular también el beneficiario original (cubre el caso de cambio de tercero)
+            for t_id in terceros_a_recalcular:
+                cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=t_id, empresa_id=empresa_id, commit=False)
+
+            db.commit()
+            print(f"[UPDATE DOC] Recalculo de cartera/proveedores completado para doc {db_documento.id}.")
+        except Exception as e_cartera:
+            db.rollback()
+            print(f"[UPDATE DOC] ADVERTENCIA: El documento {db_documento.id} se guardó pero el recálculo de cartera falló: {str(e_cartera)}")
+            # No relanzamos: el documento ya quedó guardado en el commit anterior.
 
         return db_documento
 
