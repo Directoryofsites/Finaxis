@@ -700,7 +700,8 @@ export default function RentabilidadProductoPage() {
                                         <th className="py-3 px-6 text-left w-1/3">{modoReporte === 'cliente' ? 'Razón Social' : (modoReporte === 'documento' ? 'Factura' : 'Producto')}</th>
                                         <th className="py-3 px-6 text-right">Cant.</th>
                                         <th className="py-3 px-6 text-right">Venta Total</th>
-                                        <th className="py-3 px-6 text-right" title="Participación en el total de ventas">% Vta.</th>
+                                        <th className="py-2 px-3 text-right text-indigo-700" title="% participación en ventas totales" style={{whiteSpace:'nowrap'}}>% Vta</th>
+                                        <th className="py-2 px-3 text-right text-emerald-700" title="% participación en utilidad total" style={{whiteSpace:'nowrap'}}>% Util</th>
                                         <th className="py-3 px-6 text-right">Costo Total</th>
                                         <th className="py-3 px-6 text-right bg-indigo-50/50 text-indigo-900">Utilidad</th>
                                         <th className="py-3 px-6 text-right bg-indigo-50/50 text-indigo-900">Margen %</th>
@@ -725,6 +726,8 @@ export default function RentabilidadProductoPage() {
                                         const ventaTotalItem = safeFloat(item.total_venta || item.valor_venta_total);
                                         const costoTotalItem = safeFloat(item.total_costo || item.costo_total);
                                         const porcVta = granTotalVenta > 0 ? Math.round((ventaTotalItem / granTotalVenta) * 100) : 0;
+                                        const granTotalUtilidad = safeFloat(totales.total_utilidad_general || totales.total_utilidad_bruta_valor);
+                                        const porcUtil = granTotalUtilidad !== 0 ? Math.round((utilidad / Math.abs(granTotalUtilidad)) * 100) : 0;
                                         const isLoss = utilidad < 0;
                                         const isLowMargin = margen < 15 && !isLoss; // Alerta amarilla si margen bajo
 
@@ -747,8 +750,11 @@ export default function RentabilidadProductoPage() {
                                                     <td className="py-3 px-6 text-right font-mono text-gray-600">
                                                         ${fmtMoneda(ventaTotalItem)}
                                                     </td>
-                                                    <td className="py-3 px-6 text-right font-mono text-gray-600 bg-indigo-50/20 font-bold text-indigo-600">
+                                                    <td className="py-2 px-3 text-right font-mono font-bold text-indigo-600" style={{whiteSpace:'nowrap'}}>
                                                         {porcVta}%
+                                                    </td>
+                                                    <td className={`py-2 px-3 text-right font-mono font-bold ${porcUtil < 0 ? 'text-red-600' : 'text-emerald-600'}`} style={{whiteSpace:'nowrap'}}>
+                                                        {porcUtil}%
                                                     </td>
                                                     <td className="py-3 px-6 text-right font-mono text-gray-600">
                                                         ${fmtMoneda(costoTotalItem)}

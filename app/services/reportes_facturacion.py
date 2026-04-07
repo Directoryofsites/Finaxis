@@ -1396,21 +1396,31 @@ def generar_csv_ventas_cliente(db: Session, empresa_id: int, filtros: schemas_ve
         "Cliente",
         "Facturas",
         "Venta Total",
+        "% Vta",
+        "% Util",
         "Costo Total",
         "Utilidad Bruta",
         "Margen %"
     ])
 
     # 4. Datos
+    gran_venta = float(report_data.gran_total_venta) if report_data.gran_total_venta else 0
+    gran_util = float(report_data.gran_total_utilidad) if report_data.gran_total_utilidad else 0
     for item in report_data.items:
+        venta_item = float(item.total_venta)
+        util_item = float(item.total_utilidad)
+        porc_vta = round((venta_item / gran_venta * 100)) if gran_venta != 0 else 0
+        porc_util = round((util_item / abs(gran_util) * 100)) if gran_util != 0 else 0
         writer.writerow([
             item.tercero_identificacion,
             item.tercero_nombre,
             item.conteo_documentos,
-            f"{item.total_venta:.2f}".replace('.', ','),
-            f"{item.total_costo:.2f}".replace('.', ','),
-            f"{item.total_utilidad:.2f}".replace('.', ','),
-            f"{item.margen_porcentaje:.2f}".replace('.', ',')
+            f"{venta_item:.2f}".replace('.', ','),
+            f"{porc_vta}%",
+            f"{porc_util}%",
+            f"{float(item.total_costo):.2f}".replace('.', ','),
+            f"{util_item:.2f}".replace('.', ','),
+            f"{float(item.margen_porcentaje):.2f}".replace('.', ',')
         ])
 
     # 5. Totales

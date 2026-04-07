@@ -8688,12 +8688,14 @@ TEMPLATES_EMPAQUETADOS = {
             <tr>
                 <th style="width: 10%">NIT</th>
                 <th style="width: 25%">Cliente</th>
-                <th style="width: 10%">Venta Total</th>
-                <th style="width: 10%">Costo Total</th>
-                <th style="width: 10%">Utilidad Total</th>
-                <th style="width: 5%">Margen</th>
-                <th style="width: 10%">Cant. Ítems</th>
-                <th style="width: 10%">Facturas</th>
+                <th style="width: 8%; font-size: 8pt;">Venta Total</th>
+                <th style="width: 4%; font-size: 8pt;">% Vta</th>
+                <th style="width: 4%; font-size: 8pt;">% Util</th>
+                <th style="width: 8%; font-size: 8pt;">Costo Total</th>
+                <th style="width: 8%; font-size: 8pt;">Utilidad Total</th>
+                <th style="width: 5%; font-size: 8pt;">Margen</th>
+                <th style="width: 8%; font-size: 8pt;">Cant. Ítems</th>
+                <th style="width: 6%; font-size: 8pt;">Facturas</th>
             </tr>
         </thead>
         <tbody>
@@ -8702,15 +8704,19 @@ TEMPLATES_EMPAQUETADOS = {
                 <td>{{ item.tercero_identificacion }}</td>
                 <td>{{ item.tercero_nombre }}</td>
                 <td class="text-right">${{ "{:,.0f}".format(item.total_venta) }}</td>
+                {% set pct_vta = ((item.total_venta / data.gran_total_venta * 100) | round | int) if data.gran_total_venta else 0 %}
+                <td class="text-right" style="color:#3730a3;font-weight:bold;">{{ pct_vta }}%</td>
+                {% set pct_util = ((item.total_utilidad / (data.gran_total_utilidad | abs) * 100) | round | int) if data.gran_total_utilidad else 0 %}
+                <td class="text-right" style="color:{% if item.total_utilidad < 0 %}red{% else %}#065f46{% endif %};font-weight:bold;">{{ pct_util }}%</td>
                 <td class="text-right">${{ "{:,.0f}".format(item.total_costo) }}</td>
-                <td class="text-right">${{ "{:,.0f}".format(item.total_utilidad) }}</td>
+                <td class="text-right" style="color:{% if item.total_utilidad < 0 %}red{% endif %}">${{ "{:,.0f}".format(item.total_utilidad) }}</td>
                 <td class="text-right">{{ "%.2f"|format(item.margen_porcentaje) }}%</td>
                 <td class="text-right">{{ "%.2f"|format(item.cantidad_items) }}</td>
                 <td class="text-center">{{ item.conteo_documentos }}</td>
             </tr>
-            {% if item.tercero_id in filtros.clientes_expandidos and item.detalle_productos %}
+            {% if item.detalle_productos %}
             <tr>
-                <td colspan="8" style="padding: 0;">
+                <td colspan="10" style="padding: 0;">
                     <table class="detail-table">
                         <thead>
                             <tr>
@@ -8740,7 +8746,7 @@ TEMPLATES_EMPAQUETADOS = {
             {% endif %}
             {% else %}
             <tr>
-                <td colspan="8" class="text-center">No se encontraron ventas para los filtros seleccionados.</td>
+                <td colspan="10" class="text-center">No se encontraron ventas para los filtros seleccionados.</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -8748,6 +8754,8 @@ TEMPLATES_EMPAQUETADOS = {
             <tr class="bg-totals">
                 <td colspan="2" class="text-right">TOTALES GENERALES</td>
                 <td class="text-right">${{ "{:,.0f}".format(data.gran_total_venta) }}</td>
+                <td class="text-right" style="color:#3730a3;font-weight:bold;">100%</td>
+                <td class="text-right" style="color:#065f46;font-weight:bold;">{{ '−' if data.gran_total_utilidad < 0 else '' }}100%</td>
                 <td class="text-right">${{ "{:,.0f}".format(data.gran_total_costo) }}</td>
                 <td class="text-right">${{ "{:,.0f}".format(data.gran_total_utilidad) }}</td>
                 <td class="text-right">{{ "%.2f"|format(data.margen_global_porcentaje) }}%</td>
