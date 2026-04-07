@@ -165,3 +165,66 @@ export const generarPdfDirectoReporteFacturacion = async (filtros) => {
         throw error;
     }
 };
+
+// --- NUEVAS FUNCIONES: RENTABILIDAD POR CLIENTE ---
+
+/**
+ * Obtiene los datos del reporte de rentabilidad agrupado por cliente.
+ */
+export const getRentabilidadPorCliente = async (filtros) => {
+    try {
+        console.log('Llamando a la API de rentabilidad por cliente con filtros:', filtros);
+        const response = await apiService.post('/reportes-facturacion/ventas-cliente', filtros);
+        return response.data;
+    } catch (error) {
+        console.error('Error al obtener la rentabilidad por cliente:', error.response?.data || error.message);
+        throw error;
+    }
+};
+
+/**
+ * Genera el PDF del reporte de rentabilidad por cliente.
+ */
+export const generarPdfRentabilidadCliente = async (filtros) => {
+    try {
+        console.log('Solicitando PDF de rentabilidad por cliente con filtros:', filtros);
+        const response = await apiService.post('/reportes-facturacion/ventas-cliente/pdf', filtros, {
+            responseType: 'blob',
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error al generar el PDF de rentabilidad por cliente:', error.response?.data || error.message);
+        throw error;
+    }
+};
+
+/**
+ * Exporta el reporte de rentabilidad por cliente a CSV.
+ */
+export const exportarCsvRentabilidadCliente = async (filtros) => {
+    try {
+        console.log('Exportando CSV de rentabilidad por cliente con filtros:', filtros);
+        const response = await apiService.post('/reportes-facturacion/ventas-cliente/csv', filtros, {
+            responseType: 'blob',
+        });
+        
+        // Manejar la descarga directamente
+        const filename = response.headers['content-disposition'] 
+            ? response.headers['content-disposition'].split('filename=')[1].replace(/\"/g, '')
+            : `Rentabilidad_Clientes_${new Date().toISOString().slice(0, 10)}.csv`;
+
+        const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        
+        return { success: true };
+    } catch (error) {
+        console.error('Error al exportar CSV de rentabilidad por cliente:', error.response?.data || error.message);
+        throw error;
+    }
+};

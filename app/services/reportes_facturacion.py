@@ -1262,6 +1262,15 @@ def get_analisis_ventas_por_cliente(db: Session, empresa_id: int, filtros: schem
         c_utilidad = c_venta - c_costo
         c_margen = (c_utilidad / c_venta * 100) if c_venta != 0 else Decimal(0)
         
+        # --- APLICAR FILTROS DE RENTABILIDAD (NUEVO) ---
+        if filtros.mostrar_solo_perdidas and c_utilidad >= 0:
+            continue
+        
+        if filtros.margen_minimo_porcentaje is not None and filtros.margen_minimo_porcentaje != 0:
+            if c_margen < Decimal(str(filtros.margen_minimo_porcentaje)):
+                continue
+        # ---------------------------------------------
+
         gran_total_venta += c_venta
         gran_total_costo += c_costo
 
@@ -1362,3 +1371,58 @@ def generar_pdf_ventas_cliente(db: Session, empresa_id: int, filtros: schemas_ve
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error generando PDF: {str(e)}")
+
+def generar_csv_ventas_cliente(db: Session, empresa_id: int, filtros: schemas_ventas_cliente.ReporteVentasClienteFiltros) -> bytes:
+    """
+    Genera un archivo CSV con los datos del reporte de ventas por cliente.
+    """
+    import csv
+    import io as _io
+
+    # 1. Obtener Datos
+    report_data = get_analisis_ventas_por_cliente(db, empresa_id, filtros)
+
+    # 2. Construir CSV
+    output = _io.StringIO()
+    writer = csv.writer(output, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+    # 3. Encabezados
+    writer.writerow(["Reporte de Rentabilidad por Cliente"])
+    writer.writerow([f"Período: {filtros.fecha_inicio} al {filtros.fecha_fin}"])
+    writer.writerow([])
+
+    writer.writerow([
+        "Identificación",
+        "Cliente",
+        "Facturas",
+        "Venta Total",
+        "Costo Total",
+        "Utilidad Bruta",
+        "Margen %"
+    ])
+
+    # 4. Datos
+    for item in report_data.items:
+        writer.writerow([
+            item.tercero_identificacion,
+            item.tercero_nombre,
+            item.conteo_documentos,
+            f"{item.total_venta:.2f}".replace('.', ','),
+            f"{item.total_costo:.2f}".replace('.', ','),
+            f"{item.total_utilidad:.2f}".replace('.', ','),
+            f"{item.margen_porcentaje:.2f}".replace('.', ',')
+        ])
+
+    # 5. Totales
+    writer.writerow([])
+    writer.writerow([
+        "TOTALES",
+        "",
+        "",
+        f"{report_data.gran_total_venta:.2f}".replace('.', ','),
+        f"{report_data.gran_total_costo:.2f}".replace('.', ','),
+        f"{report_data.gran_total_utilidad:.2f}".replace('.', ','),
+        f"{report_data.margen_global_porcentaje:.2f}".replace('.', ',')
+    ])
+
+    return ('\ufeff' + output.getvalue()).encode('utf-8')

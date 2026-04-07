@@ -336,3 +336,38 @@ def generar_pdf_ventas_cliente(
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post(
+    "/ventas-cliente/csv",
+    summary="Exporta el reporte de rentabilidad por cliente en formato CSV.",
+)
+def exportar_csv_ventas_cliente(
+    filtros: schemas_ventas_cliente.ReporteVentasClienteFiltros,
+    db: Session = Depends(get_db),
+    current_user: models_usuario = Depends(has_permission("reportes:ver_facturacion_detallado"))
+):
+    try:
+        csv_bytes = service.generar_csv_ventas_cliente(
+            db=db,
+            empresa_id=current_user.empresa_id,
+            filtros=filtros
+        )
+        filename = f"rentabilidad_clientes_{filtros.fecha_inicio}_a_{filtros.fecha_fin}.csv"
+        headers = {
+            'Content-Disposition': f'attachment; filename="{filename}"',
+            'Access-Control-Expose-Headers': 'Content-Disposition'
+        }
+        return StreamingResponse(
+            io.BytesIO(csv_bytes),
+            media_type="text/csv; charset=utf-8-sig",
+            headers=headers
+        )
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        print(f"Error en exportar_csv_ventas_cliente: {e}")
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al generar el CSV del Reporte de Rentabilidad por Cliente."
+        )

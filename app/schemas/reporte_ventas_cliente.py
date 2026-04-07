@@ -12,6 +12,11 @@ class ReporteVentasClienteFiltros(BaseModel):
     grupo_ids: Optional[List[int]] = None         # Filtro de Grupos de Inventario
     tipo_documento_ids: Optional[List[int]] = None # Filtro Tipo Doc (ej. Solo FV)
     clientes_expandidos: Optional[List[int]] = []  # IDs de clientes expandidos en UI para el PDF WYSIWYG
+    
+    # --- NUEVOS FILTROS DE RENTABILIDAD ---
+    margen_minimo_porcentaje: Optional[float] = 0.0
+    mostrar_solo_perdidas: Optional[bool] = False
+
 
 # --- DETALLES (Drill-down) ---
 

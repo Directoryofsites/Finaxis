@@ -17,7 +17,14 @@ import { debounce } from 'lodash';
 
 // --- Servicios ---
 import { getGruposInventario, searchProductosAutocomplete } from '../../../../lib/inventarioService';
-import { getRentabilidadPorGrupo, generarPdfRentabilidad, getRentabilidadPorDocumento } from '../../../../lib/reportesFacturacionService';
+import { 
+    getRentabilidadPorGrupo, 
+    generarPdfRentabilidad, 
+    getRentabilidadPorDocumento,
+    getRentabilidadPorCliente,
+    generarPdfRentabilidadCliente,
+    exportarCsvRentabilidadCliente
+} from '../../../../lib/reportesFacturacionService';
 import { getListasPrecio } from '../../../../lib/listaPrecioService';
 import { getTerceros } from '../../../../lib/terceroService';
 import { apiService } from '../../../../lib/apiService';
@@ -180,6 +187,39 @@ export default function RentabilidadProductoPage() {
             setIsSearching(false);
         }
     }, []);
+    
+    const fetchReportePorCliente = useCallback(async (currentFiltros) => {
+        const filtrosParaApi = {
+            fecha_inicio: currentFiltros.fecha_inicio.toISOString().split('T')[0],
+            fecha_fin: currentFiltros.fecha_fin.toISOString().split('T')[0],
+            tercero_ids: currentFiltros.tercero_ids.map(t => t.value),
+            producto_ids: currentFiltros.producto_ids.map(p => p.value),
+            grupo_ids: currentFiltros.grupo_ids.filter(g => g.value !== 'all').map(g => g.value),
+            margen_minimo_porcentaje: safeFloat(currentFiltros.margen_minimo) || null,
+            mostrar_solo_perdidas: currentFiltros.mostrar_solo_perdidas,
+        };
+
+        try {
+            const data = await getRentabilidadPorCliente(filtrosParaApi);
+            setReporteData({ 
+                items: data.items, 
+                totales: {
+                    total_venta_general: data.gran_total_venta,
+                    total_costo_general: data.gran_total_costo,
+                    total_utilidad_general: data.gran_total_utilidad,
+                    margen_general_porcentaje: data.margen_global_porcentaje
+                }, 
+                detalleDocumento: null 
+            });
+            setExpandedRows({});
+            if (data.items.length === 0) toast.info("No se encontraron resultados para clientes.");
+        } catch (error) {
+            console.error(error);
+            toast.error(error.response?.data?.detail || "Error al obtener el reporte por cliente.");
+        } finally {
+            setIsSearching(false);
+        }
+    }, []);
 
     const fetchReportePorDocumento = useCallback(async (currentFiltros) => {
         const { tipo_documento_codigo, numero_documento } = currentFiltros;
@@ -236,7 +276,13 @@ export default function RentabilidadProductoPage() {
 
     const handleSearchClick = () => {
         setIsSearching(true);
-        modoReporte === 'producto' ? fetchReportePorGrupo(filtros) : fetchReportePorDocumento(filtros);
+        if (modoReporte === 'producto') {
+            fetchReportePorGrupo(filtros);
+        } else if (modoReporte === 'cliente') {
+            fetchReportePorCliente(filtros);
+        } else {
+            fetchReportePorDocumento(filtros);
+        }
     };
 
     const handleClearFiltros = () => {
@@ -287,20 +333,22 @@ export default function RentabilidadProductoPage() {
         if (reporteData.items.length === 0) return toast.warning("Genere el reporte primero.");
         setIsSearching(true);
         try {
+            const filtrosParaApi = {
+                fecha_inicio: filtros.fecha_inicio.toISOString().split('T')[0],
+                fecha_fin: filtros.fecha_fin.toISOString().split('T')[0],
+                grupo_ids: filtros.grupo_ids.filter(g => g.value !== 'all').map(g => g.value),
+                producto_ids: filtros.producto_ids.map(p => p.value),
+                tercero_ids: filtros.tercero_ids.map(t => t.value),
+                lista_precio_ids: filtros.lista_precio_ids.map(lp => lp.value),
+                margen_minimo_porcentaje: safeFloat(filtros.margen_minimo) || null,
+                mostrar_solo_perdidas: filtros.mostrar_solo_perdidas,
+            };
+
             let pdfBlob;
             if (modoReporte === 'producto') {
-                const grupoIdsFiltrados = filtros.grupo_ids.filter(g => g.value !== 'all').map(g => g.value);
-                const filtrosParaApi = {
-                    fecha_inicio: filtros.fecha_inicio.toISOString().split('T')[0],
-                    fecha_fin: filtros.fecha_fin.toISOString().split('T')[0],
-                    grupo_ids: grupoIdsFiltrados,
-                    producto_ids: filtros.producto_ids.map(p => p.value),
-                    tercero_ids: filtros.tercero_ids.map(t => t.value),
-                    lista_precio_ids: filtros.lista_precio_ids.map(lp => lp.value),
-                    margen_minimo_porcentaje: safeFloat(filtros.margen_minimo) || null,
-                    mostrar_solo_perdidas: filtros.mostrar_solo_perdidas,
-                };
                 pdfBlob = await generarPdfRentabilidad(filtrosParaApi);
+            } else if (modoReporte === 'cliente') {
+                pdfBlob = await generarPdfRentabilidadCliente(filtrosParaApi);
             } else {
                 pdfBlob = await getRentabilidadPorDocumento({
                     tipo_documento_codigo: filtros.tipo_documento_codigo.trim().toUpperCase(),
@@ -316,6 +364,7 @@ export default function RentabilidadProductoPage() {
             setIsSearching(false);
         }
     };
+
 
     const handleImprimirIndividual = async (documentoRef) => {
         if (!documentoRef || !documentoRef.includes('-')) return toast.error("Referencia de documento inválida.");
@@ -343,31 +392,36 @@ export default function RentabilidadProductoPage() {
         if (reporteData.items.length === 0) return toast.warning("Genere el reporte primero.");
         setIsSearching(true);
         try {
-            const grupoIdsFiltrados = filtros.grupo_ids.filter(g => g.value !== 'all').map(g => g.value);
             const filtrosParaApi = {
                 fecha_inicio: filtros.fecha_inicio.toISOString().split('T')[0],
                 fecha_fin: filtros.fecha_fin.toISOString().split('T')[0],
-                grupo_ids: grupoIdsFiltrados,
+                grupo_ids: filtros.grupo_ids.filter(g => g.value !== 'all').map(g => g.value),
                 producto_ids: filtros.producto_ids.map(p => p.value),
                 tercero_ids: filtros.tercero_ids.map(t => t.value),
                 lista_precio_ids: filtros.lista_precio_ids.map(lp => lp.value),
                 margen_minimo_porcentaje: safeFloat(filtros.margen_minimo) || null,
                 mostrar_solo_perdidas: filtros.mostrar_solo_perdidas,
             };
-            const response = await apiService.post(
-                '/reportes-facturacion/rentabilidad-producto/exportar-csv',
-                filtrosParaApi,
-                { responseType: 'blob' }
-            );
-            const filename = `rentabilidad_${filtrosParaApi.fecha_inicio}_a_${filtrosParaApi.fecha_fin}.csv`;
-            const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv;charset=utf-8;' }));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', filename);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
+
+            if (modoReporte === 'producto') {
+                const response = await apiService.post(
+                    '/reportes-facturacion/rentabilidad-producto/exportar-csv',
+                    filtrosParaApi,
+                    { responseType: 'blob' }
+                );
+                const filename = `rentabilidad_productos_${filtrosParaApi.fecha_inicio}_a_${filtrosParaApi.fecha_fin}.csv`;
+                const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv;charset=utf-8;' }));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', filename);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.URL.revokeObjectURL(url);
+            } else if (modoReporte === 'cliente') {
+                await exportarCsvRentabilidadCliente(filtrosParaApi);
+            }
+            
             toast.success('CSV descargado correctamente.');
         } catch (error) {
             console.error("Error al exportar CSV:", error);
@@ -387,7 +441,7 @@ export default function RentabilidadProductoPage() {
     }
 
     const totales = reporteData.totales || {};
-    const totalUtilidad = safeFloat(modoReporte === 'producto' ? totales.total_utilidad_general : totales.total_utilidad_bruta_valor);
+    const totalUtilidad = safeFloat(totales.total_utilidad_general || totales.total_utilidad_bruta_valor);
     const fmtMoneda = (val) => safeFloat(val).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     const fmtPorcentaje = (val) => safeFloat(val).toFixed(2) + '%';
 
@@ -430,6 +484,12 @@ export default function RentabilidadProductoPage() {
                             className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${modoReporte === 'producto' ? 'bg-indigo-100 text-indigo-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'}`}
                         >
                             <FaTags /> Por Producto
+                        </button>
+                        <button
+                            onClick={() => setModoReporte('cliente')}
+                            className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all ml-1 ${modoReporte === 'cliente' ? 'bg-indigo-100 text-indigo-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'}`}
+                        >
+                            <FaArrowRight /> Por Cliente
                         </button>
                         <button
                             onClick={() => setModoReporte('documento')}
@@ -540,6 +600,29 @@ export default function RentabilidadProductoPage() {
                                 )}
                             </div>
                         </>
+                    ) : modoReporte === 'cliente' ? (
+                        /* MODO CLIENTE - Mismos filtros que producto */
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-6 items-end">
+                            <div className="md:col-span-3">
+                                <label className={labelClass}>Desde</label>
+                                <div className="relative">
+                                    <DatePicker selected={filtros.fecha_inicio} onChange={d => handleFilterChange('fecha_inicio', d)} dateFormat="dd/MM/yyyy" className={inputClass} />
+                                    <FaCalendarAlt className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
+                                </div>
+                            </div>
+                            <div className="md:col-span-3">
+                                <label className={labelClass}>Hasta</label>
+                                <div className="relative">
+                                    <DatePicker selected={filtros.fecha_fin} onChange={d => handleFilterChange('fecha_fin', d)} dateFormat="dd/MM/yyyy" className={inputClass} />
+                                    <FaCalendarAlt className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
+                                </div>
+                            </div>
+                            <div className="md:col-span-6">
+                                <label className={labelClass}>Filtrar Clientes Específicos</label>
+                                <Select isMulti options={maestros.terceros} value={filtros.tercero_ids} onChange={s => handleFilterChange('tercero_ids', s)} onInputChange={handleTerceroInputChange} placeholder="Buscar clientes..." styles={selectStyles} />
+                            </div>
+                             {/* Reutilizar filtros avanzados si es necesario, pero para cliente simplificamos los principales */}
+                        </div>
                     ) : (
                         // MODO DOCUMENTO
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
@@ -591,7 +674,7 @@ export default function RentabilidadProductoPage() {
                                     </p>
                                 </div>
                                 {/* Botón Exportar CSV */}
-                                {modoReporte === 'producto' && (
+                                {(modoReporte === 'producto' || modoReporte === 'cliente') && (
                                     <button
                                         onClick={handleExportarCSV}
                                         className="btn btn-outline btn-sm gap-2 shadow-sm bg-white hover:bg-green-50 border-green-200 text-green-700"
@@ -612,32 +695,56 @@ export default function RentabilidadProductoPage() {
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-slate-100 text-gray-600 text-xs font-bold uppercase tracking-wider">
                                     <tr>
-                                        <th className="py-3 px-6 text-left">Código</th>
-                                        <th className="py-3 px-6 text-left w-1/3">Producto</th>
+                                        <th className="py-3 px-6 text-left">{modoReporte === 'cliente' ? 'Identificación' : 'Código'}</th>
+                                        <th className="py-3 px-6 text-left w-1/3">{modoReporte === 'cliente' ? 'Razón Social' : (modoReporte === 'documento' ? 'Factura' : 'Producto')}</th>
                                         <th className="py-3 px-6 text-right">Cant.</th>
                                         <th className="py-3 px-6 text-right">Venta Total</th>
                                         <th className="py-3 px-6 text-right">Costo Total</th>
                                         <th className="py-3 px-6 text-right bg-indigo-50/50 text-indigo-900">Utilidad</th>
                                         <th className="py-3 px-6 text-right bg-indigo-50/50 text-indigo-900">Margen %</th>
-                                        {modoReporte === 'producto' && <th className="py-3 px-6 text-center">Ver Detalle</th>}
+                                        {(modoReporte === 'producto' || modoReporte === 'cliente') && <th className="py-3 px-6 text-center">Ver Detalle</th>}
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-100 text-sm">
                                     {reporteData.items.map((item) => {
-                                        const key = item.producto_codigo + (item.linea_documento_id || item.producto_id);
-                                        const margen = safeFloat(modoReporte === 'producto' ? item.margen_rentabilidad_porcentaje : item.utilidad_bruta_porcentaje);
-                                        const utilidad = safeFloat(modoReporte === 'producto' ? item.total_utilidad : item.utilidad_bruta_valor);
+                                        const key = modoReporte === 'cliente'
+                                            ? `cli-${item.tercero_id}`
+                                            : (item.producto_codigo || '') + (item.linea_documento_id || item.producto_id || '');
+                                        const margen = safeFloat(
+                                            modoReporte === 'producto' ? item.margen_rentabilidad_porcentaje
+                                            : modoReporte === 'cliente' ? item.margen_porcentaje
+                                            : item.utilidad_bruta_porcentaje
+                                        );
+                                        const utilidad = safeFloat(
+                                            modoReporte === 'producto' ? item.total_utilidad
+                                            : modoReporte === 'cliente' ? item.total_utilidad
+                                            : item.utilidad_bruta_valor
+                                        );
                                         const isLoss = utilidad < 0;
                                         const isLowMargin = margen < 15 && !isLoss; // Alerta amarilla si margen bajo
 
                                         return (
                                             <React.Fragment key={key}>
                                                 <tr className={`hover:bg-gray-50 transition-colors ${isLoss ? 'bg-red-50/30' : ''}`}>
-                                                    <td className="py-3 px-6 font-mono text-xs text-gray-500">{item.producto_codigo}</td>
-                                                    <td className="py-3 px-6 font-medium text-gray-800">{item.producto_nombre}</td>
-                                                    <td className="py-3 px-6 text-right font-mono text-gray-600">{fmtMoneda(modoReporte === 'producto' ? item.total_cantidad : item.cantidad)}</td>
-                                                    <td className="py-3 px-6 text-right font-mono text-gray-600">${fmtMoneda(modoReporte === 'producto' ? item.total_venta : item.valor_venta_total)}</td>
-                                                    <td className="py-3 px-6 text-right font-mono text-gray-600">${fmtMoneda(modoReporte === 'producto' ? item.total_costo : item.costo_total)}</td>
+                                                    <td className="py-3 px-6 font-mono text-xs text-gray-500">
+                                                        {modoReporte === 'cliente' ? item.tercero_identificacion : item.producto_codigo}
+                                                    </td>
+                                                    <td className="py-3 px-6 font-medium text-gray-800">
+                                                        {modoReporte === 'cliente' ? item.tercero_nombre : item.producto_nombre}
+                                                    </td>
+                                                    <td className="py-3 px-6 text-right font-mono text-gray-600">
+                                                        {fmtMoneda(
+                                                            modoReporte === 'producto' ? item.total_cantidad
+                                                            : modoReporte === 'cliente' ? item.cantidad_items
+                                                            : item.cantidad
+                                                        )}
+                                                    </td>
+                                                    <td className="py-3 px-6 text-right font-mono text-gray-600">
+                                                        ${fmtMoneda(item.total_venta)}
+                                                    </td>
+                                                    <td className="py-3 px-6 text-right font-mono text-gray-600">
+                                                        ${fmtMoneda(item.total_costo)}
+                                                    </td>
 
                                                     <td className={`py-3 px-6 text-right font-mono font-bold ${isLoss ? 'text-red-600' : 'text-green-600'} bg-slate-50/30`}>
                                                         ${fmtMoneda(utilidad)}
@@ -649,22 +756,22 @@ export default function RentabilidadProductoPage() {
                                                         </span>
                                                     </td>
 
-                                                    {modoReporte === 'producto' && (
+                                                    {(modoReporte === 'producto' || modoReporte === 'cliente') && (
                                                         <td className="py-3 px-6 text-center">
-                                                            {item.trazabilidad_documentos?.length > 0 ? (
+                                                            {(item.trazabilidad_documentos?.length > 0 || item.detalle_productos?.length > 0) ? (
                                                                 <button
-                                                                    onClick={() => toggleRow(item.producto_id)}
-                                                                    className={`p-1.5 rounded-full transition-colors ${expandedRows[item.producto_id] ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-100 text-gray-400 hover:text-indigo-500'}`}
+                                                                    onClick={() => toggleRow(modoReporte === 'cliente' ? item.tercero_id : item.producto_id)}
+                                                                    className={`p-1.5 rounded-full transition-colors ${expandedRows[modoReporte === 'cliente' ? item.tercero_id : item.producto_id] ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-100 text-gray-400 hover:text-indigo-500'}`}
                                                                 >
-                                                                    {expandedRows[item.producto_id] ? <FaMinusCircle /> : <FaEye />}
+                                                                    {expandedRows[modoReporte === 'cliente' ? item.tercero_id : item.producto_id] ? <FaMinusCircle /> : <FaEye />}
                                                                 </button>
                                                             ) : <span className="text-gray-300 text-xs">-</span>}
                                                         </td>
                                                     )}
                                                 </tr>
 
-                                                {/* TRAZABILIDAD EXPANDIDA (DRILL-DOWN) */}
-                                                {modoReporte === 'producto' && expandedRows[item.producto_id] && (
+                                                {/* TRAZABILIDAD EXPANDIDA / DETALLE PRODUCTOS CLIENTE */}
+                                                {(modoReporte === 'producto' && expandedRows[item.producto_id]) && (
                                                     <tr>
                                                         <td colSpan="8" className="p-4 bg-gray-50 border-b border-gray-100 shadow-inner">
                                                             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden max-w-3xl mx-auto shadow-sm">
@@ -699,6 +806,50 @@ export default function RentabilidadProductoPage() {
                                                                                     >
                                                                                         <FaPrint />
                                                                                     </button>
+                                                                                </td>
+                                                                            </tr>
+                                                                        ))}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+
+                                                {/* DRILL-DOWN PARA CLIENTE (Muestra sus productos) */}
+                                                {(modoReporte === 'cliente' && expandedRows[item.tercero_id]) && (
+                                                    <tr>
+                                                        <td colSpan="8" className="p-4 bg-gray-50 border-b border-gray-100 shadow-inner">
+                                                            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden max-w-4xl mx-auto shadow-sm">
+                                                                <div className="bg-gray-100 px-4 py-2 text-xs font-bold text-gray-500 uppercase flex justify-between items-center">
+                                                                    <span>Análisis de Productos Comprados</span>
+                                                                    <span>{item.detalle_productos.length} productos</span>
+                                                                </div>
+                                                                <table className="w-full text-xs">
+                                                                    <thead className="bg-white text-gray-500 border-b border-gray-100">
+                                                                        <tr>
+                                                                            <th className="px-4 py-2 text-left">Código</th>
+                                                                            <th className="px-4 py-2 text-left">Producto</th>
+                                                                            <th className="px-4 py-2 text-right">Cant.</th>
+                                                                            <th className="px-4 py-2 text-right">Venta</th>
+                                                                            <th className="px-4 py-2 text-right">Utilidad</th>
+                                                                            <th className="px-4 py-2 text-right">Margen %</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody className="divide-y divide-gray-50">
+                                                                        {item.detalle_productos.map((prod, idx) => (
+                                                                            <tr key={idx} className="hover:bg-blue-50/30">
+                                                                                <td className="px-4 py-2 text-gray-500">{prod.producto_codigo}</td>
+                                                                                <td className="px-4 py-2 font-medium text-gray-700">{prod.producto_nombre}</td>
+                                                                                <td className="px-4 py-2 text-right text-gray-600">{prod.cantidad}</td>
+                                                                                <td className="px-4 py-2 text-right text-gray-600">${fmtMoneda(prod.total_venta)}</td>
+                                                                                <td className={`px-4 py-2 text-right font-bold ${prod.utilidad < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                                                                    ${fmtMoneda(prod.utilidad)}
+                                                                                </td>
+                                                                                <td className="px-4 py-2 text-right">
+                                                                                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${prod.margen < 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                                                                                        {prod.margen.toFixed(1)}%
+                                                                                    </span>
                                                                                 </td>
                                                                             </tr>
                                                                         ))}
