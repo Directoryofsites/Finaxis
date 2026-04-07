@@ -29,13 +29,29 @@ class GestionVentasItem(BaseModel):
 class GestionVentasKPIs(BaseModel):
     """Define la estructura para los indicadores clave de rendimiento."""
     total_facturado: float
+    total_utilidad: float
+    margen_promedio: float
+    cantidad_facturas: int
+    ticket_promedio: float
     total_cobrado: float
     saldo_pendiente: float
     cartera_vencida: float
 
+class ChartDataPoint(BaseModel):
+    """Punto de datos para gráficas (ej: ventas por día)."""
+    label: str
+    value: float
+
+class GestionVentasGraficos(BaseModel):
+    """Estructura para los datos de gráficas del dashboard."""
+    ventas_por_dia: List[ChartDataPoint]
+    top_clientes: List[ChartDataPoint]
+    top_productos: List[ChartDataPoint]
+
 class GestionVentasResponse(BaseModel):
     """El objeto completo de respuesta de la API."""
     kpis: GestionVentasKPIs
+    graficos: GestionVentasGraficos
     items: List[GestionVentasItem]
 
 # --- INICIO DE NUEVAS CLASES PARA EL PDF ---

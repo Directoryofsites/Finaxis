@@ -51,88 +51,145 @@ def _get_cxc_accounts(db: Session, empresa_id: int) -> List[int]:
                      ).all()
     return [id_[0] for id_ in cxc_accounts]
 
+def _get_costo_accounts(db: Session, empresa_id: int) -> List[int]:
+    """Obtiene los IDs de las cuentas de Costo de Ventas (Clase 6)."""
+    costo_accounts = db.query(models_plan_cuenta.id)\
+                       .filter(
+                           models_plan_cuenta.empresa_id == empresa_id,
+                           models_plan_cuenta.codigo.startswith('6')
+                       ).all()
+    return [id_[0] for id_ in costo_accounts]
+
 
 def get_reporte_gestion_ventas(db: Session, empresa_id: int, filtros: schemas_ventas.GestionVentasFiltros) -> schemas_ventas.GestionVentasResponse:
     """
-    Genera una lista ligera de documentos que aplican al reporte de ventas (CxC)
-    FILTRANDO POR LA CONSTANTE ESCALABLE (CARTERA_CLIENTE) y AFECTA_INVENTARIO.
+    Genera un reporte gerencial de ventas con KPIs, gráficas y listado detallado.
     """
-    
-    # 1. Definición de filtros y cuentas
+    # 1. Preparación de filtros
     fecha_inicio_dt = datetime.combine(filtros.fecha_inicio, datetime.min.time())
     fecha_fin_dt = datetime.combine(filtros.fecha_fin, datetime.max.time())
     
     cxc_account_ids = _get_cxc_accounts(db, empresa_id)
+    costo_account_ids = _get_costo_accounts(db, empresa_id)
     
     if not cxc_account_ids:
-        # Si no hay cuentas de cartera, devolvemos un reporte vacío
-        return schemas_ventas.GestionVentasResponse(kpis=schemas_ventas.GestionVentasKPIs(total_facturado=0.0, total_cobrado=0.0, saldo_pendiente=0.0, cartera_vencida=0.0), items=[])
+        return schemas_ventas.GestionVentasResponse(
+            kpis=schemas_ventas.GestionVentasKPIs(
+                total_facturado=0, total_utilidad=0, margen_promedio=0, 
+                cantidad_facturas=0, ticket_promedio=0, total_cobrado=0, 
+                saldo_pendiente=0, cartera_vencida=0
+            ),
+            graficos=schemas_ventas.GestionVentasGraficos(ventas_por_dia=[], top_clientes=[], top_productos=[]),
+            items=[]
+        )
 
-
-    # OBTENER EL VALOR TOTAL DE LA FACTURA (solo la suma de DÉBITOS a CxC)
+    # 2. Subconsultas de Totales por Documento (CxC y Costo)
     sq_valor_total = db.query(
         models_mov.documento_id.label("documento_id"),
         func.coalesce(func.sum(models_mov.debito), Decimal('0.0')).label("valor_total_cxc")
-    ).filter(
-        models_mov.documento_id == models_doc.id, 
-        models_mov.cuenta_id.in_(cxc_account_ids) 
-    ).group_by(models_mov.documento_id).subquery()
+    ).filter(models_mov.cuenta_id.in_(cxc_account_ids)).group_by(models_mov.documento_id).subquery()
 
+    sq_costo_total = db.query(
+        models_mov.documento_id.label("documento_id"),
+        func.coalesce(func.sum(models_mov.debito), Decimal('0.0')).label("valor_costo")
+    ).filter(models_mov.cuenta_id.in_(costo_account_ids)).group_by(models_mov.documento_id).subquery()
 
-    # 2. Consulta Principal de Documentos (Facturas de Venta)
-    query = db.query(
+    # 3. Consulta Base de Documentos
+    docs_query = db.query(
         models_doc.id,
         models_doc.fecha,
         models_doc.numero,
         models_doc.fecha_vencimiento,
         TipoDocumentoModel.codigo.label("tipo_documento"),
         models_tercero.razon_social.label("beneficiario_nombre"),
-        func.coalesce(sq_valor_total.c.valor_total_cxc, Decimal('0.0')).label("valor_total_cxc_final")
+        func.coalesce(sq_valor_total.c.valor_total_cxc, Decimal('0.0')).label("total_factura"),
+        func.coalesce(sq_costo_total.c.valor_costo, Decimal('0.0')).label("total_costo")
     ).select_from(models_doc)\
      .join(TipoDocumentoModel, models_doc.tipo_documento_id == TipoDocumentoModel.id)\
      .join(models_tercero, models_doc.beneficiario_id == models_tercero.id)\
      .outerjoin(sq_valor_total, models_doc.id == sq_valor_total.c.documento_id)\
+     .outerjoin(sq_costo_total, models_doc.id == sq_costo_total.c.documento_id)\
      .filter(
         models_doc.empresa_id == empresa_id,
         models_doc.anulado == False,
-        # FILTRO CRÍTICO FINAL: USO DE LA CONSTANTE EN LUGAR DE LA CADENA MÁGICA
-        and_(
-             TipoDocumentoModel.funcion_especial == FuncionEspecial.CARTERA_CLIENTE,
-             TipoDocumentoModel.afecta_inventario == True
-        ),
-        models_doc.fecha.between(fecha_inicio_dt, fecha_fin_dt),
+        TipoDocumentoModel.funcion_especial == FuncionEspecial.CARTERA_CLIENTE,
+        TipoDocumentoModel.afecta_inventario == True,
+        models_doc.fecha.between(fecha_inicio_dt, fecha_fin_dt)
     )
 
-    # Aplicar filtros adicionales
     if filtros.cliente_id:
-        query = query.filter(models_doc.beneficiario_id == filtros.cliente_id)
+        docs_query = docs_query.filter(models_doc.beneficiario_id == filtros.cliente_id)
 
-    # 3. Ejecución y construcción de respuesta
-    documentos_db = query.all()
-    
-    items_reporte: List[schemas_ventas.GestionVentasItem] = []
-    
-    # Devolvemos KPIs en cero, ya que el reporte se enfoca en rentabilidad
-    kpis_cero = schemas_ventas.GestionVentasKPIs(total_facturado=0.0, total_cobrado=0.0, saldo_pendiente=0.0, cartera_vencida=0.0)
+    documentos = docs_query.order_by(models_doc.fecha.desc()).all()
 
-    for doc in documentos_db:
-        # Se usa el valor renombrado y coalescido
-        valor_total_dec = Decimal(str(doc.valor_total_cxc_final))
-            
-        items_reporte.append(schemas_ventas.GestionVentasItem(
-            id=doc.id,
-            fecha=doc.fecha,
-            tipo_documento=doc.tipo_documento,
-            numero=doc.numero,
-            beneficiario_nombre=doc.beneficiario_nombre,
-            fecha_vencimiento=doc.fecha_vencimiento,
-            estado="N/A", 
-            # Se usa el valor para cumplir con el schema
-            total=float(valor_total_dec.quantize(Decimal("0.01"), ROUND_HALF_UP)),
-            saldo_pendiente=0.0,
-        ))
+    # 4. Cálculos de KPIs
+    total_vta = sum(d.total_factura for d in documentos)
+    total_cst = sum(d.total_costo for d in documentos)
+    total_utl = total_vta - total_cst
+    cant_fact = len(documentos)
+    mrg_prom = (float(total_utl) / float(total_vta) * 100) if total_vta > 0 else 0
+    tkt_prom = (float(total_vta) / cant_fact) if cant_fact > 0 else 0
 
-    return schemas_ventas.GestionVentasResponse(kpis=kpis_cero, items=items_reporte)
+    kpis = schemas_ventas.GestionVentasKPIs(
+        total_facturado=float(total_vta),
+        total_utilidad=float(total_utl),
+        margen_promedio=round(mrg_prom, 2),
+        cantidad_facturas=cant_fact,
+        ticket_promedio=round(tkt_prom, 2),
+        total_cobrado=0.0,
+        saldo_pendiente=0.0,
+        cartera_vencida=0.0
+    )
+
+    # 5. Datos para Gráficas
+    # Ventas por Día
+    ventas_dia_dict = {}
+    for d in documentos:
+        fecha_str = d.fecha.strftime("%Y-%m-%d")
+        ventas_dia_dict[fecha_str] = ventas_dia_dict.get(fecha_str, 0) + float(d.total_factura)
+    ventas_por_dia = [schemas_ventas.ChartDataPoint(label=k, value=v) for k, v in sorted(ventas_dia_dict.items())]
+
+    # Top Clientes (basado en los documentos ya filtrados)
+    clientes_dict = {}
+    for d in documentos:
+        clientes_dict[d.beneficiario_nombre] = clientes_dict.get(d.beneficiario_nombre, 0) + float(d.total_factura)
+    top_clientes = sorted(
+        [schemas_ventas.ChartDataPoint(label=k, value=v) for k, v in clientes_dict.items()],
+        key=lambda x: x.value, reverse=True
+    )[:5]
+
+    # Top Productos (requiere query adicional sobre movimientos)
+    doc_ids = [d.id for d in documentos]
+    top_productos = []
+    if doc_ids:
+        from app.models.producto import Producto
+        productos_query = db.query(
+            Producto.nombre,
+            func.sum(models_mov.debito).label("venta_total")
+        ).join(models_mov, Producto.id == models_mov.producto_id)\
+         .filter(models_mov.documento_id.in_(doc_ids))\
+         .group_by(Producto.nombre)\
+         .order_by(func.sum(models_mov.debito).desc())\
+         .limit(5).all()
+        top_productos = [schemas_ventas.ChartDataPoint(label=p.nombre, value=float(p.venta_total)) for p in productos_query]
+
+    graficos = schemas_ventas.GestionVentasGraficos(
+        ventas_por_dia=ventas_por_dia,
+        top_clientes=top_clientes,
+        top_productos=top_productos
+    )
+
+    # 6. Mapeo de Items
+    items = [
+        schemas_ventas.GestionVentasItem(
+            id=d.id, fecha=d.fecha, tipo_documento=d.tipo_documento,
+            numero=d.numero, beneficiario_nombre=d.beneficiario_nombre,
+            fecha_vencimiento=d.fecha_vencimiento, estado="Activo",
+            total=float(d.total_factura), saldo_pendiente=0.0
+        ) for d in documentos
+    ]
+
+    return schemas_ventas.GestionVentasResponse(kpis=kpis, graficos=graficos, items=items)
 
 
 # 2. Servicio para Generación de URL Firmada 
