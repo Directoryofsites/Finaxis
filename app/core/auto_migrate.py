@@ -128,7 +128,8 @@ def run_auto_migrations():
                 ("documento_referencia_id", "INTEGER"),
                 ("descuento_global_valor", "NUMERIC(15, 2) DEFAULT 0"),
                 ("cargos_globales_valor", "NUMERIC(15, 2) DEFAULT 0"),
-                ("unidad_ph_id", "INTEGER")
+                ("unidad_ph_id", "INTEGER"),
+                ("vendedor_id", "INTEGER"),  # FK a terceros - seguimiento de vendedor
             ]
             for col, col_type in documento_cols:
                 if col not in cols_documentos:
@@ -143,7 +144,8 @@ def run_auto_migrations():
                 ("regimen_fiscal", "VARCHAR(5)"),
                 ("responsabilidad_fiscal", "VARCHAR(20)"),
                 ("lista_precio_id", "INTEGER"),
-                ("cuenta_gasto_defecto_id", "INTEGER")
+                ("cuenta_gasto_defecto_id", "INTEGER"),
+                ("es_vendedor", "BOOLEAN DEFAULT FALSE"),  # Seguimiento fuerza de ventas
             ]
             for col, col_type in tercero_cols:
                 if col not in cols_terceros:
