@@ -355,6 +355,92 @@
             white-space: nowrap;
         }
 
+        /* Gráficos */
+        .charts-container {
+            display: table;
+            width: 100%;
+            margin-top: 25px;
+            page-break-inside: avoid;
+        }
+
+        .chart-box {
+            display: table-cell;
+            width: 50%;
+            padding: 15px;
+            border: 1px solid #E4E4E4;
+            border-radius: 8px;
+            vertical-align: top;
+            background: white;
+        }
+
+        .chart-box:first-child { border-right: none; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+        .chart-box:last-child { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+
+        .chart-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-labels);
+            margin-bottom: 15px;
+            border-bottom: 1px solid #F0F0F0;
+            padding-bottom: 5px;
+        }
+
+        /* Donut Chart */
+        .donut-wrap {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .donut-legend {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 10px;
+        }
+        .legend-item {
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+        }
+        .swatch {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+            margin-right: 6px;
+        }
+
+        /* Bar Chart */
+        .hbar-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .hbar-item {
+            margin-bottom: 10px;
+        }
+        .hbar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            color: var(--text-labels);
+            margin-bottom: 3px;
+        }
+        .hbar-name { font-weight: 600; }
+        .hbar-track {
+            height: 6px;
+            background: #F0F0F0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .hbar-fill {
+            height: 100%;
+            border-radius: 3px;
+        }
+
         /* Firmas */
         .signatures {
             margin-top: 30px;
@@ -555,6 +641,62 @@
                 <div class="gt-right">
                     <span class="gt-val-prefix">COP</span>
                     <span class="gt-value">{% if report_data.totales.utilidad_neta < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(report_data.totales.utilidad_neta | abs).replace(',', '.') }}</span>
+                </div>
+            </div>
+
+            <!-- ANÁLISIS VISUAL -->
+            <div class="charts-container">
+                <!-- Composición de Ingresos -->
+                <div class="chart-box">
+                    <div class="chart-title">Composición de Ingresos</div>
+                    <div class="donut-wrap">
+                        <div style="width: 80px;">
+                            <svg viewBox="0 0 36 36" style="width: 80px; height: 80px;">
+                                <circle r="15.9155" cx="18" cy="18" fill="none" stroke="#F0F0F0" stroke-width="4"></circle>
+                                {% set ns = namespace(offset=25) %}
+                                {% set colors = ['#2D6A26', '#6BAD5E', '#9ECFB5', '#C8E6D6', '#E0F0E6'] %}
+                                {% for ing in report_data.ingresos[:5] %}
+                                    {% if ing.porcentaje > 0 %}
+                                    <circle r="15.9155" cx="18" cy="18" fill="none" 
+                                            stroke="{{ colors[loop.index0] }}" 
+                                            stroke-width="5" 
+                                            stroke-dasharray="{{ ing.porcentaje }} {{ 100 - ing.porcentaje }}" 
+                                            stroke-dashoffset="{{ ns.offset }}"></circle>
+                                    {% set ns.offset = ns.offset - ing.porcentaje %}
+                                    {% endif %}
+                                {% endfor %}
+                            </svg>
+                        </div>
+                        <ul class="donut-legend">
+                            {% for ing in report_data.ingresos[:5] %}
+                            <li class="legend-item">
+                                <div class="swatch" style="background: {{ colors[loop.index0] }}"></div>
+                                <span style="flex: 1;">{{ ing.nombre[:25] }}...</span>
+                                <span style="font-weight: 700; margin-left: 8px;">{{ "{:.1f}%".format(ing.porcentaje) }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Top Impactos -->
+                <div class="chart-box">
+                    <div class="chart-title">Top 5 Rubros de Impacto</div>
+                    <ul class="hbar-list">
+                        {% set bar_colors = ['#C0392B', '#E67E22', '#F39C12', '#D35400', '#2D6A26'] %}
+                        {% for impacto in report_data.top_10_impactos[:5] %}
+                        <li class="hbar-item">
+                            <div class="hbar-label">
+                                <span class="hbar-name">{{ impacto.nombre[:30] }}</span>
+                                <span style="font-weight: 700;">$ {{ "{:,.0f}".format(impacto.saldo).replace(',', '.') }}</span>
+                            </div>
+                            <div class="hbar-track">
+                                <div class="hbar-fill" style="width: {{ impacto.porcentaje }}%; background: {{ bar_colors[loop.index0] }}"></div>
+                            </div>
+                            <div style="font-size: 7px; text-align: right; color: #999; margin-top: 1px;">Impacto: {{ "{:.1f}%".format(impacto.porcentaje) }}</div>
+                        </li>
+                        {% endfor %}
+                    </ul>
                 </div>
             </div>
 
