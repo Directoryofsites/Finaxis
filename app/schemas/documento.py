@@ -69,6 +69,8 @@ class DocumentoBase(BaseModel):
     descuento_global_valor: Optional[Decimal] = Field(default=0)
     cargos_globales_valor: Optional[Decimal] = Field(default=0)
     # ---------------------------------
+    
+    vendedor_id: Optional[int] = None
 
     # --- NOTAS CREDITO / DEBITO ---
     documento_referencia_id: Optional[int] = None
@@ -89,6 +91,8 @@ class Documento(DocumentoBase):
     anulado: bool
     estado: str
     usuario_creador_id: Optional[int] = None
+    vendedor_id: Optional[int] = None
+    vendedor_nombre: Optional[str] = None
     
     # --- FACTURACION ELECTRONICA ---
     dian_estado: Optional[str] = None

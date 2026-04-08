@@ -29,6 +29,7 @@ class Documento(Base):
     estado = Column(String, default='ACTIVO', nullable=False)
     observaciones = Column(Text, nullable=True)
     usuario_creador_id = Column(Integer, ForeignKey("usuarios.id"))
+    vendedor_id = Column(Integer, ForeignKey("terceros.id"), nullable=True)
 
     # --- CORRECCIÓN: Se elimina el server_default PostgreSQL-específico ---
     fecha_operacion = Column(TIMESTAMP(timezone=True))
@@ -61,6 +62,7 @@ class Documento(Base):
     centro_costo = relationship("CentroCosto", back_populates="documentos")
     unidad_ph = relationship("app.models.propiedad_horizontal.unidad.PHUnidad")
     usuario_creador = relationship("Usuario")
+    vendedor = relationship("Tercero", foreign_keys=[vendedor_id])
     
     # Relación de Auto-Referencia (Nota -> Factura)
     documento_referencia = relationship("Documento", remote_side=[id], backref="notas_asociadas")

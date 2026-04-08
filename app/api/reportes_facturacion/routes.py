@@ -24,6 +24,7 @@ from app.services import reportes_facturacion as service
 from app.schemas import reportes_facturacion as schemas_reportes_fact
 from app.schemas import reporte_rentabilidad as schemas_rentabilidad
 from app.schemas import reporte_ventas_cliente as schemas_ventas_cliente
+from app.schemas import reporte_vendedor as schemas_vendedor
 
 router = APIRouter()
 
@@ -92,6 +93,29 @@ def generar_rentabilidad_por_documento_route(
         db=db,
         empresa_id=current_user.empresa_id,
         filtros=filtros
+    )
+
+
+# --- 1.4 ENDPOINT NUEVO: Desempeño por Vendedor (JSON) ---
+@router.get(
+    "/desempeno-vendedores",
+    response_model=schemas_vendedor.ReporteDesempeñoVendedoresResponse,
+    summary="Genera el ranking de desempeño de vendedores basado en utilidad."
+)
+def generar_reporte_desempeno_vendedores_route(
+    fecha_inicio: date = Query(...),
+    fecha_fin: date = Query(...),
+    db: Session = Depends(get_db),
+    current_user: models_usuario = Depends(has_permission("reportes:ver_facturacion_detallado"))
+):
+    """
+    Obtiene el ranking de vendedores dentro de un rango de fechas.
+    """
+    return service.get_analisis_desempeno_vendedores(
+        db=db,
+        empresa_id=current_user.empresa_id,
+        fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin
     )
 
 

@@ -19,6 +19,7 @@ class TerceroBase(BaseModel):
     email: Optional[str] = Field(default=None, max_length=255)
     actividad_economica_ciiu: Optional[str] = Field(default=None, max_length=10)
     es_regimen_simple: Optional[bool] = False
+    es_vendedor: Optional[bool] = False
     
     # --- FE ---
     tipo_documento: Optional[str] = Field(default='13', max_length=5)
@@ -53,6 +54,7 @@ class TerceroUpdate(BaseModel):
     email: Optional[str] = Field(default=None, max_length=255)
     actividad_economica_ciiu: Optional[str] = Field(default=None, max_length=10)
     es_regimen_simple: Optional[bool] = None
+    es_vendedor: Optional[bool] = None
     
     # --- FE Update ---
     tipo_documento: Optional[str] = None

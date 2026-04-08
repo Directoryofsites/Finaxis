@@ -36,6 +36,8 @@ class FacturaCreate(BaseModel):
     remision_id: Optional[int] = None
     cotizacion_id: Optional[int] = None
 
+    vendedor_id: Optional[int] = None
+
     # --- NOTAS CREDITO / DEBITO ---
     documento_referencia_id: Optional[int] = None
     observaciones: Optional[str] = None

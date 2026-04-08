@@ -240,6 +240,7 @@ def create_documento(db: Session, documento: schemas_doc.DocumentoCreate, user_i
             beneficiario_id=documento.beneficiario_id,
             centro_costo_id=documento.centro_costo_id,
             usuario_creador_id=user_id,
+            vendedor_id=documento.vendedor_id,
             unidad_ph_id=documento.unidad_ph_id, # Added for PH Module
             
             # --- NUEVOS CAMPOS ---
@@ -309,7 +310,7 @@ def create_documento(db: Session, documento: schemas_doc.DocumentoCreate, user_i
         raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
 
 
-def anular_documento(db: Session, documento_id: int, empresa_id: int, user_id: int, user_email: str, razon: str):
+def anular_documento(db: Session, documento_id: int, empresa_id: int, user_id: int, user_email: str, razon: str, commit: bool = True):
     # 1. Buscamos el documento (Solo lectura inicial)
     db_documento = db.query(models_doc).filter(
         models_doc.id == documento_id,

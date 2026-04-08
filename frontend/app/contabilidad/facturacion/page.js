@@ -53,6 +53,9 @@ export default function NuevaFacturaPage() {
     // --- CAMBIO: Manejo de Beneficiario con Objeto ---
     const [beneficiarioId, setBeneficiarioId] = useState('');
     const [beneficiarioOption, setBeneficiarioOption] = useState(null); // {value: id, label: string}
+    
+    const [vendedorId, setVendedorId] = useState('');
+    const [vendedorOption, setVendedorOption] = useState(null); 
     // ------------------------------------------------
 
     const [centroCostoId, setCentroCostoId] = useState('');
@@ -237,6 +240,11 @@ export default function NuevaFacturaPage() {
         } catch (error) {
             console.error("Error al obtener lista de precios:", error);
         }
+    }, []);
+
+    const handleVendedorChange = useCallback((selectedOption) => {
+        setVendedorOption(selectedOption);
+        setVendedorId(selectedOption ? selectedOption.value : '');
     }, []);
     // -------------------------------------------
 
@@ -446,6 +454,7 @@ export default function NuevaFacturaPage() {
         const payload = {
             tipo_documento_id: parseInt(tipoDocumentoId),
             beneficiario_id: parseInt(beneficiarioId),
+            vendedor_id: vendedorId ? parseInt(vendedorId) : null,
             centro_costo_id: centroCostoId ? parseInt(centroCostoId) : null,
             fecha: fecha.toISOString().split('T')[0],
             fecha_vencimiento: condicionPago === 'Crédito' ? fechaVencimiento.toISOString().split('T')[0] : null,
@@ -453,9 +462,6 @@ export default function NuevaFacturaPage() {
             bodega_id: bodegaRequerida ? parseInt(selectedBodegaId) : null,
             remision_id: remisionId ? parseInt(remisionId) : null,
             cotizacion_id: cotizacionId ? parseInt(cotizacionId) : null,
-            cotizacion_id: cotizacionId ? parseInt(cotizacionId) : null,
-            descuento_global_valor: parseFloat(items.length > 0 ? (totalGeneral - (subtotalGeneral + ivaGeneral + parseFloat(cargoGlobal) || 0)) * -1 : 0) || parseFloat(descuentoGlobalCalculado || 0), // Fallback seguro
-            // Mejor usamos el calculado directamente del hook
             descuento_global_valor: descuentoGlobalCalculado,
             cargos_globales_valor: parseFloat(cargoGlobal) || 0,
             items: itemsValidados
@@ -504,13 +510,13 @@ export default function NuevaFacturaPage() {
         const payload = {
             tipo_documento_id: parseInt(tipoDocumentoId),
             beneficiario_id: parseInt(beneficiarioId),
+            vendedor_id: vendedorId ? parseInt(vendedorId) : null,
             centro_costo_id: centroCostoId ? parseInt(centroCostoId) : null,
             fecha: fecha.toISOString().split('T')[0],
             fecha_vencimiento: condicionPago === 'Crédito' ? fechaVencimiento.toISOString().split('T')[0] : null,
             condicion_pago: condicionPago,
             bodega_id: bodegaRequerida ? parseInt(selectedBodegaId) : null,
             remision_id: remisionId ? parseInt(remisionId) : null,
-            cotizacion_id: cotizacionId ? parseInt(cotizacionId) : null,
             cotizacion_id: cotizacionId ? parseInt(cotizacionId) : null,
             descuento_global_valor: descuentoGlobalCalculado,
             cargos_globales_valor: parseFloat(cargoGlobal) || 0,
@@ -714,6 +720,19 @@ export default function NuevaFacturaPage() {
                                 />
                             </div>
                             {clienteListaPrecioId && <p className="mt-1 text-xs text-green-600 font-bold flex items-center"><FaTag className="mr-1" /> Lista Precios ID: {clienteListaPrecioId}</p>}
+                        </div>
+
+                        {/* Vendedor - Async Search */}
+                        <div className="lg:col-span-1">
+                            <label htmlFor="vendedor" className={labelClass}>Vendedor <span className="text-orange-500">(Opcional)</span></label>
+                            <div className="relative z-50">
+                                <TerceroSelect
+                                    value={vendedorOption}
+                                    onChange={handleVendedorChange}
+                                    filterVendedores={true}
+                                    placeholder="Buscar Vendedor..."
+                                />
+                            </div>
                         </div>
 
                         {/* Condición Pago */}

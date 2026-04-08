@@ -24,6 +24,7 @@ class Tercero(Base):
     email = Column(String(255), nullable=True)
     actividad_economica_ciiu = Column(String(10), nullable=True)
     es_regimen_simple = Column(Boolean, nullable=False, default=False)
+    es_vendedor = Column(Boolean, nullable=False, default=False)
     
     # --- FACTURACIÓN ELECTRÓNICA ---
     tipo_documento = Column(String(5), nullable=True, default='13', comment="13=Cedula, 31=NIT")

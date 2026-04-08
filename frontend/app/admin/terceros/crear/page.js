@@ -45,6 +45,7 @@ export default function CrearTerceroPage() {
         es_cliente: false,
         es_proveedor: false,
         es_empleado: false,
+        es_vendedor: false,
         responsabilidad_fiscal: 'R-99-PN',
         actividad_economica_ciiu: '',
         es_regimen_simple: false,
@@ -416,6 +417,10 @@ export default function CrearTerceroPage() {
                                         <label className="flex items-center space-x-2 cursor-pointer bg-white px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                                             <input type="checkbox" name="es_empleado" checked={formData.es_empleado} onChange={handleChange} className="h-4 w-4 text-purple-600 rounded focus:ring-purple-500" />
                                             <span className="text-sm font-medium text-gray-700">Es Empleado</span>
+                                        </label>
+                                        <label className="flex items-center space-x-2 cursor-pointer bg-white px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                                            <input type="checkbox" name="es_vendedor" checked={formData.es_vendedor} onChange={handleChange} className="h-4 w-4 text-orange-600 rounded focus:ring-orange-500" />
+                                            <span className="text-sm font-medium text-gray-700 font-bold">Es Vendedor</span>
                                         </label>
                                     </div>
 

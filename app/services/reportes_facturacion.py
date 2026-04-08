@@ -85,6 +85,7 @@ from ..models import lista_precio as models_lista_precio
 # Schemas
 from ..schemas import reportes_facturacion as schemas_reportes
 from ..schemas import reporte_rentabilidad as schemas_rentabilidad 
+from ..schemas import reporte_vendedor as schemas_vendedor
 
 
 # =================================================================================
@@ -1482,3 +1483,113 @@ def generar_csv_ventas_cliente(db: Session, empresa_id: int, filtros: schemas_ve
     ])
 
     return ('\ufeff' + output.getvalue()).encode('utf-8')
+
+
+def get_analisis_desempeno_vendedores(db: Session, empresa_id: int, fecha_inicio: date, fecha_fin: date):
+    """
+    Analiza el desempeño de los vendedores basado en la utilidad real aportada.
+    Calcula: Ventas Brutas, IVA, Descuentos (Línea + Global), Costo de Mercancía y Utilidad.
+    """
+    # 1. Filtro base de documentos: Tipo FACTURA_VENTA (y similares que afecten ingreso), NO anulados, fecha rango.
+    # Usamos funcion_especial='cartera_cliente' para capturar facturas de venta.
+    documentos = db.query(models_doc.Documento).join(models_tipo_doc.TipoDocumento).filter(
+        models_doc.Documento.empresa_id == empresa_id,
+        models_doc.Documento.fecha.between(fecha_inicio, fecha_fin),
+        models_doc.Documento.anulado == False,
+        models_tipo_doc.TipoDocumento.funcion_especial == 'cartera_cliente'
+    ).options(
+        joinedload(models_doc.Documento.vendedor),
+        joinedload(models_doc.Documento.movimientos).joinedload(models_mov_con.MovimientoContable.cuenta)
+    ).all()
+
+    stats_vendedores = {} # vendedor_id -> data
+
+    # Vendedor Estándar (Sin ID) para documentos sin vendedor asignado
+    VENDEDOR_ESTANDAR_ID = 0
+    VENDEDOR_ESTANDAR_NOMBRE = "Empresa (Venta Directa)"
+
+    for doc in documentos:
+        v_id = doc.vendedor_id if doc.vendedor_id else VENDEDOR_ESTANDAR_ID
+        v_nombre = doc.vendedor.razon_social if doc.vendedor else VENDEDOR_ESTANDAR_NOMBRE
+
+        if v_id not in stats_vendedores:
+            stats_vendedores[v_id] = {
+                "vendedor_id": v_id,
+                "vendedor_nombre": v_nombre,
+                "total_ventas_brutas": Decimal(0),
+                "total_descuentos": Decimal(0),
+                "total_iva": Decimal(0),
+                "total_neto": Decimal(0),
+                "costo_total": Decimal(0),
+                "utilidad_bruta": Decimal(0),
+                "cantidad_facturas": 0
+            }
+
+        stats = stats_vendedores[v_id]
+        stats["cantidad_facturas"] += 1
+        
+        # Procesar movimientos para calcular Venta, IVA, Costo y Descuentos
+        for mov in doc.movimientos:
+            # A. Identificar VENTAS (Ingresos)
+            # Generalmente clase 4
+            if mov.cuenta.codigo.startswith('4'):
+                venta_bruta = Decimal(str(mov.credito)) - Decimal(str(mov.debito))
+                stats["total_ventas_brutas"] += venta_bruta
+                # Descuentos registrados en el movimiento (descuento_valor guardado en DB)
+                # OJO: El movimiento de ingreso en este sistema ya viene "Neto" de descuento global si se usó prorrateo.
+                # Pero en la metadata del movimiento guardamos 'descuento_valor'.
+                # Si el sistema ya guardó el 'credito' neto, la venta bruta es el neto.
+                # Vamos a basarnos en la lógica: Neto = Bruto - Descuentos.
+                desc_valor = Decimal(str(mov.descuento_valor or 0))
+                stats["total_descuentos"] += desc_valor
+                stats["total_neto"] += venta_bruta # Si el crédito ya es neto, esto es correcto.
+
+            # B. Identificar IVA (Pasivo)
+            elif mov.cuenta.codigo.startswith('2408'):
+                stats["total_iva"] += Decimal(str(mov.credito)) - Decimal(str(mov.debito))
+
+            # C. Identificar COSTO (Clase 6)
+            elif mov.cuenta.codigo.startswith('6'):
+                stats["costo_total"] += Decimal(str(mov.debito)) - Decimal(str(mov.credito))
+
+    # Segundo pase para calcular indicadores derivados
+    ranking = []
+    totales_globales = {
+        "ventas_brutas": Decimal(0),
+        "descuentos": Decimal(0),
+        "iva": Decimal(0),
+        "neto": Decimal(0),
+        "costo": Decimal(0),
+        "utilidad": Decimal(0),
+        "cantidad_facturas": 0
+    }
+
+    for v_id, stats in stats_vendedores.items():
+        stats["utilidad_bruta"] = stats["total_neto"] - stats["costo_total"]
+        
+        # Margen % = (Utilidad / Neto) * 100
+        if stats["total_neto"] > 0:
+            stats["margen_porcentaje"] = (stats["utilidad_bruta"] / stats["total_neto"]) * 100
+        else:
+            stats["margen_porcentaje"] = Decimal(0)
+
+        ranking.append(schemas_vendedor.VendedorDesempeñoUnid(**stats))
+
+        # Sumar a globales
+        totales_globales["ventas_brutas"] += stats["total_ventas_brutas"]
+        totales_globales["descuentos"] += stats["total_descuentos"]
+        totales_globales["iva"] += stats["total_iva"]
+        totales_globales["neto"] += stats["total_neto"]
+        totales_globales["costo"] += stats["costo_total"]
+        totales_globales["utilidad"] += stats["utilidad_bruta"]
+        totales_globales["cantidad_facturas"] += stats["cantidad_facturas"]
+
+    # Ordenar por Ventas Netas (Ranking)
+    ranking.sort(key=lambda x: x.total_neto, reverse=True)
+
+    return schemas_vendedor.ReporteDesempeñoVendedoresResponse(
+        fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin,
+        ranking=ranking,
+        totales_globales=totales_globales
+    )

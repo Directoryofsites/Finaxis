@@ -341,6 +341,7 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
             beneficiario_id=factura.beneficiario_id,
             fecha=factura.fecha,
             fecha_vencimiento=fecha_vencimiento_final, # Guardamos la fecha manual
+            vendedor_id=factura.vendedor_id,
             centro_costo_id=factura.centro_costo_id,
             
             # --- NUEVO: Pasar valores ---

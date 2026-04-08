@@ -46,13 +46,7 @@ export default function EditarTerceroPage() {
         es_cliente: false,
         es_proveedor: false,
         es_empleado: false,
-        responsabilidad_fiscal: '',
-        actividad_economica_ciiu: '',
-        es_regimen_simple: false,
-        email: '',
-        es_cliente: false,
-        es_proveedor: false,
-        es_empleado: false,
+        es_vendedor: false,
         responsabilidad_fiscal: '',
         actividad_economica_ciiu: '',
         es_regimen_simple: false,
@@ -93,9 +87,9 @@ export default function EditarTerceroPage() {
                         es_cliente: terceroData.es_cliente || false,
                         es_proveedor: terceroData.es_proveedor || false,
                         es_empleado: terceroData.es_empleado || false,
+                        es_vendedor: terceroData.es_vendedor || false,
                         responsabilidad_fiscal: terceroData.responsabilidad_fiscal || '',
                         actividad_economica_ciiu: terceroData.actividad_economica_ciiu || '',
-                        es_regimen_simple: terceroData.es_regimen_simple || false,
                         es_regimen_simple: terceroData.es_regimen_simple || false,
                         lista_precio_id: terceroData.lista_precio_id ? String(terceroData.lista_precio_id) : '',
                         municipio_dane: terceroData.municipio_dane || '', // Load existing code
@@ -399,6 +393,10 @@ export default function EditarTerceroPage() {
                                         <label className="flex items-center space-x-2 cursor-pointer bg-white px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                                             <input type="checkbox" name="es_empleado" checked={formData.es_empleado} onChange={handleChange} className="h-4 w-4 text-purple-600 rounded focus:ring-purple-500" />
                                             <span className="text-sm font-medium text-gray-700">Empleado</span>
+                                        </label>
+                                        <label className="flex items-center space-x-2 cursor-pointer bg-white px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                                            <input type="checkbox" name="es_vendedor" checked={formData.es_vendedor} onChange={handleChange} className="h-4 w-4 text-orange-600 rounded focus:ring-orange-500" />
+                                            <span className="text-sm font-medium text-gray-700 font-bold">Vendedor</span>
                                         </label>
                                     </div>
                                 </div>

@@ -10,12 +10,15 @@ import { getTerceros } from '../../../lib/terceroService';
  * @param {function} onChange - Función que recibe el nuevo objeto seleccionado
  * @param {boolean} isDisabled - Si está deshabilitado
  */
-const TerceroSelect = ({ value, onChange, isDisabled = false }) => {
-
+const TerceroSelect = ({ value, onChange, isDisabled = false, placeholder = "Buscar por Nombre, Razón Social o NIT...", filterVendedores = false }) => {
     const loadOptions = async (inputValue) => {
         try {
             // Buscamos con filtro (nombre o NIT) y límite de 20 para rapidez
-            const terceros = await getTerceros({ filtro: inputValue, limit: 20 });
+            const params = { filtro: inputValue, limit: 20 };
+            if (filterVendedores) {
+                params.es_vendedor = true;
+            }
+            const terceros = await getTerceros(params);
             return terceros.map(t => ({
                 value: t.id,
                 label: `(${t.nit}) ${t.razon_social}`
@@ -68,7 +71,7 @@ const TerceroSelect = ({ value, onChange, isDisabled = false }) => {
             cacheOptions
             defaultOptions
             isDisabled={isDisabled}
-            placeholder="Buscar por Nombre, Razón Social o NIT..."
+            placeholder={placeholder}
             noOptionsMessage={({ inputValue }) => inputValue ? "No se encontraron resultados" : "Escribe para buscar..."}
             loadingMessage={() => "Buscando..."}
             isClearable
