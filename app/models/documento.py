@@ -58,7 +58,7 @@ class Documento(Base):
     # Relaciones existentes
     empresa = relationship("Empresa")
     tipo_documento = relationship("TipoDocumento", back_populates="documentos")
-    beneficiario = relationship("Tercero", back_populates="documentos")
+    beneficiario = relationship("Tercero", back_populates="documentos", foreign_keys=[beneficiario_id])
     centro_costo = relationship("CentroCosto", back_populates="documentos")
     unidad_ph = relationship("app.models.propiedad_horizontal.unidad.PHUnidad")
     usuario_creador = relationship("Usuario")
