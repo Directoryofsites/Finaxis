@@ -227,4 +227,51 @@ export const exportarCsvRentabilidadCliente = async (filtros) => {
         console.error('Error al exportar CSV de rentabilidad por cliente:', error.response?.data || error.message);
         throw error;
     }
-};
+};
+
+/**
+ * Genera el PDF del reporte de desempeño de vendedores.
+ */
+export const generarPdfDesempenoVendedores = async (fechaInicio, fechaFin) => {
+    try {
+        const response = await apiService.get('/reportes-facturacion/desempeno-vendedores/pdf', {
+            params: { fecha_inicio: fechaInicio, fecha_fin: fechaFin },
+            responseType: 'blob',
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error al generar el PDF de desempeño de vendedores:', error.response?.data || error.message);
+        throw error;
+    }
+};
+
+/**
+ * Exporta el reporte de desempeño de vendedores a CSV.
+ */
+export const exportarCsvDesempenoVendedores = async (fechaInicio, fechaFin) => {
+    try {
+        const response = await apiService.get('/reportes-facturacion/desempeno-vendedores/csv', {
+            params: { fecha_inicio: fechaInicio, fecha_fin: fechaFin },
+            responseType: 'blob',
+        });
+        
+        const filename = response.headers['content-disposition'] 
+            ? response.headers['content-disposition'].split('filename=')[1].replace(/\"/g, '')
+            : `Desempeno_Vendedores_${fechaInicio}_a_{fechaFin}.csv`;
+
+        const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        
+        return { success: true };
+    } catch (error) {
+        console.error('Error al exportar CSV de desempeño de vendedores:', error.response?.data || error.message);
+        throw error;
+    }
+};
+

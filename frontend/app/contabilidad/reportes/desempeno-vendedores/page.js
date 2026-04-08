@@ -8,6 +8,10 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { apiService } from '../../../../lib/apiService';
+import { 
+    generarPdfDesempenoVendedores, 
+    exportarCsvDesempenoVendedores 
+} from '../../../../lib/reportesFacturacionService';
 import { useAuth } from '../../../context/AuthContext';
 
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
@@ -100,6 +104,57 @@ export default function DesempenoVendedoresPage() {
                         >
                             {loading ? "Calculando..." : <><FaChartBar /> Refrescar</>}
                         </button>
+
+                        <div className="flex gap-2">
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        setLoading(true);
+                                        const pdfBlob = await generarPdfDesempenoVendedores(
+                                            fechaInicio.toISOString().split('T')[0],
+                                            fechaFin.toISOString().split('T')[0]
+                                        );
+                                        const url = window.URL.createObjectURL(new Blob([pdfBlob]));
+                                        const link = document.createElement('a');
+                                        link.href = url;
+                                        link.setAttribute('download', `Desempeno_Vendedores_${fechaInicio.toISOString().split('T')[0]}_a_${fechaFin.toISOString().split('T')[0]}.pdf`);
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        link.remove();
+                                    } catch (err) {
+                                        toast.error("Error al generar PDF");
+                                    } finally {
+                                        setLoading(false);
+                                    }
+                                }}
+                                disabled={loading || !data}
+                                className="bg-red-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-red-700 transition-all shadow-md disabled:bg-gray-400 flex items-center gap-2"
+                                title="Exportar Ranking a PDF"
+                            >
+                                <FaFileDownload /> PDF
+                            </button>
+
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        setLoading(true);
+                                        await exportarCsvDesempenoVendedores(
+                                            fechaInicio.toISOString().split('T')[0],
+                                            fechaFin.toISOString().split('T')[0]
+                                        );
+                                    } catch (err) {
+                                        toast.error("Error al exportar Excel");
+                                    } finally {
+                                        setLoading(false);
+                                    }
+                                }}
+                                disabled={loading || !data}
+                                className="bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-emerald-700 transition-all shadow-md disabled:bg-gray-400 flex items-center gap-2"
+                                title="Exportar Ranking a Excel/CSV"
+                            >
+                                <FaFileDownload /> EXCEL
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

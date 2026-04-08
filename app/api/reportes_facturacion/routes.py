@@ -118,6 +118,62 @@ def generar_reporte_desempeno_vendedores_route(
         fecha_fin=fecha_fin
     )
 
+@router.get(
+    "/desempeno-vendedores/pdf",
+    summary="Genera el PDF del ranking de desempeño de vendedores."
+)
+def generar_pdf_desempeno_vendedores_route(
+    fecha_inicio: date = Query(...),
+    fecha_fin: date = Query(...),
+    db: Session = Depends(get_db),
+    current_user: models_usuario = Depends(has_permission("reportes:ver_facturacion_detallado"))
+):
+    try:
+        pdf_bytes = service.generar_pdf_desempeno_vendedores(
+            db=db,
+            empresa_id=current_user.empresa_id,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin
+        )
+        filename = f"desempeno_vendedores_{fecha_inicio}_a_{fecha_fin}.pdf"
+        headers = {'Content-Disposition': f'attachment; filename="{filename}"'}
+        return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf", headers=headers)
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get(
+    "/desempeno-vendedores/csv",
+    summary="Genera el CSV del ranking de desempeño de vendedores."
+)
+def generar_csv_desempeno_vendedores_route(
+    fecha_inicio: date = Query(...),
+    fecha_fin: date = Query(...),
+    db: Session = Depends(get_db),
+    current_user: models_usuario = Depends(has_permission("reportes:ver_facturacion_detallado"))
+):
+    try:
+        csv_bytes = service.generar_csv_desempeno_vendedores(
+            db=db,
+            empresa_id=current_user.empresa_id,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin
+        )
+        filename = f"desempeno_vendedores_{fecha_inicio}_a_{fecha_fin}.csv"
+        headers = {
+            'Content-Disposition': f'attachment; filename="{filename}"',
+            'Access-Control-Expose-Headers': 'Content-Disposition'
+        }
+        return StreamingResponse(
+            io.BytesIO(csv_bytes),
+            media_type="text/csv; charset=utf-8-sig",
+            headers=headers
+        )
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 
 # =================================================================================
 # === 2. ENDPOINTS DE GENERACIÓN DE PDF (DIRECTO) ===

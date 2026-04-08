@@ -1593,3 +1593,168 @@ def get_analisis_desempeno_vendedores(db: Session, empresa_id: int, fecha_inicio
         ranking=ranking,
         totales_globales=totales_globales
     )
+
+def generar_pdf_desempeno_vendedores(db: Session, empresa_id: int, fecha_inicio: date, fecha_fin: date):
+    """Genera el PDF del ranking de desempeño de vendedores."""
+    report_data = get_analisis_desempeno_vendedores(db, empresa_id, fecha_inicio, fecha_fin)
+    
+    empresa = db.query(models_empresa).filter(models_empresa.id == empresa_id).first()
+    if not empresa: raise HTTPException(status_code=404, detail="Empresa no encontrada.")
+
+    context = {
+        "empresa": empresa,
+        "fecha_inicio": fecha_inicio,
+        "fecha_fin": fecha_fin,
+        "data": report_data,
+        "titulo_reporte": "Desempeño de Fuerza de Ventas"
+    }
+
+    template_html = """
+    <html>
+    <head>
+        <style>
+            @page { margin: 1cm; }
+            body { font-family: 'Helvetica', sans-serif; font-size: 10px; color: #333; }
+            .header { text-align: center; border-bottom: 2px solid #4f46e5; padding-bottom: 10px; margin-bottom: 20px; }
+            .header h1 { color: #4f46e5; margin: 0; font-size: 18px; }
+            .info-table { width: 100%; margin-bottom: 20px; border-collapse: collapse; }
+            .info-table td { padding: 5px; border: 1px solid #eee; }
+            .ranking-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            .ranking-table th { background-color: #f8fafc; color: #64748b; font-weight: bold; text-align: left; padding: 8px; border-bottom: 2px solid #e2e8f0; text-transform: uppercase; font-size: 8px; }
+            .ranking-table td { padding: 8px; border-bottom: 1px solid #f1f5f9; }
+            .ranking-table tr.top { background-color: #fffbeb; }
+            .text-right { text-align: right; }
+            .text-center { text-align: center; }
+            .font-bold { font-weight: bold; }
+            .total-row { background-color: #f1f5f9; font-weight: bold; }
+            .utilidad-cell { color: #15803d; font-weight: bold; }
+            .margen-badge { background-color: #dcfce7; color: #166534; padding: 2px 6px; rounded: 10px; }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>{{ empresa.razon_social }}</h1>
+            <p>{{ titulo_reporte }}<br>Periodo: {{ fecha_inicio | date }} al {{ fecha_fin | date }}</p>
+        </div>
+
+        <table class="ranking-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Vendedor</th>
+                    <th class="text-center">Facturas</th>
+                    <th class="text-right">Venta Bruta</th>
+                    <th class="text-right">Descuentos</th>
+                    <th class="text-right">Venta Neta</th>
+                    <th class="text-right">Costo</th>
+                    <th class="text-right">Utilidad</th>
+                    <th class="text-center">Margen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in data.ranking %}
+                <tr class="{{ 'top' if loop.index == 1 else '' }}">
+                    <td class="text-center">{{ loop.index }}</td>
+                    <td class="font-bold">{{ v.vendedor_nombre }}</td>
+                    <td class="text-center">{{ v.cantidad_facturas }}</td>
+                    <td class="text-right">{{ v.total_ventas_brutas | format_currency(0) }}</td>
+                    <td class="text-right">{{ v.total_descuentos | format_currency(0) }}</td>
+                    <td class="text-right font-bold">{{ v.total_neto | format_currency(0) }}</td>
+                    <td class="text-right">{{ v.costo_total | format_currency(0) }}</td>
+                    <td class="text-right utilidad-cell">{{ v.utilidad_bruta | format_currency(0) }}</td>
+                    <td class="text-center">
+                        <span class="margen-badge">{{ v.margen_porcentaje | format_decimal(2) }}%</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td></td>
+                    <td colspan="1">TOTALES GENERALES</td>
+                    <td class="text-center">{{ data.totales_globales.cantidad_facturas }}</td>
+                    <td class="text-right">{{ data.totales_globales.ventas_brutas | format_currency(0) }}</td>
+                    <td class="text-right">{{ data.totales_globales.descuentos | format_currency(0) }}</td>
+                    <td class="text-right">{{ data.totales_globales.neto | format_currency(0) }}</td>
+                    <td class="text-right">{{ data.totales_globales.costo | format_currency(0) }}</td>
+                    <td class="text-right">{{ data.totales_globales.utilidad | format_currency(0) }}</td>
+                    <td class="text-center">
+                        {% if data.totales_globales.neto > 0 %}
+                            {{ ((data.totales_globales.utilidad / data.totales_globales.neto) * 100) | format_decimal(2) }}%
+                        {% else %}
+                            0.00%
+                        {% endif %}
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </body>
+    </html>
+    """
+    
+    try:
+        template = GLOBAL_JINJA_ENV.from_string(template_html)
+        rendered_html = template.render(context)
+        return HTML(string=rendered_html).write_pdf()
+    except Exception as e:
+        print(f"Error generando PDF desempeño vendedores: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+def generar_csv_desempeno_vendedores(db: Session, empresa_id: int, fecha_inicio: date, fecha_fin: date) -> bytes:
+    """Genera el reporte de desempeño de vendedores en formato CSV."""
+    import csv
+    
+    report_data = get_analisis_desempeno_vendedores(db, empresa_id, fecha_inicio, fecha_fin)
+    
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    
+    # Encabezados
+    writer.writerow(["Ranking Desempeño Vendedores"])
+    writer.writerow([f"Periodo: {fecha_inicio} a {fecha_fin}"])
+    writer.writerow([])
+    
+    writer.writerow([
+        "Puesto",
+        "Vendedor",
+        "Cant. Facturas",
+        "Venta Bruta",
+        "Descuentos",
+        "Venta Neta",
+        "Costo Mercancia",
+        "Utilidad Real",
+        "Margen %"
+    ])
+    
+    for idx, v in enumerate(report_data.ranking):
+        writer.writerow([
+            idx + 1,
+            v.vendedor_nombre,
+            v.cantidad_facturas,
+            f"{v.total_ventas_brutas:.2f}".replace('.', ','),
+            f"{v.total_descuentos:.2f}".replace('.', ','),
+            f"{v.total_neto:.2f}".replace('.', ','),
+            f"{v.costo_total:.2f}".replace('.', ','),
+            f"{v.utilidad_bruta:.2f}".replace('.', ','),
+            f"{v.margen_porcentaje:.2f}".replace('.', ',')
+        ])
+        
+    # Totales
+    t = report_data.totales_globales
+    writer.writerow([])
+    writer.writerow([
+        "TOTALES",
+        "",
+        t["cantidad_facturas"],
+        f"{t['ventas_brutas']:.2f}".replace('.', ','),
+        f"{t['descuentos']:.2f}".replace('.', ','),
+        f"{t['neto']:.2f}".replace('.', ','),
+        f"{t['costo']:.2f}".replace('.', ','),
+        f"{t['utilidad']:.2f}".replace('.', ','),
+        f"{( (t['utilidad']/t['neto']*100) if t['neto']>0 else 0 ):.2f}".replace('.', ',')
+    ])
+    
+    csv_string = output.getvalue()
+    return ('\ufeff' + csv_string).encode('utf-8')
+
