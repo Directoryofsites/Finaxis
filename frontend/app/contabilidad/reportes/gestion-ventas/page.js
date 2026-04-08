@@ -9,7 +9,8 @@ import { API_URL } from '../../../../lib/apiService';
 import { useReactTable, getCoreRowModel, flexRender } from '@tanstack/react-table';
 import { 
     FaSearch, FaFilePdf, FaCalendarAlt, FaUser, FaFileInvoiceDollar, 
-    FaChartLine, FaArrowUp, FaMoneyBillWave, FaPercentage, FaShoppingCart 
+    FaChartLine, FaArrowUp, FaMoneyBillWave, FaPercentage, FaShoppingCart,
+    FaUsers, FaSyncAlt
 } from 'react-icons/fa';
 import Select from 'react-select';
 import DatePicker from 'react-datepicker';
@@ -248,11 +249,13 @@ export default function GestionVentasPage() {
                 <div className="max-w-7xl mx-auto space-y-8 animate-fadeIn" style={{animationDelay: '0.2s'}}>
                     
                     {/* KPI CARDS */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
                         <KPICard title="Ventas Totales" value={formatCurrency(reporteData.kpis.total_facturado)} icon={<FaMoneyBillWave />} color="indigo" />
                         <KPICard title="Utilidad Periodo" value={formatCurrency(reporteData.kpis.total_utilidad)} icon={<FaArrowUp />} color="emerald" trend={reporteData.kpis.total_utilidad < 0 ? "negative" : "positive"} />
                         <KPICard title="% Margen Prom." value={`${reporteData.kpis.margen_promedio}%`} icon={<FaPercentage />} color="amber" />
-                        <KPICard title="Ticket Promedio" value={formatCurrency(reporteData.kpis.ticket_promedio)} icon={<FaShoppingCart />} color="blue" />
+                        <KPICard title="Ticket Prom. (AOV)" value={formatCurrency(reporteData.kpis.ticket_promedio)} icon={<FaShoppingCart />} color="blue" />
+                        <KPICard title="Clientes Únicos" value={reporteData.kpis.cantidad_clientes_unicos} icon={<FaUsers />} color="purple" />
+                        <KPICard title="Frecuencia Compra" value={reporteData.kpis.frecuencia_compra} icon={<FaSyncAlt />} color="teal" />
                     </div>
 
                     {/* CHARTS */}
@@ -317,7 +320,9 @@ function KPICard({ title, value, icon, color, trend }) {
         indigo: "bg-indigo-600 shadow-indigo-100 text-indigo-600",
         emerald: "bg-emerald-600 shadow-emerald-100 text-emerald-600",
         amber: "bg-amber-500 shadow-amber-100 text-amber-500",
-        blue: "bg-blue-600 shadow-blue-100 text-blue-600"
+        blue: "bg-blue-600 shadow-blue-100 text-blue-600",
+        purple: "bg-purple-600 shadow-purple-100 text-purple-600",
+        teal: "bg-teal-600 shadow-teal-100 text-teal-600"
     };
 
     return (

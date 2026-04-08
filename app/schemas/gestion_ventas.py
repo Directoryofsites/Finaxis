@@ -32,6 +32,8 @@ class GestionVentasKPIs(BaseModel):
     total_utilidad: float
     margen_promedio: float
     cantidad_facturas: int
+    cantidad_clientes_unicos: int
+    frecuencia_compra: float
     ticket_promedio: float
     total_cobrado: float
     saldo_pendiente: float

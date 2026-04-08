@@ -102,6 +102,7 @@ def get_reporte_gestion_ventas(db: Session, empresa_id: int, filtros: schemas_ve
         models_doc.fecha_vencimiento,
         TipoDocumentoModel.codigo.label("tipo_documento"),
         models_tercero.razon_social.label("beneficiario_nombre"),
+        models_doc.beneficiario_id,
         func.coalesce(sq_valor_total.c.valor_total_cxc, Decimal('0.0')).label("total_factura"),
         func.coalesce(sq_costo_total.c.valor_costo, Decimal('0.0')).label("total_costo")
     ).select_from(models_doc)\
@@ -127,6 +128,12 @@ def get_reporte_gestion_ventas(db: Session, empresa_id: int, filtros: schemas_ve
     total_cst = sum(d.total_costo for d in documentos)
     total_utl = total_vta - total_cst
     cant_fact = len(documentos)
+    
+    # NUEVOS KPIs: Clientes Únicos y Frecuencia
+    unique_clients = set(d.beneficiario_id for d in documentos)
+    cant_clientes = len(unique_clients)
+    frec_compra = (float(cant_fact) / cant_clientes) if cant_clientes > 0 else 0
+
     mrg_prom = (float(total_utl) / float(total_vta) * 100) if total_vta > 0 else 0
     tkt_prom = (float(total_vta) / cant_fact) if cant_fact > 0 else 0
 
@@ -135,6 +142,8 @@ def get_reporte_gestion_ventas(db: Session, empresa_id: int, filtros: schemas_ve
         total_utilidad=float(total_utl),
         margen_promedio=round(mrg_prom, 2),
         cantidad_facturas=cant_fact,
+        cantidad_clientes_unicos=cant_clientes,
+        frecuencia_compra=round(frec_compra, 2),
         ticket_promedio=round(tkt_prom, 2),
         total_cobrado=0.0,
         saldo_pendiente=0.0,
