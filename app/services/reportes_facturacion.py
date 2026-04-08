@@ -1328,8 +1328,52 @@ def get_analisis_ventas_por_cliente(db: Session, empresa_id: int, filtros: schem
             detalle_documentos=detalles_doc
         ))
 
-    # Ordenar clientes por Venta Total (Top Clientes)
-    items_finales.sort(key=lambda x: x.total_venta, reverse=True)
+    # 4. Cálculo de Pareto (ABC) por Utilidad
+    # -------------------------------------------------------------------------
+    # Filtramos utilidad neta positiva para el Pareto A/B/C
+    utilidad_positiva_total = sum(Decimal(str(item.total_utilidad)) for item in items_finales if item.total_utilidad > 0)
+    
+    # Ordenar por Utilidad DESC para el Ranking
+    items_finales.sort(key=lambda x: x.total_utilidad, reverse=True)
+    
+    acumulado_utilidad = Decimal(0)
+    conteo_a = 0
+    conteo_b = 0
+    conteo_c = 0
+    conteo_criticos = 0
+
+    for item in items_finales:
+        valor_venta = Decimal(str(item.total_venta))
+        valor_util = Decimal(str(item.total_utilidad))
+        
+        # Participación en VENTAS (Sin decimales como pidió el usuario)
+        p_vta = (valor_venta / gran_total_venta * 100) if gran_total_venta > 0 else Decimal(0)
+        item.participacion_vta = float(p_vta.quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+        
+        if valor_util <= 0:
+            item.categoria_abc = "CRÍTICO"
+            item.participacion_util = 0.0
+            item.participacion_acumulada = 100.0
+            conteo_criticos += 1
+            continue
+            
+        # Participación en UTILIDAD (Para Pareto)
+        participacion = (valor_util / utilidad_positiva_total * 100) if utilidad_positiva_total > 0 else Decimal(0)
+        item.participacion_util = float(participacion.quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+        
+        acumulado_utilidad += participacion
+        item.participacion_acumulada = float(acumulado_utilidad.quantize(Decimal('0.01')))
+        
+        # Asignación de Categoría
+        if acumulado_utilidad <= 80:
+            item.categoria_abc = "A"
+            conteo_a += 1
+        elif acumulado_utilidad <= 95:
+            item.categoria_abc = "B"
+            conteo_b += 1
+        else:
+            item.categoria_abc = "C"
+            conteo_c += 1
 
     gt_utilidad = gran_total_venta - gran_total_costo
     gt_margen = (gt_utilidad / gran_total_venta * 100) if gran_total_venta != 0 else Decimal(0)
@@ -1339,7 +1383,11 @@ def get_analisis_ventas_por_cliente(db: Session, empresa_id: int, filtros: schem
         gran_total_venta=float(gran_total_venta),
         gran_total_costo=float(gran_total_costo),
         gran_total_utilidad=float(gt_utilidad),
-        margen_global_porcentaje=float(gt_margen)
+        margen_global_porcentaje=float(gt_margen),
+        conteo_clientes_a=conteo_a,
+        conteo_clientes_b=conteo_b,
+        conteo_clientes_c=conteo_c,
+        conteo_clientes_criticos=conteo_criticos
     )
 
 def generar_pdf_ventas_cliente(db: Session, empresa_id: int, filtros: schemas_ventas_cliente.ReporteVentasClienteFiltros):
@@ -1395,31 +1443,29 @@ def generar_csv_ventas_cliente(db: Session, empresa_id: int, filtros: schemas_ve
         "Identificación",
         "Cliente",
         "Facturas",
+        "ABC",
         "Venta Total",
-        "% Vta",
-        "% Util",
+        "% Vta Part.",
+        "% Util Part.",
+        "% Util Acum (Pareto)",
         "Costo Total",
         "Utilidad Bruta",
         "Margen %"
     ])
 
     # 4. Datos
-    gran_venta = float(report_data.gran_total_venta) if report_data.gran_total_venta else 0
-    gran_util = float(report_data.gran_total_utilidad) if report_data.gran_total_utilidad else 0
     for item in report_data.items:
-        venta_item = float(item.total_venta)
-        util_item = float(item.total_utilidad)
-        porc_vta = round((venta_item / gran_venta * 100)) if gran_venta != 0 else 0
-        porc_util = round((util_item / abs(gran_util) * 100)) if gran_util != 0 else 0
         writer.writerow([
             item.tercero_identificacion,
             item.tercero_nombre,
             item.conteo_documentos,
-            f"{venta_item:.2f}".replace('.', ','),
-            f"{porc_vta}%",
-            f"{porc_util}%",
+            item.categoria_abc,
+            f"{float(item.total_venta):.2f}".replace('.', ','),
+            f"{float(item.participacion_porcentaje):.2f}%", # Este campo lo agregamos al schema
+            f"{float(item.participacion_porcentaje):.2f}%", 
+            f"{float(item.participacion_acumulada):.2f}%",
             f"{float(item.total_costo):.2f}".replace('.', ','),
-            f"{util_item:.2f}".replace('.', ','),
+            f"{float(item.total_utilidad):.2f}".replace('.', ','),
             f"{float(item.margen_porcentaje):.2f}".replace('.', ',')
         ])
 

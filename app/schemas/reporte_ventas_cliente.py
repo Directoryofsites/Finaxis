@@ -45,12 +45,18 @@ class VentaClienteItem(BaseModel):
     tercero_nombre: str
     tercero_identificacion: str
     
-    # Métricas de Rentabilidad
+    # Métricas de Rentabilidad y ABC
     total_venta: float = Field(default=0.0)
     total_costo: float = Field(default=0.0)
     total_utilidad: float = Field(default=0.0)
     margen_porcentaje: float = Field(default=0.0)
     
+    # Pareto Analysis
+    participacion_vta: float = Field(default=0.0, description="% de participación en la Venta total (sin decimales)")
+    participacion_util: float = Field(default=0.0, description="% de participación en la Utilidad total (sin decimales)")
+    participacion_acumulada: float = Field(default=0.0, description="% acumulado para clasificación ABC")
+    categoria_abc: str = Field(default="C", description="Clasificación A (80%), B (15%), C (5%) o CRÍTICO (<0)")
+
     cantidad_items: float = Field(default=0.0) # Total unidades vendidas
     conteo_documentos: int = Field(default=0)  # Cuántas facturas
     
@@ -70,6 +76,12 @@ class ReporteVentasClienteResponse(BaseModel):
     gran_total_costo: float = 0.0
     gran_total_utilidad: float = 0.0
     margen_global_porcentaje: float = 0.0
+    
+    # Estadísticas ABC
+    conteo_clientes_a: int = 0
+    conteo_clientes_b: int = 0
+    conteo_clientes_c: int = 0
+    conteo_clientes_criticos: int = 0
 
     class Config:
         from_attributes = True
