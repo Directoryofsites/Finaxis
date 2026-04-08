@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -35,7 +35,7 @@
 
         @page {
             size: A4;
-            margin: 0;
+            margin: 0.5cm; /* Margen mínimo de seguridad */
         }
 
         body {
@@ -49,13 +49,12 @@
         }
 
         .page-container {
-            width: 210mm;
-            height: 297mm;
+            width: 190mm; /* A4 width (210) - margin (10*2) */
+            min-height: 277mm; 
             margin: 0 auto;
             position: relative;
             background: var(--white);
             box-sizing: border-box;
-            overflow: hidden;
         }
 
         /* Barras Decorativas */
@@ -442,6 +441,47 @@
                 </table>
             </div>
 
+            <!-- COSTO DE VENTAS -->
+            <div class="section-card">
+                <div class="card-header gastos">
+                    <div class="header-stripe" style="background: var(--gold-soft);"></div>
+                    <span class="card-title">Costo de Ventas</span>
+                </div>
+                <table class="report-table gastos">
+                    <tr class="sub-header">
+                        <td colspan="3">▸ Costos Directos</td>
+                    </tr>
+                    {% for costo in report_data.costos %}
+                    <tr class="row-item">
+                        <td class="acc-code">{{ costo.codigo }}</td>
+                        <td class="acc-name">{{ costo.nombre }}</td>
+                        <td class="acc-value">
+                            $ {{ "{:,.0f}".format(costo.saldo).replace(',', '.') }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="row-total" style="background: #FBF8F1; color: var(--gold-text); border-top-color: var(--gold-soft);">
+                        <td colspan="2">TOTAL COSTO DE VENTAS</td>
+                        <td class="acc-value">
+                            $ {{ "{:,.0f}".format(report_data.totales.total_costos).replace(',', '.') }}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- RESULTADO BRUTO -->
+            <div class="section-card" style="border: 2px solid var(--green-inst); background: var(--bg-ingresos);">
+                <table class="report-table">
+                    <tr class="row-total" style="font-size: 16px; color: var(--green-inst);">
+                        <td style="padding: 12px 16px;">UTILIDAD BRUTA</td>
+                        <td class="acc-value" style="padding: 12px 16px;">
+                            $ {{ "{:,.0f}".format(report_data.totales.utilidad_bruta).replace(',', '.') }}
+                            <div style="font-size: 10px; font-weight: 400; color: var(--green-light);">MARGEN BRUTO: {{ "{:.1f}%".format(report_data.totales.porcentaje_margen_bruto) }}</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
             <!-- GASTOS OPERACIONALES -->
             <div class="section-card">
                 <div class="card-header gastos">
@@ -476,7 +516,7 @@
                     {% endif %}
 
                     <tr class="row-total">
-                        <td colspan="2">TOTAL GASTOS OPERACIONALES</td>
+                        <td colspan="2">TOTAL GASTOS ADMINISTRATIVOS Y VENTAS</td>
                         <td class="acc-value">
                             $ {{ "{:,.0f}".format(report_data.totales.total_gastos).replace(',', '.') }}
                         </td>
@@ -487,12 +527,12 @@
             <!-- KPIs -->
             <div class="kpi-container">
                 <div class="kpi-card kpi-ingresos">
-                    <div class="kpi-label">Total Ingresos</div>
-                    <div class="kpi-value">$ {{ "{:,.0f}".format(report_data.totales.total_ingresos).replace(',', '.') }}</div>
+                    <div class="kpi-label">Margen Bruto</div>
+                    <div class="kpi-value">{{ "{:.1f}%".format(report_data.totales.porcentaje_margen_bruto) }}</div>
                 </div>
                 <div class="kpi-card kpi-gastos">
-                    <div class="kpi-label">Total Gastos</div>
-                    <div class="kpi-value">$ {{ "{:,.0f}".format(report_data.totales.total_gastos).replace(',', '.') }}</div>
+                    <div class="kpi-label">Margen Neto</div>
+                    <div class="kpi-value">{{ "{:.1f}%".format(report_data.totales.porcentaje_margen_neto) }}</div>
                 </div>
                 <div class="kpi-card kpi-resultado">
                     <div class="kpi-label">Utilidad Ejercicio</div>

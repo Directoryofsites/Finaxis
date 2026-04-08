@@ -550,15 +550,15 @@ export default function EstadoResultadosGerencialPage() {
 
                             <div className="kpi-strip">
                                 <div className="kpi-cell ing">
-                                    <div className="kpi-label">Total Ingresos</div>
-                                    <div className="kpi-value green">${new Intl.NumberFormat('es-CO').format(reporte.totales.total_ingresos)}</div>
+                                    <div className="kpi-label">Margen Bruto</div>
+                                    <div className="kpi-value green">{reporte.totales.porcentaje_margen_bruto.toFixed(1).replace('.', ',')}%</div>
                                 </div>
                                 <div className="kpi-cell exp">
-                                    <div className="kpi-label">Total Gastos</div>
-                                    <div className="kpi-value red">${new Intl.NumberFormat('es-CO').format(reporte.totales.total_gastos)}</div>
+                                    <div className="kpi-label">Margen Neto</div>
+                                    <div className="kpi-value red">{reporte.totales.porcentaje_margen_neto.toFixed(1).replace('.', ',')}%</div>
                                 </div>
                                 <div className="kpi-cell res">
-                                    <div className="kpi-label">Utilidad Ejercicio</div>
+                                    <div className="kpi-label">Utilidad Neta</div>
                                     <div className={`kpi-value ${reporte.totales.utilidad_neta < 0 ? 'red' : 'gold'}`}>
                                         {`${reporte.totales.utilidad_neta < 0 ? '-' : ''}$${new Intl.NumberFormat('es-CO').format(Math.abs(reporte.totales.utilidad_neta))}`}
                                     </div>
@@ -603,11 +603,62 @@ export default function EstadoResultadosGerencialPage() {
                                 </table>
                             </div>
 
+                            {/* COSTOS DE VENTA */}
+                            <div className="section-card border-l-4 border-l-amber-500">
+                                <div className="card-header gastos !bg-amber-50">
+                                    <div className="header-stripe !bg-amber-500"></div>
+                                    <h2 className="card-title text-amber-900">Costo de Ventas y Mercancía</h2>
+                                </div>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Cuenta</th>
+                                            <th>Descripción</th>
+                                            <th>Valor</th>
+                                            <th>% Ventas</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {reporte.costos.map((costo) => (
+                                            <tr key={costo.codigo}>
+                                                <td className="code-cell">{costo.codigo}</td>
+                                                <td>{costo.nombre}</td>
+                                                <td>${new Intl.NumberFormat('es-CO').format(costo.saldo)}</td>
+                                                <td>
+                                                    <div className="bar-wrap">
+                                                        <div className="bar-track"><div className="bar-fill" style={{ width: `${costo.porcentaje}%`, background: '#f59e0b' }}></div></div>
+                                                        <span>{costo.porcentaje.toFixed(1).replace('.', ',')}%</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        <tr className="subtotal !bg-amber-100/50">
+                                            <td colSpan="2" className="!text-amber-900"><strong>TOTAL COSTO DE VENTAS</strong></td>
+                                            <td className="!text-amber-900"><strong>${new Intl.NumberFormat('es-CO').format(reporte.totales.total_costos)}</strong></td>
+                                            <td></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* UTILIDAD BRUTA BLOCK */}
+                            <div className="result-block !bg-emerald-900 !border-emerald-600 !mt-6 !mb-10">
+                                <div className="result-label text-emerald-100 italic">Utilidad Bruta Operacional</div>
+                                <div className="flex flex-col items-end">
+                                    <div className="result-value !text-emerald-400">
+                                        ${new Intl.NumberFormat('es-CO').format(reporte.totales.utilidad_bruta)}
+                                    </div>
+                                    <div className="text-[10px] uppercase tracking-widest text-emerald-300 font-bold">
+                                        Margen Bruto: {reporte.totales.porcentaje_margen_bruto.toFixed(1).replace('.', ',')}%
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* GASTOS */}
                             <div className="section-card">
                                 <div className="card-header gastos">
                                     <div className="header-stripe"></div>
-                                    <h2 className="card-title">Gastos Operacionales</h2>
+                                    <h2 className="card-title">Gastos de Administración y Ventas</h2>
                                 </div>
                                 <table>
                                     <thead>
@@ -680,7 +731,7 @@ export default function EstadoResultadosGerencialPage() {
                                         )}
 
                                         <tr className="subtotal">
-                                            <td colSpan="2"><strong>TOTAL GASTOS OPERACIONALES</strong></td>
+                                            <td colSpan="2"><strong>TOTAL GASTOS ADMINISTRATIVOS Y VENTAS</strong></td>
                                             <td><strong>${new Intl.NumberFormat('es-CO').format(reporte.totales.total_gastos)}</strong></td>
                                             <td></td>
                                         </tr>
@@ -741,18 +792,18 @@ export default function EstadoResultadosGerencialPage() {
                                 </div>
 
                                 <div className="chart-card">
-                                    <div className="chart-title">Top 5 Rubros de Gasto</div>
+                                    <div className="chart-title">Top 5 Rubros de Mayor Impacto</div>
                                     <ul className="hbar-list">
-                                        {reporte.top_5_gastos.map((gasto, i) => {
-                                            const colors = ['#b53a2a', '#c05a45', '#1e4f87', '#d97060', '#5aab82'];
+                                        {reporte.top_10_impactos && reporte.top_10_impactos.slice(0, 5).map((impacto, i) => {
+                                            const colors = ['#b53a2a', '#c05a45', '#f59e0b', '#d97060', '#1e4f87'];
                                             return (
                                                 <li className="hbar-item" key={i}>
                                                     <div className="hbar-meta">
-                                                        <span className="hbar-name truncate max-w-[60%]">{gasto.nombre}</span>
-                                                        <span className="hbar-val">${new Intl.NumberFormat('es-CO').format(gasto.saldo)} · {gasto.porcentaje.toFixed(1).replace('.', ',')}%</span>
+                                                        <span className="hbar-name truncate max-w-[60%]">{impacto.nombre}</span>
+                                                        <span className="hbar-val">${new Intl.NumberFormat('es-CO').format(impacto.saldo)} · {impacto.porcentaje.toFixed(1).replace('.', ',')}%</span>
                                                     </div>
                                                     <div className="hbar-track">
-                                                        <div className="hbar-fill" style={{ width: `${gasto.porcentaje}%`, background: colors[i] || '#cbd5e1' }}></div>
+                                                        <div className="hbar-fill" style={{ width: `${impacto.porcentaje}%`, background: colors[i] || '#cbd5e1' }}></div>
                                                     </div>
                                                 </li>
                                             );

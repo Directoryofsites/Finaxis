@@ -1742,8 +1742,19 @@ def generate_income_statement_gerencial_report(
     for item in ingresos_items:
         item['porcentaje'] = (item['saldo'] / total_ingresos) * 100 if total_ingresos != 0 else 0
 
-    # 2. Gastos (Clase 5, 6, 7)
-    gastos_data_raw = get_saldo_cuentas(db, empresa_id, fecha_inicio, fecha_fin, ['5', '6', '7'])
+    # 2. Costos de Venta (Clase 6, 7)
+    costos_data_raw = get_saldo_cuentas(db, empresa_id, fecha_inicio, fecha_fin, ['6', '7'])
+    total_costos = sum(item['saldo'] for item in costos_data_raw)
+    costos_items = sorted(costos_data_raw, key=lambda x: x['saldo'], reverse=True)
+    
+    for item in costos_items:
+        item['porcentaje'] = (item['saldo'] / total_ingresos) * 100 if total_ingresos != 0 else 0
+    
+    # Utilidad Bruta
+    utilidad_bruta = total_ingresos - total_costos
+
+    # 3. Gastos Operacionales (Clase 5)
+    gastos_data_raw = get_saldo_cuentas(db, empresa_id, fecha_inicio, fecha_fin, ['5'])
     total_gastos = sum(item['saldo'] for item in gastos_data_raw)
     
     # Clasificación de Gastos para el formato Gerencial
@@ -1753,12 +1764,12 @@ def generate_income_statement_gerencial_report(
 
     for item in gastos_data_raw:
         codigo = item['codigo']
-        item['porcentaje'] = (item['saldo'] / total_gastos) * 100 if total_gastos != 0 else 0
+        item['porcentaje'] = (item['saldo'] / total_ingresos) * 100 if total_ingresos != 0 else 0
         
         # Lógica de asignación a grupos basada en PUC colombiano estandar
         if codigo.startswith('5105') or codigo.startswith('5205'):
             nominas.append(item)
-        elif codigo.startswith(('5110', '5120', '5135', '5210', '5220', '5235', '6', '7')):
+        elif codigo.startswith(('5110', '5120', '5135', '5210', '5220', '5235')):
             operativos.append(item)
         else:
             generales.append(item)
@@ -1780,24 +1791,29 @@ def generate_income_statement_gerencial_report(
     if ingresos_items:
         ingresos_items[0]['is_ingreso_principal'] = True
 
-    # 3. Resultado
-    utilidad_neta = total_ingresos - total_gastos
+    # 4. Resultados Finales
+    utilidad_neta = utilidad_bruta - total_gastos
 
-    # 4. Top 5 Gastos
-    todos_los_gastos_ordenados = sorted(gastos_data_raw, key=lambda x: x['saldo'], reverse=True)
-    top_5_gastos = todos_los_gastos_ordenados[:5]
+    # 5. Top 10 Impactos (Gastos + Costos)
+    todos_los_impactos = sorted(gastos_data_raw + costos_data_raw, key=lambda x: x['saldo'], reverse=True)
+    top_10_impactos = todos_los_impactos[:10]
 
     return {
         "totales": {
             "total_ingresos": total_ingresos,
+            "total_costos": total_costos,
+            "utilidad_bruta": utilidad_bruta,
             "total_gastos": total_gastos,
-            "utilidad_neta": utilidad_neta
+            "utilidad_neta": utilidad_neta,
+            "porcentaje_margen_bruto": (utilidad_bruta / total_ingresos * 100) if total_ingresos != 0 else 0,
+            "porcentaje_margen_neto": (utilidad_neta / total_ingresos * 100) if total_ingresos != 0 else 0
         },
         "ingresos": ingresos_items,
+        "costos": costos_items,
         "gastos_nomina": nominas,
         "gastos_operativos": operativos,
         "gastos_generales": generales,
-        "top_5_gastos": top_5_gastos
+        "top_10_impactos": top_10_impactos
     }
 
 def generate_income_statement_gerencial_report_pdf(
