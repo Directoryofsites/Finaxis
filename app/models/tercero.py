@@ -48,7 +48,12 @@ class Tercero(Base):
     updated_by = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
 
     # Relación para documentos ACTIVOS
-    documentos = relationship("Documento", back_populates="beneficiario", foreign_keys="Documento.beneficiario_id")
+    documentos = relationship(
+        "Documento",
+        primaryjoin="Documento.beneficiario_id == Tercero.id",
+        back_populates="beneficiario",
+        foreign_keys="[Documento.beneficiario_id]"
+    )
 
     # Relación separada para documentos ELIMINADOS
     documentos_eliminados = relationship("DocumentoEliminado", back_populates="beneficiario")
