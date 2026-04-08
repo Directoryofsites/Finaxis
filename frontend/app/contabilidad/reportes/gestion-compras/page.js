@@ -1,4 +1,5 @@
 // frontend/app/contabilidad/reportes/gestion-compras/page.js
+// v1.0.1 - Forzando despliegue
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
