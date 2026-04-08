@@ -37,13 +37,22 @@ def check_tercero_name(
 @router.get("/", response_model=List[tercero_schema.Tercero])
 def read_terceros(
     filtro: Optional[str] = None,
+    es_vendedor: Optional[bool] = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
     current_user: models_usuario = Depends(get_current_user)
 ):
-    terceros = tercero_service.get_terceros(db, empresa_id=current_user.empresa_id, filtro=filtro, skip=skip, limit=limit)
+    terceros = tercero_service.get_terceros(
+        db, 
+        empresa_id=current_user.empresa_id, 
+        filtro=filtro, 
+        es_vendedor=es_vendedor,
+        skip=skip, 
+        limit=limit
+    )
     return terceros
+
 
 @router.get("/{tercero_id}", response_model=tercero_schema.Tercero)
 def read_tercero(

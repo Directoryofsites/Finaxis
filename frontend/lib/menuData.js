@@ -204,7 +204,9 @@ export const menuStructure = [
             { name: 'Compras', href: '/contabilidad/compras', mnemonic: 'm', icon: FaReceipt, description: 'Registro de facturas de compra.', permission: 'compras:acceso' },
             { name: 'Rentabilidad Prod.', href: '/contabilidad/reportes/rentabilidad-producto', mnemonic: 'p', icon: FaChartLine, description: 'Margen de ganancia por ítem.', permission: 'facturacion:rentabilidad_producto' },
             { name: 'Rentabilidad Doc.', href: '/contabilidad/reportes/gestion-ventas', mnemonic: 'd', icon: FaChartLine, description: 'Análisis de utilidad por venta.', permission: 'facturacion:rentabilidad_doc' },
+            { name: 'Desempeño Vendedores', href: '/contabilidad/reportes/desempeno-vendedores', mnemonic: 'v', icon: FaChartArea, description: 'Análisis de rentabilidad por vendedor.', permission: 'facturacion:rentabilidad_doc' },
             { name: 'Análisis ABC Clientes', href: '/contabilidad/reportes/rentabilidad-cliente', mnemonic: 'b', icon: FaGem, description: 'Clasificación estratégica de clientes (Pareto).', permission: 'facturacion:ventas_cliente' },
+
             { name: 'Análisis Ventas Cliente', href: '/contabilidad/reportes/ventas-cliente', mnemonic: 'a', icon: FaChartPie, description: 'Reporte integral de ventas por cliente.', permission: 'facturacion:ventas_cliente' },
             { name: 'Reporte Fac. Electrónica', href: '/contabilidad/reportes/facturas-electronicas', mnemonic: 'e', icon: FaCheckCircle, description: 'Estado y gestión de facturación DIAN.', permission: 'facturacion:acceso' },
         ]

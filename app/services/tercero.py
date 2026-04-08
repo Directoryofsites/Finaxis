@@ -144,7 +144,7 @@ def get_tercero_by_razon_social(db: Session, razon_social: str, empresa_id: int)
         models_tercero.Tercero.empresa_id == empresa_id
     ).first()
 
-def get_terceros(db: Session, empresa_id: int, filtro: Optional[str] = None, skip: int = 0, limit: int = 100):
+def get_terceros(db: Session, empresa_id: int, filtro: Optional[str] = None, es_vendedor: Optional[bool] = None, skip: int = 0, limit: int = 100):
     # --- MEJORA: Incluir datos de la lista de precios ---
     query = db.query(
             models_tercero.Tercero,
@@ -153,12 +153,16 @@ def get_terceros(db: Session, empresa_id: int, filtro: Optional[str] = None, ski
         .filter(models_tercero.Tercero.empresa_id == empresa_id)
     # --- FIN MEJORA ---
 
+    if es_vendedor is not None:
+        query = query.filter(models_tercero.Tercero.es_vendedor == es_vendedor)
+
     if filtro:
         # Asegurarse que el filtro busca en las columnas correctas del modelo Tercero
         query = query.filter(or_(
             models_tercero.Tercero.razon_social.ilike(f"%{filtro}%"),
             models_tercero.Tercero.nit.ilike(f"%{filtro}%")
         ))
+
 
     # Aplicar ordenamiento, offset y limit al query final
     results = query.order_by(models_tercero.Tercero.razon_social).offset(skip).limit(limit).all()
