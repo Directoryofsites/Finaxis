@@ -23,6 +23,7 @@ from app.services import analisis_financiero as analisis_financiero_service # <-
 # Se añade el servicio de períodos para la lógica de cierre
 from app.services import periodo as periodo_service
 from app.services.email_service import email_service # <-- NUEVO SERVICIO EMAIL
+from app.schemas.compras import FiltrosDetalladoCompras, CompraDetalladaResponse
 
 # --- FIN: MODIFICACIÓN ARQUITECTÓNICA ---
 
@@ -2057,3 +2058,64 @@ def get_wc_analysis_pdf(
         headers={"Content-Disposition": f"inline; filename={filename}"}
     )
 
+
+# ==============================================================================
+# === REPORTE ESPECIALIZADO DE COMPRAS DETALLADO ===
+# ==============================================================================
+
+@router.post(
+    "/purchases-detailed",
+    response_model=CompraDetalladaResponse,
+    summary="Obtiene el reporte detallado de compras con IVA discriminado (UI)."
+)
+def get_purchases_detailed_route(
+    filtros: FiltrosDetalladoCompras,
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    return documento_service.get_purchases_detailed_report(
+        db=db,
+        empresa_id=current_user.empresa_id,
+        filtros=filtros
+    )
+
+@router.post(
+    "/purchases-detailed/pdf",
+    summary="Genera el PDF del reporte detallado de compras."
+)
+def generate_purchases_detailed_pdf_route(
+    filtros: FiltrosDetalladoCompras,
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    # Por ahora llamamos a una función que crearemos en documento_service
+    pdf_bytes, filename = documento_service.generate_purchases_detailed_pdf(
+        db=db,
+        empresa_id=current_user.empresa_id,
+        filtros=filtros
+    )
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+@router.post(
+    "/purchases-detailed/csv",
+    summary="Genera el CSV del reporte detallado de compras."
+)
+def generate_purchases_detailed_csv_route(
+    filtros: FiltrosDetalladoCompras,
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    csv_content, filename = documento_service.generate_purchases_detailed_csv(
+        db=db,
+        empresa_id=current_user.empresa_id,
+        filtros=filtros
+    )
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )

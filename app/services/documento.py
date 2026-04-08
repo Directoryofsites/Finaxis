@@ -74,7 +74,8 @@ from app.models import (
     CentroCosto as models_centro_costo,
     Usuario as models_usuario,
     Producto as models_producto,
-    MovimientoInventario as models_mov_inv
+    MovimientoInventario as models_mov_inv,
+    Bodega as models_bodega
 )
 
 from app.models.grupo_inventario import GrupoInventario as models_grupo
@@ -4184,6 +4185,201 @@ def generate_balance_sheet_report_pdf(
         raise HTTPException(status_code=500, detail="La plantilla 'reports/balance_general_report.html' no fue encontrada.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al renderizar el PDF del Balance General: {e}")
-
 # --- FIN: NUEVAS FUNCIONES PARA BALANCE GENERAL ---
+
+
+# --- REPORTE ESPECIALIZADO DE COMPRAS DETALLADO ---
+from app.schemas.compras import (
+    CompraItemCreate, CompraDetalladaItem, CompraDetalladaResponse, 
+    FiltrosDetalladoCompras
+)
+
+def get_purchases_detailed_report(db: Session, empresa_id: int, filtros: FiltrosDetalladoCompras) -> CompraDetalladaResponse:
+    """
+    Genera un reporte detallado de compras por ítem/producto.
+    Calcula IVA discriminado y permite cruces precisos con contabilidad (Clase 14 y 24).
+    Asume que las Notas Crédito (Devoluciones) se restan de los totales.
+    """
+    # 1. Consulta Base de Movimientos de Compra
+    # Filtramos documentos que no estén anulados y que sean de tipo compra.
+    # Unimos con movimientos contables para obtener los items (producto_id no nulo).
+    query = db.query(
+        models_doc.id.label("documento_id"),
+        models_doc.numero,
+        models_doc.fecha,
+        models_tercero.nombre.label("proveedor_nombre"),
+        models_producto.nombre.label("producto_nombre"),
+        models_bodega.nombre.label("bodega_nombre"),
+        models_centro_costo.nombre.label("centro_costo_nombre"),
+        models_mov.cantidad,
+        models_mov.debito,
+        models_mov.credito,
+        models_tipo.nombre.label("tipo_documento_nombre"),
+        models_producto.impuesto_iva_id
+    ).join(models_tipo, models_doc.tipo_documento_id == models_tipo.id)\
+     .join(models_tercero, models_doc.beneficiario_id == models_tercero.id)\
+     .join(models_mov, models_doc.id == models_mov.documento_id)\
+     .join(models_producto, models_mov.producto_id == models_producto.id)\
+     .outerjoin(models_centro_costo, models_doc.centro_costo_id == models_centro_costo.id)\
+     .outerjoin(models_mov_inv, and_(models_doc.id == models_mov_inv.documento_id, models_producto.id == models_mov_inv.producto_id))\
+     .outerjoin(models_bodega, models_mov_inv.bodega_id == models_bodega.id)\
+     .filter(
+         models_doc.empresa_id == empresa_id,
+         models_doc.anulado == False,
+         models_tipo.es_compra == True,
+         models_doc.fecha >= filtros.fecha_inicio,
+         models_doc.fecha <= filtros.fecha_fin
+     )
+
+    # 2. Aplicación de Filtros opcionales
+    if filtros.proveedor_id: query = query.filter(models_doc.beneficiario_id == filtros.proveedor_id)
+    if filtros.producto_id: query = query.filter(models_producto.id == filtros.producto_id)
+    if filtros.tipo_documento_id: query = query.filter(models_doc.tipo_documento_id == filtros.tipo_documento_id)
+    if filtros.numero_documento: query = query.filter(models_doc.numero.ilike(f"%{filtros.numero_documento}%"))
+    if filtros.centro_costo_id: query = query.filter(models_doc.centro_costo_id == filtros.centro_costo_id)
+    if filtros.bodega_id: query = query.filter(models_mov_inv.bodega_id == filtros.bodega_id)
+
+    results = query.order_by(models_doc.fecha.desc(), models_doc.id.desc()).all()
+
+    # 3. Procesamiento y Cálculo de IVA discriminado
+    from app.models.impuesto import Impuesto as models_imp
+    impuestos = {imp.id: imp.tasa for imp in db.query(models_imp).all()}
+
+    items_reporte = []
+    t_base = 0.0
+    t_iva = 0.0
+    t_general = 0.0
+
+    for res in results:
+        # Base = Debito - Credito (En compras: Debito suma, Credito es devolución)
+        base = float(res.debito or 0) - float(res.credito or 0)
+        tasa = float(impuestos.get(res.impuesto_iva_id, 0))
+        iva_valor = base * tasa
+        total_linea = base + iva_valor
+
+        # Evitar división por cero
+        cantidad_f = float(res.cantidad or 0)
+        valor_unitario = 0.0
+        if abs(cantidad_f) > 0.00001:
+            valor_unitario = base / cantidad_f
+
+        item = CompraDetalladaItem(
+            documento_id=res.documento_id,
+            numero=res.numero or "S/N",
+            fecha=res.fecha,
+            proveedor_nombre=res.proveedor_nombre,
+            producto_nombre=res.producto_nombre,
+            bodega_nombre=res.bodega_nombre,
+            centro_costo_nombre=res.centro_costo_nombre,
+            cantidad=cantidad_f,
+            valor_unitario=valor_unitario,
+            subtotal=base,
+            iva=iva_valor,
+            total=total_linea,
+            tipo_documento_nombre=res.tipo_documento_nombre
+        )
+        items_reporte.append(item)
+        t_base += base
+        t_iva += iva_valor
+    # 7. Generar datos para gráficos
+    ventas_dia_dict = {}
+    proveedores_dict = {}
+    productos_dict = {}
+
+    for item in items_reporte:
+        # Por día
+        ventas_dia_dict[item.fecha] = ventas_dia_dict.get(item.fecha, 0) + item.total
+        # Por Proveedor
+        proveedores_dict[item.proveedor_nombre] = proveedores_dict.get(item.proveedor_nombre, 0) + item.total
+        # Por Producto
+        productos_dict[item.producto_nombre] = productos_dict.get(item.producto_nombre, 0) + item.total
+
+    graficos = {
+        "compras_por_dia": [{"label": k, "value": round(v, 2)} for k, v in sorted(ventas_dia_dict.items())],
+        "top_proveedores": sorted([{"label": k, "value": round(v, 2)} for k, v in proveedores_dict.items()], key=lambda x: x["value"], reverse=True)[:5],
+        "top_productos": sorted([{"label": k, "value": round(v, 2)} for k, v in productos_dict.items()], key=lambda x: x["value"], reverse=True)[:5]
+    }
+
+    return CompraDetalladaResponse(
+        items=items_reporte,
+        total_base=round(t_base, 2),
+        total_iva=round(t_iva, 2),
+        total_general=round(t_general, 2),
+        graficos=graficos
+    )
+
+def generate_purchases_detailed_pdf(db: Session, empresa_id: int, filtros: FiltrosDetalladoCompras):
+    """Genera el PDF del reporte detallado de compras."""
+    # 1. Obtener datos
+    data = get_purchases_detailed_report(db, empresa_id, filtros)
+    empresa = db.query(models_empresa.Empresa).get(empresa_id)
+    
+    # 2. Preparar contexto para la plantilla
+    context = {
+        "items": data.items,
+        "total_base": data.total_base,
+        "total_iva": data.total_iva,
+        "total_general": data.total_general,
+        "graficos": data.graficos,
+        "filtros": filtros,
+        "empresa": empresa,
+        "fecha_generacion": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    
+    # 3. Renderizar y convertir a PDF
+    from app.services._templates_empaquetados import TEMPLATES_EMPAQUETADOS
+    template_string = TEMPLATES_EMPAQUETADOS.get("reports/purchases_detailed.html")
+    if not template_string:
+        # Fallback si no está en empaquetados (desarrollo)
+        try:
+             with open(os.path.join(os.path.dirname(__file__), "..", "templates", "reports", "purchases_detailed.html"), "r", encoding="utf-8") as f:
+                 template_string = f.read()
+        except:
+             raise HTTPException(status_code=500, detail="Plantilla 'reports/purchases_detailed.html' no encontrada.")
+
+    template = GLOBAL_JINJA_ENV.from_string(template_string)
+    rendered_html = template.render(context)
+    
+    filename = f"Reporte_Compras_Detallado_{filtros.fecha_inicio}_{filtros.fecha_fin}.pdf"
+    return HTML(string=rendered_html).write_pdf(), filename
+
+def generate_purchases_detailed_csv(db: Session, empresa_id: int, filtros: FiltrosDetalladoCompras):
+    """Genera el CSV del reporte detallado de compras."""
+    import csv
+    import io
+    
+    data = get_purchases_detailed_report(db, empresa_id, filtros)
+    
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+    
+    # Header
+    writer.writerow([
+        "Fecha", "Tipo Documento", "Numero", "Proveedor", "Producto", 
+        "Bodega", "Centro Costo", "Cantidad", "Valor Unitario", "Subtotal", "IVA", "Total"
+    ])
+    
+    # Data
+    for item in data.items:
+        writer.writerow([
+            item.fecha,
+            item.tipo_documento_nombre,
+            item.numero,
+            item.proveedor_nombre,
+            item.producto_nombre,
+            item.bodega_nombre or "",
+            item.centro_costo_nombre or "",
+            item.cantidad,
+            item.valor_unitario,
+            item.subtotal,
+            item.iva,
+            item.total
+        ])
+    
+    # Totales
+    writer.writerow([])
+    writer.writerow(["", "", "", "", "", "", "TOTALES", "", "", data.total_base, data.total_iva, data.total_general])
+    
+    filename = f"Reporte_Compras_Detallado_{filtros.fecha_inicio}_{filtros.fecha_fin}.csv"
+    return output.getvalue().encode('utf-8-sig'), filename
 

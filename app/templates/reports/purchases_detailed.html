@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Informe Detallado de Compras</title>
+    <style>
+        @page {
+            size: letter landscape;
+            margin: 1cm;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 8px;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 16px;
+            color: #2c3e50;
+            text-transform: uppercase;
+        }
+        .header h2 {
+            margin: 5px 0;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        .header .info {
+            font-size: 9px;
+            margin-top: 5px;
+        }
+        .filters-summary {
+            background-color: #f8f9fa;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3498db;
+        }
+        .filters-summary span {
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th {
+            background-color: #2c3e50;
+            color: white;
+            padding: 6px 4px;
+            text-align: left;
+            text-transform: uppercase;
+            font-size: 7px;
+        }
+        td {
+            padding: 5px 4px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .font-bold { font-weight: bold; }
+        
+        tr:nth-child(even) { background-color: #fdfdfd; }
+        
+        .totals-section {
+            float: right;
+            width: 250px;
+            margin-top: 10px;
+        }
+        .totals-table {
+            width: 100%;
+        }
+        .totals-table td {
+            padding: 4px;
+            border: none;
+        }
+        .totals-table .label {
+            text-align: right;
+            padding-right: 15px;
+            font-weight: bold;
+            color: #7f8c8d;
+        }
+        .totals-table .value {
+            text-align: right;
+            font-size: 10px;
+            border-bottom: 1px solid #bdc3c7;
+        }
+        .grand-total {
+            background-color: #2c3e50;
+            color: white !important;
+            font-weight: bold;
+        }
+        
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 7px;
+            color: #95a5a6;
+            border-top: 1px solid #ecf0f1;
+            padding-top: 5px;
+        }
+        
+        .negative { color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <div class="info">
+            NIT: {{ empresa.nit }} | Tel: {{ empresa.telefono or 'N/A' }} | Email: {{ empresa.email or 'N/A' }}
+        </div>
+        <h2>INFORME ESPECIALIZADO DE COMPRAS DETALLADO</h2>
+        <div class="info">
+            Período: <strong>{{ filtros.fecha_inicio }}</strong> hasta <strong>{{ filtros.fecha_fin }}</strong>
+        </div>
+    </div>
+
+    <div class="filters-summary">
+        <span>Filtros Aplicados:</span>
+        {% if filtros.proveedor_id %} <strong>Proveedor:</strong> Filtrado {% endif %}
+        {% if filtros.producto_id %} <strong>Producto:</strong> Filtrado {% endif %}
+        {% if filtros.centro_costo_id %} <strong>Centro Costo:</strong> Filtrado {% endif %}
+        {% if filtros.bodega_id %} <strong>Bodega:</strong> Filtrado {% endif %}
+        {% if not filtros.proveedor_id and not filtros.producto_id and not filtros.centro_costo_id and not filtros.bodega_id %}
+            Ninguno adicional
+        {% endif %}
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th width="7%">Fecha</th>
+                <th width="10%">Tipo Doc.</th>
+                <th width="8%">Número</th>
+                <th width="15%">Proveedor</th>
+                <th width="15%">Producto</th>
+                <th width="8%">Bodega</th>
+                <th width="8%">C. Costo</th>
+                <th width="5%" class="text-right">Cant.</th>
+                <th width="8%" class="text-right">Unit. Base</th>
+                <th width="8%" class="text-right">Subtotal</th>
+                <th width="5%" class="text-right">IVA</th>
+                <th width="8%" class="text-right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.fecha }}</td>
+                <td>{{ item.tipo_documento_nombre }}</td>
+                <td class="font-bold">{{ item.numero }}</td>
+                <td>{{ item.proveedor_nombre }}</td>
+                <td class="font-bold">{{ item.producto_nombre }}</td>
+                <td>{{ item.bodega_nombre or '-' }}</td>
+                <td>{{ item.centro_costo_nombre or '-' }}</td>
+                <td class="text-right {{ 'negative' if item.cantidad < 0 else '' }}">
+                    {{ "{:,.2f}".format(item.cantidad) }}
+                </td>
+                <td class="text-right">$ {{ "{:,.2f}".format(item.valor_unitario) }}</td>
+                <td class="text-right {{ 'negative' if item.subtotal < 0 else '' }}">
+                    $ {{ "{:,.2f}".format(item.subtotal) }}
+                </td>
+                <td class="text-right {{ 'negative' if item.iva < 0 else '' }}">
+                    $ {{ "{:,.2f}".format(item.iva) }}
+                </td>
+                <td class="text-right font-bold {{ 'negative' if item.total < 0 else '' }}">
+                    $ {{ "{:,.2f}".format(item.total) }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="page-break-inside: avoid;">
+        <div style="width: 48%; float: left;">
+            <h3 style="font-size: 10px; color: #2c3e50; border-left: 3px solid #3498db; padding-left: 5px;">TOP 5 PROVEEDORES</h3>
+            <table style="font-size: 7px;">
+                {% set max_prov = graficos.top_proveedores[0].value if graficos.top_proveedores else 1 %}
+                {% for p in graficos.top_proveedores %}
+                <tr>
+                    <td width="40%">{{ p.label }}</td>
+                    <td width="60%">
+                        <div style="background-color: #3498db; width: {{ (p.value / max_prov * 100)|round }}%; height: 8px; border-radius: 2px;"></div>
+                        <span style="font-size: 6px;">$ {{ "{:,.0f}".format(p.value) }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        <div style="width: 48%; float: right;">
+            <h3 style="font-size: 10px; color: #2c3e50; border-left: 3px solid #e74c3c; padding-left: 5px;">TOP 5 PRODUCTOS</h3>
+            <table style="font-size: 7px;">
+                {% set max_prod = graficos.top_productos[0].value if graficos.top_productos else 1 %}
+                {% for p in graficos.top_productos %}
+                <tr>
+                    <td width="40%">{{ p.label }}</td>
+                    <td width="60%">
+                        <div style="background-color: #e74c3c; width: {{ (p.value / max_prod * 100)|round }}%; height: 8px; border-radius: 2px;"></div>
+                        <span style="font-size: 6px;">$ {{ "{:,.0f}".format(p.value) }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        <div style="clear: both;"></div>
+    </div>
+
+    <div class="totals-section" style="page-break-inside: avoid; margin-top: 20px;">
+        <table class="totals-table">
+            <tr>
+                <td class="label">SUBTOTAL BASE:</td>
+                <td class="value {{ 'negative' if total_base < 0 else '' }}">
+                    $ {{ "{:,.2f}".format(total_base) }}
+                </td>
+            </tr>
+            <tr>
+                <td class="label">IVA TOTAL:</td>
+                <td class="value {{ 'negative' if total_iva < 0 else '' }}">
+                    $ {{ "{:,.2f}".format(total_iva) }}
+                </td>
+            </tr>
+            <tr class="grand-total">
+                <td class="label" style="color: white;">COMPRAS NETAS:</td>
+                <td class="value" style="border-bottom: none;">
+                    $ {{ "{:,.2f}".format(total_general) }}
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="footer">
+        Generado por Finaxis ERP el {{ fecha_generacion }} | Página 1
+    </div>
+</body>
+</html>

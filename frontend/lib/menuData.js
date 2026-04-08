@@ -202,6 +202,7 @@ export const menuStructure = [
             { name: 'Remisionado vs Facturado', href: '/remisiones/reportes', mnemonic: 'v', icon: FaChartPie, description: 'Estadísticas de remisiones.', permission: 'facturacion:reporte_remisiones' },
             { name: 'Cotizaciones', href: '/cotizaciones', mnemonic: 'c', icon: FaFileInvoiceDollar, description: 'Propuestas comerciales a clientes.', permission: 'facturacion:cotizaciones' },
             { name: 'Compras', href: '/contabilidad/compras', mnemonic: 'm', icon: FaReceipt, description: 'Registro de facturas de compra.', permission: 'compras:acceso' },
+            { name: 'Dashboard Compras', href: '/contabilidad/reportes/gestion-compras', mnemonic: 'j', icon: FaChartBar, description: 'Análisis detallado de compras e IVA.', permission: 'compras:acceso' },
             { name: 'Rentabilidad Prod.', href: '/contabilidad/reportes/rentabilidad-producto', mnemonic: 'p', icon: FaChartLine, description: 'Margen de ganancia por ítem.', permission: 'facturacion:rentabilidad_producto' },
             { name: 'Rentabilidad Doc.', href: '/contabilidad/reportes/gestion-ventas', mnemonic: 'd', icon: FaChartLine, description: 'Análisis de utilidad por venta.', permission: 'facturacion:rentabilidad_doc' },
             { name: 'Desempeño Vendedores', href: '/contabilidad/reportes/desempeno-vendedores', mnemonic: 'v', icon: FaChartArea, description: 'Análisis de rentabilidad por vendedor.', permission: 'facturacion:rentabilidad_doc' },
