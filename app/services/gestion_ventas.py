@@ -42,14 +42,14 @@ ESTADOS_REPORTE = ['Pagada', 'Pendiente', 'Vencida', 'Anulada']
 
 # --- FUNCIONES AUXILIARES CRÍTICAS ---
 
-def _get_cxc_accounts(db: Session, empresa_id: int) -> List[int]:
-    """Obtiene los IDs de las cuentas de Cartera (Clase 13)."""
-    cxc_accounts = db.query(models_plan_cuenta.id)\
-                     .filter(
-                         models_plan_cuenta.empresa_id == empresa_id,
-                         models_plan_cuenta.codigo.startswith('13')
-                     ).all()
-    return [id_[0] for id_ in cxc_accounts]
+def _get_ingreso_accounts(db: Session, empresa_id: int) -> List[int]:
+    """Obtiene los IDs de las cuentas de Ingresos (Clase 4)."""
+    ingreso_accounts = db.query(models_plan_cuenta.id)\
+                       .filter(
+                           models_plan_cuenta.empresa_id == empresa_id,
+                           models_plan_cuenta.codigo.startswith('4')
+                       ).all()
+    return [id_[0] for id_ in ingreso_accounts]
 
 def _get_costo_accounts(db: Session, empresa_id: int) -> List[int]:
     """Obtiene los IDs de las cuentas de Costo de Ventas (Clase 6)."""
@@ -69,29 +69,34 @@ def get_reporte_gestion_ventas(db: Session, empresa_id: int, filtros: schemas_ve
     fecha_inicio_dt = datetime.combine(filtros.fecha_inicio, datetime.min.time())
     fecha_fin_dt = datetime.combine(filtros.fecha_fin, datetime.max.time())
     
-    cxc_account_ids = _get_cxc_accounts(db, empresa_id)
+    ingreso_account_ids = _get_ingreso_accounts(db, empresa_id)
     costo_account_ids = _get_costo_accounts(db, empresa_id)
     
-    if not cxc_account_ids:
+    if not ingreso_account_ids:
         return schemas_ventas.GestionVentasResponse(
             kpis=schemas_ventas.GestionVentasKPIs(
                 total_facturado=0, total_utilidad=0, margen_promedio=0, 
-                cantidad_facturas=0, ticket_promedio=0, total_cobrado=0, 
+                cantidad_facturas=0, cantidad_clientes_unicos=0, frecuencia_compra=0,
+                ticket_promedio=0, total_cobrado=0, 
                 saldo_pendiente=0, cartera_vencida=0
             ),
             graficos=schemas_ventas.GestionVentasGraficos(ventas_por_dia=[], top_clientes=[], top_productos=[]),
             items=[]
         )
 
-    # 2. Subconsultas de Totales por Documento (CxC y Costo)
+    # 2. Subconsultas de Totales por Documento (Venta Neta y Costo Neto)
+    # Venta Neta = Ingresos Credito - Ingresos Debito (Devoluciones)
     sq_valor_total = db.query(
         models_mov.documento_id.label("documento_id"),
-        func.coalesce(func.sum(models_mov.debito), Decimal('0.0')).label("valor_total_cxc")
-    ).filter(models_mov.cuenta_id.in_(cxc_account_ids)).group_by(models_mov.documento_id).subquery()
+        (func.coalesce(func.sum(models_mov.credito), Decimal('0.0')) - 
+         func.coalesce(func.sum(models_mov.debito), Decimal('0.0'))).label("valor_neto")
+    ).filter(models_mov.cuenta_id.in_(ingreso_account_ids)).group_by(models_mov.documento_id).subquery()
 
+    # Costo Neto = Costo Debito - Costo Credito (Reversión devolución)
     sq_costo_total = db.query(
         models_mov.documento_id.label("documento_id"),
-        func.coalesce(func.sum(models_mov.debito), Decimal('0.0')).label("valor_costo")
+        (func.coalesce(func.sum(models_mov.debito), Decimal('0.0')) - 
+         func.coalesce(func.sum(models_mov.credito), Decimal('0.0'))).label("valor_costo")
     ).filter(models_mov.cuenta_id.in_(costo_account_ids)).group_by(models_mov.documento_id).subquery()
 
     # 3. Consulta Base de Documentos
@@ -103,7 +108,7 @@ def get_reporte_gestion_ventas(db: Session, empresa_id: int, filtros: schemas_ve
         TipoDocumentoModel.codigo.label("tipo_documento"),
         models_tercero.razon_social.label("beneficiario_nombre"),
         models_doc.beneficiario_id,
-        func.coalesce(sq_valor_total.c.valor_total_cxc, Decimal('0.0')).label("total_factura"),
+        func.coalesce(sq_valor_total.c.valor_neto, Decimal('0.0')).label("total_factura"),
         func.coalesce(sq_costo_total.c.valor_costo, Decimal('0.0')).label("total_costo")
     ).select_from(models_doc)\
      .join(TipoDocumentoModel, models_doc.tipo_documento_id == TipoDocumentoModel.id)\
