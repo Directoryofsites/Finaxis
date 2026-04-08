@@ -4207,7 +4207,7 @@ def get_purchases_detailed_report(db: Session, empresa_id: int, filtros: Filtros
         models_doc.id.label("documento_id"),
         models_doc.numero,
         models_doc.fecha,
-        models_tercero.nombre.label("proveedor_nombre"),
+        models_tercero.razon_social.label("proveedor_nombre"),
         models_producto.nombre.label("producto_nombre"),
         models_bodega.nombre.label("bodega_nombre"),
         models_centro_costo.nombre.label("centro_costo_nombre"),
@@ -4281,6 +4281,7 @@ def get_purchases_detailed_report(db: Session, empresa_id: int, filtros: Filtros
         items_reporte.append(item)
         t_base += base
         t_iva += iva_valor
+        t_general += total_linea
     # 7. Generar datos para gráficos
     ventas_dia_dict = {}
     proveedores_dict = {}
