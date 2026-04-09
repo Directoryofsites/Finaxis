@@ -50,14 +50,22 @@ def get_tipos_documento(db: Session, empresa_id: int, skip: int = 0, limit: int 
 def create_tipo_documento(db: Session, tipo_documento: schemas.TipoDocumentoCreate, user_id: int):
     _validar_cuentas_existentes(db, tipo_documento)
     
-    # Auto-completar flags críticos si no vinieron explícitos pero el código es estándar
+    # Auto-completar flags críticos. Prioridad 1: Función Especial (dropdown UI). Prioridad 2: Código clásico.
     datos = tipo_documento.model_dump()
     cod_upper = datos.get('codigo', '').upper()
+    func_esp = (datos.get('funcion_especial') or '').lower()
     
-    if cod_upper in ('FC', 'OC', 'RC', 'REC', 'NCC', 'DVC', 'DEVP') and not datos.get('es_compra'):
+    # 1. Evaluación estricta por función elegida en el UI
+    if func_esp in ('cxp_proveedor', 'documento_soporte', 'pago_proveedor'):
         datos['es_compra'] = True
-    if cod_upper in ('FV', 'FE', 'NCV', 'NDV', 'REM', 'COT') and not datos.get('es_venta'):
+    elif func_esp in ('cartera_cliente', 'rc_cliente', 'factura_venta'):
         datos['es_venta'] = True
+    else:
+        # 2. Fallback heurístico si no eligieron función especial
+        if cod_upper in ('FC', 'OC', 'RC', 'REC', 'NCC', 'DVC', 'DEVP') and not datos.get('es_compra'):
+            datos['es_compra'] = True
+        if cod_upper in ('FV', 'FE', 'NCV', 'NDV', 'REM', 'COT') and not datos.get('es_venta'):
+            datos['es_venta'] = True
         
     db_tipo_documento = models.TipoDocumento(
         **datos,
@@ -83,6 +91,20 @@ def update_tipo_documento(db: Session, tipo_documento_id: int, tipo_documento: s
     
     for key, value in update_data.items():
         setattr(db_tipo_doc, key, value)
+        
+    # Auto-completar flags críticos tras la actualización. Prioridad 1: Función Especial. Prioridad 2: Código.
+    cod_upper = (db_tipo_doc.codigo or '').upper()
+    func_esp = (db_tipo_doc.funcion_especial or '').lower()
+    
+    if func_esp in ('cxp_proveedor', 'documento_soporte', 'pago_proveedor'):
+        db_tipo_doc.es_compra = True
+    elif func_esp in ('cartera_cliente', 'rc_cliente', 'factura_venta'):
+        db_tipo_doc.es_venta = True
+    else:
+        if cod_upper in ('FC', 'OC', 'RC', 'REC', 'NCC', 'DVC', 'DEVP'):
+            db_tipo_doc.es_compra = True
+        if cod_upper in ('FV', 'FE', 'NCV', 'NDV', 'REM', 'COT'):
+            db_tipo_doc.es_venta = True
     
     db_tipo_doc.updated_by = user_id
     db.add(db_tipo_doc)

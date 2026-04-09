@@ -229,18 +229,20 @@ def run_auto_migrations():
     logger.info("Verificando flags es_compra / es_venta en tipos_documento...")
     try:
         with engine.begin() as trans_conn:
-            # Códigos que POR CONVENCIÓN son facturas/notas de compra
+            # Tipos de Compra: Por función seleccionada en UI o por código clásico
             trans_conn.execute(text("""
                 UPDATE tipos_documento
                 SET es_compra = TRUE
-                WHERE UPPER(codigo) IN ('FC', 'OC', 'RC', 'REC', 'NCC', 'DVC', 'DEVP')
+                WHERE (UPPER(codigo) IN ('FC', 'OC', 'RC', 'REC', 'NCC', 'DVC', 'DEVP')
+                       OR LOWER(funcion_especial) IN ('cxp_proveedor', 'documento_soporte', 'pago_proveedor'))
                   AND es_compra = FALSE
             """))
-            # Códigos que POR CONVENCIÓN son facturas de venta
+            # Tipos de Venta: Por función seleccionada en UI o por código clásico
             trans_conn.execute(text("""
                 UPDATE tipos_documento
                 SET es_venta = TRUE
-                WHERE UPPER(codigo) IN ('FV', 'FE', 'NCV', 'NDV', 'REM', 'COT')
+                WHERE (UPPER(codigo) IN ('FV', 'FE', 'NCV', 'NDV', 'REM', 'COT')
+                       OR LOWER(funcion_especial) IN ('cartera_cliente', 'rc_cliente', 'factura_venta'))
                   AND es_venta = FALSE
             """))
             logger.info("Data fix de es_compra / es_venta aplicado correctamente.")
