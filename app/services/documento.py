@@ -4242,7 +4242,7 @@ def get_purchases_detailed_report(db: Session, empresa_id: int, filtros: Filtros
     results = query.order_by(models_doc.fecha.desc(), models_doc.id.desc()).all()
 
     # 3. Procesamiento y Cálculo de IVA discriminado
-    from app.models.impuesto import Impuesto as models_imp
+    from app.models.impuesto import TasaImpuesto as models_imp
     impuestos = {imp.id: imp.tasa for imp in db.query(models_imp).all()}
 
     items_reporte = []
