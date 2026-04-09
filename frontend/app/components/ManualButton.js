@@ -27,7 +27,7 @@ const ManualButton = ({
         }
 
         // Construir la ruta completa del manual
-        const fullPath = manualPath.startsWith('/') ? manualPath : `/Manual/ph/${manualPath}`;
+        const fullPath = manualPath.startsWith('/') ? manualPath : `/manual/ph/${manualPath}`;
         
         // Abrir en nueva ventana
         const manualWindow = window.open(

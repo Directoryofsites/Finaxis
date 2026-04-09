@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes - Manual de Gestión de Recaudos</title>
+    <link rel="stylesheet" href="assets/css/manual-styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">📊 Reportes de Recaudos</div>
+                <div class="subtitle">Manual de Usuario - Gestión de Recaudos</div>
+                <div class="version">Sistema ContaPY2 - Módulo PH</div>
+            </div>
+        </header>
+
+        <nav class="nav">
+            <ul>
+                <li><a href="#introduccion">Introducción</a></li>
+                <li><a href="#acceso">Acceso</a></li>
+                <li><a href="#tipos">Tipos de Reportes</a></li>
+                <li><a href="#generacion">Generación</a></li>
+                <li><a href="#ejemplos">Ejemplos</a></li>
+                <li><a href="#errores">Errores Comunes</a></li>
+            </ul>
+        </nav>
+
+        <main class="content">
+            <div class="toc">
+                <h3>📑 Contenido</h3>
+                <ul></ul>
+            </div>
+
+            <section id="introduccion" class="section">
+                <h2>🎯 Introducción</h2>
+                <p>El módulo de Reportes proporciona herramientas completas para generar informes financieros, análisis de cartera y estadísticas de gestión que facilitan la toma de decisiones administrativas y el cumplimiento de obligaciones legales.</p>
+                
+                <div class="info">
+                    <strong>💡 Objetivo:</strong> Generar informes precisos y actualizados que permitan analizar la situación financiera, controlar la cartera y presentar información a la junta directiva y entidades de control.
+                </div>
+
+                <h3>Categorías de Reportes</h3>
+                <ul>
+                    <li>📊 <strong>Reportes Financieros:</strong> Estados financieros y balances</li>
+                    <li>💰 <strong>Reportes de Cartera:</strong> Análisis de cuentas por cobrar</li>
+                    <li>📈 <strong>Reportes de Gestión:</strong> Indicadores y estadísticas</li>
+                    <li>📋 <strong>Reportes Operativos:</strong> Movimientos y transacciones</li>
+                    <li>🏛️ <strong>Reportes Legales:</strong> Informes para entidades oficiales</li>
+                </ul>
+            </section>
+
+            <section id="acceso" class="section">
+                <h2>🚪 Cómo Acceder</h2>
+                <ol class="step-list">
+                    <li>Ingrese al sistema ContaPY2</li>
+                    <li>Navegue al módulo "Gestión de Recaudos"</li>
+                    <li>Haga clic en "Reportes" o "Reportes Recaudos"</li>
+                </ol>
+            </section>
+
+            <section id="tipos" class="section">
+                <h2>📋 Tipos de Reportes Disponibles</h2>
+                
+                <h3>📊 Reportes de Cartera</h3>
+                
+                <h4>🕒 Cartera por Edades</h4>
+                <p><strong>Propósito:</strong> Clasificar la cartera según su antigüedad de vencimiento.</p>
+                <ul>
+                    <li><strong>Información incluida:</strong> Saldos por rangos de días vencidos</li>
+                    <li><strong>Clasificación:</strong> 0-30, 31-60, 61-90, +90 días</li>
+                    <li><strong>Uso:</strong> Control de gestión de cobranza</li>
+                </ul>
+
+                <h4>💰 Balance de Cartera</h4>
+                <p><strong>Propósito:</strong> Detalle completo de saldos por unidad y concepto.</p>
+                <ul>
+                    <li><strong>Información incluida:</strong> Saldos detallados por cada concepto</li>
+                    <li><strong>Agrupación:</strong> Por unidad, propietario o concepto</li>
+                    <li><strong>Uso:</strong> Análisis detallado de obligaciones</li>
+                </ul>
+
+                <h3>📈 Reportes de Ejecución</h3>
+                
+                <h4>📊 Ejecución Presupuestal</h4>
+                <p><strong>Propósito:</strong> Comparar presupuesto vs ejecución real.</p>
+                <ul>
+                    <li><strong>Información incluida:</strong> Presupuesto, ejecución, variaciones</li>
+                    <li><strong>Períodos:</strong> Mensual, trimestral, anual</li>
+                    <li><strong>Uso:</strong> Informes para junta directiva</li>
+                </ul>
+
+                <h3>💸 Reportes de Movimientos</h3>
+                
+                <h4>📋 Reporte General de Movimientos</h4>
+                <p><strong>Propósito:</strong> Listar todas las transacciones del período.</p>
+                <ul>
+                    <li><strong>Información incluida:</strong> Facturación, pagos, ajustes</li>
+                    <li><strong>Filtros:</strong> Por fecha, unidad, concepto</li>
+                    <li><strong>Uso:</strong> Auditoría y control</li>
+                </ul>
+
+                <h4>💰 Reporte de Recaudos</h4>
+                <p><strong>Propósito:</strong> Análisis de pagos recibidos.</p>
+                <ul>
+                    <li><strong>Información incluida:</strong> Pagos por período, forma de pago</li>
+                    <li><strong>Agrupación:</strong> Diario, semanal, mensual</li>
+                    <li><strong>Uso:</strong> Control de ingresos</li>
+                </ul>
+            </section>
+
+            <section id="generacion" class="section">
+                <h2>⚙️ Proceso de Generación</h2>
+                
+                <h3>Pasos Generales</h3>
+                <ol class="step-list">
+                    <li><strong>Seleccionar Reporte:</strong> Elija el tipo de informe deseado</li>
+                    <li><strong>Configurar Filtros:</strong> Defina parámetros y rangos</li>
+                    <li><strong>Establecer Formato:</strong> PDF, Excel o visualización</li>
+                    <li><strong>Generar:</strong> Procese el reporte</li>
+                    <li><strong>Descargar/Ver:</strong> Obtenga el resultado final</li>
+                </ol>
+
+                <h3>Filtros Comunes</h3>
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Filtro</th>
+                                <th>Descripción</th>
+                                <th>Ejemplo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>📅 Rango de Fechas</td>
+                                <td>Período a incluir en el reporte</td>
+                                <td>01/01/2024 - 31/03/2024</td>
+                            </tr>
+                            <tr>
+                                <td>🏠 Unidades</td>
+                                <td>Unidades específicas o todas</td>
+                                <td>APT-101, LOC-001</td>
+                            </tr>
+                            <tr>
+                                <td>👤 Propietarios</td>
+                                <td>Propietarios específicos</td>
+                                <td>Juan Pérez, Empresa XYZ</td>
+                            </tr>
+                            <tr>
+                                <td>📋 Conceptos</td>
+                                <td>Tipos de obligaciones</td>
+                                <td>Administración, Parqueadero</td>
+                            </tr>
+                            <tr>
+                                <td>🏢 Torres/Grupos</td>
+                                <td>Agrupación por ubicación</td>
+                                <td>Torre A, Bloque 1</td>
+                            </tr>
+                            <tr>
+                                <td>💰 Rangos de Valor</td>
+                                <td>Montos mínimos y máximos</td>
+                                <td>$100,000 - $500,000</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Formatos de Salida</h3>
+                <ul>
+                    <li>📄 <strong>PDF:</strong> Para impresión y presentaciones oficiales</li>
+                    <li>📊 <strong>Excel:</strong> Para análisis y procesamiento de datos</li>
+                    <li>🖥️ <strong>Pantalla:</strong> Visualización rápida en el navegador</li>
+                    <li>📧 <strong>Email:</strong> Envío directo a destinatarios</li>
+                </ul>
+            </section>
+
+            <section id="ejemplos" class="section">
+                <h2>📝 Ejemplos de Uso</h2>
+                
+                <h3>Ejemplo 1: Reporte Mensual para Junta</h3>
+                <div class="success">
+                    <strong>Objetivo:</strong> Presentar situación financiera mensual a la junta directiva.
+                    <br><strong>Reportes necesarios:</strong>
+                    <ul>
+                        <li>📊 Ejecución Presupuestal del mes</li>
+                        <li>💰 Balance de Cartera actualizado</li>
+                        <li>🕒 Cartera por Edades</li>
+                        <li>💸 Reporte de Recaudos del período</li>
+                    </ul>
+                    <strong>Configuración:</strong> Período mensual, formato PDF, incluir gráficos.
+                </div>
+
+                <h3>Ejemplo 2: Análisis de Morosidad</h3>
+                <div class="success">
+                    <strong>Objetivo:</strong> Identificar unidades con mayor morosidad para gestión de cobranza.
+                    <br><strong>Reportes necesarios:</strong>
+                    <ul>
+                        <li>🕒 Cartera por Edades (detallado)</li>
+                        <li>💰 Balance de Cartera por unidad</li>
+                        <li>📋 Historial de pagos por propietario</li>
+                    </ul>
+                    <strong>Configuración:</strong> Filtrar solo saldos vencidos, formato Excel para análisis.
+                </div>
+
+                <h3>Ejemplo 3: Informe Anual</h3>
+                <div class="success">
+                    <strong>Objetivo:</strong> Preparar informe anual de gestión.
+                    <br><strong>Reportes necesarios:</strong>
+                    <ul>
+                        <li>📊 Ejecución Presupuestal anual</li>
+                        <li>💸 Consolidado de recaudos por mes</li>
+                        <li>📈 Indicadores de gestión</li>
+                        <li>💰 Evolución de cartera</li>
+                    </ul>
+                    <strong>Configuración:</strong> Período anual completo, incluir comparativos con año anterior.
+                </div>
+            </section>
+
+            <section id="errores" class="section">
+                <h2>⚠️ Errores Comunes y Soluciones</h2>
+                
+                <h3>Error: "No hay datos para el período seleccionado"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> El reporte no muestra información.
+                    <br><strong>Causa:</strong> Rango de fechas sin movimientos o filtros muy restrictivos.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique que el rango de fechas sea correcto</li>
+                        <li>Amplíe el período de consulta</li>
+                        <li>Revise que los filtros no sean muy específicos</li>
+                        <li>Confirme que haya facturación en ese período</li>
+                    </ul>
+                </div>
+
+                <h3>Error: "Reporte muy grande para generar"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> El sistema no puede procesar el reporte.
+                    <br><strong>Causa:</strong> Demasiados registros o período muy amplio.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Reduzca el rango de fechas</li>
+                        <li>Use filtros para limitar los datos</li>
+                        <li>Genere el reporte por partes</li>
+                        <li>Contacte soporte para reportes masivos</li>
+                    </ul>
+                </div>
+
+                <h3>Error: "Datos inconsistentes en el reporte"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> Los totales no coinciden con otras consultas.
+                    <br><strong>Causa:</strong> Diferencias en fechas de corte o criterios de cálculo.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique las fechas de corte utilizadas</li>
+                        <li>Confirme que no haya movimientos posteriores</li>
+                        <li>Revise los criterios de inclusión/exclusión</li>
+                        <li>Compare con reportes similares del mismo período</li>
+                    </ul>
+                </div>
+
+                <h3>Problema: "El PDF no se descarga"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> Error al descargar reportes en PDF.
+                    <br><strong>Causa:</strong> Bloqueadores de popups o problemas del navegador.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Permita popups en su navegador</li>
+                        <li>Desactive bloqueadores de anuncios</li>
+                        <li>Intente con otro navegador</li>
+                        <li>Use la opción "Ver en pantalla" como alternativa</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>🆘 ¿Necesita Más Ayuda?</h2>
+                <div class="highlight">
+                    <p><strong>Recursos Relacionados:</strong></p>
+                    <ul>
+                        <li>📖 Manual de Estado de Cuenta - Para consultas individuales</li>
+                        <li>📖 Manual de Facturación - Para entender el origen de los datos</li>
+                        <li>📖 Manual de Pagos - Para comprender los movimientos de recaudos</li>
+                        <li>📖 Manual de Configuración - Para ajustar parámetros de reportes</li>
+                    </ul>
+                </div>
+
+                <div class="info">
+                    <p><strong>Contacto de Soporte:</strong></p>
+                    <ul>
+                        <li>📧 Email: soporte@contapy2.com</li>
+                        <li>📞 Teléfono: +57 (1) 234-5678</li>
+                        <li>💬 Chat en línea: Disponible en el sistema</li>
+                        <li>🕒 Horario: Lunes a Viernes 8:00 AM - 6:00 PM</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 ContaPY2 - Sistema de Gestión Contable Integral</p>
+            <p>Manual generado automáticamente - Versión 1.0</p>
+        </footer>
+    </div>
+
+    <script src="assets/js/manual-navigation.js"></script>
+</body>
+</html>

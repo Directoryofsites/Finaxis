@@ -3,7 +3,7 @@
  */
 class ManualService {
     constructor() {
-        this.basePath = '/Manual/ph/';
+        this.basePath = '/manual/ph/';
         this.cache = new Map();
     }
 
