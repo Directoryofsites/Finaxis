@@ -4378,7 +4378,26 @@ def generate_purchases_detailed_pdf(db: Session, empresa_id: int, filtros: Filtr
     data = get_purchases_detailed_report(db, empresa_id, filtros)
     from app.models.empresa import Empresa
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
-    # 2. Preparar contexto para la plantilla
+    # 2. Obtener nombres legibles de los filtros
+    filtros_nombres = {}
+    if filtros.proveedor_id:
+        from app.models.tercero import Tercero
+        prov = db.query(Tercero).get(filtros.proveedor_id)
+        filtros_nombres["proveedor"] = prov.razon_social if prov else str(filtros.proveedor_id)
+    if filtros.producto_id:
+        from app.models.producto import Producto
+        prod = db.query(Producto).get(filtros.producto_id)
+        filtros_nombres["producto"] = prod.nombre if prod else str(filtros.producto_id)
+    if filtros.centro_costo_id:
+        from app.models.centro_costo import CentroCosto
+        cc = db.query(CentroCosto).get(filtros.centro_costo_id)
+        filtros_nombres["centro_costo"] = cc.nombre if cc else str(filtros.centro_costo_id)
+    if filtros.bodega_id:
+        from app.models.bodega import Bodega
+        bod = db.query(Bodega).get(filtros.bodega_id)
+        filtros_nombres["bodega"] = bod.nombre if bod else str(filtros.bodega_id)
+
+    # 3. Preparar contexto para la plantilla
     context = {
         "items": data.items,
         "total_base": data.total_base,
@@ -4386,6 +4405,7 @@ def generate_purchases_detailed_pdf(db: Session, empresa_id: int, filtros: Filtr
         "total_general": data.total_general,
         "graficos": data.graficos,
         "filtros": filtros,
+        "filtros_nombres": filtros_nombres,
         "empresa": empresa,
         "fecha_generacion": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }

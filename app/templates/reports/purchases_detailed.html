@@ -127,10 +127,10 @@
 
     <div class="filters-summary">
         <span>Filtros Aplicados:</span>
-        {% if filtros.proveedor_id %} <strong>Proveedor:</strong> Filtrado {% endif %}
-        {% if filtros.producto_id %} <strong>Producto:</strong> Filtrado {% endif %}
-        {% if filtros.centro_costo_id %} <strong>Centro Costo:</strong> Filtrado {% endif %}
-        {% if filtros.bodega_id %} <strong>Bodega:</strong> Filtrado {% endif %}
+        {% if filtros.proveedor_id %} <strong>Proveedor:</strong> {{ filtros_nombres.proveedor }} {% endif %}
+        {% if filtros.producto_id %} <strong>Producto:</strong> {{ filtros_nombres.producto }} {% endif %}
+        {% if filtros.centro_costo_id %} <strong>Centro Costo:</strong> {{ filtros_nombres.centro_costo }} {% endif %}
+        {% if filtros.bodega_id %} <strong>Bodega:</strong> {{ filtros_nombres.bodega }} {% endif %}
         {% if not filtros.proveedor_id and not filtros.producto_id and not filtros.centro_costo_id and not filtros.bodega_id %}
             Ninguno adicional
         {% endif %}
