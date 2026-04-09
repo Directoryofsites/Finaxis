@@ -140,14 +140,16 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
                 es_mora = False
                 saldo_mora = 0
 
-                # --- LÓGICA DE MÓDULOS DE CONTRIBUCIÓN ---
-                if concepto.modulos and not es_excepcion_unidad:
-                    # El concepto tiene restricción por módulo (y no fue forzado por excepción manual)
+                # --- LÓGICA DE MÓDULOS DE CONTRIBUCIÓN (BLINDAJE TOTAL) ---
+                if concepto.modulos:
+                    # El concepto tiene restricción por módulo. 
+                    # Se verifica SIEMPRE, incluso si fue forzado por excepción manual.
                     unidad_modulos_ids = [m.id for m in unidad.modulos_contribucion]
                     concepto_modulos_ids = [m.id for m in concepto.modulos]
                     if not set(unidad_modulos_ids) & set(concepto_modulos_ids):
+                        print(f"--- SEGURIDAD: Unidad {unidad.codigo} ignorada para concepto {concepto.nombre} por no pertenecer al módulo adecuado. ---")
                         continue
-                # ----------------------------------------
+                # ---------------------------------------------------------
 
                 # --- CÁLCULO DE VALOR (SMART LOGIC) ---
                 if concepto.es_interes:

@@ -153,24 +153,31 @@ export default function FacturacionPHPage() {
         setConceptConfigs(newConfigs);
     };
 
-    // --- NUEVO HANDLER: SELECCION POR TORRE ---
+    // --- NUEVO HANDLER: SELECCION POR TORRE (AJUSTADO PARA RESPETAR MÓDULOS) ---
     const handleToggleTower = (torreId) => {
-        // 1. Identificar unidades de esta torre
-        // Asumiendo que unidad tiene torre_id (verificado en modelo)
-        const unidadesTorre = unidades.filter(u => u.torre_id === torreId).map(u => u.id);
+        const activeConcept = conceptos.find(c => c.id === currentConceptId);
+        const allowedModuleIds = activeConcept?.modulos?.map(m => m.id) || [];
 
-        if (unidadesTorre.length === 0) return;
+        // 1. Identificar unidades de esta torre QUE CALIFICAN para el concepto
+        const unidadesValidasTorre = unidades.filter(u => {
+            if (u.torre_id !== torreId) return false;
+            if (allowedModuleIds.length > 0) {
+                return u.modulos_ids?.some(mid => allowedModuleIds.includes(mid));
+            }
+            return true;
+        }).map(u => u.id);
 
-        // 2. Verificar estado actual (¿Todos seleccionados?)
-        const allSelected = unidadesTorre.every(uid => tempSelectedUnits.includes(uid));
+        if (unidadesValidasTorre.length === 0) return;
+
+        // 2. Verificar estado actual (¿Todos los válidos seleccionados?)
+        const allSelected = unidadesValidasTorre.every(uid => tempSelectedUnits.includes(uid));
 
         if (allSelected) {
-            // Deseleccionar todos
-            setTempSelectedUnits(prev => prev.filter(uid => !unidadesTorre.includes(uid)));
+            // Deseleccionar los válidos de esta torre
+            setTempSelectedUnits(prev => prev.filter(uid => !unidadesValidasTorre.includes(uid)));
         } else {
-            // Seleccionar todos (Union)
-            // Usamos Set para evitar duplicados
-            const parking = new Set([...tempSelectedUnits, ...unidadesTorre]);
+            // Seleccionar solo los válidos (Union)
+            const parking = new Set([...tempSelectedUnits, ...unidadesValidasTorre]);
             setTempSelectedUnits(Array.from(parking));
         }
     };
@@ -537,7 +544,22 @@ export default function FacturacionPHPage() {
                                     />
                                 </div>
                                 <div className="mt-2 flex justify-between text-sm">
-                                    <span className="text-indigo-600 font-bold">{tempSelectedUnits.length} Unidades Seleccionadas</span>
+                                    <span className="text-indigo-600 font-bold">
+                                        {/* Solo contar unidades seleccionadas que califiquen para el concepto actual */}
+                                        {(() => {
+                                            const activeConcept = conceptos.find(c => c.id === currentConceptId);
+                                            const allowedModuleIds = activeConcept?.modulos?.map(m => m.id) || [];
+                                            const count = tempSelectedUnits.filter(uid => {
+                                                const u = unidades.find(unit => unit.id === uid);
+                                                if (!u) return false;
+                                                if (allowedModuleIds.length > 0) {
+                                                    return u.modulos_ids?.some(mid => allowedModuleIds.includes(mid));
+                                                }
+                                                return true;
+                                            }).length;
+                                            return `${count} Unidades Seleccionadas`;
+                                        })()}
+                                    </span>
                                     {tempSelectedUnits.length > 0 &&
                                         <button onClick={() => setTempSelectedUnits([])} className="text-red-500 text-xs hover:underline">Limpiar Selección</button>
                                     }
@@ -550,8 +572,21 @@ export default function FacturacionPHPage() {
                                     <div className="flex gap-2 min-w-max">
                                         <span className="text-xs font-bold text-gray-500 uppercase tracking-wider py-1">Agrupar por:</span>
                                         {torres.map(t => {
-                                            // Calcular si está "full", "partial" o "none"
-                                            const unitsInTower = unidades.filter(u => u.torre_id === t.id).map(u => u.id);
+                                            const activeConcept = conceptos.find(c => c.id === currentConceptId);
+                                            const allowedModuleIds = activeConcept?.modulos?.map(m => m.id) || [];
+
+                                            // Calcular solo las que CALIFICAN para el concepto
+                                            const unitsInTower = unidades.filter(u => {
+                                                if (u.torre_id !== t.id) return false;
+                                                if (allowedModuleIds.length > 0) {
+                                                    return u.modulos_ids?.some(mid => allowedModuleIds.includes(mid));
+                                                }
+                                                return true;
+                                            }).map(u => u.id);
+
+                                            // Omitir torres que no tengan ninguna unidad válida para este concepto
+                                            if (unitsInTower.length === 0) return null;
+
                                             const selectedInTower = unitsInTower.filter(uid => tempSelectedUnits.includes(uid));
 
                                             let statusClass = "bg-gray-100 text-gray-600 border-gray-200";
@@ -563,7 +598,7 @@ export default function FacturacionPHPage() {
                                                     icon = <FaCheckSquare className="text-indigo-600" />;
                                                 } else if (selectedInTower.length > 0) {
                                                     statusClass = "bg-indigo-50 text-indigo-600 border-indigo-200 border-dashed";
-                                                    icon = <div className="w-3 h-3 bg-indigo-500 rounded-sm"></div>; // Indeterminate look
+                                                    icon = <div className="w-3 h-3 bg-indigo-500 rounded-sm"></div>;
                                                 }
                                             }
 
