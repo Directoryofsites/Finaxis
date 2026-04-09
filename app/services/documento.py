@@ -4235,6 +4235,7 @@ def get_purchases_detailed_report(db: Session, empresa_id: int, filtros: Filtros
     if filtros.proveedor_id: query = query.filter(models_doc.beneficiario_id == filtros.proveedor_id)
     if filtros.producto_id: query = query.filter(models_producto.id == filtros.producto_id)
     if filtros.tipo_documento_id: query = query.filter(models_doc.tipo_documento_id == filtros.tipo_documento_id)
+    if filtros.codigo_documento: query = query.filter(models_tipo.codigo.ilike(f"%{filtros.codigo_documento}%"))
     if filtros.numero_documento: query = query.filter(models_doc.numero.ilike(f"%{filtros.numero_documento}%"))
     if filtros.centro_costo_id: query = query.filter(models_doc.centro_costo_id == filtros.centro_costo_id)
     if filtros.bodega_id: query = query.filter(models_mov_inv.bodega_id == filtros.bodega_id)

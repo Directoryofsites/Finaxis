@@ -61,6 +61,7 @@ class FiltrosDetalladoCompras(BaseModel):
     proveedor_id: Optional[int] = None
     producto_id: Optional[int] = None
     tipo_documento_id: Optional[int] = None
+    codigo_documento: Optional[str] = None
     numero_documento: Optional[str] = None
     centro_costo_id: Optional[int] = None
     bodega_id: Optional[int] = None

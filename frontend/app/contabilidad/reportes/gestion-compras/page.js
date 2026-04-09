@@ -119,6 +119,8 @@ export default function GestionComprasPage() {
         ...filtros,
         fecha_inicio: filtros.fecha_inicio.toISOString().split('T')[0],
         fecha_fin: filtros.fecha_fin.toISOString().split('T')[0],
+        codigo_documento: filtros.documento_tipo || null,
+        numero_documento: filtros.documento_numero || null,
     });
 
     const handleSearch = async (e) => {
