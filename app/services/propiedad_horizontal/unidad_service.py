@@ -5,7 +5,11 @@ from typing import List, Optional
 
 def get_unidades(db: Session, empresa_id: int, skip: int = 0, limit: int = 100):
     unidades = db.query(PHUnidad).filter(PHUnidad.empresa_id == empresa_id)\
-        .options(joinedload(PHUnidad.torre), joinedload(PHUnidad.propietario_principal))\
+        .options(
+            joinedload(PHUnidad.torre), 
+            joinedload(PHUnidad.propietario_principal),
+            joinedload(PHUnidad.modulos_contribucion) # <--- CARGAR MÓDULOS
+        )\
         .offset(skip).limit(limit).all()
     
     # Manually construct dicts to avoid stale ORM property crash
@@ -24,10 +28,11 @@ def get_unidades(db: Session, empresa_id: int, skip: int = 0, limit: int = 100):
             "residente_actual_id": u.residente_actual_id,
             "activo": u.activo,
             "observaciones": u.observaciones,
-            # Handle computed fields manually
             "torre_nombre": u.torre.nombre if u.torre else None,
+            "propietario": {"razon_social": u.propietario_principal.razon_social} if u.propietario_principal else None,
             "propietario_nombre": u.propietario_principal.razon_social if u.propietario_principal else None,
-            # Nested lists (empty by default for summary view, or can load if needed)
+            # Incluir IDs de módulos para filtrado rápido en frontend
+            "modulos_ids": [m.id for m in u.modulos_contribucion],
             "vehiculos": u.vehiculos,
             "mascotas": u.mascotas
         })

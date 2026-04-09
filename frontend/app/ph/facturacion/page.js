@@ -305,11 +305,25 @@ export default function FacturacionPHPage() {
 
     if (authLoading) return <div className="p-10 text-center text-gray-500">Cargando módulo...</div>;
 
-    // Unidades filtradas para el modal
-    const filteredUnits = unidades.filter(u =>
-        u.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (u.propietario?.razon_social || '').toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Unidades filtradas para el modal (Con restricción estricta por módulo del concepto)
+    const filteredUnits = unidades.filter(u => {
+        // 1. Obtener concepto actual si hay modal abierto
+        if (showUnitModal && currentConceptId) {
+            const activeConcept = conceptos.find(c => c.id === currentConceptId);
+            if (activeConcept && activeConcept.modulos?.length > 0) {
+                const allowedModuleIds = activeConcept.modulos.map(m => m.id);
+                const belongsToAllowedModule = u.modulos_ids?.some(mid => allowedModuleIds.includes(mid));
+                // Si la unidad no pertenece a ninguno de los módulos del concepto, queda FUERA.
+                if (!belongsToAllowedModule) return false;
+            }
+        }
+        
+        // 2. Filtro de búsqueda habitual
+        return (
+            u.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (u.propietario?.razon_social || '').toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    });
 
     return (
         <div className="min-h-screen bg-gray-50 p-6 font-sans pb-24">
