@@ -2080,7 +2080,7 @@ def purchases_diagnostic(
 
     # 0. Listar TODAS las empresas en la BD para identificar el ID correcto
     todas_empresas = db.query(models_empresa).all()
-    empresas_info = [{"id": e.id, "nombre": e.nombre} for e in todas_empresas]
+    empresas_info = [{"id": e.id, "razon_social": e.razon_social} for e in todas_empresas]
 
     # Contar documentos por empresa
     docs_por_empresa = db.query(
