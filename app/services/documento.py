@@ -418,8 +418,11 @@ def anular_documento(db: Session, documento_id: int, empresa_id: int, user_id: i
                     )
                 )
         
-        db.commit()
-        db.refresh(db_documento)
+        if commit:
+            db.commit()
+            db.refresh(db_documento)
+        else:
+            db.flush()
 
         # --- GATILLO AUTOMÁTICO DE RECÁLCULO (NUEVO) ---
         # Recalculamos cada producto afectado para que el Kárdex y la Contabilidad (Cuenta 6) 
@@ -427,14 +430,20 @@ def anular_documento(db: Session, documento_id: int, empresa_id: int, user_id: i
         if productos_afectados:
             from app.services import inventario as service_inventario
             for p_id in productos_afectados:
-                service_inventario.recalcular_saldos_producto(db, p_id)
-            db.commit() # Confirmamos los cambios del recálculo (sincronización contable cascada)
+                service_inventario.recalcular_saldos_producto(db, p_id, commit=commit)
+            
+            if commit:
+                db.commit() # Confirmamos los cambios del recálculo (sincronización contable cascada)
+            else:
+                db.flush()
 
 
         # --- GATILLO AUTOMÁTICO DE RECÁLCULO CARTERA/PROVEEDORES ---
-        trigger_recalc_if_cxc_cxp(db, db_documento.id, empresa_id)
+        trigger_recalc_if_cxc_cxp(db, db_documento.id, empresa_id, commit=commit)
         if commit:
             db.commit()
+        else:
+            db.flush()
 
 
         return db_documento
@@ -609,10 +618,13 @@ def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id:
         
         # G. RECALCULAR CARTERA (Post-Eliminación)
         for t_id in terceros_recalc:
-            cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=t_id, empresa_id=empresa_id)
+            cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=t_id, empresa_id=empresa_id, commit=commit)
         
-        if commit and terceros_recalc:
-            db.commit()
+        if commit:
+            if terceros_recalc:
+                db.commit()
+        else:
+            db.flush()
 
         return {
             "message": "Documento preparado para mover a la papelera.",
@@ -2373,24 +2385,37 @@ def buscar_documentos_para_gestion(db: Session, filtros: schemas_doc.DocumentoGe
 def anular_documentos_masivamente(db: Session, payload: schemas_doc.DocumentoAccionMasivaPayload, empresa_id: int, user_id: int, user_email: str):
     documentos_anulados_count = 0
     ids_no_encontrados_o_fallidos = []
+    productos_totales_afectados = set()
 
     try:
-        for doc_id in payload.documentoIds:
-            try:
-                anular_documento(
+        # Iniciamos un savepoint para que el rollback sea total pero podamos manejar excepciones
+        with db.begin_nested():
+            for doc_id in payload.documentoIds:
+                res = anular_documento(
                     db=db,
                     documento_id=doc_id,
                     empresa_id=empresa_id,
                     user_id=user_id,
                     user_email=user_email,
-                    razon=payload.razon
+                    razon=payload.razon,
+                    commit=False # <--- IMPORTANTE: No commit individual
                 )
                 documentos_anulados_count += 1
-            except HTTPException as e:
-                if e.status_code in [404, 400]:
-                    ids_no_encontrados_o_fallidos.append(doc_id)
-                else:
-                    raise e
+                
+                # Colectar productos afectados para recálculo optimizado
+                # Nota: anular_documento devuelve el objeto documento_db
+                for mov in res.movimientos:
+                    # Si el documento tiene movimientos de inventario asociados
+                    from app.models.inventario import MovimientoInventario
+                    movs_inv = db.query(MovimientoInventario.producto_id).filter(MovimientoInventario.documento_id == res.id).all()
+                    for mi in movs_inv:
+                        productos_totales_afectados.add(mi.producto_id)
+
+        # Recálculo único al final del lote (Integridad de Inventario Optimizado)
+        if productos_totales_afectados:
+            from app.services.inventario import recalcular_saldos_producto
+            for p_id in productos_totales_afectados:
+                recalcular_saldos_producto(db, p_id, commit=False)
 
         db.commit()
 
@@ -2444,8 +2469,6 @@ def eliminar_documentos_masivamente(db: Session, payload: schemas_doc.DocumentoA
 
                 eliminados_count += 1
 
-        db.commit()
-
         # 3. RECALCULO ÚNICO POST-LOTE (Integridad de Inventario Optimizado)
         if productos_totales_afectados:
             from app.services.inventario import recalcular_saldos_producto, SaldoNegativoException
@@ -2458,7 +2481,7 @@ def eliminar_documentos_masivamente(db: Session, payload: schemas_doc.DocumentoA
         for tercero_id in terceros_afectados_ids:
             cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=tercero_id, empresa_id=empresa_id, commit=False)
         
-        db.commit() # Commit final de inventario y cartera
+        db.commit() # Commit final de eliminación + inventario + cartera
 
         mensaje = f"{eliminados_count} documento(s) eliminado(s) exitosamente."
         if fallidos_ids:
