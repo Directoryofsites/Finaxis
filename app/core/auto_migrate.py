@@ -222,3 +222,27 @@ def run_auto_migrations():
         logger.error(f"Error crítico en auto-migraciones: {e}")
             
     logger.info("Auto-migraciones finalizadas.")
+
+    # 5. DATA FIX: Asegurar que los tipos de documento de compra tengan es_compra=True
+    # Esto corrige datos históricos donde el campo fue añadido después de crear los tipos.
+    # Es idempotente (safe to run multiple times).
+    logger.info("Verificando flags es_compra / es_venta en tipos_documento...")
+    try:
+        with engine.begin() as trans_conn:
+            # Códigos que POR CONVENCIÓN son facturas/notas de compra
+            trans_conn.execute(text("""
+                UPDATE tipos_documento
+                SET es_compra = TRUE
+                WHERE UPPER(codigo) IN ('FC', 'OC', 'RC', 'REC', 'NCC', 'DVC', 'DEVP')
+                  AND es_compra = FALSE
+            """))
+            # Códigos que POR CONVENCIÓN son facturas de venta
+            trans_conn.execute(text("""
+                UPDATE tipos_documento
+                SET es_venta = TRUE
+                WHERE UPPER(codigo) IN ('FV', 'FE', 'NCV', 'NDV', 'REM', 'COT')
+                  AND es_venta = FALSE
+            """))
+            logger.info("Data fix de es_compra / es_venta aplicado correctamente.")
+    except Exception as e:
+        logger.error(f"Error en data fix de tipos_documento: {e}")
