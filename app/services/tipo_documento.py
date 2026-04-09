@@ -49,8 +49,18 @@ def get_tipos_documento(db: Session, empresa_id: int, skip: int = 0, limit: int 
 
 def create_tipo_documento(db: Session, tipo_documento: schemas.TipoDocumentoCreate, user_id: int):
     _validar_cuentas_existentes(db, tipo_documento)
+    
+    # Auto-completar flags críticos si no vinieron explícitos pero el código es estándar
+    datos = tipo_documento.model_dump()
+    cod_upper = datos.get('codigo', '').upper()
+    
+    if cod_upper in ('FC', 'OC', 'RC', 'REC', 'NCC', 'DVC', 'DEVP') and not datos.get('es_compra'):
+        datos['es_compra'] = True
+    if cod_upper in ('FV', 'FE', 'NCV', 'NDV', 'REM', 'COT') and not datos.get('es_venta'):
+        datos['es_venta'] = True
+        
     db_tipo_documento = models.TipoDocumento(
-        **tipo_documento.model_dump(),
+        **datos,
         created_by=user_id,
         updated_by=user_id
     )
