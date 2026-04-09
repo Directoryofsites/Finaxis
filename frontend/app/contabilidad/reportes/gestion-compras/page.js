@@ -280,12 +280,20 @@ export default function GestionComprasPage() {
                         </div>
                         <div className="w-2/3">
                             <label className="text-xs font-bold text-slate-400 uppercase mb-1.5 block">Número</label>
-                            <input name="documento_number" value={filtros.documento_numero} onChange={handleInputChange} placeholder="Número doc..." className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" />
+                            <input name="documento_numero" value={filtros.documento_numero} onChange={handleInputChange} placeholder="Número doc..." className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" />
                         </div>
                     </div>
-                    <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2">
-                        {loading ? <span className="loading loading-spinner loading-sm"></span> : <><FaSearch /> Buscar Reporte</>}
-                    </button>
+                    <div className="flex gap-2 w-full h-[41px]">
+                        <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 text-sm">
+                            {loading ? <span className="loading loading-spinner loading-sm"></span> : <><FaSearch /> Buscar Reporte</>}
+                        </button>
+                        <button type="button" onClick={() => handleExport('pdf')} disabled={exporting.pdf || loading} className="bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl shadow-lg px-4 flex items-center justify-center transition-all" title="Exportar a PDF">
+                            {exporting.pdf ? <span className="loading loading-spinner loading-sm"></span> : <FaFilePdf className="text-lg" />}
+                        </button>
+                        <button type="button" onClick={() => handleExport('csv')} disabled={exporting.csv || loading} className="bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl shadow-lg px-4 flex items-center justify-center transition-all" title="Exportar a Excel (CSV)">
+                            {exporting.csv ? <span className="loading loading-spinner loading-sm"></span> : <FaFileCsv className="text-lg" />}
+                        </button>
+                    </div>
                 </form>
             </div>
 
@@ -331,14 +339,6 @@ export default function GestionComprasPage() {
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                             <h2 className="font-bold text-slate-800 flex items-center gap-2">Detalle Itemizado de Facturación y Notas</h2>
-                            <div className="flex gap-2">
-                                <button onClick={() => handleExport('pdf')} disabled={exporting.pdf} className="btn btn-sm btn-error text-white gap-2 font-bold rounded-lg shadow-md px-4">
-                                    {exporting.pdf ? <span className="loading loading-spinner loading-xs"></span> : <FaFilePdf />} PDF
-                                </button>
-                                <button onClick={() => handleExport('csv')} disabled={exporting.csv} className="btn btn-sm btn-success text-white gap-2 font-bold rounded-lg shadow-md px-4">
-                                    {exporting.csv ? <span className="loading loading-spinner loading-xs"></span> : <FaFileCsv />} EXCEL
-                                </button>
-                            </div>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">

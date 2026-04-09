@@ -4223,7 +4223,8 @@ def get_purchases_detailed_report(db: Session, empresa_id: int, filtros: Filtros
     if filtros.codigo_documento:
         doc_query = doc_query.filter(models_tipo.codigo.ilike(f"%{filtros.codigo_documento}%"))
     if filtros.numero_documento:
-        doc_query = doc_query.filter(models_doc.numero.ilike(f"%{filtros.numero_documento}%"))
+        from sqlalchemy import cast, String
+        doc_query = doc_query.filter(cast(models_doc.numero, String).ilike(f"%{filtros.numero_documento}%"))
     if filtros.centro_costo_id:
         doc_query = doc_query.filter(models_doc.centro_costo_id == filtros.centro_costo_id)
 
