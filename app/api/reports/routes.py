@@ -2075,8 +2075,18 @@ def purchases_diagnostic(
     from app.models import TipoDocumento as models_tipo, Documento as models_doc
     from app.models.producto import MovimientoInventario as models_mov_inv
     from app.models.movimiento_contable import MovimientoContable as models_mov
-    
-    # Intentamos obtener empresa_id de los parámetros o usar el default
+    from app.models.empresa import Empresa as models_empresa
+    from sqlalchemy import func
+
+    # 0. Listar TODAS las empresas en la BD para identificar el ID correcto
+    todas_empresas = db.query(models_empresa).all()
+    empresas_info = [{"id": e.id, "nombre": e.nombre} for e in todas_empresas]
+
+    # Contar documentos por empresa
+    docs_por_empresa = db.query(
+        models_doc.empresa_id,
+        func.count(models_doc.id).label("total")
+    ).group_by(models_doc.empresa_id).all()
 
     # 1. Todos los tipos de documento de la empresa
     tipos = db.query(models_tipo).filter(models_tipo.empresa_id == empresa_id).all()
@@ -2131,7 +2141,10 @@ def purchases_diagnostic(
         ).count()
 
     return {
-        "empresa_id": empresa_id,
+        "NOTA": "Si tipos_documento esta vacio, el empresa_id es incorrecto. Revisa 'todas_empresas'.",
+        "todas_empresas_en_bd": empresas_info,
+        "documentos_por_empresa": [{"empresa_id": r.empresa_id, "total_docs": r.total} for r in docs_por_empresa],
+        "empresa_id_consultado": empresa_id,
         "tipos_documento": tipos_info,
         "total_documentos_compra_activos": total_docs_compra,
         "muestra_documentos_compra": docs_info,
