@@ -156,12 +156,25 @@ export default function GestionComprasPage() {
         { accessorKey: 'fecha', header: 'Fecha' },
         { 
             header: 'Documento', 
-            accessorFn: row => `${row.tipo_documento_nombre} ${row.numero}`,
+            accessorFn: row => {
+                const prefix = row.tipo_documento_nombre ? row.tipo_documento_nombre.substring(0, 2).toUpperCase() : 'FC';
+                return `${prefix}-${row.numero}`;
+            },
             cell: info => <span className="font-bold text-indigo-900">{info.getValue()}</span>
         },
         { accessorKey: 'proveedor_nombre', header: 'Proveedor' },
         { accessorKey: 'producto_nombre', header: 'Producto' },
         { accessorKey: 'bodega_nombre', header: 'Bodega' },
+        { 
+            accessorKey: 'cantidad', 
+            header: 'CANT',
+            cell: info => <span className="font-mono text-center block">{info.getValue() || 0}</span>
+        },
+        { 
+            accessorKey: 'valor_unitario', 
+            header: 'V/U',
+            cell: info => <span className="font-mono text-slate-600">{formatCurrency(info.getValue() || 0)}</span>
+        },
         { 
             accessorKey: 'subtotal', 
             header: 'Subtotal Base',

@@ -4376,8 +4376,8 @@ def generate_purchases_detailed_pdf(db: Session, empresa_id: int, filtros: Filtr
     """Genera el PDF del reporte detallado de compras."""
     # 1. Obtener datos
     data = get_purchases_detailed_report(db, empresa_id, filtros)
-    empresa = db.query(models_empresa.Empresa).get(empresa_id)
-    
+    from app.models.empresa import Empresa
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
     # 2. Preparar contexto para la plantilla
     context = {
         "items": data.items,
@@ -4419,16 +4419,16 @@ def generate_purchases_detailed_csv(db: Session, empresa_id: int, filtros: Filtr
     
     # Header
     writer.writerow([
-        "Fecha", "Tipo Documento", "Numero", "Proveedor", "Producto", 
-        "Bodega", "Centro Costo", "Cantidad", "Valor Unitario", "Subtotal", "IVA", "Total"
+        "Fecha", "Documento", "Proveedor", "Producto", 
+        "Bodega", "Centro Costo", "CANT", "V/U", "Subtotal", "IVA", "Total"
     ])
     
     # Data
     for item in data.items:
+        prefix = item.tipo_documento_nombre[:2].upper() if item.tipo_documento_nombre else "FC"
         writer.writerow([
             item.fecha,
-            item.tipo_documento_nombre,
-            item.numero,
+            f"{prefix}-{item.numero}",
             item.proveedor_nombre,
             item.producto_nombre,
             item.bodega_nombre or "",
@@ -4442,7 +4442,7 @@ def generate_purchases_detailed_csv(db: Session, empresa_id: int, filtros: Filtr
     
     # Totales
     writer.writerow([])
-    writer.writerow(["", "", "", "", "", "", "TOTALES", "", "", data.total_base, data.total_iva, data.total_general])
+    writer.writerow(["", "", "", "", "", "", "TOTALES", "", data.total_base, data.total_iva, data.total_general])
     
     filename = f"Reporte_Compras_Detallado_{filtros.fecha_inicio}_{filtros.fecha_fin}.csv"
     return output.getvalue().encode('utf-8-sig'), filename
