@@ -2063,6 +2063,82 @@ def get_wc_analysis_pdf(
 # === REPORTE ESPECIALIZADO DE COMPRAS DETALLADO ===
 # ==============================================================================
 
+@router.get(
+    "/purchases-diagnostic",
+    summary="Diagnóstico del estado de datos para reporte de compras."
+)
+def purchases_diagnostic(
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    """Endpoint temporal de diagnóstico para ver qué datos existen en la BD."""
+    from app.models import TipoDocumento as models_tipo, Documento as models_doc
+    from app.models.producto import MovimientoInventario as models_mov_inv
+    from app.models.movimiento_contable import MovimientoContable as models_mov
+    empresa_id = current_user.empresa_id
+
+    # 1. Todos los tipos de documento de la empresa
+    tipos = db.query(models_tipo).filter(models_tipo.empresa_id == empresa_id).all()
+    tipos_info = [{
+        "id": t.id,
+        "codigo": t.codigo,
+        "nombre": t.nombre,
+        "es_compra": t.es_compra,
+        "es_venta": t.es_venta,
+        "funcion_especial": t.funcion_especial
+    } for t in tipos]
+
+    # 2. Documentos con es_compra=True
+    docs_compra = db.query(models_doc).join(
+        models_tipo, models_doc.tipo_documento_id == models_tipo.id
+    ).filter(
+        models_doc.empresa_id == empresa_id,
+        models_tipo.es_compra == True,
+        models_doc.anulado == False
+    ).limit(10).all()
+
+    docs_info = [{
+        "id": d.id,
+        "numero": d.numero,
+        "fecha": str(d.fecha),
+        "beneficiario_id": d.beneficiario_id,
+        "tipo_documento_id": d.tipo_documento_id
+    } for d in docs_compra]
+
+    # 3. Total de documentos de compra (todos los tipos que tengan es_compra)
+    total_docs_compra = db.query(models_doc).join(
+        models_tipo, models_doc.tipo_documento_id == models_tipo.id
+    ).filter(
+        models_doc.empresa_id == empresa_id,
+        models_tipo.es_compra == True
+    ).count()
+
+    # 4. Movimientos de inventario para esos documentos
+    doc_ids = [d.id for d in docs_compra]
+    mov_inv_count = 0
+    if doc_ids:
+        mov_inv_count = db.query(models_mov_inv).filter(
+            models_mov_inv.documento_id.in_(doc_ids)
+        ).count()
+
+    # 5. Movimientos contables con producto para esos documentos
+    mov_cont_count = 0
+    if doc_ids:
+        mov_cont_count = db.query(models_mov).filter(
+            models_mov.documento_id.in_(doc_ids),
+            models_mov.producto_id != None
+        ).count()
+
+    return {
+        "empresa_id": empresa_id,
+        "tipos_documento": tipos_info,
+        "total_documentos_compra_activos": total_docs_compra,
+        "muestra_documentos_compra": docs_info,
+        "movimientos_inventario_en_muestra": mov_inv_count,
+        "movimientos_contables_con_producto_en_muestra": mov_cont_count
+    }
+
+
 @router.post(
     "/purchases-detailed",
     response_model=CompraDetalladaResponse,
