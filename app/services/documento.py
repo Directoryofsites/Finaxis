@@ -4198,108 +4198,169 @@ def get_purchases_detailed_report(db: Session, empresa_id: int, filtros: Filtros
     """
     Genera un reporte detallado de compras por ítem/producto.
     Calcula IVA discriminado y permite cruces precisos con contabilidad (Clase 14 y 24).
-    Asume que las Notas Crédito (Devoluciones) se restan de los totales.
+    Usa MovimientoInventario como base (garantiza que siempre hay producto).
     """
-    # 1. Consulta Base de Movimientos de Compra
-    # Filtramos documentos que no estén anulados y que sean de tipo compra.
-    # Unimos con movimientos contables para obtener los items (producto_id no nulo).
-    query = db.query(
-        models_doc.id.label("documento_id"),
-        models_doc.numero,
-        models_doc.fecha,
-        models_tercero.razon_social.label("proveedor_nombre"),
-        models_producto.nombre.label("producto_nombre"),
-        models_bodega.nombre.label("bodega_nombre"),
-        models_centro_costo.nombre.label("centro_costo_nombre"),
-        models_mov.cantidad,
-        models_mov.debito,
-        models_mov.credito,
-        models_tipo.nombre.label("tipo_documento_nombre"),
-        models_producto.impuesto_iva_id
-    ).join(models_tipo, models_doc.tipo_documento_id == models_tipo.id)\
-     .join(models_tercero, models_doc.beneficiario_id == models_tercero.id)\
-     .join(models_mov, models_doc.id == models_mov.documento_id)\
-     .join(models_producto, models_mov.producto_id == models_producto.id)\
-     .outerjoin(models_centro_costo, models_doc.centro_costo_id == models_centro_costo.id)\
-     .outerjoin(models_mov_inv, and_(models_doc.id == models_mov_inv.documento_id, models_producto.id == models_mov_inv.producto_id))\
-     .outerjoin(models_bodega, models_mov_inv.bodega_id == models_bodega.id)\
-     .filter(
-         models_doc.empresa_id == empresa_id,
-         models_doc.anulado == False,
-         models_tipo.es_compra == True,
-         models_doc.fecha >= filtros.fecha_inicio,
-         models_doc.fecha <= filtros.fecha_fin
-     )
-
-    # 2. Aplicación de Filtros opcionales
-    if filtros.proveedor_id: query = query.filter(models_doc.beneficiario_id == filtros.proveedor_id)
-    if filtros.producto_id: query = query.filter(models_producto.id == filtros.producto_id)
-    if filtros.tipo_documento_id: query = query.filter(models_doc.tipo_documento_id == filtros.tipo_documento_id)
-    if filtros.codigo_documento: query = query.filter(models_tipo.codigo.ilike(f"%{filtros.codigo_documento}%"))
-    if filtros.numero_documento: query = query.filter(models_doc.numero.ilike(f"%{filtros.numero_documento}%"))
-    if filtros.centro_costo_id: query = query.filter(models_doc.centro_costo_id == filtros.centro_costo_id)
-    if filtros.bodega_id: query = query.filter(models_mov_inv.bodega_id == filtros.bodega_id)
-
-    results = query.order_by(models_doc.fecha.desc(), models_doc.id.desc()).all()
-
-    # 3. Procesamiento y Cálculo de IVA discriminado
+    from sqlalchemy import func, case
     from app.models.impuesto import TasaImpuesto as models_imp
-    impuestos = {imp.id: imp.tasa for imp in db.query(models_imp).all()}
 
+    # 1. Consulta Base: Documentos de compra (activos) en el rango de fechas
+    # Filtramos primero los documentos vía TipoDocumento.es_compra = True
+    doc_query = db.query(models_doc).join(
+        models_tipo, models_doc.tipo_documento_id == models_tipo.id
+    ).filter(
+        models_doc.empresa_id == empresa_id,
+        models_doc.anulado == False,
+        models_tipo.es_compra == True,
+        models_doc.fecha >= filtros.fecha_inicio,
+        models_doc.fecha <= filtros.fecha_fin,
+    )
+
+    # Aplica filtros opcionales a nivel de documento
+    if filtros.proveedor_id:
+        doc_query = doc_query.filter(models_doc.beneficiario_id == filtros.proveedor_id)
+    if filtros.tipo_documento_id:
+        doc_query = doc_query.filter(models_doc.tipo_documento_id == filtros.tipo_documento_id)
+    if filtros.codigo_documento:
+        doc_query = doc_query.filter(models_tipo.codigo.ilike(f"%{filtros.codigo_documento}%"))
+    if filtros.numero_documento:
+        doc_query = doc_query.filter(models_doc.numero.ilike(f"%{filtros.numero_documento}%"))
+    if filtros.centro_costo_id:
+        doc_query = doc_query.filter(models_doc.centro_costo_id == filtros.centro_costo_id)
+
+    documentos = doc_query.all()
+    doc_ids = [d.id for d in documentos]
+
+    if not doc_ids:
+        return CompraDetalladaResponse(items=[], total_base=0, total_iva=0, total_general=0, graficos={})
+
+    # 2. Obtener movimientos de inventario (siempre tiene producto_id)
+    # Solo tipos ENTRADA para compras
+    mov_inv_query = db.query(models_mov_inv).filter(
+        models_mov_inv.documento_id.in_(doc_ids),
+    )
+    if filtros.bodega_id:
+        mov_inv_query = mov_inv_query.filter(models_mov_inv.bodega_id == filtros.bodega_id)
+    if filtros.producto_id:
+        mov_inv_query = mov_inv_query.filter(models_mov_inv.producto_id == filtros.producto_id)
+
+    movimientos_inv = mov_inv_query.all()
+
+    if not movimientos_inv and not filtros.bodega_id and not filtros.producto_id:
+        # No hay movimientos de inventario: usa movimientos contables con producto
+        mov_contables_con_producto = db.query(models_mov).filter(
+            models_mov.documento_id.in_(doc_ids),
+            models_mov.producto_id != None
+        )
+        if filtros.producto_id:
+            mov_contables_con_producto = mov_contables_con_producto.filter(models_mov.producto_id == filtros.producto_id)
+        movimientos_inv = []  # usaremos modo contable
+        movimientos_contables_fallback = mov_contables_con_producto.all()
+    else:
+        movimientos_contables_fallback = []
+
+    # 3. Cargar datos maestros para enriquecer
+    impuestos = {imp.id: imp.tasa for imp in db.query(models_imp).all()}
+    productos_dict = {p.id: p for p in db.query(models_producto).filter(
+        models_producto.empresa_id == empresa_id
+    ).all()}
+    bodegas_dict = {b.id: b for b in db.query(models_bodega).filter(
+        models_bodega.empresa_id == empresa_id
+    ).all()}
+    docs_dict = {d.id: d for d in documentos}
+    tipos_dict = {t.id: t for t in db.query(models_tipo).filter(
+        models_tipo.empresa_id == empresa_id
+    ).all()}
+    terceros_dict = {t.id: t for t in db.query(models_tercero).filter(
+        models_tercero.empresa_id == empresa_id
+    ).all()}
+    centros_dict = {}
+    if any(d.centro_costo_id for d in documentos):
+        cc_ids = list(set(d.centro_costo_id for d in documentos if d.centro_costo_id))
+        centros_dict = {c.id: c for c in db.query(models_centro_costo).filter(
+            models_centro_costo.id.in_(cc_ids)
+        ).all()}
+
+    # 4. Construir items del reporte
     items_reporte = []
     t_base = 0.0
     t_iva = 0.0
     t_general = 0.0
 
-    for res in results:
-        # Base = Debito - Credito (En compras: Debito suma, Credito es devolución)
-        base = float(res.debito or 0) - float(res.credito or 0)
-        tasa = float(impuestos.get(res.impuesto_iva_id, 0))
-        iva_valor = base * tasa
-        total_linea = base + iva_valor
+    def build_item(doc, producto, bodega_nombre, cantidad, costo_unitario):
+        nonlocal t_base, t_iva, t_general
+        tipo = tipos_dict.get(doc.tipo_documento_id)
+        tercero = terceros_dict.get(doc.beneficiario_id)
+        centro = centros_dict.get(doc.centro_costo_id)
 
-        # Evitar división por cero
-        cantidad_f = float(res.cantidad or 0)
-        valor_unitario = 0.0
-        if abs(cantidad_f) > 0.00001:
-            valor_unitario = base / cantidad_f
+        # Signo: las Notas Crédito de compra restan (es_compra y funcion_especial == 'nota_credito_compra')
+        es_devolucion = tipo and tipo.funcion_especial in ('nota_credito_compra', 'devolucion_compra')
+        signo = -1 if es_devolucion else 1
+
+        base = round(float(costo_unitario or 0) * float(cantidad or 0) * signo, 2)
+        tasa = float(impuestos.get(producto.impuesto_iva_id, 0)) if producto else 0.0
+        iva_valor = round(base * tasa, 2)
+        total_linea = round(base + iva_valor, 2)
+        cantidad_f = float(cantidad or 0) * signo
 
         item = CompraDetalladaItem(
-            documento_id=res.documento_id,
-            numero=res.numero or "S/N",
-            fecha=res.fecha,
-            proveedor_nombre=res.proveedor_nombre,
-            producto_nombre=res.producto_nombre,
-            bodega_nombre=res.bodega_nombre,
-            centro_costo_nombre=res.centro_costo_nombre,
+            documento_id=doc.id,
+            numero=str(doc.numero) if doc.numero else "S/N",
+            fecha=doc.fecha,
+            proveedor_nombre=tercero.razon_social if tercero else "Desconocido",
+            producto_nombre=producto.nombre if producto else "Desconocido",
+            bodega_nombre=bodega_nombre,
+            centro_costo_nombre=centro.nombre if centro else None,
             cantidad=cantidad_f,
-            valor_unitario=valor_unitario,
+            valor_unitario=float(costo_unitario or 0),
             subtotal=base,
             iva=iva_valor,
             total=total_linea,
-            tipo_documento_nombre=res.tipo_documento_nombre
+            tipo_documento_nombre=tipo.nombre if tipo else "Compra"
         )
         items_reporte.append(item)
         t_base += base
         t_iva += iva_valor
         t_general += total_linea
-    # 7. Generar datos para gráficos
+
+    # Procesar movimientos de inventario
+    for mov in movimientos_inv:
+        doc = docs_dict.get(mov.documento_id)
+        if not doc:
+            continue
+        producto = productos_dict.get(mov.producto_id)
+        bodega = bodegas_dict.get(mov.bodega_id)
+        bodega_nombre = bodega.nombre if bodega else None
+        build_item(doc, producto, bodega_nombre, mov.cantidad, mov.costo_unitario)
+
+    # Procesar fallback contable (servicios sin inventario)
+    for mov in movimientos_contables_fallback:
+        doc = docs_dict.get(mov.documento_id)
+        if not doc:
+            continue
+        producto = productos_dict.get(mov.producto_id)
+        valor_base = float(mov.debito or 0) - float(mov.credito or 0)
+        cantidad = float(mov.cantidad or 1)
+        costo_unit = valor_base / cantidad if cantidad != 0 else valor_base
+        build_item(doc, producto, None, cantidad, costo_unit)
+
+    # Ordenar por fecha descendente
+    items_reporte.sort(key=lambda x: x.fecha, reverse=True)
+
+    # 5. Generar datos para gráficos
     ventas_dia_dict = {}
-    proveedores_dict = {}
-    productos_dict = {}
+    proveedores_graf = {}
+    productos_graf = {}
 
     for item in items_reporte:
-        # Por día
-        ventas_dia_dict[item.fecha] = ventas_dia_dict.get(item.fecha, 0) + item.total
-        # Por Proveedor
-        proveedores_dict[item.proveedor_nombre] = proveedores_dict.get(item.proveedor_nombre, 0) + item.total
-        # Por Producto
-        productos_dict[item.producto_nombre] = productos_dict.get(item.producto_nombre, 0) + item.total
+        k_dia = str(item.fecha)
+        ventas_dia_dict[k_dia] = ventas_dia_dict.get(k_dia, 0) + item.total
+        proveedores_graf[item.proveedor_nombre] = proveedores_graf.get(item.proveedor_nombre, 0) + item.total
+        productos_graf[item.producto_nombre] = productos_graf.get(item.producto_nombre, 0) + item.total
 
     graficos = {
         "compras_por_dia": [{"label": k, "value": round(v, 2)} for k, v in sorted(ventas_dia_dict.items())],
-        "top_proveedores": sorted([{"label": k, "value": round(v, 2)} for k, v in proveedores_dict.items()], key=lambda x: x["value"], reverse=True)[:5],
-        "top_productos": sorted([{"label": k, "value": round(v, 2)} for k, v in productos_dict.items()], key=lambda x: x["value"], reverse=True)[:5]
+        "top_proveedores": sorted([{"label": k, "value": round(v, 2)} for k, v in proveedores_graf.items()], key=lambda x: x["value"], reverse=True)[:5],
+        "top_productos": sorted([{"label": k, "value": round(v, 2)} for k, v in productos_graf.items()], key=lambda x: x["value"], reverse=True)[:5]
     }
 
     return CompraDetalladaResponse(
