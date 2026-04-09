@@ -2065,28 +2065,18 @@ def get_wc_analysis_pdf(
 
 @router.get(
     "/purchases-diagnostic",
-    summary="Diagnóstico del estado de datos para reporte de compras."
+    summary="Diagnóstico del estado de datos para reporte de compras (protegido)."
 )
 def purchases_diagnostic(
-    empresa_id: int = 1, # Default a 1 o permitir paso por query
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
 ):
-    """Endpoint temporal de diagnóstico accesible sin token para depuración rápida."""
+    """Endpoint de diagnóstico que muestra el estado de los datos de compras para LA EMPRESA del usuario autenticado."""
     from app.models import TipoDocumento as models_tipo, Documento as models_doc
     from app.models.producto import MovimientoInventario as models_mov_inv
     from app.models.movimiento_contable import MovimientoContable as models_mov
-    from app.models.empresa import Empresa as models_empresa
     from sqlalchemy import func
-
-    # 0. Listar TODAS las empresas en la BD para identificar el ID correcto
-    todas_empresas = db.query(models_empresa).all()
-    empresas_info = [{"id": e.id, "razon_social": e.razon_social} for e in todas_empresas]
-
-    # Contar documentos por empresa
-    docs_por_empresa = db.query(
-        models_doc.empresa_id,
-        func.count(models_doc.id).label("total")
-    ).group_by(models_doc.empresa_id).all()
+    empresa_id = current_user.empresa_id
 
     # 1. Todos los tipos de documento de la empresa
     tipos = db.query(models_tipo).filter(models_tipo.empresa_id == empresa_id).all()
@@ -2099,7 +2089,7 @@ def purchases_diagnostic(
         "funcion_especial": t.funcion_especial
     } for t in tipos]
 
-    # 2. Documentos con es_compra=True
+    # 2. Documentos con es_compra=True (muestra hasta 10)
     docs_compra = db.query(models_doc).join(
         models_tipo, models_doc.tipo_documento_id == models_tipo.id
     ).filter(
@@ -2116,7 +2106,7 @@ def purchases_diagnostic(
         "tipo_documento_id": d.tipo_documento_id
     } for d in docs_compra]
 
-    # 3. Total de documentos de compra (todos los tipos que tengan es_compra)
+    # 3. Total de documentos de compra
     total_docs_compra = db.query(models_doc).join(
         models_tipo, models_doc.tipo_documento_id == models_tipo.id
     ).filter(
@@ -2124,34 +2114,26 @@ def purchases_diagnostic(
         models_tipo.es_compra == True
     ).count()
 
-    # 4. Movimientos de inventario para esos documentos
+    # 4. Movimientos de inventario en la muestra
     doc_ids = [d.id for d in docs_compra]
-    mov_inv_count = 0
-    if doc_ids:
-        mov_inv_count = db.query(models_mov_inv).filter(
-            models_mov_inv.documento_id.in_(doc_ids)
-        ).count()
+    mov_inv_count = db.query(models_mov_inv).filter(
+        models_mov_inv.documento_id.in_(doc_ids)
+    ).count() if doc_ids else 0
 
-    # 5. Movimientos contables con producto para esos documentos
-    mov_cont_count = 0
-    if doc_ids:
-        mov_cont_count = db.query(models_mov).filter(
-            models_mov.documento_id.in_(doc_ids),
-            models_mov.producto_id != None
-        ).count()
+    # 5. Movimientos contables con producto en la muestra
+    mov_cont_count = db.query(models_mov).filter(
+        models_mov.documento_id.in_(doc_ids),
+        models_mov.producto_id != None
+    ).count() if doc_ids else 0
 
     return {
-        "NOTA": "Si tipos_documento esta vacio, el empresa_id es incorrecto. Revisa 'todas_empresas'.",
-        "todas_empresas_en_bd": empresas_info,
-        "documentos_por_empresa": [{"empresa_id": r.empresa_id, "total_docs": r.total} for r in docs_por_empresa],
-        "empresa_id_consultado": empresa_id,
+        "empresa_id": empresa_id,
         "tipos_documento": tipos_info,
         "total_documentos_compra_activos": total_docs_compra,
         "muestra_documentos_compra": docs_info,
         "movimientos_inventario_en_muestra": mov_inv_count,
         "movimientos_contables_con_producto_en_muestra": mov_cont_count
     }
-
 
 @router.post(
     "/purchases-detailed",
