@@ -1,279 +1,139 @@
 # -*- coding: utf-8 -*-
-# Â¡Â¡Â¡ ARCHIVO AUTO-GENERADO !!!
+# ¡¡¡ ARCHIVO AUTO-GENERADO !!!
 # No editar este archivo manualmente. Ejecutar precompile_templates.py para actualizar.
 
 TEMPLATES_EMPAQUETADOS = {
-    'reports/account_ledger_report.html': r'''<!DOCTYPE html>
+    'reports/account_ledger_report.html': r'''
+﻿<!DOCTYPE html>
 <html lang="es">
+
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-g">
     <title>Auxiliar por Cuenta</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --green-inst: #1C3A18;
-            --green-light: #2D5A27;
-            --gold-soft: #C9A84C;
-            --white: #FFFFFF;
-            --bg-page: #FAFAF7;
-            --text-main: #1C3A18;
-            --text-muted: #666666;
-            --text-labels: #444444;
-            --bg-grand-total: #F2F5F1;
-            --bg-accent: #FAFAF7;
-            --negative: #B22222;
-        }
-
-        @page {
-            size: A4 landscape;
-            margin: 0;
-        }
-
         body {
-            margin: 0;
-            padding: 0;
-            background-color: var(--white);
-            color: var(--text-main);
-            font-family: 'DM Sans', sans-serif;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
-
-        .page-container {
-            width: 297mm;
-            height: 210mm;
-            margin: 0 auto;
-            position: relative;
-            box-sizing: border-box;
-            overflow: hidden;
-            background-color: var(--white);
-        }
-
-        .decor-bar-top {
-            height: 6px;
-            background: linear-gradient(90deg, var(--green-inst), var(--green-light), var(--gold-soft), var(--green-light), var(--green-inst));
-            width: 100%;
-        }
-
-        .decor-bar-bottom {
-            height: 4px;
-            background: linear-gradient(90deg, var(--green-inst), var(--gold-soft));
-            width: 100%;
-            position: absolute;
-            bottom: 0;
-        }
-
-        header {
-            padding: 35px 50px 20px 50px;
-            display: table;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .header-left { display: table-cell; vertical-align: middle; text-align: left; }
-        .header-right { display: table-cell; vertical-align: middle; text-align: right; }
-
-        .badge-premium {
-            font-size: 9px;
-            font-weight: 700;
-            color: var(--green-inst);
-            text-transform: uppercase;
-            letter-spacing: 2.5px;
-            margin-bottom: 5px;
-            display: block;
-        }
-        .badge-premium::before { content: "â€¢"; margin-right: 8px; color: var(--gold-soft); }
-
-        .company-name {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 32px;
-            font-weight: 700;
-            line-height: 1;
-            margin: 0;
-            color: var(--green-inst);
-        }
-        .company-nit {
+            font-family: sans-serif;
             font-size: 10px;
-            color: #888;
-            margin-top: 4px;
-            letter-spacing: 1px;
         }
-
-        .report-title-box {
-            text-align: right;
-        }
-        .doc-title {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 22px;
-            font-style: italic;
-            color: #444;
-            margin-bottom: 8px;
-        }
-        .date-range-badge {
-            display: inline-block;
-            border: 1px solid var(--green-inst);
-            padding: 5px 12px;
-            border-radius: 2px;
-        }
-        .date-range-text { font-size: 13px; font-weight: 700; color: var(--green-inst); }
-
-        .account-ribbon {
-            margin: 0 50px;
-            padding: 12px 20px;
-            background-color: var(--bg-grand-total);
-            border-left: 4px solid var(--green-inst);
-            font-size: 12px;
-            color: var(--text-main);
-        }
-        .account-ribbon strong { color: var(--green-light); margin-right: 5px; }
-
-        main { padding: 25px 50px; }
 
         table {
             width: 100%;
             border-collapse: collapse;
         }
 
-        thead th {
-            background-color: #F8F9F7;
-            color: var(--text-labels);
-            font-size: 9px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1.2px;
-            padding: 12px 10px;
-            border-bottom: 2px solid var(--green-inst);
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 4px;
             text-align: left;
         }
 
-        tbody td {
-            padding: 10px;
-            font-size: 10px;
-            border-bottom: 1px solid #EEE;
-            color: #333;
-            vertical-align: middle;
+        th {
+            background-color: #f2f2f2;
         }
 
-        .row-alt { background-color: #FCFCFB; }
-        .text-right { text-align: right !important; }
-        .negative { color: var(--negative) !important; font-weight: 500; }
-        
-        .doc-id { font-weight: 700; color: var(--green-light); font-size: 9px; }
-
-        .subtotal-row {
-            background-color: #F8F9F7;
-            font-weight: 700;
-            color: var(--green-inst);
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
         }
 
-        .grand-total-section {
-            background-color: var(--green-inst);
-            color: var(--white);
-            font-weight: 700;
-            font-size: 12px;
+        .header h1 {
+            margin: 0;
         }
-        .grand-total-section td { border: none; padding: 15px 10px; color: var(--white) !important; }
-        .gold-label { color: var(--gold-soft); text-transform: uppercase; letter-spacing: 1px; font-size: 10px; }
+
+        .header h2 {
+            margin: 0;
+            font-weight: normal;
+        }
+
+        .report-info {
+            margin-bottom: 15px;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .total-row td {
+            font-weight: bold;
+            background-color: #f8f8f8;
+        }
     </style>
 </head>
+
 <body>
-    <div class="page-container">
-        <div class="decor-bar-top"></div>
-        
-        <header>
-            <div class="header-left">
-                <span class="badge-premium">Inteligencia Financiera</span>
-                <h1 class="company-name">{{ empresa_nombre or 'VERDURAS LA 21' }}</h1>
-                <div class="company-nit">NIT: {{ empresa_nit or '901464119-7' }}</div>
-            </div>
-            <div class="header-right">
-                <div class="report-title-box">
-                    <div class="doc-title">Auxiliar por Cuenta</div>
-                    <div class="date-range-badge">
-                        <span class="date-range-text">Del {{ fecha_inicio }} al {{ fecha_fin }}</span>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <div class="account-ribbon">
-            <strong>CUENTA SELECCIONADA:</strong> {{ cuenta_codigo }} - {{ cuenta_nombre }}
-        </div>
-
-        <main>
-            <table>
-                <thead>
-                    <tr>
-                        <th width="80">Fecha</th>
-                        <th width="120">Documento</th>
-                        <th>Beneficiario / Tercero</th>
-                        <th width="200">Concepto</th>
-                        {% if has_cost_centers %}
-                        <th width="90" class="text-right" style="white-space: nowrap;">C. Costo</th>
-                        {% endif %}
-                        <th width="100" class="text-right">D&eacute;bitos</th>
-                        <th width="100" class="text-right">Cr&eacute;ditos</th>
-                        <th width="110" class="text-right">Saldo</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr class="subtotal-row">
-                        <td colspan="{{ 5 if has_cost_centers else 4 }}">SALDO ANTERIOR</td>
-                        <td colspan="3" class="text-right" style="padding-right: 10px;">{{ "{:,.0f}".format(saldo_anterior).replace(',', '.') }}</td>
-                    </tr>
-                    
-                    {% for mov in movimientos %}
-                    <tr class="{{ 'row-alt' if loop.index0 % 2 == 0 else '' }}">
-                        <td>{{ mov.fecha.strftime('%Y-%m-%d') }}</td>
-                        <td class="doc-id">{{ mov.tipo_documento }}-{{ mov.numero_documento }}</td>
-                        <td style="font-size: 9px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                            {{ mov.beneficiario or 'N/A' }}
-                        </td>
-                        <td style="font-size: 9px; line-height: 1.2;">{{ mov.concepto }}</td>
-                        {% if has_cost_centers %}
-                        <td class="text-right" style="color: #888;">{{ mov.centro_costo_codigo or '-' }}</td>
-                        {% endif %}
-                        <td class="text-right">{{ "{:,.0f}".format(mov.debito).replace(',', '.') }}</td>
-                        <td class="text-right">{{ "{:,.0f}".format(mov.credito).replace(',', '.') }}</td>
-                        <td class="text-right {{ 'negative' if mov.saldo_parcial < 0 else '' }}">
-                            {{ "{:,.0f}".format(mov.saldo_parcial).replace(',', '.') }}
-                        </td>
-                    </tr>
-                    {% endfor %}
-
-                    <tr class="subtotal-row">
-                        <td colspan="{{ 5 if has_cost_centers else 4 }}">MOVIMIENTOS DEL PERIODO</td>
-                        <td class="text-right">{{ "{:,.0f}".format(total_debito_periodo).replace(',', '.') }}</td>
-                        <td class="text-right">{{ "{:,.0f}".format(total_credito_periodo).replace(',', '.') }}</td>
-                        <td></td>
-                    </tr>
-                </tbody>
-                <tfoot>
-                    <tr class="grand-total-section">
-                        <td colspan="{{ 5 if has_cost_centers else 4 }}">
-                            <span class="gold-label">Consolidado Final</span><br>
-                            SALDO ACUMULADO AL {{ fecha_fin }}
-                        </td>
-                        {% set saldo_final = movimientos[-1].saldo_parcial if movimientos else saldo_anterior %}
-                        <td colspan="3" class="text-right" style="font-size: 16px; padding-right: 10px;">
-                            {{ "{:,.0f}".format(saldo_final).replace(',', '.') }}
-                        </td>
-                    </tr>
-                </tfoot>
-            </table>
-        </main>
-
-        <div class="decor-bar-bottom"></div>
+    <div class="header">
+        <h1>{{ empresa_nombre }}</h1>
+        <h2>NIT: {{ empresa_nit }}</h2>
+        <h2>Auxiliar por Cuenta</h2>
     </div>
+
+    <div class="report-info">
+        <strong>Cuenta:</strong> {{ cuenta_codigo }} - {{ cuenta_nombre }}<br>
+        <strong>Periodo:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Documento</th>
+                <th>Beneficiario</th>
+                <th>Concepto</th>
+                {% if has_cost_centers %}
+                <th>C. Costo</th>
+                {% endif %}
+                <th class="text-right">Débito</th>
+                <th class="text-right">Crédito</th>
+                <th class="text-right">Saldo Parcial</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="total-row">
+                <td colspan="{{ 5 if has_cost_centers else 4 }}"><strong>SALDO ANTERIOR</strong></td>
+                <td colspan="3" class="text-right"><strong>{{ "{:,.2f}".format(saldo_anterior) }}</strong></td>
+            </tr>
+            {% for mov in movimientos %}
+            <tr>
+
+                <td>{{ mov.fecha.strftime('%Y-%m-%d') }}</td>
+                <td>{{ mov.tipo_documento }}-{{ mov.numero_documento }}</td>
+                <td>{{ mov.beneficiario or '' }}</td>
+                <td>{{ mov.concepto }}</td>
+                {% if has_cost_centers %}
+                <td>{{ mov.centro_costo_codigo or '' }}</td>
+                {% endif %}
+                <td class="text-right">{{ "{:,.2f}".format(mov.debito) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(mov.credito) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(mov.saldo_parcial) }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row" style="background-color: #f1f5f9;">
+                <td colspan="{{ 5 if has_cost_centers else 4 }}"><strong>TOTALES MOVIMIENTOS DEL PERIODO</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(total_debito_periodo) }}</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(total_credito_periodo) }}</strong></td>
+                <td></td>
+            </tr>
+            <tr class="total-row" style="background-color: #1e293b; color: white;">
+                <td colspan="{{ 5 if has_cost_centers else 4 }}"><strong>SALDO FINAL ACUMULADO AL {{ fecha_fin
+                        }}</strong></td>
+                {% set saldo_final = movimientos[-1].saldo_parcial if movimientos else saldo_anterior %}
+                <td colspan="3" class="text-right"><strong>{{ "{:,.2f}".format(saldo_final) }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
 </body>
+
 </html>
+
 ''',
+
     'reports/analisis_cuenta_doc_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
-    <title>AnÃ¡lisis de Cuenta por Documento</title>
+    <title>Análisis de Cuenta por Documento</title>
     <meta charset="UTF-8">
     <style>
         @page {
@@ -367,7 +227,7 @@ TEMPLATES_EMPAQUETADOS = {
     <div class="header">
         <h1>{{ empresa_nombre }}</h1>
         <h2>NIT: {{ empresa_nit }}</h2>
-        <h2>ANÃLISIS DE CUENTA POR DOCUMENTO</h2>
+        <h2>ANÁLISIS DE CUENTA POR DOCUMENTO</h2>
         <p>Periodo: {{ fecha_inicio }} - {{ fecha_fin }}</p>
     </div>
 
@@ -381,10 +241,10 @@ TEMPLATES_EMPAQUETADOS = {
         <table>
             <thead>
                 <tr>
-                    <th class="text-left" style="width: 15%">CÃ³d. Tipo</th>
+                    <th class="text-left" style="width: 15%">Cód. Tipo</th>
                     <th class="text-left" style="width: 45%">Tipo de Documento</th>
-                    <th style="width: 20%">DÃ©bitos</th>
-                    <th style="width: 20%">CrÃ©ditos</th>
+                    <th style="width: 20%">Débitos</th>
+                    <th style="width: 20%">Créditos</th>
                 </tr>
             </thead>
             <tbody>
@@ -410,18 +270,19 @@ TEMPLATES_EMPAQUETADOS = {
         <table>
             <tr>
                 <td class="text-left"><strong>TOTALES GENERALES</strong></td>
-                <td><strong>DÃ©bitos: ${{ "{:,.0f}".format(reporte.totales_generales.debito) }}</strong></td>
-                <td><strong>CrÃ©ditos: ${{ "{:,.0f}".format(reporte.totales_generales.credito) }}</strong></td>
+                <td><strong>Débitos: ${{ "{:,.0f}".format(reporte.totales_generales.debito) }}</strong></td>
+                <td><strong>Créditos: ${{ "{:,.0f}".format(reporte.totales_generales.credito) }}</strong></td>
             </tr>
         </table>
     </div>
 </body>
 
 </html>
+
 ''',
 
     'reports/auxiliar_cartera_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <title>Auxiliar de Cartera Detallado</title>
@@ -457,8 +318,8 @@ TEMPLATES_EMPAQUETADOS = {
             <tr>
                 <th style="width: 12%;">Fecha</th>
                 <th style="width: 18%;">Documento</th>
-                <th style="width: 20%;">DÃ©bito (Cargos)</th>
-                <th style="width: 20%;">CrÃ©dito (Abonos)</th>
+                <th style="width: 20%;">Débito (Cargos)</th>
+                <th style="width: 20%;">Crédito (Abonos)</th>
                 <th style="width: 30%;">Saldo</th>
             </tr>
         </thead>
@@ -494,10 +355,11 @@ TEMPLATES_EMPAQUETADOS = {
     </table>
 </body>
 </html>
+
 ''',
 
     'reports/auxiliar_cc_cuenta_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <title>Auxiliar por Centro de Costo y Cuenta</title>
@@ -531,7 +393,7 @@ TEMPLATES_EMPAQUETADOS = {
         <h2>Auxiliar por Centro de Costo y Cuenta</h2>
         <p>Centro de Costo: {{ centro_costo_nombre_display }}</p>
         <p>Cuenta: {{ cuenta_nombre_display }}</p>
-        <p>PerÃ­odo: {{ fecha_inicio }} al {{ fecha_fin }}</p>
+        <p>Período: {{ fecha_inicio }} al {{ fecha_fin }}</p>
     </div>
 
     <table>
@@ -542,8 +404,8 @@ TEMPLATES_EMPAQUETADOS = {
                 <th style="width: 15%;">Beneficiario</th>
                 <th style="width: 10%;">Cuenta</th>
                 <th style="width: 20%;">Concepto</th>
-                <th style="width: 10%;">DÃ©bito</th>
-                <th style="width: 10%;">CrÃ©dito</th>
+                <th style="width: 10%;">Débito</th>
+                <th style="width: 10%;">Crédito</th>
                 <th style="width: 12%;">Saldo Parcial</th>
             </tr>
         </thead>
@@ -596,10 +458,11 @@ TEMPLATES_EMPAQUETADOS = {
     </table>
 </body>
 </html>
+
 ''',
 
     'reports/auxiliar_por_facturas_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <title>Auxiliar por Facturas</title>
@@ -665,10 +528,11 @@ TEMPLATES_EMPAQUETADOS = {
     </table>
 </body>
 </html>
+
 ''',
 
     'reports/auxiliar_por_recibos_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <title>Auxiliar por Recibos de Caja</title>
@@ -728,10 +592,11 @@ TEMPLATES_EMPAQUETADOS = {
     </table>
 </body>
 </html>
+
 ''',
 
     'reports/auxiliar_proveedores_por_facturas_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <title>Auxiliar por Facturas de Compra</title>
@@ -797,10 +662,11 @@ TEMPLATES_EMPAQUETADOS = {
     </table>
 </body>
 </html>
+
 ''',
 
     'reports/auxiliar_proveedores_por_recibos_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <title>Auxiliar por Comprobantes de Egreso</title>
@@ -860,10 +726,11 @@ TEMPLATES_EMPAQUETADOS = {
     </table>
 </body>
 </html>
+
 ''',
 
     'reports/auxiliar_proveedores_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <title>Auxiliar de Proveedores Detallado</title>
@@ -897,8 +764,8 @@ TEMPLATES_EMPAQUETADOS = {
             <tr>
                 <th style="width: 12%;">Fecha</th>
                 <th style="width: 25%;">Documento</th>
-                <th style="width: 21%;">DÃ©bito (Pagos)</th>
-                <th style="width: 21%;">CrÃ©dito (Deudas)</th>
+                <th style="width: 21%;">Débito (Pagos)</th>
+                <th style="width: 21%;">Crédito (Deudas)</th>
                 <th style="width: 21%;">Saldo</th>
             </tr>
         </thead>
@@ -934,10 +801,11 @@ TEMPLATES_EMPAQUETADOS = {
     </table>
 </body>
 </html>
+
 ''',
 
     'reports/balance_de_prueba_cc_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <title>Balance de Prueba por Centro de Costo</title>
@@ -1003,11 +871,11 @@ TEMPLATES_EMPAQUETADOS = {
     <table>
         <thead>
             <tr>
-                <th>CÃ³digo</th>
+                <th>Código</th>
                 <th>Nombre del Centro de Costo</th>
                 <th class="text-right">Saldo Inicial</th>
-                <th class="text-right">DÃ©bitos</th>
-                <th class="text-right">CrÃ©ditos</th>
+                <th class="text-right">Débitos</th>
+                <th class="text-right">Créditos</th>
                 <th class="text-right">Nuevo Saldo</th>
             </tr>
         </thead>
@@ -1035,9 +903,11 @@ TEMPLATES_EMPAQUETADOS = {
     </table>
 </body>
 </html>
+
 ''',
 
-    'reports/balance_de_prueba_report.html': r'''<!DOCTYPE html>
+    'reports/balance_de_prueba_report.html': r'''
+﻿<!DOCTYPE html>
 <html>
 <head>
     <title>Balance de Prueba</title>
@@ -1068,7 +938,6 @@ TEMPLATES_EMPAQUETADOS = {
             color: var(--text-main);
             font-family: 'DM Sans', sans-serif;
             -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
         }
 
         .page-container {
@@ -1114,7 +983,7 @@ TEMPLATES_EMPAQUETADOS = {
             margin-bottom: 5px;
             display: block;
         }
-        .badge::before { content: "â€¢"; margin-right: 6px; }
+        .badge::before { content: "•"; margin-right: 6px; }
 
         .company-name {
             font-family: 'Cormorant Garamond', serif;
@@ -1185,6 +1054,7 @@ TEMPLATES_EMPAQUETADOS = {
     </style>
 </head>
 <body>
+
     <div class="page-container">
         <div class="top-bar"></div>
         <header>
@@ -1205,11 +1075,11 @@ TEMPLATES_EMPAQUETADOS = {
     <table>
         <thead>
             <tr>
-                <th>CÃ³digo</th>
+                <th>Código</th>
                 <th>Nombre de la Cuenta</th>
                 <th class="text-right">Saldo Inicial</th>
-                <th class="text-right">DÃ©bitos</th>
-                <th class="text-right">CrÃ©ditos</th>
+                <th class="text-right">Débitos</th>
+                <th class="text-right">Créditos</th>
                 <th class="text-right">Nuevo Saldo</th>
             </tr>
         </thead>
@@ -1240,10 +1110,11 @@ TEMPLATES_EMPAQUETADOS = {
     </div>
 </body>
 </html>
+
 ''',
 
     'reports/balance_general_cc_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -1377,7 +1248,7 @@ TEMPLATES_EMPAQUETADOS = {
             </div>
         {% endfor %}
         <div class="item-row utilidad-row">
-            <span>3605 - Utilidad (PÃ©rdida) del Ejercicio</span>
+            <span>3605 - Utilidad (Pérdida) del Ejercicio</span>
             <span>{{ "{:,.2f}".format(reporte.utilidad_ejercicio) }}</span>
         </div>
         <div class="total-row">
@@ -1396,8 +1267,635 @@ TEMPLATES_EMPAQUETADOS = {
 
 ''',
 
+    'reports/balance_general_gerencial.html': r'''
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Estado de Situación Financiera - Gerencial</title>
+    <!-- WeasyPrint renders local fonts if installed, or we can use webfonts if connected -->
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Colores Primarios */
+            --green-inst: #2D6A26;
+            --green-light: #6BAD5E;
+            --blue-slate: #4A6FA5;
+            --gold-soft: #C9A84C;
+            --green-text: #1A3D17;
+            --blue-text: #1F3560;
+            --gold-text: #6B5010;
+            
+            /* Fondos */
+            --white: #FFFFFF;
+            --bg-activos: #F2F8F1;
+            --bg-pasivos: #F3F5F8;
+            --bg-patrimonio: #FBF8F1;
+            --row-activos: #EEF5ED;
+            --row-pasivos: #EEF1F8;
+            --row-patrimonio: #FAF5E9;
+            --subrow-activos: #F7F9F7;
+            --subrow-pasivos: #F3F6FB;
+            --gray-light: #FAFAFA;
+            --bg-grand-total: #F5FAF4;
+            
+            /* Texto */
+            --text-main: #1A1A1A;
+            --text-muted: #BBBBBB;
+            --text-labels: #444444;
+            --red-contable: #C0392B;
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--white);
+            color: var(--text-main);
+            font-family: 'DM Sans', sans-serif;
+            -webkit-print-color-adjust: exact;
+        }
+
+        .page-container {
+            width: 210mm;
+            height: 297mm; /* Forced A4 height to ensure everything fits */
+            margin: 0 auto;
+            position: relative;
+            background: var(--white);
+            box-sizing: border-box;
+            overflow: hidden; /* Prevent spillover */
+        }
+
+        /* Barras Decorativas */
+        .top-bar {
+            height: 4px; /* Reduced */
+            background: linear-gradient(90deg, var(--green-inst), var(--green-light), var(--gold-soft), var(--green-light), var(--green-inst));
+            width: 100%;
+        }
+
+        .bottom-bar {
+            height: 3px;
+            background: linear-gradient(90deg, var(--green-inst), var(--green-light), var(--gold-soft));
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+        }
+
+        /* Cabecera */
+        header {
+            padding: 30px 56px 20px 56px; /* Reduced padding */
+            display: table;
+            width: 100%;
+            box-sizing: border-box;
+            border-bottom: 1px solid #F0F0F0;
+        }
+
+        .header-left {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: left;
+        }
+
+        .header-right {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: right;
+        }
+
+        .badge {
+            font-size: 9px; /* Reduced */
+            font-weight: 700;
+            color: var(--green-inst);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .badge::before {
+            content: "•";
+            margin-right: 6px;
+            font-size: 12px;
+        }
+
+        .company-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 38px; /* Reduced */
+            font-weight: 700;
+            line-height: 1;
+            margin: 0;
+            color: var(--text-main);
+        }
+        .company-name span {
+            color: var(--green-inst);
+        }
+
+        .company-nit {
+            font-size: 10px;
+            color: var(--text-muted);
+            letter-spacing: 1.5px;
+            margin-top: 4px;
+            font-weight: 400;
+        }
+
+        .doc-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            font-style: italic;
+            color: #555555;
+            margin-bottom: 10px;
+        }
+
+        .date-box {
+            display: inline-block;
+            border: 1.5px solid var(--green-inst);
+            border-radius: 4px;
+            padding: 6px 14px;
+            text-align: center;
+        }
+
+        .date-label {
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--green-inst);
+            margin-bottom: 1px;
+        }
+
+        .date-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        /* Cuerpo */
+        main {
+            padding: 20px 56px; /* Reduced */
+        }
+
+        .grid-container {
+            display: table;
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 24px 0;
+            margin-left: -24px;
+        }
+
+        .col {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+        }
+
+        /* Tarjetas de Sección */
+        .section-card {
+            border: 1.5px solid #E4E4E4;
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--white);
+            margin-bottom: 15px; /* Reduced from 24px */
+        }
+
+        .card-header {
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1.5px solid #E4E4E4;
+        }
+        .card-header.activos { background: var(--bg-activos); }
+        .card-header.pasivos { background: var(--bg-pasivos); }
+        .card-header.patrimonio { background: var(--bg-patrimonio); }
+
+        .header-stripe {
+            width: 3px;
+            height: 16px;
+            border-radius: 2px;
+            margin-right: 10px;
+        }
+        .activos .header-stripe { background: var(--green-inst); }
+        .pasivos .header-stripe { background: var(--blue-slate); }
+        .patrimonio .header-stripe { background: var(--gold-soft); }
+
+        .card-title {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-labels);
+        }
+
+        /* Tablas */
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .sub-header {
+            background: var(--gray-light);
+            border-bottom: 1px solid #F0F0F0;
+        }
+        .sub-header td {
+            padding: 4px 16px; /* Reduced */
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #AAAAAA;
+        }
+
+        .row-item td {
+            padding: 6px 16px; /* Reduced */
+            border-bottom: 1px solid #F8F8F8;
+            vertical-align: middle; /* Fix for alignment */
+        }
+        .acc-code { font-size: 9px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; width: 40px; }
+        .acc-name { font-size: 12px; color: var(--text-labels); padding-right: 10px; }
+        .acc-value { 
+            font-size: 12px; 
+            font-weight: 500; 
+            text-align: right; 
+            font-variant-numeric: tabular-nums; 
+            white-space: nowrap; /* CRITICAL FIX: No wrapping for currency */
+            min-width: 90px;
+        }
+
+        .negativo { color: var(--red-contable) !important; }
+
+        .row-subtotal td { padding: 8px 16px; font-weight: 700; font-size: 13px; }
+        .activos .row-subtotal { background: var(--subrow-activos); border-top: 1.5px solid #D8E8D6; color: var(--green-inst); }
+        .pasivos .row-subtotal { background: var(--subrow-pasivos); border-top: 1.5px solid #C0CEDF; color: var(--blue-slate); }
+
+        .row-total td { padding: 10px 16px; font-weight: 700; font-size: 13.5px; }
+        .activos .row-total { background: var(--row-activos); border-top: 2px solid var(--green-inst); color: var(--green-text); }
+        .pasivos .row-total { background: var(--row-pasivos); border-top: 2px solid var(--blue-slate); color: var(--blue-text); }
+        .patrimonio .row-total { background: var(--row-patrimonio); border-top: 2px solid var(--gold-soft); color: var(--gold-text); }
+
+        /* KPIs */
+        .kpi-container {
+            display: table;
+            width: 100%;
+            border-spacing: 15px 0;
+            margin-top: 5px;
+            margin-left: -15px;
+        }
+
+        .kpi-card {
+            display: table-cell;
+            width: 33.33%;
+            border: 1.5px solid #E4E4E4;
+            border-radius: 8px;
+            padding: 15px; /* Reduced */
+            position: relative;
+            background: var(--white);
+        }
+        .kpi-card::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 15%;
+            bottom: 15%;
+            width: 4px;
+            border-radius: 0 2px 2px 0;
+        }
+        .kpi-activos::before { background: var(--green-inst); }
+        .kpi-pasivos::before { background: var(--red-contable); }
+        .kpi-patrimonio::before { background: var(--gold-soft); }
+
+        .kpi-label {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .kpi-value {
+            font-size: 16px; /* Reduced */
+            font-weight: 700;
+            color: var(--text-main);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        /* Grand Total */
+        .grand-total-bar {
+            background: var(--bg-grand-total);
+            border: 2px solid var(--green-inst);
+            border-radius: 8px;
+            padding: 15px 25px; /* Reduced */
+            margin-top: 15px; /* Reduced */
+            display: table;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .gt-left {
+            display: table-cell;
+            vertical-align: middle;
+            width: 40px;
+        }
+
+        .pulse-circle {
+            width: 32px;
+            height: 32px;
+            background: var(--green-inst);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .gt-center {
+            display: table-cell;
+            vertical-align: middle;
+            padding-left: 15px;
+        }
+
+        .gt-label {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 16px;
+            font-style: italic;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .gt-right {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: right;
+        }
+
+        .gt-val-prefix {
+            font-size: 11px;
+            color: #888888;
+            margin-right: 5px;
+        }
+
+        .gt-value {
+            font-size: 22px; /* Reduced */
+            font-weight: 700;
+            color: var(--green-text);
+            white-space: nowrap;
+        }
+
+        .equation-note {
+            text-align: center;
+            font-size: 10px;
+            color: #AAAAAA;
+            font-style: italic;
+            margin-top: 8px;
+        }
+
+        /* Firmas */
+        .signatures {
+            margin-top: 30px; /* Reduced from 60px */
+            display: table;
+            width: 100%;
+        }
+
+        .sig-col {
+            display: table-cell;
+            width: 50%;
+            text-align: center;
+            padding: 0 40px;
+        }
+
+        .sig-line {
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent, var(--gold-soft), transparent);
+            width: 80%;
+            margin: 0 auto 10px auto;
+        }
+
+        .sig-name {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-main);
+        }
+
+        .sig-meta {
+            font-size: 9px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="top-bar"></div>
+        
+        <header>
+            <div class="header-left">
+                <span class="badge">Informe Financiero Oficial</span>
+                <h1 class="company-name">Verduras <span>La 21</span></h1>
+                <div class="company-nit">NIT {{ empresa.nit or '942.807.497' }}</div>
+            </div>
+            <div class="header-right">
+                <div class="doc-title">Estado de Situación Financiera</div>
+                <div class="date-box">
+                    <div class="date-label">Fecha de Corte</div>
+                    <div class="date-value">{{ fecha_corte.strftime('%d de %B de %Y') }}</div>
+                </div>
+                <div style="font-size: 9px; color: #BBBBBB; margin-top: 8px; letter-spacing: 1px;">Cifras en Pesos Colombianos (COP)</div>
+            </div>
+        </header>
+
+        <main>
+            <div class="grid-container">
+                <!-- COLUMNA ACTIVOS -->
+                <div class="col">
+                    <div class="section-card">
+                        <div class="card-header activos">
+                            <div class="header-stripe"></div>
+                            <span class="card-title">Activos</span>
+                        </div>
+                        <table class="report-table activos">
+                            {% if reporte.clasificado_activo.corriente %}
+                            <tr class="sub-header">
+                                <td colspan="3">▸ Activo Corriente</td>
+                            </tr>
+                            {% for it in reporte.clasificado_activo.corriente %}
+                            <tr class="row-item">
+                                <td class="acc-code">{{ it.codigo }}</td>
+                                <td class="acc-name">{{ it.nombre }}</td>
+                                <td class="acc-value {% if it.saldo < 0 %}negativo{% endif %}">
+                                    {% if it.saldo < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(it.saldo | abs).replace(',', '.') }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            <tr class="row-subtotal">
+                                <td colspan="2">Total Activo Corriente</td>
+                                <td class="acc-value">
+                                    {% if reporte.clasificado_activo.total_corriente < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(reporte.clasificado_activo.total_corriente | abs).replace(',', '.') }}
+                                </td>
+                            </tr>
+                            {% endif %}
+
+                            {% if reporte.clasificado_activo.no_corriente %}
+                            <tr class="sub-header">
+                                <td colspan="3">▸ Activo No Corriente</td>
+                            </tr>
+                            {% for it in reporte.clasificado_activo.no_corriente %}
+                            <tr class="row-item">
+                                <td class="acc-code">{{ it.codigo }}</td>
+                                <td class="acc-name">{{ it.nombre }}</td>
+                                <td class="acc-value {% if it.saldo < 0 %}negativo{% endif %}">
+                                    {% if it.saldo < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(it.saldo | abs).replace(',', '.') }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% endif %}
+
+                            <tr class="row-total">
+                                <td colspan="2">TOTAL ACTIVOS</td>
+                                <td class="acc-value">
+                                    {% if reporte.total_activos < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(reporte.total_activos | abs).replace(',', '.') }}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- COLUMNA PASIVOS Y PATRIMONIO -->
+                <div class="col">
+                    <!-- PASIVOS -->
+                    <div class="section-card">
+                        <div class="card-header pasivos">
+                            <div class="header-stripe"></div>
+                            <span class="card-title">Pasivos</span>
+                        </div>
+                        <table class="report-table pasivos">
+                            <tr class="sub-header">
+                                <td colspan="3">▸ Pasivo Corriente</td>
+                            </tr>
+                            {% for it in reporte.clasificado_pasivo.corriente %}
+                            <tr class="row-item">
+                                <td class="acc-code">{{ it.codigo }}</td>
+                                <td class="acc-name">{{ it.nombre }}</td>
+                                <td class="acc-value {% if it.saldo < 0 %}negativo{% endif %}">
+                                    {% if it.saldo < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(it.saldo | abs).replace(',', '.') }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            <tr class="row-subtotal">
+                                <td colspan="2">Total Pasivo Corriente</td>
+                                <td class="acc-value">
+                                    {% if reporte.clasificado_pasivo.total_corriente < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(reporte.clasificado_pasivo.total_corriente | abs).replace(',', '.') }}
+                                </td>
+                            </tr>
+                            <tr class="row-total">
+                                <td colspan="2">TOTAL PASIVOS</td>
+                                <td class="acc-value">
+                                    {% if reporte.total_pasivos < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(reporte.total_pasivos | abs).replace(',', '.') }}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- PATRIMONIO -->
+                    <div class="section-card">
+                        <div class="card-header patrimonio">
+                            <div class="header-stripe"></div>
+                            <span class="card-title">Patrimonio</span>
+                        </div>
+                        <table class="report-table patrimonio">
+                            {% for it in reporte.patrimonio %}
+                            <tr class="row-item">
+                                <td class="acc-code">{{ it.codigo }}</td>
+                                <td class="acc-name">{{ it.nombre }}</td>
+                                <td class="acc-value {% if it.saldo < 0 %}negativo{% endif %}">
+                                    {% if it.saldo < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(it.saldo | abs).replace(',', '.') }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            <!-- Utilidad -->
+                            <tr class="row-item">
+                                <td class="acc-code">3605</td>
+                                <td class="acc-name">{{ reporte.nombre_utilidad }}</td>
+                                <td class="acc-value {% if reporte.utilidad_ejercicio < 0 %}negativo{% endif %}">
+                                    {% if reporte.utilidad_ejercicio < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(reporte.utilidad_ejercicio | abs).replace(',', '.') }}
+                                </td>
+                            </tr>
+                            <tr class="row-total">
+                                <td colspan="2">TOTAL PATRIMONIO</td>
+                                <td class="acc-value">
+                                    {% if reporte.total_patrimonio < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(reporte.total_patrimonio | abs).replace(',', '.') }}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="kpi-container">
+                <div class="kpi-card kpi-activos">
+                    <div class="kpi-label">Total Activos</div>
+                    <div class="kpi-value">$ {{ "{:,.0f}".format(reporte.total_activos | abs).replace(',', '.') }}</div>
+                </div>
+                <div class="kpi-card kpi-pasivos">
+                    <div class="kpi-label">Total Pasivos</div>
+                    <div class="kpi-value">$ {{ "{:,.0f}".format(reporte.total_pasivos | abs).replace(',', '.') }}</div>
+                </div>
+                <div class="kpi-card kpi-patrimonio">
+                    <div class="kpi-label">Patrimonio Neto</div>
+                    <div class="kpi-value">$ {{ "{:,.0f}".format(reporte.total_patrimonio | abs).replace(',', '.') }}</div>
+                </div>
+            </div>
+
+            <!-- Grand Total -->
+            <div class="grand-total-bar">
+                <div class="gt-left">
+                    <div class="pulse-circle">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    </div>
+                </div>
+                <div class="gt-center">
+                    <div class="gt-label">Verificación Contable: Total Pasivo + Patrimonio</div>
+                </div>
+                <div class="gt-right">
+                    <span class="gt-val-prefix">COP</span>
+                    <span class="gt-value">$ {{ "{:,.0f}".format(reporte.total_pasivo_patrimonio | abs).replace(',', '.') }}</span>
+                </div>
+            </div>
+
+            <div class="equation-note">
+                Activos = Pasivos + Patrimonio · Ecuación contable verificada
+            </div>
+
+            <!-- Signatures -->
+            <div class="signatures">
+                <div class="sig-col">
+                    <div class="sig-line"></div>
+                    <div class="sig-name">Representante Legal</div>
+                    <div class="sig-meta">C.C. _______________________</div>
+                </div>
+                <div class="sig-col">
+                    <div class="sig-line"></div>
+                    <div class="sig-name">Contador Público</div>
+                    <div class="sig-meta">T.P. _______________________</div>
+                </div>
+            </div>
+        </main>
+
+        <div class="bottom-bar"></div>
+    </div>
+</body>
+</html>
+
+''',
+
     'reports/balance_general_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -1527,7 +2025,7 @@ TEMPLATES_EMPAQUETADOS = {
             </div>
         {% endfor %}
         <div class="item-row utilidad-row">
-            <span>3605 - Utilidad (PÃ©rdida) del Ejercicio</span>
+            <span>3605 - Utilidad (Pérdida) del Ejercicio</span>
             <span>{{ "{:,.2f}".format(reporte.utilidad_ejercicio) }}</span>
         </div>
         <div class="total-row">
@@ -1543,10 +2041,11 @@ TEMPLATES_EMPAQUETADOS = {
 
 </body>
 </html>
+
 ''',
 
     'reports/cartilla_inventario_admin_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -1579,7 +2078,7 @@ TEMPLATES_EMPAQUETADOS = {
         <table>
             <thead>
                 <tr>
-                    <th>CÃ³digo</th>
+                    <th>Código</th>
                     <th>Producto / Servicio</th>
                     <th>Grupo</th>
                     <th class="text-right">Costo Promedio</th>
@@ -1607,10 +2106,11 @@ TEMPLATES_EMPAQUETADOS = {
     {% endif %}
 </body>
 </html>
+
 ''',
 
     'reports/comprobante_egreso_template.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -1787,7 +2287,7 @@ TEMPLATES_EMPAQUETADOS = {
     </div>
 
     <div class="doc-title">
-        <h3>{{ documento.tipo_nombre }} NÂ° {{ documento.consecutivo }}</h3>
+        <h3>{{ documento.tipo_nombre }} N° {{ documento.consecutivo }}</h3>
     </div>
 
     <div class="info-grid">
@@ -1795,7 +2295,7 @@ TEMPLATES_EMPAQUETADOS = {
             <div class="info-cell label">Fecha:</div>
             <div class="info-cell">{{ documento.fecha_emision }}</div>
             <div class="info-cell label">Ciudad:</div>
-            <div class="info-cell">BogotÃ¡ D.C.</div> <!-- Placeholder city -->
+            <div class="info-cell">Bogotá D.C.</div> <!-- Placeholder city -->
         </div>
         <div class="info-row">
             <div class="info-cell label">Pagado a:</div>
@@ -1812,10 +2312,10 @@ TEMPLATES_EMPAQUETADOS = {
     <table class="items-table">
         <thead>
             <tr>
-                <th style="width: 15%;">CÃ³digo</th>
-                <th style="width: 45%;">DescripciÃ³n</th>
-                <th style="width: 20%;" class="text-right">DÃ©bito</th>
-                <th style="width: 20%;" class="text-right">CrÃ©dito</th>
+                <th style="width: 15%;">Código</th>
+                <th style="width: 45%;">Descripción</th>
+                <th style="width: 20%;" class="text-right">Débito</th>
+                <th style="width: 20%;" class="text-right">Crédito</th>
             </tr>
         </thead>
         <tbody>
@@ -1842,27 +2342,325 @@ TEMPLATES_EMPAQUETADOS = {
 
     <div class="signatures">
         <div class="sig-box">
-            <div class="sig-line">ElaborÃ³</div>
+            <div class="sig-line">Elaboró</div>
         </div>
         <div class="sig-box">
-            <div class="sig-line">AprobÃ³</div>
+            <div class="sig-line">Aprobó</div>
         </div>
         <div class="sig-box">
-            <div class="sig-line">RecibÃ­ Conforme</div>
+            <div class="sig-line">Recibí Conforme</div>
             <div style="font-size: 8pt;">C.C.</div>
         </div>
     </div>
 
     <div class="footer">
-        Generado automÃ¡ticamente por Finaxis Cloud
+        Generado automáticamente por Finaxis Cloud
     </div>
 </body>
 
 </html>
+
+''',
+
+    'reports/detalle_facturacion_report.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Detalle de Facturación - PH</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1C3A18;
+            --primary-light: #2D5A27;
+            --accent: #C9A84C;
+            --bg-soft: #F9FAF8;
+            --text-main: #2D3436;
+            --text-light: #636E72;
+            --white: #FFFFFF;
+            --border: #E0E0E0;
+        }
+
+        @page {
+            size: letter;
+            margin: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', sans-serif;
+            color: var(--text-main);
+            background-color: var(--white);
+            -webkit-print-color-adjust: exact;
+        }
+
+        .container {
+            width: 100%;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+
+        /* Encabezado Premium */
+        header {
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .company-info h1 {
+            margin: 0;
+            font-size: 24px;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .company-info p {
+            margin: 4px 0 0 0;
+            font-size: 12px;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .report-title {
+            text-align: right;
+        }
+
+        .report-title h2 {
+            margin: 0;
+            font-size: 18px;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .period-badge {
+            background-color: var(--primary);
+            color: var(--white);
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 8px;
+            display: inline-block;
+        }
+
+        /* Resumen Ejecutivo */
+        .summary-box {
+            background-color: var(--bg-soft);
+            border-left: 5px solid var(--accent);
+            padding: 15px 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .summary-item label {
+            display: block;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: var(--text-light);
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .summary-item span {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        /* Tabla de Detalle */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            table-layout: fixed;
+        }
+
+        thead th {
+            background-color: var(--primary);
+            color: var(--white);
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 12px 10px;
+            text-align: left;
+            letter-spacing: 0.5px;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #FAFAFA;
+        }
+
+        tbody td {
+            padding: 12px 10px;
+            font-size: 11px;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+
+        .col-idx { width: 80px; font-weight: 600; color: var(--primary-light); }
+        .col-date { width: 85px; color: var(--text-light); }
+        .col-tercero { width: auto; }
+        .col-unidad { width: 100px; font-weight: 500; }
+        .col-total { width: 110px; text-align: right; font-weight: 700; color: var(--primary); }
+
+        .tercero-nit {
+            display: block;
+            font-size: 9px;
+            color: var(--text-light);
+            margin-top: 2px;
+        }
+
+        /* Sub-items (Desglose) */
+        .sub-items-container {
+            margin-top: 6px;
+            padding-top: 4px;
+            border-top: 1px dashed #EEE;
+        }
+
+        .sub-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            color: var(--text-light);
+            margin-bottom: 2px;
+            font-style: italic;
+        }
+
+        .sub-item-val {
+            font-weight: 500;
+        }
+
+        /* Footer del Reporte */
+        .footer-totals {
+            margin-top: 30px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .total-card {
+            background-color: var(--primary);
+            color: var(--white);
+            padding: 20px 40px;
+            text-align: right;
+            border-radius: 4px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .total-card label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.8;
+        }
+
+        .total-card h3 {
+            margin: 5px 0 0 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .legal-notice {
+            margin-top: 50px;
+            font-size: 8px;
+            color: var(--text-light);
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .page-number:after { content: counter(page); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="company-info">
+                <h1>{{ empresa.razon_social }}</h1>
+                <p>NIT: {{ empresa.nit }}</p>
+            </div>
+            <div class="report-title">
+                <h2>Detalle de Facturación Masiva</h2>
+                <div class="period-badge">PERIODO: {{ periodo }}</div>
+            </div>
+        </header>
+
+        <div class="summary-box">
+            <div class="summary-item">
+                <label>Total Documentos</label>
+                <span>{{ items|length }}</span>
+            </div>
+            <div class="summary-item">
+                <label>Gran Total Facturado</label>
+                <span>$ {{ "{:,.0f}".format(total_periodo).replace(',', '.') }}</span>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-idx">Nro. Factura</th>
+                    <th class="col-date">Fecha</th>
+                    <th class="col-tercero">Residente / Tercero</th>
+                    <th class="col-unidad">{{ labels.entidad_secundaria_short or 'Unidad' }}</th>
+                    <th class="col-total">Valor Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td class="col-idx"># {{ item.consecutivo }}</td>
+                    <td class="col-date">{{ item.fecha.strftime('%Y-%m-%d') if item.fecha else '-' }}</td>
+                    <td class="col-tercero">
+                        <strong>{{ item.tercero_nombre }}</strong>
+                        <span class="tercero-nit">NIT/CC: {{ item.tercero_nit }}</span>
+                        
+                        {% if item.sub_items %}
+                        <div class="sub-items-container">
+                            {% for sub in item.sub_items %}
+                            <div class="sub-item">
+                                <span>{{ sub.nombre }}</span>
+                                <span class="sub-item-val">$ {{ "{:,.0f}".format(sub.valor).replace(',', '.') }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td class="col-unidad">{{ item.detalle }}</td>
+                    <td class="col-total">$ {{ "{:,.0f}".format(item.total).replace(',', '.') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="footer-totals">
+            <div class="total-card">
+                <label>Total Consolidado</label>
+                <h3>$ {{ "{:,.0f}".format(total_periodo).replace(',', '.') }}</h3>
+            </div>
+        </div>
+
+        <div class="legal-notice">
+            Este documento es un reporte informativo del proceso de facturación masiva.<br>
+            Generado digitalmente por Finaxis Intelligence.
+        </div>
+    </div>
+</body>
+</html>
+
 ''',
 
     'reports/estado_cuenta_cliente_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <title>Estado de Cuenta</title>
@@ -1917,9 +2715,9 @@ TEMPLATES_EMPAQUETADOS = {
                 <td class="text-right">{{ '{:,.2f}'.format(factura.saldo_pendiente) }}</td>
                 <td class="text-center">
                     {% if factura.estado == 'VENCIDA' %}
-                        <span class="vencida">{{ factura.dias_mora }} dÃ­as de mora</span>
+                        <span class="vencida">{{ factura.dias_mora }} días de mora</span>
                     {% else %}
-                        <span class="por-vencer">Vence en {{ factura.dias_para_vencer }} dÃ­as</span>
+                        <span class="por-vencer">Vence en {{ factura.dias_para_vencer }} días</span>
                     {% endif %}
                 </td>
             </tr>
@@ -1937,17 +2735,18 @@ TEMPLATES_EMPAQUETADOS = {
 
     <div class="aging-grid">
         <div class="aging-box"><h4 class="por-vencer">Por Vencer</h4><p>{{ '{:,.2f}'.format(reporte.edades.por_vencer) }}</p></div>
-        <div class="aging-box"><h4 class="vencida">1-30 DÃ­as</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_1_30) }}</p></div>
-        <div class="aging-box"><h4 class="vencida">31-60 DÃ­as</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_31_60) }}</p></div>
-        <div class="aging-box"><h4 class="vencida">61-90 DÃ­as</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_61_90) }}</p></div>
-        <div class="aging-box"><h4 class="vencida">+90 DÃ­as</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_mas_90) }}</p></div>
+        <div class="aging-box"><h4 class="vencida">1-30 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_1_30) }}</p></div>
+        <div class="aging-box"><h4 class="vencida">31-60 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_31_60) }}</p></div>
+        <div class="aging-box"><h4 class="vencida">61-90 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_61_90) }}</p></div>
+        <div class="aging-box"><h4 class="vencida">+90 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_mas_90) }}</p></div>
     </div>
 </body>
 </html>
+
 ''',
 
     'reports/estado_cuenta_proveedor_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <title>Estado de Cuenta de Proveedor</title>
@@ -2002,9 +2801,9 @@ TEMPLATES_EMPAQUETADOS = {
                 <td class="text-right">{{ '{:,.2f}'.format(factura.saldo_pendiente) }}</td>
                 <td class="text-center">
                     {% if factura.estado == 'VENCIDA' %}
-                        <span class="vencida">{{ factura.dias_mora }} dÃ­as de mora</span>
+                        <span class="vencida">{{ factura.dias_mora }} días de mora</span>
                     {% else %}
-                        <span class="por-vencer">Vence en {{ factura.dias_para_vencer }} dÃ­as</span>
+                        <span class="por-vencer">Vence en {{ factura.dias_para_vencer }} días</span>
                     {% endif %}
                 </td>
             </tr>
@@ -2022,17 +2821,18 @@ TEMPLATES_EMPAQUETADOS = {
 
     <div class="aging-grid">
         <div class="aging-box"><h4 class="por-vencer">Por Vencer</h4><p>{{ '{:,.2f}'.format(reporte.edades.por_vencer) }}</p></div>
-        <div class="aging-box"><h4 class="vencida">1-30 DÃ­as</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_1_30) }}</p></div>
-        <div class="aging-box"><h4 class="vencida">31-60 DÃ­as</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_31_60) }}</p></div>
-        <div class="aging-box"><h4 class="vencida">61-90 DÃ­as</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_61_90) }}</p></div>
-        <div class="aging-box"><h4 class="vencida">+90 DÃ­as</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_mas_90) }}</p></div>
+        <div class="aging-box"><h4 class="vencida">1-30 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_1_30) }}</p></div>
+        <div class="aging-box"><h4 class="vencida">31-60 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_31_60) }}</p></div>
+        <div class="aging-box"><h4 class="vencida">61-90 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_61_90) }}</p></div>
+        <div class="aging-box"><h4 class="vencida">+90 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_mas_90) }}</p></div>
     </div>
 </body>
 </html>
+
 ''',
 
     'reports/estado_inventarios_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -2092,13 +2892,13 @@ TEMPLATES_EMPAQUETADOS = {
     </div>
 
     <div class="info">
-        <p><strong>PerÃ­odo Analizado:</strong> {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
+        <p><strong>Período Analizado:</strong> {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
     </div>
 
     <table>
         <thead>
             <tr>
-                <th>CÃ³digo</th>
+                <th>Código</th>
                 <th>Producto</th>
                 <th class="text-right">Cant. Inicial</th>
                 <th class="text-right">Valor Inicial</th>
@@ -2127,7 +2927,7 @@ TEMPLATES_EMPAQUETADOS = {
             </tr>
             {% else %}
             <tr>
-                <td colspan="10" style="text-align:center;">No se encontraron productos con movimiento en el perÃ­odo seleccionado.</td>
+                <td colspan="10" style="text-align:center;">No se encontraron productos con movimiento en el período seleccionado.</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -2147,618 +2947,741 @@ TEMPLATES_EMPAQUETADOS = {
 
 </body>
 </html>
+
 ''',
 
     'reports/estado_resultados_gerencial.html': r'''
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Estado de Resultados Â· {{ empresa_nombre }}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --cream:    #faf8f4;
-      --white:    #ffffff;
-      --warm1:    #f3ede3;
-      --warm2:    #e8dfd0;
-      --ink:      #1a1612;
-      --ink2:     #3d3529;
-      --muted:    #8a7e6f;
-      --rule:     #d9cfc0;
-      --gold:     #b5892a;
-      --gold-lt:  #f5ead4;
-      --green:    #2e7d52;
-      --green-lt: #e6f4ed;
-      --red:      #b53a2a;
-      --red-lt:   #faecea;
-      --blue:     #1e4f87;
-      --blue-lt:  #e8f0fb;
-    }
+    <meta charset="UTF-8">
+    <title>Estado de Resultados Gerencial - {{ empresa_nombre }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Colores Primarios (Sincronizados con Balance Gerencial) */
+            --green-inst: #2D6A26;
+            --green-light: #6BAD5E;
+            --blue-slate: #4A6FA5;
+            --gold-soft: #C9A84C;
+            --green-text: #1A3D17;
+            --blue-text: #1F3560;
+            --gold-text: #6B5010;
+            
+            /* Fondos */
+            --white: #FFFFFF;
+            --bg-ingresos: #F2F8F1;
+            --bg-gastos: #FDF5F5;
+            --bg-resultado: #FBF8F1;
+            --row-ingresos: #EEF5ED;
+            --row-gastos: #F9EEEE;
+            --row-resultado: #FAF5E9;
+            --gray-light: #FAFAFA;
+            --bg-grand-total: #1A3D17; /* Verde oscuro para el total final */
+            
+            /* Texto */
+            --text-main: #1A1A1A;
+            --text-muted: #BBBBBB;
+            --text-labels: #444444;
+            --red-contable: #C0392B;
+        }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        @page {
+            size: A4;
+            margin: 0.5cm; /* Margen mínimo de seguridad */
+        }
 
-    html { scroll-behavior: smooth; }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--white);
+            color: var(--text-main);
+            font-family: 'DM Sans', sans-serif;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
 
-    body {
-      background: var(--cream);
-      color: var(--ink);
-      font-family: 'Lato', sans-serif;
-      font-size: 15px;
-      line-height: 1.6;
-    }
+        .page-container {
+            width: 190mm; /* A4 width (210) - margin (10*2) */
+            min-height: 277mm; 
+            margin: 0 auto;
+            position: relative;
+            background: var(--white);
+            box-sizing: border-box;
+        }
 
-    /* â”€â”€â”€ PAGE WRAPPER â”€â”€â”€ */
-    .page {
-      max-width: 860px;
-      margin: 0 auto;
-      padding: 60px 48px 80px;
-      background: var(--white);
-      box-shadow: 0 2px 40px rgba(90,60,20,.10);
-      min-height: 100vh;
-    }
+        /* Barras Decorativas */
+        .top-bar {
+            height: 4px;
+            background: linear-gradient(90deg, var(--green-inst), var(--green-light), var(--gold-soft), var(--green-light), var(--green-inst));
+            width: 100%;
+        }
 
-    /* â”€â”€â”€ HEADER â”€â”€â”€ */
-    .header {
-      border-top: 4px solid var(--ink);
-      padding-top: 28px;
-      margin-bottom: 40px;
-      position: relative;
-    }
-    .header::after {
-      content: '';
-      display: block;
-      height: 1px;
-      background: var(--rule);
-      margin-top: 28px;
-    }
-    .org-name {
-      font-family: 'Playfair Display', serif;
-      font-size: 26px;
-      font-weight: 700;
-      letter-spacing: .01em;
-      color: var(--ink);
-    }
-    .org-meta {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 11px;
-      color: var(--muted);
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      margin-top: 4px;
-    }
-    .doc-title {
-      margin-top: 16px;
-      font-family: 'Playfair Display', serif;
-      font-size: 20px;
-      font-style: italic;
-      color: var(--gold);
-      font-weight: 400;
-    }
-    .doc-period {
-      font-size: 13px;
-      color: var(--muted);
-      margin-top: 3px;
-      font-family: 'IBM Plex Mono', monospace;
-      letter-spacing: .06em;
-    }
+        .bottom-bar {
+            height: 3px;
+            background: linear-gradient(90deg, var(--green-inst), var(--green-light), var(--gold-soft));
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+        }
 
-    /* â”€â”€â”€ KPI STRIP â”€â”€â”€ */
-    .kpi-strip {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1px;
-      background: var(--rule);
-      border: 1px solid var(--rule);
-      border-radius: 8px;
-      overflow: hidden;
-      margin-bottom: 48px;
-    }
-    .kpi-cell {
-      background: var(--white);
-      padding: 20px 22px;
-    }
-    .kpi-cell:hover { background: var(--warm1); }
-    .kpi-label {
-      font-size: 10px;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      color: var(--muted);
-      font-family: 'IBM Plex Mono', monospace;
-      margin-bottom: 6px;
-    }
-    .kpi-value {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 20px;
-      font-weight: 500;
-    }
-    .kpi-value.green { color: var(--green); }
-    .kpi-value.red   { color: var(--red);   }
-    .kpi-value.gold  { color: var(--gold);  }
-    .kpi-sub {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 3px;
-    }
+        /* Cabecera */
+        header {
+            padding: 30px 56px 20px 56px;
+            display: table;
+            width: 100%;
+            box-sizing: border-box;
+            border-bottom: 1px solid #F0F0F0;
+        }
 
-    /* â”€â”€â”€ SECTION TITLE â”€â”€â”€ */
-    .section-head {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 4px;
-    }
-    .section-head h2 {
-      font-family: 'Playfair Display', serif;
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: .03em;
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-    .section-head h2.income { color: var(--green); }
-    .section-head h2.expense { color: var(--red); }
-    .section-head::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--rule);
-    }
+        .header-left {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: left;
+        }
 
-    /* â”€â”€â”€ TABLE â”€â”€â”€ */
-    .tbl-wrap { margin-bottom: 36px; }
+        .header-right {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: right;
+        }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
+        .badge {
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--green-inst);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .badge::before {
+            content: "•";
+            margin-right: 6px;
+            font-size: 12px;
+        }
 
-    thead tr {
-      border-bottom: 2px solid var(--rule);
-    }
-    thead th {
-      font-size: 10px;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      font-family: 'IBM Plex Mono', monospace;
-      color: var(--muted);
-      font-weight: 500;
-      padding: 8px 10px 10px;
-    }
-    thead th:first-child { text-align: left; padding-left: 0; }
-    thead th:not(:first-child) { text-align: right; }
+        .company-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 38px;
+            font-weight: 700;
+            line-height: 1;
+            margin: 0;
+            color: var(--text-main);
+        }
+        .company-name span { color: var(--green-inst); }
 
-    tbody tr {
-      border-bottom: 1px solid var(--warm1);
-      transition: background .12s;
-    }
-    tbody tr:hover { background: var(--warm1); }
+        .company-nit {
+            font-size: 10px;
+            color: var(--text-muted);
+            letter-spacing: 1.5px;
+            margin-top: 4px;
+            font-weight: 400;
+        }
 
-    td {
-      padding: 11px 10px;
-      font-size: 14px;
-      vertical-align: middle;
-    }
-    td:first-child {
-      padding-left: 0;
-      color: var(--ink2);
-      font-weight: 400;
-    }
-    td:not(:first-child) {
-      text-align: right;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 13px;
-      color: var(--ink);
-    }
+        .doc-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            font-style: italic;
+            color: #555555;
+            margin-bottom: 10px;
+        }
 
-    .code-cell {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 11px;
-      color: var(--muted);
-      padding-right: 16px;
-    }
+        .date-box {
+            display: inline-block;
+            border: 1.5px solid var(--green-inst);
+            border-radius: 4px;
+            padding: 6px 14px;
+            text-align: center;
+        }
 
-    /* pct bar */
-    .bar-wrap { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
-    .bar-track {
-      width: 80px; height: 5px;
-      background: var(--warm2);
-      border-radius: 3px;
-      overflow: hidden;
-    }
-    .bar-fill { height: 100%; border-radius: 3px; }
+        .date-label {
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--green-inst);
+            margin-bottom: 1px;
+        }
 
-    /* subtotal / total rows */
-    tr.subtotal td {
-      border-top: 1.5px solid var(--rule);
-      border-bottom: 1.5px solid var(--rule);
-      font-weight: 700;
-      font-size: 14px;
-      background: var(--warm1);
-    }
-    tr.subtotal td:first-child { font-family: 'Lato', sans-serif; }
-    tr.subtotal td:not(:first-child) { font-family: 'IBM Plex Mono', monospace; }
+        .date-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
 
-    tr.grand-total td {
-      border-top: 3px double var(--ink);
-      padding-top: 16px;
-      padding-bottom: 16px;
-      font-weight: 700;
-      font-size: 15px;
-    }
-    tr.grand-total td:first-child {
-      font-family: 'Playfair Display', serif;
-      font-size: 16px;
-    }
+        /* Cuerpo */
+        main {
+            padding: 20px 56px;
+        }
 
-    .loss { color: var(--red) !important; }
-    .profit { color: var(--green) !important; }
+        /* Tarjetas de Sección */
+        .section-card {
+            border: 1.5px solid #E4E4E4;
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--white);
+            margin-bottom: 15px;
+        }
 
-    /* badge */
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 20px;
-      font-size: 10px;
-      font-weight: 700;
-      font-family: 'IBM Plex Mono', monospace;
-      letter-spacing: .05em;
-      margin-left: 6px;
-      vertical-align: middle;
-    }
-    .badge.ing { background: var(--green-lt); color: var(--green); }
-    .badge.gasto { background: var(--red-lt); color: var(--red); }
-    .badge.info { background: var(--blue-lt); color: var(--blue); }
+        .card-header {
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1.5px solid #E4E4E4;
+        }
+        .card-header.ingresos { background: var(--bg-ingresos); }
+        .card-header.gastos { background: var(--bg-gastos); }
+        .card-header.resultado { background: var(--bg-resultado); }
 
-    /* group header inside tbody */
-    tr.group-row td {
-      font-size: 11px;
-      letter-spacing: .09em;
-      text-transform: uppercase;
-      color: var(--muted);
-      font-family: 'IBM Plex Mono', monospace;
-      padding: 14px 0 4px;
-      border-bottom: none;
-      background: transparent;
-    }
-    tr.group-row:hover { background: transparent; }
+        .header-stripe {
+            width: 3px;
+            height: 16px;
+            border-radius: 2px;
+            margin-right: 10px;
+        }
+        .ingresos .header-stripe { background: var(--green-inst); }
+        .gastos .header-stripe { background: var(--red-contable); }
+        .resultado .header-stripe { background: var(--gold-soft); }
 
-    /* â”€â”€â”€ UTILIDAD BLOCK â”€â”€â”€ */
-    .result-block {
-      margin-top: 8px;
-      border-radius: 10px;
-      padding: 24px 28px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-      flex-wrap: wrap;
-    }
-    .result-block.loss { background: var(--red-lt); border: 1.5px solid #e8bdb8; }
-    .result-block.profit { background: var(--green-lt); border: 1.5px solid #a8d9bb; }
-    .result-label {
-      font-family: 'Playfair Display', serif;
-      font-size: 18px;
-      font-weight: 700;
-    }
-    .result-label.loss  { color: var(--red); }
-    .result-label.profit { color: var(--green); }
-    .result-period { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .result-value {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 32px;
-      font-weight: 500;
-    }
-    .result-value.loss  { color: var(--red); }
-    .result-value.profit { color: var(--green); }
+        .card-title {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-labels);
+        }
 
-    /* â”€â”€â”€ DONUT CHART â”€â”€â”€ */
-    .charts-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      margin: 44px 0;
-    }
-    .chart-card {
-      border: 1px solid var(--rule);
-      border-radius: 10px;
-      padding: 22px;
-      background: var(--white);
-    }
-    .chart-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--ink);
-      margin-bottom: 16px;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-    }
-    .donut-wrap { display: flex; align-items: center; gap: 16px; }
-    svg.donut { flex-shrink: 0; }
-    .legend-list { font-size: 12px; color: var(--ink2); }
-    .legend-list li {
-      display: flex; align-items: center; gap: 7px;
-      margin-bottom: 7px; list-style: none;
-    }
-    .leg-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink:0; }
-    .leg-name { flex: 1; }
-    .leg-pct { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+        /* Tablas */
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
 
-    /* â”€â”€â”€ BAR CHART â”€â”€â”€ */
-    .hbar-list { list-style: none; }
-    .hbar-item { margin-bottom: 10px; }
-    .hbar-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
-    .hbar-name { font-family: 'Lato', sans-serif; color: var(--ink2); }
-    .hbar-val  { font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
-    .hbar-track { height: 8px; background: var(--warm2); border-radius: 4px; overflow: hidden; }
-    .hbar-fill  { height: 100%; border-radius: 4px; }
+        .sub-header {
+            background: var(--gray-light);
+            border-bottom: 1px solid #F0F0F0;
+        }
+        .sub-header td {
+            padding: 4px 16px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #AAAAAA;
+        }
 
-    /* â”€â”€â”€ FOOTER â”€â”€â”€ */
-    .footer {
-      margin-top: 60px;
-      padding-top: 20px;
-      border-top: 1px solid var(--rule);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 11px;
-      color: var(--muted);
-      font-family: 'IBM Plex Mono', monospace;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
+        .row-item td {
+            padding: 6px 16px;
+            border-bottom: 1px solid #F8F8F8;
+            vertical-align: middle;
+        }
+        .acc-code { font-size: 9px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; width: 40px; }
+        .acc-name { font-size: 12px; color: var(--text-labels); padding-right: 10px; }
+        .acc-value { 
+            font-size: 12px; 
+            font-weight: 500; 
+            text-align: right; 
+            font-variant-numeric: tabular-nums; 
+            white-space: nowrap;
+            min-width: 100px;
+        }
 
-    /* â”€â”€â”€ PRINT â”€â”€â”€ */
-    @media print {
-      body { background: #fff; }
-      .page { box-shadow: none; padding: 30px 30px 50px; }
-      .kpi-cell:hover, tbody tr:hover { background: none; }
-    }
+        .negativo { color: var(--red-contable) !important; }
 
-    @media (max-width: 640px) {
-      .page { padding: 30px 20px 50px; }
-      .kpi-strip { grid-template-columns: 1fr; }
-      .charts-row { grid-template-columns: 1fr; }
-      .result-value { font-size: 24px; }
-    }
+        .row-subtotal td { padding: 8px 16px; font-weight: 700; font-size: 13px; }
+        .ingresos .row-subtotal { background: #EEF5ED; border-top: 1.5px solid #D8E8D6; color: var(--green-inst); }
+        .gastos .row-subtotal { background: #F9EEEE; border-top: 1.5px solid #E8D6D6; color: var(--red-contable); }
 
-    /* â”€â”€â”€ ANIMATIONS â”€â”€â”€ */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(18px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .page > * {
-      animation: fadeUp .5s ease both;
-    }
-    .page > *:nth-child(1) { animation-delay: .05s; }
-    .page > *:nth-child(2) { animation-delay: .12s; }
-    .page > *:nth-child(3) { animation-delay: .18s; }
-    .page > *:nth-child(4) { animation-delay: .24s; }
-    .page > *:nth-child(5) { animation-delay: .30s; }
-    .page > *:nth-child(6) { animation-delay: .36s; }
-    .page > *:nth-child(7) { animation-delay: .42s; }
-  </style>
+        .row-total td { padding: 10px 16px; font-weight: 700; font-size: 13.5px; }
+        .ingresos .row-total { background: var(--row-ingresos); border-top: 2px solid var(--green-inst); color: var(--green-text); }
+        .gastos .row-total { background: var(--row-gastos); border-top: 2px solid var(--red-contable); color: var(--red-contable); }
+        .resultado .row-total { background: var(--row-resultado); border-top: 2px solid var(--gold-soft); color: var(--gold-text); }
+
+        /* KPIs */
+        .kpi-container {
+            display: table;
+            width: 100%;
+            border-spacing: 15px 0;
+            margin-top: 5px;
+            margin-left: -15px;
+        }
+
+        .kpi-card {
+            display: table-cell;
+            width: 33.33%;
+            border: 1.5px solid #E4E4E4;
+            border-radius: 8px;
+            padding: 15px;
+            position: relative;
+            background: var(--white);
+        }
+        .kpi-card::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 15%;
+            bottom: 15%;
+            width: 4px;
+            border-radius: 0 2px 2px 0;
+        }
+        .kpi-ingresos::before { background: var(--green-inst); }
+        .kpi-gastos::before { background: var(--red-contable); }
+        .kpi-resultado::before { background: var(--gold-soft); }
+
+        .kpi-label {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .kpi-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        /* Grand Total */
+        .grand-total-bar {
+            background: var(--bg-grand-total);
+            border: 2px solid var(--green-inst);
+            border-radius: 8px;
+            padding: 15px 25px;
+            margin-top: 15px;
+            display: table;
+            width: 100%;
+            box-sizing: border-box;
+            color: white;
+        }
+
+        .gt-left {
+            display: table-cell;
+            vertical-align: middle;
+            width: 40px;
+        }
+
+        .pulse-circle {
+            width: 32px;
+            height: 32px;
+            background: var(--gold-soft);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--green-text);
+        }
+
+        .gt-center {
+            display: table-cell;
+            vertical-align: middle;
+            padding-left: 15px;
+        }
+
+        .gt-label {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 16px;
+            font-style: italic;
+            font-weight: 600;
+        }
+
+        .gt-right {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: right;
+        }
+
+        .gt-val-prefix {
+            font-size: 11px;
+            color: #CBD5E1;
+            margin-right: 5px;
+        }
+
+        .gt-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--gold-soft);
+            white-space: nowrap;
+        }
+
+        /* Gráficos */
+        .charts-container {
+            display: table;
+            width: 100%;
+            margin-top: 25px;
+            page-break-inside: avoid;
+        }
+
+        .chart-box {
+            display: table-cell;
+            width: 50%;
+            padding: 15px;
+            border: 1px solid #E4E4E4;
+            border-radius: 8px;
+            vertical-align: top;
+            background: white;
+        }
+
+        .chart-box:first-child { border-right: none; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+        .chart-box:last-child { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+
+        .chart-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-labels);
+            margin-bottom: 15px;
+            border-bottom: 1px solid #F0F0F0;
+            padding-bottom: 5px;
+        }
+
+        /* Donut Chart */
+        .donut-wrap {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .donut-legend {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 10px;
+        }
+        .legend-item {
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+        }
+        .swatch {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+            margin-right: 6px;
+        }
+
+        /* Bar Chart */
+        .hbar-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .hbar-item {
+            margin-bottom: 10px;
+        }
+        .hbar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            color: var(--text-labels);
+            margin-bottom: 3px;
+        }
+        .hbar-name { font-weight: 600; }
+        .hbar-track {
+            height: 6px;
+            background: #F0F0F0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .hbar-fill {
+            height: 100%;
+            border-radius: 3px;
+        }
+
+        /* Firmas */
+        .signatures {
+            margin-top: 30px;
+            display: table;
+            width: 100%;
+        }
+
+        .sig-col {
+            display: table-cell;
+            width: 50%;
+            text-align: center;
+            padding: 0 40px;
+        }
+
+        .sig-line {
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent, var(--gold-soft), transparent);
+            width: 80%;
+            margin: 0 auto 10px auto;
+        }
+
+        .sig-name {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-main);
+        }
+
+        .sig-meta {
+            font-size: 9px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+    </style>
 </head>
 <body>
-<div class="page">
-
-  <!-- HEADER -->
-  <header class="header">
-    <div class="org-name">{{ empresa_nombre }}</div>
-    <div class="org-meta">NIT: {{ empresa_nit }}</div>
-    <div class="doc-title">Estado de Resultados Gerencial</div>
-    <div class="doc-period">PerÃ­odo: {{ fecha_inicio }} â€” {{ fecha_fin }}</div>
-  </header>
-
-  <!-- KPIs -->
-  <div class="kpi-strip">
-    <div class="kpi-cell">
-      <div class="kpi-label">Total Ingresos</div>
-      <div class="kpi-value green">${{ "{:,.0f}".format(report_data.totales.total_ingresos).replace(',', '.') }}</div>
-      <div class="kpi-sub">Ingresos operacionales</div>
-    </div>
-    <div class="kpi-cell">
-      <div class="kpi-label">Total Gastos</div>
-      <div class="kpi-value red">${{ "{:,.0f}".format(report_data.totales.total_gastos).replace(',', '.') }}</div>
-      <div class="kpi-sub">Gastos operacionales</div>
-    </div>
-    <div class="kpi-cell">
-      <div class="kpi-label">Resultado del PerÃ­odo</div>
-      <div class="kpi-value {% if report_data.totales.utilidad_neta < 0 %}red{% else %}gold{% endif %}">
-        {% if report_data.totales.utilidad_neta < 0 %}âˆ’{% endif %}${{ "{:,.0f}".format(report_data.totales.utilidad_neta | abs).replace(',', '.') }}
-      </div>
-      <div class="kpi-sub">{% if report_data.totales.utilidad_neta < 0 %}DÃ©ficit{% else %}SuperÃ¡vit{% endif %} operacional</div>
-    </div>
-  </div>
-
-  <!-- INGRESOS -->
-  <div class="tbl-wrap">
-    <div class="section-head"><h2 class="income">Ingresos Operacionales</h2></div>
-    <table>
-      <thead>
-        <tr>
-          <th>Cuenta</th>
-          <th>DescripciÃ³n</th>
-          <th>Valor</th>
-          <th>% s/Total Ing.</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for ing in report_data.ingresos %}
-        <tr>
-          <td class="code-cell">{{ ing.codigo }}</td>
-          <td>{{ ing.nombre }} {% if ing.is_ingreso_principal %}<span class="badge ing">Principal</span>{% endif %}</td>
-          <td>${{ "{:,.0f}".format(ing.saldo).replace(',', '.') }}</td>
-          <td>
-            <div class="bar-wrap">
-              <div class="bar-track"><div class="bar-fill" style="width:{{ ing.porcentaje | round(1) }}%; background:#2e7d52;"></div></div>
-              <span>{{ "{:,.1f}".format(ing.porcentaje).replace('.', ',') }}%</span>
+    <div class="page-container">
+        <div class="top-bar"></div>
+        
+        <header>
+            <div class="header-left">
+                <span class="badge">Informe Financiero Oficial</span>
+                <h1 class="company-name">Verduras <span>La 21</span></h1>
+                <div class="company-nit">NIT {{ empresa_nit or '942.807.497' }}</div>
             </div>
-          </td>
-        </tr>
-        {% endfor %}
-        <tr class="subtotal">
-          <td colspan="2"><strong>TOTAL INGRESOS OPERACIONALES</strong></td>
-          <td><strong>${{ "{:,.0f}".format(report_data.totales.total_ingresos).replace(',', '.') }}</strong></td>
-          <td></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- GASTOS -->
-  <div class="tbl-wrap">
-    <div class="section-head"><h2 class="expense">Gastos Operacionales</h2></div>
-    <table>
-      <thead>
-        <tr>
-          <th>Cuenta</th>
-          <th>DescripciÃ³n</th>
-          <th>Valor</th>
-          <th>% s/Total Gtos.</th>
-        </tr>
-      </thead>
-      <tbody>
-
-        <!-- NÃ“MINA -->
-        {% if report_data.gastos_nomina %}
-        <tr class="group-row"><td colspan="4">â–¸ NÃ³mina y Carga Prestacional</td></tr>
-        {% for gasto in report_data.gastos_nomina %}
-        <tr>
-          <td class="code-cell">{{ gasto.codigo }}</td>
-          <td>{{ gasto.nombre }} {% if gasto.is_mayor_gasto %}<span class="badge gasto">Mayor gasto</span>{% endif %}</td>
-          <td>${{ "{:,.0f}".format(gasto.saldo).replace(',', '.') }}</td>
-          <td>
-            <div class="bar-wrap">
-              <div class="bar-track"><div class="bar-fill" style="width:{{ gasto.porcentaje | round(1) }}%; background:#b53a2a;"></div></div>
-              <span>{{ "{:,.1f}".format(gasto.porcentaje).replace('.', ',') }}%</span>
+            <div class="header-right">
+                <div class="doc-title">Estado de Resultados Gerencial</div>
+                <div class="date-box">
+                    <div class="date-label">Período</div>
+                    <div class="date-value">{{ fecha_inicio }} — {{ fecha_fin }}</div>
+                </div>
+                <div style="font-size: 9px; color: #BBBBBB; margin-top: 8px; letter-spacing: 1px;">Cifras en Pesos Colombianos (COP)</div>
             </div>
-          </td>
-        </tr>
-        {% endfor %}
-        {% endif %}
+        </header>
 
-        <!-- OPERATIVOS -->
-        {% if report_data.gastos_operativos %}
-        <tr class="group-row"><td colspan="4">â–¸ Gastos Operativos</td></tr>
-        {% for gasto in report_data.gastos_operativos %}
-        <tr>
-          <td class="code-cell">{{ gasto.codigo }}</td>
-          <td>{{ gasto.nombre }} {% if gasto.is_mayor_gasto %}<span class="badge gasto">Mayor gasto</span>{% endif %}</td>
-          <td>${{ "{:,.0f}".format(gasto.saldo).replace(',', '.') }}</td>
-          <td>
-            <div class="bar-wrap">
-              <div class="bar-track"><div class="bar-fill" style="width:{{ gasto.porcentaje | round(1) }}%; background:#c05a45;"></div></div>
-              <span>{{ "{:,.1f}".format(gasto.porcentaje).replace('.', ',') }}%</span>
+        <main>
+            <!-- INGRESOS OPERACIONALES -->
+            <div class="section-card">
+                <div class="card-header ingresos">
+                    <div class="header-stripe"></div>
+                    <span class="card-title">Ingresos Operacionales</span>
+                </div>
+                <table class="report-table ingresos">
+                    <tr class="sub-header">
+                        <td colspan="3">▸ Detalle de Ingresos</td>
+                    </tr>
+                    {% for ing in report_data.ingresos %}
+                    <tr class="row-item">
+                        <td class="acc-code">{{ ing.codigo }}</td>
+                        <td class="acc-name">{{ ing.nombre }}</td>
+                        <td class="acc-value">
+                            $ {{ "{:,.0f}".format(ing.saldo).replace(',', '.') }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="row-total">
+                        <td colspan="2">TOTAL INGRESOS OPERACIONALES</td>
+                        <td class="acc-value">
+                            $ {{ "{:,.0f}".format(report_data.totales.total_ingresos).replace(',', '.') }}
+                        </td>
+                    </tr>
+                </table>
             </div>
-          </td>
-        </tr>
-        {% endfor %}
-        {% endif %}
 
-        <!-- GENERALES -->
-        {% if report_data.gastos_generales %}
-        <tr class="group-row"><td colspan="4">â–¸ Gastos Generales y Tributarios</td></tr>
-        {% for gasto in report_data.gastos_generales %}
-        <tr>
-          <td class="code-cell">{{ gasto.codigo }}</td>
-          <td>{{ gasto.nombre }} {% if gasto.is_mayor_gasto %}<span class="badge gasto">Mayor gasto</span>{% endif %}</td>
-          <td>${{ "{:,.0f}".format(gasto.saldo).replace(',', '.') }}</td>
-          <td>
-            <div class="bar-wrap">
-              <div class="bar-track"><div class="bar-fill" style="width:{{ gasto.porcentaje | round(1) }}%; background:#d8958a;"></div></div>
-              <span>{{ "{:,.1f}".format(gasto.porcentaje).replace('.', ',') }}%</span>
+            <!-- COSTO DE VENTAS -->
+            <div class="section-card">
+                <div class="card-header gastos">
+                    <div class="header-stripe" style="background: var(--gold-soft);"></div>
+                    <span class="card-title">Costo de Ventas</span>
+                </div>
+                <table class="report-table gastos">
+                    <tr class="sub-header">
+                        <td colspan="3">▸ Costos Directos</td>
+                    </tr>
+                    {% for costo in report_data.costos %}
+                    <tr class="row-item">
+                        <td class="acc-code">{{ costo.codigo }}</td>
+                        <td class="acc-name">{{ costo.nombre }}</td>
+                        <td class="acc-value">
+                            $ {{ "{:,.0f}".format(costo.saldo).replace(',', '.') }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="row-total" style="background: #FBF8F1; color: var(--gold-text); border-top-color: var(--gold-soft);">
+                        <td colspan="2">TOTAL COSTO DE VENTAS</td>
+                        <td class="acc-value">
+                            $ {{ "{:,.0f}".format(report_data.totales.total_costos).replace(',', '.') }}
+                        </td>
+                    </tr>
+                </table>
             </div>
-          </td>
-        </tr>
-        {% endfor %}
-        {% endif %}
 
-        <tr class="subtotal">
-          <td colspan="2"><strong>TOTAL GASTOS OPERACIONALES</strong></td>
-          <td><strong>${{ "{:,.0f}".format(report_data.totales.total_gastos).replace(',', '.') }}</strong></td>
-          <td></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+            <!-- RESULTADO BRUTO -->
+            <div class="section-card" style="border: 2px solid var(--green-inst); background: var(--bg-ingresos);">
+                <table class="report-table">
+                    <tr class="row-total" style="font-size: 16px; color: var(--green-inst);">
+                        <td style="padding: 12px 16px;">UTILIDAD BRUTA</td>
+                        <td class="acc-value" style="padding: 12px 16px;">
+                            $ {{ "{:,.0f}".format(report_data.totales.utilidad_bruta).replace(',', '.') }}
+                            <div style="font-size: 10px; font-weight: 400; color: var(--green-light);">MARGEN BRUTO: {{ "{:.1f}%".format(report_data.totales.porcentaje_margen_bruto) }}</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
 
-  <!-- RESULTADO -->
-  <div class="result-block {% if report_data.totales.utilidad_neta < 0 %}loss{% else %}profit{% endif %}">
-    <div>
-      <div class="result-label {% if report_data.totales.utilidad_neta < 0 %}loss{% else %}profit{% endif %}">Utilidad (PÃ©rdida) del Ejercicio</div>
-      <div class="result-period">PerÃ­odo {{ fecha_inicio }} â€“ {{ fecha_fin }}</div>
+            <!-- GASTOS OPERACIONALES -->
+            <div class="section-card">
+                <div class="card-header gastos">
+                    <div class="header-stripe"></div>
+                    <span class="card-title">Gastos Operacionales</span>
+                </div>
+                <table class="report-table gastos">
+                    {% if report_data.gastos_nomina %}
+                    <tr class="sub-header">
+                        <td colspan="3">▸ Nómina y Carga Prestacional</td>
+                    </tr>
+                    {% for gasto in report_data.gastos_nomina %}
+                    <tr class="row-item">
+                        <td class="acc-code">{{ gasto.codigo }}</td>
+                        <td class="acc-name">{{ gasto.nombre }}</td>
+                        <td class="acc-value">$ {{ "{:,.0f}".format(gasto.saldo).replace(',', '.') }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% endif %}
+
+                    {% if report_data.gastos_operativos %}
+                    <tr class="sub-header">
+                        <td colspan="3">▸ Gastos Operativos</td>
+                    </tr>
+                    {% for gasto in report_data.gastos_operativos %}
+                    <tr class="row-item">
+                        <td class="acc-code">{{ gasto.codigo }}</td>
+                        <td class="acc-name">{{ gasto.nombre }}</td>
+                        <td class="acc-value">$ {{ "{:,.0f}".format(gasto.saldo).replace(',', '.') }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% endif %}
+
+                    <tr class="row-total">
+                        <td colspan="2">TOTAL GASTOS ADMINISTRATIVOS Y VENTAS</td>
+                        <td class="acc-value">
+                            $ {{ "{:,.0f}".format(report_data.totales.total_gastos).replace(',', '.') }}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- KPIs -->
+            <div class="kpi-container">
+                <div class="kpi-card kpi-ingresos">
+                    <div class="kpi-label">Margen Bruto</div>
+                    <div class="kpi-value">{{ "{:.1f}%".format(report_data.totales.porcentaje_margen_bruto) }}</div>
+                </div>
+                <div class="kpi-card kpi-gastos">
+                    <div class="kpi-label">Margen Neto</div>
+                    <div class="kpi-value">{{ "{:.1f}%".format(report_data.totales.porcentaje_margen_neto) }}</div>
+                </div>
+                <div class="kpi-card kpi-resultado">
+                    <div class="kpi-label">Utilidad Ejercicio</div>
+                    <div class="kpi-value {% if report_data.totales.utilidad_neta < 0 %}negativo{% endif %}">
+                        {% if report_data.totales.utilidad_neta < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(report_data.totales.utilidad_neta | abs).replace(',', '.') }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grand Total Bar -->
+            <div class="grand-total-bar">
+                <div class="gt-left">
+                    <div class="pulse-circle">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    </div>
+                </div>
+                <div class="gt-center">
+                    <div class="gt-label">Resultado Final del Período</div>
+                </div>
+                <div class="gt-right">
+                    <span class="gt-val-prefix">COP</span>
+                    <span class="gt-value">{% if report_data.totales.utilidad_neta < 0 %}$ -{% else %}$ {% endif %}{{ "{:,.0f}".format(report_data.totales.utilidad_neta | abs).replace(',', '.') }}</span>
+                </div>
+            </div>
+
+            <!-- ANÁLISIS VISUAL -->
+            <div class="charts-container">
+                <!-- Composición de Ingresos -->
+                <div class="chart-box">
+                    <div class="chart-title">Composición de Ingresos</div>
+                    <div class="donut-wrap">
+                        <div style="width: 80px;">
+                            <svg viewBox="0 0 36 36" style="width: 80px; height: 80px;">
+                                <circle r="15.9155" cx="18" cy="18" fill="none" stroke="#F0F0F0" stroke-width="4"></circle>
+                                {% set ns = namespace(offset=25) %}
+                                {% set colors = ['#2D6A26', '#6BAD5E', '#9ECFB5', '#C8E6D6', '#E0F0E6'] %}
+                                {% for ing in report_data.ingresos[:5] %}
+                                    {% if ing.porcentaje > 0 %}
+                                    <circle r="15.9155" cx="18" cy="18" fill="none" 
+                                            stroke="{{ colors[loop.index0] }}" 
+                                            stroke-width="5" 
+                                            stroke-dasharray="{{ ing.porcentaje }} {{ 100 - ing.porcentaje }}" 
+                                            stroke-dashoffset="{{ ns.offset }}"></circle>
+                                    {% set ns.offset = ns.offset - ing.porcentaje %}
+                                    {% endif %}
+                                {% endfor %}
+                            </svg>
+                        </div>
+                        <ul class="donut-legend">
+                            {% for ing in report_data.ingresos[:5] %}
+                            <li class="legend-item">
+                                <div class="swatch" style="background: {{ colors[loop.index0] }}"></div>
+                                <span style="flex: 1;">{{ ing.nombre[:25] }}...</span>
+                                <span style="font-weight: 700; margin-left: 8px;">{{ "{:.1f}%".format(ing.porcentaje) }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Top Impactos -->
+                <div class="chart-box">
+                    <div class="chart-title">Top 5 Rubros de Impacto</div>
+                    <ul class="hbar-list">
+                        {% set bar_colors = ['#C0392B', '#E67E22', '#F39C12', '#D35400', '#2D6A26'] %}
+                        {% for impacto in report_data.top_10_impactos[:5] %}
+                        <li class="hbar-item">
+                            <div class="hbar-label">
+                                <span class="hbar-name">{{ impacto.nombre[:30] }}</span>
+                                <span style="font-weight: 700;">$ {{ "{:,.0f}".format(impacto.saldo).replace(',', '.') }}</span>
+                            </div>
+                            <div class="hbar-track">
+                                <div class="hbar-fill" style="width: {{ impacto.porcentaje }}%; background: {{ bar_colors[loop.index0] }}"></div>
+                            </div>
+                            <div style="font-size: 7px; text-align: right; color: #999; margin-top: 1px;">Impacto: {{ "{:.1f}%".format(impacto.porcentaje) }}</div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Signatures -->
+            <div class="signatures">
+                <div class="sig-col">
+                    <div class="sig-line"></div>
+                    <div class="sig-name">Representante Legal</div>
+                    <div class="sig-meta">C.C. _______________________</div>
+                </div>
+                <div class="sig-col">
+                    <div class="sig-line"></div>
+                    <div class="sig-name">Contador Público</div>
+                    <div class="sig-meta">T.P. _______________________</div>
+                </div>
+            </div>
+        </main>
+
+        <div class="bottom-bar"></div>
     </div>
-    <div class="result-value {% if report_data.totales.utilidad_neta < 0 %}loss{% else %}profit{% endif %}">
-      {% if report_data.totales.utilidad_neta < 0 %}âˆ’{% endif %}${{ "{:,.0f}".format(report_data.totales.utilidad_neta | abs).replace(',', '.') }}
-    </div>
-  </div>
-
-  <!-- GRÃFICAS -->
-  <div class="charts-row">
-
-    <!-- Donut ingresos -->
-    <div class="chart-card">
-      <div class="chart-title">ComposiciÃ³n de Ingresos</div>
-      <div class="donut-wrap">
-        <svg class="donut" width="90" height="90" viewBox="0 0 36 36">
-          <circle r="15.9155" cx="18" cy="18" fill="none" stroke="#e8dfd0" stroke-width="3.8"/>
-          
-          {% set ns = namespace(offset=25) %}
-          {% set colors = ['#2e7d52', '#5aab82', '#9ecfb5', '#c8e6d6', '#e0f0e6'] %}
-          
-          {% for ing in report_data.ingresos[:5] %}
-          {% set pct = ing.porcentaje %}
-          {% if pct > 0 %}
-          <circle r="15.9155" cx="18" cy="18" fill="none" stroke="{{ colors[loop.index0] }}" stroke-width="3.8"
-            stroke-dasharray="{{ pct | round(1) }} {{ 100 - (pct | round(1)) }}" stroke-dashoffset="{{ ns.offset }}" stroke-linecap="round"/>
-          {% set ns.offset = ns.offset - pct %}
-          {% endif %}
-          {% endfor %}
-        </svg>
-        <ul class="legend-list">
-          {% for ing in report_data.ingresos[:5] %}
-          <li><div class="leg-swatch" style="background:{{ colors[loop.index0] }}"></div><span class="leg-name">{{ ing.nombre }}</span><span class="leg-pct">{{ "{:,.1f}".format(ing.porcentaje).replace('.', ',') }}%</span></li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
-
-    <!-- Barras top 5 gastos -->
-    <div class="chart-card">
-      <div class="chart-title">Top 5 Rubros de Gasto</div>
-      <ul class="hbar-list">
-        {% for gasto in report_data.top_5_gastos %}
-        <li class="hbar-item">
-          <div class="hbar-meta"><span class="hbar-name">{{ gasto.nombre }}</span><span class="hbar-val">${{ "{:,.0f}".format(gasto.saldo).replace(',', '.') }} Â· {{ "{:,.1f}".format(gasto.porcentaje).replace('.', ',') }}%</span></div>
-          <div class="hbar-track"><div class="hbar-fill" style="width:{{ gasto.porcentaje | round(1) }}%; background:{% if loop.index0 == 0 %}#b53a2a{% elif loop.index0 == 1 %}#c05a45{% else %}#1e4f87{% endif %};"></div></div>
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-  </div>
-
-  <!-- FOOTER -->
-  <footer class="footer">
-    <span>Estado de Resultados Gerencial Â· {{ fecha_inicio }} â€“ {{ fecha_fin }} Â· {{ empresa_nombre }} Â· NIT {{ empresa_nit }}</span>
-    <span>Generado automÃ¡ticamente Â· Solo lectura</span>
-  </footer>
-
-</div>
 </body>
 </html>
 
 ''',
 
     'reports/exito_fe_template.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
     <meta charset="UTF-8">
-    <title>Factura ElectrÃ³nica de Venta - Estilo Exito</title>
+    <title>Factura Electrónica de Venta - Estilo Exito</title>
     <style>
         /* RESET & BASE */
         * {
@@ -2820,7 +3743,7 @@ TEMPLATES_EMPAQUETADOS = {
             margin-bottom: 2px;
         }
 
-        /* SECCIÃ“N TIPO DOCUMENTO Y NÃšMERO (IZQUIERDA) */
+        /* SECCIÓN TIPO DOCUMENTO Y NÚMERO (IZQUIERDA) */
         .doc-info {
             position: absolute;
             top: 0;
@@ -2844,7 +3767,7 @@ TEMPLATES_EMPAQUETADOS = {
             margin-top: 5px;
         }
 
-        /* CLIENTE Y DIRECCIÃ“N */
+        /* CLIENTE Y DIRECCIÓN */
         .client-section {
             width: 100%;
             border-top: 1px solid #000;
@@ -2897,7 +3820,7 @@ TEMPLATES_EMPAQUETADOS = {
             border-bottom: 1px solid #eee;
         }
 
-        /* SECCIÃ“N TOTALES E IMPUESTOS */
+        /* SECCIÓN TOTALES E IMPUESTOS */
         .summary-section {
             display: table;
             width: 100%;
@@ -2938,7 +3861,7 @@ TEMPLATES_EMPAQUETADOS = {
             font-size: 12px;
         }
 
-        /* PIE DE PÃGINA (DIAN) */
+        /* PIE DE PÁGINA (DIAN) */
         .dian-section {
             margin-top: 20px;
             padding: 10px;
@@ -2976,7 +3899,7 @@ TEMPLATES_EMPAQUETADOS = {
         <div class="company-nit">NIT: {{empresa.nit}}</div>
         <div class="company-details">Responsable de IVA</div>
         <div class="company-details">{{empresa.direccion}} - {{empresa.ciudad}} - Colombia</div>
-        <div class="company-details">TelÃ©fono - {{empresa.telefono}}</div>
+        <div class="company-details">Teléfono - {{empresa.telefono}}</div>
         <div class="company-details">E-mail: {{empresa.email}}</div>
         <div class="company-details text-bold">REPRESENTACION GRAFICA DE FACTURA ELECTRONICA</div>
     </div>
@@ -2985,8 +3908,8 @@ TEMPLATES_EMPAQUETADOS = {
         <div class="doc-title">FACTURA ELECTRONICA DE VENTA</div>
         <div class="doc-number">{{documento.tipo_documento_codigo}} - {{documento.numero}}</div>
         <div class="doc-dates">
-            Fecha ValidaciÃ³n DIAN: {{documento.fecha_emision}}<br>
-            Hora ValidaciÃ³n DIAN: {{documento.hora_emision|default('00:00:00')}}
+            Fecha Validación DIAN: {{documento.fecha_emision}}<br>
+            Hora Validación DIAN: {{documento.hora_emision|default('00:00:00')}}
         </div>
     </div>
 
@@ -3001,11 +3924,11 @@ TEMPLATES_EMPAQUETADOS = {
                 <div class="value">{{tercero.nit}}</div>
             </div>
             <div class="row">
-                <div class="label">RÃ©gimen:</div>
+                <div class="label">Régimen:</div>
                 <div class="value">{{tercero.regimen|default('No responsable de IVA')}}</div>
             </div>
             <div class="row">
-                <div class="label">ObligaciÃ³n:</div>
+                <div class="label">Obligación:</div>
                 <div class="value">{{tercero.responsabilidad|default('No responsable')}}</div>
             </div>
             <div class="row">
@@ -3019,7 +3942,7 @@ TEMPLATES_EMPAQUETADOS = {
         </div>
         <div class="client-col">
             <div class="row">
-                <div class="label">DirecciÃ³n:</div>
+                <div class="label">Dirección:</div>
                 <div class="value">{{tercero.direccion}}</div>
             </div>
             <div class="row">
@@ -3027,7 +3950,7 @@ TEMPLATES_EMPAQUETADOS = {
                 <div class="value">{{tercero.ciudad}}</div>
             </div>
             <div class="row">
-                <div class="label">TelÃ©fono:</div>
+                <div class="label">Teléfono:</div>
                 <div class="value">{{tercero.telefono}}</div>
             </div>
             <div class="row">
@@ -3049,8 +3972,8 @@ TEMPLATES_EMPAQUETADOS = {
         <thead>
             <tr>
                 <th width="4%">#</th>
-                <th width="14%">CÃ³digo</th>
-                <th width="32%">DescripciÃ³n</th>
+                <th width="14%">Código</th>
+                <th width="32%">Descripción</th>
                 <th width="7%">Cantidad</th>
                 <th width="7%">UM</th>
                 <th width="12%">Val. Unit</th>
@@ -3198,7 +4121,7 @@ TEMPLATES_EMPAQUETADOS = {
                 width="100" height="100">
         </div>
         <div class="dian-info-col">
-            <strong>ResoluciÃ³n de FacturaciÃ³n ElectrÃ³nica</strong><br>
+            <strong>Resolución de Facturación Electrónica</strong><br>
             Nro. {{documento.resolucion_numero}} de {{documento.resolucion_fecha}}<br>
             Prefijo: {{documento.resolucion_prefijo}}, Rango {{documento.resolucion_rango_desde}} Al
             {{documento.resolucion_rango_hasta}}<br>
@@ -3207,8 +4130,8 @@ TEMPLATES_EMPAQUETADOS = {
 
             <strong>CUFE:</strong> {{documento.dian_cufe}}<br><br>
 
-            La presente Factura ElectrÃ³nica de Venta, es un tÃ­tulo valor de acuerdo con lo establecido en el CÃ³digo de
-            Comercio y en especial en los artÃ­culos 621,772 y 774.
+            La presente Factura Electrónica de Venta, es un título valor de acuerdo con lo establecido en el Código de
+            Comercio y en especial en los artículos 621,772 y 774.
         </div>
     </div>
     {% endif %}
@@ -3216,10 +4139,11 @@ TEMPLATES_EMPAQUETADOS = {
 </body>
 
 </html>
+
 ''',
 
     'reports/fuentes_usos_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -3351,13 +4275,13 @@ TEMPLATES_EMPAQUETADOS = {
                     <p>K.T. Inicial: <strong>{{ "${:,.0f}".format(resumen_kt.kt_ini) }}</strong></p>
                 </td>
                 <td style="border: none; width: 50%;">
-                    <h3>VariaciÃ³n en el Periodo</h3>
+                    <h3>Variación en el Periodo</h3>
                     <p>Activo Corriente Final: <strong>{{ "${:,.0f}".format(resumen_kt.activo_cte_fin) }}</strong></p>
                     <p>Pasivo Corriente Final: <strong>{{ "${:,.0f}".format(resumen_kt.pasivo_cte_fin) }}</strong></p>
                     <hr>
                     <p>K.T. Final: <strong>{{ "${:,.0f}".format(resumen_kt.kt_fin) }}</strong></p>
                     <h4 class="{{ 'text-success' if resumen_kt.variacion_kt > 0 else 'text-danger' }}">
-                        VariaciÃ³n K.T.: {{ "${:,.0f}".format(resumen_kt.variacion_kt) }}
+                        Variación K.T.: {{ "${:,.0f}".format(resumen_kt.variacion_kt) }}
                     </h4>
                 </td>
             </tr>
@@ -3368,12 +4292,12 @@ TEMPLATES_EMPAQUETADOS = {
     <table>
         <thead>
             <tr>
-                <th style="width: 10%;">CÃ³digo</th>
+                <th style="width: 10%;">Código</th>
                 <th style="width: 30%;">Cuenta</th>
                 <th style="width: 15%;">Saldo Inicial</th>
                 <th style="width: 15%;">Saldo Final</th>
                 <th style="width: 15%; background-color: #28a745;">FUENTES (Origen)</th>
-                <th style="width: 15%; background-color: #dc3545;">USOS (AplicaciÃ³n)</th>
+                <th style="width: 15%; background-color: #dc3545;">USOS (Aplicación)</th>
             </tr>
         </thead>
         <tbody>
@@ -3403,7 +4327,7 @@ TEMPLATES_EMPAQUETADOS = {
                 <td colspan="2" class="text-center font-bold">
                     {{ "${:,.0f}".format(totales.diferencia) }}
                     <br>
-                    <span style="font-size: 9px; font-weight: normal;">(Debe ser igual a la VariaciÃ³n K.T.)</span>
+                    <span style="font-size: 9px; font-weight: normal;">(Debe ser igual a la Variación K.T.)</span>
                 </td>
             </tr>
         </tfoot>
@@ -3411,18 +4335,19 @@ TEMPLATES_EMPAQUETADOS = {
 
     <div style="font-size: 9px; color: #666; margin-top: 20px;">
         <p><strong>Nota Interpretativa:</strong><br>
-            - <strong>FUENTES:</strong> Dinero generado por disminuciÃ³n de Activos (ej. cobro de cartera) o aumento de
-            Pasivos (ej. financiaciÃ³n proveedores).<br>
+            - <strong>FUENTES:</strong> Dinero generado por disminución de Activos (ej. cobro de cartera) o aumento de
+            Pasivos (ej. financiación proveedores).<br>
             - <strong>USOS:</strong> Dinero utilizado para aumentar Activos (ej. compra inventario) o disminuir Pasivos
             (ej. pago deudas).</p>
     </div>
 </body>
 
 </html>
+
 ''',
 
     'reports/generic_document_template.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -3617,10 +4542,11 @@ TEMPLATES_EMPAQUETADOS = {
 </body>
 
 </html>
+
 ''',
 
     'reports/historial_consumo_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -3676,7 +4602,7 @@ TEMPLATES_EMPAQUETADOS = {
             width: 100%;
             border-collapse: collapse;
             margin-top: 10px;
-            /* Asegurar que la cabecera se repita en cada pÃ¡gina */
+            /* Asegurar que la cabecera se repita en cada página */
             display: table;
         }
 
@@ -3826,7 +4752,7 @@ TEMPLATES_EMPAQUETADOS = {
     <div class="filters-info">
         <strong>Filtros Aplicados:</strong><br>
         Rango de Fechas: {{ filtros.fecha_inicio or 'Inicio' }} - {{ filtros.fecha_fin or 'Actualidad' }} <br>
-        Tipo de OperaciÃ³n: {{ filtros.tipo_operacion or 'TODOS' }} <br>
+        Tipo de Operación: {{ filtros.tipo_operacion or 'TODOS' }} <br>
         <strong>Registros Exportados: {{ items|length }} (Max: 5000)</strong>
     </div>
 
@@ -3834,7 +4760,7 @@ TEMPLATES_EMPAQUETADOS = {
         <thead>
             <tr>
                 <th width="15%">Fecha</th>
-                <th width="15%">OperaciÃ³n</th>
+                <th width="15%">Operación</th>
                 <th width="20%">Empresa</th>
                 <th width="25%">Detalle / Documento</th>
                 <th width="15%">Origen/Bolsa</th>
@@ -3849,7 +4775,7 @@ TEMPLATES_EMPAQUETADOS = {
                 <td>
                     {% if item.tipo_operacion == 'CONSUMO' %} <span class="tag tag-consumo">CONSUMO</span>
                     {% elif item.tipo_operacion == 'COMPRA' %} <span class="tag tag-compra">COMPRA RECARGA</span>
-                    {% elif item.tipo_operacion == 'REVERSION' %} <span class="tag tag-reversion">REVERSIÃ“N</span>
+                    {% elif item.tipo_operacion == 'REVERSION' %} <span class="tag tag-reversion">REVERSIÓN</span>
                     {% elif item.tipo_operacion == 'CIERRE' %} <span class="tag tag-cierre">CIERRE MENSUAL</span>
                     {% else %} {{ item.tipo_operacion }} {% endif %}
                 </td>
@@ -3917,15 +4843,16 @@ TEMPLATES_EMPAQUETADOS = {
     {% endif %}
 
     <div class="footer">
-        Este reporte fue generado automÃ¡ticamente por el sistema FINAXIS.
+        Este reporte fue generado automáticamente por el sistema FINAXIS.
     </div>
 </body>
 
 </html>
+
 ''',
 
     'reports/income_statement_cc_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -4010,17 +4937,18 @@ TEMPLATES_EMPAQUETADOS = {
             </tr>
 
             <tr class="final-total-row">
-                <td><strong>UTILIDAD (O PÃ‰RDIDA) DEL EJERCICIO</strong></td>
+                <td><strong>UTILIDAD (O PÉRDIDA) DEL EJERCICIO</strong></td>
                 <td class="text-right"><strong>{{ "{:,.2f}".format(totales.utilidad_neta) }}</strong></td>
             </tr>
         </tbody>
     </table>
 </body>
 </html>
+
 ''',
 
     'reports/income_statement_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -4103,17 +5031,18 @@ TEMPLATES_EMPAQUETADOS = {
             </tr>
 
             <tr class="final-total-row">
-                <td><strong>UTILIDAD (O PÃ‰RDIDA) DEL EJERCICIO</strong></td>
+                <td><strong>UTILIDAD (O PÉRDIDA) DEL EJERCICIO</strong></td>
                 <td class="text-right"><strong>{{ "{:,.2f}".format(totales.utilidad_neta) }}</strong></td>
             </tr>
         </tbody>
     </table>
 </body>
 </html>
+
 ''',
 
     'reports/inventario_document_template.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -4196,7 +5125,7 @@ TEMPLATES_EMPAQUETADOS = {
             color: #374151;
         }
 
-        /* INFORMACIÃ“N CLIENTE */
+        /* INFORMACIÓN CLIENTE */
         .client-section {
             background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
             border-radius: 6px;
@@ -4294,7 +5223,7 @@ TEMPLATES_EMPAQUETADOS = {
             color: #374151;
         }
 
-        /* SECCIÃ“N TOTALES PROFESIONAL */
+        /* SECCIÓN TOTALES PROFESIONAL */
         .totals-container {
             display: flex;
             justify-content: space-between;
@@ -4392,7 +5321,7 @@ TEMPLATES_EMPAQUETADOS = {
             min-width: 85px;
         }
 
-        /* PIE DE PÃGINA EMPRESARIAL */
+        /* PIE DE PÁGINA EMPRESARIAL */
         .footer-area {
             margin-top: 28px;
             padding-top: 16px;
@@ -4451,14 +5380,14 @@ TEMPLATES_EMPAQUETADOS = {
             {% endif %}
             <div class="company-name">{{empresa.razon_social}}</div>
             <div class="company-details">
-                NIT: {{empresa.nit}} â€¢ {{empresa.direccion}}<br>
-                Tel: {{empresa.telefono}}{% if empresa.email %} â€¢ {{empresa.email}}{% endif %}
+                NIT: {{empresa.nit}} • {{empresa.direccion}}<br>
+                Tel: {{empresa.telefono}}{% if empresa.email %} • {{empresa.email}}{% endif %}
             </div>
         </div>
         
         <div class="document-section">
             <div class="doc-type">{{documento.tipo_nombre}}</div>
-            <div class="doc-number">NÂ° {{documento.consecutivo}}</div>
+            <div class="doc-number">N° {{documento.consecutivo}}</div>
             <div class="doc-dates">
                 <span class="date-label">Fecha:</span> {{documento.fecha_emision}}<br>
                 {% if documento.fecha_vencimiento %}<span class="date-label">Vence:</span> {{documento.fecha_vencimiento}}<br>{% endif %}
@@ -4467,12 +5396,12 @@ TEMPLATES_EMPAQUETADOS = {
         </div>
     </div>
 
-    <!-- INFORMACIÃ“N DEL CLIENTE -->
+    <!-- INFORMACIÓN DEL CLIENTE -->
     <div class="client-section">
         <div class="client-header">Cliente / Proveedor</div>
         <div class="client-name">{{tercero.razon_social}}</div>
         <div class="client-info">
-            NIT/CC: {{tercero.nit}}{% if tercero.direccion %} â€¢ {{tercero.direccion}}{% endif %}{% if tercero.telefono %} â€¢ Tel: {{tercero.telefono}}{% endif %}
+            NIT/CC: {{tercero.nit}}{% if tercero.direccion %} • {{tercero.direccion}}{% endif %}{% if tercero.telefono %} • Tel: {{tercero.telefono}}{% endif %}
         </div>
     </div>
 
@@ -4480,8 +5409,8 @@ TEMPLATES_EMPAQUETADOS = {
     <table class="products-table">
         <thead>
             <tr>
-                <th width="10%">CÃ³digo</th>
-                <th width="40%">DescripciÃ³n del Producto/Servicio</th>
+                <th width="10%">Código</th>
+                <th width="40%">Descripción del Producto/Servicio</th>
                 <th width="8%" class="text-center">Cant.</th>
                 <th width="12%" class="text-right">Precio Unit.</th>
                 <th width="10%" class="text-right">Descuento</th>
@@ -4502,7 +5431,7 @@ TEMPLATES_EMPAQUETADOS = {
         </tbody>
     </table>
 
-    <!-- TOTALES Y DISCRIMINACIÃ“N FISCAL -->
+    <!-- TOTALES Y DISCRIMINACIÓN FISCAL -->
     <div class="totals-container">
         <div class="notes-area">
             {% if totales.valor_letras %}
@@ -4534,7 +5463,7 @@ TEMPLATES_EMPAQUETADOS = {
             </div>
             {% endif %}
             
-            <!-- DISCRIMINACIÃ“N DE BASES GRAVABLES -->
+            <!-- DISCRIMINACIÓN DE BASES GRAVABLES -->
             {% if totales.base_exenta and totales.base_exenta != '0.00' %}
             <div class="total-line base-line">
                 <span class="total-label">Base Exenta (0%):</span>
@@ -4556,7 +5485,7 @@ TEMPLATES_EMPAQUETADOS = {
             </div>
             {% endif %}
             
-            <!-- DISCRIMINACIÃ“N DE IMPUESTOS -->
+            <!-- DISCRIMINACIÓN DE IMPUESTOS -->
             {% if totales.iva_5 and totales.iva_5 != '0.00' %}
             <div class="total-line tax-line">
                 <span class="total-label">IVA (5%):</span>
@@ -4574,7 +5503,7 @@ TEMPLATES_EMPAQUETADOS = {
             <!-- RETENCIONES -->
             {% if totales.retencion and totales.retencion != '0.00' %}
             <div class="total-line">
-                <span class="total-label">RetenciÃ³n:</span>
+                <span class="total-label">Retención:</span>
                 <span class="total-value">-{{totales.retencion}}</span>
             </div>
             {% endif %}
@@ -4587,38 +5516,39 @@ TEMPLATES_EMPAQUETADOS = {
         </div>
     </div>
 
-    <!-- PIE DE PÃGINA EMPRESARIAL -->
+    <!-- PIE DE PÁGINA EMPRESARIAL -->
     <div class="footer-area">
         <div class="legal-notice">
-            Esta factura se asimila en todos sus efectos a una letra de cambio de conformidad con el artÃ­culo 774 del CÃ³digo de Comercio. 
-            Los pagos realizados despuÃ©s del vencimiento causarÃ¡n intereses de mora segÃºn las tasas legales vigentes.
+            Esta factura se asimila en todos sus efectos a una letra de cambio de conformidad con el artículo 774 del Código de Comercio. 
+            Los pagos realizados después del vencimiento causarán intereses de mora según las tasas legales vigentes.
         </div>
 
         <div class="signature-grid">
             <div class="signature-field">
-                <div class="signature-line">ElaborÃ³</div>
+                <div class="signature-line">Elaboró</div>
             </div>
             <div class="signature-field">
-                <div class="signature-line">RevisÃ³</div>
+                <div class="signature-line">Revisó</div>
             </div>
             <div class="signature-field">
-                <div class="signature-line">AprobÃ³</div>
+                <div class="signature-line">Aprobó</div>
             </div>
             <div class="signature-field">
-                <div class="signature-line">RecibÃ­ Conforme</div>
+                <div class="signature-line">Recibí Conforme</div>
             </div>
         </div>
 
         <div class="footer-brand">
-            Gracias por su confianza â€¢ Powered by ContaPY Enterprise
+            Gracias por su confianza • Powered by ContaPY Enterprise
         </div>
     </div>
 </body>
 </html>
+
 ''',
 
     'reports/inventarios_y_balances_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -4628,7 +5558,7 @@ TEMPLATES_EMPAQUETADOS = {
             size: letter;
             margin: 1.5cm;
             @bottom-center {
-                content: "PÃ¡gina " counter(page) " de " counter(pages);
+                content: "Página " counter(page) " de " counter(pages);
                 font-size: 10px;
             }
         }
@@ -4684,7 +5614,7 @@ TEMPLATES_EMPAQUETADOS = {
     <div class="header">
         <h1>{{ empresa.razon_social }}</h1>
         <h2>NIT: {{ empresa.nit }}</h2>
-        <p><strong>Libro de Inventarios y Balances (Estado de SituaciÃ³n Financiera)</strong></p>
+        <p><strong>Libro de Inventarios y Balances (Estado de Situación Financiera)</strong></p>
         <p>Con corte al {{ fecha_corte.strftime('%d de %B de %Y') }}</p>
     </div>
 
@@ -4727,7 +5657,7 @@ TEMPLATES_EMPAQUETADOS = {
         </tr>
         {% endfor %}
         <tr>
-            <td>Utilidad (o PÃ©rdida) del Ejercicio</td>
+            <td>Utilidad (o Pérdida) del Ejercicio</td>
             <td class="text-right">{{ "${:,.2f}".format(reporte.utilidad_ejercicio) }}</td>
         </tr>
         <tr class="total-row">
@@ -4743,10 +5673,11 @@ TEMPLATES_EMPAQUETADOS = {
 
 </body>
 </html>
+
 ''',
 
     'reports/invoice_premium_template.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -4756,7 +5687,7 @@ TEMPLATES_EMPAQUETADOS = {
         @page {
             size: letter;
             margin: 0;
-            /* Usaremos paddings internos para mayor control del diseÃ±o */
+            /* Usaremos paddings internos para mayor control del diseño */
         }
 
         body {
@@ -5050,15 +5981,15 @@ TEMPLATES_EMPAQUETADOS = {
                 {% endif %}
                 <h1 class="company-name">{{empresa.razon_social}}</h1>
                 <div class="company-info">
-                    NIT: {{empresa.nit}} â€¢ RÃ©gimen ComÃºn<br>
+                    NIT: {{empresa.nit}} • Régimen Común<br>
                     {{empresa.direccion}}<br>
-                    {{empresa.email}} â€¢ {{empresa.telefono}}
+                    {{empresa.email}} • {{empresa.telefono}}
                 </div>
             </div>
             <div class="header-right">
                 <h2 class="doc-label">{{documento.tipo_nombre}}</h2>
                 <div class="doc-number-box">
-                    <span style="font-size: 8px; display: block; color: #94a3b8; text-transform: uppercase;">NÃºmero de
+                    <span style="font-size: 8px; display: block; color: #94a3b8; text-transform: uppercase;">Número de
                         Documento</span>
                     <span class="doc-number">{{documento.prefix}}{{documento.consecutivo}}</span>
                 </div>
@@ -5083,7 +6014,7 @@ TEMPLATES_EMPAQUETADOS = {
                 </div>
             </div>
             <div class="info-col" style="padding-left: 20px;">
-                <div class="section-title">Detalles de OperaciÃ³n</div>
+                <div class="section-title">Detalles de Operación</div>
                 <div class="data-text">
                     <strong>Vendedor:</strong> {{documento.vendedor|default('N/A')}}<br>
                     <strong>Forma de Pago:</strong> {{documento.metodo_pago|default('Contado')}}<br>
@@ -5097,7 +6028,7 @@ TEMPLATES_EMPAQUETADOS = {
             <table class="items-table">
                 <thead>
                     <tr>
-                        <th width="50%">DescripciÃ³n del Servicio</th>
+                        <th width="50%">Descripción del Servicio</th>
                         <th width="10%" class="text-center">Cant.</th>
                         <th width="20%" class="text-right">Precio Unit.</th>
                         <th width="20%" class="text-right">Subtotal</th>
@@ -5128,7 +6059,7 @@ TEMPLATES_EMPAQUETADOS = {
                 </div>
 
                 <div class="payment-info">
-                    <strong>InformaciÃ³n de Pago:</strong><br>
+                    <strong>Información de Pago:</strong><br>
                     Por favor realizar transferencia a la cuenta de ahorros No. XXX-XXXXXX-XX de Banco XXXXXX.<br>
                     Referencia: Factura {{documento.consecutivo}}
                 </div>
@@ -5164,10 +6095,10 @@ TEMPLATES_EMPAQUETADOS = {
         {% if documento.dian_cufe %}
         <div class="fiscal-area">
             <div class="fiscal-left">
-                <strong>INFORMACIÃ“N FISCAL DIAN</strong><br>
-                Software Proveedor: <strong>FINAXIS ENTERPRISE</strong> (TecnologÃ­a Cloud)<br>
-                Tipo: {% if 'SOPORTE' in documento.tipo_nombre.upper() %}Documento Soporte ElectrÃ³nico{% else %}Factura
-                ElectrÃ³nica de Venta{% endif %}<br>
+                <strong>INFORMACIÓN FISCAL DIAN</strong><br>
+                Software Proveedor: <strong>FINAXIS ENTERPRISE</strong> (Tecnología Cloud)<br>
+                Tipo: {% if 'SOPORTE' in documento.tipo_nombre.upper() %}Documento Soporte Electrónico{% else %}Factura
+                Electrónica de Venta{% endif %}<br>
                 CUFE/CUDS:
                 <span class="cufe-text">{{documento.dian_cufe}}</span>
             </div>
@@ -5177,7 +6108,7 @@ TEMPLATES_EMPAQUETADOS = {
                 {% else %}
                 <div class="qr-placeholder"
                     style="display: flex; align-items: center; justify-content: center; font-size: 6px;">
-                    CÃ“DIGO QR VALIDACIÃ“N
+                    CÓDIGO QR VALIDACIÓN
                 </div>
                 {% endif %}
             </div>
@@ -5185,20 +6116,21 @@ TEMPLATES_EMPAQUETADOS = {
         {% endif %}
 
         <div class="signature-line">
-            Recibido por (Nombre y CÃ©dula)
+            Recibido por (Nombre y Cédula)
         </div>
 
         <div class="finaxis-brand">
-            Software de GestiÃ³n Inteligente â€¢ FINAXIS.COM.CO
+            Software de Gestión Inteligente • FINAXIS.COM.CO
         </div>
     </div>
 </body>
 
 </html>
+
 ''',
 
     'reports/invoice_template.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -5282,7 +6214,7 @@ TEMPLATES_EMPAQUETADOS = {
             color: #374151;
         }
 
-        /* INFORMACIÃ“N CLIENTE */
+        /* INFORMACIÓN CLIENTE */
         .client-section {
             background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
             border-radius: 6px;
@@ -5314,7 +6246,7 @@ TEMPLATES_EMPAQUETADOS = {
         }
 
         /* TABLA PRODUCTOS */
-        /* CONFIGURACIÃ“N DE PÃGINA PARA PDF (WeasyPrint) */
+        /* CONFIGURACIÓN DE PÁGINA PARA PDF (WeasyPrint) */
         @page {
             size: letter;
             margin: 1cm;
@@ -5394,7 +6326,7 @@ TEMPLATES_EMPAQUETADOS = {
             color: #374151;
         }
 
-        /* SECCIÃ“N TOTALES PROFESIONAL */
+        /* SECCIÓN TOTALES PROFESIONAL */
         .totals-container {
             display: flex;
             justify-content: space-between;
@@ -5492,7 +6424,7 @@ TEMPLATES_EMPAQUETADOS = {
             min-width: 85px;
         }
 
-        /* PIE DE PÃGINA EMPRESARIAL */
+        /* PIE DE PÁGINA EMPRESARIAL */
         .footer-area {
             margin-top: 28px;
             padding-top: 16px;
@@ -5551,14 +6483,14 @@ TEMPLATES_EMPAQUETADOS = {
             {% endif %}
             <div class="company-name">{{empresa.razon_social}}</div>
             <div class="company-details">
-                NIT: {{empresa.nit}} â€¢ {{empresa.direccion}}<br>
-                Tel: {{empresa.telefono}}{% if empresa.email %} â€¢ {{empresa.email}}{% endif %}
+                NIT: {{empresa.nit}} • {{empresa.direccion}}<br>
+                Tel: {{empresa.telefono}}{% if empresa.email %} • {{empresa.email}}{% endif %}
             </div>
         </div>
 
         <div class="document-section">
             <div class="doc-type">{{documento.tipo_nombre}}</div>
-            <div class="doc-number">NÂ° {{documento.consecutivo}}</div>
+            <div class="doc-number">N° {{documento.consecutivo}}</div>
             <div class="doc-dates">
                 <span class="date-label">Fecha:</span> {{documento.fecha_emision}}<br>
                 {% if documento.fecha_vencimiento %}<span class="date-label">Vence:</span>
@@ -5568,13 +6500,13 @@ TEMPLATES_EMPAQUETADOS = {
         </div>
     </div>
 
-    <!-- INFORMACIÃ“N DEL CLIENTE -->
+    <!-- INFORMACIÓN DEL CLIENTE -->
     <div class="client-section">
         <div class="client-header">Cliente / Proveedor</div>
         <div class="client-name">{{tercero.razon_social}}</div>
         <div class="client-info">
-            NIT/CC: {{tercero.nit}}{% if tercero.direccion %} â€¢ {{tercero.direccion}}{% endif %}{% if tercero.telefono
-            %} â€¢ Tel: {{tercero.telefono}}{% endif %}
+            NIT/CC: {{tercero.nit}}{% if tercero.direccion %} • {{tercero.direccion}}{% endif %}{% if tercero.telefono
+            %} • Tel: {{tercero.telefono}}{% endif %}
         </div>
     </div>
 
@@ -5582,8 +6514,8 @@ TEMPLATES_EMPAQUETADOS = {
     <table class="products-table">
         <thead>
             <tr>
-                <th width="10%">CÃ³digo</th>
-                <th width="40%">DescripciÃ³n del Producto/Servicio</th>
+                <th width="10%">Código</th>
+                <th width="40%">Descripción del Producto/Servicio</th>
                 <th width="8%" class="text-center">Cant.</th>
                 <th width="12%" class="text-right">Precio Unit.</th>
                 <th width="10%" class="text-right">Descuento</th>
@@ -5604,7 +6536,7 @@ TEMPLATES_EMPAQUETADOS = {
         </tbody>
     </table>
 
-    <!-- TOTALES Y DISCRIMINACIÃ“N FISCAL -->
+    <!-- TOTALES Y DISCRIMINACIÓN FISCAL -->
     <div class="totals-container">
         <div class="notes-area">
             {% if totales.valor_letras %}
@@ -5636,7 +6568,7 @@ TEMPLATES_EMPAQUETADOS = {
             </div>
             {% endif %}
 
-            <!-- DISCRIMINACIÃ“N DE BASES GRAVABLES -->
+            <!-- DISCRIMINACIÓN DE BASES GRAVABLES -->
             {% if totales.base_exenta and totales.base_exenta != '0.00' %}
             <div class="total-line base-line">
                 <span class="total-label">Base Exenta (0%):</span>
@@ -5658,7 +6590,7 @@ TEMPLATES_EMPAQUETADOS = {
             </div>
             {% endif %}
 
-            <!-- DISCRIMINACIÃ“N DE IMPUESTOS -->
+            <!-- DISCRIMINACIÓN DE IMPUESTOS -->
             {% if totales.iva_5 and totales.iva_5 != '0.00' %}
             <div class="total-line tax-line">
                 <span class="total-label">IVA (5%):</span>
@@ -5676,7 +6608,7 @@ TEMPLATES_EMPAQUETADOS = {
             <!-- RETENCIONES -->
             {% if totales.retencion and totales.retencion != '0.00' %}
             <div class="total-line">
-                <span class="total-label">RetenciÃ³n:</span>
+                <span class="total-label">Retención:</span>
                 <span class="total-value">-{{totales.retencion}}</span>
             </div>
             {% endif %}
@@ -5689,40 +6621,41 @@ TEMPLATES_EMPAQUETADOS = {
         </div>
     </div>
 
-    <!-- PIE DE PÃGINA EMPRESARIAL -->
+    <!-- PIE DE PÁGINA EMPRESARIAL -->
     <div class="footer-area">
         <div class="legal-notice">
-            Esta factura se asimila en todos sus efectos a una letra de cambio de conformidad con el artÃ­culo 774 del
-            CÃ³digo de Comercio.
-            Los pagos realizados despuÃ©s del vencimiento causarÃ¡n intereses de mora segÃºn las tasas legales vigentes.
+            Esta factura se asimila en todos sus efectos a una letra de cambio de conformidad con el artículo 774 del
+            Código de Comercio.
+            Los pagos realizados después del vencimiento causarán intereses de mora según las tasas legales vigentes.
         </div>
 
         <div class="signature-grid">
             <div class="signature-field">
-                <div class="signature-line">ElaborÃ³</div>
+                <div class="signature-line">Elaboró</div>
             </div>
             <div class="signature-field">
-                <div class="signature-line">RevisÃ³</div>
+                <div class="signature-line">Revisó</div>
             </div>
             <div class="signature-field">
-                <div class="signature-line">AprobÃ³</div>
+                <div class="signature-line">Aprobó</div>
             </div>
             <div class="signature-field">
-                <div class="signature-line">RecibÃ­ Conforme</div>
+                <div class="signature-line">Recibí Conforme</div>
             </div>
         </div>
 
         <div class="footer-brand">
-            Gracias por su confianza â€¢ Powered by ContaPY Enterprise
+            Gracias por su confianza • Powered by ContaPY Enterprise
         </div>
     </div>
 </body>
 
 </html>
+
 ''',
 
     'reports/journal_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -5734,7 +6667,7 @@ TEMPLATES_EMPAQUETADOS = {
             margin: 1.5cm;
 
             @bottom-center {
-                content: "PÃ¡gina " counter(page) " de " counter(pages);
+                content: "Página " counter(page) " de " counter(pages);
                 font-size: 10px;
             }
         }
@@ -5858,8 +6791,8 @@ TEMPLATES_EMPAQUETADOS = {
                 {% if has_cost_centers %}
                 <th>C. Costo</th>
                 {% endif %}
-                <th class="text-right">DÃ©bito</th>
-                <th class="text-right">CrÃ©dito</th>
+                <th class="text-right">Débito</th>
+                <th class="text-right">Crédito</th>
             </tr>
         </thead>
 
@@ -5900,7 +6833,7 @@ TEMPLATES_EMPAQUETADOS = {
             {% else %}
             <tr>
                 <td colspan="{{ 7 if has_cost_centers else 6 }}" style="text-align:center;">No hay movimientos para el
-                    perÃ­odo seleccionado.</td>
+                    período seleccionado.</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -5917,10 +6850,11 @@ TEMPLATES_EMPAQUETADOS = {
 </body>
 
 </html>
+
 ''',
 
     'reports/journal_summary_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -5932,7 +6866,7 @@ TEMPLATES_EMPAQUETADOS = {
             margin: 2cm;
 
             @bottom-center {
-                content: "PÃ¡gina " counter(page) " de " counter(pages);
+                content: "Página " counter(page) " de " counter(pages);
                 font-size: 10px;
             }
         }
@@ -6036,10 +6970,10 @@ TEMPLATES_EMPAQUETADOS = {
                     <td colspan="4">COMPROBANTE: {{ grupo.tipo_documento }}</td>
                 </tr>
                 <tr>
-                    <th style="width: 15%">CÃ³digo</th>
+                    <th style="width: 15%">Código</th>
                     <th style="width: 45%">Cuenta</th>
-                    <th style="width: 20%">DÃ©bitos</th>
-                    <th style="width: 20%">CrÃ©ditos</th>
+                    <th style="width: 20%">Débitos</th>
+                    <th style="width: 20%">Créditos</th>
                 </tr>
             </thead>
             <tbody>
@@ -6074,10 +7008,11 @@ TEMPLATES_EMPAQUETADOS = {
 </body>
 
 </html>
+
 ''',
 
     'reports/kardex_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -6124,7 +7059,7 @@ TEMPLATES_EMPAQUETADOS = {
             background-color: #f2f2f2;
             font-weight: bold;
             text-align: center;
-            /* Ajuste de tamaÃ±o de fuente para cabecera */
+            /* Ajuste de tamaño de fuente para cabecera */
             font-size: 7.5pt; 
         }
         .text-right { text-align: right; font-family: 'Courier New', monospace; }
@@ -6145,7 +7080,7 @@ TEMPLATES_EMPAQUETADOS = {
 
     <div class="info">
         <p><strong>Producto:</strong> {{ data.producto_codigo }} - {{ data.producto_nombre }}</p>
-        <p><strong>PerÃ­odo Analizado:</strong> {{ filtros.fecha_inicio | truncate(10, True, '') }} al {{ filtros.fecha_fin | truncate(10, True, '') }}</p>
+        <p><strong>Período Analizado:</strong> {{ filtros.fecha_inicio | truncate(10, True, '') }} al {{ filtros.fecha_fin | truncate(10, True, '') }}</p>
     </div>
 
     <table>
@@ -6168,24 +7103,24 @@ TEMPLATES_EMPAQUETADOS = {
         </thead>
         <tbody>
 
-            {# FIX CRÃTICO DE ALINEACIÃ“N: Fila de Saldo Anterior #}
+            {# FIX CRÍTICO DE ALINEACIÓN: Fila de Saldo Anterior #}
             {% set saldo_inicial_cant = data.totales.saldo_inicial_cantidad | default(0) | float %}
             {% set saldo_inicial_valor = data.totales.saldo_inicial_valor | default(0) | float %}
             
-            {# FIX CRÃTICO: Evitar DivisiÃ³n por Cero en Costo Promedio Inicial #}
+            {# FIX CRÍTICO: Evitar División por Cero en Costo Promedio Inicial #}
             {% set costo_prom_inicial = saldo_inicial_valor / saldo_inicial_cant if saldo_inicial_cant else 0.00 %}
             
             <tr class="saldo-anterior">
                 <td>{{ filtros.fecha_inicio | truncate(10, True, '') }}</td>
-                <td colspan="8">SALDO ANTERIOR</td> {# Â¡FIX DE ALINEACIÃ“N CRÃTICO! Fusiona 8 celdas (Col 2 a Col 9) #}
+                <td colspan="8">SALDO ANTERIOR</td> {# ¡FIX DE ALINEACIÓN CRÍTICO! Fusiona 8 celdas (Col 2 a Col 9) #}
 
-                {# Las Ãºltimas 3 columnas (Saldo, Costo Prom, Saldo Val) se mantienen alineadas #}
+                {# Las últimas 3 columnas (Saldo, Costo Prom, Saldo Val) se mantienen alineadas #}
                 <td class="text-right"><strong>{{ "%.2f"|format(saldo_inicial_cant) }}</strong></td>
                 <td class="text-right"><strong>{{ costo_prom_inicial | float | format_miles }}</strong></td>
                 <td class="text-right"><strong>{{ saldo_inicial_valor | float | format_miles }}</strong></td>
             </tr>
 
-            {# Bucle de Movimientos: FIX CRÃTICO: Se usa 'data.movimientos' #}
+            {# Bucle de Movimientos: FIX CRÍTICO: Se usa 'data.movimientos' #}
             {% for item in data.movimientos | default([]) %}
                 
                 <tr class="{{ 'entrada' if item.entrada_cantidad else 'salida' }}">
@@ -6216,17 +7151,18 @@ TEMPLATES_EMPAQUETADOS = {
     
     {# Totales Finales #}
     <div class="info">
-        <p><strong>Balance del PerÃ­odo:</strong></p>
+        <p><strong>Balance del Período:</strong></p>
         <p>Entradas (Cant.): {{ "%.2f"|format(data.totales.total_entradas_cantidad) }} | Salidas (Cant.): {{ "%.2f"|format(data.totales.total_salidas_cantidad) }}</p>
         <p><strong>Saldo Final:</strong> {{ "%.2f"|format(data.totales.saldo_final_cantidad) }} unidades con un valor total de <strong>${{ data.totales.saldo_final_valor | float | format_miles }}</strong></p>
     </div>
 
 </body>
 </html>
+
 ''',
 
     'reports/mayor_y_balances_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -6238,7 +7174,7 @@ TEMPLATES_EMPAQUETADOS = {
             margin: 1.5cm;
 
             @bottom-center {
-                content: "PÃ¡gina " counter(page) " de " counter(pages);
+                content: "Página " counter(page) " de " counter(pages);
                 font-size: 10px;
             }
         }
@@ -6318,11 +7254,11 @@ TEMPLATES_EMPAQUETADOS = {
     <table>
         <thead>
             <tr>
-                <th style="width: 15%;">CÃ³digo</th>
+                <th style="width: 15%;">Código</th>
                 <th style="width: 35%;">Cuenta</th>
                 <th class="text-right" style="width: 12.5%;">Saldo Anterior</th>
-                <th class="text-right" style="width: 12.5%;">DÃ©bitos</th>
-                <th class="text-right" style="width: 12.5%;">CrÃ©ditos</th>
+                <th class="text-right" style="width: 12.5%;">Débitos</th>
+                <th class="text-right" style="width: 12.5%;">Créditos</th>
                 <th class="text-right" style="width: 12.5%;">Nuevo Saldo</th>
             </tr>
         </thead>
@@ -6338,7 +7274,7 @@ TEMPLATES_EMPAQUETADOS = {
             </tr>
             {% else %}
             <tr>
-                <td colspan="6" style="text-align: center;">No se encontraron movimientos ni saldos para el perÃ­odo
+                <td colspan="6" style="text-align: center;">No se encontraron movimientos ni saldos para el período
                     seleccionado.</td>
             </tr>
             {% endfor %}
@@ -6356,15 +7292,16 @@ TEMPLATES_EMPAQUETADOS = {
 </body>
 
 </html>
+
 ''',
 
     'reports/movimiento_analitico_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
     <meta charset="UTF-8">
-    <title>Reporte AnalÃ­tico de Movimientos</title>
+    <title>Reporte Analítico de Movimientos</title>
     <style>
         body {
             font-family: sans-serif;
@@ -6423,7 +7360,7 @@ TEMPLATES_EMPAQUETADOS = {
             font-family: monospace;
         }
 
-        /* Para alinear nÃºmeros */
+        /* Para alinear números */
         .total-row {
             font-weight: bold;
             background-color: #e8e8e8;
@@ -6442,7 +7379,7 @@ TEMPLATES_EMPAQUETADOS = {
 <body>
     <div class="header">
         <h1>{{ empresa_nombre }}</h1>
-        <h2>Reporte AnalÃ­tico de Movimiento y Saldos</h2>
+        <h2>Reporte Analítico de Movimiento y Saldos</h2>
         <p>Periodo: {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
     </div>
 
@@ -6450,7 +7387,7 @@ TEMPLATES_EMPAQUETADOS = {
         <p><strong>Filtros Aplicados:</strong></p>
         <p>Bodega: {{ bodega_nombre | default('Todas', true) }}</p>
         <p>Grupo: {{ grupo_nombre | default('Todos', true) }}</p>
-        <p>ArtÃ­culo: {{ producto_nombre | default('Todos', true) }}</p>
+        <p>Artículo: {{ producto_nombre | default('Todos', true) }}</p>
         <p>Vista por: {{ 'Valor' if filtros.vista_por_valor else 'Cantidad' }}</p>
     </div>
 
@@ -6543,7 +7480,7 @@ TEMPLATES_EMPAQUETADOS = {
         {% endif %}
     </table>
 
-    {# Filtro personalizado de Jinja2 para formatear nÃºmeros/moneda #}
+    {# Filtro personalizado de Jinja2 para formatear números/moneda #}
     {% macro format_value(num, is_currency) %}
     {% if is_currency %}
     {{ "$ {:,.0f}".format(num | float) }}
@@ -6554,15 +7491,16 @@ TEMPLATES_EMPAQUETADOS = {
 </body>
 
 </html>
+
 ''',
 
     'reports/premium_fe_template.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
     <meta charset="UTF-8">
-    <title>Factura ElectrÃ³nica de Venta Premium</title>
+    <title>Factura Electrónica de Venta Premium</title>
     <style>
         /* RESET & BASE */
         * {
@@ -6584,7 +7522,7 @@ TEMPLATES_EMPAQUETADOS = {
             margin: 1.5cm 1.5cm;
         }
 
-        /* TIPOGRAFÃA & UTILIDADES */
+        /* TIPOGRAFÍA & UTILIDADES */
         .text-right {
             text-align: right;
         }
@@ -6708,7 +7646,7 @@ TEMPLATES_EMPAQUETADOS = {
             font-weight: 800;
         }
 
-        /* INFORMACIÃ“N ADQUIRENTE (CARD MODERNO) */
+        /* INFORMACIÓN ADQUIRENTE (CARD MODERNO) */
         .adquirente-section {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
@@ -6824,7 +7762,7 @@ TEMPLATES_EMPAQUETADOS = {
 
         .amount-words-box {
             background: #f0fdf4;
-            /* Verde muy claro indicando Ã©xito / pago */
+            /* Verde muy claro indicando éxito / pago */
             border-left: 4px solid #22c55e;
             padding: 12px 15px;
             border-radius: 0 6px 6px 0;
@@ -6933,7 +7871,7 @@ TEMPLATES_EMPAQUETADOS = {
             overflow: hidden;
         }
 
-        /* SECCIÃ“N FACTURACIÃ“N ELECTRÃ“NICA DIAN */
+        /* SECCIÓN FACTURACIÓN ELECTRÓNICA DIAN */
         /* Hacemos este bloque VISUALMENTE IMPECABLE para que el usuario no tenga quejas */
         .fe-dian-section {
             margin-top: 30px;
@@ -7032,7 +7970,7 @@ TEMPLATES_EMPAQUETADOS = {
             font-weight: 500;
         }
 
-        /* PIE DE PÃGINA */
+        /* PIE DE PÁGINA */
         .commercial-footer {
             margin-top: 30px;
             text-align: center;
@@ -7057,16 +7995,16 @@ TEMPLATES_EMPAQUETADOS = {
             <div class="emisor-nit">NIT: {{empresa.nit}}</div>
             <div class="emisor-details">
                 {{empresa.direccion}}<br>
-                TelÃ©fono: {{empresa.telefono}} {% if empresa.email %}| Correo: {{empresa.email}}{% endif %}<br>
-                <strong style="color:#0f172a;">Responsabilidad Tributaria:</strong> IVA RÃ©gimen ComÃºn
+                Teléfono: {{empresa.telefono}} {% if empresa.email %}| Correo: {{empresa.email}}{% endif %}<br>
+                <strong style="color:#0f172a;">Responsabilidad Tributaria:</strong> IVA Régimen Común
             </div>
         </div>
 
         <div class="header-right">
-            <div class="doc-title">Factura ElectrÃ³nica de Venta</div>
-            <div class="doc-number">NÂ° {{documento.consecutivo}}</div>
+            <div class="doc-title">Factura Electrónica de Venta</div>
+            <div class="doc-number">N° {{documento.consecutivo}}</div>
             <div class="doc-meta">
-                <div class="meta-label">Fecha EmisiÃ³n:</div>
+                <div class="meta-label">Fecha Emisión:</div>
                 <div class="meta-value">{{documento.fecha_emision}}</div>
 
                 <div class="meta-label">Fecha Venc.:</div>
@@ -7088,11 +8026,11 @@ TEMPLATES_EMPAQUETADOS = {
         </div>
         <div class="adquirente-col">
             <div class="adq-detail-row" style="margin-top: 18px;">
-                <div class="adq-detail-label">DirecciÃ³n:</div>
+                <div class="adq-detail-label">Dirección:</div>
                 <div class="adq-detail-value">{{tercero.direccion|default('No registrada')}}</div>
             </div>
             <div class="adq-detail-row">
-                <div class="adq-detail-label">TelÃ©fono:</div>
+                <div class="adq-detail-label">Teléfono:</div>
                 <div class="adq-detail-value">{{tercero.telefono|default('No registrado')}}</div>
             </div>
         </div>
@@ -7102,8 +8040,8 @@ TEMPLATES_EMPAQUETADOS = {
     <table class="items-table">
         <thead>
             <tr>
-                <th width="12%" class="text-left">CÃ³digo</th>
-                <th width="40%" class="text-left">DescripciÃ³n del Producto o Servicio</th>
+                <th width="12%" class="text-left">Código</th>
+                <th width="40%" class="text-left">Descripción del Producto o Servicio</th>
                 <th width="8%" class="text-center">Cant.</th>
                 <th width="15%" class="text-right">Vr. Unitario</th>
                 <th width="8%" class="text-right">IVA</th>
@@ -7194,8 +8132,8 @@ TEMPLATES_EMPAQUETADOS = {
         </div>
     </div>
 
-    <!-- BLOQUE DIAN - FACTURACIÃ“N ELECTRÃ“NICA -->
-    <!-- Mostrar SIEMPRE Si existe CUFE para garantizar visibilidad de la validaciÃ³n -->
+    <!-- BLOQUE DIAN - FACTURACIÓN ELECTRÓNICA -->
+    <!-- Mostrar SIEMPRE Si existe CUFE para garantizar visibilidad de la validación -->
     {% if documento.dian_cufe %}
     <div class="fe-dian-section">
         <div class="fe-qr-col">
@@ -7204,23 +8142,23 @@ TEMPLATES_EMPAQUETADOS = {
                 class="qr-placeholder" alt="QR DIAN Sandbox">
         </div>
         <div class="fe-info-col">
-            <div class="fe-title">âœ“ Documento ElectrÃ³nico DIAN</div>
+            <div class="fe-title">✓ Documento Electrónico DIAN</div>
 
             <div class="fe-cufe-box">
-                <div class="fe-cufe-label">CUFE (CÃ³digo Ãšnico de FacturaciÃ³n ElectrÃ³nica):</div>
+                <div class="fe-cufe-label">CUFE (Código Único de Facturación Electrónica):</div>
                 <div class="fe-cufe-value">{{documento.dian_cufe}}</div>
             </div>
 
             <div class="fe-legal-text">
-                AutorizaciÃ³n NumeraciÃ³n FacturaciÃ³n ElectrÃ³nica DIAN NO.
+                Autorización Numeración Facturación Electrónica DIAN NO.
                 <strong>{{documento.resolucion_numero}}</strong> de fecha
                 <strong>{{documento.resolucion_fecha}}</strong>.
                 Rango desde <strong>{{documento.resolucion_prefijo}}-{{documento.resolucion_rango_desde}}</strong> hasta
                 <strong>{{documento.resolucion_prefijo}}-{{documento.resolucion_rango_hasta}}</strong>.
-                Esta factura se asimila en todos sus efectos a una letra de cambio segÃºn el Art. 774 del CÃ³digo de
+                Esta factura se asimila en todos sus efectos a una letra de cambio según el Art. 774 del Código de
                 Comercio.
-                Transcurridos 3 dÃ­as hÃ¡biles desde su recepciÃ³n, si no hay reclamaciÃ³n en contra, se entenderÃ¡ aceptada
-                y constituirÃ¡ tÃ­tulo ejecutivo.
+                Transcurridos 3 días hábiles desde su recepción, si no hay reclamación en contra, se entenderá aceptada
+                y constituirá título ejecutivo.
             </div>
 
 
@@ -7229,52 +8167,292 @@ TEMPLATES_EMPAQUETADOS = {
     {% endif %}
 
     <div class="commercial-footer">
-        Finaxis Enterprise Software - Sistema Integral de FacturaciÃ³n ElectrÃ³nica DIAN
+        Finaxis Enterprise Software - Sistema Integral de Facturación Electrónica DIAN
     </div>
 
 </body>
 
 </html>
+
+''',
+
+    'reports/purchases_detailed.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Informe Detallado de Compras</title>
+    <style>
+        @page {
+            size: letter landscape;
+            margin: 1cm;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 8px;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 16px;
+            color: #2c3e50;
+            text-transform: uppercase;
+        }
+        .header h2 {
+            margin: 5px 0;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        .header .info {
+            font-size: 9px;
+            margin-top: 5px;
+        }
+        .filters-summary {
+            background-color: #f8f9fa;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3498db;
+        }
+        .filters-summary span {
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th {
+            background-color: #2c3e50;
+            color: white;
+            padding: 6px 4px;
+            text-align: left;
+            text-transform: uppercase;
+            font-size: 7px;
+        }
+        td {
+            padding: 5px 4px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .font-bold { font-weight: bold; }
+        
+        tr:nth-child(even) { background-color: #fdfdfd; }
+        
+        .totals-section {
+            float: right;
+            width: 250px;
+            margin-top: 10px;
+        }
+        .totals-table {
+            width: 100%;
+        }
+        .totals-table td {
+            padding: 4px;
+            border: none;
+        }
+        .totals-table .label {
+            text-align: right;
+            padding-right: 15px;
+            font-weight: bold;
+            color: #7f8c8d;
+        }
+        .totals-table .value {
+            text-align: right;
+            font-size: 10px;
+            border-bottom: 1px solid #bdc3c7;
+        }
+        .grand-total {
+            background-color: #2c3e50;
+            color: white !important;
+            font-weight: bold;
+        }
+        
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 7px;
+            color: #95a5a6;
+            border-top: 1px solid #ecf0f1;
+            padding-top: 5px;
+        }
+        
+        .negative { color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <div class="info">
+            NIT: {{ empresa.nit }} | Tel: {{ empresa.telefono or 'N/A' }} | Email: {{ empresa.email or 'N/A' }}
+        </div>
+        <h2>INFORME ESPECIALIZADO DE COMPRAS DETALLADO</h2>
+        <div class="info">
+            Período: <strong>{{ filtros.fecha_inicio }}</strong> hasta <strong>{{ filtros.fecha_fin }}</strong>
+        </div>
+    </div>
+
+    <div class="filters-summary">
+        <span>Filtros Aplicados:</span>
+        {% if filtros.proveedor_id %} <strong>Proveedor:</strong> {{ filtros_nombres.proveedor }} {% endif %}
+        {% if filtros.producto_id %} <strong>Producto:</strong> {{ filtros_nombres.producto }} {% endif %}
+        {% if filtros.centro_costo_id %} <strong>Centro Costo:</strong> {{ filtros_nombres.centro_costo }} {% endif %}
+        {% if filtros.bodega_id %} <strong>Bodega:</strong> {{ filtros_nombres.bodega }} {% endif %}
+        {% if not filtros.proveedor_id and not filtros.producto_id and not filtros.centro_costo_id and not filtros.bodega_id %}
+            Ninguno adicional
+        {% endif %}
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th width="8%">Fecha</th>
+                <th width="12%">Documento</th>
+                <th width="16%">Proveedor</th>
+                <th width="16%">Producto</th>
+                <th width="8%">Bodega</th>
+                <th width="8%">C. Costo</th>
+                <th width="6%" class="text-right">CANT</th>
+                <th width="8%" class="text-right">V/U</th>
+                <th width="8%" class="text-right">Subtotal</th>
+                <th width="5%" class="text-right">IVA</th>
+                <th width="5%" class="text-right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.fecha }}</td>
+                <td class="font-bold">
+                    {{ (item.tipo_documento_nombre[:2] | upper) if item.tipo_documento_nombre else 'FC' }}-{{ item.numero }}
+                </td>
+                <td>{{ item.proveedor_nombre }}</td>
+                <td class="font-bold">{{ item.producto_nombre }}</td>
+                <td>{{ item.bodega_nombre or '-' }}</td>
+                <td>{{ item.centro_costo_nombre or '-' }}</td>
+                <td class="text-right {{ 'negative' if item.cantidad < 0 else '' }}">
+                    {{ "{:,.2f}".format(item.cantidad) }}
+                </td>
+                <td class="text-right">$ {{ "{:,.2f}".format(item.valor_unitario) }}</td>
+                <td class="text-right {{ 'negative' if item.subtotal < 0 else '' }}">
+                    $ {{ "{:,.2f}".format(item.subtotal) }}
+                </td>
+                <td class="text-right {{ 'negative' if item.iva < 0 else '' }}">
+                    $ {{ "{:,.2f}".format(item.iva) }}
+                </td>
+                <td class="text-right font-bold {{ 'negative' if item.total < 0 else '' }}">
+                    $ {{ "{:,.2f}".format(item.total) }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="page-break-inside: avoid;">
+        <div style="width: 48%; float: left;">
+            <h3 style="font-size: 10px; color: #2c3e50; border-left: 3px solid #3498db; padding-left: 5px;">TOP 5 PROVEEDORES</h3>
+            <table style="font-size: 7px;">
+                {% set max_prov = graficos.top_proveedores[0].value if graficos.top_proveedores else 1 %}
+                {% for p in graficos.top_proveedores %}
+                <tr>
+                    <td width="40%">{{ p.label }}</td>
+                    <td width="60%">
+                        <div style="background-color: #3498db; width: {{ (p.value / max_prov * 100)|round }}%; height: 8px; border-radius: 2px;"></div>
+                        <span style="font-size: 6px;">$ {{ "{:,.0f}".format(p.value) }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        <div style="width: 48%; float: right;">
+            <h3 style="font-size: 10px; color: #2c3e50; border-left: 3px solid #e74c3c; padding-left: 5px;">TOP 5 PRODUCTOS</h3>
+            <table style="font-size: 7px;">
+                {% set max_prod = graficos.top_productos[0].value if graficos.top_productos else 1 %}
+                {% for p in graficos.top_productos %}
+                <tr>
+                    <td width="40%">{{ p.label }}</td>
+                    <td width="60%">
+                        <div style="background-color: #e74c3c; width: {{ (p.value / max_prod * 100)|round }}%; height: 8px; border-radius: 2px;"></div>
+                        <span style="font-size: 6px;">$ {{ "{:,.0f}".format(p.value) }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        <div style="clear: both;"></div>
+    </div>
+
+    <div class="totals-section" style="page-break-inside: avoid; margin-top: 20px;">
+        <table class="totals-table">
+            <tr>
+                <td class="label">SUBTOTAL BASE:</td>
+                <td class="value {{ 'negative' if total_base < 0 else '' }}">
+                    $ {{ "{:,.2f}".format(total_base) }}
+                </td>
+            </tr>
+            <tr>
+                <td class="label">IVA TOTAL:</td>
+                <td class="value {{ 'negative' if total_iva < 0 else '' }}">
+                    $ {{ "{:,.2f}".format(total_iva) }}
+                </td>
+            </tr>
+            <tr class="grand-total">
+                <td class="label" style="color: white;">COMPRAS NETAS:</td>
+                <td class="value" style="border-bottom: none;">
+                    $ {{ "{:,.2f}".format(total_general) }}
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="footer">
+        Generado por Finaxis ERP el {{ fecha_generacion }} | Página 1
+    </div>
+</body>
+</html>
+
 ''',
 
     'reports/rentabilidad_documento_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <title>Rentabilidad por Documento</title>
     <style>
-        @page { size: letter landscape; margin: 1cm; }
-        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 9pt; color: #333; line-height: 1.4; }
-        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #444; padding-bottom: 10px; }
-        .header h1 { font-size: 18pt; margin: 0; color: #000; }
-        .header p { font-size: 10pt; margin: 2px 0; color: #666; }
-        
-        .header-section { text-align: center; margin-bottom: 15px; }
-        .header-section h1 { font-size: 16pt; color: #2c3e50; text-transform: uppercase; margin: 0; }
-
-        .info-box { display: table; width: 100%; border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 5px; background-color: #fcfcfc; }
-        .info-box div { display: table-cell; width: 50%; vertical-align: top; }
-        .info-box p { margin: 3px 0; font-size: 9pt; }
-        
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
-        th, td { border: 1px solid #ccc; padding: 6px 4px; text-align: left; word-wrap: break-word; }
-        th { background-color: #f2f2f2; font-weight: bold; font-size: 8pt; text-transform: uppercase; color: #444; text-align: center; }
-        td { font-size: 8pt; }
-        
+        body { font-family: Arial, sans-serif; font-size: 10pt; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { font-size: 16pt; margin-bottom: 5px; }
+        .header p { font-size: 10pt; margin: 0; }
+        .info-box { border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 5px; background-color: #f9f9f9; }
+        .info-box p { margin: 3px 0; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #eee; font-weight: bold; }
         .right { text-align: right; }
-        .center { text-align: center; }
-        .mono { font-family: 'Courier New', monospace; font-weight: bold; }
-        .footer { margin-top: 30px; border-top: 1px solid #ccc; padding-top: 10px; font-size: 8pt; color: #777; text-align: center; }
-        .totals-row td { font-weight: bold; background-color: #eee; font-size: 9pt; border-top: 2px solid #444; }
-        .negative { color: #d9534f; background-color: #f9f2f2; }
+        .mono { font-family: 'Courier New', monospace; }
+        .footer { margin-top: 30px; border-top: 1px solid #ccc; padding-top: 10px; font-size: 9pt; }
+        .totals-row td { font-weight: bold; background-color: #e0e0e0; }
+        .negative { color: red; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>{{ empresa.razon_social }}</h1>
         <p>NIT: {{ empresa.nit }}</p>
-        <p>Reporte Generado: {{ now()|date("%d/%m/%Y %H:%M") }}</p>
+        <p>Reporte Generado: {{ now()|date("d/m/Y H:i") }}</p>
     </div>
 
     <div class="header-section">
@@ -7282,28 +8460,24 @@ TEMPLATES_EMPAQUETADOS = {
     </div>
 
     <div class="info-box">
-        <div>
-            <p><strong>Documento Auditado:</strong> {{ data.documento_ref }}</p>
-            <p><strong>Tercero:</strong> {{ data.tercero_nombre }}</p>
-        </div>
-        <div>
-            <p><strong>Fecha de Documento:</strong> {{ data.fecha|date("%d/%m/%Y") }}</p>
-            <p><strong>Filtro Usado:</strong> Código {{ filtros.tipo_documento_codigo|default('N/A') }} y Número {{ filtros.numero_documento|default('N/A') }}</p>
-        </div>
+        <p><strong>Documento Auditado:</strong> {{ data.documento_ref }}</p>
+        <p><strong>Tercero:</strong> {{ data.tercero_nombre }}</p>
+        <p><strong>Fecha de Documento:</strong> {{ data.fecha|date("d/m/Y") }}</p>
+        <p><strong>Filtro Usado:</strong> Código {{ filtros.tipo_documento_codigo|default('N/A') }} y Número {{ filtros.numero_documento|default('N/A') }}</p>
     </div>
 
     <table>
         <thead>
             <tr>
-                <th style="width: 6%;">CÓDIGO</th>
-                <th style="width: 15%;">ARTÍCULO</th>
-                <th class="right" style="width: 5%;">CANT.</th>
-                <th class="right" style="width: 8%;">VTA. UNIT.</th>
-                <th class="right" style="width: 8%;">COSTO UNIT.</th>
-                <th class="right" style="width: 15%;">VTA. TOTAL</th>
-                <th class="right" style="width: 15%;">COSTO TOTAL</th>
-                <th class="right" style="width: 12%;">UTILIDAD</th>
-                <th class="center" style="width: 16%;">MARGEN%</th>
+                <th style="width: 15%;">CÓDIGO</th>
+                <th style="width: 25%;">ARTÍCULO</th>
+                <th class="right" style="width: 8%;">CANT.</th>
+                <th class="right" style="width: 10%;">VTA. UNIT.</th>
+                <th class="right" style="width: 10%;">COSTO UNIT.</th>
+                <th class="right" style="width: 10%;">VTA. TOTAL</th>
+                <th class="right" style="width: 10%;">COSTO TOTAL</th>
+                <th class="right" style="width: 10%;">UTILIDAD BRUTA</th>
+                <th class="right" style="width: 7%;">MARGEN %</th>
             </tr>
         </thead>
         <tbody>
@@ -7311,13 +8485,13 @@ TEMPLATES_EMPAQUETADOS = {
             <tr class="{% if item.utilidad_bruta_valor|default(0) < 0 %}negative{% endif %}">
                 <td class="mono">{{ item.producto_codigo }}</td>
                 <td>{{ item.producto_nombre }}</td>
-                <td class="right mono">{{ item.cantidad|format_decimal(0) }}</td>
-                <td class="right mono">{{ item.valor_venta_unitario|format_currency(0) }}</td>
-                <td class="right mono">{{ item.costo_unitario|format_currency(0) }}</td>
-                <td class="right mono">{{ item.valor_venta_total|format_currency(0) }}</td>
-                <td class="right mono">{{ item.costo_total|format_currency(0) }}</td>
-                <td class="right mono">{{ item.utilidad_bruta_valor|format_currency(0) }}</td>
-                <td class="center mono">{{ item.utilidad_bruta_porcentaje|format_decimal(2) }}%</td>
+                <td class="right mono">{{ item.cantidad|format_decimal(2) }}</td>
+                <td class="right mono">{{ item.valor_venta_unitario|format_currency }}</td>
+                <td class="right mono">{{ item.costo_unitario|format_currency }}</td>
+                <td class="right mono">{{ item.valor_venta_total|format_currency }}</td>
+                <td class="right mono">{{ item.costo_total|format_currency }}</td>
+                <td class="right mono">{{ item.utilidad_bruta_valor|format_currency }}</td>
+                <td class="right mono">{{ item.utilidad_bruta_porcentaje|format_decimal(2) }}%</td>
             </tr>
             {% endfor %}
             {% if not data.detalle %}
@@ -7329,10 +8503,10 @@ TEMPLATES_EMPAQUETADOS = {
         <tfoot>
             <tr class="totals-row">
                 <td colspan="5" class="right">TOTALES ACUMULADOS:</td>
-                <td class="right mono">{{ data.totales.total_venta|default(0)|format_currency(0) }}</td>
-                <td class="right mono">{{ data.totales.total_costo|default(0)|format_currency(0) }}</td>
-                <td class="right mono">{{ data.totales.total_utilidad_bruta_valor|default(0)|format_currency(0) }}</td>
-                <td class="center mono">{{ data.totales.total_utilidad_bruta_porcentaje|default(0)|format_decimal(2) }}%</td>
+                <td class="right mono">{{ data.totales.total_venta|default(0)|format_currency }}</td>
+                <td class="right mono">{{ data.totales.total_costo|default(0)|format_currency }}</td>
+                <td class="right mono">{{ data.totales.total_utilidad_bruta_valor|default(0)|format_currency }}</td>
+                <td class="right mono">{{ data.totales.total_utilidad_bruta_porcentaje|default(0)|format_decimal(2) }}%</td>
             </tr>
         </tfoot>
     </table>
@@ -7343,10 +8517,11 @@ TEMPLATES_EMPAQUETADOS = {
     </div>
 </body>
 </html>
+
 ''',
 
     'reports/rentabilidad_factura_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -7446,10 +8621,11 @@ TEMPLATES_EMPAQUETADOS = {
     </div>
 </body>
 </html>
+
 ''',
 
     'reports/rentabilidad_producto.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -7546,15 +8722,15 @@ TEMPLATES_EMPAQUETADOS = {
     <table>
         <thead>
             <tr>
-                <th style="width: 10%;">Fecha</th>
-                <th style="width: 13%;">Documento</th>
-                <th class="text-right" style="width: 5%;">Cant.</th>
-                <th class="text-right" style="width: 8%;">Venta Unit.</th>
-                <th class="text-right" style="width: 15%;">Venta Total</th>
-                <th class="text-right" style="width: 8%;">Costo Unit.</th>
-                <th class="text-right" style="width: 15%;">Costo Total</th>
-                <th class="text-right" style="width: 11%;">Utilidad Bruta</th>
-                <th class="text-right" style="width: 15%;">% Margen</th>
+                <th>Fecha</th>
+                <th>Documento</th>
+                <th class="text-right">Cant.</th>
+                <th class="text-right">Venta Unit.</th>
+                <th class="text-right">Venta Total</th>
+                <th class="text-right">Costo Unit.</th>
+                <th class="text-right">Costo Total</th>
+                <th class="text-right">Utilidad Bruta</th>
+                <th class="text-right">% Margen</th>
             </tr>
         </thead>
         <tbody>
@@ -7599,22 +8775,23 @@ TEMPLATES_EMPAQUETADOS = {
 
 </body>
 </html>
+
 ''',
 
     'reports/rentabilidad_producto_grupo_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <title>Análisis de Rentabilidad por Producto/Grupo</title>
     <style>
         @page {
-            size: letter landscape; /* Paisaje para mÃ¡s columnas */
+            size: letter landscape; /* Paisaje para más columnas */
             margin: 1.5cm;
         }
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
-            font-size: 8pt; /* TamaÃ±o reducido para caber mÃ¡s info */
+            font-size: 8pt; /* Tamaño reducido para caber más info */
             color: #333;
         }
         .header {
@@ -7623,12 +8800,12 @@ TEMPLATES_EMPAQUETADOS = {
             padding-bottom: 10px;
             margin-bottom: 15px; /* Reducido margen */
         }
-        .header h1 { margin: 0; font-size: 14pt; }
-        .header h2 { margin: 0; font-size: 11pt; font-weight: normal; }
+        .header h1 { margin: 0; font-size: 14pt; } /* Reducido tamaño */
+        .header h2 { margin: 0; font-size: 11pt; font-weight: normal; } /* Reducido tamaño */
         .info {
             margin-bottom: 15px; /* Reducido margen */
             text-align: center;
-            font-size: 9pt; /* Reducido tamaÃ±o */
+            font-size: 9pt; /* Reducido tamaño */
         }
         .info p { margin: 1px 0; }
         table {
@@ -7648,13 +8825,13 @@ TEMPLATES_EMPAQUETADOS = {
             text-align: center;
         }
         .text-right { text-align: right; }
-        .nowrap { white-space: nowrap; } /* Para columnas de ID/CÃ³digo */
+        .nowrap { white-space: nowrap; } /* Para columnas de ID/Código */
         tfoot td {
             font-weight: bold;
             background-color: #e8e8e8;
             border-top: 2px solid #333;
         }
-        /* Clases para formato numÃ©rico */
+        /* Clases para formato numérico */
         .currency { text-align: right; }
         .percentage { text-align: right; }
     </style>
@@ -7667,7 +8844,7 @@ TEMPLATES_EMPAQUETADOS = {
     </div>
 
     <div class="info">
-        <p><strong>PerÃ­odo Analizado:</strong> {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
+        <p><strong>Período Analizado:</strong> {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
         {% if filtros.grupos_nombres %}
         <p><strong>Grupos:</strong> {{ filtros.grupos_nombres | join(', ') }}</p>
         {% elif filtros.producto_nombre %}
@@ -7721,10 +8898,11 @@ TEMPLATES_EMPAQUETADOS = {
 
 </body>
 </html>
+
 ''',
 
     'reports/reporte_facturacion_detallado.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -7815,14 +8993,15 @@ TEMPLATES_EMPAQUETADOS = {
     </table>
 </body>
 </html>
+
 ''',
 
     'reports/reporte_gestion_ventas.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Reporte de GestiÃ³n de Ventas</title>
+    <title>Reporte de Gestión de Ventas</title>
     <style>
         body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #333; }
         .header { text-align: center; margin-bottom: 20px; }
@@ -7844,8 +9023,8 @@ TEMPLATES_EMPAQUETADOS = {
 <body>
     <div class="header">
         <h1>{{ data.empresa_nombre }}</h1>
-        <h2>Reporte de GestiÃ³n de Ventas</h2>
-        <p>PerÃ­odo del {{ data.filtros.fecha_inicio }} al {{ data.filtros.fecha_fin }}</p>
+        <h2>Reporte de Gestión de Ventas</h2>
+        <p>Período del {{ data.filtros.fecha_inicio }} al {{ data.filtros.fecha_fin }}</p>
     </div>
 
     <h3>Resumen General</h3>
@@ -7908,17 +9087,18 @@ TEMPLATES_EMPAQUETADOS = {
     </table>
 </body>
 </html>
+
 ''',
 
     'reports/super_informe_inventarios_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <title>{{ titulo_reporte }}</title>
     <style>
         body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10px; color: #333; }
-        /* FORZAR ORIENTACIÃ“N HORIZONTAL PARA MOVIMIENTOS DETALLADOS */
+        /* FORZAR ORIENTACIÓN HORIZONTAL PARA MOVIMIENTOS DETALLADOS */
         @page { size: Letter landscape; margin: 1cm; } 
         h1 { font-size: 16px; text-align: center; margin-bottom: 5px; }
         h2 { font-size: 14px; text-align: center; margin-bottom: 15px; }
@@ -7933,7 +9113,7 @@ TEMPLATES_EMPAQUETADOS = {
         .total-row td { padding-top: 6px; padding-bottom: 6px; }
         .no-data { text-align: center; font-style: italic; padding: 20px; }
 
-        /* --- Estilos EspecÃ­ficos para cada Vista --- */
+        /* --- Estilos Específicos para cada Vista --- */
 
         /* Vista Movimientos */
         .vista-movimientos th { font-size: 9px; }
@@ -7954,7 +9134,7 @@ TEMPLATES_EMPAQUETADOS = {
     <div class="header-info">
         <p style="font-size: 14px; font-weight: bold;">{{ empresa_nombre }}</p>
         <p>NIT: (pendiente)</p>
-        <p>TelÃ©fono: (pendiente)</p>
+        <p>Teléfono: (pendiente)</p>
     </div>
 
     <h1>{{ titulo_reporte }}</h1>
@@ -7984,7 +9164,7 @@ TEMPLATES_EMPAQUETADOS = {
                     <th>Documento</th>
                     <th>Tercero</th>
                     <th>Bodega</th>
-                    <th>CÃ³digo</th>
+                    <th>Código</th>
                     <th>Producto</th>
                     <th>Tipo Mov.</th>
                     <th class="text-right">Cantidad</th>
@@ -8133,14 +9313,15 @@ TEMPLATES_EMPAQUETADOS = {
     {% endif %}
 </body>
 </html>
+
 ''',
 
     'reports/super_informe_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
-    <title>AuditorÃ­a Contable Avanzada</title>
+    <title>Auditoría Contable Avanzada</title>
     <meta charset="UTF-8">
     <style>
         @page {
@@ -8216,7 +9397,7 @@ TEMPLATES_EMPAQUETADOS = {
             background-color: #ffebee;
         }
 
-        /* Se eliminÃ³ el tachado */
+        /* Se eliminó el tachado */
 
         tfoot td {
             font-weight: bold;
@@ -8264,7 +9445,7 @@ TEMPLATES_EMPAQUETADOS = {
             {% else %}
             <tr>
                 <td colspan="{{ headers|length }}">No se encontraron resultados que coincidan con los criterios de
-                    bÃºsqueda.</td>
+                    búsqueda.</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -8287,286 +9468,181 @@ TEMPLATES_EMPAQUETADOS = {
 </body>
 
 </html>
+
 ''',
 
-    'reports/tercero_account_ledger_report.html': r'''<!DOCTYPE html>
+    'reports/tercero_account_ledger_report.html': r'''
+﻿<!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <title>Auxiliar por Tercero y Cuenta</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --green-inst: #1C3A18;
-            --green-light: #2D5A27;
-            --gold-soft: #C9A84C;
-            --white: #FFFFFF;
-            --bg-page: #FAFAF7;
-            --text-main: #1C3A18;
-            --text-labels: #444444;
-            --bg-accent: #F2F5F1;
-        }
-
         @page {
-            size: A4 portrait;
-            margin: 0;
+            size: letter landscape;
+            margin: 1.5cm;
         }
 
         body {
+            font-family: Arial, sans-serif;
+            font-size: 8px;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        h1,
+        h2 {
             margin: 0;
-            padding: 0;
-            background-color: var(--white);
-            color: var(--text-main);
-            font-family: 'DM Sans', sans-serif;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
         }
 
-        .page-container {
-            width: 210mm;
-            min-height: 297mm;
-            margin: 0 auto;
-            position: relative;
-            box-sizing: border-box;
-            background-color: var(--white);
-            padding-bottom: 30px;
+        h1 {
+            font-size: 14px;
         }
 
-        .decor-bar-top {
-            height: 6px;
-            background: linear-gradient(90deg, var(--green-inst), var(--green-light), var(--gold-soft), var(--green-light), var(--green-inst));
-            width: 100%;
+        h2 {
+            font-size: 12px;
+            font-weight: normal;
         }
 
-        .decor-bar-bottom {
-            height: 4px;
-            background: linear-gradient(90deg, var(--green-inst), var(--gold-soft));
-            width: 100%;
-            position: absolute;
-            bottom: 0;
+        .report-info {
+            margin-bottom: 15px;
+            font-size: 9px;
         }
-
-        header {
-            padding: 30px 30px 15px 30px;
-            display: table;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .header-left { display: table-cell; vertical-align: middle; text-align: left; }
-        .header-right { display: table-cell; vertical-align: middle; text-align: right; }
-
-        .badge-premium {
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--green-inst);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 4px;
-            display: block;
-        }
-        .badge-premium::before { content: "•"; margin-right: 6px; color: var(--gold-soft); }
-
-        .company-name {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 32px;
-            font-weight: 700;
-            line-height: 1;
-            margin: 0;
-            color: var(--green-inst);
-        }
-        .company-nit {
-            font-size: 11px;
-            color: #888;
-            margin-top: 2px;
-            letter-spacing: 1px;
-        }
-
-        .report-title-box {
-            text-align: right;
-        }
-        .doc-title {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 24px;
-            font-style: italic;
-            color: #444;
-            margin-bottom: 6px;
-        }
-        .date-range-badge {
-            display: inline-block;
-            border: 1px solid var(--green-inst);
-            padding: 4px 10px;
-            border-radius: 2px;
-        }
-        .date-range-text { font-size: 13px; font-weight: 700; color: var(--green-inst); }
-
-        .tercero-ribbon {
-            background-color: var(--green-inst);
-            color: var(--white);
-            padding: 12px 30px;
-            font-size: 13px;
-            margin-bottom: 20px;
-        }
-        .tercero-ribbon strong { color: var(--gold-soft); }
-
-        main { padding: 0 30px; }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 30px;
         }
 
-        thead th {
-            background-color: #F8F9F7;
-            color: var(--text-labels);
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            padding: 10px 8px;
-            border-bottom: 2px solid var(--green-inst);
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 4px;
             text-align: left;
+            word-wrap: break-word;
         }
 
-        tbody td {
-            padding: 8px;
-            font-size: 11px;
-            border-bottom: 1px solid #EEE;
-            color: #333;
-            vertical-align: middle;
+        th {
+            background-color: #f2f2f2;
+            text-align: center;
+            font-weight: bold;
         }
 
-        .row-alt { background-color: #FCFCFB; }
-        .text-right { text-align: right !important; }
-        .text-center { text-align: center !important; }
-        
-        .cuenta-header {
-            background-color: #F4F6F2;
-            font-weight: 700;
-            color: var(--green-inst);
-            font-size: 12px;
+        .text-right {
+            text-align: right;
         }
 
-        .saldo-ant-row {
-            font-style: italic;
-            color: #666;
-            font-size: 10px;
+        .text-center {
+            text-align: center;
         }
 
-        .total-section {
-            background-color: var(--green-inst);
-            color: var(--white);
-            font-weight: 700;
-            font-size: 12px;
+        .total-global-row td {
+            font-weight: bold;
+            background-color: #e0e0e0;
+            border-top: 2px solid #333;
         }
-        .total-section td { border: none; padding: 12px 8px; color: var(--white) !important; }
-        .gold-label { color: var(--gold-soft); text-transform: uppercase; letter-spacing: 1px; font-size: 10px; }
+
+        .cuenta-header-row td {
+            font-weight: bold;
+            background-color: #f2f2f2;
+        }
     </style>
 </head>
+
 <body>
-    <div class="page-container">
-        <div class="decor-bar-top"></div>
-        
-        <header>
-            <div class="header-left">
-                <span class="badge-premium">Inteligencia Financiera</span>
-                <h1 class="company-name">{{ empresa_nombre or 'VERDURAS LA 21' }}</h1>
-                <div class="company-nit">NIT: {{ empresa_nit or '901464119-7' }}</div>
-            </div>
-            <div class="header-right">
-                <div class="report-title-box">
-                    <div class="doc-title">Auxiliar por Tercero y Cuenta</div>
-                    <div class="date-range-badge">
-                        <span class="date-range-text">Del {{ fecha_inicio }} al {{ fecha_fin }}</span>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <div class="tercero-ribbon">
-            <strong>TERCERO SELECCIONADO:</strong> {{ tercero_info.nit }} &#8212; {{ tercero_info.razon_social }}
-        </div>
-
-        <main>
-            <table>
-                <thead>
-                    <tr>
-                        <th width="10%">Fecha</th>
-                        <th width="12%">Documento</th>
-                        <th>Concepto</th>
-                        {% if has_cost_centers %}
-                        <th width="10%">C. Costo</th>
-                        {% endif %}
-                        <th width="12%" class="text-right">D&eacute;bito</th>
-                        <th width="12%" class="text-right">Cr&eacute;dito</th>
-                        <th width="12%" class="text-right">Saldo Parcial</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr class="cuenta-header">
-                        <td colspan="{{ 6 if has_cost_centers else 5 }}">SALDO ANTERIOR GLOBAL</td>
-                        <td class="text-right">{{ "{:,.0f}".format(saldo_anterior_global).replace(',', '.') }}</td>
-                    </tr>
-
-                    {% for cuenta_id, grupo_movimientos in movimientos | groupby('cuenta_id') %}
-                    {% set movimientos_lista = list(grupo_movimientos) %}
-                    {% set primer_mov = movimientos_lista[0] %}
-                    <tr class="cuenta-header" style="background-color: #EEE; color: #333; font-size: 9px;">
-                        <td colspan="{{ 7 if has_cost_centers else 6 }}">
-                            Cuenta: {{ primer_mov.cuenta_codigo }} &#8212; {{ primer_mov.cuenta_nombre }}
-                        </td>
-                    </tr>
-                    <tr class="saldo-ant-row">
-                        <td colspan="{{ 6 if has_cost_centers else 5 }}">Saldo Inicial de la Cuenta</td>
-                        <td class="text-right">
-                            {{ "{:,.0f}".format(saldos_iniciales_por_cuenta.get(cuenta_id | string, 0)).replace(',', '.') }}
-                        </td>
-                    </tr>
-
-                    {% for mov in movimientos_lista %}
-                    <tr class="{{ 'row-alt' if loop.index0 % 2 == 0 else '' }}">
-                        <td class="text-center">{{ mov.fecha.strftime('%Y-%m-%d') if mov.fecha else '' }}</td>
-                        <td style="font-weight: 700; color: var(--green-light);">{{ mov.tipo_documento }}-{{ mov.numero_documento }}</td>
-                        <td style="font-size: 8px;">{{ mov.concepto }}</td>
-                        {% if has_cost_centers %}
-                        <td class="text-center" style="color: #888;">{{ mov.centro_costo_codigo or '-' }}</td>
-                        {% endif %}
-                        <td class="text-right">{{ "{:,.0f}".format(mov.debito).replace(',', '.') }}</td>
-                        <td class="text-right">{{ "{:,.0f}".format(mov.credito).replace(',', '.') }}</td>
-                        <td class="text-right">{{ "{:,.0f}".format(mov.saldo_parcial).replace(',', '.') }}</td>
-                    </tr>
-                    {% endfor %}
-                    {% endfor %}
-
-                    <tr class="cuenta-header">
-                        <td colspan="{{ 4 if has_cost_centers else 3 }}">TOTALES MOVIMIENTOS PERIODO</td>
-                        <td class="text-right">{{ "{:,.0f}".format(total_debito_global).replace(',', '.') }}</td>
-                        <td class="text-right">{{ "{:,.0f}".format(total_credito_global).replace(',', '.') }}</td>
-                        <td></td>
-                    </tr>
-
-                    <tr class="total-section">
-                        <td colspan="{{ 6 if has_cost_centers else 5 }}">
-                            <span class="gold-label">Consolidado Final</span><br>
-                            SALDO FINAL GLOBAL AL {{ fecha_fin }}
-                        </td>
-                        {% set saldo_final_global = (movimientos[-1].saldo_parcial if movimientos else saldo_anterior_global) %}
-                        <td class="text-right" style="font-size: 14px;">
-                            {{ "{:,.0f}".format(saldo_final_global).replace(',', '.') }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </main>
-        <div class="decor-bar-bottom"></div>
+    <div class="header">
+        <h1>{{ empresa_nombre }}</h1>
+        <h2>NIT: {{ empresa_nit }}</h2>
     </div>
+
+    <div class="report-info">
+        <h2>Auxiliar por Tercero y Cuenta</h2>
+        <p>
+            <strong>Tercero:</strong> {{ tercero_info.nit }} - {{ tercero_info.razon_social }}<br>
+            <strong>Periodo:</strong> Del {{ fecha_inicio }} al {{ fecha_fin }}
+        </p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Documento</th>
+                <th>Concepto</th>
+                {% if has_cost_centers %}
+                <th>C. Costo</th>
+                {% endif %}
+                <th class="text-right">Débito</th>
+                <th class="text-right">Crédito</th>
+                <th class="text-right">Saldo Parcial</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="total-global-row">
+                <td colspan="{{ 6 if has_cost_centers else 5 }}"><strong>SALDO ANTERIOR GLOBAL</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(saldo_anterior_global) }}</strong></td>
+            </tr>
+
+            {% for cuenta_id, grupo_movimientos in movimientos | groupby('cuenta_id') %}
+            {% set movimientos_lista = list(grupo_movimientos) %}
+            {% set primer_mov = movimientos_lista[0] %}
+            <tr class="cuenta-header-row">
+                <td colspan="{{ 7 if has_cost_centers else 6 }}">
+                    <strong>Cuenta: {{ primer_mov.cuenta_codigo }} - {{ primer_mov.cuenta_nombre }}</strong>
+                </td>
+            </tr>
+            <tr style="background-color: #fafafa;">
+                <td colspan="{{ 6 if has_cost_centers else 5 }}"><i>Saldo Anterior de la Cuenta</i></td>
+                <td class="text-right">
+                    <i>{{ "{:,.2f}".format(saldos_iniciales_por_cuenta.get(cuenta_id | string, 0)) }}</i>
+                </td>
+            </tr>
+
+            {% for mov in movimientos_lista %}
+            <tr>
+                <td>{{ mov.fecha.strftime('%Y-%m-%d') if mov.fecha else '' }}</td>
+                <td>{{ mov.tipo_documento }}-{{ mov.numero_documento }}</td>
+                <td>{{ mov.concepto }}</td>
+                {% if has_cost_centers %}
+                <td>{{ mov.centro_costo_codigo or '' }}</td>
+                {% endif %}
+                <td class="text-right">{{ "{:,.2f}".format(mov.debito) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(mov.credito) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(mov.saldo_parcial) }}</td>
+            </tr>
+            {% endfor %}
+            {% endfor %}
+
+            <tr class="total-global-row" style="background-color: #f1f5f9;">
+                <td colspan="{{ 4 if has_cost_centers else 3 }}"><strong>TOTALES MOVIMIENTOS DEL PERIODO</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(total_debito_global) }}</strong></td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(total_credito_global) }}</strong></td>
+                <td></td>
+            </tr>
+
+            <tr class="total-global-row" style="background-color: #1e293b; color: white;">
+                <td colspan="{{ 6 if has_cost_centers else 5 }}"><strong>SALDO FINAL GLOBAL AL {{ fecha_fin }}</strong>
+                </td>
+                {% set saldo_final_global = (movimientos[-1].saldo_parcial if movimientos else saldo_anterior_global) %}
+                <td class="text-right"><strong>{{ "{:,.2f}".format(saldo_final_global) }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
 </body>
+
 </html>
+
 ''',
 
     'reports/topes_inventario_report.html': r'''
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -8603,13 +9679,13 @@ TEMPLATES_EMPAQUETADOS = {
     <table>
         <thead>
             <tr>
-                <th style="width: 10%;">CÃ³d.</th>
+                <th style="width: 10%;">Cód.</th>
                 <th style="width: 30%;">Producto</th>
                 <th style="width: 15%;" class="text-right">Saldo Actual</th>
-                <th style="width: 10%;" class="text-right">Stock MÃ­n.</th>
-                <th style="width: 10%;" class="text-right">Stock MÃ¡x.</th>
+                <th style="width: 10%;" class="text-right">Stock Mín.</th>
+                <th style="width: 10%;" class="text-right">Stock Máx.</th>
                 <th style="width: 15%;" class="text-right">Diferencia</th>
-                <th style="width: 10%;" class="text-center">DecisiÃ³n</th>
+                <th style="width: 10%;" class="text-center">Decisión</th>
             </tr>
         </thead>
         <tbody>
@@ -8643,127 +9719,11 @@ TEMPLATES_EMPAQUETADOS = {
         </tbody>
     </table>
     
-    <h2>Total ArtÃ­culos en Alerta: {{ data | length }}</h2>
+    <h2>Total Artículos en Alerta: {{ data | length }}</h2>
 
 </body>
 </html>
+
 ''',
 
-    'reports/ventas_cliente_report.html': r'''
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Reporte Integral de Ventas por Cliente</title>
-    <style>
-        @page { size: letter landscape; margin: 1cm; }
-        body { font-family: 'Helvetica', sans-serif; font-size: 9pt; color: #333; }
-        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
-        .header h1 { margin: 0; font-size: 14pt; }
-        .header h2 { margin: 2px 0; font-size: 11pt; font-weight: normal; }
-        .info { margin-bottom: 15px; text-align: center; font-size: 9pt; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        th, td { border: 1px solid #ccc; padding: 4px; text-align: left; }
-        th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        .bg-totals { background-color: #e8e8e8; font-weight: bold; border-top: 2px solid #333; }
-        .client-header { background-color: #d9edf7; font-weight: bold; }
-        .detail-table { width: 95%; margin: 5px auto; font-size: 8pt; background-color: #fcfcfc;}
-        .detail-table th { background-color: #e0e0e0; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>{{ empresa.razon_social }}</h1>
-        <h2>Reporte Integral de Ventas por Cliente</h2>
-    </div>
-
-    <div class="info">
-        <p><strong>Período:</strong> {{ filtros.fecha_inicio }} al {{ filtros.fecha_fin }}</p>
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th style="width: 10%">NIT</th>
-                <th style="width: 25%">Cliente</th>
-                <th style="width: 8%; font-size: 8pt;">Venta Total</th>
-                <th style="width: 4%; font-size: 8pt;">% Vta</th>
-                <th style="width: 4%; font-size: 8pt;">% Util</th>
-                <th style="width: 8%; font-size: 8pt;">Costo Total</th>
-                <th style="width: 8%; font-size: 8pt;">Utilidad Total</th>
-                <th style="width: 5%; font-size: 8pt;">Margen</th>
-                <th style="width: 8%; font-size: 8pt;">Cant. Ítems</th>
-                <th style="width: 6%; font-size: 8pt;">Facturas</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in data.items %}
-            <tr class="client-header">
-                <td>{{ item.tercero_identificacion }}</td>
-                <td>{{ item.tercero_nombre }}</td>
-                <td class="text-right">${{ "{:,.0f}".format(item.total_venta) }}</td>
-                {% set pct_vta = ((item.total_venta / data.gran_total_venta * 100) | round | int) if data.gran_total_venta else 0 %}
-                <td class="text-right" style="color:#3730a3;font-weight:bold;">{{ pct_vta }}%</td>
-                {% set pct_util = ((item.total_utilidad / (data.gran_total_utilidad | abs) * 100) | round | int) if data.gran_total_utilidad else 0 %}
-                <td class="text-right" style="color:{% if item.total_utilidad < 0 %}red{% else %}#065f46{% endif %};font-weight:bold;">{{ pct_util }}%</td>
-                <td class="text-right">${{ "{:,.0f}".format(item.total_costo) }}</td>
-                <td class="text-right" style="color:{% if item.total_utilidad < 0 %}red{% endif %}">${{ "{:,.0f}".format(item.total_utilidad) }}</td>
-                <td class="text-right">{{ "%.2f"|format(item.margen_porcentaje) }}%</td>
-                <td class="text-right">{{ "%.2f"|format(item.cantidad_items) }}</td>
-                <td class="text-center">{{ item.conteo_documentos }}</td>
-            </tr>
-            {% if item.detalle_productos %}
-            <tr>
-                <td colspan="10" style="padding: 0;">
-                    <table class="detail-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 15%">Código</th>
-                                <th style="width: 30%">Producto</th>
-                                <th style="width: 10%">Cantidad</th>
-                                <th style="width: 15%">Venta Total</th>
-                                <th style="width: 15%">Costo Total</th>
-                                <th style="width: 15%">Utilidad</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for prod in item.detalle_productos %}
-                            <tr>
-                                <td>{{ prod.producto_codigo }}</td>
-                                <td>{{ prod.producto_nombre }}</td>
-                                <td class="text-right">{{ "%.2f"|format(prod.cantidad) }}</td>
-                                <td class="text-right">${{ "{:,.0f}".format(prod.total_venta) }}</td>
-                                <td class="text-right">${{ "{:,.0f}".format(prod.total_costo) }}</td>
-                                <td class="text-right">${{ "{:,.0f}".format(prod.utilidad) }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </td>
-            </tr>
-            {% endif %}
-            {% else %}
-            <tr>
-                <td colspan="10" class="text-center">No se encontraron ventas para los filtros seleccionados.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-        <tfoot>
-            <tr class="bg-totals">
-                <td colspan="2" class="text-right">TOTALES GENERALES</td>
-                <td class="text-right">${{ "{:,.0f}".format(data.gran_total_venta) }}</td>
-                <td class="text-right" style="color:#3730a3;font-weight:bold;">100%</td>
-                <td class="text-right" style="color:#065f46;font-weight:bold;">{{ '−' if data.gran_total_utilidad < 0 else '' }}100%</td>
-                <td class="text-right">${{ "{:,.0f}".format(data.gran_total_costo) }}</td>
-                <td class="text-right">${{ "{:,.0f}".format(data.gran_total_utilidad) }}</td>
-                <td class="text-right">{{ "%.2f"|format(data.margen_global_porcentaje) }}%</td>
-                <td colspan="2"></td>
-            </tr>
-        </tfoot>
-    </table>
-</body>
-</html>
-'''
 }
