@@ -411,7 +411,7 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
                     unidad_ph_id=unidad.id
                 )
                 
-                new_doc = documento_service.create_documento(db, doc_create, user_id=usuario_id)
+                new_doc = documento_service.create_documento(db, doc_create, user_id=usuario_id, skip_recalculo=True)
                 resultados["generadas"] += 1
                 resultados["detalles"].append(f"Unidad {unidad.codigo}: Doc {new_doc.numero} por ${total_factura:,.0f}")
 

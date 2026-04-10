@@ -165,7 +165,7 @@ def trigger_recalc_if_cxc_cxp(db: Session, documento_id: int, empresa_id: int, c
 
 # Dentro de app/services/documento.py
 
-def create_documento(db: Session, documento: schemas_doc.DocumentoCreate, user_id: int, commit: bool = True):
+def create_documento(db: Session, documento: schemas_doc.DocumentoCreate, user_id: int, commit: bool = True, skip_recalculo: bool = False):
     try:
         # 1. BLINDAJE CONTABLE: Validar período cerrado
         periodo_service.validar_periodo_abierto(db, documento.empresa_id, documento.fecha)
@@ -297,9 +297,10 @@ def create_documento(db: Session, documento: schemas_doc.DocumentoCreate, user_i
             pass
         
         # --- GATILLO AUTOMÁTICO DE RECÁLCULO CARTERA/PROVEEDORES ---
-        trigger_recalc_if_cxc_cxp(db, db_documento.id, db_documento.empresa_id)
-        if commit:
-            db.commit()
+        if not skip_recalculo:
+            trigger_recalc_if_cxc_cxp(db, db_documento.id, db_documento.empresa_id)
+            if commit:
+                db.commit()
 
 
         return db_documento
