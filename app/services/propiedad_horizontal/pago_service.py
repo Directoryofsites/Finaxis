@@ -88,7 +88,7 @@ from collections import defaultdict
 
 
 
-def get_estado_cuenta_unidad(db: Session, unidad_id: int, empresa_id: int):
+def get_estado_cuenta_unidad(db: Session, unidad_id: int, empresa_id: int, skip_recalculo: bool = False):
 
 
 
@@ -214,7 +214,13 @@ def get_estado_cuenta_unidad(db: Session, unidad_id: int, empresa_id: int):
 
 
 
-        propietario_id=unidad.propietario_principal_id
+        propietario_id=unidad.propietario_principal_id,
+
+
+
+
+
+        skip_recalculo=skip_recalculo  # OPTIMIZACIÓN: evitar recálculo redundante
 
 
 
@@ -2434,157 +2440,51 @@ def get_estado_cuenta_propietario(db: Session, propietario_id: int, empresa_id: 
 
 
 
-    # 3. Iterar y Consolidar
-
-
-
-
-
-    # Forzamos recálculo una sola vez por seguridad
-
-
-
-
+    # 3. Consolidar — OPTIMIZADO: recálculo ejecutado UNA sola vez. El bucle de unidades
+    # ya NO dispara recálculos individuales. Usamos get_historial_cuenta_unidad que calcula
+    # el saldo directamente de los movimientos contables (sin tocar aplicaciones_pago).
 
     cartera_service.recalcular_aplicaciones_tercero(db, propietario_id, empresa_id)
 
+    # Pre-cargar los IDs de cuentas CXC una sola vez para todas las unidades
+    cuentas_cxc_ids_set = set(cartera_service.get_cuentas_especiales_ids(db, empresa_id, 'cxc'))
 
+    # Carga TODOS los documentos del propietario en una sola consulta (evita N queries)
+    from sqlalchemy.orm import selectinload
+    todos_docs = db.query(Documento).options(
+        selectinload(Documento.movimientos)
+    ).filter(
+        Documento.empresa_id == empresa_id,
+        Documento.beneficiario_id == propietario_id,
+        Documento.estado.in_(['ACTIVO', 'PROCESADO'])
+    ).order_by(Documento.fecha.asc(), Documento.id.asc()).all()
 
+    # Agrupar documentos por unidad para cálculo batch
+    docs_por_unidad = {}
+    for doc in todos_docs:
+        uid = doc.unidad_ph_id
+        if uid not in docs_por_unidad:
+            docs_por_unidad[uid] = []
+        docs_por_unidad[uid].append(doc)
 
-
-
-
-
-
-
-
+    # Calcular saldo de cada unidad sin N queries adicionales
     for u in unidades:
-
-
-
-
-
-        # Llamamos al individual (pero optimizado, ya recalculó arriba)
-
-
-
-
-
-        # Nota: get_estado_cuenta_unidad hace recalculo, es redundante pero seguro.
-
-
-
-
-
-        # Si performance es problema, refactorizamos.
-
-
-
-
-
-        estado_u = get_estado_cuenta_unidad(db, u.id, empresa_id)
-
-
-
-
-
-        
-
-
-
-
+        docs_unidad = docs_por_unidad.get(u.id, [])
+        saldo_unidad = 0
+        for doc in docs_unidad:
+            for mov in doc.movimientos:
+                if mov.cuenta_id in cuentas_cxc_ids_set:
+                    saldo_unidad += (mov.debito - mov.credito)
 
         desglose_unidades.append({
-
-
-
-
-
             "unidad_id": u.id,
-
-
-
-
-
             "codigo": u.codigo,
-
-
-
-
-
-            "saldo": estado_u['saldo_total']
-
-
-
-
-
+            "saldo": saldo_unidad
         })
+        saldo_total_consolidado += saldo_unidad
 
-
-
-
-
-        saldo_total_consolidado += estado_u['saldo_total']
-
-
-
-
-
-        
-
-
-
-
-
-        # Filtramos facturas pendientes QUE PERTENEZCAN a esta unidad
-
-
-
-
-
-        # get_estado_cuenta_unidad trae TODO lo del tercero. Debemos filtrar por unidad si es posible.
-
-
-
-
-
-        # PERO: get_estado_cuenta_unidad actualmente usa 'get_facturas_pendientes_por_tercero', 
-
-
-
-
-
-        # que NO distingue unidad.
-
-
-
-
-
-        # SOLUCION: En el paso 4 haremos el filtrado correcto al armar la lista final.
-
-
-
-
-
-
-
-
-
-
-
-    # 4. Obtener Cartera REAL (Pendientes) con Distincion de Unidad
-
-
-
-
-
-    # Usamos nuestra nueva funcion especializada
-
-
-
-
-
-    docs_pendientes = get_cartera_ph_pendientes(db, empresa_id, propietario_id=propietario_id)
+    # 4. Obtener Cartera REAL (Pendientes) — skip_recalculo=True porque ya se recalculó arriba
+    docs_pendientes = get_cartera_ph_pendientes(db, empresa_id, propietario_id=propietario_id, skip_recalculo=True)
 
 
 
@@ -2662,7 +2562,7 @@ def get_estado_cuenta_propietario(db: Session, propietario_id: int, empresa_id: 
 
 
 
-def get_cartera_ph_pendientes(db: Session, empresa_id: int, unidad_id: int = None, propietario_id: int = None):
+def get_cartera_ph_pendientes(db: Session, empresa_id: int, unidad_id: int = None, propietario_id: int = None, skip_recalculo: bool = False):
 
 
 
@@ -2746,7 +2646,7 @@ def get_cartera_ph_pendientes(db: Session, empresa_id: int, unidad_id: int = Non
 
 
 
-    if target_propietario_id:
+    if target_propietario_id and not skip_recalculo:  # OPTIMIZACIÓN: omitir si ya se recalculó
 
 
 
