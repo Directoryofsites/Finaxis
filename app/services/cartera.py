@@ -287,6 +287,7 @@ def get_facturas_pendientes_por_tercero(db: Session, tercero_id: int, empresa_id
         func.sum(models_mov.debito).label("valor_total")
     ).join(models_doc, models_mov.documento_id == models_doc.id).filter(
         models_doc.empresa_id == empresa_id,
+        models_doc.beneficiario_id == tercero_id, # OPTIMIZACIÓN PATH B
         models_doc.anulado == False,
         models_mov.cuenta_id.in_(cuentas_cxc_ids) 
     ).group_by(models_mov.documento_id).subquery()
@@ -296,6 +297,8 @@ def get_facturas_pendientes_por_tercero(db: Session, tercero_id: int, empresa_id
         models_aplica.documento_factura_id.label("documento_id"),
         func.sum(models_aplica.valor_aplicado).label("total_aplicado")
     ).join(models_doc, models_aplica.documento_pago_id == models_doc.id).filter(
+        models_doc.empresa_id == empresa_id, # OPTIMIZACIÓN PATH B
+        models_doc.beneficiario_id == tercero_id, # OPTIMIZACIÓN PATH B
         models_doc.anulado == False
     )
     
