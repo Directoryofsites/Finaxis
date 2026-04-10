@@ -2279,11 +2279,7 @@ def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_
 
 
         "documento": new_doc,
-
-
-
-
-
+        "documento_id": getattr(new_doc, 'id', None),
         "sugerir_recalculo": sugerir_recalculo,
 
 
@@ -4970,11 +4966,7 @@ def registrar_pago_consolidado(db: Session, propietario_id: int, monto_total: fl
 
 
                     "unidad_id": uid,
-
-
-
-
-
+                    "documento_id": getattr(doc_creado, 'id', None),
                     "documento": f"RC-{doc_creado.numero}",
 
 

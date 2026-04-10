@@ -3,8 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
+import { apiService } from '../../../lib/apiService';
 import { phService } from '../../../lib/phService';
-import { FaMoneyBillWave, FaUser, FaBuilding, FaCheckCircle, FaExclamationTriangle, FaCalendarAlt } from 'react-icons/fa';
+import {
+    FaMoneyBillWave, FaUser, FaBuilding, FaCheckCircle, FaExclamationTriangle, FaCalendarAlt,
+    FaHistory, FaFileInvoiceDollar, FaPrint, FaFileAlt, FaListUl
+} from 'react-icons/fa';
 import { useRecaudos } from '../../../contexts/RecaudosContext'; // IMPORT
 import ManualButton from '../../components/ManualButton';
 
@@ -34,6 +38,8 @@ export default function PagosPHPage() {
         fecha: new Date().toISOString().slice(0, 10)
     });
     const [processing, setProcessing] = useState(false);
+    const [lastPaymentData, setLastPaymentData] = useState(null);
+    const [downloading, setDownloading] = useState(null);
     const [successMsg, setSuccessMsg] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
 
@@ -95,6 +101,7 @@ export default function PagosPHPage() {
         setEstadoCuenta(null);
         setSuccessMsg('');
         setErrorMsg('');
+        setLastPaymentData(null);
         setPagoForm(prev => ({ ...prev, monto: '' }));
     };
 
@@ -167,6 +174,7 @@ export default function PagosPHPage() {
                 : `Pago consolidado exitoso. Se generaron ${res.total_recibos} recibos.`;
 
             setSuccessMsg(msg);
+            setLastPaymentData(res);
 
             // Recargar estado
             if (paymentMode === 'UNIT') fetchEstadoCuenta('UNIT', selectedUnidadId);
@@ -184,6 +192,42 @@ export default function PagosPHPage() {
             setErrorMsg(err.response?.data?.detail || 'Error registrando pago.');
         } finally {
             setProcessing(false);
+        }
+    };
+
+    const handleDownloadPDF = async (type, id = null) => {
+        // type: 'RECEIPT' | 'ACCOUNT_STATUS' | 'EXTRACT'
+        setDownloading(type);
+        try {
+            let url = '';
+            let filename = 'documento.pdf';
+
+            if (type === 'RECEIPT') {
+                if (!id) return;
+                url = `/documentos/${id}/pdf`;
+                filename = `Recibo_Caja_${id}.pdf`;
+            } else if (type === 'ACCOUNT_STATUS') {
+                const targetId = paymentMode === 'UNIT' ? selectedUnidadId : selectedPropietarioId;
+                const mode = paymentMode === 'UNIT' ? 'UNIT' : 'OWNER';
+                url = `/ph/pagos/estado-cuenta/${targetId}/pdf?mode=${mode}&view=PENDING`;
+                filename = `Estado_Cuenta_${targetId}.pdf`;
+            } else if (type === 'EXTRACT') {
+                const targetId = paymentMode === 'UNIT' ? selectedUnidadId : selectedPropietarioId;
+                const mode = paymentMode === 'UNIT' ? 'UNIT' : 'OWNER';
+                url = `/ph/pagos/estado-cuenta/${targetId}/pdf?mode=${mode}&view=HISTORY`;
+                filename = `Extracto_${targetId}.pdf`;
+            }
+
+            const response = await apiService.get(url, { responseType: 'blob' });
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const blobUrl = URL.createObjectURL(blob);
+            window.open(blobUrl, '_blank');
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+        } catch (error) {
+            console.error(error);
+            alert("Error al generar PDF.");
+        } finally {
+            setDownloading(null);
         }
     };
 
@@ -414,7 +458,77 @@ export default function PagosPHPage() {
                             </form>
                         )}
 
-                        {successMsg && <div className="mt-4 p-3 bg-green-50 text-green-700 text-sm rounded-lg border border-green-200">{successMsg}</div>}
+                        {successMsg && (
+                            <div className="space-y-4">
+                                <div className="mt-4 p-3 bg-green-50 text-green-700 text-sm rounded-lg border border-green-200 shadow-sm animate-fadeIn">
+                                    <div className="flex items-center gap-2 font-bold mb-1">
+                                        <FaCheckCircle /> Pago Exitoso
+                                    </div>
+                                    {successMsg}
+                                </div>
+
+                                {/* CENTRO DE ACCIÓN INMEDIATO */}
+                                <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100 shadow-inner animate-slideUp">
+                                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 text-center">Acciones Rápidas</p>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {/* BOTON RECIBO(S) */}
+                                        {paymentMode === 'UNIT' && lastPaymentData?.documento_id && (
+                                            <button
+                                                onClick={() => handleDownloadPDF('RECEIPT', lastPaymentData.documento_id)}
+                                                className="flex items-center justify-between p-3 bg-white hover:bg-indigo-600 hover:text-white rounded-lg border border-indigo-200 transition-all font-bold text-sm text-indigo-700 group shadow-sm"
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <FaPrint className="group-hover:scale-110 transition-transform" /> Imprimir Recibo
+                                                </div>
+                                                <span className="text-[10px] opacity-60">PDF</span>
+                                            </button>
+                                        )}
+
+                                        {paymentMode === 'OWNER' && lastPaymentData?.detalle_pagos && (
+                                            <div className="space-y-1">
+                                                <p className="text-[9px] font-bold text-indigo-300 uppercase mb-1">Recibos por Unidad:</p>
+                                                <div className="max-h-32 overflow-y-auto pr-1">
+                                                    {lastPaymentData.detalle_pagos.filter(p => p.estado === 'OK').map((p, i) => (
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => handleDownloadPDF('RECEIPT', p.documento_id)}
+                                                            className="flex items-center justify-between w-full p-2 bg-white hover:bg-indigo-100 rounded border border-indigo-100 mb-1 text-xs text-indigo-600 transition-all"
+                                                        >
+                                                            <div className="flex items-center gap-1">
+                                                                <FaListUl className="text-[10px]" /> {p.documento}
+                                                            </div>
+                                                            <FaPrint />
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <button
+                                            onClick={() => handleDownloadPDF('ACCOUNT_STATUS')}
+                                            disabled={downloading === 'ACCOUNT_STATUS'}
+                                            className="flex items-center justify-between p-3 bg-white hover:bg-indigo-600 hover:text-white rounded-lg border border-indigo-200 transition-all font-bold text-sm text-indigo-700 group shadow-sm"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <FaFileAlt className="group-hover:scale-110 transition-transform" /> Estado de Cuenta
+                                            </div>
+                                            <span className="text-[10px] opacity-60">VISTA ACTUAL</span>
+                                        </button>
+
+                                        <button
+                                            onClick={() => handleDownloadPDF('EXTRACT')}
+                                            disabled={downloading === 'EXTRACT'}
+                                            className="flex items-center justify-between p-3 bg-white hover:bg-indigo-600 hover:text-white rounded-lg border border-indigo-200 transition-all font-bold text-sm text-indigo-700 group shadow-sm"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <FaHistory className="group-hover:scale-110 transition-transform" /> Descargar Extracto
+                                            </div>
+                                            <span className="text-[10px] opacity-60">HISTÓRICO</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         {errorMsg && <div className="mt-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-200 flex items-center gap-2"><FaExclamationTriangle /> {errorMsg}</div>}
                     </div>
 
