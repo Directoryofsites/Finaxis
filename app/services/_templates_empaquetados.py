@@ -2044,6 +2044,104 @@ TEMPLATES_EMPAQUETADOS = {
 
 ''',
 
+    'reports/cartera_detallada_ph_report.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Relación Detallada de Cartera</title>
+    <style>
+        @page { size: letter portrait; margin: 1.5cm; }
+        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10px; color: #333; line-height: 1.4; }
+        .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #2c3e50; padding-bottom: 10px; }
+        .header h1 { margin: 0; font-size: 16px; color: #2c3e50; text-transform: uppercase; }
+        .header h2 { margin: 2px 0; font-size: 12px; font-weight: normal; }
+        
+        .report-info { background: #f8f9fa; padding: 12px; margin-bottom: 20px; border: 1px solid #dee2e6; border-radius: 4px; }
+        .report-info h3 { margin: 0 0 10px 0; font-size: 14px; color: #2c3e50; text-align: center; }
+        
+        .details-box { margin-bottom: 20px; border-left: 4px solid #0d6efd; padding-left: 15px; }
+        .details-box p { margin: 4px 0; }
+        .label { font-weight: bold; width: 80px; display: inline-block; color: #555; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background-color: #2c3e50; color: white; padding: 10px 6px; text-align: left; font-size: 9px; text-transform: uppercase; }
+        td { padding: 10px 6px; border-bottom: 1px solid #eee; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        
+        .badge { padding: 3px 8px; border-radius: 12px; font-size: 8px; font-weight: bold; color: white; text-transform: uppercase; }
+        .bg-INTERES { background-color: #dc3545; }
+        .bg-MULTA { background-color: #fd7e14; }
+        .bg-CAPITAL { background-color: #0d6efd; }
+        
+        .total-row { background-color: #f8f9fa; font-weight: bold; font-size: 12px; color: #000; }
+        .total-row td { border-top: 2px solid #2c3e50; padding: 12px 6px; }
+        
+        .legal-note { margin-top: 20px; padding: 10px; font-size: 9px; background: #fff3cd; border: 1px solid #ffeeba; border-radius: 4px; color: #856404; }
+        .footer { margin-top: 30px; font-size: 8px; color: #777; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <h2>NIT: {{ empresa.nit }}</h2>
+    </div>
+
+    <div class="report-info">
+        <h3>Relación Detallada de Cartera por Conceptos</h3>
+        <div class="details-box">
+            <p><span class="label">Unidad:</span> <span style="font-weight: bold;">{{ unidad.codigo }}</span></p>
+            <p><span class="label">Fecha:</span> {{ fecha_impresion }}</p>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 50%;">Concepto de Cobro</th>
+                <th class="text-center" style="width: 20%;">Clasificación</th>
+                <th class="text-right" style="width: 30%;">Saldo Pendiente</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td style="font-weight: 500;">{{ item.concepto }}</td>
+                <td class="text-center">
+                    <span class="badge bg-{{ item.tipo }}">{{ item.tipo }}</span>
+                </td>
+                <td class="text-right" style="font-family: monospace; font-weight: bold; font-size: 11px;">
+                    ${{ "{:,.0f}".format(item.saldo) }}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3" class="text-center" style="padding: 30px; color: #999;">
+                    No existen deudas pendientes por conceptos para esta unidad.
+                </td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="2" class="text-right">TOTAL CARTERA PENDIENTE:</td>
+                <td class="text-right">${{ "{:,.0f}".format(total) }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="legal-note">
+        <strong>Nota de Prelación Legal:</strong> Los pagos recibidos se aplican siguiendo el orden legal establecido: 
+        1. Intereses de mora, 2. Sanciones/Multas, 3. Capital (Administración y otros conceptos).
+    </div>
+
+    <div class="footer">
+        Generado por Finaxis PH - Estado de cuenta consolidado basado en simulación de prelación legal.
+    </div>
+</body>
+</html>
+
+''',
+
     'reports/cartilla_inventario_admin_report.html': r'''
 ﻿<!DOCTYPE html>
 <html lang="es">
@@ -2739,6 +2837,244 @@ TEMPLATES_EMPAQUETADOS = {
         <div class="aging-box"><h4 class="vencida">31-60 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_31_60) }}</p></div>
         <div class="aging-box"><h4 class="vencida">61-90 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_61_90) }}</p></div>
         <div class="aging-box"><h4 class="vencida">+90 Días</h4><p>{{ '{:,.2f}'.format(reporte.edades.vencida_mas_90) }}</p></div>
+    </div>
+</body>
+</html>
+
+''',
+
+    'reports/estado_cuenta_ph_historico_report.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ labels.titulo_reporte_historico }}</title>
+    <style>
+        @page { size: letter portrait; margin: 1cm; }
+        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 9px; color: #333; line-height: 1.3; }
+        .header { text-align: center; margin-bottom: 15px; border-bottom: 2px solid #2c3e50; padding-bottom: 8px; }
+        .header h1 { margin: 0; font-size: 14px; color: #2c3e50; text-transform: uppercase; }
+        .header h2 { margin: 2px 0; font-size: 11px; font-weight: normal; }
+        
+        .report-header { background: #f8f9fa; padding: 10px; margin-bottom: 15px; border: 1px solid #dee2e6; border-radius: 4px; }
+        .report-header h3 { margin: 0; font-size: 12px; color: #2c3e50; text-align: center; text-transform: uppercase; }
+        
+        .summary-grid { display: table; width: 100%; border: 1px solid #dee2e6; margin-bottom: 15px; background: #fff; }
+        .summary-box { display: table-cell; width: 25%; padding: 8px; text-align: center; border-right: 1px solid #dee2e6; }
+        .summary-box:last-child { border-right: none; }
+        .summary-label { font-size: 8px; color: #666; text-transform: uppercase; margin-bottom: 3px; display: block; }
+        .summary-value { font-size: 11px; font-weight: bold; color: #2c3e50; }
+        .summary-value.positive { color: #28a745; }
+        .summary-value.negative { color: #dc3545; }
+
+        .info-section { display: table; width: 100%; margin-bottom: 15px; }
+        .info-box { display: table-cell; width: 50%; padding: 5px; }
+        .info-box p { margin: 2px 0; }
+        .info-label { font-weight: bold; color: #555; width: 90px; display: inline-block; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        th { background-color: #2c3e50; color: white; padding: 6px 4px; text-align: left; font-weight: 600; text-transform: uppercase; font-size: 8px; }
+        td { padding: 6px 4px; border-bottom: 1px solid #eee; vertical-align: top; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        
+        .doc-num { font-family: monospace; font-weight: bold; font-size: 9px; }
+        .sub-detalle { font-size: 8px; color: #666; margin-top: 2px; font-style: italic; }
+        
+        .footer { margin-top: 20px; font-size: 8px; color: #777; text-align: center; border-top: 1px solid #eee; padding-top: 8px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <h2>NIT: {{ empresa.nit }}</h2>
+    </div>
+
+    <div class="report-header">
+        <h3>{{ labels.titulo_reporte_historico }}</h3>
+        <p style="text-align: center; margin: 3px 0 0 0; font-size: 8px;">
+            Periodo: {{ fecha_inicio if fecha_inicio else 'Desde el inicio' }} al {{ fecha_fin }}
+        </p>
+    </div>
+
+    <div class="info-section">
+        <div class="info-box">
+            <p><span class="info-label">{{ labels.entidad_principal }}:</span> {{ propietario.nombre }}</p>
+            <p><span class="info-label">NIT/CC:</span> {{ propietario.documento }}</p>
+        </div>
+        <div class="info-box">
+            <p><span class="info-label">{{ labels.entidad_secundaria }}:</span> {{ unidad_codigo }}</p>
+            <p><span class="info-label">Fecha Impresión:</span> {{ fecha_impresion }}</p>
+        </div>
+    </div>
+
+    <div class="summary-grid">
+        <div class="summary-box">
+            <span class="summary-label">Saldo Anterior</span>
+            <span class="summary-value">${{ "{:,.0f}".format(saldo_anterior) }}</span>
+        </div>
+        <div class="summary-box">
+            <span class="summary-label">Total Cargos (+)</span>
+            <span class="summary-value negative">${{ "{:,.0f}".format(total_cargos if total_cargos else 0) }}</span>
+        </div>
+        <div class="summary-box">
+            <span class="summary-label">Total Abonos (-)</span>
+            <span class="summary-value positive">${{ "{:,.0f}".format(total_abonos if total_abonos else 0) }}</span>
+        </div>
+        <div class="summary-box" style="background: #e9ecef;">
+            <span class="summary-label">Saldo Final</span>
+            <span class="summary-value" style="font-size: 13px;">${{ "{:,.0f}".format(saldo_final) }}</span>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 10%;">Fecha</th>
+                <th style="width: 15%;">Documento</th>
+                <th>Concepto / Detalle</th>
+                <th class="text-right" style="width: 12%;">Cargo (+)</th>
+                <th class="text-right" style="width: 12%;">Abono (-)</th>
+                <th class="text-right" style="width: 15%;">Nuevo Saldo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if saldo_anterior != 0 %}
+            <tr style="background: #fafafa;">
+                <td colspan="5" class="text-right" style="font-weight: bold;">SALDO ANTERIOR AL {{ fecha_inicio }}:</td>
+                <td class="text-right" style="font-weight: bold;">${{ "{:,.0f}".format(saldo_anterior) }}</td>
+            </tr>
+            {% endif %}
+            
+            {% for t in transacciones %}
+            <tr>
+                <td>{{ t.fecha }}</td>
+                <td class="doc-num">{{ t.documento }}</td>
+                <td>
+                    {{ t.detalle }}
+                    {% if t.detalle_pago %}
+                    <div class="sub-detalle">
+                        Aplicado a: {{ t.detalle_pago | join(', ') }}
+                    </div>
+                    {% endif %}
+                </td>
+                <td class="text-right">{{ "${:,.0f}".format(t.debito) if t.debito > 0 else '-' }}</td>
+                <td class="text-right">{{ "${:,.0f}".format(t.credito) if t.credito > 0 else '-' }}</td>
+                <td class="text-right" style="font-weight: 600;">${{ "{:,.0f}".format(t.saldo) }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center" style="padding: 15px; color: #888;">No se registraron movimientos en el periodo seleccionado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>Software de Gestión Contable Finaxis PH - Desarrollado para ambientes de alta eficiencia.</p>
+        <p>Este reporte muestra el historial contable de su unidad basado en documentos oficiales procesados.</p>
+    </div>
+</body>
+</html>
+
+''',
+
+    'reports/estado_cuenta_ph_pendientes_report.html': r'''
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ labels.titulo_reporte_cobro }}</title>
+    <style>
+        @page { size: letter portrait; margin: 1.5cm; }
+        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10px; color: #333; line-height: 1.4; }
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #2c3e50; padding-bottom: 10px; }
+        .header h1 { margin: 0; font-size: 16px; color: #2c3e50; text-transform: uppercase; }
+        .header h2 { margin: 2px 0; font-size: 12px; font-weight: normal; }
+        .report-title { text-align: center; background: #f8f9fa; padding: 10px; margin-bottom: 20px; border: 1px solid #dee2e6; border-radius: 4px; }
+        .report-title h3 { margin: 0; font-size: 14px; color: #2c3e50; }
+        
+        .info-section { display: table; width: 100%; margin-bottom: 20px; border-collapse: collapse; }
+        .info-box { display: table-cell; width: 50%; vertical-align: top; padding: 5px; }
+        .info-box p { margin: 3px 0; }
+        .info-label { font-weight: bold; color: #555; width: 100px; display: inline-block; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background-color: #2c3e50; color: white; padding: 8px 5px; text-align: left; font-weight: 600; text-transform: uppercase; font-size: 9px; }
+        td { padding: 8px 5px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        
+        .total-row { background-color: #f8f9fa; font-weight: bold; font-size: 11px; }
+        .total-row td { border-top: 2px solid #2c3e50; border-bottom: 2px solid #2c3e50; }
+        
+        .footer { margin-top: 30px; font-size: 8px; color: #777; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
+        
+        .badge { padding: 2px 5px; border-radius: 3px; font-size: 8px; font-weight: bold; color: white; text-transform: uppercase; }
+        .bg-factura { background-color: #0d6efd; }
+        .bg-interes { background-color: #dc3545; }
+        .bg-ajuste { background-color: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ empresa.razon_social }}</h1>
+        <h2>NIT: {{ empresa.nit }}</h2>
+    </div>
+
+    <div class="report-title">
+        <h3>{{ labels.titulo_reporte_cobro }}</h3>
+        <p style="margin: 5px 0 0 0; font-size: 9px;">Fecha de Generación: {{ fecha_impresion }}</p>
+    </div>
+
+    <div class="info-section">
+        <div class="info-box" style="border-right: 1px solid #eee;">
+            <p><span class="info-label">{{ labels.entidad_principal }}:</span> {{ propietario.nombre }}</p>
+            <p><span class="info-label">NIT/CC:</span> {{ propietario.documento }}</p>
+        </div>
+        <div class="info-box" style="padding-left: 15px;">
+            <p><span class="info-label">{{ labels.entidad_secundaria }}:</span> {{ unidad_codigo }}</p>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 12%;">Fecha</th>
+                <th style="width: 15%;">Documento</th>
+                <th style="width: 18%;">Tipo</th>
+                <th>{{ labels.entidad_secundaria_short }}</th>
+                <th class="text-right" style="width: 15%;">Valor Original</th>
+                <th class="text-right" style="width: 15%;">Saldo Pendiente</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.fecha_fmt }}</td>
+                <td style="font-family: monospace; font-weight: bold;">{{ item.numero }}</td>
+                <td>{{ item.tipo }}</td>
+                <td class="text-center">{{ item.unidad_codigo }}</td>
+                <td class="text-right">${{ "{:,.0f}".format(item.valor_total) }}</td>
+                <td class="text-right" style="font-weight: bold;">${{ "{:,.0f}".format(item.saldo_pendiente) }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center" style="padding: 20px; color: #888;">No se encontraron saldos pendientes para esta unidad/propietario.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td colspan="5" class="text-right">TOTAL PENDIENTE A LA FECHA:</td>
+                <td class="text-right" style="color: #c00;">${{ "{:,.0f}".format(total_pendiente) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="footer">
+        <p>Este documento es una relación informativa de saldos y no constituye una factura de venta.</p>
+        <p>Generado automáticamente por Finaxis - Software de Gestión PH</p>
     </div>
 </body>
 </html>

@@ -5236,6 +5236,8 @@ def get_cartera_ph_pendientes_detallada(db: Session, empresa_id: int, unidad_id:
 
 def generar_pdf_cartera_detallada(db: Session, empresa_id: int, unidad_id: int):
     from weasyprint import HTML
+    from jinja2 import Environment, select_autoescape
+    from app.services._templates_empaquetados import TEMPLATES_EMPAQUETADOS
     from app.models.empresa import Empresa
     from datetime import date
     
@@ -5245,58 +5247,29 @@ def generar_pdf_cartera_detallada(db: Session, empresa_id: int, unidad_id: int):
         empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
         total = sum(d['saldo'] for d in detalle)
         fecha_impresion = date.today().strftime('%Y-%m-%d')
-    except Exception as e:
-        return HTML(string=f"Error: {e}").write_pdf()
+        
+        template_name = 'reports/cartera_detallada_ph_report.html'
+        
+        if template_name not in TEMPLATES_EMPAQUETADOS:
+            return HTML(string=f"<h1>Error: Plantilla {template_name} no encontrada.</h1>").write_pdf()
 
-    html_template = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <style>
-            @page {{ size: letter; margin: 2cm; }}
-            body {{ font-family: sans-serif; font-size: 12px; color: #333; }}
-            .header {{ text-align: center; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 10px; }}
-            .info-box {{ margin-bottom: 20px; background: #f9f9f9; padding: 15px; border-radius: 5px; }}
-            table {{ w-width: 100%; border-collapse: collapse; margin-top: 20px; width: 100%; }}
-            th {{ background: #2c3e50; color: white; padding: 10px; }}
-            td {{ padding: 10px; border-bottom: 1px solid #eee; }}
-            .amount {{ text-align: right; font-family: monospace; }}
-            .badge {{ padding: 2px 6px; border-radius: 4px; color: white; }}
-            .bg-INTERES {{ background: #dc3545; }} 
-            .bg-MULTA {{ background: #fd7e14; }}
-            .bg-CAPITAL {{ background: #0d6efd; }}
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <h1>{empresa.razon_social if empresa else 'Empresa'}</h1>
-            <h2>NIT: {empresa.nit if empresa else ''}</h2>
-            <h3>Relación Detallada de Cartera</h3>
-        </div>
-        <div class="info-box">
-             <p><strong>Unidad:</strong> {unidad.codigo if unidad else 'N/A'}</p>
-             <p><strong>Fecha:</strong> {fecha_impresion}</p>
-        </div>
-        <table>
-            <thead><tr><th>Concepto</th><th>Tipo</th><th>Saldo</th></tr></thead>
-            <tbody>
-    """
-    for item in detalle:
-        cls = f"bg-{item['tipo']}"
-        html_template += f"""
-        <tr>
-            <td>{item['concepto']}</td>
-            <td><span class="badge {cls}">{item['tipo']}</span></td>
-            <td class="amount">${item['saldo']:,.0f}</td>
-        </tr>
-        """
-    html_template += f"""
-        <tr><td colspan="2"><strong>TOTAL</strong></td><td class="amount"><strong>${total:,.0f}</strong></td></tr>
-        </tbody></table>
-        <p style="font-size:10px; background:#fff3cd; padding:10px;">
-           Nota: Prelación legal aplicada (1. Intereses, 2. Multas, 3. Capital).
-        </p>
-    </body>
-    </html>
-    """
-    return HTML(string=html_template).write_pdf()
+        # Renderizar con Jinja2
+        env = Environment(loader=None, autoescape=select_autoescape(['html', 'xml']))
+        template = env.from_string(TEMPLATES_EMPAQUETADOS[template_name])
+        
+        html_rendered = template.render(
+            empresa=empresa,
+            unidad=unidad,
+            items=detalle,
+            total=total,
+            fecha_impresion=fecha_impresion
+        )
+        
+        return HTML(string=html_rendered).write_pdf()
+
+    except Exception as e:
+        import traceback
+        error_msg = f"Error generando PDF de Cartera Detallada: {str(e)}\n{traceback.format_exc()}"
+        print(error_msg)
+        return HTML(string=f"<html><body><h1>Error en PDF</h1><pre>{error_msg}</pre></body></html>").write_pdf()
+
