@@ -52,3 +52,11 @@ class PHModuloContribucion(Base):
         secondary=ph_modulo_torre_association,
         backref="modulos"
     )
+
+    @property
+    def torres_ids(self):
+        """Propiedad calculada para serialización Pydantic: IDs de torres vinculadas."""
+        try:
+            return [t.id for t in self.torres] if self.torres else []
+        except Exception:
+            return []

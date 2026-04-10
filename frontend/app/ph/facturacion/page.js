@@ -301,11 +301,24 @@ export default function FacturacionPHPage() {
 
     if (authLoading) return <div className="p-10 text-center text-gray-500">Cargando módulo...</div>;
 
-    // Unidades filtradas para el modal (solo por texto de búsqueda)
-    const filteredUnits = unidades.filter(u =>
-        u.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (u.propietario?.razon_social || u.propietario_nombre || '').toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Unidades filtradas para el modal:
+    // Si el concepto tiene módulos con torres configuradas, solo muestra unidades de esas torres.
+    const filteredUnits = (() => {
+        const activeConcept = conceptos.find(c => c.id === currentConceptId);
+        const allowedTorresIds = activeConcept?.modulos
+            ?.flatMap(m => m.torres_ids || [])
+            .filter((id, i, arr) => arr.indexOf(id) === i) || [];
+
+        return unidades.filter(u => {
+            // Filtro por torre (solo si el concepto tiene torres configuradas en sus módulos)
+            if (allowedTorresIds.length > 0 && !allowedTorresIds.includes(u.torre_id)) return false;
+            // Filtro por texto de búsqueda
+            return (
+                u.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (u.propietario?.razon_social || u.propietario_nombre || '').toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        });
+    })();
 
     return (
         <div className="min-h-screen bg-gray-50 p-6 font-sans pb-24">
@@ -526,44 +539,60 @@ export default function FacturacionPHPage() {
                                 </div>
                             </div>
 
-                            {/* FILTRO POR TORRES (NUEVO) */}
-                            {torres.length > 0 && (
-                                <div className="p-3 bg-white border-b overflow-x-auto">
-                                    <div className="flex gap-2 min-w-max">
-                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider py-1">Agrupar por:</span>
-                                        {torres.map(t => {
-                                            const unitsInTower = unidades.filter(u => u.torre_id === t.id).map(u => u.id);
-                                            const selectedInTower = unitsInTower.filter(uid => tempSelectedUnits.includes(uid));
+                            {/* FILTRO POR TORRES - Solo muestra las torres permitidas por el módulo del concepto */}
+                            {(() => {
+                                // Calcular torres permitidas según el módulo del concepto activo
+                                const activeConcept = conceptos.find(c => c.id === currentConceptId);
+                                const allowedTorresIds = activeConcept?.modulos
+                                    ?.flatMap(m => m.torres_ids || [])
+                                    .filter((id, i, arr) => arr.indexOf(id) === i) || []; // unique
+                                
+                                // Si el concepto tiene módulos con torres configuradas, filtrar;
+                                // Si no, mostrar todas.
+                                const torresVisibles = allowedTorresIds.length > 0
+                                    ? torres.filter(t => allowedTorresIds.includes(t.id))
+                                    : torres;
 
-                                            let statusClass = "bg-gray-100 text-gray-600 border-gray-200";
-                                            let icon = <FaRegSquare className="text-gray-400" />;
+                                if (torresVisibles.length === 0) return null;
 
-                                            if (unitsInTower.length > 0) {
-                                                if (selectedInTower.length === unitsInTower.length) {
-                                                    statusClass = "bg-indigo-100 text-indigo-700 border-indigo-200 font-bold";
-                                                    icon = <FaCheckSquare className="text-indigo-600" />;
-                                                } else if (selectedInTower.length > 0) {
-                                                    statusClass = "bg-indigo-50 text-indigo-600 border-indigo-200 border-dashed";
-                                                    icon = <div className="w-3 h-3 bg-indigo-500 rounded-sm"></div>;
+                                return (
+                                    <div className="p-3 bg-white border-b overflow-x-auto">
+                                        <div className="flex gap-2 min-w-max">
+                                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider py-1">Agrupar por:</span>
+                                            {torresVisibles.map(t => {
+                                                const unitsInTower = unidades.filter(u => u.torre_id === t.id).map(u => u.id);
+                                                const selectedInTower = unitsInTower.filter(uid => tempSelectedUnits.includes(uid));
+
+                                                let statusClass = "bg-gray-100 text-gray-600 border-gray-200";
+                                                let icon = <FaRegSquare className="text-gray-400" />;
+
+                                                if (unitsInTower.length > 0) {
+                                                    if (selectedInTower.length === unitsInTower.length) {
+                                                        statusClass = "bg-indigo-100 text-indigo-700 border-indigo-200 font-bold";
+                                                        icon = <FaCheckSquare className="text-indigo-600" />;
+                                                    } else if (selectedInTower.length > 0) {
+                                                        statusClass = "bg-indigo-50 text-indigo-600 border-indigo-200 border-dashed";
+                                                        icon = <div className="w-3 h-3 bg-indigo-500 rounded-sm"></div>;
+                                                    }
                                                 }
-                                            }
 
-                                            return (
-                                                <button
-                                                    key={t.id}
-                                                    onClick={() => handleToggleTower(t.id)}
-                                                    className={`px-3 py-1 rounded-full text-xs border flex items-center gap-2 transition-all hover:scale-105 active:scale-95 ${statusClass}`}
-                                                    title={`Seleccionar toda la ${t.nombre}`}
-                                                >
-                                                    {icon}
-                                                    {t.nombre}
-                                                    <span className="opacity-60 text-[10px]">({selectedInTower.length}/{unitsInTower.length})</span>
-                                                </button>
-                                            );
-                                        })}
+                                                return (
+                                                    <button
+                                                        key={t.id}
+                                                        onClick={() => handleToggleTower(t.id)}
+                                                        className={`px-3 py-1 rounded-full text-xs border flex items-center gap-2 transition-all hover:scale-105 active:scale-95 ${statusClass}`}
+                                                        title={`Seleccionar toda la ${t.nombre}`}
+                                                    >
+                                                        {icon}
+                                                        {t.nombre}
+                                                        <span className="opacity-60 text-[10px]">({selectedInTower.length}/{unitsInTower.length})</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                );
+                            })()}
 
                             <div className="flex-1 overflow-y-auto p-2 bg-gray-50">
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">

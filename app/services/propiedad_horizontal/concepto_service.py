@@ -6,11 +6,20 @@ from fastapi import HTTPException
 
 class PHConceptoService:
     def get_all(self, db: Session, empresa_id: int) -> List[PHConcepto]:
-        return db.query(PHConcepto).options(
+        from app.models.propiedad_horizontal.modulo_contribucion import PHModuloContribucion
+        conceptos = db.query(PHConcepto).options(
             joinedload(PHConcepto.cuenta_ingreso),
             joinedload(PHConcepto.cuenta_cxc),
-            joinedload(PHConcepto.cuenta_interes)
+            joinedload(PHConcepto.cuenta_interes),
+            joinedload(PHConcepto.modulos)  # Cargar módulos del concepto
         ).filter(PHConcepto.empresa_id == empresa_id, PHConcepto.activo == True).all()
+        
+        # Forzar carga de torres de cada módulo dentro de la sesión activa
+        for c in conceptos:
+            for m in c.modulos:
+                _ = m.torres  # lazy load mientras la sesión está abierta
+        
+        return conceptos
 
     def get_by_id(self, db: Session, id: int) -> Optional[PHConcepto]:
         return db.query(PHConcepto).filter(PHConcepto.id == id).first()
