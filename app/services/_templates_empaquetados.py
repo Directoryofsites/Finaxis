@@ -2850,129 +2850,146 @@ TEMPLATES_EMPAQUETADOS = {
     <meta charset="UTF-8">
     <title>{{ labels.titulo_reporte_historico }}</title>
     <style>
-        @page { size: letter portrait; margin: 1cm; }
-        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 9px; color: #333; line-height: 1.3; }
-        .header { text-align: center; margin-bottom: 15px; border-bottom: 2px solid #2c3e50; padding-bottom: 8px; }
-        .header h1 { margin: 0; font-size: 14px; color: #2c3e50; text-transform: uppercase; }
-        .header h2 { margin: 2px 0; font-size: 11px; font-weight: normal; }
+        @page { size: letter landscape; margin: 1cm; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 9px; color: #1a202c; line-height: 1.5; background-color: #fff; }
         
-        .report-header { background: #f8f9fa; padding: 10px; margin-bottom: 15px; border: 1px solid #dee2e6; border-radius: 4px; }
-        .report-header h3 { margin: 0; font-size: 12px; color: #2c3e50; text-align: center; text-transform: uppercase; }
+        .header { display: table; width: 100%; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 20px; }
+        .header-logo { display: table-cell; vertical-align: middle; }
+        .header-info { display: table-cell; text-align: right; vertical-align: middle; }
+        .header h1 { margin: 0; font-size: 18px; color: #2d3748; font-weight: 700; }
+        .header h2 { margin: 2px 0; font-size: 12px; color: #4a5568; font-weight: 400; }
         
-        .summary-grid { display: table; width: 100%; border: 1px solid #dee2e6; margin-bottom: 15px; background: #fff; }
-        .summary-box { display: table-cell; width: 25%; padding: 8px; text-align: center; border-right: 1px solid #dee2e6; }
-        .summary-box:last-child { border-right: none; }
-        .summary-label { font-size: 8px; color: #666; text-transform: uppercase; margin-bottom: 3px; display: block; }
-        .summary-value { font-size: 11px; font-weight: bold; color: #2c3e50; }
-        .summary-value.positive { color: #28a745; }
-        .summary-value.negative { color: #dc3545; }
-
-        .info-section { display: table; width: 100%; margin-bottom: 15px; }
-        .info-box { display: table-cell; width: 50%; padding: 5px; }
-        .info-box p { margin: 2px 0; }
-        .info-label { font-weight: bold; color: #555; width: 90px; display: inline-block; }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-        th { background-color: #2c3e50; color: white; padding: 6px 4px; text-align: left; font-weight: 600; text-transform: uppercase; font-size: 8px; }
-        td { padding: 6px 4px; border-bottom: 1px solid #eee; vertical-align: top; }
+        /* SUMMARY CARDS DESIGN */
+        .cards-container { display: table; width: 100%; border-spacing: 15px 0; margin: 0 -15px 25px -15px; }
+        .card { display: table-cell; width: 33.33%; background: #ffffff; border-radius: 12px; padding: 15px; border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
+        
+        .card-cargos { border-left: 6px solid #6b46c1; } /* Purple/Blue */
+        .card-pagos { border-left: 6px solid #38a169; } /* Green */
+        .card-saldo { border-left: 6px solid #3182ce; } /* Blue */
+        
+        .card-label { font-size: 8px; font-weight: 700; color: #718096; text-transform: uppercase; margin-bottom: 8px; display: block; }
+        .card-value { font-size: 20px; font-weight: 800; color: #2d3748; }
+        
+        .info-panel { display: table; width: 100%; margin-bottom: 20px; background: #f7fafc; padding: 15px; border-radius: 8px; border: 1px solid #edf2f7; }
+        .info-col { display: table-cell; width: 50%; }
+        .info-row { margin-bottom: 5px; }
+        .label { font-weight: 700; color: #4a5568; display: inline-block; width: 100px; }
+        
+        /* TABLE DESIGN */
+        table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 10px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+        thead { background-color: #f8fafc; }
+        th { padding: 12px 10px; text-align: left; font-weight: 700; color: #4a5568; border-bottom: 2px solid #e2e8f0; text-transform: uppercase; font-size: 8px; letter-spacing: 0.05em; }
+        td { padding: 10px; border-bottom: 1px solid #edf2f7; vertical-align: middle; }
+        
         .text-right { text-align: right; }
         .text-center { text-align: center; }
+        .text-bold { font-weight: 700; }
+        .text-purple { color: #6b46c1; }
+        .text-green { color: #38a169; }
+        .text-blue { color: #3182ce; }
         
-        .doc-num { font-family: monospace; font-weight: bold; font-size: 9px; }
-        .sub-detalle { font-size: 8px; color: #666; margin-top: 2px; font-style: italic; }
+        .doc-link { color: #3182ce; font-weight: 600; text-decoration: none; }
+        .badge-unit { background: #ebf8ff; color: #2b6cb0; padding: 2px 6px; border-radius: 4px; font-weight: 600; border: 1px solid #bee3f8; }
         
-        .footer { margin-top: 20px; font-size: 8px; color: #777; text-align: center; border-top: 1px solid #eee; padding-top: 8px; }
+        .footer { margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 15px; text-align: center; color: #a0aec0; font-size: 8px; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>{{ empresa.razon_social }}</h1>
-        <h2>NIT: {{ empresa.nit }}</h2>
-    </div>
-
-    <div class="report-header">
-        <h3>{{ labels.titulo_reporte_historico }}</h3>
-        <p style="text-align: center; margin: 3px 0 0 0; font-size: 8px;">
-            Periodo: {{ fecha_inicio if fecha_inicio else 'Desde el inicio' }} al {{ fecha_fin }}
-        </p>
-    </div>
-
-    <div class="info-section">
-        <div class="info-box">
-            <p><span class="info-label">{{ labels.entidad_principal }}:</span> {{ propietario.nombre }}</p>
-            <p><span class="info-label">NIT/CC:</span> {{ propietario.documento }}</p>
+        <div class="header-logo">
+            <h1>{{ empresa.razon_social }}</h1>
+            <h2>NIT: {{ empresa.nit }}</h2>
         </div>
-        <div class="info-box">
-            <p><span class="info-label">{{ labels.entidad_secundaria }}:</span> {{ unidad_codigo }}</p>
-            <p><span class="info-label">Fecha Impresión:</span> {{ fecha_impresion }}</p>
+        <div class="header-info">
+            <h1 style="font-size: 16px;">{{ labels.titulo_reporte_historico }}</h1>
+            <h2>Periodo: {{ fecha_inicio }} al {{ fecha_fin }}</h2>
         </div>
     </div>
 
-    <div class="summary-grid">
-        <div class="summary-box">
-            <span class="summary-label">Saldo Anterior</span>
-            <span class="summary-value">${{ "{:,.0f}".format(saldo_anterior) }}</span>
+    <div class="cards-container">
+        <div class="card card-cargos">
+            <span class="card-label">Total Cargos (Debe)</span>
+            <div class="card-value">$ {{ "{:,.2f}".format(total_cargos) }}</div>
         </div>
-        <div class="summary-box">
-            <span class="summary-label">Total Cargos (+)</span>
-            <span class="summary-value negative">${{ "{:,.0f}".format(total_cargos if total_cargos else 0) }}</span>
+        <div class="card card-pagos">
+            <span class="card-label">Total Pagos (Abonos)</span>
+            <div class="card-value">$ {{ "{:,.2f}".format(total_abonos) }}</div>
         </div>
-        <div class="summary-box">
-            <span class="summary-label">Total Abonos (-)</span>
-            <span class="summary-value positive">${{ "{:,.0f}".format(total_abonos if total_abonos else 0) }}</span>
+        <div class="card card-saldo">
+            <span class="card-label">Saldo Neto</span>
+            <div class="card-value text-blue">$ {{ "{:,.2f}".format(saldo_neto) }}</div>
         </div>
-        <div class="summary-box" style="background: #e9ecef;">
-            <span class="summary-label">Saldo Final</span>
-            <span class="summary-value" style="font-size: 13px;">${{ "{:,.0f}".format(saldo_final) }}</span>
+    </div>
+
+    <div class="info-panel">
+        <div class="info-col">
+            <div class="info-row"><span class="label">{{ labels.entidad_principal }}:</span> {{ propietario.nombre }}</div>
+            <div class="info-row"><span class="label">Documento:</span> {{ propietario.documento }}</div>
+        </div>
+        <div class="info-col">
+            <div class="info-row"><span class="label">{{ labels.entidad_secundaria }}:</span> {{ unidad_codigo }}</div>
+            <div class="info-row"><span class="label">Impreso en:</span> {{ fecha_impresion }}</div>
         </div>
     </div>
 
     <table>
         <thead>
             <tr>
-                <th style="width: 10%;">Fecha</th>
-                <th style="width: 15%;">Documento</th>
+                <th style="width: 80px;">Fecha</th>
+                <th style="width: 100px;">Documento</th>
+                <th style="width: 100px;">Unidad Privada</th>
                 <th>Concepto / Detalle</th>
-                <th class="text-right" style="width: 12%;">Cargo (+)</th>
-                <th class="text-right" style="width: 12%;">Abono (-)</th>
-                <th class="text-right" style="width: 15%;">Nuevo Saldo</th>
+                <th class="text-right" style="width: 100px;">Cargos</th>
+                <th class="text-right" style="width: 100px;">Abonos</th>
+                <th class="text-right" style="width: 120px;">Saldo</th>
             </tr>
         </thead>
         <tbody>
             {% if saldo_anterior != 0 %}
-            <tr style="background: #fafafa;">
-                <td colspan="5" class="text-right" style="font-weight: bold;">SALDO ANTERIOR AL {{ fecha_inicio }}:</td>
-                <td class="text-right" style="font-weight: bold;">${{ "{:,.0f}".format(saldo_anterior) }}</td>
+            <tr style="background: #fdfdfd;">
+                <td class="text-bold">{{ fecha_inicio }}</td>
+                <td class="text-bold">-</td>
+                <td class="text-bold">{{ unidad_codigo }}</td>
+                <td class="text-bold">SALDO ANTERIOR AL PERIODO</td>
+                <td class="text-right">-</td>
+                <td class="text-right">-</td>
+                <td class="text-right text-bold">$ {{ "{:,.2f}".format(saldo_anterior) }}</td>
             </tr>
             {% endif %}
-            
+
             {% for t in transacciones %}
             <tr>
                 <td>{{ t.fecha }}</td>
-                <td class="doc-num">{{ t.documento }}</td>
+                <td class="doc-link">{{ t.documento }}</td>
+                <td><span class="badge-unit">{{ t.unidad_codigo or unidad_codigo }}</span></td>
                 <td>
                     {{ t.detalle }}
                     {% if t.detalle_pago %}
-                    <div class="sub-detalle">
-                        Aplicado a: {{ t.detalle_pago | join(', ') }}
-                    </div>
+                    <br><small style="color: #718096; font-style: italic;">Abonado a: {{ t.detalle_pago | join(', ') }}</small>
                     {% endif %}
                 </td>
-                <td class="text-right">{{ "${:,.0f}".format(t.debito) if t.debito > 0 else '-' }}</td>
-                <td class="text-right">{{ "${:,.0f}".format(t.credito) if t.credito > 0 else '-' }}</td>
-                <td class="text-right" style="font-weight: 600;">${{ "{:,.0f}".format(t.saldo) }}</td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="6" class="text-center" style="padding: 15px; color: #888;">No se registraron movimientos en el periodo seleccionado.</td>
+                <td class="text-right text-purple">
+                    {% if t.debito > 0 %}
+                    $ {{ "{:,.2f}".format(t.debito) }}
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td class="text-right text-green">
+                    {% if t.credito > 0 %}
+                    $ {{ "{:,.2f}".format(t.credito) }}
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td class="text-right text-bold">$ {{ "{:,.2f}".format(t.saldo) }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
     <div class="footer">
-        <p>Software de Gestión Contable Finaxis PH - Desarrollado para ambientes de alta eficiencia.</p>
-        <p>Este reporte muestra el historial contable de su unidad basado en documentos oficiales procesados.</p>
+        Finaxis PH - Plataforma de Inteligencia Financiera para Propiedad Horizontal.
     </div>
 </body>
 </html>

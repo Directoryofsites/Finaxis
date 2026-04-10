@@ -4215,7 +4215,15 @@ def generar_pdf_estado_cuenta(db: Session, empresa_id: int, unidad_id: int = Non
         if 'transacciones' in data_hist:
             data_hist['transacciones'] = [t for t in data_hist['transacciones'] if t['tipo_documento'] != 'SALDO INICIAL']
 
+        # Calcular totales especificos para el PDF (Cards)
+        total_cargos = sum(t['debito'] for t in data_hist['transacciones'])
+        total_abonos = sum(t['credito'] for t in data_hist['transacciones'])
+        
         context.update(data_hist)
+        context["total_cargos"] = total_cargos
+        context["total_abonos"] = total_abonos
+        context["saldo_neto"] = data_hist['saldo_final']
+
 
 
 
