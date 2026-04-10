@@ -48,6 +48,12 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
         .options(joinedload(PHUnidad.modulos_contribucion))\
         .filter(PHUnidad.empresa_id == empresa_id, PHUnidad.activo == True).all()
     
+    # Pre-cargar torres de los módulos para evitar lazy loading en el bucle
+    # Acceder a .torres en cada módulo dentro de la sesión activa
+    for concepto in conceptos:
+        for modulo in concepto.modulos:
+            _ = modulo.torres  # Forzar la carga mientras la sesión está abierta
+    
     print(f"--- DEBUG: Conceptos encontrados: {len(conceptos)}")
     print(f"--- DEBUG: Unidades encontradas: {len(unidades)}")
     
@@ -144,16 +150,32 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
                 es_mora = False
                 saldo_mora = 0
 
-                # --- LÓGICA DE MÓDULOS DE CONTRIBUCIÓN (BLINDAJE TOTAL) ---
+                # --- LÓGICA DE MÓDULOS DE CONTRIBUCIÓN (FILTRO POR TORRE) ---
                 if concepto.modulos:
-                    # El concepto tiene restricción por módulo. 
-                    # Se verifica SIEMPRE, incluso si fue forzado por excepción manual.
-                    unidad_modulos_ids = [m.id for m in unidad.modulos_contribucion]
-                    concepto_modulos_ids = [m.id for m in concepto.modulos]
-                    if not set(unidad_modulos_ids) & set(concepto_modulos_ids):
-                        print(f"--- SEGURIDAD: Unidad {unidad.codigo} ignorada para concepto {concepto.nombre} por no pertenecer al módulo adecuado. ---")
-                        continue
-                # ---------------------------------------------------------
+                    # Recopilar las torres autorizadas de TODOS los módulos del concepto
+                    torres_autorizadas_ids = set()
+                    modulos_sin_torres = []  # Módulos sin torres configuradas (usan asignación directa de unidades)
+                    
+                    for mod in concepto.modulos:
+                        if mod.torres:
+                            for t in mod.torres:
+                                torres_autorizadas_ids.add(t.id)
+                        else:
+                            modulos_sin_torres.append(mod.id)
+                    
+                    # Si hay torres configuradas en los módulos, filtrar por torre_id de la unidad
+                    if torres_autorizadas_ids:
+                        if unidad.torre_id not in torres_autorizadas_ids:
+                            print(f"--- SEGURIDAD: Unidad {unidad.codigo} (Torre {unidad.torre_id}) ignorada para concepto '{concepto.nombre}'. Torres permitidas: {torres_autorizadas_ids} ---")
+                            continue
+                    elif modulos_sin_torres:
+                        # Fallback: Si el módulo no tiene torres configuradas, usar asignación directa de unidades
+                        unidad_modulos_ids = {m.id for m in unidad.modulos_contribucion}
+                        concepto_modulos_ids = set(modulos_sin_torres)
+                        if not unidad_modulos_ids & concepto_modulos_ids:
+                            print(f"--- SEGURIDAD: Unidad {unidad.codigo} ignorada (sin módulo directo) para concepto '{concepto.nombre}' ---")
+                            continue
+                # -------------------------------------------------------
 
                 # --- CÁLCULO DE VALOR (SMART LOGIC) ---
                 if concepto.es_interes:

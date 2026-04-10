@@ -10,19 +10,22 @@ import { FaLayerGroup, FaPlus, FaEdit, FaTrash, FaSave, FaTimes } from 'react-ic
 
 export default function ModulosConfigPage() {
     const { user } = useAuth();
-    const { labels } = useRecaudos(); // HOOK
+    const { labels } = useRecaudos();
     const [modulos, setModulos] = useState([]);
+    const [torres, setTorres] = useState([]); // NUEVO: lista de torres disponibles
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [formData, setFormData] = useState({
         nombre: '',
         descripcion: '',
-        tipo_distribucion: 'COEFICIENTE'
+        tipo_distribucion: 'COEFICIENTE',
+        torres_ids: []
     });
 
     useEffect(() => {
         loadModulos();
+        loadTorres();
     }, []);
 
     const loadModulos = async () => {
@@ -38,20 +41,31 @@ export default function ModulosConfigPage() {
         }
     };
 
+    const loadTorres = async () => {
+        try {
+            const data = await phService.getTorres();
+            setTorres(data);
+        } catch (error) {
+            console.error("Error loading torres", error);
+        }
+    };
+
     const handleOpenModal = (modulo = null) => {
         if (modulo) {
             setEditingId(modulo.id);
             setFormData({
                 nombre: modulo.nombre,
                 descripcion: modulo.descripcion || '',
-                tipo_distribucion: modulo.tipo_distribucion
+                tipo_distribucion: modulo.tipo_distribucion,
+                torres_ids: modulo.torres_ids || []
             });
         } else {
             setEditingId(null);
             setFormData({
                 nombre: '',
                 descripcion: '',
-                tipo_distribucion: 'COEFICIENTE'
+                tipo_distribucion: 'COEFICIENTE',
+                torres_ids: []
             });
         }
         setModalOpen(true);
@@ -383,7 +397,18 @@ export default function ModulosConfigPage() {
                                         modulos.map((m) => (
                                             <tr key={m.id} className="hover:bg-gray-50 transition-colors">
                                                 <td className="p-3 font-medium text-gray-800">{m.nombre}</td>
-                                                <td className="p-3 text-gray-500">{m.descripcion || '-'}</td>
+                                                <td className="p-3">
+                                                     {(m.torres_ids?.length > 0) ? (
+                                                         <div className="flex flex-wrap gap-1">
+                                                             {m.torres_ids.map(tid => {
+                                                                 const t = torres.find(tor => tor.id === tid);
+                                                                 return t ? <span key={tid} className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full font-medium">{t.nombre}</span> : null;
+                                                             })}
+                                                         </div>
+                                                     ) : (
+                                                         <span className="text-xs text-orange-500 italic">Sin torres</span>
+                                                     )}
+                                                 </td>
                                                 <td className="p-3">
                                                     <span className={`px-2 py-1 rounded-full text-xs font-bold ${m.tipo_distribucion === 'COEFICIENTE' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
                                                         {m.tipo_distribucion}
@@ -462,10 +487,55 @@ export default function ModulosConfigPage() {
                                 <textarea
                                     className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                                     placeholder="Opcional..."
-                                    rows="3"
+                                    rows="2"
                                     value={formData.descripcion}
                                     onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
                                 />
+                            </div>
+
+                            {/* NUEVO: Selector de Torres */}
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">
+                                    🏗️ Torres / Grupos que Pertenecen a este Módulo
+                                </label>
+                                <p className="text-xs text-gray-500 mb-2">
+                                    Selecciona las Torres o Grupos cuyas unidades forman parte de este sector de cobro.
+                                    El sistema solo cargará esas unidades al facturar conceptos de este módulo.
+                                </p>
+                                {torres.length === 0 ? (
+                                    <p className="text-xs text-orange-500 italic">No hay torres configuradas aún.</p>
+                                ) : (
+                                    <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg border">
+                                        {torres.map(t => {
+                                            const isSelected = formData.torres_ids?.includes(t.id);
+                                            return (
+                                                <button
+                                                    key={t.id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const current = formData.torres_ids || [];
+                                                        const updated = isSelected
+                                                            ? current.filter(id => id !== t.id)
+                                                            : [...current, t.id];
+                                                        setFormData({ ...formData, torres_ids: updated });
+                                                    }}
+                                                    className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all ${
+                                                        isSelected
+                                                            ? 'bg-indigo-600 text-white border-indigo-600'
+                                                            : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-400'
+                                                    }`}
+                                                >
+                                                    {isSelected ? '✓ ' : ''}{t.nombre}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                                {formData.torres_ids?.length === 0 && torres.length > 0 && (
+                                    <p className="text-xs text-orange-500 mt-1 italic">
+                                        ⚠️ Sin torres asignadas: el módulo no filtrará por sector al facturar.
+                                    </p>
+                                )}
                             </div>
 
                             <div className="pt-4 flex justify-end gap-3">

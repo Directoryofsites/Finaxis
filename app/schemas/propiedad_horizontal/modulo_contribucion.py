@@ -7,14 +7,15 @@ class PHModuloContribucionBase(BaseModel):
     tipo_distribucion: str = "COEFICIENTE" # COEFICIENTE, IGUALITARIO
 
 class PHModuloContribucionCreate(PHModuloContribucionBase):
-    pass
+    torres_ids: Optional[List[int]] = []  # IDs de torres vinculadas a este módulo
 
 class PHModuloContribucionUpdate(PHModuloContribucionBase):
-    pass
+    torres_ids: Optional[List[int]] = []  # IDs de torres vinculadas a este módulo
 
 class PHModuloContribucionResponse(PHModuloContribucionBase):
     id: int
     empresa_id: int
+    torres_ids: List[int] = []  # IDs de las torres vinculadas
 
     class Config:
         from_attributes = True

@@ -10,6 +10,14 @@ ph_unidad_modulo_association = Table(
     Column("modulo_id", Integer, ForeignKey("ph_modulos_contribucion.id"), primary_key=True)
 )
 
+# Tabla de asociación (Muchos a Muchos) Módulos <-> Torres
+ph_modulo_torre_association = Table(
+    "ph_modulo_torre_association",
+    Base.metadata,
+    Column("modulo_id", Integer, ForeignKey("ph_modulos_contribucion.id"), primary_key=True),
+    Column("torre_id", Integer, ForeignKey("ph_torres.id"), primary_key=True)
+)
+
 class PHModuloContribucion(Base):
     """
     Representa un Módulo de Contribución para PH Mixta o por Sectores.
@@ -26,16 +34,21 @@ class PHModuloContribucion(Base):
     descripcion = Column(Text, nullable=True)
     
     # Tipo de Distribución por defecto para este módulo
-    # COEFICIENTE: Usa el coeficiente de copropiedad de las unidades miembro (Renormalizado)
-    # IGUALITARIO: Divide el gasto en partes iguales entre los miembros
     tipo_distribucion = Column(String(50), default="COEFICIENTE") 
 
     # Relaciones
     empresa = relationship("Empresa")
     
-    # Relación inversa con Unidades (definida aqui para claridad, pero el backref en Unidad la maneja)
+    # Relación inversa con Unidades
     unidades = relationship(
         "app.models.propiedad_horizontal.unidad.PHUnidad",
         secondary=ph_unidad_modulo_association,
         back_populates="modulos_contribucion"
+    )
+
+    # NUEVA RELACIÓN: Módulo -> Torres (Para filtrado de facturación)
+    torres = relationship(
+        "app.models.propiedad_horizontal.unidad.PHTorre",
+        secondary=ph_modulo_torre_association,
+        backref="modulos"
     )

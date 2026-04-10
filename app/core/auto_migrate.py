@@ -192,6 +192,18 @@ def run_auto_migrations():
             else:
                 logger.info("No se requieren migraciones de esquema pendientes.")
 
+            # 4. Crear tabla ph_modulo_torre_association si no existe
+            logger.info("Verificando tabla ph_modulo_torre_association...")
+            with engine.begin() as trans_conn:
+                trans_conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS ph_modulo_torre_association (
+                        modulo_id INTEGER NOT NULL REFERENCES ph_modulos_contribucion(id) ON DELETE CASCADE,
+                        torre_id INTEGER NOT NULL REFERENCES ph_torres(id) ON DELETE CASCADE,
+                        PRIMARY KEY (modulo_id, torre_id)
+                    )
+                """))
+                logger.info("Tabla ph_modulo_torre_association verificada/creada.")
+
             # 4. Auto-configuración de Rangos Sandbox (Self-healing)
             # Si estamos en PRUEBAS y los rangos son NULL, poner los defaults conocidos
             logger.info("Verificando consistencia de rangos en ambiente PRUEBAS...")
