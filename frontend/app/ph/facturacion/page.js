@@ -153,31 +153,20 @@ export default function FacturacionPHPage() {
         setConceptConfigs(newConfigs);
     };
 
-    // --- NUEVO HANDLER: SELECCION POR TORRE (AJUSTADO PARA RESPETAR MÓDULOS) ---
+    // --- HANDLER: SELECCION POR TORRE ---
     const handleToggleTower = (torreId) => {
-        const activeConcept = conceptos.find(c => c.id === currentConceptId);
-        const allowedModuleIds = activeConcept?.modulos?.map(m => m.id) || [];
+        // Identificar todas las unidades de esta torre
+        const unidadesTorre = unidades.filter(u => u.torre_id === torreId).map(u => u.id);
 
-        // 1. Identificar unidades de esta torre QUE CALIFICAN para el concepto
-        const unidadesValidasTorre = unidades.filter(u => {
-            if (u.torre_id !== torreId) return false;
-            if (allowedModuleIds.length > 0) {
-                return u.modulos_ids?.some(mid => allowedModuleIds.includes(mid));
-            }
-            return true;
-        }).map(u => u.id);
+        if (unidadesTorre.length === 0) return;
 
-        if (unidadesValidasTorre.length === 0) return;
-
-        // 2. Verificar estado actual (¿Todos los válidos seleccionados?)
-        const allSelected = unidadesValidasTorre.every(uid => tempSelectedUnits.includes(uid));
+        // Verificar si ya están todas seleccionadas
+        const allSelected = unidadesTorre.every(uid => tempSelectedUnits.includes(uid));
 
         if (allSelected) {
-            // Deseleccionar los válidos de esta torre
-            setTempSelectedUnits(prev => prev.filter(uid => !unidadesValidasTorre.includes(uid)));
+            setTempSelectedUnits(prev => prev.filter(uid => !unidadesTorre.includes(uid)));
         } else {
-            // Seleccionar solo los válidos (Union)
-            const parking = new Set([...tempSelectedUnits, ...unidadesValidasTorre]);
+            const parking = new Set([...tempSelectedUnits, ...unidadesTorre]);
             setTempSelectedUnits(Array.from(parking));
         }
     };
@@ -312,25 +301,11 @@ export default function FacturacionPHPage() {
 
     if (authLoading) return <div className="p-10 text-center text-gray-500">Cargando módulo...</div>;
 
-    // Unidades filtradas para el modal (Con restricción estricta por módulo del concepto)
-    const filteredUnits = unidades.filter(u => {
-        // 1. Obtener concepto actual si hay modal abierto
-        if (showUnitModal && currentConceptId) {
-            const activeConcept = conceptos.find(c => c.id === currentConceptId);
-            if (activeConcept && activeConcept.modulos?.length > 0) {
-                const allowedModuleIds = activeConcept.modulos.map(m => m.id);
-                const belongsToAllowedModule = u.modulos_ids?.some(mid => allowedModuleIds.includes(mid));
-                // Si la unidad no pertenece a ninguno de los módulos del concepto, queda FUERA.
-                if (!belongsToAllowedModule) return false;
-            }
-        }
-        
-        // 2. Filtro de búsqueda habitual
-        return (
-            u.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (u.propietario?.razon_social || '').toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    });
+    // Unidades filtradas para el modal (solo por texto de búsqueda)
+    const filteredUnits = unidades.filter(u =>
+        u.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (u.propietario?.razon_social || u.propietario_nombre || '').toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     return (
         <div className="min-h-screen bg-gray-50 p-6 font-sans pb-24">
@@ -544,22 +519,7 @@ export default function FacturacionPHPage() {
                                     />
                                 </div>
                                 <div className="mt-2 flex justify-between text-sm">
-                                    <span className="text-indigo-600 font-bold">
-                                        {/* Solo contar unidades seleccionadas que califiquen para el concepto actual */}
-                                        {(() => {
-                                            const activeConcept = conceptos.find(c => c.id === currentConceptId);
-                                            const allowedModuleIds = activeConcept?.modulos?.map(m => m.id) || [];
-                                            const count = tempSelectedUnits.filter(uid => {
-                                                const u = unidades.find(unit => unit.id === uid);
-                                                if (!u) return false;
-                                                if (allowedModuleIds.length > 0) {
-                                                    return u.modulos_ids?.some(mid => allowedModuleIds.includes(mid));
-                                                }
-                                                return true;
-                                            }).length;
-                                            return `${count} Unidades Seleccionadas`;
-                                        })()}
-                                    </span>
+                                    <span className="text-indigo-600 font-bold">{tempSelectedUnits.length} Unidades Seleccionadas</span>
                                     {tempSelectedUnits.length > 0 &&
                                         <button onClick={() => setTempSelectedUnits([])} className="text-red-500 text-xs hover:underline">Limpiar Selección</button>
                                     }
@@ -572,21 +532,7 @@ export default function FacturacionPHPage() {
                                     <div className="flex gap-2 min-w-max">
                                         <span className="text-xs font-bold text-gray-500 uppercase tracking-wider py-1">Agrupar por:</span>
                                         {torres.map(t => {
-                                            const activeConcept = conceptos.find(c => c.id === currentConceptId);
-                                            const allowedModuleIds = activeConcept?.modulos?.map(m => m.id) || [];
-
-                                            // Calcular solo las que CALIFICAN para el concepto
-                                            const unitsInTower = unidades.filter(u => {
-                                                if (u.torre_id !== t.id) return false;
-                                                if (allowedModuleIds.length > 0) {
-                                                    return u.modulos_ids?.some(mid => allowedModuleIds.includes(mid));
-                                                }
-                                                return true;
-                                            }).map(u => u.id);
-
-                                            // Omitir torres que no tengan ninguna unidad válida para este concepto
-                                            if (unitsInTower.length === 0) return null;
-
+                                            const unitsInTower = unidades.filter(u => u.torre_id === t.id).map(u => u.id);
                                             const selectedInTower = unitsInTower.filter(uid => tempSelectedUnits.includes(uid));
 
                                             let statusClass = "bg-gray-100 text-gray-600 border-gray-200";

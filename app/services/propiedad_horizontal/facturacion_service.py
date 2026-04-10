@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from datetime import date, datetime, timedelta
 from typing import List, Dict, Any
 from decimal import Decimal
@@ -30,8 +30,10 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
             if c_id and u_ids:
                 mapa_excepciones[c_id] = set(u_ids)
                 
-    # 2. Obtener Conceptos Activos
-    query = db.query(PHConcepto).filter(PHConcepto.empresa_id == empresa_id, PHConcepto.activo == True)
+    # 2. Obtener Conceptos Activos (con sus módulos cargados)
+    query = db.query(PHConcepto)\
+        .options(joinedload(PHConcepto.modulos))\
+        .filter(PHConcepto.empresa_id == empresa_id, PHConcepto.activo == True)
     
     # Filtrar por IDs seleccionados si se proporcionan
     if conceptos_ids:
@@ -41,8 +43,10 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
     if not conceptos:
         raise HTTPException(status_code=400, detail="No hay conceptos de cobro activos (o seleccionados) para facturar.")
 
-    # 4. Obtener Unidades Activas con Propietario
-    unidades = db.query(PHUnidad).filter(PHUnidad.empresa_id == empresa_id, PHUnidad.activo == True).all()
+    # 4. Obtener Unidades Activas con Propietario y sus Módulos de Contribución cargados
+    unidades = db.query(PHUnidad)\
+        .options(joinedload(PHUnidad.modulos_contribucion))\
+        .filter(PHUnidad.empresa_id == empresa_id, PHUnidad.activo == True).all()
     
     print(f"--- DEBUG: Conceptos encontrados: {len(conceptos)}")
     print(f"--- DEBUG: Unidades encontradas: {len(unidades)}")
