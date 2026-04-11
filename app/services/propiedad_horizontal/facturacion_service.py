@@ -115,7 +115,7 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
     primer_dia_mes_factura = fecha_factura.replace(day=1)
 
     # 1. Precarga de Cartera y Anatocismo (Saldos Mora)
-    from app.models.documento import MovimientoContable, Documento
+    # Nota: Usamos una version simplificada de cartera.py para velocidad masiva
     from app.models.aplicacion_pago import AplicacionPago
     from sqlalchemy import func
 
