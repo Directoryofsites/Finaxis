@@ -7,7 +7,10 @@ from sqlalchemy.orm import Session, selectinload, joinedload
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-limiter = Limiter(key_func=get_remote_address)
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["100/minute"]  # Límite global para prevenir saturación (Anti-DoS)
+)
 
 from .config import settings
 from app.core.database import get_db

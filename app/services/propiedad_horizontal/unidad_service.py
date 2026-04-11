@@ -32,9 +32,7 @@ def get_unidades(db: Session, empresa_id: int, skip: int = 0, limit: int = 100):
             "propietario": {"razon_social": u.propietario_principal.razon_social} if u.propietario_principal else None,
             "propietario_nombre": u.propietario_principal.razon_social if u.propietario_principal else None,
             # Incluir IDs de módulos para filtrado rápido en frontend
-            "modulos_ids": [m.id for m in u.modulos_contribucion],
-            "vehiculos": u.vehiculos,
-            "mascotas": u.mascotas
+            "modulos_ids": [m.id for m in u.modulos_contribucion]
         })
     return results
 

@@ -11,7 +11,9 @@ from ..core.config import settings
 # Esto resultará en un arranque del servidor mucho más limpio.
 engine = create_engine(
     settings.DATABASE_URL, 
-    echo=False  # <-- "Interruptor" de diagnóstico APAGADO
+    echo=False,
+    pool_size=20,
+    max_overflow=40
 )
 # --- FIN DE LA CORRECCIÓN ---
 

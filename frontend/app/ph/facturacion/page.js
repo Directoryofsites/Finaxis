@@ -46,17 +46,10 @@ export default function FacturacionPHPage() {
     const [conceptConfigs, setConceptConfigs] = useState({});
 
     // --- ESTADOS DE UI ---
-    const [loading, setLoading] = useState(false);
-    const [resultado, setResultado] = useState(null);
-    const [error, setError] = useState(null);
-    const [showWarningModal, setShowWarningModal] = useState(false);
-    const [warningData, setWarningData] = useState({ cantidad: 0 });
-
-    // --- MODAL DE SELECCIÓN DE UNIDADES ---
-    const [showUnitModal, setShowUnitModal] = useState(false);
-    const [currentConceptId, setCurrentConceptId] = useState(null);
-    const [tempSelectedUnits, setTempSelectedUnits] = useState([]); // Selección temporal en el modal
+    const [loadingUnits, setLoadingUnits] = useState(false);
+    const [loadingHistorial, setLoadingHistorial] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [filtroPeriodo, setFiltroPeriodo] = useState(new Date().toISOString().slice(0, 7)); // Periodo para consulta historial
 
     useEffect(() => {
         if (!authLoading && user?.empresaId) {
@@ -66,35 +59,41 @@ export default function FacturacionPHPage() {
 
     const loadInitialData = async () => {
         try {
-            const [conceptosData, historialData, unidadesData, torresData] = await Promise.all([
+            setLoading(true);
+            const [conceptosData, torresData] = await Promise.all([
                 phService.getConceptos(),
-                phService.getHistorialFacturacion(),
-                phService.getUnidades({ limit: 1000 }), // Traer todas para el selector
-                phService.getTorres() // Fetch torres
+                phService.getTorres()
             ]);
             // Filtrar solo activos y ordenar por nombre
             const activos = conceptosData.filter(c => c.activo).sort((a, b) => a.nombre.localeCompare(b.nombre));
             setConceptos(activos);
-            setUnidades(unidadesData);
-            setTorres(torresData || []); // Set torres
+            setTorres(torresData || []);
 
             // --- AUTO-SELECCIÓN INTELIGENTE ---
             const conceptosFijos = activos.filter(c => c.es_fijo || c.es_interes).map(c => c.id);
             setSelectedConceptos(conceptosFijos);
-
-            setHistorial(historialData);
         } catch (err) {
             console.error("Error cargando datos iniciales", err);
             setError("Error cargando datos del servidor.");
+        } finally {
+            setLoading(false);
         }
     };
 
-    const loadHistorial = async () => {
+    const handleSearchHistorial = async () => {
         try {
+            setLoadingHistorial(true);
             const data = await phService.getHistorialFacturacion();
-            setHistorial(data);
+            // Filtrar solo el periodo seleccionado por el usuario en el buscador
+            const filtrado = data.filter(h => h.periodo === filtroPeriodo);
+            setHistorial(filtrado);
+            if (filtrado.length === 0) {
+                alert(`No se encontró facturación procesada para el periodo ${filtroPeriodo}`);
+            }
         } catch (error) {
             console.error("Error refreshing history", error);
+        } finally {
+            setLoadingHistorial(false);
         }
     };
 
@@ -116,13 +115,26 @@ export default function FacturacionPHPage() {
     };
 
     // --- MANEJO DE CONFIGURACIÓN FLEXIBLE (FILTROS) ---
-    const openUnitFilter = (e, conceptoId) => {
+    const openUnitFilter = async (e, conceptoId) => {
         e.stopPropagation(); // Evitar toggle del concepto
         setCurrentConceptId(conceptoId);
         // Cargar selección actual o vacía
         setTempSelectedUnits(conceptConfigs[conceptoId] || []);
         setSearchTerm('');
         setShowUnitModal(true);
+
+        // --- CARGA LAZY DE UNIDADES ---
+        if (unidades.length === 0) {
+            try {
+                setLoadingUnits(true);
+                const data = await phService.getUnidades({ limit: 1000 });
+                setUnidades(data);
+            } catch (err) {
+                console.error("Error cargando unidades", err);
+            } finally {
+                setLoadingUnits(false);
+            }
+        }
 
         // Asegurar que el concepto esté seleccionado si abro su filtro
         if (!selectedConceptos.includes(conceptoId)) {
@@ -473,28 +485,57 @@ export default function FacturacionPHPage() {
                         </button>
                     </div>
 
-                    {/* HISTORIAL */}
+                    {/* CONSULTA DE HISTORIAL (RESTRICTIVO) */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="p-6 bg-gray-50 border-b border-gray-100 flex items-center gap-2">
-                            <FaHistory className="text-gray-500 text-xl" />
-                            <h3 className="font-bold text-gray-800 text-lg">Historial de Facturaciones</h3>
+                        <div className="p-6 bg-gray-50 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="flex items-center gap-2">
+                                <FaHistory className="text-gray-500 text-xl" />
+                                <h3 className="font-bold text-gray-800 text-lg">Consultar Periodo Anterior</h3>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <input 
+                                    type="month" 
+                                    value={filtroPeriodo} 
+                                    onChange={(e) => setFiltroPeriodo(e.target.value)} 
+                                    className="px-3 py-2 border rounded-lg text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                                <button 
+                                    onClick={handleSearchHistorial} 
+                                    disabled={loadingHistorial}
+                                    className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                                >
+                                    {loadingHistorial ? 'Buscando...' : <><FaSearch /> Buscar</>}
+                                </button>
+                            </div>
                         </div>
-                        <div className="max-h-[500px] overflow-y-auto">
-                            {historial.map((h, i) => (
-                                <div key={i} className="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50">
-                                    <div>
-                                        <p className="font-bold text-indigo-900">{h.periodo}</p>
-                                        <span className="text-xs text-gray-500">{h.cantidad} Documentos</span>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="font-bold">${parseFloat(h.total).toLocaleString()}</p>
-                                        <div className="flex gap-2 mt-1 justify-end">
-                                            <button onClick={() => handleVerDetalle(h.periodo)} className="text-indigo-600 text-xs font-bold hover:underline"><FaEye /> Ver Detalle</button>
-                                            <button onClick={() => handleDeleteFromHistory(h.periodo)} className="text-red-500 text-xs hover:text-red-700"><FaTrash /></button>
-                                        </div>
-                                    </div>
+                        <div className="p-4">
+                            {historial.length === 0 ? (
+                                <div className="py-10 text-center text-gray-400 italic">
+                                    No hay resultados. Selecciona un mes y presiona Buscar para consultar facturaciones previas.
                                 </div>
-                            ))}
+                            ) : (
+                                <div className="space-y-4">
+                                    {historial.map((h, i) => (
+                                        <div key={i} className="flex items-center justify-between p-4 bg-indigo-50/30 rounded-xl border border-indigo-100 hover:bg-indigo-50 transition-colors">
+                                            <div>
+                                                <p className="font-bold text-indigo-900 text-lg uppercase">{h.periodo}</p>
+                                                <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">{h.cantidad} Documentos Generados</span>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="font-bold text-xl text-gray-800">${parseFloat(h.total).toLocaleString()}</p>
+                                                <div className="flex gap-4 mt-2 justify-end">
+                                                    <button onClick={() => handleVerDetalle(h.periodo)} className="text-indigo-600 text-sm font-bold hover:underline flex items-center gap-1 transition-transform hover:scale-105">
+                                                        <FaEye /> Ver Detalle de Facturas
+                                                    </button>
+                                                    <button onClick={() => handleDeleteFromHistory(h.periodo)} className="text-red-500 text-sm font-bold hover:text-red-700 flex items-center gap-1 transition-transform hover:scale-105" title="Eliminar este periodo">
+                                                        <FaTrash /> Eliminar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -595,29 +636,36 @@ export default function FacturacionPHPage() {
                             })()}
 
                             <div className="flex-1 overflow-y-auto p-2 bg-gray-50">
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                    {filteredUnits.length === 0 ? <p className="col-span-3 text-center text-gray-400 py-10">No se encontraron unidades.</p> :
-                                        filteredUnits.map(u => (
-                                            <div key={u.id}
-                                                onClick={() => toggleUnitSelection(u.id)}
-                                                className={`p-3 rounded-lg border cursor-pointer text-sm flex items-center gap-2 hover:shadow-sm transition-all
-                                                ${tempSelectedUnits.includes(u.id) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-gray-200 text-gray-700'}
-                                            `}
-                                            >
-                                                <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0
-                                                ${tempSelectedUnits.includes(u.id) ? 'bg-white border-white' : 'border-gray-400'}
-                                            `}>
-                                                    {tempSelectedUnits.includes(u.id) && <FaCheckCircle className="text-indigo-600 text-xs" />}
-                                                </div>
-                                                <div className="overflow-hidden">
-                                                    <div className="font-bold truncate">{u.codigo}</div>
-                                                    <div className={`text-[10px] truncate ${tempSelectedUnits.includes(u.id) ? 'text-indigo-100' : 'text-gray-400'}`}>
-                                                        {u.propietario?.razon_social || 'Sin Propietario'}
+                                {loadingUnits ? (
+                                    <div className="py-20 text-center">
+                                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent mb-4"></div>
+                                        <p className="text-gray-500 font-medium">Cargando Unidades...</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                        {filteredUnits.length === 0 ? <p className="col-span-3 text-center text-gray-400 py-10">No se encontraron unidades.</p> :
+                                            filteredUnits.map(u => (
+                                                <div key={u.id}
+                                                    onClick={() => toggleUnitSelection(u.id)}
+                                                    className={`p-3 rounded-lg border cursor-pointer text-sm flex items-center gap-2 hover:shadow-sm transition-all
+                                                    ${tempSelectedUnits.includes(u.id) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-gray-200 text-gray-700'}
+                                                `}
+                                                >
+                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0
+                                                    ${tempSelectedUnits.includes(u.id) ? 'bg-white border-white' : 'border-gray-400'}
+                                                `}>
+                                                        {tempSelectedUnits.includes(u.id) && <FaCheckCircle className="text-indigo-600 text-xs" />}
+                                                    </div>
+                                                    <div className="overflow-hidden">
+                                                        <div className="font-bold truncate">{u.codigo}</div>
+                                                        <div className={`text-[10px] truncate ${tempSelectedUnits.includes(u.id) ? 'text-indigo-100' : 'text-gray-400'}`}>
+                                                            {u.propietario?.razon_social || 'Sin Propietario'}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
-                                </div>
+                                            ))}
+                                    </div>
+                                )}
                             </div>
 
                             <div className="p-4 border-t bg-white rounded-b-2xl flex justify-end gap-3">

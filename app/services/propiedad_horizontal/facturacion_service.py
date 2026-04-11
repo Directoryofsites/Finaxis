@@ -429,60 +429,51 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
 
 def get_historial_facturacion(db: Session, empresa_id: int):
     """
-    Agrupa las facturas de PH por mes para mostrar historial.
+    Agrupa las facturas de PH por mes para mostrar historial usando una consulta SQL agregada eficiente.
     """
     from sqlalchemy import func, desc
     
     config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
-    if not config:
+    if not config or not config.tipo_documento_factura_id:
         return []
 
     tipo_factura_id = config.tipo_documento_factura_id
-    if not tipo_factura_id:
-        return []
-
-    # Estrategia 2: Query de periodos distintos
-    periodos = db.query(Documento.fecha).filter(
+    
+    # 1. Obtener IDs de Cuentas CXC para el cálculo de totales
+    from app.services.cartera import get_cuentas_especiales_ids
+    ids_cxc = get_cuentas_especiales_ids(db, empresa_id, 'cxc')
+    
+    if not ids_cxc:
+        # Si no hay cuentas de cartera configuradas, usamos un fallback basado en el tipo de doc
+        tipo_doc = db.query(TipoDocumento).filter(TipoDocumento.id == tipo_factura_id).first()
+        if tipo_doc and tipo_doc.cuenta_debito_cxc_id:
+            ids_cxc = [tipo_doc.cuenta_debito_cxc_id]
+    
+    # 2. Consulta Agregada: Agrupar por mes, contar documentos únicos y sumar débitos a CXC
+    # Usamos func.to_char para compatibilidad con PostgreSQL (entorno Render)
+    resumen_query = db.query(
+        func.to_char(Documento.fecha, 'YYYY-MM').label('mes'),
+        func.count(Documento.id.distinct()).label('cantidad'),
+        func.sum(MovimientoContable.debito).label('total')
+    ).join(MovimientoContable, MovimientoContable.documento_id == Documento.id)\
+     .filter(
         Documento.empresa_id == empresa_id, 
         Documento.tipo_documento_id == tipo_factura_id,
-        Documento.estado.in_(['ACTIVO', 'PROCESADO'])
-    ).distinct().all()
+        Documento.estado.in_(['ACTIVO', 'PROCESADO']),
+        MovimientoContable.cuenta_id.in_(ids_cxc) if ids_cxc else True
+    )\
+    .group_by('mes')\
+    .order_by(desc('mes'))
     
-    # Normalizar a meses unicos
-    meses_set = set()
-    for p in periodos:
-        meses_set.add(p.fecha.strftime('%Y-%m'))
-        
-    historial = []
+    stats = resumen_query.all()
     
-    # Calcular totales por mes
-    for mes in sorted(list(meses_set), reverse=True):
-        # Buscar docs de este mes
-        docs = db.query(Documento).filter(
-            Documento.empresa_id == empresa_id,
-            Documento.tipo_documento_id == tipo_factura_id,
-            func.to_char(Documento.fecha, 'YYYY-MM') == mes,
-            Documento.estado.in_(['ACTIVO', 'PROCESADO'])
-        ).all()
-        
-        # Calcular total DEBITO (Total facturado) - Buscando Movimientos Ingreso o CXC
-        total_periodo = 0
-        from app.services.cartera import get_cuentas_especiales_ids
-        ids_cxc = get_cuentas_especiales_ids(db, empresa_id, 'cxc')
-        
-        for d in docs:
-            # Sumar debito de cuentas cxc
-            for mov in d.movimientos:
-                if mov.cuenta_id in ids_cxc:
-                    total_periodo += mov.debito
-
-        historial.append({
-            "periodo": mes,
-            "cantidad": len(docs),
-            "total": total_periodo
-        })
-        
-    return historial
+    return [
+        {
+            "periodo": s.mes,
+            "cantidad": s.cantidad,
+            "total": float(s.total or 0)
+        } for s in stats
+    ]
 
 def eliminar_facturacion_masiva(db: Session, empresa_id: int, periodo: str, usuario_id: int):
     """

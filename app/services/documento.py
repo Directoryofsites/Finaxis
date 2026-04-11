@@ -2404,13 +2404,12 @@ def anular_documentos_masivamente(db: Session, payload: schemas_doc.DocumentoAcc
                 documentos_anulados_count += 1
                 
                 # Colectar productos afectados para recálculo optimizado
-                # Nota: anular_documento devuelve el objeto documento_db
-                for mov in res.movimientos:
-                    # Si el documento tiene movimientos de inventario asociados
-                    from app.models.inventario import MovimientoInventario
-                    movs_inv = db.query(MovimientoInventario.producto_id).filter(MovimientoInventario.documento_id == res.id).all()
-                    for mi in movs_inv:
-                        productos_totales_afectados.add(mi.producto_id)
+                # Buscamos los productos que acabamos de afectar con las anulaciones
+                movs_inv = db.query(models_mov_inv.producto_id).filter(
+                    models_mov_inv.documento_id == res.id
+                ).all()
+                for mi in movs_inv:
+                    productos_totales_afectados.add(mi.producto_id)
 
         # Recálculo único al final del lote (Integridad de Inventario Optimizado)
         if productos_totales_afectados:
