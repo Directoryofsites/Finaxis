@@ -46,8 +46,20 @@ export default function FacturacionPHPage() {
     const [conceptConfigs, setConceptConfigs] = useState({});
 
     // --- ESTADOS DE UI ---
+    const [loading, setLoading] = useState(false);
     const [loadingUnits, setLoadingUnits] = useState(false);
     const [loadingHistorial, setLoadingHistorial] = useState(false);
+    const [error, setError] = useState(null);
+    const [resultado, setResultado] = useState(null);
+    
+    // MODALES
+    const [showUnitModal, setShowUnitModal] = useState(false);
+    const [showWarningModal, setShowWarningModal] = useState(false);
+    const [warningData, setWarningData] = useState({ cantidad: 0 });
+
+    // FILTROS Y BÚSQUEDA
+    const [currentConceptId, setCurrentConceptId] = useState(null);
+    const [tempSelectedUnits, setTempSelectedUnits] = useState([]); // Selección temporal en el modal
     const [searchTerm, setSearchTerm] = useState('');
     const [filtroPeriodo, setFiltroPeriodo] = useState(new Date().toISOString().slice(0, 7)); // Periodo para consulta historial
 
