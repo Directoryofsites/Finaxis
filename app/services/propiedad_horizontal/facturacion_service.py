@@ -105,15 +105,95 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
         if u.id not in ids_ya_facturados or u.id in unidades_con_excepciones:
             unidades_a_procesar.append(u)
     
-    if len(unidades_a_procesar) == 0:
-         return {
-            "generadas": 0,
-            "errores": 0,
-            "detalles": [f"Todas las unidades ({len(unidades)}) ya tienen facturación para {periodo_str}."]
-        }
-        
     unidades = unidades_a_procesar
 
+    # --- PRECARGA MASIVA DE DATOS (ANTI N+1) ---
+    print(f"--- BATCH OPTIMIZATION: Iniciando precarga masiva para {len(unidades)} unidades ---")
+    from app.services.cartera import get_cuentas_especiales_ids
+    ids_cxc = get_cuentas_especiales_ids(db, empresa_id, 'cxc')
+    cuentas_interes_ids = [c.cuenta_ingreso_id for c in conceptos if c.es_interes and c.cuenta_ingreso_id]
+    primer_dia_mes_factura = fecha_factura.replace(day=1)
+
+    # 1. Precarga de Cartera y Anatocismo (Saldos Mora)
+    from app.models.documento import MovimientoContable, Documento
+    from app.models.aplicacion_pago import AplicacionPago
+    from sqlalchemy import func
+
+    # Subquery de aplicaciones por factura
+    q_aplica = db.query(
+        AplicacionPago.documento_factura_id,
+        func.sum(AplicacionPago.valor_aplicado).label("total_aplicado")
+    ).join(Documento, AplicacionPago.documento_pago_id == Documento.id).filter(
+        Documento.empresa_id == empresa_id,
+        Documento.anulado == False
+    ).group_by(AplicacionPago.documento_factura_id).subquery()
+
+    # Subquery de debitos (Solo cuentas CXC)
+    q_debitos = db.query(
+        MovimientoContable.documento_id,
+        func.sum(MovimientoContable.debito).label("valor_total")
+    ).filter(
+        MovimientoContable.cuenta_id.in_(ids_cxc)
+    ).group_by(MovimientoContable.documento_id).subquery()
+
+    # Consulta masiva de pendientes con saldo
+    pendientes_lote = db.query(
+        Documento.id,
+        Documento.unidad_ph_id,
+        q_debitos.c.valor_total,
+        func.coalesce(q_aplica.c.total_aplicado, 0).label("aplicado")
+    ).join(q_debitos, Documento.id == q_debitos.c.documento_id)\
+     .outerjoin(q_aplica, Documento.id == q_aplica.c.documento_factura_id)\
+     .filter(
+        Documento.empresa_id == empresa_id,
+        Documento.anulado == False,
+        Documento.fecha < primer_dia_mes_factura,
+        (q_debitos.c.valor_total - func.coalesce(q_aplica.c.total_aplicado, 0)) > 0.01
+    ).all()
+
+    # 2. Precarga de Intereses Registrados (Para evitar Anatocismo en lote)
+    ids_docs_pendientes = [p.id for p in pendientes_lote]
+    mapa_anatocismo = {}
+    if ids_docs_pendientes and cuentas_interes_ids:
+        anatocismo_query = db.query(
+            MovimientoContable.documento_id,
+            func.sum(MovimientoContable.credito).label("total_interes")
+        ).filter(
+            MovimientoContable.documento_id.in_(ids_docs_pendientes),
+            MovimientoContable.cuenta_id.in_(cuentas_interes_ids)
+        ).group_by(MovimientoContable.documento_id).all()
+        mapa_anatocismo = {q.documento_id: float(q.total_interes) for q in anatocismo_query}
+
+    # Organizar saldos depurados por unidad en un mapa de memoria
+    mapa_saldos_unidades = {}
+    for p in pendientes_lote:
+        saldo_factura = float(p.valor_total - p.aplicado)
+        interes_incluido = mapa_anatocismo.get(p.id, 0)
+        base_depurada = max(0, saldo_factura - interes_incluido)
+        
+        if p.unidad_ph_id not in mapa_saldos_unidades:
+            mapa_saldos_unidades[p.unidad_ph_id] = 0
+        mapa_saldos_unidades[p.unidad_ph_id] += base_depurada
+
+    # 3. Precarga de Pagos Tardios (Recibos del mes anterior)
+    ultimo_dia_mes_ant = primer_dia_mes_factura - timedelta(days=1)
+    primer_dia_mes_ant = ultimo_dia_mes_ant.replace(day=1)
+    mapa_recibos_tardios = {}
+    if config.tipo_documento_recibo_id:
+        recibos_query = db.query(Documento).filter(
+            Documento.empresa_id == empresa_id,
+            Documento.tipo_documento_id == config.tipo_documento_recibo_id,
+            Documento.fecha >= primer_dia_mes_ant,
+            Documento.fecha <= ultimo_dia_mes_ant,
+            Documento.estado == 'ACTIVO'
+        ).options(joinedload(Documento.movimientos)).all()
+        for r in recibos_query:
+            if r.unidad_ph_id not in mapa_recibos_tardios:
+                mapa_recibos_tardios[r.unidad_ph_id] = []
+            mapa_recibos_tardios[r.unidad_ph_id].append(r)
+    
+    print(f"--- BATCH OPTIMIZATION: Precarga completada. Iniciando bucle de generacion ---")
+    # -------------------------------------------
     # 6. Iterar Unidades y Generar Facturas
     for unidad in unidades:
         try:
@@ -184,60 +264,42 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
                     # --- LÓGICA DE INTERÉS DIFERIDO DISCRIMINADO (Pagos Tardios del Mes Anterior) ---
                     # MOVIDO AL INICIO PARA QUE APAREZCA PRIMERO EN EL DETALLE
                     if not pagos_tardios_procesados and float(config.interes_mora_mensual) > 0 and not ya_facturada:
-                        # NOTA: Si es Delta (ya_facturada), ¿deberíamos recalcular intereses de mora?
-                        # Probablemente NO, porque ya se cobraron en la factura principal.
-                        # Asumimos que el Delta es para OTROS conceptos (Multas, etc).
-                        # Si el usuario quiere recalcular mora, debería borrar y regenerar.
                         try:
-                            # 1. Calcular fechas del mes anterior
-                            # Ejemplo: fecha_factura 2026-02-01 -> Mes Anterior: Enero 2026 (01 al 31)
-                            # Restamos 1 dia al 1ro del mes actual para obtener ultimo del anterior
-                            ultimo_dia_mes_ant = fecha_factura.replace(day=1) - timedelta(days=1)
-                            primer_dia_mes_ant = ultimo_dia_mes_ant.replace(day=1)
-                            
-                            # 2. Buscar Recibos en ese rango
-                            if config.tipo_documento_recibo_id and config.dia_limite_pago:
-                                recibos_tardios = db.query(Documento).filter(
-                                    Documento.empresa_id == empresa_id,
-                                    Documento.unidad_ph_id == unidad.id,
-                                    Documento.tipo_documento_id == config.tipo_documento_recibo_id,
-                                    Documento.fecha >= primer_dia_mes_ant,
-                                    Documento.fecha <= ultimo_dia_mes_ant,
-                                    Documento.estado == 'ACTIVO'
-                                ).order_by(Documento.fecha.asc()).all() # Ordenar por fecha para agrupar
+                            # 2. Obtener Recibos del mapa precargado
+                            recibos_tardios = mapa_recibos_tardios.get(unidad.id, [])
 
-                                for recibo in recibos_tardios:
-                                    if recibo.fecha.day > config.dia_limite_pago:
-                                        # 3. Calcular Base (Total abonado a credito)
-                                        valor_base_pago = sum([m.credito for m in recibo.movimientos if m.credito > 0])
+                            for recibo in recibos_tardios:
+                                if recibo.fecha.day > config.dia_limite_pago:
+                                    # 3. Calcular Base (Total abonado a credito)
+                                    valor_base_pago = sum([m.credito for m in recibo.movimientos if m.credito > 0])
+                                    
+                                    if valor_base_pago > 0:
+                                        tasa_decimal = Decimal(str(config.interes_mora_mensual)) / Decimal(100)
+                                        interes_pago = valor_base_pago * tasa_decimal
+                                        interes_pago = round(interes_pago, 2)
                                         
-                                        if valor_base_pago > 0:
-                                            tasa_decimal = Decimal(str(config.interes_mora_mensual)) / Decimal(100)
-                                            interes_pago = valor_base_pago * tasa_decimal
-                                            interes_pago = round(interes_pago, 2)
+                                        if interes_pago > 0:
+                                            # Cuentas
+                                            cta_ing = concepto.cuenta_ingreso_id
+                                            cta_cxc = concepto.cuenta_cxc_id or config.cuenta_cartera_id or tipo_doc_obj.cuenta_debito_cxc_id
                                             
-                                            if interes_pago > 0:
-                                                # Cuentas
-                                                cta_ing = concepto.cuenta_ingreso_id
-                                                cta_cxc = concepto.cuenta_cxc_id or config.cuenta_cartera_id or tipo_doc_obj.cuenta_debito_cxc_id
-                                                
-                                                if cta_ing and cta_cxc:
-                                                    # Credito Ingreso
-                                                    movimientos.append(doc_schemas.MovimientoContableCreate(
-                                                        cuenta_id=cta_ing,
-                                                        concepto=f"Interés Mora (Pago tardío {recibo.fecha}: {config.interes_mora_mensual}% sobre ${valor_base_pago:,.0f})",
-                                                        debito=0,
-                                                        credito=interes_pago,
-                                                        centro_costo_id=None
-                                                    ))
-                                                    # Debito Cartera
-                                                    movimientos.append(doc_schemas.MovimientoContableCreate(
-                                                        cuenta_id=cta_cxc,
-                                                        concepto=f"CxC Interés Mora (Pago tardío {recibo.fecha}: {config.interes_mora_mensual}% sobre ${valor_base_pago:,.0f}) - {unidad.codigo}",
-                                                        debito=interes_pago,
-                                                        credito=0
-                                                    ))
-                                                    total_factura += float(interes_pago)
+                                            if cta_ing and cta_cxc:
+                                                # Credito Ingreso
+                                                movimientos.append(doc_schemas.MovimientoContableCreate(
+                                                    cuenta_id=cta_ing,
+                                                    concepto=f"Interés Mora (Pago tardío {recibo.fecha}: {config.interes_mora_mensual}% sobre ${valor_base_pago:,.0f})",
+                                                    debito=0,
+                                                    credito=interes_pago,
+                                                    centro_costo_id=None
+                                                ))
+                                                # Debito Cartera
+                                                movimientos.append(doc_schemas.MovimientoContableCreate(
+                                                    cuenta_id=cta_cxc,
+                                                    concepto=f"CxC Interés Mora (Pago tardío {recibo.fecha}: {config.interes_mora_mensual}% sobre ${valor_base_pago:,.0f}) - {unidad.codigo}",
+                                                    debito=interes_pago,
+                                                    credito=0
+                                                ))
+                                                total_factura += float(interes_pago)
                                                     
                             pagos_tardios_procesados = True
                             
@@ -245,66 +307,16 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
                             print(f"Error procesando pagos tardios unidad {unidad.codigo}: {str(e_tardios)}")
 
                     # Lógica de Interés de Mora (Saldo Actual)
-                    # Lógica de Interés de Mora
                     es_mora = True
                     if config.interes_mora_mensual > 0:
                         try:
-                            # Importuración diferida para evitar ciclos
-                            from app.services.cartera import get_facturas_pendientes_por_tercero
-                            from datetime import datetime
-                            
-                            pendientes = get_facturas_pendientes_por_tercero(
-                                db, 
-                                unidad.propietario_principal_id, 
-                                empresa_id, 
-                                unidad_ph_id=unidad.id
-                            )
-                            
-                            print(f"DEBUG: Pendientes encontradas: {len(pendientes)}")
-                            
-                            # --- CORRECCION DE VARIABLES ---
-                            saldo_mora = 0
-                            primer_dia_mes_factura = fecha_factura.replace(day=1)
-                            print(f"DEBUG: Fecha ref factura: {primer_dia_mes_factura}")
-
-                            # --- ANTI-ANATOCISMO: Identificar cuentas de interes ---
-                            cuentas_interes_ids = [c.cuenta_ingreso_id for c in conceptos if c.es_interes and c.cuenta_ingreso_id]
-                            print(f"DEBUG: Cuentas de Interes a excluir de la base: {cuentas_interes_ids}")
-                            from app.models.documento import MovimientoContable
-                            from sqlalchemy import func
-
-                            for fact in pendientes:
-                                fecha_ref_str = fact.get('fecha_vencimiento') or fact['fecha']
-                                try:
-                                    fecha_ref = datetime.fromisoformat(fecha_ref_str).date()
-                                except:
-                                    fecha_ref = fact.get('fecha_vencimiento') or fact['fecha']
-                                
-                                # Solo interesa si est vencida
-                                if fecha_ref < primer_dia_mes_factura:
-                                    saldo_factura = fact['saldo_pendiente']
-                                    
-                                    # Calcular componente de interes en esta factura (Anatocismo)
-                                    interes_acumulado_en_factura = 0
-                                    if cuentas_interes_ids:
-                                        val_dec = db.query(func.sum(MovimientoContable.credito)).filter(
-                                            MovimientoContable.documento_id == fact['id'],
-                                            MovimientoContable.cuenta_id.in_(cuentas_interes_ids)
-                                        ).scalar() or 0
-                                        interes_acumulado_en_factura = float(val_dec)
-                                    
-                                    base_depurada = max(0, saldo_factura - interes_acumulado_en_factura)
-                                    
-                                    print(f"DEBUG: Factura {fact['numero']} | Saldo Total: {saldo_factura} | Interes Incluido: {interes_acumulado_en_factura} | Base Depurada: {base_depurada}")
-                                    
-                                    saldo_mora += base_depurada
-                            
-                            print(f"DEBUG: Saldo Mora Calculado: {saldo_mora}")
+                            # USAR MAPA DE SALDOS PRECARGADO (Cero consultas adicionales)
+                            saldo_mora = mapa_saldos_unidades.get(unidad.id, 0)
 
                             if saldo_mora > 0:
-                                interes_valor = saldo_mora * (config.interes_mora_mensual / 100.0)
+                                interes_valor = saldo_mora * (float(config.interes_mora_mensual) / 100.0)
                                 valor_linea = round(interes_valor, 2)
-                                print(f"DEBUG: Interes final: {valor_linea}")
+                                print(f"DEBUG: Unidad {unidad.codigo} tiene saldo mora {saldo_mora}. Interes: {valor_linea}")
                         except Exception as e_mora:
                             print(f"Error calculando mora unidad {unidad.codigo}: {str(e_mora)}")
                             valor_linea = 0
@@ -498,10 +510,20 @@ def eliminar_facturacion_masiva(db: Session, empresa_id: int, periodo: str, usua
     count = 0
     from app.services.documento import eliminar_documento
     
+    # OPTIMIZACIÓN: Desactivar autocommit/flush para el bucle y hacerlo al final
+    # Pero eliminar_documento ya lo maneja. Lo ideal seria un bulk delete pero afectaria la integridad
+    # de los logs y reversiones contables.
+    # REFUERZO: Solo procesar los documentos en una sesion controlada
     for doc in docs:
-        eliminar_documento(db, doc.id, empresa_id, usuario_id, "Eliminacion Masiva Facturacion PH")
-        count += 1
-        
+        try:
+            eliminar_documento(db, doc.id, empresa_id, usuario_id, "Eliminacion Masiva Facturacion PH")
+            count += 1
+            if count % 50 == 0:
+                db.flush() # Flush periodico para no saturar memoria
+        except Exception as e_del:
+            print(f"Error eliminando doc {doc.id}: {str(e_del)}")
+            continue
+            
     db.commit()
     return {"mensaje": "Facturacion eliminada correctamente.", "eliminadas": count}
 
