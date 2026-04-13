@@ -413,29 +413,42 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
 
                 doc_create = doc_schemas.DocumentoCreate(
                     empresa_id=empresa_id,
-                    tipo_documento_id=global_doc_id, # Usamos el global
-                    numero=0, 
+                    tipo_documento_id=global_doc_id,
+                    numero=0,
                     fecha=fecha_factura,
-                    fecha_vencimiento=fecha_factura, 
+                    fecha_vencimiento=fecha_factura,
                     beneficiario_id=unidad.propietario_principal_id,
                     observaciones=obs,
                     movimientos=movimientos,
                     unidad_ph_id=unidad.id
                 )
-                
-                new_doc = documento_service.create_documento(db, doc_create, user_id=usuario_id, skip_recalculo=True)
+
+                # OPTIMIZACIÓN: commit=False para no hacer un commit por factura.
+                # Gestionamos el commit manualmente en lotes de 50 para evitar timeouts.
+                new_doc = documento_service.create_documento(db, doc_create, user_id=usuario_id, skip_recalculo=True, commit=False)
+                db.flush()  # Forzar asignación de ID sin confirmar transacción
                 resultados["generadas"] += 1
                 resultados["detalles"].append(f"Unidad {unidad.codigo}: Doc {new_doc.numero} por ${total_factura:,.0f}")
 
-        except Exception as e:
-            resultados["errores"] += 1
-            resultados["detalles"].append(f"Unidad {unidad.codigo}: Error - {str(e)}")
-            continue
+                # Commit por lotes de 50 para liberar memoria sin saturar la BD
+                if resultados["generadas"] % 50 == 0:
+                    db.commit()
+                    print(f"--- BATCH COMMIT: {resultados['generadas']} facturas confirmadas ---")
 
         except Exception as e:
             resultados["errores"] += 1
             resultados["detalles"].append(f"Unidad {unidad.codigo}: Error - {str(e)}")
+            # El rollback parcial de SQLAlchemy mantiene el estado limpio para la siguiente iteración
+            db.rollback()
             continue
+
+    # Commit final para confirmar las últimas facturas del lote
+    try:
+        db.commit()
+        print(f"--- COMMIT FINAL: Proceso completado. {resultados['generadas']} generadas, {resultados['errores']} errores ---")
+    except Exception as e_final:
+        db.rollback()
+        print(f"--- ERROR EN COMMIT FINAL: {str(e_final)} ---")
 
     return resultados
 
@@ -490,42 +503,78 @@ def get_historial_facturacion(db: Session, empresa_id: int):
 def eliminar_facturacion_masiva(db: Session, empresa_id: int, periodo: str, usuario_id: int):
     """
     Elimina todas las facturas de un periodo (YYYY-MM).
+    OPTIMIZADO: Recalcula la cartera de cada propietario UNA SOLA VEZ al final,
+    en lugar de hacerlo por cada factura eliminada. Esto reduce el tiempo de
+    ejecución de minutos a segundos.
     """
     config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
     if not config or not config.tipo_documento_factura_id:
         raise Exception("Configuracion PH invalida.")
-        
+
     from sqlalchemy import func
-    # Buscar documentos
+    # Buscar documentos del periodo
     docs = db.query(Documento).filter(
         Documento.empresa_id == empresa_id,
         Documento.tipo_documento_id == config.tipo_documento_factura_id,
         func.to_char(Documento.fecha, 'YYYY-MM') == periodo,
-        Documento.estado.in_(['ACTIVO', 'PROCESADO']) # Solo activos
+        Documento.estado.in_(['ACTIVO', 'PROCESADO'])
     ).all()
-    
+
     if not docs:
         return {"mensaje": "No se encontraron facturas para este periodo.", "eliminadas": 0}
-        
+
     count = 0
+    errores = 0
+    terceros_a_recalcular = set()  # Acumular terceros ANTES de eliminar, para recálculo único al final
     from app.services.documento import eliminar_documento
-    
-    # OPTIMIZACIÓN: Desactivar autocommit/flush para el bucle y hacerlo al final
-    # Pero eliminar_documento ya lo maneja. Lo ideal seria un bulk delete pero afectaria la integridad
-    # de los logs y reversiones contables.
-    # REFUERZO: Solo procesar los documentos en una sesion controlada
+    from app.services import cartera as cartera_service
+
+    # Recolectar todos los propietarios afectados antes de empezar
+    for doc in docs:
+        if doc.beneficiario_id:
+            terceros_a_recalcular.add(doc.beneficiario_id)
+
+    # BUCLE DE ELIMINACIÓN: Sin commit ni recálculo de cartera por iteración
+    # commit=True es necesario por la arquitectura de eliminar_documento (maneja su propia transacción)
+    # pero le decimos recalc=False para que NO recalcule inventario (las facturas PH no tienen inventario)
     for doc in docs:
         try:
-            eliminar_documento(db, doc.id, empresa_id, usuario_id, "Eliminacion Masiva Facturacion PH")
+            eliminar_documento(
+                db,
+                doc.id,
+                empresa_id,
+                usuario_id,
+                "Eliminacion Masiva Facturacion PH",
+                commit=True,
+                recalc=False  # CLAVE: Evita X recálculos de inventario (no aplica aquí)
+            )
             count += 1
-            if count % 50 == 0:
-                db.flush() # Flush periodico para no saturar memoria
+            if count % 20 == 0:
+                print(f"[ELIMINACION PH] Progreso: {count}/{len(docs)} facturas eliminadas...")
         except Exception as e_del:
-            print(f"Error eliminando doc {doc.id}: {str(e_del)}")
+            errores += 1
+            print(f"[ELIMINACION PH] Error eliminando doc {doc.id}: {str(e_del)}")
+            try:
+                db.rollback()
+            except:
+                pass
             continue
-            
-    db.commit()
-    return {"mensaje": "Facturacion eliminada correctamente.", "eliminadas": count}
+
+    # RECÁLCULO ÚNICO DE CARTERA: Una sola vez por propietario, al final de todo
+    # Esto reemplaza los N recálculos que antes ocurrían dentro de eliminar_documento
+    print(f"[ELIMINACION PH] Iniciando recálculo de cartera para {len(terceros_a_recalcular)} propietarios únicos...")
+    for t_id in terceros_a_recalcular:
+        try:
+            cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=t_id, empresa_id=empresa_id, commit=True)
+        except Exception as e_recalc:
+            print(f"[ELIMINACION PH] Error recalculando cartera tercero {t_id}: {str(e_recalc)}")
+
+    print(f"[ELIMINACION PH] Completado: {count} eliminadas, {errores} errores.")
+    return {
+        "mensaje": f"Facturacion del periodo {periodo} eliminada correctamente.",
+        "eliminadas": count,
+        "errores": errores
+    }
 
 def check_facturacion_periodo(db: Session, empresa_id: int, fecha: date):
     """

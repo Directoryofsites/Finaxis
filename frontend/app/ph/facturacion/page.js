@@ -262,7 +262,8 @@ export default function FacturacionPHPage() {
             );
 
             setResultado(data);
-            loadHistorial();
+            // Refrescar el historial automáticamente para mostrar el nuevo periodo
+            await handleSearchHistorial();
         } catch (err) {
             setError(err.response?.data?.detail || 'Error crítico al generar facturación.');
         } finally {
@@ -291,9 +292,11 @@ export default function FacturacionPHPage() {
         if (!confirm(`🚨 ¿Estás seguro de ELIMINAR todo el periodo ${periodo}?\nSe reversarán asientos y anularán facturas.`)) return;
         try {
             setLoading(true);
+            setError(null);
             const res = await phService.deleteFacturacionMasiva(periodo);
-            alert(res.mensaje);
-            loadHistorial();
+            alert(res.mensaje || `Periodo ${periodo} eliminado. ${res.eliminadas} facturas procesadas.`);
+            // Refrescar lista tras eliminar
+            await handleSearchHistorial();
         } catch (error) {
             alert("Error eliminando: " + (error.response?.data?.detail || error.message));
         } finally {
