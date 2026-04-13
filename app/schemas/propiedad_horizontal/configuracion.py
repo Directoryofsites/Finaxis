@@ -16,8 +16,8 @@ class PHConfiguracionBase(BaseModel):
     tipo_documento_mora_id: Optional[int] = None # Nuevo
     cuenta_cartera_id: Optional[int] = None
     cuenta_caja_id: Optional[int] = None
-    cuenta_caja_id: Optional[int] = None
     cuenta_ingreso_intereses_id: Optional[int] = None
+    cuenta_anticipos_id: Optional[int] = None # Nueva
     interes_mora_habilitado: bool = True
     tipo_negocio: str = 'PH_RESIDENCIAL' # Nuevo campo
 
@@ -32,6 +32,7 @@ class PHConfiguracionResponse(PHConfiguracionBase):
     cuenta_cartera: Optional[PlanCuentaSimple] = None
     cuenta_caja: Optional[PlanCuentaSimple] = None
     cuenta_ingreso_intereses: Optional[PlanCuentaSimple] = None
+    cuenta_anticipos: Optional[PlanCuentaSimple] = None
 
     class Config:
         from_attributes = True

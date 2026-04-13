@@ -838,7 +838,7 @@ def get_historial_cuenta_unidad(db: Session, unidad_id: Optional[int], empresa_i
 
 
 
-def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_id: int, monto: float, fecha_pago: date, forma_pago_id: int = None):
+def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_id: int, monto: float, fecha_pago: date, forma_pago_id: int = None, skip_recalculo: bool = False, commit: bool = True):
 
 
 
@@ -1504,102 +1504,44 @@ def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_
 
 
 
-        raise HTTPException(status_code=400, detail="No se encontró cuenta de Cartera. Configure 'Cuenta Cartera' en Parámetros PH.")
-
-
-
-
-
+        raise HTTPException(status_code=400, detail="No se encontró cuenta de Cartera. Configure 'Cuenta Cartera' en Parámetros PH.")    # B. Créditos (Disminución de deuda / Generación de Anticipo)
+    # Detectar deuda actual para aplicar "División Inteligente" si hay excedente
+    deuda_actual = float(estado_cuenta.get('saldo_total', 0))
+    id_propietario = estado_cuenta.get('propietario_id')
     
+    # 1. Determinar cuánto va a Cartera y cuánto a Anticipos
+    monto_cartera = monto
+    monto_anticipo = 0
+    
+    # Solo aplicamos división si hay una cuenta de anticipos configurada
+    if config.cuenta_anticipos_id and monto > deuda_actual:
+        monto_cartera = max(0, deuda_actual)
+        monto_anticipo = monto - monto_cartera
+        print(f"DEBUG: Pago exceede deuda (${deuda_actual}). Dividiendo: Cartera ${monto_cartera}, Anticipo ${monto_anticipo}")
 
+    # 2. Agregar Movimiento Crédito a Cartera (Abono)
+    if monto_cartera > 0:
+        movimientos.append(doc_schemas.MovimientoContableCreate(
+            cuenta_id=cuenta_cartera_final,
+            concepto=f"Abono/Pago Unidad {estado_cuenta['unidad']}",
+            debito=0,
+            credito=monto_cartera
+        ))
 
-
-
-
-    # Agregar Movimiento Crédito (Abono a Cartera)
-
-
-
-
-
-    movimientos.append(doc_schemas.MovimientoContableCreate(
-
-
-
-
-
-        cuenta_id=cuenta_cartera_final,
-
-
-
-
-
-        concepto=f"Abono/Pago Unidad {estado_cuenta['unidad']}",
-
-
-
-
-
-        debito=0,
-
-
-
-
-
-        credito=monto
-
-
-
-
-
-    ))
-
-
-
-
-
-
-
-
-
-
+    # 3. Agregar Movimiento Crédito a Anticipos (Pasivo) - NUEVO
+    if monto_anticipo > 0:
+        movimientos.append(doc_schemas.MovimientoContableCreate(
+            cuenta_id=config.cuenta_anticipos_id,
+            concepto=f"Anticipo Recibido Unidad {estado_cuenta['unidad']}",
+            debito=0,
+            credito=monto_anticipo
+        ))
 
     # C. Agregar Movimiento Débito (Entra a Caja)
-
-
-
-
-
-    # OJO: Anteriormente estaba implícito o faltaba en el snippet, aqui lo agrego explicito.
-
-
-
-
-
     movimientos.append(doc_schemas.MovimientoContableCreate(
-
-
-
-
-
         cuenta_id=cuenta_caja_final,
-
-
-
-
-
         concepto=f"Ingreso Pago Unidad {estado_cuenta['unidad']}",
-
-
-
-
-
         debito=monto,
-
-
-
-
-
         credito=0
 
 
@@ -1714,7 +1656,7 @@ def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_
 
 
 
-    new_doc = documento_service.create_documento(db, doc_create, user_id=usuario_id)
+    new_doc = documento_service.create_documento(db, doc_create, user_id=usuario_id, skip_recalculo=skip_recalculo, commit=commit)
 
 
 
@@ -5172,4 +5114,103 @@ def generar_pdf_cartera_detallada(db: Session, empresa_id: int, unidad_id: int):
         error_msg = f"Error generando PDF de Cartera Detallada: {str(e)}\n{traceback.format_exc()}"
         print(error_msg)
         return HTML(string=f"<html><body><h1>Error en PDF</h1><pre>{error_msg}</pre></body></html>").write_pdf()
+
+def registrar_pago_masivo(
+    db: Session, 
+    empresa_id: int, 
+    usuario_id: int, 
+    unidades_ids: List[int], 
+    fecha_pago: date, 
+    forma_pago_id: int = None,
+    monto_fijo: float = None,
+    pagar_saldo_total: bool = False,
+    observaciones: str = None
+):
+    """
+    Registra pagos para múltiples unidades de forma optimizada.
+    Implementa recálculo diferido de cartera para evitar saturación de la BD.
+    """
+    from app.services import cartera as cartera_service
+    from app.models.propiedad_horizontal.unidad import PHUnidad
+    
+    resultados = {
+        "procesados": 0,
+        "errores": 0,
+        "detalles": []
+    }
+    
+    terceros_a_recalcular = set()
+    total_unidades = len(unidades_ids)
+    
+    print(f"--- INICIANDO PAGO MASIVO: {total_unidades} unidades ---")
+    
+    # 1. Obtener datos de las unidades en una sola consulta
+    unidades = db.query(PHUnidad).filter(PHUnidad.id.in_(unidades_ids)).all()
+    mapa_unidades = {u.id: u for u in unidades}
+
+    # 2. Bucle de procesamiento
+    for index, u_id in enumerate(unidades_ids):
+        try:
+            unidad = mapa_unidades.get(u_id)
+            if not unidad:
+                continue
+                
+            monto_final = 0
+            if pagar_saldo_total:
+                # Obtener deuda
+                edo_cta = get_estado_cuenta_unidad(db, u_id, empresa_id)
+                monto_final = float(edo_cta.get('saldo_total', 0))
+            else:
+                monto_final = monto_fijo or 0
+                
+            if monto_final <= 0:
+                resultados["detalles"].append(f"Unidad {unidad.codigo}: Salto (Sin deuda o monto 0).")
+                continue
+
+            # Llamada optimizada: skip_recalculo=True, commit=False
+            res_pago = registrar_pago_unidad(
+                db, 
+                unidad_id=u_id,
+                empresa_id=empresa_id,
+                usuario_id=usuario_id,
+                monto=monto_final,
+                fecha_pago=fecha_pago,
+                forma_pago_id=forma_pago_id,
+                skip_recalculo=True,
+                commit=False
+            )
+            
+            # Registrar propietario para recálculo final
+            if unidad.propietario_principal_id:
+                terceros_a_recalcular.add(unidad.propietario_principal_id)
+                
+            resultados["procesados"] += 1
+            
+            # Commit por lotes de 50 para liberar memoria
+            if resultados["procesados"] % 50 == 0:
+                db.commit()
+                print(f"--- BATCH COMMIT PAGO: {resultados['procesados']} procesados ---")
+                
+        except Exception as e:
+            db.rollback()
+            resultados["errores"] += 1
+            resultados["detalles"].append(f"Unidad {u_id}: Error - {str(e)}")
+
+    # 3. Commit final de pagos
+    try:
+        db.commit()
+    except Exception as e_final:
+        db.rollback()
+        return {"error": f"Error final en transacción: {str(e_final)}"}
+
+    # 4. RECÁLCULO DIFERIDO DE CARTERA
+    print(f"--- INICIANDO RECALCULO DE CARTERA PARA {len(terceros_a_recalcular)} PROPIETARIOS ---")
+    for t_id in terceros_a_recalcular:
+        try:
+            cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=t_id, empresa_id=empresa_id, commit=True)
+        except Exception as e_recalc:
+            print(f"WARN: Error recalculando cartera tercero {t_id}: {e_recalc}")
+
+    print(f"--- PAGO MASIVO FINALIZADO: {resultados['procesados']} exitos ---")
+    return resultados
 

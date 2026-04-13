@@ -86,13 +86,11 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
         
     ids_ya_facturados = {u.unidad_ph_id for u in unidades_ya_facturadas if u.unidad_ph_id}
     
-    # NUEVO: Si estamos usando excepciones, permitimos "refacturar" si es un concepto diferente (Manejo a futuro)
-    # Por ahora, mantenemos la regla de "Una factura por mes".
-    # Pero el usuario podría querer facturar Multas aparte.
-    # SI hay mapa de excepciones, relajamos la restricción de "ya facturado"? 
-    # NO, por ahora agregaremos los items a la factura si no existe, o crearemos nota separada?
-    # MEJOR: En este MVP, si ya tiene factura, NO generamos otra. El usuario deberá borrarla y regenerar 
-    # o hacer factura manual. Este es el trade-off de la "Facturación Masiva".
+    # NUEVO: Buscar Tipo de Documento para Cruces (Nota de Contabilidad)
+    tipo_nc = db.query(TipoDocumento).filter(
+        TipoDocumento.empresa_id == empresa_id,
+        TipoDocumento.codigo == 'NC'
+    ).first()
     
     # Identificar unidades con excepciones (whitelisted)
     unidades_con_excepciones = set()
@@ -178,20 +176,25 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
     # 3. Precarga de Pagos Tardios (Recibos del mes anterior)
     ultimo_dia_mes_ant = primer_dia_mes_factura - timedelta(days=1)
     primer_dia_mes_ant = ultimo_dia_mes_ant.replace(day=1)
-    mapa_recibos_tardios = {}
-    if config.tipo_documento_recibo_id:
-        recibos_query = db.query(Documento).filter(
-            Documento.empresa_id == empresa_id,
-            Documento.tipo_documento_id == config.tipo_documento_recibo_id,
-            Documento.fecha >= primer_dia_mes_ant,
-            Documento.fecha <= ultimo_dia_mes_ant,
-            Documento.estado == 'ACTIVO'
-        ).options(joinedload(Documento.movimientos)).all()
-        for r in recibos_query:
-            if r.unidad_ph_id not in mapa_recibos_tardios:
-                mapa_recibos_tardios[r.unidad_ph_id] = []
-            mapa_recibos_tardios[r.unidad_ph_id].append(r)
+                mapa_recibos_tardios[r.unidad_ph_id].append(r)
     
+    # 4. Precarga de Anticipos (Saldos a favor en Pasivo) - NUEVO
+    mapa_anticipos = {}
+    if config.cuenta_anticipos_id:
+        print(f"--- BATCH OPTIMIZATION: Cargando saldos de anticipos (Cuenta: {config.cuenta_anticipos_id}) ---")
+        anticipos_query = db.query(
+            MovimientoContable.tercero_id,
+            func.sum(MovimientoContable.credito - MovimientoContable.debito).label("saldo_anticipo")
+        ).join(Documento, MovimientoContable.documento_id == Documento.id)\
+         .filter(
+            Documento.empresa_id == empresa_id,
+            Documento.anulado == False,
+            MovimientoContable.cuenta_id == config.cuenta_anticipos_id
+        ).group_by(MovimientoContable.tercero_id).all()
+        
+        mapa_anticipos = {q.tercero_id: float(q.saldo_anticipo) for q in anticipos_query if q.saldo_anticipo > 0.01}
+        print(f"--- BATCH OPTIMIZATION: {len(mapa_anticipos)} propietarios con anticipos encontrados ---")
+
     print(f"--- BATCH OPTIMIZATION: Precarga completada. Iniciando bucle de generacion ---")
     # -------------------------------------------
     # 6. Iterar Unidades y Generar Facturas
@@ -423,12 +426,56 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
                     unidad_ph_id=unidad.id
                 )
 
-                # OPTIMIZACIÓN: commit=False para no hacer un commit por factura.
-                # Gestionamos el commit manualmente en lotes de 50 para evitar timeouts.
                 new_doc = documento_service.create_documento(db, doc_create, user_id=usuario_id, skip_recalculo=True, commit=False)
                 db.flush()  # Forzar asignación de ID sin confirmar transacción
                 resultados["generadas"] += 1
                 resultados["detalles"].append(f"Unidad {unidad.codigo}: Doc {new_doc.numero} por ${total_factura:,.0f}")
+
+                # --- LÓGICA DE AUTO-CRUCE DE ANTICIPOS ---
+                # Si el propietario tiene saldo a favor en pasivo, aplicamos el cruce inmediatamente
+                id_propietario = unidad.propietario_principal_id
+                if config.cuenta_anticipos_id and id_propietario in mapa_anticipos and tipo_nc:
+                    saldo_disponible = mapa_anticipos[id_propietario]
+                    if saldo_disponible > 0.01:
+                        monto_cruce = min(total_factura, saldo_disponible)
+                        
+                        # Crear movimientos del cruce
+                        movs_cruce = [
+                            # 1. Debito al Pasivo (Reducción de Anticipo)
+                            doc_schemas.MovimientoContableCreate(
+                                cuenta_id=config.cuenta_anticipos_id,
+                                concepto=f"Cruce Anticipo - Pago Factura {new_doc.numero} - {unidad.codigo}",
+                                debito=monto_cruce,
+                                credito=0
+                            ),
+                            # 2. Credito a la Cartera (Pago de la Factura)
+                            doc_schemas.MovimientoContableCreate(
+                                cuenta_id=config.cuenta_cartera_id or tipo_doc_obj.cuenta_debito_cxc_id,
+                                concepto=f"Cruce Anticipo - Aplicación Factura {new_doc.numero} - {unidad.codigo}",
+                                debito=0,
+                                credito=monto_cruce
+                            )
+                        ]
+                        
+                        doc_cruce = doc_schemas.DocumentoCreate(
+                            empresa_id=empresa_id,
+                            tipo_documento_id=tipo_nc.id,
+                            numero=0,
+                            fecha=fecha_factura,
+                            fecha_vencimiento=fecha_factura,
+                            beneficiario_id=id_propietario,
+                            observaciones=f"Auto-cruce masivo de anticipo contra Factura {new_doc.numero}",
+                            movimientos=movs_cruce,
+                            unidad_ph_id=unidad.id
+                        )
+                        
+                        cruce_obj = documento_service.create_documento(db, doc_cruce, user_id=usuario_id, skip_recalculo=True, commit=False)
+                        db.flush()
+                        
+                        # Actualizar el mapa RAM para siguientes unidades del mismo dueño
+                        mapa_anticipos[id_propietario] -= monto_cruce
+                        resultados["detalles"].append(f"   ↳ Cruce automático aplicado: ${monto_cruce:,.0f} (NC {cruce_obj.numero})")
+                # -----------------------------------------
 
                 # Commit por lotes de 50 para liberar memoria sin saturar la BD
                 if resultados["generadas"] % 50 == 0:

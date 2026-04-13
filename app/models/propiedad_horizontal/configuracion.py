@@ -32,7 +32,8 @@ class PHConfiguracion(Base):
     cuenta_cartera_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Para CXC (13, 14, 16...)
     cuenta_caja_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Para Caja/Bancos (11...)
     cuenta_ingreso_intereses_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Para Ingreso por Intereses (42...)
-    
+    cuenta_anticipos_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Para Pasivo Anticipos (2805...)
+        
     # Flags Logicos
     interes_mora_habilitado = Column(Boolean, default=True)
 
@@ -42,6 +43,7 @@ class PHConfiguracion(Base):
     cuenta_cartera = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_cartera_id])
     cuenta_caja = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_caja_id])
     cuenta_ingreso_intereses = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_ingreso_intereses_id])
+    cuenta_anticipos = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_anticipos_id])
 
     # --- NUEVO CAMPO: TIPO DE NEGOCIO (SECTOR) ---
     # Valores: 'PH_RESIDENCIAL', 'PH_COMERCIAL', 'TRANSPORTE', 'EDUCATIVO', 'PARQUEADERO', 'GENERICO'

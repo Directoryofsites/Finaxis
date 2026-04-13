@@ -37,7 +37,10 @@ export default function ConfiguracionPHPage() {
         tipo_documento_recibo_id: '',
         cuenta_ingreso_intereses_id: '',
         cuenta_ingreso_intereses_codigo: '',
-        cuenta_ingreso_intereses_nombre: ''
+        cuenta_ingreso_intereses_nombre: '',
+        cuenta_anticipos_id: '',
+        cuenta_anticipos_codigo: '',
+        cuenta_anticipos_nombre: ''
     });
 
     const [tiposDoc, setTiposDoc] = useState([]);
@@ -60,6 +63,8 @@ export default function ConfiguracionPHPage() {
                 interes_mora_habilitado: configData.interes_mora_habilitado ?? true,
                 cuenta_ingreso_intereses_codigo: configData.cuenta_ingreso_intereses ? configData.cuenta_ingreso_intereses.codigo : '',
                 cuenta_ingreso_intereses_nombre: configData.cuenta_ingreso_intereses ? configData.cuenta_ingreso_intereses.nombre : '',
+                cuenta_anticipos_codigo: configData.cuenta_anticipos ? configData.cuenta_anticipos.codigo : '',
+                cuenta_anticipos_nombre: configData.cuenta_anticipos ? configData.cuenta_anticipos.nombre : '',
                 tipo_negocio: configData.tipo_negocio || 'PH_RESIDENCIAL'
             });
             setTiposDoc(tiposData);
@@ -267,14 +272,16 @@ export default function ConfiguracionPHPage() {
                                             <p className="text-xs text-gray-400 mt-1">Usado para registrar pagos de propietarios.</p>
                                         </div>
                                         <div>
-                                            <label className={labelClass}>Tipo Doc. Mora/Ajuste</label>
-                                            <select name="tipo_documento_mora_id" value={config.tipo_documento_mora_id || ''} onChange={handleConfigChange} className={inputClass}>
-                                                <option value="">-- Seleccionar --</option>
-                                                {tiposDoc.map(t => (
-                                                    <option key={t.id} value={t.id}>{t.codigo} - {t.nombre}</option>
-                                                ))}
-                                            </select>
                                             <p className="text-xs text-gray-400 mt-1">Usado para cargar la Mora Automática.</p>
+                                        </div>
+                                        <div>
+                                            <label className={labelClass}>Cuenta de Anticipos (Pasivo)</label>
+                                            <BuscadorCuentas
+                                                onSelect={(cta) => setConfig({ ...config, cuenta_anticipos_id: cta.id, cuenta_anticipos_codigo: cta.codigo, cuenta_anticipos_nombre: cta.nombre })}
+                                                selectedCodigo={config.cuenta_anticipos_codigo}
+                                                placeholder="280505 - Anticipos"
+                                            />
+                                            <p className="text-xs text-gray-400 mt-1">{config.cuenta_anticipos_nombre || 'Mueve excedentes de pago a este Pasivo.'}</p>
                                         </div>
                                     </div>
                                 </div>

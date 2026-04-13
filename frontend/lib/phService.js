@@ -97,6 +97,16 @@ export const phService = {
         return response.data;
     },
 
+    registrarPago: async (data) => {
+        const response = await apiService.post('/ph/pagos', data);
+        return response.data;
+    },
+
+    registrarPagoMasivo: async (data) => {
+        const response = await apiService.post('/ph/pagos/masivo', data);
+        return response.data;
+    },
+
     createModulo: async (data) => {
         const response = await apiService.post('/ph/modulos', data);
         return response.data;

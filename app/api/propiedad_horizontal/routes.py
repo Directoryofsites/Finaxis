@@ -67,13 +67,15 @@ class PagoRequest(BaseModel):
     unidad_id: int
     monto: float
     fecha: date
-    forma_pago_id: int = None # Opcional por ahora
+    forma_pago_id: int = None
 
-class PagoRequest(BaseModel):
-    unidad_id: int
-    monto: float
+class PagoMasivoRequest(BaseModel):
+    unidades_ids: List[int]
     fecha: date
-    forma_pago_id: int = None # Opcional por ahora
+    forma_pago_id: Optional[int] = None
+    monto_fijo: Optional[float] = None # Si se provee, todas pagan este valor
+    pagar_saldo_total: bool = False # Si es True, cada una paga su deuda completa
+    observaciones: Optional[str] = None
 
 # --- TORRES ---
 @router.get("/torres", response_model=List[schemas.PHTorre])
@@ -360,6 +362,34 @@ def registrar_pago(
         monto=payload.monto,
         fecha_pago=payload.fecha,
         forma_pago_id=payload.forma_pago_id
+        db, 
+        pago.unidad_id, 
+        current_user.empresa_id, 
+        current_user.id, 
+        pago.monto, 
+        pago.fecha,
+        pago.forma_pago_id
+    )
+
+@router.post("/pagos/masivo")
+def registrar_pago_masivo(
+    pago: PagoMasivoRequest,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Endpoint para procesar el pago de múltiples unidades en lote (Torre/Bloque).
+    """
+    return pago_service.registrar_pago_masivo(
+        db,
+        current_user.empresa_id,
+        current_user.id,
+        pago.unidades_ids,
+        pago.fecha,
+        pago.forma_pago_id,
+        monto_fijo=pago.monto_fijo,
+        pagar_saldo_total=pago.pagar_saldo_total,
+        observaciones=pago.observaciones
     )
 
 @router.get("/pagos/historial/{unidad_id}")
