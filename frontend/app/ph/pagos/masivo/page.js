@@ -324,13 +324,13 @@ export default function RecaudosMasivosPage() {
 
                             {/* RESUMEN RESULTADO */}
                             {resultado && (
-                                <div className="absolute inset-0 bg-white bg-opacity-95 flex items-center justify-center p-8 z-10 transition-all">
-                                    <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 max-w-md w-full text-center">
+                                <div className="absolute inset-0 bg-white bg-opacity-95 flex items-center justify-center p-8 z-10 transition-all overflow-y-auto">
+                                    <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 max-w-lg w-full text-center">
                                         <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
                                             <FaCheckCircle />
                                         </div>
                                         <h2 className="text-2xl font-bold text-gray-800 mb-2">¡Lote Procesado!</h2>
-                                        <div className="grid grid-cols-2 gap-4 my-6">
+                                        <div className="grid grid-cols-3 gap-3 my-6">
                                             <div className="bg-green-50 p-4 rounded-2xl">
                                                 <p className="text-2xl font-bold text-green-600">{resultado.procesados}</p>
                                                 <p className="text-[10px] font-bold text-green-700 uppercase">Éxitos</p>
@@ -339,7 +339,33 @@ export default function RecaudosMasivosPage() {
                                                 <p className="text-2xl font-bold text-red-600">{resultado.errores}</p>
                                                 <p className="text-[10px] font-bold text-red-700 uppercase">Errores</p>
                                             </div>
+                                            <div className="bg-gray-50 p-4 rounded-2xl">
+                                                <p className="text-2xl font-bold text-gray-500">
+                                                    {(resultado.detalles || []).filter(d => d.includes('Sin deuda') || d.includes('Omitido') || d.includes('Salto')).length}
+                                                </p>
+                                                <p className="text-[10px] font-bold text-gray-500 uppercase">Omitidas</p>
+                                            </div>
                                         </div>
+                                        
+                                        {/* Detalle de unidades con problema */}
+                                        {resultado.detalles && resultado.detalles.length > 0 && (
+                                            <div className="text-left mb-4 max-h-48 overflow-y-auto">
+                                                <p className="text-xs font-bold text-gray-500 uppercase mb-2">Detalle por unidad:</p>
+                                                <div className="space-y-1">
+                                                    {resultado.detalles.map((d, i) => {
+                                                        const isError = d.toLowerCase().includes('error');
+                                                        const isOmit = d.includes('Sin deuda') || d.includes('Omitido') || d.includes('Salto');
+                                                        return (
+                                                            <div key={i} className={`text-xs px-3 py-1.5 rounded-lg flex items-start gap-2 ${isError ? 'bg-red-50 text-red-700' : isOmit ? 'bg-gray-50 text-gray-500' : 'bg-blue-50 text-blue-700'}`}>
+                                                                <span className="mt-0.5">{isError ? '⚠️' : isOmit ? '⏭️' : 'ℹ️'}</span>
+                                                                <span>{d}</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                        
                                         <button 
                                             onClick={() => setResultado(null)}
                                             className="w-full bg-gray-800 text-white py-4 rounded-2xl font-bold hover:bg-black transition-colors"
@@ -349,6 +375,7 @@ export default function RecaudosMasivosPage() {
                                     </div>
                                 </div>
                             )}
+
                         </div>
                     </div>
                 </div>

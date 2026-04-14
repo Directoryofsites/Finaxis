@@ -1258,103 +1258,40 @@ def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_
 
 
 
-    # Fallbacks standard si no se resolvio por concepto (o no habia dedua)
-
-
-
-
+    # FALLBACKS para cuenta_caja_final (si no se resolvio por concepto)
+    if not cuenta_caja_final:
+        # PRIORIDAD 1: Buscar en CUALQUIER PHConcepto activo con cuenta_caja configurada
+        # Esto garantiza que incluso unidades sin facturas pendientes usen la cuenta correcta
+        from app.models.propiedad_horizontal.concepto import PHConcepto as PHConceptoCaja
+        cualquier_concepto_caja = db.query(PHConceptoCaja).filter(
+            PHConceptoCaja.empresa_id == empresa_id,
+            PHConceptoCaja.cuenta_caja_id.isnot(None)
+        ).first()
+        if cualquier_concepto_caja:
+            cuenta_caja_final = cualquier_concepto_caja.cuenta_caja_id
+            print(f"DEBUG: Caja resuelta desde concepto general: {cuenta_caja_final}")
 
     if not cuenta_caja_final:
-
-
-
-
-
-        # Usar cuenta debito CXC estandar del Tipo Doc Recibo (A veces la caja se configura ahi)
-
-
-
-
-
-        cuenta_caja_final = tipo_doc.cuenta_debito_cxc_id 
-
-
-
-
-
-        
-
-
-
-
-
-        # Fallback 2: Usar campo especial 'cuenta_caja_id' de Tipo Doc
-
-
-
-
-
-        if not cuenta_caja_final:
-
-
-
-
-
-             caja_id_custom = getattr(tipo_doc, 'cuenta_caja_id', None)
-
-
-
-
-
-             if caja_id_custom:
-
-
-
-
-
-                 cuenta_caja_final = caja_id_custom
-
-
-
-
-
-    
-
-
-
-
-
-    # Fallback 3: Global Config (Para compatibilidad si aun existe en algun lado, aunque lo quitamos de UI)
-
-
-
-
-
-    if not cuenta_caja_final and config.cuenta_caja_id:
-
-
-
-
-
-        cuenta_caja_final = config.cuenta_caja_id
-
-
-
-
-
-
-
-
-
-
+        # PRIORIDAD 2: Campo personalizado del Tipo Doc (cuenta_caja_id si existe)
+        caja_custom = getattr(tipo_doc, 'cuenta_caja_id', None)
+        if caja_custom:
+            cuenta_caja_final = caja_custom
 
     if not cuenta_caja_final:
+        # PRIORIDAD 3: Config Global PH
+        if config and config.cuenta_caja_id:
+            cuenta_caja_final = config.cuenta_caja_id
 
+    if not cuenta_caja_final:
+        # PRIORIDAD 4 (ultimo recurso): cuenta_debito_cxc del tipo doc
+        # (puede ser cartera en algunos configs - es mejor que nada)
+        cuenta_caja_final = tipo_doc.cuenta_debito_cxc_id
 
+    if not cuenta_caja_final:
+        raise HTTPException(status_code=400, detail="No se encontro cuenta de Caja/Bancos. Configure 'Cuenta Caja' en el Concepto de Facturacion.")
 
+    print(f"DEBUG: Cuenta caja final: {cuenta_caja_final}")
 
-
-         raise HTTPException(status_code=400, detail="No se encontró cuenta de Caja/Bancos. Configure 'Cuenta Caja' en el Concepto de Facturación o en el Tipo de Documento.")
 
 
 
