@@ -176,7 +176,21 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
     # 3. Precarga de Pagos Tardios (Recibos del mes anterior)
     ultimo_dia_mes_ant = primer_dia_mes_factura - timedelta(days=1)
     primer_dia_mes_ant = ultimo_dia_mes_ant.replace(day=1)
-                mapa_recibos_tardios[r.unidad_ph_id].append(r)
+    
+    rc_tipo = db.query(TipoDocumento).filter(TipoDocumento.empresa_id == empresa_id, TipoDocumento.codigo == 'RC').first()
+    mapa_recibos_tardios = {}
+    if rc_tipo:
+        recibos_mes_ant = db.query(Documento).filter(
+            Documento.empresa_id == empresa_id,
+            Documento.tipo_documento_id == rc_tipo.id,
+            Documento.fecha >= primer_dia_mes_ant,
+            Documento.fecha <= ultimo_dia_mes_ant,
+            Documento.anulado == False
+        ).all()
+        for r in recibos_mes_ant:
+            if r.unidad_ph_id not in mapa_recibos_tardios:
+                mapa_recibos_tardios[r.unidad_ph_id] = []
+            mapa_recibos_tardios[r.unidad_ph_id].append(r)
     
     # 4. Precarga de Anticipos (Saldos a favor en Pasivo) - NUEVO
     mapa_anticipos = {}
