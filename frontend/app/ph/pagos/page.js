@@ -303,7 +303,9 @@ export default function PagosPHPage() {
                                 <p className="text-gray-500 text-sm">Gestión de recaudos por {labels.unidad} o consolidado por Propietario.</p>
                             </div>
                         </div>
-                        <div className="mt-3">
+                        <div className="mt-3 flex items-center gap-2">
+                            <ManualButton 
+                                manualPath="pagos.html"
                                 title="Manual de Registro de Pagos"
                                 position="header"
                             />
