@@ -3,8 +3,13 @@ from app.models.propiedad_horizontal import PHUnidad, PHVehiculo, PHMascota, PHC
 from app.schemas.propiedad_horizontal import unidad as schemas
 from typing import List, Optional
 
-def get_unidades(db: Session, empresa_id: int, skip: int = 0, limit: int = 100):
-    unidades = db.query(PHUnidad).filter(PHUnidad.empresa_id == empresa_id)\
+def get_unidades(db: Session, empresa_id: int, skip: int = 0, limit: int = 100, torre_id: Optional[int] = None):
+    query = db.query(PHUnidad).filter(PHUnidad.empresa_id == empresa_id)
+    
+    if torre_id:
+        query = query.filter(PHUnidad.torre_id == torre_id)
+        
+    unidades = query\
         .options(
             joinedload(PHUnidad.torre), 
             joinedload(PHUnidad.propietario_principal),

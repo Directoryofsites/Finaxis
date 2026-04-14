@@ -142,10 +142,11 @@ def listar_propietarios_directorio(
 def listar_unidades(
     skip: int = 0, 
     limit: int = 100,
+    torre_id: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    return unidad_service.get_unidades(db, empresa_id=current_user.empresa_id, skip=skip, limit=limit)
+    return unidad_service.get_unidades(db, empresa_id=current_user.empresa_id, skip=skip, limit=limit, torre_id=torre_id)
 
 @router.post("/unidades", response_model=schemas.PHUnidad, status_code=status.HTTP_201_CREATED)
 def crear_unidad(
