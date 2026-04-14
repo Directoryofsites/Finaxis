@@ -7,10 +7,11 @@ import { apiService } from '../../../lib/apiService';
 import { phService } from '../../../lib/phService';
 import {
     FaMoneyBillWave, FaUser, FaBuilding, FaCheckCircle, FaExclamationTriangle, FaCalendarAlt,
-    FaHistory, FaFileInvoiceDollar, FaPrint, FaFileAlt, FaListUl
+    FaHistory, FaFileInvoiceDollar, FaPrint, FaFileAlt, FaListUl, FaLayerGroup
 } from 'react-icons/fa';
 import { useRecaudos } from '../../../contexts/RecaudosContext'; // IMPORT
 import ManualButton from '../../components/ManualButton';
+import Link from 'next/link';
 
 export default function PagosPHPage() {
     const { user, loading: authLoading } = useAuth();
@@ -303,11 +304,15 @@ export default function PagosPHPage() {
                             </div>
                         </div>
                         <div className="mt-3">
-                            <ManualButton 
-                                manualPath="pagos.html"
                                 title="Manual de Registro de Pagos"
                                 position="header"
                             />
+                            <Link 
+                                href="/ph/pagos/masivo" 
+                                className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-xs shadow-lg hover:bg-indigo-700 transition-all hover:scale-105"
+                            >
+                                <FaLayerGroup /> RECAUDOS MASIVOS (POR TORRE)
+                            </Link>
                         </div>
                     </div>
                 </div>
