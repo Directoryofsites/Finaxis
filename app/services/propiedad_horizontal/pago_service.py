@@ -5152,23 +5152,26 @@ def registrar_pago_masivo(
     mapa_unidades = {u.id: u for u in unidades}
     
     # 2. PRECARGA MASIVA DE SALDOS (Evitar N+1 queries)
-    # Calcular cuánto debe cada unidad en una sola consulta SQL agrupada
+    # Calculamos el saldo neto CONTABLE por unidad usando sus movimientos.
+    # El saldo = sum(debitos) - sum(creditos) en los documentos activos de cada unidad.
+    # Esto es exactamente lo que hace get_historial_cuenta_unidad internamente.
+    from app.models.movimiento_contable import MovimientoContable
     from app.models.documento import Documento
     from sqlalchemy import func
     
     saldos_query = db.query(
         Documento.unidad_ph_id,
-        func.sum(Documento.valor_total - Documento.aplicado).label('saldo_total')
+        func.sum(MovimientoContable.debito - MovimientoContable.credito).label('saldo_neto')
+    ).join(
+        MovimientoContable, MovimientoContable.documento_id == Documento.id
     ).filter(
         Documento.empresa_id == empresa_id,
         Documento.unidad_ph_id.in_(unidades_ids),
-        Documento.anulado == False,
-        Documento.estado.in_(['ACTIVO', 'PROCESADO']),
-        (Documento.valor_total - Documento.aplicado) > 0
+        Documento.anulado == False
     ).group_by(Documento.unidad_ph_id).all()
     
-    mapa_saldos = {row.unidad_ph_id: float(row.saldo_total or 0) for row in saldos_query}
-    print(f"--- PRECARGA SALDOS: {len(mapa_saldos)} unidades con deuda encontradas ---")
+    mapa_saldos = {row.unidad_ph_id: max(0.0, float(row.saldo_neto or 0)) for row in saldos_query}
+    print(f"--- PRECARGA SALDOS: {len(mapa_saldos)} unidades con saldo ---")
 
     # 3. Bucle de procesamiento
     for index, u_id in enumerate(unidades_ids):
