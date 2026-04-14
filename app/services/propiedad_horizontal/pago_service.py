@@ -5145,10 +5145,32 @@ def registrar_pago_masivo(
     print(f"--- INICIANDO PAGO MASIVO: {total_unidades} unidades ---")
     
     # 1. Obtener datos de las unidades en una sola consulta
-    unidades = db.query(PHUnidad).filter(PHUnidad.id.in_(unidades_ids)).all()
+    unidades = db.query(PHUnidad).filter(
+        PHUnidad.id.in_(unidades_ids),
+        PHUnidad.empresa_id == empresa_id
+    ).all()
     mapa_unidades = {u.id: u for u in unidades}
+    
+    # 2. PRECARGA MASIVA DE SALDOS (Evitar N+1 queries)
+    # Calcular cuánto debe cada unidad en una sola consulta SQL agrupada
+    from app.models.documento import Documento
+    from sqlalchemy import func
+    
+    saldos_query = db.query(
+        Documento.unidad_ph_id,
+        func.sum(Documento.valor_total - Documento.aplicado).label('saldo_total')
+    ).filter(
+        Documento.empresa_id == empresa_id,
+        Documento.unidad_ph_id.in_(unidades_ids),
+        Documento.anulado == False,
+        Documento.estado.in_(['ACTIVO', 'PROCESADO']),
+        (Documento.valor_total - Documento.aplicado) > 0
+    ).group_by(Documento.unidad_ph_id).all()
+    
+    mapa_saldos = {row.unidad_ph_id: float(row.saldo_total or 0) for row in saldos_query}
+    print(f"--- PRECARGA SALDOS: {len(mapa_saldos)} unidades con deuda encontradas ---")
 
-    # 2. Bucle de procesamiento
+    # 3. Bucle de procesamiento
     for index, u_id in enumerate(unidades_ids):
         try:
             unidad = mapa_unidades.get(u_id)
@@ -5157,9 +5179,8 @@ def registrar_pago_masivo(
                 
             monto_final = 0
             if pagar_saldo_total:
-                # Obtener deuda
-                edo_cta = get_estado_cuenta_unidad(db, u_id, empresa_id)
-                monto_final = float(edo_cta.get('saldo_total', 0))
+                # Usar saldo precargado en RAM (sin consultas adicionales)
+                monto_final = mapa_saldos.get(u_id, 0)
             else:
                 monto_final = monto_fijo or 0
                 
@@ -5168,7 +5189,7 @@ def registrar_pago_masivo(
                 continue
 
             # Llamada optimizada: skip_recalculo=True, commit=False
-            res_pago = registrar_pago_unidad(
+            registrar_pago_unidad(
                 db, 
                 unidad_id=u_id,
                 empresa_id=empresa_id,
@@ -5195,8 +5216,9 @@ def registrar_pago_masivo(
             db.rollback()
             resultados["errores"] += 1
             resultados["detalles"].append(f"Unidad {u_id}: Error - {str(e)}")
+            print(f"ERROR pagando unidad {u_id}: {e}")
 
-    # 3. Commit final de pagos
+    # 4. Commit final de pagos
     try:
         db.commit()
     except Exception as e_final:

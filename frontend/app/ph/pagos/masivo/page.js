@@ -81,16 +81,16 @@ export default function RecaudosMasivosPage() {
     const loadUnidades = async (torreId) => {
         try {
             setLoading(true);
-            // Obtenemos unidades de la torre
-            const data = await phService.getUnidades({ torre_id: torreId });
-            
-            // Para que se vea premium, cargamos dinámicamente el saldo de cada una?
-            // NOTA: Como el usuario pidió "agilizar", esto debe ser rápido. 
-            // Si el backend es rápido, podemos mapear deudas aquí.
+            setError(null);
+            // Convertir a entero para evitar mismatch de tipos en el backend
+            const data = await phService.getUnidades({ 
+                torre_id: parseInt(torreId, 10), 
+                limit: 500 
+            });
             setUnidades(data);
             setSelectedUnidades(data.map(u => u.id)); // Por defecto todas seleccionadas
         } catch (err) {
-            setError("Error cargando unidades.");
+            setError("Error cargando unidades de la torre. Verifique la conexión.");
         } finally {
             setLoading(false);
         }
