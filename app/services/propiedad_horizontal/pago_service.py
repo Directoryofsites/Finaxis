@@ -1372,139 +1372,30 @@ def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_
 
 
 
-    # PRIORIDAD: Intentar resolver por concepto (Igual que la caja)
+    # PRIORIDAD 1 (siempre): Config Global PH - garantiza consistencia entre todas las unidades
+    # Esto evita el bug donde una unidad sin deuda pendiente usaba la cuenta incorrecta
+    cuenta_cartera_final = config.cuenta_cartera_id if (config and config.cuenta_cartera_id) else None
 
-
-
-
-
-    cuenta_cartera_final = None
-
-
-
-
-
-
-
-
-
-
-
-    if pendientes:
-
-
-
-
-
+    # PRIORIDAD 2: Si no hay config global, intentar resolver por cuenta CXC del concepto de la deuda
+    if not cuenta_cartera_final and pendientes:
         try:
-
-
-
-
-
-             # Usamos el mismo mapa_cxc_caja o lógica similar si ya lo calculamos antes.
-
-
-
-
-
-             # Si encontramos la cuenta CXC en el documento pagado, esa ES la cuenta cartera final.
-
-
-
-
-
-             if 'cuenta_cxc_encontrada' in locals() and cuenta_cxc_encontrada:
-
-
-
-
-
-                 cuenta_cartera_final = cuenta_cxc_encontrada
-
-
-
-
-
-                 print(f"DEBUG: Cartera resuelta por Concepto (CXC detectada: {cuenta_cartera_final})")
-
-
-
-
-
+            cuenta_cxc_local = locals().get('cuenta_cxc_encontrada', None)
+            if cuenta_cxc_local:
+                cuenta_cartera_final = cuenta_cxc_local
+                print(f"DEBUG: Cartera resuelta por Concepto (CXC: {cuenta_cartera_final})")
         except Exception as e:
-
-
-
-
-
             print(f"WARN: Error resolviendo cartera por concepto: {e}")
 
-
-
-
-
-
-
-
-
-
-
-    # Fallback 1: Config Global (si existe)
-
-
-
-
-
-    if not cuenta_cartera_final and config.cuenta_cartera_id:
-
-
-
-
-
-        cuenta_cartera_final = config.cuenta_cartera_id
-
-
-
-
-
-    
-
-
-
-
-
-    # Fallback 2: Tipo Doc Recibo (Credito CXC)
-
-
-
-
-
+    # FALLBACK: Tipo Doc Recibo credito CXC
     if not cuenta_cartera_final:
-
-
-
-
-
         cuenta_cartera_final = tipo_doc.cuenta_credito_cxc_id
 
-
-
-
-
-    
-
-
-
-
-
     if not cuenta_cartera_final:
+        raise HTTPException(status_code=400, detail="No se encontro cuenta de Cartera. Configure Cuenta Cartera en Parametros PH.")
 
+    print(f"DEBUG: Cuenta cartera final usada: {cuenta_cartera_final}")
 
-
-
-
-        raise HTTPException(status_code=400, detail="No se encontró cuenta de Cartera. Configure 'Cuenta Cartera' en Parámetros PH.")    # B. Créditos (Disminución de deuda / Generación de Anticipo)
+    # B. Creditos (Disminucion de deuda / Generacion de Anticipo)
     # Detectar deuda actual para aplicar "División Inteligente" si hay excedente
     deuda_actual = float(estado_cuenta.get('saldo_total', 0))
     id_propietario = estado_cuenta.get('propietario_id')
@@ -5151,27 +5042,36 @@ def registrar_pago_masivo(
     ).all()
     mapa_unidades = {u.id: u for u in unidades}
     
-    # 2. PRECARGA MASIVA DE SALDOS (Evitar N+1 queries)
-    # Calculamos el saldo neto CONTABLE por unidad usando sus movimientos.
-    # El saldo = sum(debitos) - sum(creditos) en los documentos activos de cada unidad.
-    # Esto es exactamente lo que hace get_historial_cuenta_unidad internamente.
+    # 2. PRECARGA MASIVA DE SALDOS (enfoque correcto: filtrar por cuenta de Cartera)
+    # El saldo de cartera = SUM(debitos) - SUM(creditos) en la cuenta CXC/Cartera del PH.
+    # Debitos = facturas emitidas. Creditos = pagos aplicados. Diferencia = deuda actual.
     from app.models.movimiento_contable import MovimientoContable
     from app.models.documento import Documento
     from sqlalchemy import func
     
-    saldos_query = db.query(
-        Documento.unidad_ph_id,
-        func.sum(MovimientoContable.debito - MovimientoContable.credito).label('saldo_neto')
-    ).join(
-        MovimientoContable, MovimientoContable.documento_id == Documento.id
-    ).filter(
-        Documento.empresa_id == empresa_id,
-        Documento.unidad_ph_id.in_(unidades_ids),
-        Documento.anulado == False
-    ).group_by(Documento.unidad_ph_id).all()
+    mapa_saldos = {}
     
-    mapa_saldos = {row.unidad_ph_id: max(0.0, float(row.saldo_neto or 0)) for row in saldos_query}
-    print(f"--- PRECARGA SALDOS: {len(mapa_saldos)} unidades con saldo ---")
+    config_ph = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
+    cuenta_cartera_ph = config_ph.cuenta_cartera_id if config_ph else None
+    
+    if cuenta_cartera_ph:
+        # Saldo neto en la CUENTA DE CARTERA: débitos (facturas) menos créditos (pagos previos)
+        saldos_query = db.query(
+            Documento.unidad_ph_id,
+            func.sum(MovimientoContable.debito - MovimientoContable.credito).label('saldo_cartera')
+        ).join(
+            MovimientoContable, MovimientoContable.documento_id == Documento.id
+        ).filter(
+            Documento.empresa_id == empresa_id,
+            Documento.unidad_ph_id.in_(unidades_ids),
+            Documento.anulado == False,
+            MovimientoContable.cuenta_id == cuenta_cartera_ph
+        ).group_by(Documento.unidad_ph_id).all()
+        
+        mapa_saldos = {row.unidad_ph_id: max(0.0, float(row.saldo_cartera or 0)) for row in saldos_query}
+        print(f"--- PRECARGA SALDOS (cuenta cartera {cuenta_cartera_ph}): {len(mapa_saldos)} unidades con deuda ---")
+    else:
+        print("WARN: No se encontró cuenta_cartera_id en config PH. Pagar Saldo Total no funcionará.")
 
     # 3. Bucle de procesamiento
     for index, u_id in enumerate(unidades_ids):
