@@ -5042,58 +5042,41 @@ def registrar_pago_masivo(
     ).all()
     mapa_unidades = {u.id: u for u in unidades}
     
-    # 2. PRECARGA MASIVA DE SALDOS (enfoque correcto: filtrar por cuenta de Cartera)
-    # El saldo de cartera = SUM(debitos) - SUM(creditos) en la cuenta CXC/Cartera del PH.
-    # Debitos = facturas emitidas. Creditos = pagos aplicados. Diferencia = deuda actual.
-    from app.models.movimiento_contable import MovimientoContable
-    from app.models.documento import Documento
-    from sqlalchemy import func
-    
-    mapa_saldos = {}
-    
-    config_ph = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
-    cuenta_cartera_ph = config_ph.cuenta_cartera_id if config_ph else None
-    
-    if cuenta_cartera_ph:
-        # Saldo neto en la CUENTA DE CARTERA: débitos (facturas) menos créditos (pagos previos)
-        saldos_query = db.query(
-            Documento.unidad_ph_id,
-            func.sum(MovimientoContable.debito - MovimientoContable.credito).label('saldo_cartera')
-        ).join(
-            MovimientoContable, MovimientoContable.documento_id == Documento.id
-        ).filter(
-            Documento.empresa_id == empresa_id,
-            Documento.unidad_ph_id.in_(unidades_ids),
-            Documento.anulado == False,
-            MovimientoContable.cuenta_id == cuenta_cartera_ph
-        ).group_by(Documento.unidad_ph_id).all()
-        
-        mapa_saldos = {row.unidad_ph_id: max(0.0, float(row.saldo_cartera or 0)) for row in saldos_query}
-        print(f"--- PRECARGA SALDOS (cuenta cartera {cuenta_cartera_ph}): {len(mapa_saldos)} unidades con deuda ---")
-    else:
-        print("WARN: No se encontró cuenta_cartera_id en config PH. Pagar Saldo Total no funcionará.")
-
-    # 3. Bucle de procesamiento
+    # 2. Bucle de procesamiento con saldo calculado por la misma funcion que usa registrar_pago_unidad
+    # ESTRATEGIA: Llamar get_estado_cuenta_unidad por unidad (con skip_recalculo=True para velocidad).
+    # Esto garantiza que el monto que enviamos a registrar_pago_unidad coincide EXACTAMENTE
+    # con el saldo que esa funcion ve internamente, eliminando el bug de discrepancia.
     for index, u_id in enumerate(unidades_ids):
         try:
             unidad = mapa_unidades.get(u_id)
             if not unidad:
                 continue
-                
+
             monto_final = 0
             if pagar_saldo_total:
-                # Usar saldo precargado en RAM (sin consultas adicionales)
-                monto_final = mapa_saldos.get(u_id, 0)
+                # Usamos la misma funcion de estado de cuenta que registrar_pago_unidad usa internamente
+                try:
+                    edo = get_estado_cuenta_unidad(db, u_id, empresa_id, skip_recalculo=True)
+                    saldo = float(edo.get('saldo_total', 0))
+                    if saldo <= 0:
+                        resultados["detalles"].append(f"Unidad {unidad.codigo}: Sin deuda pendiente. Omitido.")
+                        continue
+                    monto_final = saldo
+                    print(f"DEBUG MASIVO: Unidad {unidad.codigo} -> saldo={monto_final}")
+                except Exception as e_saldo:
+                    resultados["errores"] += 1
+                    resultados["detalles"].append(f"Unidad {unidad.codigo}: Error leyendo saldo - {str(e_saldo)}")
+                    continue
             else:
                 monto_final = monto_fijo or 0
-                
+
             if monto_final <= 0:
-                resultados["detalles"].append(f"Unidad {unidad.codigo}: Salto (Sin deuda o monto 0).")
+                resultados["detalles"].append(f"Unidad {unidad.codigo}: Monto 0. Omitido.")
                 continue
 
-            # Llamada optimizada: skip_recalculo=True, commit=False
+            # Registrar pago con recalculo diferido
             registrar_pago_unidad(
-                db, 
+                db,
                 unidad_id=u_id,
                 empresa_id=empresa_id,
                 usuario_id=usuario_id,
@@ -5103,25 +5086,25 @@ def registrar_pago_masivo(
                 skip_recalculo=True,
                 commit=False
             )
-            
-            # Registrar propietario para recálculo final
+
             if unidad.propietario_principal_id:
                 terceros_a_recalcular.add(unidad.propietario_principal_id)
-                
+
             resultados["procesados"] += 1
-            
+            print(f"DEBUG MASIVO: Unidad {unidad.codigo} -> OK (${monto_final})")
+
             # Commit por lotes de 50 para liberar memoria
             if resultados["procesados"] % 50 == 0:
                 db.commit()
                 print(f"--- BATCH COMMIT PAGO: {resultados['procesados']} procesados ---")
-                
+
         except Exception as e:
             db.rollback()
             resultados["errores"] += 1
             resultados["detalles"].append(f"Unidad {u_id}: Error - {str(e)}")
             print(f"ERROR pagando unidad {u_id}: {e}")
 
-    # 4. Commit final de pagos
+        # 4. Commit final de pagos
     try:
         db.commit()
     except Exception as e_final:
