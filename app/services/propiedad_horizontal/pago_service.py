@@ -5119,7 +5119,7 @@ def registrar_pago_masivo(
     db: Session, 
     empresa_id: int, 
     usuario_id: int, 
-    unidades_ids: List[int], 
+    unidades_ids: list[int], 
     fecha_pago: date, 
     forma_pago_id: int = None,
     monto_fijo: float = None,
