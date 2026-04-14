@@ -363,13 +363,6 @@ def registrar_pago(
         monto=payload.monto,
         fecha_pago=payload.fecha,
         forma_pago_id=payload.forma_pago_id
-        db, 
-        pago.unidad_id, 
-        current_user.empresa_id, 
-        current_user.id, 
-        pago.monto, 
-        pago.fecha,
-        pago.forma_pago_id
     )
 
 @router.post("/pagos/masivo")
