@@ -14,6 +14,7 @@ class PHConfiguracionBase(BaseModel):
     tipo_documento_factura_id: Optional[int] = None
     tipo_documento_recibo_id: Optional[int] = None
     tipo_documento_mora_id: Optional[int] = None # Nuevo
+    tipo_documento_cruce_id: Optional[int] = None # Para Documento Cruce Anticipos
     cuenta_cartera_id: Optional[int] = None
     cuenta_caja_id: Optional[int] = None
     cuenta_ingreso_intereses_id: Optional[int] = None
@@ -33,6 +34,7 @@ class PHConfiguracionResponse(PHConfiguracionBase):
     cuenta_caja: Optional[PlanCuentaSimple] = None
     cuenta_ingreso_intereses: Optional[PlanCuentaSimple] = None
     cuenta_anticipos: Optional[PlanCuentaSimple] = None
+    tipo_documento_cruce: Optional[str] = None # Podríamos traer el SimpleModel, pero usualmente con el ID es suficiente, o podemos añadir TypeDoc
 
     class Config:
         from_attributes = True

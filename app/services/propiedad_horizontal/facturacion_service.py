@@ -86,11 +86,20 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
         
     ids_ya_facturados = {u.unidad_ph_id for u in unidades_ya_facturadas if u.unidad_ph_id}
     
-    # NUEVO: Buscar Tipo de Documento para Cruces (Nota de Contabilidad)
-    tipo_nc = db.query(TipoDocumento).filter(
-        TipoDocumento.empresa_id == empresa_id,
-        TipoDocumento.codigo == 'NC'
-    ).first()
+    # NUEVO: Buscar Tipo de Documento para Cruces
+    tipo_nc = None
+    if config and config.tipo_documento_cruce_id:
+        tipo_nc = db.query(TipoDocumento).filter(TipoDocumento.id == config.tipo_documento_cruce_id).first()
+    if not tipo_nc:
+        tipo_nc = db.query(TipoDocumento).filter(
+            TipoDocumento.empresa_id == empresa_id,
+            TipoDocumento.funcion_especial == 'PH_CRUCE_ANTICIPO'
+        ).first()
+    if not tipo_nc:
+        tipo_nc = db.query(TipoDocumento).filter(
+            TipoDocumento.empresa_id == empresa_id,
+            TipoDocumento.codigo == 'NC'
+        ).first()
     
     # Identificar unidades con excepciones (whitelisted)
     unidades_con_excepciones = set()

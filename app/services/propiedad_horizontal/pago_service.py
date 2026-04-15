@@ -587,76 +587,28 @@ def get_historial_cuenta_unidad(db: Session, unidad_id: Optional[int], empresa_i
 
 
     # Identificar cuentas de cartera validas (incluyendo la configurada en PH)
-
-
-
-
-
     cuentas_cxc_ids = cartera_service.get_cuentas_especiales_ids(db, empresa_id, 'cxc')
-
-
-
-
-
-
-
-
-
-
+    
+    config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
+    cuentas_validas = set(cuentas_cxc_ids)
+    if config and config.cuenta_anticipos_id:
+        cuentas_validas.add(config.cuenta_anticipos_id)
 
     for doc in docs:
 
-
-
-
-
         # Calcular impacto en cartera de este documento
-
-
-
-
 
         # Usamos los movimientos del documento.
 
-
-
-
-
-        
-
-
-
-
-
         impacto_cxc = 0
-
-
-
-
 
         for mov in doc.movimientos:
 
+            # Si la cuenta está en el grupo de Cartera (13, 16 config, etc) o es Anticipos (2805)
 
-
-
-
-            # Si la cuenta está en el grupo de Cartera (13, 16 config, etc)
-
-
-
-
-
-            if mov.cuenta_id in cuentas_cxc_ids:
-
-
-
-
+            if mov.cuenta_id in cuentas_validas:
 
                 impacto_cxc += (mov.debito - mov.credito)
-
-
-
-
 
         
 

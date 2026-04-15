@@ -272,16 +272,23 @@ export default function ConfiguracionPHPage() {
                                             <p className="text-xs text-gray-400 mt-1">Usado para registrar pagos de propietarios.</p>
                                         </div>
                                         <div>
-                                            <p className="text-xs text-gray-400 mt-1">Usado para cargar la Mora Automática.</p>
+                                            <label className={labelClass}>Tipo Doc. Cruce Anticipos</label>
+                                            <select name="tipo_documento_cruce_id" value={config.tipo_documento_cruce_id || ''} onChange={handleConfigChange} className={inputClass}>
+                                                <option value="">-- Seleccionar --</option>
+                                                {tiposDoc.map(t => (
+                                                    <option key={t.id} value={t.id}>{t.codigo} - {t.nombre}</option>
+                                                ))}
+                                            </select>
+                                            <p className="text-xs text-gray-400 mt-1">Usado para aplicar saldos a favor (Ej. NC).</p>
                                         </div>
-                                        <div>
-                                            <label className={labelClass}>Cuenta de Anticipos (Pasivo)</label>
+                                        <div className="md:col-span-1">
+                                            <label className="block text-xs font-bold text-indigo-800 uppercase mb-1">Cuenta de Anticipos (Pasivo)</label>
                                             <BuscadorCuentas
                                                 onSelect={(cta) => setConfig({ ...config, cuenta_anticipos_id: cta.id, cuenta_anticipos_codigo: cta.codigo, cuenta_anticipos_nombre: cta.nombre })}
                                                 selectedCodigo={config.cuenta_anticipos_codigo}
                                                 placeholder="280505 - Anticipos"
                                             />
-                                            <p className="text-xs text-gray-400 mt-1">{config.cuenta_anticipos_nombre || 'Mueve excedentes de pago a este Pasivo.'}</p>
+                                            <p className="text-xs text-indigo-700 mt-1">{config.cuenta_anticipos_nombre || 'Mueve excedentes de pago a este Pasivo automáticamente.'}</p>
                                         </div>
                                     </div>
                                 </div>

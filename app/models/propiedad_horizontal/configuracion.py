@@ -27,6 +27,7 @@ class PHConfiguracion(Base):
     tipo_documento_factura_id = Column(Integer, ForeignKey("tipos_documento.id"), nullable=True)
     tipo_documento_recibo_id = Column(Integer, ForeignKey("tipos_documento.id"), nullable=True)
     tipo_documento_mora_id = Column(Integer, ForeignKey("tipos_documento.id"), nullable=True) # New Field
+    tipo_documento_cruce_id = Column(Integer, ForeignKey("tipos_documento.id"), nullable=True) # Para Documento Cruce Anticipos
     
     # Cuentas Contables Centralizadas (Overrides)
     cuenta_cartera_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Para CXC (13, 14, 16...)
@@ -40,6 +41,7 @@ class PHConfiguracion(Base):
     empresa = relationship("app.models.empresa.Empresa", back_populates="ph_configuracion")
     tipo_documento_recibo = relationship("app.models.tipo_documento.TipoDocumento", foreign_keys=[tipo_documento_recibo_id])
     tipo_documento_mora = relationship("app.models.tipo_documento.TipoDocumento", foreign_keys=[tipo_documento_mora_id])
+    tipo_documento_cruce = relationship("app.models.tipo_documento.TipoDocumento", foreign_keys=[tipo_documento_cruce_id])
     cuenta_cartera = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_cartera_id])
     cuenta_caja = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_caja_id])
     cuenta_ingreso_intereses = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_ingreso_intereses_id])

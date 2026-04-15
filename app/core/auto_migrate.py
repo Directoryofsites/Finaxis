@@ -165,6 +165,8 @@ def run_auto_migrations():
             cols_ph_config = get_existing_columns('ph_configuracion')
             if 'cuenta_anticipos_id' not in cols_ph_config:
                 migrations.append(('ph_configuracion', 'cuenta_anticipos_id', 'INTEGER'))
+            if 'tipo_documento_cruce_id' not in cols_ph_config:
+                migrations.append(('ph_configuracion', 'tipo_documento_cruce_id', 'INTEGER'))
 
             # empresa_config_buzon (Nuevas columnas de Ventas y Soporte)
             cols_empresa_config_buzon = get_existing_columns('empresa_config_buzon')
