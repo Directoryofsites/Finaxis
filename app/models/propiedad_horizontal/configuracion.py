@@ -39,6 +39,7 @@ class PHConfiguracion(Base):
     interes_mora_habilitado = Column(Boolean, default=True)
 
     empresa = relationship("app.models.empresa.Empresa", back_populates="ph_configuracion")
+    tipo_documento_factura = relationship("app.models.tipo_documento.TipoDocumento", foreign_keys=[tipo_documento_factura_id])
     tipo_documento_recibo = relationship("app.models.tipo_documento.TipoDocumento", foreign_keys=[tipo_documento_recibo_id])
     tipo_documento_mora = relationship("app.models.tipo_documento.TipoDocumento", foreign_keys=[tipo_documento_mora_id])
     tipo_documento_cruce = relationship("app.models.tipo_documento.TipoDocumento", foreign_keys=[tipo_documento_cruce_id])
