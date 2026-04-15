@@ -255,7 +255,7 @@ export default function ConfiguracionPHPage() {
                                             <label className={labelClass}>Tipo Doc. Facturación</label>
                                             <select name="tipo_documento_factura_id" value={config.tipo_documento_factura_id || ''} onChange={handleConfigChange} className={inputClass}>
                                                 <option value="">-- Seleccionar --</option>
-                                                {tiposDoc.filter(t => t.funcion_especial !== 'PAGO_PROVEEDOR').map(t => (
+                                                {(Array.isArray(tiposDoc) ? tiposDoc : []).filter(t => t.funcion_especial !== 'PAGO_PROVEEDOR').map(t => (
                                                     <option key={t.id} value={t.id}>{t.codigo} - {t.nombre}</option>
                                                 ))}
                                             </select>
@@ -265,7 +265,7 @@ export default function ConfiguracionPHPage() {
                                             <label className={labelClass}>Tipo Doc. Recaudo</label>
                                             <select name="tipo_documento_recibo_id" value={config.tipo_documento_recibo_id || ''} onChange={handleConfigChange} className={inputClass}>
                                                 <option value="">-- Seleccionar --</option>
-                                                {tiposDoc.filter(t => t.funcion_especial !== 'FACTURA_VENTA').map(t => (
+                                                {(Array.isArray(tiposDoc) ? tiposDoc : []).filter(t => t.funcion_especial !== 'FACTURA_VENTA').map(t => (
                                                     <option key={t.id} value={t.id}>{t.codigo} - {t.nombre}</option>
                                                 ))}
                                             </select>
@@ -275,7 +275,7 @@ export default function ConfiguracionPHPage() {
                                             <label className={labelClass}>Tipo Doc. Cruce Anticipos</label>
                                             <select name="tipo_documento_cruce_id" value={config.tipo_documento_cruce_id || ''} onChange={handleConfigChange} className={inputClass}>
                                                 <option value="">-- Seleccionar --</option>
-                                                {tiposDoc.map(t => (
+                                                {(Array.isArray(tiposDoc) ? tiposDoc : []).map(t => (
                                                     <option key={t.id} value={t.id}>{t.codigo} - {t.nombre}</option>
                                                 ))}
                                             </select>
