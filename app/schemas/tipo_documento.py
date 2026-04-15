@@ -51,10 +51,9 @@ class SiguienteNumero(BaseModel):
 class TipoDocumentoSimple(BaseModel):
     id: int
     nombre: str
-    numeracion_manual: bool
-    afecta_inventario: bool
+    numeracion_manual: bool = False      # Valor por defecto para evitar crash con NULL en BD
+    afecta_inventario: bool = False      # Valor por defecto para evitar crash con NULL en BD
     funcion_especial: Optional[str] = None
-    # CRÍTICO: Asegurar que este esquema también los tenga si se usa
     es_venta: bool = False
     es_compra: bool = False
 

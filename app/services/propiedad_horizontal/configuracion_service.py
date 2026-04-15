@@ -1,11 +1,25 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.models.propiedad_horizontal import PHConfiguracion
 from app.schemas.propiedad_horizontal import configuracion as schemas
 from typing import List, Optional
 
 # --- CONFIGURACION ---
 def get_configuracion(db: Session, empresa_id: int):
-    config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
+    config = (
+        db.query(PHConfiguracion)
+        .options(
+            joinedload(PHConfiguracion.tipo_documento_factura),
+            joinedload(PHConfiguracion.tipo_documento_recibo),
+            joinedload(PHConfiguracion.tipo_documento_mora),
+            joinedload(PHConfiguracion.tipo_documento_cruce),
+            joinedload(PHConfiguracion.cuenta_cartera),
+            joinedload(PHConfiguracion.cuenta_caja),
+            joinedload(PHConfiguracion.cuenta_ingreso_intereses),
+            joinedload(PHConfiguracion.cuenta_anticipos),
+        )
+        .filter(PHConfiguracion.empresa_id == empresa_id)
+        .first()
+    )
     if not config:
         # Auto-create default configuration if not exists
         config = PHConfiguracion(empresa_id=empresa_id)
