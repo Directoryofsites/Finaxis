@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 from app.schemas.plan_cuenta import PlanCuentaSimple
+from app.schemas.tipo_documento import TipoDocumentoSimple
 
 # --- CONFIGURACION ---
 class PHConfiguracionBase(BaseModel):
@@ -13,14 +14,14 @@ class PHConfiguracionBase(BaseModel):
     mensaje_factura: Optional[str] = None
     tipo_documento_factura_id: Optional[int] = None
     tipo_documento_recibo_id: Optional[int] = None
-    tipo_documento_mora_id: Optional[int] = None # Nuevo
-    tipo_documento_cruce_id: Optional[int] = None # Para Documento Cruce Anticipos
+    tipo_documento_mora_id: Optional[int] = None
+    tipo_documento_cruce_id: Optional[int] = None
     cuenta_cartera_id: Optional[int] = None
     cuenta_caja_id: Optional[int] = None
     cuenta_ingreso_intereses_id: Optional[int] = None
-    cuenta_anticipos_id: Optional[int] = None # Nueva
+    cuenta_anticipos_id: Optional[int] = None
     interes_mora_habilitado: bool = True
-    tipo_negocio: str = 'PH_RESIDENCIAL' # Nuevo campo
+    tipo_negocio: str = 'PH_RESIDENCIAL'
 
 class PHConfiguracionUpdate(PHConfiguracionBase):
     pass
@@ -29,12 +30,15 @@ class PHConfiguracionResponse(PHConfiguracionBase):
     id: int
     empresa_id: int
     
-    # Relationships for UI
+    # Objetos nested correctamente tipados para que el frontend pueda mostrar nombres
     cuenta_cartera: Optional[PlanCuentaSimple] = None
     cuenta_caja: Optional[PlanCuentaSimple] = None
     cuenta_ingreso_intereses: Optional[PlanCuentaSimple] = None
     cuenta_anticipos: Optional[PlanCuentaSimple] = None
-    tipo_documento_cruce: Optional[str] = None # Podríamos traer el SimpleModel, pero usualmente con el ID es suficiente, o podemos añadir TypeDoc
+    tipo_documento_factura: Optional[TipoDocumentoSimple] = None
+    tipo_documento_recibo: Optional[TipoDocumentoSimple] = None
+    tipo_documento_mora: Optional[TipoDocumentoSimple] = None
+    tipo_documento_cruce: Optional[TipoDocumentoSimple] = None  # ← Antes era Optional[str], causaba el crash
 
     class Config:
         from_attributes = True

@@ -204,7 +204,10 @@ def get_configuracion(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    return configuracion_service.get_configuracion(db, current_user.empresa_id)
+    try:
+        return configuracion_service.get_configuracion(db, current_user.empresa_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener configuración: {str(e)}")
 
 # --- PAGOS CONSOLIDADOS ---
 @router.post("/pagos/consolidado", response_model=recaudo_schemas.PagoConsolidadoResponse)
@@ -233,8 +236,11 @@ def update_configuracion(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    print(f"DEBUG: update_configuracion called by user {current_user.id}. Payload: {config.dict()}")
-    return configuracion_service.update_configuracion(db, current_user.empresa_id, config)
+    try:
+        print(f"DEBUG: update_configuracion called by user {current_user.id}. Payload: {config.dict()}")
+        return configuracion_service.update_configuracion(db, current_user.empresa_id, config)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al guardar configuración: {str(e)}")
 
 
 # Rutas de Conceptos movidas a conceptos.py y gestionadas por configuracion_service en unidad_service.py o similar si fuera necesario.
