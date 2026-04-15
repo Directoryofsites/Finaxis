@@ -136,5 +136,5 @@ class HistorialConsumo(Base):
     
     documento_id = Column(Integer, ForeignKey("documentos.id"), nullable=True)
     
-    empresa = relationship("Empresa")
+    empresa = relationship("Empresa", overlaps="empresa_hist_consumo,historial_consumo")
     documento = relationship("Documento", back_populates="historial_consumos")
