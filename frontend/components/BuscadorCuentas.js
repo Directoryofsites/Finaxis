@@ -8,7 +8,7 @@ import { FaSearch, FaBook, FaTimes, FaSpinner } from 'react-icons/fa';
  * @param {String} selectedCodigo - Código de la cuenta pre-seleccionada (opcional).
  * @param {String} label - Etiqueta del campo.
  */
-export default function BuscadorCuentas({ onSelect, selectedCodigo, label = "Cuenta Contable" }) {
+export default function BuscadorCuentas({ onSelect, selectedCodigo, label = "Cuenta Contable", filterPrefix = "" }) {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [filteredResults, setFilteredResults] = useState([]);
@@ -51,13 +51,14 @@ export default function BuscadorCuentas({ onSelect, selectedCodigo, label = "Cue
             setFilteredResults([]);
         } else {
             const lowerQ = query.toLowerCase();
-            const filtered = results.filter(c =>
-                c.codigo.toLowerCase().includes(lowerQ) ||
-                c.nombre.toLowerCase().includes(lowerQ)
-            ).slice(0, 20); // Limitar a 20 resultados
+            const filtered = results.filter(c => {
+                const matchesPrefix = filterPrefix ? c.codigo.startsWith(filterPrefix) : true;
+                const matchesQuery = c.codigo.toLowerCase().includes(lowerQ) || c.nombre.toLowerCase().includes(lowerQ);
+                return matchesPrefix && matchesQuery;
+            }).slice(0, 20); // Limitar a 20 resultados
             setFilteredResults(filtered);
         }
-    }, [query, results]);
+    }, [query, results, filterPrefix]);
 
     // Cerrar al hacer click fuera
     useEffect(() => {

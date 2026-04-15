@@ -287,6 +287,7 @@ export default function ConfiguracionPHPage() {
                                                 onSelect={(cta) => setConfig({ ...config, cuenta_anticipos_id: cta.id, cuenta_anticipos_codigo: cta.codigo, cuenta_anticipos_nombre: cta.nombre })}
                                                 selectedCodigo={config.cuenta_anticipos_codigo}
                                                 placeholder="280505 - Anticipos"
+                                                filterPrefix="2"
                                             />
                                             <p className="text-xs text-indigo-700 mt-1">{config.cuenta_anticipos_nombre || 'Mueve excedentes de pago a este Pasivo automáticamente.'}</p>
                                         </div>
