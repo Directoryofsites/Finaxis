@@ -76,6 +76,14 @@ export default function NuevaFacturaPage() {
     const [cotizacionesDisponibles, setCotizacionesDisponibles] = useState([]);
     // -------------------------------------
 
+    // --- NUEVO: ESTADOS PARA NOTA CRÉDITO (FACTURA AFECTADA) ---
+    const [documentoReferenciaId, setDocumentoReferenciaId] = useState(null);
+    const [documentoReferenciaNumero, setDocumentoReferenciaNumero] = useState(null);
+    const [isFacturaReferenciaModalOpen, setIsFacturaReferenciaModalOpen] = useState(false);
+    const [facturasDisponibles, setFacturasDisponibles] = useState([]);
+    const [isFacturasLoading, setIsFacturasLoading] = useState(false);
+    // ---------------------------------------------------------
+
     const [clienteListaPrecioId, setClienteListaPrecioId] = useState(null);
 
     const [pageIsLoading, setPageIsLoading] = useState(true);
@@ -180,9 +188,11 @@ export default function NuevaFacturaPage() {
                 // --- FILTRO ESTRUCTURAL: SOLO HIJOS ---
                 const centrosCostoFiltrados = centrosCostoRes.filter(c => c.permite_movimiento);
 
+                const funcionesPermitidas = ['cartera_cliente', 'nota_credito', 'nota_debito', 'FACTURA_VENTA'];
+
                 setMaestros({
                     // terceros: tercerosRes,
-                    tiposDocumento: tiposDocRes.filter(td => td.afecta_inventario && td.funcion_especial === 'cartera_cliente'),
+                    tiposDocumento: tiposDocRes.filter(td => td.afecta_inventario && td.funcion_especial && funcionesPermitidas.includes(td.funcion_especial.toLowerCase())),
                     centrosCosto: centrosCostoFiltrados,
                     productos: productosRes.data
                 });
@@ -408,8 +418,92 @@ export default function NuevaFacturaPage() {
 
         toast.success(`Cotización #${cot.numero} cargada.`);
     };
-    // ------------------------------------
-    // ------------------------------------
+    // --- LÓGICA DE NOTA CRÉDITO (CARGAR FACTURA AFECTADA) ---
+    const handleOpenFacturaReferenciaModal = async () => {
+        if (!beneficiarioId) {
+            toast.warning("Debe seleccionar un cliente primero.");
+            return;
+        }
+
+        setIsFacturasLoading(true);
+        setIsFacturaReferenciaModalOpen(true);
+        setFacturasDisponibles([]);
+
+        try {
+            // Buscamos todas las facturas de venta del cliente
+            const res = await apiService.get(`/documentos/`, {
+                params: {
+                    tercero_id: beneficiarioId,
+                    funcion_especial: 'cartera_cliente',
+                    limit: 50
+                }
+            });
+            // Filtramos las facturas que tengan items para poder revertir
+            setFacturasDisponibles(res.data.items || res.data || []);
+        } catch (error) {
+            console.error("Error fetching facturas:", error);
+            toast.error("Error al cargar las facturas del cliente.");
+        } finally {
+            setIsFacturasLoading(false);
+        }
+    };
+
+    const cargarFacturaAfectada = async (fact) => {
+        try {
+            setIsFacturasLoading(true);
+            const res = await apiService.get(`/documentos/${fact.id}`);
+            const facturaCompleta = res.data;
+
+            setDocumentoReferenciaId(facturaCompleta.id);
+            setDocumentoReferenciaNumero(facturaCompleta.numero);
+            
+            // 1. Validar Bodega (si aplica)
+            if (bodegaRequerida) {
+                // Intentamos mantener la bodega actual o usar la de la factura original
+                // Esto podría requerir cargar los detalles y ver de dónde salieron
+            }
+
+            // 2. Items
+            const nuevosItems = facturaCompleta.movimientos
+                .filter(m => m.producto_id && m.cantidad > 0)
+                .map(d => {
+                    const producto = maestros.productos.find(p => p.id === d.producto_id);
+                    return {
+                        producto_id: d.producto_id,
+                        codigo: producto ? producto.codigo : d.producto_id,
+                        nombre: producto ? producto.nombre : `Producto ID ${d.producto_id}`,
+                        cantidad: d.cantidad,
+                        // Asumimos que el crédito/débito contiene el valor total (necesitamos precio unitario = subtotal / cantidad)
+                        // Para notas crédito as is: 
+                        precio_unitario: d.credito > 0 ? (d.credito / d.cantidad) : (d.debito / d.cantidad),
+                        porcentaje_iva: producto ? (producto.porcentaje_iva || 0) : 0,
+                        descuento_tasa: d.descuento_tasa || 0
+                    };
+                });
+            
+            // Eliminar duplicados si hay varios movimientos del mismo producto (ej. costo e ingreso)
+            // Agrupamos por producto_id tomando el precio más alto (usualmente el ingreso, no el costo)
+            const mapItems = new Map();
+            nuevosItems.forEach(item => {
+                if(!mapItems.has(item.producto_id) || mapItems.get(item.producto_id).precio_unitario < item.precio_unitario) {
+                    mapItems.set(item.producto_id, item);
+                }
+            });
+
+            setItems(Array.from(mapItems.values()));
+            setIsFacturaReferenciaModalOpen(false);
+            setCondicionPago('Crédito'); // Default para NC
+            
+            toast.success(`Factura #${facturaCompleta.numero} cargada para cruce.`);
+            
+        } catch (error) {
+            console.error("Error cargando detalles de factura:", error);
+            toast.error("Error al obtener los detalles de la factura.");
+        } finally {
+            setIsFacturasLoading(false);
+        }
+    };
+    // --------------------------------------------------------
 
 
 
@@ -462,6 +556,7 @@ export default function NuevaFacturaPage() {
             bodega_id: bodegaRequerida ? parseInt(selectedBodegaId) : null,
             remision_id: remisionId ? parseInt(remisionId) : null,
             cotizacion_id: cotizacionId ? parseInt(cotizacionId) : null,
+            documento_referencia_id: documentoReferenciaId ? parseInt(documentoReferenciaId) : null,
             descuento_global_valor: descuentoGlobalCalculado,
             cargos_globales_valor: parseFloat(cargoGlobal) || 0,
             items: itemsValidados
@@ -518,6 +613,7 @@ export default function NuevaFacturaPage() {
             bodega_id: bodegaRequerida ? parseInt(selectedBodegaId) : null,
             remision_id: remisionId ? parseInt(remisionId) : null,
             cotizacion_id: cotizacionId ? parseInt(cotizacionId) : null,
+            documento_referencia_id: documentoReferenciaId ? parseInt(documentoReferenciaId) : null,
             descuento_global_valor: descuentoGlobalCalculado,
             cargos_globales_valor: parseFloat(cargoGlobal) || 0,
             items: itemsValidados
@@ -643,20 +739,38 @@ export default function NuevaFacturaPage() {
                     </div>
                 </div>
 
-                {/* BOTÓN CARGAR REMISIÓN Y COTIZACIÓN */}
+                {/* BOTONES DE CARGA DE DOCUMENTOS PREVIOS */}
                 <div className="flex justify-end mb-4 gap-2">
-                    <button
-                        onClick={handleOpenCotizacionModal}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 flex items-center gap-2 font-bold transition-colors"
-                    >
-                        <FaListOl /> Cargar Cotización
-                    </button>
-                    <button
-                        onClick={handleOpenRemisionModal}
-                        className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-300 flex items-center gap-2 font-bold transition-colors"
-                    >
-                        <FaListOl /> Cargar Remisión
-                    </button>
+                    {tipoDocSeleccionado && ['nota_credito', 'nota_debito'].includes(tipoDocSeleccionado.funcion_especial?.toLowerCase()) ? (
+                        <>
+                            {documentoReferenciaNumero && (
+                                <div className="bg-orange-100 text-orange-800 px-4 py-2 rounded-lg font-bold flex items-center gap-2 border border-orange-300">
+                                    <FaCheckCircle /> Afectando: {documentoReferenciaNumero}
+                                </div>
+                            )}
+                            <button
+                                onClick={handleOpenFacturaReferenciaModal}
+                                className="bg-orange-600 text-white px-4 py-2 rounded-lg shadow hover:bg-orange-700 flex items-center gap-2 font-bold transition-colors"
+                            >
+                                <FaListOl /> Cargar Factura a Afectar
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <button
+                                onClick={handleOpenCotizacionModal}
+                                className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 flex items-center gap-2 font-bold transition-colors"
+                            >
+                                <FaListOl /> Cargar Cotización
+                            </button>
+                            <button
+                                onClick={handleOpenRemisionModal}
+                                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-300 flex items-center gap-2 font-bold transition-colors"
+                            >
+                                <FaListOl /> Cargar Remisión
+                            </button>
+                        </>
+                    )}
                 </div>
 
                 {/* CARD 1: DATOS GENERALES */}
@@ -1072,6 +1186,69 @@ export default function NuevaFacturaPage() {
                                                     <td className="px-4 py-2 text-center">
                                                         <button onClick={() => cargarCotizacion(cot)} className="bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200 text-sm font-bold">
                                                             Cargar
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* MODAL SELECCION FACTURA A AFECTAR */}
+            {
+                isFacturaReferenciaModalOpen && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
+                            <div className="flex justify-between items-center mb-6 border-b pb-2">
+                                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                    <FaFileInvoiceDollar className="text-orange-500" />
+                                    Seleccionar Factura a Afectar
+                                </h3>
+                                <button onClick={() => setIsFacturaReferenciaModalOpen(false)} className="text-gray-500 hover:text-gray-700">
+                                    <FaTrash className="transform rotate-45" />
+                                </button>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Número</th>
+                                            <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Fecha</th>
+                                            <th className="px-4 py-2 text-right text-xs font-bold text-gray-500 uppercase">Total Movimientos</th>
+                                            <th className="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {isFacturasLoading ? (
+                                            <tr><td colSpan="4" className="text-center py-4">Buscando facturas...</td></tr>
+                                        ) : facturasDisponibles.length === 0 ? (
+                                            <tr><td colSpan="4" className="text-center py-4">No se encontraron facturas recientes.</td></tr>
+                                        ) : (
+                                            facturasDisponibles.map(fact => (
+                                                <tr key={fact.id} className="hover:bg-orange-50 transition-colors">
+                                                    <td className="px-4 py-2 font-bold">#{fact.numero}</td>
+                                                    <td className="px-4 py-2">{fact.fecha}</td>
+                                                    <td className="px-4 py-2 text-right">
+                                                        {(fact.movimientos && fact.movimientos.length > 0) ? (
+                                                            <span>
+                                                                {fact.movimientos.reduce((acc, current) => acc + parseFloat(current.debito || current.credito || 0), 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP' })}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-gray-400 italic">No disponible</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-2 text-center">
+                                                        <button 
+                                                            onClick={() => cargarFacturaAfectada(fact)} 
+                                                            className="bg-orange-100 text-orange-700 px-3 py-1 rounded hover:bg-orange-200 text-sm font-bold shadow-sm"
+                                                        >
+                                                            Afectar
                                                         </button>
                                                     </td>
                                                 </tr>

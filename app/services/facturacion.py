@@ -17,6 +17,7 @@ from ..models import empresa as models_empresa # Nuevo Import
 
 from ..schemas import facturacion as schemas_facturacion
 from ..schemas import documento as schemas_doc
+from ..schemas import aplicacion_pago as schemas_aplicacion
 
 from . import documento as service_documento
 from . import inventario as service_inventario
@@ -353,8 +354,12 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
             observaciones=factura.observaciones,
             # ----------------------------
 
+            # --- AUTO APLICACIÓN PARA NOTA CRÉDITO ---
             movimientos=movimientos_contables,
-            aplicaciones=None
+            aplicaciones=[schemas_aplicacion.AplicacionPagoCreate(
+                documento_factura_id=factura.documento_referencia_id,
+                valor_aplicado=total_factura
+            )] if es_nota_credito and factura.documento_referencia_id and total_factura > 0 else None
         )
 
         nuevo_documento = service_documento.create_documento(
