@@ -201,22 +201,22 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
                 mapa_recibos_tardios[r.unidad_ph_id] = []
             mapa_recibos_tardios[r.unidad_ph_id].append(r)
     
-    # 4. Precarga de Anticipos (Saldos a favor en Pasivo) - NUEVO
+    # 4. Precarga de Anticipos (Saldos a favor en Pasivo) - Corregido: agrupa por beneficiario_id
     mapa_anticipos = {}
     if config.cuenta_anticipos_id:
         print(f"--- BATCH OPTIMIZATION: Cargando saldos de anticipos (Cuenta: {config.cuenta_anticipos_id}) ---")
         anticipos_query = db.query(
-            MovimientoContable.tercero_id,
+            Documento.beneficiario_id,
             func.sum(MovimientoContable.credito - MovimientoContable.debito).label("saldo_anticipo")
         ).join(Documento, MovimientoContable.documento_id == Documento.id)\
          .filter(
             Documento.empresa_id == empresa_id,
             Documento.anulado == False,
             MovimientoContable.cuenta_id == config.cuenta_anticipos_id
-        ).group_by(MovimientoContable.tercero_id).all()
+        ).group_by(Documento.beneficiario_id).all()
         
-        mapa_anticipos = {q.tercero_id: float(q.saldo_anticipo) for q in anticipos_query if q.saldo_anticipo > 0.01}
-        print(f"--- BATCH OPTIMIZATION: {len(mapa_anticipos)} propietarios con anticipos encontrados ---")
+        mapa_anticipos = {q.beneficiario_id: float(q.saldo_anticipo) for q in anticipos_query if q.saldo_anticipo and q.saldo_anticipo > 0.01}
+        print(f"--- BATCH OPTIMIZATION: {len(mapa_anticipos)} propietarios con anticipos encontrados: {list(mapa_anticipos.keys())} ---")
 
     print(f"--- BATCH OPTIMIZATION: Precarga completada. Iniciando bucle de generacion ---")
     # -------------------------------------------
@@ -495,14 +495,14 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
                         cruce_obj = documento_service.create_documento(db, doc_cruce, user_id=usuario_id, skip_recalculo=True, commit=False)
                         db.flush()
                         
-                        # --- NUEVO: APLICACION DIRECTA DE PAGO (ALTO RENDIMIENTO) ---
-                        # Vincula la NC generada directamente a la factura
-                        # Esto reduce el saldo de la factura inmediatamente sin requerir procesos de recálculo pesados
+                        # --- APLICACION DIRECTA DE PAGO (ALTO RENDIMIENTO) ---
+                        # Vincula la NC de cruce a la factura directamente en la tabla de aplicaciones.
+                        # Sin recálculo completo → el saldo baja de inmediato en la pantalla de recaudos.
                         nueva_aplicacion = AplicacionPago(
                             documento_factura_id=new_doc.id,
                             documento_pago_id=cruce_obj.id,
                             valor_aplicado=monto_cruce,
-                            fecha_aplicacion=fecha_factura
+                            empresa_id=empresa_id
                         )
                         db.add(nueva_aplicacion)
                         
