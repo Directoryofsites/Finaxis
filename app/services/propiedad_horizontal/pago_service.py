@@ -5014,6 +5014,7 @@ def registrar_pago_masivo(
     return resultados
 
 
+
 def get_pago_distribucion_detalle(db: Session, documento_id: int, empresa_id: int):
     """
     Obtiene el desglose de aplicación de un pago específico de PH.
@@ -5043,32 +5044,43 @@ def get_pago_distribucion_detalle(db: Session, documento_id: int, empresa_id: in
         if t.get('id') == documento_id:
             sub_items = t.get('sub_items', [])
             
-            # Agrupar por niveles
+            # Agrupar por niveles y conceptos específicos
             res = {
                 'intereses': 0,
                 'multas': 0,
                 'capital': 0,
                 'total': 0,
-                'detalles': []
+                'intereses_detalle': [], # List of {concepto, valor}
+                'multas_detalle': [],
+                'capital_detalle': []
             }
             
+            # Helper para agrupar en sub-listas
+            def agregar_a_detalle(lista, concepto, valor):
+                # Limpiar el concepto (quitar "Abono a " si existe)
+                limpio = concepto.replace("Abono a ", "")
+                for item in lista:
+                    if item['concepto'] == limpio:
+                        item['valor'] += valor
+                        return
+                lista.append({'concepto': limpio, 'valor': valor})
+
             for item in sub_items:
                 tipo = item.get('tipo', 'CAPITAL')
                 valor = float(item.get('valor', 0))
+                concepto = item.get('concepto', 'Abono')
                 
                 if tipo == 'INTERES':
                     res['intereses'] += valor
+                    agregar_a_detalle(res['intereses_detalle'], concepto, valor)
                 elif tipo == 'MULTA':
                     res['multas'] += valor
+                    agregar_a_detalle(res['multas_detalle'], concepto, valor)
                 else:
                     res['capital'] += valor
+                    agregar_a_detalle(res['capital_detalle'], concepto, valor)
                 
                 res['total'] += valor
-                res['detalles'].append({
-                    'concepto': item.get('concepto', 'Abono'),
-                    'valor': valor,
-                    'tipo': tipo
-                })
                 
             return res
             

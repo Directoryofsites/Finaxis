@@ -173,21 +173,41 @@
             <tbody>
                 {% if ph_distribucion.intereses > 0 %}
                 <tr>
-                    <td style="padding: 4px;"><strong>Nivel 1:</strong> Intereses de Mora</td>
-                    <td class="text-right font-mono" style="padding: 4px;">$ {{ ph_distribucion.intereses|format_decimal(0) }}</td>
+                    <td style="padding: 4px; border-top: 1px solid #eee;"><strong>Nivel 1:</strong> Intereses de Mora</td>
+                    <td class="text-right font-mono" style="padding: 4px; border-top: 1px solid #eee;">$ {{ ph_distribucion.intereses|format_decimal(0) }}</td>
                 </tr>
+                {% for item in ph_distribucion.intereses_detalle %}
+                <tr>
+                    <td style="padding: 2px 4px 2px 25px; font-size: 8.5px; color: #555; font-style: italic;">&bull; {{ item.concepto }}</td>
+                    <td class="text-right font-mono" style="padding: 2px 4px; font-size: 8.5px; color: #555;">$ {{ item.valor|format_decimal(0) }}</td>
+                </tr>
+                {% endfor %}
                 {% endif %}
+
                 {% if ph_distribucion.multas > 0 %}
                 <tr>
-                    <td style="padding: 4px;"><strong>Nivel 2:</strong> Multas y Sanciones</td>
-                    <td class="text-right font-mono" style="padding: 4px;">$ {{ ph_distribucion.multas|format_decimal(0) }}</td>
+                    <td style="padding: 4px; border-top: 1px solid #eee;"><strong>Nivel 2:</strong> Multas y Sanciones</td>
+                    <td class="text-right font-mono" style="padding: 4px; border-top: 1px solid #eee;">$ {{ ph_distribucion.multas|format_decimal(0) }}</td>
                 </tr>
+                {% for item in ph_distribucion.multas_detalle %}
+                <tr>
+                    <td style="padding: 2px 4px 2px 25px; font-size: 8.5px; color: #555; font-style: italic;">&bull; {{ item.concepto }}</td>
+                    <td class="text-right font-mono" style="padding: 2px 4px; font-size: 8.5px; color: #555;">$ {{ item.valor|format_decimal(0) }}</td>
+                </tr>
+                {% endfor %}
                 {% endif %}
+
                 {% if ph_distribucion.capital > 0 %}
                 <tr>
-                    <td style="padding: 4px;"><strong>Nivel 3:</strong> Capital (Cuotas de Admin. y otros)</td>
-                    <td class="text-right font-mono" style="padding: 4px;">$ {{ ph_distribucion.capital|format_decimal(0) }}</td>
+                    <td style="padding: 4px; border-top: 1px solid #eee;"><strong>Nivel 3:</strong> Capital (Cuotas de Admin. y otros)</td>
+                    <td class="text-right font-mono" style="padding: 4px; border-top: 1px solid #eee;">$ {{ ph_distribucion.capital|format_decimal(0) }}</td>
                 </tr>
+                {% for item in ph_distribucion.capital_detalle %}
+                <tr>
+                    <td style="padding: 2px 4px 2px 25px; font-size: 8.5px; color: #555; font-style: italic;">&bull; {{ item.concepto }}</td>
+                    <td class="text-right font-mono" style="padding: 2px 4px; font-size: 8.5px; color: #555;">$ {{ item.valor|format_decimal(0) }}</td>
+                </tr>
+                {% endfor %}
                 {% endif %}
                 <tr style="background: #f5f5f5; font-weight: bold;">
                     <td style="padding: 6px;">TOTAL DISTRIBUIDO</td>
