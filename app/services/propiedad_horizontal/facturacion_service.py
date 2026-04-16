@@ -495,6 +495,17 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
                         cruce_obj = documento_service.create_documento(db, doc_cruce, user_id=usuario_id, skip_recalculo=True, commit=False)
                         db.flush()
                         
+                        # --- NUEVO: APLICACION DIRECTA DE PAGO (ALTO RENDIMIENTO) ---
+                        # Vincula la NC generada directamente a la factura
+                        # Esto reduce el saldo de la factura inmediatamente sin requerir procesos de recálculo pesados
+                        nueva_aplicacion = AplicacionPago(
+                            documento_factura_id=new_doc.id,
+                            documento_pago_id=cruce_obj.id,
+                            valor_aplicado=monto_cruce,
+                            fecha_aplicacion=fecha_factura
+                        )
+                        db.add(nueva_aplicacion)
+                        
                         # Actualizar el mapa RAM para siguientes unidades del mismo dueño
                         mapa_anticipos[id_propietario] -= monto_cruce
                         resultados["detalles"].append(f"   ↳ Cruce automático aplicado: ${monto_cruce:,.0f} (NC {cruce_obj.numero})")
