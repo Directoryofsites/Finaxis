@@ -1125,6 +1125,18 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
     # Subtotal a mostrar (el bruto si se calculó en VENTA, sino el normal)
     subtotal_mostrar = subtotal_bruto_acumulado if modo_operacion == 'VENTA' else subtotal_acumulado
     
+    # --- PH DISTRIBUTION (NUEVO) ---
+    ph_distribucion = None
+    if db_doc.unidad_ph_id:
+        # Solo si tiene movimientos al crédito (es un pago/abono)
+        if suma_credito_total > 0:
+            try:
+                from app.services.propiedad_horizontal import pago_service as ph_pago_service
+                ph_distribucion = ph_pago_service.get_pago_distribucion_detalle(db, documento_id, empresa_id)
+            except Exception as e_ph:
+                print(f"Error cargando distribucion PH: {e_ph}")
+    # -------------------------------
+
     # 5. Contexto
     beneficiario = db_doc.beneficiario
     context = {
@@ -1173,7 +1185,8 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
             "total_debito": f"{suma_debito_total:,.0f}",
             "total_credito": f"{suma_credito_total:,.0f}",
             "valor_letras": valor_letras
-        }
+        },
+        "ph_distribucion": ph_distribucion
     }
 
     # 6. Render

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -157,6 +157,49 @@
             </tr>
         </tbody>
     </table>
+
+    {% if ph_distribucion %}
+    <div style="margin-top: 20px; page-break-inside: avoid;">
+        <div style="font-weight: bold; background: #eee; padding: 5px; border: 1px solid #ccc; font-size: 10px; border-bottom: none;">
+            DETALLE DE AMORTIZACIÓN Y APLICACIÓN DEL PAGO (Regla de Prioridad)
+        </div>
+        <table style="margin-top: 0; border: 1px solid #ccc; width: 100%;">
+            <thead>
+                <tr>
+                    <th style="background: #f9f9f9; color: #333; border-bottom: 1px solid #ccc;">Nivel de Prioridad</th>
+                    <th style="background: #f9f9f9; color: #333; border-bottom: 1px solid #ccc;" class="text-right">Monto Aplicado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if ph_distribucion.intereses > 0 %}
+                <tr>
+                    <td style="padding: 4px;"><strong>Nivel 1:</strong> Intereses de Mora</td>
+                    <td class="text-right font-mono" style="padding: 4px;">$ {{ ph_distribucion.intereses|format_decimal(0) }}</td>
+                </tr>
+                {% endif %}
+                {% if ph_distribucion.multas > 0 %}
+                <tr>
+                    <td style="padding: 4px;"><strong>Nivel 2:</strong> Multas y Sanciones</td>
+                    <td class="text-right font-mono" style="padding: 4px;">$ {{ ph_distribucion.multas|format_decimal(0) }}</td>
+                </tr>
+                {% endif %}
+                {% if ph_distribucion.capital > 0 %}
+                <tr>
+                    <td style="padding: 4px;"><strong>Nivel 3:</strong> Capital (Cuotas de Admin. y otros)</td>
+                    <td class="text-right font-mono" style="padding: 4px;">$ {{ ph_distribucion.capital|format_decimal(0) }}</td>
+                </tr>
+                {% endif %}
+                <tr style="background: #f5f5f5; font-weight: bold;">
+                    <td style="padding: 6px;">TOTAL DISTRIBUIDO</td>
+                    <td class="text-right font-mono" style="padding: 6px;">$ {{ ph_distribucion.total|format_decimal(0) }}</td>
+                </tr>
+            </tbody>
+        </table>
+        <div style="font-size: 8px; font-style: italic; color: #666; margin-top: 5px; margin-bottom: 15px;">
+            * El pago se aplica siguiendo el orden legal: Intereses de mora > Multas > Capital.
+        </div>
+    </div>
+    {% endif %}
 
     <div class="signatures">
         <div class="sig-col">

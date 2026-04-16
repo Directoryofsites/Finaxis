@@ -4126,7 +4126,8 @@ def _simular_cronologia_pagos(db: Session, docs: list, empresa_id: int, fecha_co
             consumed, remaining, summary = apply_payment_to_debts(total_wallet, pending_debts)
             
             saldo_a_favor = remaining # Guardar excedente como anticipo
-            pago_summary.update(summary)
+            for k, v in summary.items():
+                pago_summary[k] += v
             
         # Limpieza global de deudas pagadas
         pending_debts = [d for d in pending_debts if d['saldo'] > 0.001]
@@ -4144,6 +4145,7 @@ def _simular_cronologia_pagos(db: Session, docs: list, empresa_id: int, fecha_co
              for (tipo, concepto), val in pago_summary.items():
                  if val > 0:
                      template_sub_items.append({
+                         'tipo': tipo,
                          'concepto': f"Abono a {concepto}",
                          'valor': val
                      })
@@ -4201,7 +4203,7 @@ def get_historial_cuenta_ph_detailed(db: Session, empresa_id: int, unidad_id: in
     # Pasamos fecha_inicio para que nos capture la foto de la deuda en ese momento
     # --- 3. REPLAY SIMULATION (Delegada) ---
     # Pasamos fecha_inicio para que nos capture la foto de la deuda en ese momento
-    pending_debts, transacciones_simuladas, snapshot_saldo_inicial, _, _ = _simular_cronologia_pagos(db, docs, empresa_id, fecha_inicio)
+    pending_debts, transacciones_simuladas, snapshot_saldo_inicial, _, _ = _simular_cronologia_pagos(db, docs, empresa_id, fecha_inicio) # [/] Fix cumulative sum bug in `_simular_cronologia_pagos`
 
     # --- 4. AJUSTE FINAL POR RANGO DE FECHAS ---
     final_result = []
@@ -5010,4 +5012,66 @@ def registrar_pago_masivo(
 
     print(f"--- PAGO MASIVO FINALIZADO: {resultados['procesados']} exitos ---")
     return resultados
+
+
+def get_pago_distribucion_detalle(db: Session, documento_id: int, empresa_id: int):
+    """
+    Obtiene el desglose de aplicación de un pago específico de PH.
+    Agrupa por niveles de prioridad (Interés, Multa, Capital).
+    """
+    # 1. Obtener el documento y validar que sea de PH
+    doc = db.query(Documento).filter(
+        Documento.id == documento_id, 
+        Documento.empresa_id == empresa_id
+    ).first()
+    
+    if not doc or not doc.unidad_ph_id:
+        return None
+        
+    # 2. Obtener el historial completo de la unidad para el replay
+    docs_unidad = db.query(Documento).filter(
+        Documento.unidad_ph_id == doc.unidad_ph_id,
+        Documento.empresa_id == empresa_id,
+        Documento.estado.in_(['ACTIVO', 'PROCESADO'])
+    ).order_by(Documento.fecha.asc(), Documento.id.asc()).all()
+    
+    # 3. Ejecutar simulación
+    _, transacciones, _, _, _ = _simular_cronologia_pagos(db, docs_unidad, empresa_id)
+    
+    # 4. Buscar el documento específico y extraer su desglose
+    for t in transacciones:
+        if t.get('id') == documento_id:
+            sub_items = t.get('sub_items', [])
+            
+            # Agrupar por niveles
+            res = {
+                'intereses': 0,
+                'multas': 0,
+                'capital': 0,
+                'total': 0,
+                'detalles': []
+            }
+            
+            for item in sub_items:
+                tipo = item.get('tipo', 'CAPITAL')
+                valor = float(item.get('valor', 0))
+                
+                if tipo == 'INTERES':
+                    res['intereses'] += valor
+                elif tipo == 'MULTA':
+                    res['multas'] += valor
+                else:
+                    res['capital'] += valor
+                
+                res['total'] += valor
+                res['detalles'].append({
+                    'concepto': item.get('concepto', 'Abono'),
+                    'valor': valor,
+                    'tipo': tipo
+                })
+                
+            return res
+            
+    return None
+
 
