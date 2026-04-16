@@ -4923,6 +4923,36 @@ TEMPLATES_EMPAQUETADOS = {
     </div>
     {% endif %}
 
+    {% if aplicaciones_pagos and not ph_distribucion %}
+    <div style="margin-top: 20px; page-break-inside: avoid;">
+        <div style="font-weight: bold; background: #eee; padding: 5px; border: 1px solid #ccc; font-size: 10px; border-bottom: none;">
+            RELACIÓN DE DOCUMENTOS CANCELADOS / ABONADOS CON ESTE PAGO
+        </div>
+        <table style="margin-top: 0; border: 1px solid #ccc; width: 100%;">
+            <thead>
+                <tr>
+                    <th style="background: #f9f9f9; color: #333; border-bottom: 1px solid #ccc; font-size: 9px; padding: 4px;">Documento</th>
+                    <th style="background: #f9f9f9; color: #333; border-bottom: 1px solid #ccc; font-size: 9px; padding: 4px;">Fecha</th>
+                    <th style="background: #f9f9f9; color: #333; border-bottom: 1px solid #ccc; font-size: 9px; padding: 4px;" class="text-right">Monto Aplicado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set total_aplicado = 0 %}
+                {% for app in aplicaciones_pagos %}
+                <tr>
+                    <td style="padding: 4px; border-bottom: 1px solid #eee; font-size: 9px;">{{ app.numero }}</td>
+                    <td style="padding: 4px; border-bottom: 1px solid #eee; font-size: 9px; color: #666;">{{ app.fecha }}</td>
+                    <td class="text-right font-mono" style="padding: 4px; border-bottom: 1px solid #eee; font-size: 9px;">$ {{ app.valor|format_decimal(0) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div style="font-size: 8px; font-style: italic; color: #666; margin-top: 5px; margin-bottom: 15px;">
+            * Esta tabla detalla qué facturas fueron cubiertas total o parcialmente por este movimiento.
+        </div>
+    </div>
+    {% endif %}
+
     <div class="signatures">
         <div class="sig-col">
             <div class="sig-line">Elaboró</div>
