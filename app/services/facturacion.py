@@ -190,7 +190,7 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
                 not producto_db.es_servicio 
                 and producto_db.controlar_inventario 
                 and not es_nota_credito 
-                and not es_nota_debito
+                and item.mueve_inventario
             )
 
             if tipo_doc.afecta_inventario and bodega_db and should_check_stock:
@@ -279,8 +279,8 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
             # Asientos Costo
             # Normal: Debito Costo, Credito Inv.
             # Nota Credito: Debito Inv, Credito Costo.
-            # Nota Debito: Nada (generalmente solo ajuste valor).
-            if not producto_db.es_servicio and producto_db.controlar_inventario and not es_nota_debito:
+            # Nota Debito: Debito Inv, Credito Costo (A menos que item.mueve_inventario sea False).
+            if not producto_db.es_servicio and producto_db.controlar_inventario and item.mueve_inventario:
                 costo_total_item = float(item.cantidad) * (float(producto_db.costo_promedio) or 0.0)
                 if costo_total_item > 0:
                     
@@ -372,11 +372,10 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
                 for item in factura.items:
                     p_db = productos_map.get(item.producto_id)
                     # Kardex solo si NO es servicio y SI controla inv
-                    if p_db and not p_db.es_servicio and p_db.controlar_inventario:
+                    if p_db and not p_db.es_servicio and p_db.controlar_inventario and item.mueve_inventario:
                         
                         tipo_mov_kardex = 'SALIDA_VENTA'
                         if es_nota_credito: tipo_mov_kardex = 'ENTRADA_DEVOLUCION_VENTA'
-                        if es_nota_debito: continue # Nota Débito financiera no mueve stock físico usualmente
                         
                         service_inventario.registrar_movimiento_inventario(
                             db=db,

@@ -8,6 +8,8 @@ class FacturaItemCreate(BaseModel):
     cantidad: float = Field(..., gt=0) # gt=0 asegura que la cantidad sea mayor a cero
     precio_unitario: float = Field(..., ge=0) # ge=0 asegura que el precio no sea negativo
     descuento_tasa: Optional[float] = Field(default=0.0, ge=0, le=100) # Nueva
+    mueve_inventario: bool = True # Control manual para mover stock
+
 
 class FacturaCreate(BaseModel):
     """ Define la estructura completa para crear una nueva factura. """

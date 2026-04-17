@@ -484,7 +484,8 @@ export default function NuevaFacturaPage() {
                         // Para notas crédito as is: 
                         precio_unitario: d.credito > 0 ? (d.credito / d.cantidad) : (d.debito / d.cantidad),
                         porcentaje_iva: producto ? (producto.porcentaje_iva || 0) : 0,
-                        descuento_tasa: d.descuento_tasa || 0
+                        descuento_tasa: d.descuento_tasa || 0,
+                        mueve_inventario: true
                     };
                 });
             
@@ -517,6 +518,12 @@ export default function NuevaFacturaPage() {
 
 
     const handleItemChange = (productId, field, value) => {
+        if (field === 'mueve_inventario') {
+            setItems(prevItems => prevItems.map(item =>
+                item.producto_id === productId ? { ...item, [field]: value } : item
+            ));
+            return;
+        }
         const numericValue = value === '' ? '' : parseFloat(value);
         if (value !== '' && isNaN(numericValue)) return;
         setItems(prevItems => prevItems.map(item =>
@@ -543,7 +550,8 @@ export default function NuevaFacturaPage() {
             ...item,
             cantidad: parseFloat(item.cantidad) || 0,
             precio_unitario: parseFloat(item.precio_unitario) || 0,
-            descuento_tasa: parseFloat(item.descuento_tasa) || 0
+            descuento_tasa: parseFloat(item.descuento_tasa) || 0,
+            mueve_inventario: item.mueve_inventario !== false
         }));
 
         if (itemsValidados.some(item => item.cantidad <= 0 || item.precio_unitario < 0)) {
@@ -606,7 +614,8 @@ export default function NuevaFacturaPage() {
             ...item,
             cantidad: parseFloat(item.cantidad) || 0,
             precio_unitario: parseFloat(item.precio_unitario) || 0,
-            descuento_tasa: parseFloat(item.descuento_tasa) || 0
+            descuento_tasa: parseFloat(item.descuento_tasa) || 0,
+            mueve_inventario: item.mueve_inventario !== false
         }));
 
         const payload = {
@@ -925,6 +934,9 @@ export default function NuevaFacturaPage() {
                                     <th className="px-0 py-3 text-center text-sm font-normal text-blue-600 uppercase tracking-wider w-[6%]">IVA%</th>
                                     <th className="px-0 py-3 text-center text-sm font-normal text-gray-500 uppercase tracking-wider w-[6%]">Desc%</th>
                                     <th className="px-4 py-3 text-right text-sm font-normal text-gray-500 uppercase tracking-wider w-[14%]">Subtotal</th>
+                                    {tipoDocSeleccionado && ['nota_credito', 'nota_debito'].includes(tipoDocSeleccionado.funcion_especial?.toLowerCase()) && (
+                                        <th className="px-2 py-3 text-center text-sm font-normal text-blue-600 uppercase tracking-wider w-[8%]" title="Mover Inventario y Costos">Stock</th>
+                                    )}
                                     <th className="px-2 py-3 text-center w-[3%]"></th>
                                 </tr>
                             </thead>
@@ -955,6 +967,19 @@ export default function NuevaFacturaPage() {
                                             <td className="px-4 py-4 text-right font-mono text-lg font-normal text-gray-900">
                                                 ${((parseFloat(item.cantidad) || 0) * (parseFloat(item.precio_unitario) || 0) * (1 - (parseFloat(item.descuento_tasa) || 0) / 100)).toLocaleString('es-CO')}
                                             </td>
+                                            {tipoDocSeleccionado && ['nota_credito', 'nota_debito'].includes(tipoDocSeleccionado.funcion_especial?.toLowerCase()) && (
+                                                <td className="px-2 py-4 text-center">
+                                                    <label className="cursor-pointer label justify-center">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            className="checkbox checkbox-info checkbox-sm" 
+                                                            checked={item.mueve_inventario !== false} 
+                                                            onChange={e => handleItemChange(item.producto_id, 'mueve_inventario', e.target.checked)} 
+                                                            title="Si está marcado, hará entrada/salida de bodega y costo de venta. Si se desmarca, será solo un ajuste financiero." 
+                                                        />
+                                                    </label>
+                                                </td>
+                                            )}
                                             <td className="px-2 py-4 text-center">
                                                 <button onClick={() => handleRemoveItem(item.producto_id)} className="text-red-400 hover:text-red-600 p-1 rounded transition-colors"><FaTrash /></button>
                                             </td>
