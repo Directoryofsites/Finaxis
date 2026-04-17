@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
 from sqlalchemy.orm import Session, joinedload, selectinload
-from sqlalchemy import and_, func, select, or_
+from sqlalchemy import and_, func, select, or_, not_
 from datetime import date
 
 from ..models import PlanCuenta as models_plan
@@ -54,43 +54,33 @@ def get_cuentas_especiales_ids(db: Session, empresa_id: int, tipo: str) -> List[
     for row in conceptos_cxc:
         if row.cuenta_cxc_id:
             cuentas_ids.add(row.cuenta_cxc_id)
-
-    # Lógica flexible para CXC:
-    # En PH y otros negocios, la cartera puede ser 13, 14, 16, etc.
-    # El problema original era que incluía la 11 (Caja) y los recibos sumaban deuda.
-    # SOLUCIÓN: Si es CXC, aceptamos cualquier ACTIVO (1%) excepto DISPONIBLE (11%).
-    
+    # Lógica para CXC: 
+    # Aseguramos que solo tomamos cuentas de Activo (1) que NO sean Disponibilidad (11).
+    # Prioridad: Cuentas empezando por 1305 (Cartera Nacional)
     if tipo == 'cxc':
-        # --- NUEVO: INTEGRACIÓN ROBUSTA DE CUENTAS ---
-        # 1. Obtener los códigos de las cuentas ya encontradas para encontrar sus raíces
-        codigos_base = db.query(models_plan.codigo).filter(models_plan.id.in_(list(cuentas_ids))).all()
-        prefijos = set([c.codigo[:4] for c in codigos_base]) # Ej: 1305, 1345
-        
-        # 2. Asegurar que 1305 (Cartera Nacional) siempre esté, aunque no esté en tipos
-        prefijos.add("1305")
-        
-        # 3. Buscar todas las cuentas que pertenezcan a estos prefijos o que ya estuvieran
+        # 1. Cuentos base desde la configuración de Tipos de Documento
         valid_ids_query = db.query(models_plan.id).filter(
             or_(
                 models_plan.id.in_(list(cuentas_ids)),
-                # Incluir cualquier subcuenta de los prefijos detectados
-                and_(
-                    or_(*[models_plan.codigo.like(f"{p}%") for p in prefijos]),
-                    models_plan.codigo.like("1%"),
-                    ~models_plan.codigo.like("11%")
-                )
+                models_plan.codigo.like("1305%") # Forzar inclusión de Cartera Nacional
             )
+        ).filter(
+            models_plan.codigo.like("1%"),
+            not_(models_plan.codigo.like("11%")) # Excluir Caja/Bancos estrictamente
         )
         
         result_ids = [row.id for row in valid_ids_query.all()]
         
-        # AGREGAR CUENTA PH EXPLICITA SI EXISTE
+        # Agregar cuenta PH si existe
         if ph_cuenta_cartera_id and ph_cuenta_cartera_id not in result_ids:
-            result_ids.append(ph_cuenta_cartera_id)
+            # Solo si es una cuenta de activo válida
+            c = db.query(models_plan.codigo).filter(models_plan.id == ph_cuenta_cartera_id).first()
+            if c and c.codigo.startswith('1') and not c.codigo.startswith('11'):
+                result_ids.append(ph_cuenta_cartera_id)
 
         return list(set(result_ids))
     else:
-        # Para CXP (Proveedores), mantenemos Pasivos (2%)
+        # Para CXP (Proveedores), mantenemos Pasivos (2)
         prefix = empresa.prefijo_cxp if empresa and empresa.prefijo_cxp else '2'
         valid_ids = db.query(models_plan.id).filter(
             models_plan.id.in_(list(cuentas_ids)),
@@ -293,43 +283,45 @@ def get_facturas_pendientes_por_tercero(db: Session, tercero_id: int, empresa_id
     if not cuentas_cxc_ids:
         return []
 
-    # IDs de documentos donde el tercero está en un MOVIMIENTO sobre cuentas CXC
-    ids_por_movimiento = db.query(models_mov.documento_id).where(
+    # 1. Identificar IDs de documentos que podrían ser "Facturas" (Deuda)
+    # Buscamos documentos donde el tercero DEBE dinero (Impacto positivo en CXC)
+    # Buscamos tanto por beneficiario (cabecera) como por movimientos.
+    ids_potenciales_cxc = db.query(models_mov.documento_id).filter(
         models_mov.tercero_id == tercero_id,
         models_mov.cuenta_id.in_(cuentas_cxc_ids)
-    ).join(models_doc, models_mov.documento_id == models_doc.id).where(
+    ).join(models_doc, models_mov.documento_id == models_doc.id).filter(
         models_doc.empresa_id == empresa_id,
         models_doc.anulado == False
     ).subquery()
 
+    # 2. Calcular el VALOR TOTAL (Impacto Neto) de esos documentos
+    # IMPORTANTE: Un documento solo entra al reporte si su impacto neto en cartera es POSITIVO
     subquery_valor_total = db.query(
         models_mov.documento_id.label("documento_id"),
-        func.sum(models_mov.debito).label("valor_total")
+        func.sum(models_mov.debito - models_mov.credito).label("valor_total")
     ).join(models_doc, models_mov.documento_id == models_doc.id).filter(
         models_doc.empresa_id == empresa_id,
         models_doc.anulado == False,
         models_mov.cuenta_id.in_(cuentas_cxc_ids),
         or_(
             models_doc.beneficiario_id == tercero_id,
-            models_doc.id.in_(ids_por_movimiento)
+            models_doc.id.in_(ids_potenciales_cxc)
         )
-    ).group_by(models_mov.documento_id).subquery()
+    ).group_by(models_mov.documento_id).having(
+        func.sum(models_mov.debito - models_mov.credito) > 0 # DEUDAS POSITIVAS
+    ).subquery()
 
-    # Construir query base para pagos aplicados
-    q_pagos = db.query(
+    # 3. Calcular Pagos Aplicados
+    # Buscamos cualquier aplicación contra estos documentos potenciales
+    subquery_valor_aplicado = db.query(
         models_aplica.documento_factura_id.label("documento_id"),
         func.sum(models_aplica.valor_aplicado).label("total_aplicado")
     ).join(models_doc, models_aplica.documento_pago_id == models_doc.id).filter(
         models_doc.empresa_id == empresa_id,
         models_doc.anulado == False
-    )
-    
-    # [NUEVO] Filtro de fecha de corte para ver el pasado
-    if fecha_corte:
-        q_pagos = q_pagos.filter(models_doc.fecha <= fecha_corte)
-        
-    subquery_valor_aplicado = q_pagos.group_by(models_aplica.documento_factura_id).subquery()
+    ).group_by(models_aplica.documento_factura_id).subquery()
 
+    # 4. Query Final ensamblada
     query = db.query(
         models_doc.id, models_doc.numero, models_doc.fecha, models_doc.fecha_vencimiento,
         subquery_valor_total.c.valor_total,
@@ -344,7 +336,8 @@ def get_facturas_pendientes_por_tercero(db: Session, tercero_id: int, empresa_id
     ).filter(
         models_doc.empresa_id == empresa_id,
         models_doc.anulado == False,
-        subquery_valor_total.c.valor_total > func.coalesce(subquery_valor_aplicado.c.total_aplicado, 0)
+        # Saldo pendiente > 0.01 para evitar decimales basura
+        (subquery_valor_total.c.valor_total - func.coalesce(subquery_valor_aplicado.c.total_aplicado, 0)) > 0.01
     )
     
     # DEBUG SPY
@@ -359,13 +352,19 @@ def get_facturas_pendientes_por_tercero(db: Session, tercero_id: int, empresa_id
     resultado_formateado = []
     for factura in facturas_pendientes:
         saldo_pendiente = factura.valor_total - factura.total_aplicado
-        # Forma del numero: "TIPO #NUMERO" para distinguirlos en pantalla de recaudos
-        num_str = f"{factura.tipo_nombre} #{factura.numero}" if factura.tipo_nombre else factura.numero
+        # Forma del numero: Aseguramos que no se duplique el nombre del tipo
+        num_str = str(factura.numero)
+        if factura.tipo_nombre and not num_str.startswith(factura.tipo_nombre):
+            num_str = f"{factura.tipo_nombre} #{num_str}"
 
         resultado_formateado.append({
-            "id": factura.id, "numero": num_str, "numero_puro": factura.numero, "tipo_documento": factura.tipo_nombre,
+            "id": factura.id, 
+            "numero": num_str, 
+            "numero_puro": factura.numero, 
+            "tipo_documento": factura.tipo_nombre,
             "fecha": factura.fecha.isoformat(),
             "valor_total": float(factura.valor_total),
+            "total_aplicado": float(factura.total_aplicado),
             "saldo_pendiente": float(saldo_pendiente),
             "fecha_vencimiento": factura.fecha_vencimiento.isoformat() if factura.fecha_vencimiento else None
         })
