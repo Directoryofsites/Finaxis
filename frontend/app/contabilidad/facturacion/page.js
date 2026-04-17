@@ -475,6 +475,7 @@ export default function NuevaFacturaPage() {
                 .filter(m => m.producto_id && m.cantidad > 0)
                 .map(d => {
                     const producto = maestros.productos.find(p => p.id === d.producto_id);
+                    const p_unitario = d.credito > 0 ? (d.credito / d.cantidad) : (d.debito / d.cantidad);
                     return {
                         producto_id: d.producto_id,
                         codigo: producto ? producto.codigo : d.producto_id,
