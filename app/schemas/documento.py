@@ -143,6 +143,8 @@ class DocumentoFiltros(BaseModel):
     estado: Optional[str] = None
     numero: Optional[str] = None
     concepto: Optional[str] = None
+    anulado: Optional[bool] = None # Added missing filter
+    funcion_especial: Optional[str] = None # Added missing filter
 
 class DocumentoGestionFiltros(BaseModel):
     tipoEntidad: str

@@ -438,7 +438,7 @@ export default function NuevaFacturaPage() {
             const res = await apiService.get(`/documentos/`, {
                 params: {
                     tercero_id: beneficiarioId,
-                    funcion_especial: 'factura_venta',
+                    funcion_especial: 'factura_venta,cartera_cliente',
                     anulado: false,
                     limit: 50
                 }
