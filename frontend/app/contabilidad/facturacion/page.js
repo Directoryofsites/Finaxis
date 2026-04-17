@@ -481,11 +481,14 @@ export default function NuevaFacturaPage() {
                         nombre: producto ? producto.nombre : `Producto ID ${d.producto_id}`,
                         cantidad: d.cantidad,
                         // Asumimos que el crédito/débito contiene el valor total (necesitamos precio unitario = subtotal / cantidad)
-                        // Para notas crédito as is: 
-                        precio_unitario: d.credito > 0 ? (d.credito / d.cantidad) : (d.debito / d.cantidad),
+                        precio_unitario: p_unitario,
                         porcentaje_iva: producto ? (producto.porcentaje_iva || 0) : 0,
                         descuento_tasa: d.descuento_tasa || 0,
-                        mueve_inventario: true
+                        mueve_inventario: true,
+                        // --- Atributos ocultos para el cerebro de Autodetección ---
+                        cantidad_original: parseFloat(d.cantidad) || 0,
+                        precio_original: p_unitario,
+                        auto_mueve_inventario: true // Para saber si podemos anularle la decisión
                     };
                 });
             
@@ -520,15 +523,37 @@ export default function NuevaFacturaPage() {
     const handleItemChange = (productId, field, value) => {
         if (field === 'mueve_inventario') {
             setItems(prevItems => prevItems.map(item =>
-                item.producto_id === productId ? { ...item, [field]: value } : item
+                item.producto_id === productId ? { ...item, [field]: value, auto_mueve_inventario: false } : item
             ));
             return;
         }
         const numericValue = value === '' ? '' : parseFloat(value);
         if (value !== '' && isNaN(numericValue)) return;
-        setItems(prevItems => prevItems.map(item =>
-            item.producto_id === productId ? { ...item, [field]: value } : item
-        ));
+        
+        setItems(prevItems => prevItems.map(item => {
+            if (item.producto_id !== productId) return item;
+            
+            const updatedItem = { ...item, [field]: value };
+            
+            // AUTO-DETECCIÓN INTELIGENTE
+            if (updatedItem.auto_mueve_inventario && updatedItem.cantidad_original !== undefined) {
+                const currentQty = parseFloat(updatedItem.cantidad) || 0;
+                const currentPrice = parseFloat(updatedItem.precio_unitario) || 0;
+                
+                // Si el precio cambió, PERO la cantidad se mantiene IGUAL al original 
+                // => ES UN AJUSTE DE PRECIO FINANCIERO PUDO (No mueve inventario)
+                if (currentPrice !== updatedItem.precio_original && currentQty === updatedItem.cantidad_original) {
+                    updatedItem.mueve_inventario = false;
+                } 
+                // Si la cantidad cambió, o si ambos son idénticos al original (devolución total)
+                // => ES UN MOVIMIENTO DE INVENTARIO
+                else {
+                    updatedItem.mueve_inventario = true;
+                }
+            }
+            
+            return updatedItem;
+        }));
     };
 
     const handleRemoveItem = (productId) => {
