@@ -192,9 +192,13 @@ export default function NuevaFacturaPage() {
 
                 setMaestros({
                     // terceros: tercerosRes,
-                    tiposDocumento: tiposDocRes.filter(td => td.afecta_inventario && td.funcion_especial && funcionesPermitidas.includes(td.funcion_especial.toLowerCase())),
-                    centrosCosto: centrosCostoFiltrados,
-                    productos: productosRes.data
+                    tiposDocumento: (tiposDocRes || []).filter(td => 
+                        td.afecta_inventario && 
+                        td.funcion_especial && 
+                        funcionesPermitidas.includes(td.funcion_especial.toLowerCase())
+                    ),
+                    centrosCosto: centrosCostoFiltrados || [],
+                    productos: productosRes.data || []
                 });
 
                 setBodegas(bodegasRes);
@@ -438,8 +442,9 @@ export default function NuevaFacturaPage() {
                     limit: 50
                 }
             });
-            // Filtramos las facturas que tengan items para poder revertir
-            setFacturasDisponibles(res.data.items || res.data || []);
+            // El backend devuelve { total, documentos: [] }
+            const lista = res.data.documentos || res.data.items || (Array.isArray(res.data) ? res.data : []);
+            setFacturasDisponibles(lista);
         } catch (error) {
             console.error("Error fetching facturas:", error);
             toast.error("Error al cargar las facturas del cliente.");
@@ -463,8 +468,10 @@ export default function NuevaFacturaPage() {
                 // Esto podría requerir cargar los detalles y ver de dónde salieron
             }
 
+            
             // 2. Items
-            const nuevosItems = facturaCompleta.movimientos
+            const movimientos = facturaCompleta.movimientos || [];
+            const nuevosItems = movimientos
                 .filter(m => m.producto_id && m.cantidad > 0)
                 .map(d => {
                     const producto = maestros.productos.find(p => p.id === d.producto_id);
@@ -1230,7 +1237,7 @@ export default function NuevaFacturaPage() {
                                         ) : facturasDisponibles.length === 0 ? (
                                             <tr><td colSpan="4" className="text-center py-4">No se encontraron facturas recientes.</td></tr>
                                         ) : (
-                                            facturasDisponibles.map(fact => (
+                                            (facturasDisponibles || []).map(fact => (
                                                 <tr key={fact.id} className="hover:bg-orange-50 transition-colors">
                                                     <td className="px-4 py-2 font-bold">#{fact.numero}</td>
                                                     <td className="px-4 py-2">{fact.fecha}</td>
