@@ -61,26 +61,37 @@ def get_cuentas_especiales_ids(db: Session, empresa_id: int, tipo: str) -> List[
     # SOLUCIÓN: Si es CXC, aceptamos cualquier ACTIVO (1%) excepto DISPONIBLE (11%).
     
     if tipo == 'cxc':
-        valid_ids = db.query(models_plan.id, models_plan.codigo).filter(
-            models_plan.id.in_(list(cuentas_ids)),
-            models_plan.codigo.like("1%"),
-            ~models_plan.codigo.like("11%") # Excluir Caja/Bancos
-        ).all()
+        # --- NUEVO: INTEGRACIÓN ROBUSTA DE CUENTAS ---
+        # 1. Obtener los códigos de las cuentas ya encontradas para encontrar sus raíces
+        codigos_base = db.query(models_plan.codigo).filter(models_plan.id.in_(list(cuentas_ids))).all()
+        prefijos = set([c.codigo[:4] for c in codigos_base]) # Ej: 1305, 1345
         
-        result_ids = [row.id for row in valid_ids]
+        # 2. Asegurar que 1305 (Cartera Nacional) siempre esté, aunque no esté en tipos
+        prefijos.add("1305")
         
-        # AGREGAR CUENTA PH EXPLICITA SI EXISTE (Y SI ES VALIDA/ACTIVA)
-        # Esto soluciona el caso donde por algun motivo el filtro de arriba no la cogiera,
-        # O simplemente para dar prioridad total.
-        if ph_cuenta_cartera_id and ph_cuenta_cartera_id in cuentas_ids:
-            if ph_cuenta_cartera_id not in result_ids:
-                result_ids.append(ph_cuenta_cartera_id)
+        # 3. Buscar todas las cuentas que pertenezcan a estos prefijos o que ya estuvieran
+        valid_ids_query = db.query(models_plan.id).filter(
+            or_(
+                models_plan.id.in_(list(cuentas_ids)),
+                # Incluir cualquier subcuenta de los prefijos detectados
+                and_(
+                    or_(*[models_plan.codigo.like(f"{p}%") for p in prefijos]),
+                    models_plan.codigo.like("1%"),
+                    ~models_plan.codigo.like("11%")
+                )
+            )
+        )
+        
+        result_ids = [row.id for row in valid_ids_query.all()]
+        
+        # AGREGAR CUENTA PH EXPLICITA SI EXISTE
+        if ph_cuenta_cartera_id and ph_cuenta_cartera_id not in result_ids:
+            result_ids.append(ph_cuenta_cartera_id)
 
-        return result_ids
+        return list(set(result_ids))
     else:
         # Para CXP (Proveedores), mantenemos Pasivos (2%)
-        # Podríamos usar la configuración de empresa si se requiere algo exótico
-        prefix = empresa.prefijo_cxp if empresa and empresa.prefijo_cxp else default_cxp
+        prefix = empresa.prefijo_cxp if empresa and empresa.prefijo_cxp else '2'
         valid_ids = db.query(models_plan.id).filter(
             models_plan.id.in_(list(cuentas_ids)),
             models_plan.codigo.like(f"{prefix}%")
@@ -282,14 +293,26 @@ def get_facturas_pendientes_por_tercero(db: Session, tercero_id: int, empresa_id
     if not cuentas_cxc_ids:
         return []
 
+    # IDs de documentos donde el tercero está en un MOVIMIENTO sobre cuentas CXC
+    ids_por_movimiento = db.query(models_mov.documento_id).where(
+        models_mov.tercero_id == tercero_id,
+        models_mov.cuenta_id.in_(cuentas_cxc_ids)
+    ).join(models_doc, models_mov.documento_id == models_doc.id).where(
+        models_doc.empresa_id == empresa_id,
+        models_doc.anulado == False
+    ).subquery()
+
     subquery_valor_total = db.query(
         models_mov.documento_id.label("documento_id"),
         func.sum(models_mov.debito).label("valor_total")
     ).join(models_doc, models_mov.documento_id == models_doc.id).filter(
         models_doc.empresa_id == empresa_id,
-        models_doc.beneficiario_id == tercero_id, # OPTIMIZACIÓN PATH B
         models_doc.anulado == False,
-        models_mov.cuenta_id.in_(cuentas_cxc_ids) 
+        models_mov.cuenta_id.in_(cuentas_cxc_ids),
+        or_(
+            models_doc.beneficiario_id == tercero_id,
+            models_doc.id.in_(ids_por_movimiento)
+        )
     ).group_by(models_mov.documento_id).subquery()
 
     # Construir query base para pagos aplicados
@@ -297,8 +320,7 @@ def get_facturas_pendientes_por_tercero(db: Session, tercero_id: int, empresa_id
         models_aplica.documento_factura_id.label("documento_id"),
         func.sum(models_aplica.valor_aplicado).label("total_aplicado")
     ).join(models_doc, models_aplica.documento_pago_id == models_doc.id).filter(
-        models_doc.empresa_id == empresa_id, # OPTIMIZACIÓN PATH B
-        models_doc.beneficiario_id == tercero_id, # OPTIMIZACIÓN PATH B
+        models_doc.empresa_id == empresa_id,
         models_doc.anulado == False
     )
     
@@ -320,7 +342,6 @@ def get_facturas_pendientes_por_tercero(db: Session, tercero_id: int, empresa_id
     ).outerjoin(
         subquery_valor_aplicado, subquery_valor_aplicado.c.documento_id == models_doc.id
     ).filter(
-        models_doc.beneficiario_id == tercero_id,
         models_doc.empresa_id == empresa_id,
         models_doc.anulado == False,
         subquery_valor_total.c.valor_total > func.coalesce(subquery_valor_aplicado.c.total_aplicado, 0)
