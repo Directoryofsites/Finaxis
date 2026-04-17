@@ -584,6 +584,19 @@ export default function NuevaFacturaPage() {
             return toast.error("Cantidades deben ser mayores a 0 y precios no negativos.");
         }
 
+        // --- VALIDACIÓN DE SEGURIDAD PARA NOTA DÉBITO ---
+        if (tipoDocSeleccionado?.funcion_especial === 'nota_debito' && documentoReferenciaId) {
+            const hayCambios = itemsValidados.some(item => 
+                (item.cantidad !== item.cantidad_original) || 
+                (Math.abs(item.precio_unitario - item.precio_original) > 0.01)
+            );
+            if (!hayCambios) {
+                setIsSubmitting(false);
+                return toast.error("Error: La Nota Débito no tiene cambios respecto a la factura original. Debe aumentar precio o cantidad para ser válida.");
+            }
+        }
+
+
         setIsSubmitting(true);
 
         const payload = {
@@ -643,6 +656,19 @@ export default function NuevaFacturaPage() {
             descuento_tasa: parseFloat(item.descuento_tasa) || 0,
             mueve_inventario: item.mueve_inventario !== false
         }));
+
+        // --- VALIDACIÓN DE SEGURIDAD PARA NOTA DÉBITO ---
+        if (tipoDocSeleccionado?.funcion_especial === 'nota_debito' && documentoReferenciaId) {
+            const hayCambios = itemsValidados.some(item => 
+                (item.cantidad !== item.cantidad_original) || 
+                (Math.abs(item.precio_unitario - item.precio_original) > 0.01)
+            );
+            if (!hayCambios) {
+                setIsSubmitting(false);
+                return toast.error("Error: La Nota Débito no tiene cambios respecto a la factura original. Debe aumentar precio o cantidad para ser válida.");
+            }
+        }
+
 
         const payload = {
             tipo_documento_id: parseInt(tipoDocumentoId),
