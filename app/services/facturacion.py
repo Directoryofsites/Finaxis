@@ -77,6 +77,15 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
     if not tipo_doc:
         raise HTTPException(status_code=404, detail="Tipo de documento no encontrado.")
 
+    # --- 1.2 OBTENER UNIDAD PH SI ES UNA NOTA ---
+    unidad_ph_id_ref = None
+    if factura.documento_referencia_id:
+        doc_ref = db.query(models_doc.Documento).filter(models_doc.Documento.id == factura.documento_referencia_id).first()
+        if doc_ref:
+            unidad_ph_id_ref = doc_ref.unidad_ph_id
+            log_debug(f"Documento Ref encontrado. Unidad PH ID: {unidad_ph_id_ref}")
+    # --------------------------------------------
+
     # DETERMINAR TIPO DE OPERACIÓN
     # Usamos funcion_especial o codigo/nombre para inferir
     es_nota_credito = False
@@ -344,6 +353,7 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
             fecha_vencimiento=fecha_vencimiento_final, # Guardamos la fecha manual
             vendedor_id=factura.vendedor_id,
             centro_costo_id=factura.centro_costo_id,
+            unidad_ph_id=unidad_ph_id_ref, # <--- PASAR UNIDAD PH PARA INTEGRACIÓN
             
             # --- NUEVO: Pasar valores ---
             descuento_global_valor=factura.descuento_global_valor,

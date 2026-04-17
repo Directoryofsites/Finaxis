@@ -709,6 +709,20 @@ def get_documentos(db: Session, empresa_id: int, filtros: dict, skip: int = 0, l
         # 5. NUEVO: Filtro por Observaciones
         if filtros.get("observaciones"):
             filter_conditions.append(models_doc.observaciones.ilike(f"%{filtros['observaciones']}%"))
+            
+        # 6. Filtro funcion_especial
+        if filtros.get("funcion_especial"):
+            # Compatibilidad con múltiples funciones especiales si se envían separadas por coma
+            funciones_list = [f.strip() for f in str(filtros["funcion_especial"]).split(',') if f.strip()]
+            if funciones_list:
+                filter_conditions.append(models_tipo.funcion_especial.in_(funciones_list))
+
+        # 7. Filtro anulado
+        if "anulado" in filtros:
+            val_anulado = filtros["anulado"]
+            if isinstance(val_anulado, str):
+                val_anulado = val_anulado.lower() == "true"
+            filter_conditions.append(models_doc.anulado == val_anulado)
 
         # Aplicar todos los filtros acumulados
         if filter_conditions:

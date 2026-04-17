@@ -311,7 +311,8 @@ def get_facturas_pendientes_por_tercero(db: Session, tercero_id: int, empresa_id
     query = db.query(
         models_doc.id, models_doc.numero, models_doc.fecha, models_doc.fecha_vencimiento,
         subquery_valor_total.c.valor_total,
-        func.coalesce(subquery_valor_aplicado.c.total_aplicado, 0).label("total_aplicado")
+        func.coalesce(subquery_valor_aplicado.c.total_aplicado, 0).label("total_aplicado"),
+        models_tipo.nombre.label("tipo_nombre")
     ).join(
         subquery_valor_total, subquery_valor_total.c.documento_id == models_doc.id
     ).join(
@@ -337,8 +338,11 @@ def get_facturas_pendientes_por_tercero(db: Session, tercero_id: int, empresa_id
     resultado_formateado = []
     for factura in facturas_pendientes:
         saldo_pendiente = factura.valor_total - factura.total_aplicado
+        # Forma del numero: "TIPO #NUMERO" para distinguirlos en pantalla de recaudos
+        num_str = f"{factura.tipo_nombre} #{factura.numero}" if factura.tipo_nombre else factura.numero
+
         resultado_formateado.append({
-            "id": factura.id, "numero": factura.numero,
+            "id": factura.id, "numero": num_str, "numero_puro": factura.numero, "tipo_documento": factura.tipo_nombre,
             "fecha": factura.fecha.isoformat(),
             "valor_total": float(factura.valor_total),
             "saldo_pendiente": float(saldo_pendiente),
@@ -373,7 +377,8 @@ def get_facturas_compra_pendientes_por_tercero(db: Session, tercero_id: int, emp
     facturas_pendientes = db.query(
         models_doc.id, models_doc.numero, models_doc.fecha,
         subquery_valor_total.c.valor_total,
-        func.coalesce(subquery_valor_aplicado.c.total_aplicado, 0).label("total_aplicado")
+        func.coalesce(subquery_valor_aplicado.c.total_aplicado, 0).label("total_aplicado"),
+        models_tipo.nombre.label("tipo_nombre")
     ).join(
         subquery_valor_total, subquery_valor_total.c.documento_id == models_doc.id
     ).join(
@@ -390,8 +395,9 @@ def get_facturas_compra_pendientes_por_tercero(db: Session, tercero_id: int, emp
     resultado_formateado = []
     for factura in facturas_pendientes:
         saldo_pendiente = factura.valor_total - factura.total_aplicado
+        num_str = f"{factura.tipo_nombre} #{factura.numero}" if factura.tipo_nombre else factura.numero
         resultado_formateado.append({
-            "id": factura.id, "numero": factura.numero,
+            "id": factura.id, "numero": num_str, "numero_puro": factura.numero, "tipo_documento": factura.tipo_nombre,
             "fecha": factura.fecha.isoformat(),
             "valor_total": float(factura.valor_total),
             "saldo_pendiente": float(saldo_pendiente)

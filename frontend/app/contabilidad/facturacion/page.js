@@ -434,11 +434,12 @@ export default function NuevaFacturaPage() {
         setFacturasDisponibles([]);
 
         try {
-            // Buscamos todas las facturas de venta del cliente
+            // Fetch facturas pendientes del tercero, asegurando enviar anulado: false y tipo factura_venta (no traer otras notas)
             const res = await apiService.get(`/documentos/`, {
                 params: {
                     tercero_id: beneficiarioId,
-                    funcion_especial: 'cartera_cliente',
+                    funcion_especial: 'factura_venta',
+                    anulado: false,
                     limit: 50
                 }
             });
