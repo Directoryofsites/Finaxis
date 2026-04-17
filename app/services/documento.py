@@ -2690,18 +2690,17 @@ def generate_auxiliar_por_facturas(
     if not cuentas_cxc_ids:
         return {"facturas": [], "totales": {}}
 
-    factura_ids_query = db.query(models_doc.id).join(
-        models_tipo, models_doc.tipo_documento_id == models_tipo.id
-    ).join(
-        models_mov, models_doc.id == models_mov.documento_id
+    # Filtro inteligente: Documentos que tengan balance DEUDOR neto en cuentas CXC
+    # Esto captura Facturas, Notas Débito y cualquier otro que sume a la cartera.
+    factura_ids_query = db.query(models_mov.documento_id).join(
+        models_doc, models_mov.documento_id == models_doc.id
     ).filter(
         models_doc.empresa_id == empresa_id,
         models_doc.beneficiario_id == tercero_id,
         models_doc.fecha.between(fecha_inicio, fecha_fin),
         models_doc.anulado == False,
-        models_tipo.funcion_especial == FuncionEspecial.CARTERA_CLIENTE,
         models_mov.cuenta_id.in_(cuentas_cxc_ids)
-    ).distinct()
+    ).group_by(models_mov.documento_id).having(func.sum(models_mov.debito - models_mov.credito) > 0.01).subquery()
 
     facturas_base = db.query(
         models_doc.id,
@@ -2767,7 +2766,7 @@ def generate_auxiliar_por_facturas(
         reporte_facturas.append({
             "id": factura.id,
             "fecha": factura.fecha,
-            "documento": f"Factura de Venta-{factura.numero}",
+            "documento": f"{factura.tipo_nombre}-{factura.numero}",
             "tipo_documento": factura.tipo_nombre,
             "numero_documento": factura.numero,
             "beneficiario_nit": factura.tercero_nit,
@@ -2938,22 +2937,23 @@ def generate_auxiliar_proveedores_por_facturas(
     if not cuentas_cxp_ids:
         return {"facturas": [], "totales": {}}
 
-    factura_ids_query = db.query(models_doc.id).join(
-        models_tipo, models_doc.tipo_documento_id == models_tipo.id
-    ).join(
-        models_mov, models_doc.id == models_mov.documento_id
+    # Filtro inteligente: Documentos con balance ACREEDOR neto en cuentas CXP
+    # Esto captura Facturas de Compra, Notas Crédito de Proveedor y cualquier otro que sume a la deuda.
+    factura_ids_query = db.query(models_mov.documento_id).join(
+        models_doc, models_mov.documento_id == models_doc.id
     ).filter(
         models_doc.empresa_id == empresa_id,
         models_doc.beneficiario_id == tercero_id,
         models_doc.fecha.between(fecha_inicio, fecha_fin),
         models_doc.anulado == False,
-        models_tipo.funcion_especial == FuncionEspecial.CXP_PROVEEDOR,
         models_mov.cuenta_id.in_(cuentas_cxp_ids)
-    ).distinct()
+    ).group_by(models_mov.documento_id).having(func.sum(models_mov.credito - models_mov.debito) > 0.01).subquery()
 
     facturas_base = db.query(
-        models_doc.id, models_doc.fecha, models_doc.numero
-    ).filter(
+        models_doc.id, models_doc.fecha, models_doc.numero,
+        models_tipo.nombre.label("tipo_nombre") # Necesitamos el nombre real
+    ).join(models_tipo, models_doc.tipo_documento_id == models_tipo.id)\
+     .filter(
         models_doc.id.in_(factura_ids_query)
     ).order_by(models_doc.fecha.asc(), models_doc.id.asc()).all()
 
@@ -3006,7 +3006,7 @@ def generate_auxiliar_proveedores_por_facturas(
         total_abonos = float(abonos_map.get(factura.id, 0))
         reporte_facturas.append({
             "id": factura.id, "fecha": factura.fecha,
-            "documento": f"Factura de Compra-{factura.numero}",
+            "documento": f"{factura.tipo_nombre}-{factura.numero}",
             "valor_original": valor_original, "total_abonos": total_abonos,
             "saldo_factura": valor_original - total_abonos,
             "abonos_detalle": detalle_map.get(factura.id, [])
@@ -3211,10 +3211,9 @@ def generate_estado_cuenta_cliente_report(
      .filter(
         models_doc.empresa_id == empresa_id,
         models_doc.beneficiario_id == tercero_id,
-        models_doc.fecha <= fecha_fin, # La factura debe existir a la fecha de corte
+        models_doc.fecha <= fecha_fin,
         models_doc.anulado == False,
-        models_tipo.funcion_especial == FuncionEspecial.CARTERA_CLIENTE,
-        # Condición HAVING implícita: Saldo > 0 (con tolerancia a float)
+        # Ya no filtramos por CARTERA_CLIENTE, sino por impacto real en cuenta (el subquery ya garantiza saldo > 0)
         (sq_valor_original.c.valor_original - func.coalesce(sq_abonos.c.total_abonos, 0)) > 0.01 
     ).order_by(models_doc.fecha_vencimiento).all()
 
@@ -3344,7 +3343,7 @@ def generate_estado_cuenta_proveedor_report(
         models_doc.beneficiario_id == tercero_id,
         models_doc.fecha <= fecha_fin,
         models_doc.anulado == False,
-        models_tipo.funcion_especial == FuncionEspecial.CXP_PROVEEDOR,
+        # Seguimos la contabilidad real (el sq_valor_original ya asegura impacto acreedor)
         sq_valor_original.c.valor_original > func.coalesce(sq_abonos.c.total_abonos, 0)
     ).order_by(models_doc.fecha_vencimiento).all()
 
