@@ -585,7 +585,10 @@ export default function NuevaFacturaPage() {
         }
 
         // --- VALIDACIÓN DE SEGURIDAD PARA NOTA DÉBITO ---
-        if (tipoDocSeleccionado?.funcion_especial === 'nota_debito' && documentoReferenciaId) {
+        const isNotaDebito = tipoDocSeleccionado?.funcion_especial?.toLowerCase() === 'nota_debito' || 
+                             (tipoDocSeleccionado?.nombre && tipoDocSeleccionado.nombre.toLowerCase().includes('nota de'));
+
+        if (isNotaDebito && documentoReferenciaId) {
             const hayCambios = itemsValidados.some(item => 
                 (item.cantidad !== item.cantidad_original) || 
                 (Math.abs(item.precio_unitario - item.precio_original) > 0.01)
@@ -658,7 +661,10 @@ export default function NuevaFacturaPage() {
         }));
 
         // --- VALIDACIÓN DE SEGURIDAD PARA NOTA DÉBITO ---
-        if (tipoDocSeleccionado?.funcion_especial === 'nota_debito' && documentoReferenciaId) {
+        const isNotaDebitoSave = tipoDocSeleccionado?.funcion_especial?.toLowerCase() === 'nota_debito' || 
+                                 (tipoDocSeleccionado?.nombre && tipoDocSeleccionado.nombre.toLowerCase().includes('nota de'));
+
+        if (isNotaDebitoSave && documentoReferenciaId) {
             const hayCambios = itemsValidados.some(item => 
                 (item.cantidad !== item.cantidad_original) || 
                 (Math.abs(item.precio_unitario - item.precio_original) > 0.01)
