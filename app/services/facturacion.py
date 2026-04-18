@@ -287,12 +287,25 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
             
             # Asientos Costo
             # Normal: Debito Costo, Credito Inv.
-            # Nota Credito: Debito Inv, Credito Costo.
-            # Nota Debito: Debito Inv, Credito Costo (A menos que item.mueve_inventario sea False).
+            # Nota Credito: Debito Inv, Credito Costo. (Usando costo histórico si existe referencia)
             if not producto_db.es_servicio and producto_db.controlar_inventario and item.mueve_inventario:
-                costo_total_item = float(item.cantidad) * (float(producto_db.costo_promedio) or 0.0)
+                
+                # --- LÓGICA DE COSTO HISTÓRICO PARA NOTAS (DÉBITO O CRÉDITO) ---
+                costo_unitario_operacion = float(producto_db.costo_promedio or 0.0)
+                if (es_nota_credito or es_nota_debito) and factura.documento_referencia_id:
+                    # Intentar buscar el costo al que salió en la factura original
+                    from ..models.producto import MovimientoInventario
+                    mov_original = db.query(MovimientoInventario.costo_unitario).filter(
+                        MovimientoInventario.documento_id == factura.documento_referencia_id,
+                        MovimientoInventario.producto_id == item.producto_id,
+                        MovimientoInventario.tipo_movimiento == 'SALIDA_VENTA'
+                    ).first()
+                    if mov_original:
+                        costo_unitario_operacion = float(mov_original.costo_unitario)
+
+                costo_total_item = float(item.cantidad) * costo_unitario_operacion
+                
                 if costo_total_item > 0:
-                    
                     debito_costo = costo_total_item if not es_nota_credito else 0
                     credito_costo = 0 if not es_nota_credito else costo_total_item
                     
@@ -387,13 +400,25 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
                         tipo_mov_kardex = 'SALIDA_VENTA'
                         if es_nota_credito: tipo_mov_kardex = 'ENTRADA_DEVOLUCION_VENTA'
                         
+                        # Recuperar el costo que calculamos arriba para el asiento
+                        # Lo buscamos de nuevo o lo pasamos (aquí lo recalculamos igual que arriba para consistencia)
+                        costo_kardex = float(p_db.costo_promedio or 0.0)
+                        if (es_nota_credito or es_nota_debito) and factura.documento_referencia_id:
+                            from ..models.producto import MovimientoInventario
+                            mov_orig_k = db.query(MovimientoInventario.costo_unitario).filter(
+                                MovimientoInventario.documento_id == factura.documento_referencia_id,
+                                MovimientoInventario.producto_id == item.producto_id,
+                                MovimientoInventario.tipo_movimiento == 'SALIDA_VENTA'
+                            ).first()
+                            if mov_orig_k: costo_kardex = float(mov_orig_k.costo_unitario)
+
                         service_inventario.registrar_movimiento_inventario(
                             db=db,
                             producto_id=item.producto_id,
                             bodega_id=factura.bodega_id,
                             tipo_movimiento=tipo_mov_kardex,
                             cantidad=item.cantidad,
-                            costo_unitario=(p_db.costo_promedio or 0.0),
+                            costo_unitario=costo_kardex,
                             documento_id=nuevo_documento.id,
                             fecha=fecha_factura_dt
                         )
