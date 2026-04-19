@@ -403,6 +403,9 @@ def get_kardex_por_producto(db: Session, empresa_id: int, filtros: schemas_repor
         .outerjoin(models_bodega.Bodega, models_producto.MovimientoInventario.bodega_id == models_bodega.Bodega.id)\
         .filter(and_(*movimientos_periodo_filters))\
         .order_by(models_producto.MovimientoInventario.fecha.asc(), models_producto.MovimientoInventario.id.asc())
+    
+    # DEBUG: Imprimir la query generada para verificar joins (solo en logs)
+    # print(f"SQL KARDEX: {movimientos_base_query.statement.compile(dialect=postgresql.dialect())}")
         
     # Ejecutamos la query y obtenemos el resultado como mapeo de columnas (no como objeto ORM)
     movimientos_periodo = movimientos_base_query.all()
@@ -467,12 +470,14 @@ def get_kardex_por_producto(db: Session, empresa_id: int, filtros: schemas_repor
         elif mov_data['mov_tipo'].startswith('SALIDA'):
             # --- BLINDAJE PARA AJUSTES CON REFERENCIA ---
             costo_promedio_a_usar = costo_promedio_global_actual_dec
+            ref_id_mov = mov_data.get('doc_referencia_id')
             
-            # Si tiene referencia, respetamos el costo almacenado en DB
+            # Si tiene referencia, respetamos el costo almacenado en DB (el histórico)
             tiene_referencia_salida = False
-            if mov_data.get('doc_referencia_id'):
+            if ref_id_mov is not None:
                 tiene_referencia_salida = True
                 costo_promedio_a_usar = mov_costo_unitario
+                print(f"[AUDITORIA_REPORTE] Doc {mov_data['doc_numero']}: Detectada Ref {ref_id_mov}. Aplicando histórico {costo_promedio_a_usar}")
             
             costo_salida_calculado = mov_cantidad * costo_promedio_a_usar
             saldo_parcial_cantidad = saldo_cantidad_actual - mov_cantidad
