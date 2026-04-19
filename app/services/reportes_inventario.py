@@ -469,7 +469,9 @@ def get_kardex_por_producto(db: Session, empresa_id: int, filtros: schemas_repor
             costo_promedio_a_usar = costo_promedio_global_actual_dec
             
             # Si tiene referencia, respetamos el costo almacenado en DB
+            tiene_referencia_salida = False
             if mov_data.get('doc_referencia_id'):
+                tiene_referencia_salida = True
                 costo_promedio_a_usar = mov_costo_unitario
             
             costo_salida_calculado = mov_cantidad * costo_promedio_a_usar
@@ -483,6 +485,11 @@ def get_kardex_por_producto(db: Session, empresa_id: int, filtros: schemas_repor
             })
             total_salidas_cant += mov_cantidad
             total_salidas_val += costo_salida_calculado
+            
+            # --- CORRECCIÓN MATEMÁTICA: Recalcular promedio si el valor extraído difiere del promedio ---
+            # Si retiramos a 190 pero el promedio era 195, lo que queda DEBE cambiar de promedio.
+            if tiene_referencia_salida and saldo_parcial_cantidad.is_normal() and saldo_parcial_cantidad > 0:
+                costo_promedio_global_actual_dec = saldo_parcial_valor / saldo_parcial_cantidad
 
         # Actualizar saldos para la próxima iteración
         saldo_cantidad_actual = saldo_parcial_cantidad
