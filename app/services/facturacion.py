@@ -31,11 +31,10 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
     import json
     import os
     
-    log_path = r"c:\ContaPY2\debug_invoice_error.log"
-    
     def log_debug(msg):
-        with open(log_path, "a", encoding="utf-8") as f:
-            f.write(f"{datetime.now()}: {msg}\n")
+    # Ya no usamos archivos locales (C:\...) porque en Render (Linux) fallan
+    # Ahora usamos la salida estándar para que aparezca en los logs de la nube
+        print(f"[AUDITORIA_FACTURACION] {datetime.now()}: {msg}")
             
     try:
         log_debug("--- INICIO SOLICITUD ---")
@@ -293,23 +292,23 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
                 # --- LÓGICA DE COSTO HISTÓRICO PARA AJUSTES (DÉBITO O CRÉDITO) ---
                 costo_unitario_operacion = float(producto_db.costo_promedio or 0.0)
                 
-                # Robustecimiento: Si hay referencia, intentamos siempre buscar el costo histórico
-                # independientemente de si el tipo está bien configurado como Nota o no.
                 if factura.documento_referencia_id:
-                    log_debug(f"Detectada referencia {factura.documento_referencia_id} para producto {item.producto_id}. Buscando costo histórico...")
+                    print(f"--- INICIO BUSQUEDA COSTO HISTORICO ---")
+                    print(f"Ref ID: {factura.documento_referencia_id}, Producto: {item.producto_id}")
                     
-                    # Usamos models_producto.MovimientoInventario para evitar NameError
+                    # Buscamos CUALQUIER movimiento de este producto en el documento de referencia
+                    # (Más robusto que filtrar solo por SALIDA_VENTA)
                     mov_original = db.query(models_producto.MovimientoInventario.costo_unitario).filter(
                         models_producto.MovimientoInventario.documento_id == factura.documento_referencia_id,
-                        models_producto.MovimientoInventario.producto_id == item.producto_id,
-                        models_producto.MovimientoInventario.tipo_movimiento == 'SALIDA_VENTA'
-                    ).first()
+                        models_producto.MovimientoInventario.producto_id == item.producto_id
+                    ).order_by(models_producto.MovimientoInventario.id.asc()).first()
                     
                     if mov_original:
                         costo_unitario_operacion = float(mov_original.costo_unitario)
-                        log_debug(f"Costo histórico encontrado: {costo_unitario_operacion}")
+                        print(f"COSTO ENCONTRADO EN REFERENCIA: {costo_unitario_operacion}")
                     else:
-                        log_debug(f"ADVERTENCIA: No se encontró movimiento SALIDA_VENTA en el documento de referencia {factura.documento_referencia_id}")
+                        print(f"ADVERTENCIA: No se halló movimiento de inventario para el producto {item.producto_id} en la referencia {factura.documento_referencia_id}. Se usará promedio: {costo_unitario_operacion}")
+                    print(f"--- FIN BUSQUEDA COSTO HISTORICO ---")
 
                 costo_total_item = float(item.cantidad) * costo_unitario_operacion
                 
@@ -409,17 +408,16 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
                         if es_nota_credito: tipo_mov_kardex = 'ENTRADA_DEVOLUCION_VENTA'
                         
                         # Recuperar el costo que calculamos arriba para el asiento
-                        # Implementamos la misma lógica robusta para el Kárdex
                         costo_kardex = float(p_db.costo_promedio or 0.0)
                         if factura.documento_referencia_id:
                             mov_orig_k = db.query(models_producto.MovimientoInventario.costo_unitario).filter(
                                 models_producto.MovimientoInventario.documento_id == factura.documento_referencia_id,
-                                models_producto.MovimientoInventario.producto_id == item.producto_id,
-                                models_producto.MovimientoInventario.tipo_movimiento == 'SALIDA_VENTA'
-                            ).first()
+                                models_producto.MovimientoInventario.producto_id == item.producto_id
+                            ).order_by(models_producto.MovimientoInventario.id.asc()).first()
+                            
                             if mov_orig_k:
                                 costo_kardex = float(mov_orig_k.costo_unitario)
-                                log_debug(f"Kárdex: Usando costo histórico {costo_kardex}")
+                                print(f"KARDEX: Aplicando histórico {costo_kardex}")
 
                         service_inventario.registrar_movimiento_inventario(
                             db=db,
