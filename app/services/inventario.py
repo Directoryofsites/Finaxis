@@ -224,7 +224,7 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
         
         # Inicializar bodega si no existe en mapa
         if bodega_id not in stocks_por_bodega: stocks_por_bodega[bodega_id] = 0.0
-        
+        if mov.tipo_movimiento.startswith('ENTRADA'):
             # --- LÓGICA DE COSTEO DINÁMICO ---
             tipos_que_fijan_costo = ['ENTRADA_COMPRA', 'ENTRADA_INICIAL']
             
