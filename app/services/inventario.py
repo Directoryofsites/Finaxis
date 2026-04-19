@@ -190,11 +190,14 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
     # 3. Obtener TODOS los movimientos ordenados cronológicamente
     # El orden es VITAL para el promedio ponderado.
     # IMPORTANTE: Filtrar movimientos de documentos ANULADOS para que no corrompan el stock.
+    # PRECARGAMOS el documento para detectar referencias rápidamente.
     from app.models.documento import Documento as models_doc
     from sqlalchemy import or_
+    from sqlalchemy.orm import contains_eager
 
     movimientos = db.query(models_producto.MovimientoInventario)\
         .outerjoin(models_doc, models_producto.MovimientoInventario.documento_id == models_doc.id)\
+        .options(contains_eager(models_producto.MovimientoInventario.documento))\
         .filter(
             models_producto.MovimientoInventario.producto_id == producto_id,
             or_(
@@ -219,20 +222,24 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
         
         if mov.tipo_movimiento.startswith('ENTRADA'):
             # --- LÓGICA DE COSTEO DINÁMICO ---
-            # Solo las Compras e Inventario Inicial 'mandan' sobre el costo.
-            # Los demás (Traslados, Anulaciones, Devoluciones, Ajustes) asumen el promedio.
             tipos_que_fijan_costo = ['ENTRADA_COMPRA', 'ENTRADA_INICIAL']
             
-            if mov.tipo_movimiento not in tipos_que_fijan_costo:
-                # Si no es una compra o inicial, adopta el costo promedio actual
+            # Detectar si es una devolución/ajuste con referencia
+            tiene_referencia = False
+            if mov.documento and mov.documento.documento_referencia_id:
+                tiene_referencia = True
+
+            if mov.tipo_movimiento not in tipos_que_fijan_costo and not tiene_referencia:
+                # Si no fija costo y NO tiene referencia, adopta el promedio actual
                 costo_mov = nuevo_costo_promedio
                 mov.costo_unitario = costo_mov
                 mov.costo_total = cantidad * costo_mov
                 db.add(mov)
             else:
-                # Es una compra o inicial, su costo es el que viene en el registro
-                # (el cual pudo ser modificado manualmente por el usuario antes del recálculo)
+                # Si fija costo O TIENE REFERENCIA, respetamos el costo que trae el registro
                 costo_mov = float(mov.costo_unitario or 0.0)
+                if tiene_referencia:
+                    print(f"[RECALCULO] Respetando costo historico {costo_mov} por referencia en Entrada Doc {mov.documento_id}")
             # ---------------------------------------------------------------
 
             # Lógica de Promedio Ponderado
@@ -255,11 +262,19 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
             stocks_por_bodega[bodega_id] -= cantidad
             stock_total_global -= cantidad
             
-            # FIX CRÍTICO: Sincronizar costo en DB con el costo promedio vigente al momento
-            # Esto evita que el Movimiento Analítico y Super Informe difieran del Kardex dinámico
-            mov.costo_unitario = nuevo_costo_promedio
-            mov.costo_total = cantidad * nuevo_costo_promedio
-            db.add(mov)
+            # BLINDAJE: Si tiene referencia, NO SOBRESCRIBIR con el promedio
+            tiene_referencia_salida = False
+            if mov.documento and mov.documento.documento_referencia_id:
+                tiene_referencia_salida = True
+
+            if not tiene_referencia_salida:
+                # FIX CRÍTICO: Sincronizar costo en DB con el costo promedio vigente al momento
+                mov.costo_unitario = nuevo_costo_promedio
+                mov.costo_total = cantidad * nuevo_costo_promedio
+                db.add(mov)
+            else:
+                # Respetamos el costo histórico que ya tiene
+                print(f"[RECALCULO] Respetando costo historico {mov.costo_unitario} por referencia en Salida Doc {mov.documento_id}")
 
             # --- SINCRONIZACIÓN CON CONTABILIDAD (PUENTE CASCADA) ---
             # Si el movimiento está vinculado a un documento, actualizamos su asiento de costo
