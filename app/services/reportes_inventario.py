@@ -393,6 +393,7 @@ def get_kardex_por_producto(db: Session, empresa_id: int, filtros: schemas_repor
         
         models_tipo_doc.TipoDocumento.codigo.label('doc_codigo'),
         models_doc.Documento.numero.label('doc_numero'),
+        models_doc.Documento.documento_referencia_id.label('doc_referencia_id'),
         models_bodega.Bodega.nombre.label('bodega_nombre')
     ]
 
@@ -443,31 +444,37 @@ def get_kardex_por_producto(db: Session, empresa_id: int, filtros: schemas_repor
         
         if mov_data['mov_tipo'].startswith('ENTRADA'):
             saldo_parcial_cantidad = saldo_cantidad_actual + mov_cantidad
-            saldo_parcial_valor = saldo_valor_actual + mov_costo_total_entrada
+            
+            # --- BLINDAJE PARA DEVOLUCIONES CON REFERENCIA ---
+            costo_entrada_a_usar = mov_costo_unitario
+            # (Nota: La lógica de promedios para entradas suele confiar en mov_costo_unitario,
+            # pero aquí forzamos la coherencia con la base de datos).
+            
+            saldo_parcial_valor = saldo_valor_actual + (mov_cantidad * costo_entrada_a_usar)
             
             # Actualizar costo promedio (lógica dinámica para el Kardex)
-            # FIX: El recálculo del promedio debe ocurrir SIEMPRE para reflejar la realidad en el reporte filtrado.
             if saldo_parcial_cantidad.is_normal() and saldo_parcial_cantidad > 0: 
                 costo_promedio_global_actual_dec = saldo_parcial_valor / saldo_parcial_cantidad
             
             item_data.update({
                 "entrada_cantidad": float(mov_cantidad), 
-                "entrada_costo_unit": float(mov_costo_unitario.quantize(Decimal("0.01"), ROUND_HALF_UP)),
-                "entrada_costo_total": float(mov_costo_total_entrada.quantize(Decimal("0.01"), ROUND_HALF_UP))
+                "entrada_costo_unit": float(costo_entrada_a_usar.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+                "entrada_costo_total": float((mov_cantidad * costo_entrada_a_usar).quantize(Decimal("0.01"), ROUND_HALF_UP))
             })
             total_entradas_cant += mov_cantidad
-            total_entradas_val += mov_costo_total_entrada
+            total_entradas_val += (mov_cantidad * costo_entrada_a_usar)
 
         elif mov_data['mov_tipo'].startswith('SALIDA'):
+            # --- BLINDAJE PARA AJUSTES CON REFERENCIA ---
             costo_promedio_a_usar = costo_promedio_global_actual_dec
+            
+            # Si tiene referencia, respetamos el costo almacenado en DB
+            if mov_data.get('doc_referencia_id'):
+                costo_promedio_a_usar = mov_costo_unitario
+            
             costo_salida_calculado = mov_cantidad * costo_promedio_a_usar
             saldo_parcial_cantidad = saldo_cantidad_actual - mov_cantidad
             saldo_parcial_valor = max(Decimal(0), saldo_valor_actual - costo_salida_calculado)
-            
-            # // ********* FIX CRÍTICO: COMENTAR BLOQUE DE RECALCULO INCORRECTO (YA COMENTADO EN LA LÍNEA 128 DE LA VERSIÓN BASE) *********
-            # if not bodega_id and saldo_parcial_cantidad.is_normal():
-            #     costo_promedio_global_actual_dec = saldo_valor_actual / saldo_parcial_cantidad
-            # // *************************************************************************
             
             item_data.update({
                 "salida_cantidad": float(mov_cantidad), 

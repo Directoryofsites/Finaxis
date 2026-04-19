@@ -195,9 +195,11 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
     from sqlalchemy import or_
     from sqlalchemy.orm import contains_eager
 
-    movimientos = db.query(models_producto.MovimientoInventario)\
+    movimientos = db.query(
+        models_producto.MovimientoInventario,
+        models_doc.documento_referencia_id.label('ref_id')
+    )\
         .outerjoin(models_doc, models_producto.MovimientoInventario.documento_id == models_doc.id)\
-        .options(contains_eager(models_producto.MovimientoInventario.documento))\
         .filter(
             models_producto.MovimientoInventario.producto_id == producto_id,
             or_(
@@ -212,7 +214,10 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
     stock_total_global = 0.0
     
     # 4. Re-procesar paso a paso
-    for mov in movimientos:
+    for mov_row in movimientos:
+        mov = mov_row[0] # El objeto MovimientoInventario
+        ref_id = mov_row.ref_id # El ID de referencia directamente de la query
+        
         bodega_id = mov.bodega_id
         cantidad = float(mov.cantidad)
         costo_mov = float(mov.costo_unitario or 0.0)
@@ -220,14 +225,11 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
         # Inicializar bodega si no existe en mapa
         if bodega_id not in stocks_por_bodega: stocks_por_bodega[bodega_id] = 0.0
         
-        if mov.tipo_movimiento.startswith('ENTRADA'):
             # --- LÓGICA DE COSTEO DINÁMICO ---
             tipos_que_fijan_costo = ['ENTRADA_COMPRA', 'ENTRADA_INICIAL']
             
             # Detectar si es una devolución/ajuste con referencia
-            tiene_referencia = False
-            if mov.documento and mov.documento.documento_referencia_id:
-                tiene_referencia = True
+            tiene_referencia = (ref_id is not None)
 
             if mov.tipo_movimiento not in tipos_que_fijan_costo and not tiene_referencia:
                 # Si no fija costo y NO tiene referencia, adopta el promedio actual
@@ -263,9 +265,7 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
             stock_total_global -= cantidad
             
             # BLINDAJE: Si tiene referencia, NO SOBRESCRIBIR con el promedio
-            tiene_referencia_salida = False
-            if mov.documento and mov.documento.documento_referencia_id:
-                tiene_referencia_salida = True
+            tiene_referencia_salida = (ref_id is not None)
 
             if not tiene_referencia_salida:
                 # FIX CRÍTICO: Sincronizar costo en DB con el costo promedio vigente al momento
