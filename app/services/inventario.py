@@ -297,23 +297,30 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
             stocks_por_bodega[bodega_id] -= cantidad
             stock_total_global -= cantidad
             
-            # --- LÓGICA DE SALIDA (FIX: Forzar promedio en ventas normales) ---
-            # BLINDAJE CONDICIONAL: Solo protegemos el costo histórico si es un tipo de ajuste 
-            # o devolución que realmente lo requiera. Las Ventas y Traslados SIEMPRE deben 
-            # seguir el promedio ponderado del momento.
+            # --- LÓGICA DE SALIDA (RECONCILIACIÓN FINAL) ---
+            # Para SALIDA_VENTA (facturas normales), forzamos el promedio actual
+            # para evitar que el costo se quede "pegado" en valores antiguos.
+            # Pero para SALIDA_AJUSTE_VENTA (notas débito) u otros con referencia,
+            # PROTEGEMOS el costo histórico grabado.
             
-            es_venta_o_traslado = mov.tipo_movimiento in ['SALIDA_VENTA', 'SALIDA_TRASLADO']
+            es_venta_normal = mov.tipo_movimiento in ['SALIDA_VENTA', 'SALIDA_TRASLADO']
             tiene_referencia_salida = (ref_id is not None)
 
-            if es_venta_o_traslado or not tiene_referencia_salida:
-                # Sincronizar costo en DB con el costo promedio vigente al momento
+            if es_venta_normal and not tiene_referencia_salida:
+                # Venta normal sin referencia: Sincronizar con el promedio vigente
                 mov.costo_unitario = nuevo_costo_promedio
                 mov.costo_total = cantidad * nuevo_costo_promedio
                 db.add(mov)
-            else:
-                # Si tiene referencia y NO es una venta normal (ej: Anulación específica), 
-                # respetamos el costo que trae el registro.
+            elif tiene_referencia_salida:
+                # Si tiene referencia (NDEB, Devoluciones, Ajustes Históricos), 
+                # RESPETAMOS el costo grabado (ej: los 190 de la factura origen).
+                # No hacemos nada, el valor de mov.costo_unitario se mantiene.
                 pass
+            else:
+                # Otros casos sin referencia: por safety, sincronizamos con promedio
+                mov.costo_unitario = nuevo_costo_promedio
+                mov.costo_total = cantidad * nuevo_costo_promedio
+                db.add(mov)
             
             # --- CORRECCIÓN MATEMÁTICA CRÍTICA ---
             # Si el costo de salida fue diferente al promedio (por tener referencia histórica),

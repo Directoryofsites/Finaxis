@@ -387,7 +387,11 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
                     if p_db and not p_db.es_servicio and p_db.controlar_inventario and item.mueve_inventario:
                         
                         tipo_mov_kardex = 'SALIDA_VENTA'
-                        if es_nota_credito: tipo_mov_kardex = 'ENTRADA_DEVOLUCION_VENTA'
+                        if es_nota_credito: 
+                            tipo_mov_kardex = 'ENTRADA_DEVOLUCION_VENTA'
+                        elif es_nota_debito:
+                            # Las Notas Débito en Ventas se marcan como ajuste para proteger su costo histórico
+                            tipo_mov_kardex = 'SALIDA_AJUSTE_VENTA'
                         
                         # Recuperar el costo que ya determinamos en el paso anterior (Asientos Costo)
                         costo_kardex = procesado.get("costo_unitario_determinado", float(p_db.costo_promedio or 0.0))
