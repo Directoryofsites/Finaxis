@@ -533,18 +533,18 @@ export default function EliminacionMasivaPage() {
               </div>
 
               <div className="flex flex-wrap justify-end gap-3">
-                <button onClick={handleSendToTemplate} className="btn bg-purple-600 hover:bg-purple-700 text-white border-none shadow-md flex gap-2" disabled={seleccionados.size !== 1 || isSearching}>
-                  <FaFileExport /> Guardar como Plantilla
+                <button onClick={handleSendToTemplate} className="bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-lg py-2 px-4 shadow-sm transition-all flex items-center gap-2 font-medium" disabled={seleccionados.size !== 1 || isSearching}>
+                  <FaFileExport className="text-purple-600" /> Guardar como Plantilla
                 </button>
-                <button onClick={handleModificar} className="btn bg-blue-600 hover:bg-blue-700 text-white border-none shadow-md flex gap-2" disabled={seleccionados.size !== 1 || isSearching}>
-                  <FaEdit /> Modificar
+                <button onClick={handleModificar} className="bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-lg py-2 px-4 shadow-sm transition-all flex items-center gap-2 font-medium" disabled={seleccionados.size !== 1 || isSearching}>
+                  <FaEdit className="text-blue-600" /> Modificar
                 </button>
                 <div className="w-px bg-gray-300 mx-2 hidden md:block"></div>
-                <button onClick={() => handleAction('anular')} className="btn bg-orange-500 hover:bg-orange-600 text-white border-none shadow-md flex gap-2" disabled={seleccionados.size === 0 || isSearching}>
-                  <FaBan /> Anular Seleccionados
+                <button onClick={() => handleAction('anular')} className="bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-lg py-2 px-4 shadow-sm transition-all flex items-center gap-2 font-medium" disabled={seleccionados.size === 0 || isSearching}>
+                  <FaBan className="text-orange-500" /> Anular Seleccionados
                 </button>
-                <button onClick={() => handleAction('eliminar')} className="btn bg-red-600 hover:bg-red-700 text-white border-none shadow-md flex gap-2" disabled={seleccionados.size === 0 || !razon || isSearching}>
-                  {isSearching ? <span className="loading loading-spinner loading-sm"></span> : <><FaTrash /> Eliminar Definitivamente</>}
+                <button onClick={() => handleAction('eliminar')} className="bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-lg py-2 px-4 shadow-sm transition-all flex items-center gap-2 font-medium" disabled={seleccionados.size === 0 || !razon || isSearching}>
+                  {isSearching ? <span className="loading loading-spinner loading-sm"></span> : <><FaTrash className="text-red-600" /> Eliminar Definitivamente</>}
                 </button>
               </div>
             </div>
