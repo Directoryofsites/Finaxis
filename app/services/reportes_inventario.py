@@ -477,7 +477,7 @@ def get_kardex_por_producto(db: Session, empresa_id: int, filtros: schemas_repor
             if ref_id_mov is not None:
                 tiene_referencia_salida = True
                 costo_promedio_a_usar = mov_costo_unitario
-                print(f"[AUDITORIA_REPORTE] Doc {mov_data['doc_numero']}: Detectada Ref {ref_id_mov}. Aplicando histórico {costo_promedio_a_usar}")
+
             
             costo_salida_calculado = mov_cantidad * costo_promedio_a_usar
             saldo_parcial_cantidad = saldo_cantidad_actual - mov_cantidad

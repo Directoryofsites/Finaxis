@@ -85,6 +85,12 @@ export default function ReportesPHPage() {
         }
     };
 
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            generarReporte();
+        }
+    };
+
     const limpiarFiltros = () => {
         setFechaDesde('');
         setFechaHasta('');
@@ -238,7 +244,7 @@ export default function ReportesPHPage() {
                                 type="date"
                                 className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
                                 value={fechaDesde}
-                                onChange={(e) => setFechaDesde(e.target.value)}
+                                onChange={(e) => setFechaDesde(e.target.value)} onKeyDown={handleKeyDown}
                             />
                         </div>
                         <div>
@@ -247,7 +253,7 @@ export default function ReportesPHPage() {
                                 type="date"
                                 className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
                                 value={fechaHasta}
-                                onChange={(e) => setFechaHasta(e.target.value)}
+                                onChange={(e) => setFechaHasta(e.target.value)} onKeyDown={handleKeyDown}
                             />
                         </div>
 
@@ -297,7 +303,7 @@ export default function ReportesPHPage() {
                                 className="w-full border rounded-lg p-2"
                                 placeholder="# Documento"
                                 value={numeroDoc}
-                                onChange={(e) => setNumeroDoc(e.target.value)}
+                                onChange={(e) => setNumeroDoc(e.target.value)} onKeyDown={handleKeyDown}
                             />
                         </div>
 
@@ -325,7 +331,7 @@ export default function ReportesPHPage() {
                                 className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
                                 placeholder="Escribe para buscar..."
                                 value={filterText}
-                                onChange={(e) => setFilterText(e.target.value)}
+                                onChange={(e) => setFilterText(e.target.value)} onKeyDown={handleKeyDown}
                             />
                         </div>
                     </div>

@@ -240,8 +240,7 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
             else:
                 # Si fija costo O TIENE REFERENCIA, respetamos el costo que trae el registro
                 costo_mov = float(mov.costo_unitario or 0.0)
-                if tiene_referencia:
-                    print(f"[RECALCULO] Respetando costo historico {costo_mov} por referencia en Entrada Doc {mov.documento_id}")
+
             # ---------------------------------------------------------------
 
             # Lógica de Promedio Ponderado
@@ -272,9 +271,7 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
                 mov.costo_unitario = nuevo_costo_promedio
                 mov.costo_total = cantidad * nuevo_costo_promedio
                 db.add(mov)
-            else:
-                # Respetamos el costo histórico que ya tiene
-                print(f"[RECALCULO] Respetando costo historico {mov.costo_unitario} por referencia en Salida Doc {mov.documento_id}")
+
 
             # --- SINCRONIZACIÓN CON CONTABILIDAD (PUENTE CASCADA) ---
             # Si el movimiento está vinculado a un documento, actualizamos su asiento de costo

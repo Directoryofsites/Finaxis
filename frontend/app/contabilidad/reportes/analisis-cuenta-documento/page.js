@@ -61,6 +61,12 @@ export default function AnalisisCuentaDocPage() {
         }
     };
 
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            handleGenerate();
+        }
+    };
+
     const handleExportPDF = async () => {
         try {
             const token = localStorage.getItem('authToken');
@@ -152,6 +158,7 @@ export default function AnalisisCuentaDocPage() {
                             type="date"
                             value={fechaInicio}
                             onChange={(e) => setFechaInicio(e.target.value)}
+                            onKeyDown={handleKeyDown}
                             className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                         />
                     </div>
@@ -161,6 +168,7 @@ export default function AnalisisCuentaDocPage() {
                             type="date"
                             value={fechaFin}
                             onChange={(e) => setFechaFin(e.target.value)}
+                            onKeyDown={handleKeyDown}
                             className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                         />
                     </div>
@@ -173,6 +181,7 @@ export default function AnalisisCuentaDocPage() {
                                 placeholder="Código o Nombre..."
                                 value={cuentaFiltro}
                                 onChange={(e) => setCuentaFiltro(e.target.value)}
+                                onKeyDown={handleKeyDown}
                                 className="w-full pl-10 p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                             />
                         </div>

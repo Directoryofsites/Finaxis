@@ -285,6 +285,12 @@ export default function RentabilidadProductoPage() {
         }
     };
 
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            handleSearchClick();
+        }
+    };
+
     const handleClearFiltros = () => {
         setFiltros({
             fecha_inicio: new Date(new Date().setMonth(new Date().getMonth() - 1)),
@@ -590,7 +596,7 @@ export default function RentabilidadProductoPage() {
                                         <div className="flex flex-col justify-end gap-2">
                                             <div>
                                                 <label className={labelClass}>Margen Mínimo %</label>
-                                                <input type="number" step="0.01" value={filtros.margen_minimo} onChange={e => handleFilterChange('margen_minimo', e.target.value)} className={inputClass} placeholder="Ej: 20" />
+                                                <input type="number" step="0.01" value={filtros.margen_minimo} onChange={e => handleFilterChange('margen_minimo', e.target.value)} onKeyDown={handleKeyDown} className={inputClass} placeholder="Ej: 20" />
                                             </div>
                                             <label className="flex items-center cursor-pointer bg-white px-3 py-2 rounded-lg border border-red-100 hover:bg-red-50 transition-colors">
                                                 <input type="checkbox" checked={filtros.mostrar_solo_perdidas} onChange={e => handleFilterChange('mostrar_solo_perdidas', e.target.checked)} className="checkbox checkbox-error checkbox-sm" />
@@ -629,11 +635,11 @@ export default function RentabilidadProductoPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
                             <div>
                                 <label className={labelClass}>Código Tipo Doc.</label>
-                                <input type="text" value={filtros.tipo_documento_codigo} onChange={e => handleFilterChange('tipo_documento_codigo', e.target.value)} className={inputClass} placeholder="Ej: FV" />
+                                <input type="text" value={filtros.tipo_documento_codigo} onChange={e => handleFilterChange('tipo_documento_codigo', e.target.value)} onKeyDown={handleKeyDown} className={inputClass} placeholder="Ej: FV" />
                             </div>
                             <div>
                                 <label className={labelClass}>Número Consecutivo</label>
-                                <input type="text" value={filtros.numero_documento} onChange={e => handleFilterChange('numero_documento', e.target.value)} className={inputClass} placeholder="Ej: 1050" />
+                                <input type="text" value={filtros.numero_documento} onChange={e => handleFilterChange('numero_documento', e.target.value)} onKeyDown={handleKeyDown} className={inputClass} placeholder="Ej: 1050" />
                             </div>
                         </div>
                     )}

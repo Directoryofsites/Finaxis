@@ -144,6 +144,12 @@ function BalancePruebaContent() {
     }
   }
 
+  function handleKeyDown(e) {
+    if (e.key === 'Enter') {
+      handleGenerateReport();
+    }
+  }
+
   async function handleSendEmail() {
     const emailTo = searchParams.get('email');
     if (!reportData || !emailTo) return;
@@ -245,7 +251,7 @@ function BalancePruebaContent() {
                   type="date"
                   name="fecha_inicio"
                   value={filtros.fecha_inicio}
-                  onChange={handleFiltroChange}
+                  onChange={handleFiltroChange} onKeyDown={handleKeyDown}
                   className={inputClass}
                 />
                 <FaCalendarAlt className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
@@ -260,7 +266,7 @@ function BalancePruebaContent() {
                   type="date"
                   name="fecha_fin"
                   value={filtros.fecha_fin}
-                  onChange={handleFiltroChange}
+                  onChange={handleFiltroChange} onKeyDown={handleKeyDown}
                   className={inputClass}
                 />
                 <FaCalendarAlt className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
@@ -305,7 +311,7 @@ function BalancePruebaContent() {
                   type="text"
                   name="cuenta_prefijo"
                   value={filtros.cuenta_prefijo}
-                  onChange={handleFiltroChange}
+                  onChange={handleFiltroChange} onKeyDown={handleKeyDown}
                   placeholder="Ej: 1, 3, 2408"
                   className={inputClass}
                   autoComplete="off"

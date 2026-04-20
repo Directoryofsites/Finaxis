@@ -276,6 +276,12 @@ function AuxiliarCarteraContent() {
     setFiltros(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleGenerateReport();
+    }
+  };
+
   const handleGenerateReport = async () => {
     if (!filtros.terceroId || !filtros.fechaInicio || !filtros.fechaFin) {
       setError("Por favor, seleccione un cliente y un rango de fechas.");
@@ -431,7 +437,7 @@ function AuxiliarCarteraContent() {
                     id="terceroId"
                     name="terceroId"
                     value={filtros.terceroId}
-                    onChange={handleFiltroChange}
+                    onChange={handleFiltroChange} onKeyDown={handleKeyDown}
                     className={selectClass}
                   >
                     <option value="">Seleccione un cliente...</option>
@@ -449,7 +455,7 @@ function AuxiliarCarteraContent() {
                     type="date"
                     name="fechaInicio"
                     value={filtros.fechaInicio}
-                    onChange={handleFiltroChange}
+                    onChange={handleFiltroChange} onKeyDown={handleKeyDown}
                     className={inputClass}
                   />
                   <FaCalendarAlt className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
@@ -464,7 +470,7 @@ function AuxiliarCarteraContent() {
                     type="date"
                     name="fechaFin"
                     value={filtros.fechaFin}
-                    onChange={handleFiltroChange}
+                    onChange={handleFiltroChange} onKeyDown={handleKeyDown}
                     className={inputClass}
                   />
                   <FaCalendarAlt className="absolute left-3 top-3 text-gray-400 pointer-events-none" />

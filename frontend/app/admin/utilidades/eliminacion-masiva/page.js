@@ -306,6 +306,12 @@ export default function EliminacionMasivaPage() {
     }
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleBuscar();
+    }
+  };
+
   const handleReactivar = async (docId) => {
     if (!window.confirm("¿Estás seguro de que deseas reactivar este documento?")) return;
     setMensaje({ text: '', type: 'info' });
@@ -428,20 +434,20 @@ export default function EliminacionMasivaPage() {
                 />
               </div>
               <div><label className={labelClass}>Tercero (Beneficiario)</label><select name="terceroId" value={filtros.terceroId} onChange={handleFiltroChange} className={selectClass}><option value="">Todos</option>{terceros.map(t => <option key={t.id} value={t.id}>{t.razon_social}</option>)}</select></div>
-              <div><label className={labelClass}>Número(s) de Documento</label><input type="text" name="numero" value={filtros.numero} onChange={handleFiltroChange} placeholder="Ej: 101, 105, 210" className={inputClass} /><p className="text-xs text-gray-400 mt-1">Separar por comas para varios.</p></div>
+              <div><label className={labelClass}>Número(s) de Documento</label><input type="text" name="numero" value={filtros.numero} onChange={handleFiltroChange} onKeyDown={handleKeyDown} placeholder="Ej: 101, 105, 210" className={inputClass} /><p className="text-xs text-gray-400 mt-1">Separar por comas para varios.</p></div>
             </div>
 
             {/* Columna 2: Clasificación */}
             <div className="space-y-4">
               <div><label className={labelClass}>Cuenta Contable</label><select name="cuentaId" value={filtros.cuentaId} onChange={handleFiltroChange} className={selectClass}><option value="">Todas</option>{cuentas.map(c => <option key={c.id} value={c.id}>{c.codigo} - {c.nombre}</option>)}</select></div>
               <div><label className={labelClass}>Centro de Costo</label><select name="centroCostoId" value={filtros.centroCostoId} onChange={handleFiltroChange} className={selectClass}><option value="">Todos</option>{centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}</select></div>
-              <div><label className={labelClass}>Palabra en Concepto</label><input type="text" name="conceptoKeyword" value={filtros.conceptoKeyword} onChange={handleFiltroChange} placeholder="Ej: Arriendo" className={inputClass} /></div>
+              <div><label className={labelClass}>Palabra en Concepto</label><input type="text" name="conceptoKeyword" value={filtros.conceptoKeyword} onChange={handleFiltroChange} onKeyDown={handleKeyDown} placeholder="Ej: Arriendo" className={inputClass} /></div>
             </div>
 
             {/* Columna 3: Rango y Valor */}
             <div className="space-y-4">
-              <div><label className={labelClass}>Rango de Fechas</label><div className="flex gap-2"><input type="date" name="fechaInicio" value={filtros.fechaInicio} onChange={handleFiltroChange} className={inputClass} /><input type="date" name="fechaFin" value={filtros.fechaFin} onChange={handleFiltroChange} className={inputClass} /></div></div>
-              <div><label className={labelClass}>Filtro por Valor</label><div className="flex gap-2"><select name="valorOperador" value={filtros.valorOperador} onChange={handleFiltroChange} className={`${selectClass} w-1/3`}><option value="mayor">Mayor</option><option value="menor">Menor</option><option value="igual">Igual</option></select><input type="number" name="valorMonto" value={filtros.valorMonto} onChange={handleFiltroChange} placeholder="0.00" className={inputClass} /></div></div>
+              <div><label className={labelClass}>Rango de Fechas</label><div className="flex gap-2"><input type="date" name="fechaInicio" value={filtros.fechaInicio} onChange={handleFiltroChange} onKeyDown={handleKeyDown} className={inputClass} /><input type="date" name="fechaFin" value={filtros.fechaFin} onChange={handleFiltroChange} onKeyDown={handleKeyDown} className={inputClass} /></div></div>
+              <div><label className={labelClass}>Filtro por Valor</label><div className="flex gap-2"><select name="valorOperador" value={filtros.valorOperador} onChange={handleFiltroChange} className={`${selectClass} w-1/3`}><option value="mayor">Mayor</option><option value="menor">Menor</option><option value="igual">Igual</option></select><input type="number" name="valorMonto" value={filtros.valorMonto} onChange={handleFiltroChange} onKeyDown={handleKeyDown} placeholder="0.00" className={inputClass} /></div></div>
             </div>
           </div>
 

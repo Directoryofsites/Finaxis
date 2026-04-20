@@ -342,6 +342,12 @@ function SuperInformeInventariosContent() {
         }
     }, [filtros]);
 
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            handleSearch(1);
+        }
+    };
+
     // --- Renderizado Celdas ---
     const renderCellContent = (item, headerKeyOrIndex) => {
         try {
@@ -472,7 +478,7 @@ function SuperInformeInventariosContent() {
                                     </div>
                                     <div className="md:col-span-2 lg:col-span-2">
                                         <label className={labelClass}>Ref. Documento</label>
-                                        <input type="text" name="search_term_doc" placeholder="Número de factura..." value={filtros.search_term_doc} onChange={handleFiltroChange} className={inputClass} />
+                                        <input type="text" name="search_term_doc" placeholder="Número de factura..." value={filtros.search_term_doc} onChange={handleFiltroChange} onKeyDown={handleKeyDown} className={inputClass} />
                                     </div>
                                 </div>
                             )}
@@ -485,7 +491,7 @@ function SuperInformeInventariosContent() {
                                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                     <FaSearch />
                                 </span>
-                                <input type="text" name="search_term_prod" placeholder="Nombre del producto, código, referencia..." value={filtros.search_term_prod} onChange={handleFiltroChange} className={`${inputClass} pl-10`} />
+                                <input type="text" name="search_term_prod" placeholder="Nombre del producto, código, referencia..." value={filtros.search_term_prod} onChange={handleFiltroChange} onKeyDown={handleKeyDown} className={`${inputClass} pl-10`} />
                             </div>
                         </div>
 

@@ -27,21 +27,7 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
     Servicio orquestador para crear Facturas de Venta, Notas de Crédito y Notas de Débito.
     Maneja la lógica de inventario y contabilidad según el tipo de documento.
     """
-    # --- DEBUGGING MECHANISM ---
-    import json
-    import os
-    
-    def log_debug(msg):
-    # Ya no usamos archivos locales (C:\...) porque en Render (Linux) fallan
-    # Ahora usamos la salida estándar para que aparezca en los logs de la nube
-        print(f"[AUDITORIA_FACTURACION] {datetime.now()}: {msg}")
-            
-    try:
-        log_debug("--- INICIO SOLICITUD ---")
-        log_debug(f"Payload: {factura.model_dump_json()}")
-    except Exception as e:
-        log_debug(f"Error logging payload: {e}")
-    # ---------------------------
+
     
     # --- 0.1 VALIDACIÓN DE ESTADO DE REMISIÓN ---
     if factura.remision_id:
@@ -82,7 +68,7 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
         doc_ref = db.query(models_doc.Documento).filter(models_doc.Documento.id == factura.documento_referencia_id).first()
         if doc_ref:
             unidad_ph_id_ref = doc_ref.unidad_ph_id
-            log_debug(f"Documento Ref encontrado. Unidad PH ID: {unidad_ph_id_ref}")
+
     # --------------------------------------------
 
     # DETERMINAR TIPO DE OPERACIÓN
@@ -293,8 +279,7 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
                 costo_unitario_operacion = float(producto_db.costo_promedio or 0.0)
                 
                 if factura.documento_referencia_id:
-                    print(f"--- INICIO BUSQUEDA COSTO HISTORICO ---")
-                    print(f"Ref ID: {factura.documento_referencia_id}, Producto: {item.producto_id}")
+
                     
                     # Buscamos CUALQUIER movimiento de este producto en el documento de referencia
                     # (Más robusto que filtrar solo por SALIDA_VENTA)
@@ -305,10 +290,7 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
                     
                     if mov_original:
                         costo_unitario_operacion = float(mov_original.costo_unitario)
-                        print(f"COSTO ENCONTRADO EN REFERENCIA: {costo_unitario_operacion}")
-                    else:
-                        print(f"ADVERTENCIA: No se halló movimiento de inventario para el producto {item.producto_id} en la referencia {factura.documento_referencia_id}. Se usará promedio: {costo_unitario_operacion}")
-                    print(f"--- FIN BUSQUEDA COSTO HISTORICO ---")
+
 
                 costo_total_item = float(item.cantidad) * costo_unitario_operacion
                 
@@ -417,7 +399,7 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
                             
                             if mov_orig_k:
                                 costo_kardex = float(mov_orig_k.costo_unitario)
-                                print(f"KARDEX: Aplicando histórico {costo_kardex}")
+
 
                         service_inventario.registrar_movimiento_inventario(
                             db=db,
@@ -454,11 +436,10 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
     except Exception as e:
         db.rollback()
         if isinstance(e, HTTPException):
-            log_debug(f"HTTPException caught: {e.status_code} - {e.detail}")
+
             raise e
         import traceback
         traceback.print_exc()
-        log_debug(f"ERROR FACTURACION: {e}")
-        log_debug(traceback.format_exc())
         print(f"ERROR FACTURACION: {e}")
+
         raise HTTPException(status_code=500, detail="Error interno al crear factura.")

@@ -393,6 +393,12 @@ function SuperInformeContent() {
     }
   }, [filtros]);
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleBuscar(1);
+    }
+  };
+
   const handlePageChange = (newPage) => {
     handleBuscar(newPage);
   };
@@ -520,11 +526,11 @@ function SuperInformeContent() {
               <>
                 <div className="md:col-span-3">
                   <label className={labelClass}>Fecha Desde</label>
-                  <input type="date" name="fechaInicio" value={filtros.fechaInicio} onChange={handleFiltroChange} className={inputClass} />
+                  <input type="date" name="fechaInicio" value={filtros.fechaInicio} onChange={handleFiltroChange} onKeyDown={handleKeyDown} className={inputClass} />
                 </div>
                 <div className="md:col-span-3">
                   <label className={labelClass}>Fecha Hasta</label>
-                  <input type="date" name="fechaFin" value={filtros.fechaFin} onChange={handleFiltroChange} className={inputClass} />
+                  <input type="date" name="fechaFin" value={filtros.fechaFin} onChange={handleFiltroChange} onKeyDown={handleKeyDown} className={inputClass} />
                 </div>
                 <div className="md:col-span-2">
                   <label className={labelClass}>Estado</label>
@@ -560,8 +566,8 @@ function SuperInformeContent() {
                       value={filtros.tipoDocIds}
                       onChange={(val) => handleMultiSelectChange('tipoDocIds', val)}
                     />
-                    <div><label className={labelClass}>Número Doc.</label><input type="text" name="numero" placeholder="Ej: 101, 102, 105" value={filtros.numero} onChange={handleFiltroChange} className={inputClass} /></div>
-                    <div><label className={labelClass}>Concepto (Palabra Clave)</label><input type="text" name="conceptoKeyword" placeholder="Ej: Venta..." value={filtros.conceptoKeyword} onChange={handleFiltroChange} className={inputClass} /></div>
+                    <div><label className={labelClass}>Número Doc.</label><input type="text" name="numero" placeholder="Ej: 101, 102, 105" value={filtros.numero} onChange={handleFiltroChange} onKeyDown={handleKeyDown} className={inputClass} /></div>
+                    <div><label className={labelClass}>Concepto (Palabra Clave)</label><input type="text" name="conceptoKeyword" placeholder="Ej: Venta..." value={filtros.conceptoKeyword} onChange={handleFiltroChange} onKeyDown={handleKeyDown} className={inputClass} /></div>
                   </div>
 
                   <div className="space-y-3">
@@ -605,9 +611,9 @@ function SuperInformeContent() {
                     <div className={filtros.valorOperador === 'entre' ? "grid grid-cols-1 gap-2" : "grid grid-cols-2 gap-2"}>
                       <div><label className={labelClass}>Condición</label><select name="valorOperador" value={filtros.valorOperador} onChange={handleFiltroChange} className={inputClass}><option value="mayor">Mayor que</option><option value="menor">Menor que</option><option value="igual">Igual a</option><option value="entre">Entre</option></select></div>
                       <div className={filtros.valorOperador === 'entre' ? "grid grid-cols-2 gap-2" : ""}>
-                        <div><label className={labelClass}>{filtros.valorOperador === 'entre' ? 'Desde' : 'Monto'}</label><input type="number" name="valorMonto" placeholder="0" value={filtros.valorMonto} onChange={handleFiltroChange} className={inputClass} /></div>
+                        <div><label className={labelClass}>{filtros.valorOperador === 'entre' ? 'Desde' : 'Monto'}</label><input type="number" name="valorMonto" placeholder="0" value={filtros.valorMonto} onChange={handleFiltroChange} onKeyDown={handleKeyDown} className={inputClass} /></div>
                         {filtros.valorOperador === 'entre' && (
-                          <div><label className={labelClass}>Hasta</label><input type="number" name="valorMontoFin" placeholder="0" value={filtros.valorMontoFin} onChange={handleFiltroChange} className={inputClass} /></div>
+                          <div><label className={labelClass}>Hasta</label><input type="number" name="valorMontoFin" placeholder="0" value={filtros.valorMontoFin} onChange={handleFiltroChange} onKeyDown={handleKeyDown} className={inputClass} /></div>
                         )}
                       </div>
                     </div>

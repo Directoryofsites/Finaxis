@@ -279,6 +279,12 @@ function AuxiliarPorCuentaContent() {
         fetchReport(selectedAccount, startDate, endDate);
     };
 
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            handleGenerateReport();
+        }
+    };
+
     const handleExportToCSV = () => {
         if (!reportData) return;
         if (typeof window.Papa === 'undefined') {
@@ -397,7 +403,7 @@ function AuxiliarPorCuentaContent() {
                                 <select
                                     id="cuenta"
                                     value={selectedAccount}
-                                    onChange={e => setSelectedAccount(e.target.value)}
+                                    onChange={e => setSelectedAccount(e.target.value)} onKeyDown={handleKeyDown}
                                     className={selectClass}
                                 >
                                     <option value="">Seleccione una cuenta...</option>
@@ -415,7 +421,7 @@ function AuxiliarPorCuentaContent() {
                                     type="date"
                                     id="fecha_inicio"
                                     value={startDate}
-                                    onChange={e => setStartDate(e.target.value)}
+                                    onChange={e => setStartDate(e.target.value)} onKeyDown={handleKeyDown}
                                     className={inputClass}
                                 />
                                 <FaCalendarAlt className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
@@ -430,7 +436,7 @@ function AuxiliarPorCuentaContent() {
                                     type="date"
                                     id="fecha_fin"
                                     value={endDate}
-                                    onChange={e => setEndDate(e.target.value)}
+                                    onChange={e => setEndDate(e.target.value)} onKeyDown={handleKeyDown}
                                     className={inputClass}
                                 />
                                 <FaCalendarAlt className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
