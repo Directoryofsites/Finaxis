@@ -203,14 +203,17 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
     # IMPORTANTE: Filtrar movimientos de documentos ANULADOS para que no corrompan el stock.
     # PRECARGAMOS el documento para detectar referencias rápidamente.
     from app.models.documento import Documento as models_doc
+    from app.models.tipo_documento import TipoDocumento as models_tipo
     from sqlalchemy import or_
     from sqlalchemy.orm import contains_eager
 
     movimientos = db.query(
         models_producto.MovimientoInventario,
-        models_doc.documento_referencia_id.label('ref_id')
+        models_doc.documento_referencia_id.label('ref_id'),
+        models_tipo.funcion_especial
     )\
         .outerjoin(models_doc, models_producto.MovimientoInventario.documento_id == models_doc.id)\
+        .outerjoin(models_tipo, models_doc.tipo_documento_id == models_tipo.id)\
         .filter(
             models_producto.MovimientoInventario.producto_id == producto_id,
             or_(
@@ -297,32 +300,25 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
             stocks_por_bodega[bodega_id] -= cantidad
             stock_total_global -= cantidad
             
-            # --- LÓGICA DE SALIDA (RECONCILIACIÓN FINAL) ---
-            # Para SALIDA_VENTA (facturas normales), forzamos el promedio actual
-            # para evitar que el costo se quede "pegado" en valores antiguos.
-            # Pero para SALIDA_AJUSTE_VENTA (notas débito) u otros con referencia,
-            # PROTEGEMOS el costo histórico grabado.
-            
-            es_venta_normal = mov.tipo_movimiento in ['SALIDA_VENTA', 'SALIDA_TRASLADO']
+            # --- LÓGICA DE SALIDA (RECONCILIACIÓN POR METADATOS) ---
+            func_esp = mov_row.funcion_especial
             tiene_referencia_salida = (ref_id is not None)
-
-            if es_venta_normal and not tiene_referencia_salida:
-                # Venta normal sin referencia: Sincronizar con el promedio vigente
-                mov.costo_unitario = nuevo_costo_promedio
-                mov.costo_total = cantidad * nuevo_costo_promedio
-                db.add(mov)
-            elif tiene_referencia_salida:
-                # Si tiene referencia (NDEB, Devoluciones, Ajustes Históricos), 
-                # RESPETAMOS el costo grabado (ej: los 190 de la factura origen).
-                # No hacemos nada, el valor de mov.costo_unitario se mantiene.
-                pass
-            else:
-                # Otros casos sin referencia: por safety, sincronizamos con promedio
-                mov.costo_unitario = nuevo_costo_promedio
-                mov.costo_total = cantidad * nuevo_costo_promedio
-                db.add(mov)
             
-            # --- CORRECCIÓN MATEMÁTICA CRÍTICA ---
+            # ¿Es una nota que requiere blindaje histórico?
+            es_nota_blindada = tiene_referencia_salida and func_esp in ['nota_debito', 'nota_credito']
+
+            if not es_nota_blindada:
+                # Si NO es una nota blindada (ej: Venta normal, factura con referencia a pedido,
+                # traslado, etc.), SIEMPRE debe adoptar el promedio vigente en este punto.
+                mov.costo_unitario = nuevo_costo_promedio
+                mov.costo_total = cantidad * nuevo_costo_promedio
+                db.add(mov)
+            else:
+                # Si es una NOTA con referencia, RESPETAMOS el costo histórico ($190).
+                # No modificamos mov.costo_unitario.
+                pass
+            
+            # --- CORRECCIÓN MATEMÁTICA ---
             # Si el costo de salida fue diferente al promedio (por tener referencia histórica),
             # el promedio de las unidades restantes DEBE cambiar.
             if stock_total_global > 0:
