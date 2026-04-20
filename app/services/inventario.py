@@ -297,14 +297,23 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
             stocks_por_bodega[bodega_id] -= cantidad
             stock_total_global -= cantidad
             
-            # BLINDAJE: Si tiene referencia, NO SOBRESCRIBIR con el promedio
+            # --- LÓGICA DE SALIDA (FIX: Forzar promedio en ventas normales) ---
+            # BLINDAJE CONDICIONAL: Solo protegemos el costo histórico si es un tipo de ajuste 
+            # o devolución que realmente lo requiera. Las Ventas y Traslados SIEMPRE deben 
+            # seguir el promedio ponderado del momento.
+            
+            es_venta_o_traslado = mov.tipo_movimiento in ['SALIDA_VENTA', 'SALIDA_TRASLADO']
             tiene_referencia_salida = (ref_id is not None)
 
-            if not tiene_referencia_salida:
-                # FIX CRÍTICO: Sincronizar costo en DB con el costo promedio vigente al momento
+            if es_venta_o_traslado or not tiene_referencia_salida:
+                # Sincronizar costo en DB con el costo promedio vigente al momento
                 mov.costo_unitario = nuevo_costo_promedio
                 mov.costo_total = cantidad * nuevo_costo_promedio
                 db.add(mov)
+            else:
+                # Si tiene referencia y NO es una venta normal (ej: Anulación específica), 
+                # respetamos el costo que trae el registro.
+                pass
             
             # --- CORRECCIÓN MATEMÁTICA CRÍTICA ---
             # Si el costo de salida fue diferente al promedio (por tener referencia histórica),
