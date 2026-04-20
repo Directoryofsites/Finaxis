@@ -151,6 +151,7 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
         # --- LÓGICA DE PRORRATEO (DOBLE PASADA) ---
         # Paso 1: Calcular Bases y Validar
         items_procesados = []
+        costos_por_item = {} # Mapa para transferir costos al Kardex
         total_base_para_prorrateo = 0.0
         
         # Pre-cargar productos
@@ -200,6 +201,16 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
                 if stock_disponible < item.cantidad:
                     msg = f"Stock insuficiente '{producto_db.nombre}'. Disp: {stock_disponible:.2f}, Req: {item.cantidad:.2f}"
                     raise HTTPException(status_code=409, detail=msg)
+                
+                # --- NUEVA VALIDACIÓN: Integridad Cronológica (Muro de Fecha) ---
+                from . import inventario as service_inventario
+                stock_historico = service_inventario.get_stock_historico(db, item.producto_id, factura.bodega_id, fecha_factura_dt)
+                if stock_historico < item.cantidad:
+                     raise HTTPException(
+                         status_code=409, 
+                         detail=f"Bloqueo de Integridad: Saldo insuficiente el {factura.fecha.strftime('%Y-%m-%d')}. "
+                                f"En esa fecha solo había {stock_historico:.2f} unidades de '{producto_db.nombre}'."
+                     )
 
             # Cálculo Base de Línea (Con Descuento por Ítem)
             precio_base = float(item.precio_unitario)
@@ -276,21 +287,45 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
             costo_unitario_operacion = float(producto_db.costo_promedio or 0.0)
             if not producto_db.es_servicio and producto_db.controlar_inventario and item.mueve_inventario:
                 
-                # --- LÓGICA DE COSTO HISTÓRICO PARA AJUSTES (DÉBITO O CRÉDITO) ---
+                # --- LÓGICA DE COSTO HISTÓRICO Y VALIDACIÓN DE CANTIDAD SOBRE REFERENCIA ---
                 if factura.documento_referencia_id:
-                    # Buscamos CUALQUIER movimiento de este producto en el documento de referencia
-                    # (Más robusto que filtrar solo por SALIDA_VENTA)
-                    mov_original = db.query(models_producto.MovimientoInventario.costo_unitario).filter(
+                    # 1. Obtener cantidad y costo original del documento referenciado
+                    row_original = db.query(
+                        func.sum(models_producto.MovimientoInventario.cantidad).label("sum_cant"),
+                        func.avg(models_producto.MovimientoInventario.costo_unitario).label("avg_costo") # Costo promedio del item en esa factura
+                    ).filter(
                         models_producto.MovimientoInventario.documento_id == factura.documento_referencia_id,
                         models_producto.MovimientoInventario.producto_id == item.producto_id
-                    ).order_by(models_producto.MovimientoInventario.id.asc()).first()
+                    ).first()
                     
-                    if mov_original:
-                        costo_unitario_operacion = float(mov_original.costo_unitario)
+                    cant_original = float(row_original.sum_cant or 0.0)
+                    if row_original.avg_costo:
+                        costo_unitario_operacion = float(row_original.avg_costo)
+
+                    # 2. VALIDACIÓN DE BLOQUEO TOTAL: No exceder la cantidad original
+                    # Consultamos otros documentos que ya hayan ajustado esta misma factura
+                    ajustes_previos = db.query(
+                        func.sum(models_producto.MovimientoInventario.cantidad).label("sum_adj")
+                    ).join(models_doc.Documento, models_producto.MovimientoInventario.documento_id == models_doc.Documento.id)\
+                     .filter(
+                        models_doc.Documento.documento_referencia_id == factura.documento_referencia_id,
+                        models_producto.MovimientoInventario.producto_id == item.producto_id,
+                        models_doc.Documento.anulado == False
+                    ).first()
+                    
+                    cant_ya_ajustada = float(ajustes_previos.sum_adj or 0.0)
+                    
+                    if (cant_ya_ajustada + float(item.cantidad)) > cant_original:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Bloqueo de Referencia: '{producto_db.nombre}' ya ha ajustado {cant_ya_ajustada:.2f} "
+                                   f"de {cant_original:.2f} unidades originales. No puede exceder este límite."
+                        )
 
                 # Guardamos el costo para usarlo luego en el bloque de kárdex sin repetir query
-                # (Lo guardamos en el diccionario de procesados)
+                # (Lo guardamos en el diccionario de procesados y el mapa por ID)
                 procesado["costo_unitario_determinado"] = costo_unitario_operacion
+                costos_por_item[item.producto_id] = costo_unitario_operacion
 
                 costo_total_item = float(item.cantidad) * costo_unitario_operacion
                 
@@ -394,7 +429,7 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
                             tipo_mov_kardex = 'SALIDA_AJUSTE_VENTA'
                         
                         # Recuperar el costo que ya determinamos en el paso anterior (Asientos Costo)
-                        costo_kardex = procesado.get("costo_unitario_determinado", float(p_db.costo_promedio or 0.0))
+                        costo_kardex = costos_por_item.get(item.producto_id, float(p_db.costo_promedio or 0.0))
 
 
                         service_inventario.registrar_movimiento_inventario(
