@@ -273,14 +273,11 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
             # Asientos Costo
             # Normal: Debito Costo, Credito Inv.
             # Nota Credito: Debito Inv, Credito Costo. (Usando costo histórico si existe referencia)
+            costo_unitario_operacion = float(producto_db.costo_promedio or 0.0)
             if not producto_db.es_servicio and producto_db.controlar_inventario and item.mueve_inventario:
                 
                 # --- LÓGICA DE COSTO HISTÓRICO PARA AJUSTES (DÉBITO O CRÉDITO) ---
-                costo_unitario_operacion = float(producto_db.costo_promedio or 0.0)
-                
                 if factura.documento_referencia_id:
-
-                    
                     # Buscamos CUALQUIER movimiento de este producto en el documento de referencia
                     # (Más robusto que filtrar solo por SALIDA_VENTA)
                     mov_original = db.query(models_producto.MovimientoInventario.costo_unitario).filter(
@@ -291,6 +288,9 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
                     if mov_original:
                         costo_unitario_operacion = float(mov_original.costo_unitario)
 
+                # Guardamos el costo para usarlo luego en el bloque de kárdex sin repetir query
+                # (Lo guardamos en el diccionario de procesados)
+                procesado["costo_unitario_determinado"] = costo_unitario_operacion
 
                 costo_total_item = float(item.cantidad) * costo_unitario_operacion
                 
@@ -389,16 +389,8 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
                         tipo_mov_kardex = 'SALIDA_VENTA'
                         if es_nota_credito: tipo_mov_kardex = 'ENTRADA_DEVOLUCION_VENTA'
                         
-                        # Recuperar el costo que calculamos arriba para el asiento
-                        costo_kardex = float(p_db.costo_promedio or 0.0)
-                        if factura.documento_referencia_id:
-                            mov_orig_k = db.query(models_producto.MovimientoInventario.costo_unitario).filter(
-                                models_producto.MovimientoInventario.documento_id == factura.documento_referencia_id,
-                                models_producto.MovimientoInventario.producto_id == item.producto_id
-                            ).order_by(models_producto.MovimientoInventario.id.asc()).first()
-                            
-                            if mov_orig_k:
-                                costo_kardex = float(mov_orig_k.costo_unitario)
+                        # Recuperar el costo que ya determinamos en el paso anterior (Asientos Costo)
+                        costo_kardex = procesado.get("costo_unitario_determinado", float(p_db.costo_promedio or 0.0))
 
 
                         service_inventario.registrar_movimiento_inventario(

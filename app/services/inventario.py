@@ -271,6 +271,23 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
                 mov.costo_unitario = nuevo_costo_promedio
                 mov.costo_total = cantidad * nuevo_costo_promedio
                 db.add(mov)
+            
+            # --- CORRECCIÓN MATEMÁTICA CRÍTICA ---
+            # Si el costo de salida fue diferente al promedio (por tener referencia histórica),
+            # el promedio de las unidades restantes DEBE cambiar.
+            if stock_total_global > 0:
+                # Nuevo Promedio = (Valor Restante) / (Stock Restante)
+                # Valor Restante = (Valor Anterior) - (Valor de esta Salida)
+                # El "Valor Anterior" antes de restar stock_total_global era (stock_total_global + cantidad) * nuevo_costo_promedio
+                valor_total_antes_de_salida = (stock_total_global + cantidad) * nuevo_costo_promedio
+                valor_salida = cantidad * float(mov.costo_unitario)
+                nuevo_costo_promedio = (valor_total_antes_de_salida - valor_salida) / stock_total_global
+            elif stock_total_global < 0:
+                 # Si llegamos a negativo (aunque no debería por validación), mantenemos el promedio
+                 pass
+            else:
+                 # Si queda en 0, no hay promedio
+                 nuevo_costo_promedio = 0.0
 
 
             # --- SINCRONIZACIÓN CON CONTABILIDAD (PUENTE CASCADA) ---
