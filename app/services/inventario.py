@@ -258,20 +258,21 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
         # Inicializar bodega si no existe en mapa
         if bodega_id not in stocks_por_bodega: stocks_por_bodega[bodega_id] = 0.0
         if mov.tipo_movimiento.startswith('ENTRADA'):
-            # --- LÓGICA DE COSTEO DINÁMICO ---
-            tipos_que_fijan_costo = ['ENTRADA_COMPRA', 'ENTRADA_INICIAL']
+            # --- LÓGICA DE COSTEO DINÁMICO (FIX: Incluir Ajustes y Producción) ---
+            tipos_que_fijan_costo = ['ENTRADA_COMPRA', 'ENTRADA_INICIAL', 'ENTRADA_AJUSTE', 'ENTRADA_PRODUCCION']
             
             # Detectar si es una devolución/ajuste con referencia
             tiene_referencia = (ref_id is not None)
 
             if mov.tipo_movimiento not in tipos_que_fijan_costo and not tiene_referencia:
-                # Si no fija costo y NO tiene referencia, adopta el promedio actual
+                # Si no fija costo y NO tiene referencia (ej: Traslado), adopta el promedio actual
                 costo_mov = nuevo_costo_promedio
                 mov.costo_unitario = costo_mov
                 mov.costo_total = cantidad * costo_mov
                 db.add(mov)
             else:
-                # Si fija costo O TIENE REFERENCIA, respetamos el costo que trae el registro
+                # Si fija costo (Compra/Ajuste/Producción) O TIENE REFERENCIA (Devolución), 
+                # respetamos el costo que trae el registro y este ALTERARÁ el promedio.
                 costo_mov = float(mov.costo_unitario or 0.0)
 
             # ---------------------------------------------------------------
