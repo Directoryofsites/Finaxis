@@ -144,6 +144,7 @@ def registrar_movimiento_inventario(db: Session, producto_id: int, bodega_id: in
             nuevo_costo_promedio = costo_unitario_mov
             
         db_producto.costo_promedio = nuevo_costo_promedio
+        db.add(db_producto)
             
         # 4. Registro de Movimiento y Flush
         costo_unitario_guardar = float(costo_unitario or 0.0)
@@ -245,6 +246,7 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
                 asientos_map[k].append(a)
 
     # 4. Re-procesar paso a paso
+    nuevo_costo_promedio = 0.0
     for mov_row in movimientos:
         mov = mov_row[0] # El objeto MovimientoInventario
         ref_id = mov_row.ref_id # El ID de referencia directamente de la query

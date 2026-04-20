@@ -456,8 +456,8 @@ export default function EliminacionMasivaPage() {
               <input id="incluir-anulados" type="checkbox" checked={incluirAnulados} onChange={(e) => setIncluirAnulados(e.target.checked)} className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded cursor-pointer" />
               <label htmlFor="incluir-anulados" className="ml-2 block text-sm font-bold text-gray-700 cursor-pointer">Incluir Documentos Anulados</label>
             </div>
-            <button type="button" onClick={handleBuscar} disabled={isSearching} className="bg-indigo-600 hover:bg-indigo-800 text-white font-bold py-2 px-8 rounded-lg shadow-lg transform hover:-translate-y-0.5 transition-all flex items-center gap-2">
-              {isSearching ? <><span className="loading loading-spinner loading-sm"></span> Buscando...</> : <><FaSearch /> Buscar Documentos</>}
+            <button type="button" onClick={handleBuscar} disabled={isSearching} className="bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-lg py-2 px-8 shadow-sm transition-all flex items-center gap-2 font-bold transform hover:-translate-y-px active:translate-y-0">
+              {isSearching ? <><span className="loading loading-spinner loading-sm"></span> Buscando...</> : <><FaSearch className="text-indigo-600" /> Buscar Documentos</>}
             </button>
           </div>
         </div>
@@ -532,19 +532,19 @@ export default function EliminacionMasivaPage() {
                 <textarea id="razon" name="razon" rows="2" value={razon} onChange={(e) => setRazon(e.target.value)} className={inputClass} placeholder="Escriba el motivo de la anulación o eliminación..."></textarea>
               </div>
 
-              <div className="flex flex-wrap justify-end gap-3">
-                <button onClick={handleSendToTemplate} className="bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-lg py-2 px-4 shadow-sm transition-all flex items-center gap-2 font-medium" disabled={seleccionados.size !== 1 || isSearching}>
-                  <FaFileExport className="text-purple-600" /> Guardar como Plantilla
+              <div className="flex flex-wrap justify-end gap-3 translate-y-2">
+                <button onClick={handleSendToTemplate} className="bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 rounded-xl py-2.5 px-5 shadow-sm transition-all flex items-center gap-2 font-semibold text-sm transform hover:-translate-y-px active:translate-y-0" disabled={seleccionados.size !== 1 || isSearching}>
+                  <FaFileExport className="text-purple-500" /> Guardar Plantilla
                 </button>
-                <button onClick={handleModificar} className="bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-lg py-2 px-4 shadow-sm transition-all flex items-center gap-2 font-medium" disabled={seleccionados.size !== 1 || isSearching}>
-                  <FaEdit className="text-blue-600" /> Modificar
+                <button onClick={handleModificar} className="bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 rounded-xl py-2.5 px-5 shadow-sm transition-all flex items-center gap-2 font-semibold text-sm transform hover:-translate-y-px active:translate-y-0" disabled={seleccionados.size !== 1 || isSearching}>
+                  <FaEdit className="text-blue-500" /> Modificar
                 </button>
-                <div className="w-px bg-gray-300 mx-2 hidden md:block"></div>
-                <button onClick={() => handleAction('anular')} className="bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-lg py-2 px-4 shadow-sm transition-all flex items-center gap-2 font-medium" disabled={seleccionados.size === 0 || isSearching}>
-                  <FaBan className="text-orange-500" /> Anular Seleccionados
+                <div className="w-px bg-gray-200 mx-2 hidden md:block"></div>
+                <button onClick={() => handleAction('anular')} className="bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 rounded-xl py-2.5 px-5 shadow-sm transition-all flex items-center gap-2 font-semibold text-sm transform hover:-translate-y-px active:translate-y-0" disabled={seleccionados.size === 0 || isSearching}>
+                  <FaBan className="text-amber-500" /> Anular
                 </button>
-                <button onClick={() => handleAction('eliminar')} className="bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-lg py-2 px-4 shadow-sm transition-all flex items-center gap-2 font-medium" disabled={seleccionados.size === 0 || !razon || isSearching}>
-                  {isSearching ? <span className="loading loading-spinner loading-sm"></span> : <><FaTrash className="text-red-600" /> Eliminar Definitivamente</>}
+                <button onClick={() => handleAction('eliminar')} className="bg-gray-800 hover:bg-black text-white rounded-xl py-2.5 px-6 shadow-md transition-all flex items-center gap-2 font-bold text-sm transform hover:-translate-y-px active:translate-y-0" disabled={seleccionados.size === 0 || !razon || isSearching}>
+                  {isSearching ? <span className="loading loading-spinner loading-sm"></span> : <><FaTrash className="text-red-400" /> Eliminar Definitivamente</>}
                 </button>
               </div>
             </div>
