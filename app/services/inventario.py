@@ -110,30 +110,40 @@ def registrar_movimiento_inventario(db: Session, producto_id: int, bodega_id: in
         # --- FIX STOCK/TRASLADO: Forzar el guardado de stock_actual en la sesión ---
         db.flush() 
         
-        # 3. Recálculo de Costo Promedio (Solo si es ENTRADA)
-        if tipo_movimiento.startswith('ENTRADA'):
-            stock_total_anterior_otras_bodegas = db.query(func.sum(models_producto.StockBodega.stock_actual)).filter(
-                models_producto.StockBodega.producto_id == producto_id, 
-                models_producto.StockBodega.bodega_id != bodega_id
-            ).scalar() or 0.0
+        # 3. Recálculo de Costo Promedio (Para ENTRADAS y SALIDAS con costo diferente al promedio)
+        # Obtenemos stock total previo (En todas las bodegas)
+        stock_total_anterior_otras_bodegas = db.query(func.sum(models_producto.StockBodega.stock_actual)).filter(
+            models_producto.StockBodega.producto_id == producto_id, 
+            models_producto.StockBodega.bodega_id != bodega_id
+        ).scalar() or 0.0
+        
+        stock_total_anterior = stock_total_anterior_otras_bodegas + stock_anterior_bodega
+        costo_anterior = float(db_producto.costo_promedio or 0.0)
+        
+        # Valor total antes de este movimiento
+        valor_total_anterior = stock_total_anterior * costo_anterior
+        
+        # Impacto de este movimiento
+        # ENTRADA: Suma valor. SALIDA: Resta valor.
+        es_entrada = not tipo_movimiento.startswith('SALIDA')
+        factor = 1 if es_entrada else -1
+        
+        costo_unitario_mov = float(costo_unitario or 0.0)
+        valor_movimiento = factor * (cantidad * costo_unitario_mov)
+        
+        stock_total_nuevo = stock_total_anterior + (factor * cantidad)
+        nuevo_costo_promedio = costo_anterior # Default: no cambia
+        
+        if abs(stock_total_nuevo) > 1e-9:
+            # Fórmula General: (Valor Anterior + Valor Movimiento) / Stock Nuevo
+            nuevo_costo_promedio = (valor_total_anterior + valor_movimiento) / stock_total_nuevo
+            # Si el costo resulta negativo por redondeos extremos o inconsistencias, lo llevamos a 0 o costo del mov
+            if nuevo_costo_promedio < 0: nuevo_costo_promedio = costo_unitario_mov
+        elif es_entrada and cantidad > 0:
+            # Si el stock nuevo es cero o muy cercano a cero pero es una entrada (ej: volviendo a stock 0), tomamos el costo directo
+            nuevo_costo_promedio = costo_unitario_mov
             
-            stock_total_anterior = stock_total_anterior_otras_bodegas + stock_anterior_bodega
-            
-            costo_anterior = db_producto.costo_promedio if db_producto.costo_promedio is not None else 0.0
-            cantidad_entrada = cantidad
-            costo_unitario_entrada = float(costo_unitario or 0.0)
-            
-            stock_total_nuevo = stock_total_anterior + cantidad_entrada
-            nuevo_costo_promedio = 0.0
-            
-            if abs(stock_total_nuevo) > 1e-9:
-                valor_total_anterior = stock_total_anterior * costo_anterior
-                valor_entrada = cantidad_entrada * costo_unitario_entrada
-                nuevo_costo_promedio = (valor_total_anterior + valor_entrada) / stock_total_nuevo
-            elif cantidad_entrada > 0: 
-                nuevo_costo_promedio = costo_unitario_entrada
-                
-            db_producto.costo_promedio = nuevo_costo_promedio
+        db_producto.costo_promedio = nuevo_costo_promedio
             
         # 4. Registro de Movimiento y Flush
         costo_unitario_guardar = float(costo_unitario or 0.0)
@@ -213,6 +223,27 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
 
     stock_total_global = 0.0
     
+    # --- OPTIMIZACIÓN: Carga masiva de asientos contables ---
+    # Cargamos todos los asientos contables relacionados con este producto para evitar N+1 queries
+    from app.models.documento import MovimientoContable as models_mov
+    documento_ids = [m[0].documento_id for m in movimientos if m[0].documento_id]
+    asientos_map = {} # Mapa: (documento_id, cuenta_id) -> list of asientos
+    
+    if documento_ids:
+        # Cargamos solo los asientos de las cuentas de inventario/costo para este producto
+        grupo = producto.grupo_inventario
+        if grupo and grupo.cuenta_costo_venta_id and grupo.cuenta_inventario_id:
+            asientos_raw = db.query(models_mov).filter(
+                models_mov.documento_id.in_(documento_ids),
+                models_mov.producto_id == producto_id,
+                models_mov.cuenta_id.in_([grupo.cuenta_costo_venta_id, grupo.cuenta_inventario_id])
+            ).all()
+            
+            for a in asientos_raw:
+                k = (a.documento_id, a.cuenta_id)
+                if k not in asientos_map: asientos_map[k] = []
+                asientos_map[k].append(a)
+
     # 4. Re-procesar paso a paso
     for mov_row in movimientos:
         mov = mov_row[0] # El objeto MovimientoInventario
@@ -290,34 +321,27 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
                  nuevo_costo_promedio = 0.0
 
 
-            # --- SINCRONIZACIÓN CON CONTABILIDAD (PUENTE CASCADA) ---
-            # Si el movimiento está vinculado a un documento, actualizamos su asiento de costo
+            # --- SINCRONIZACIÓN CON CONTABILIDAD (OPTIMIZADA) ---
             if mov.documento_id:
                 grupo = producto.grupo_inventario
                 if grupo and grupo.cuenta_costo_venta_id and grupo.cuenta_inventario_id:
-                    # Buscamos las líneas contables de este producto en este documento
-                    # Filtramos por las cuentas específicas de costo e inventario del grupo
-                    asientos = db.query(models_mov.MovimientoContable).filter(
-                        models_mov.MovimientoContable.documento_id == mov.documento_id,
-                        models_mov.MovimientoContable.producto_id == producto_id,
-                        models_mov.MovimientoContable.cuenta_id.in_([
-                            grupo.cuenta_costo_venta_id, 
-                            grupo.cuenta_inventario_id
-                        ])
-                    ).all()
+                    # Usamos el mapa cargado previamente en lugar de hacer una consulta por cada iteración
+                    cuentas_interes = [grupo.cuenta_costo_venta_id, grupo.cuenta_inventario_id]
                     
-                    for asiento in asientos:
-                        # Actualizar el valor basado en el nuevo costo total calculado
-                        if asiento.cuenta_id == grupo.cuenta_costo_venta_id:
-                            asiento.debito = Decimal(str(mov.costo_total)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                            asiento.credito = Decimal('0.0')
-                        elif asiento.cuenta_id == grupo.cuenta_inventario_id:
-                            asiento.credito = Decimal(str(mov.costo_total)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                            asiento.debito = Decimal('0.0')
-                        
-                        # Sincronizamos también la cantidad por si hubo cambios
-                        asiento.cantidad = Decimal(str(mov.cantidad))
-                        db.add(asiento)
+                    for c_id in cuentas_interes:
+                        asientos_lista = asientos_map.get((mov.documento_id, c_id), [])
+                        for asiento in asientos_lista:
+                            valor_decimal = Decimal(str(mov.costo_total)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                            
+                            if c_id == grupo.cuenta_costo_venta_id:
+                                asiento.debito = valor_decimal
+                                asiento.credito = Decimal('0.0')
+                            else:
+                                asiento.credito = valor_decimal
+                                asiento.debito = Decimal('0.0')
+                            
+                            asiento.cantidad = Decimal(str(mov.cantidad))
+                            db.add(asiento)
 
 
         # --- VALIDACIÓN DE STOCK NEGATIVO (OBLIGATORIA) ---
