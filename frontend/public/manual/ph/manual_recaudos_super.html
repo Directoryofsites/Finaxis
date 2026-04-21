@@ -106,7 +106,7 @@
         .alert {
             padding: 2.5rem;
             border-radius: 20px;
-            margin: 3rem 0;
+            margin: 3.0rem 0;
         }
         .alert-tip {
             background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
@@ -214,7 +214,7 @@
             <div class="p-12 border-t border-gray-100">
                 <div class="flex items-center gap-2 text-indigo-600 font-bold text-[11px] tracking-widest uppercase">
                     <div class="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse"></div>
-                    Sincronizado • 2026.6
+                    Sincronizado • 2026.7
                 </div>
             </div>
         </aside>
@@ -268,7 +268,7 @@
                         <ul>
                             <li><strong>1. Las Unidades (El Atomo)</strong>: Cada apartamento, local, alumno o vehículo. Es el destinatario final del cobro y quien posee el Coeficiente.</li>
                             <li><strong>2. Las Torres / Bloques (La Ubicación)</strong>: Agrupador físico que facilita la discriminación de gastos localizados.</li>
-                            <li><strong>3. Los Módulos de Contribución (La Inteligencia)</strong>: Es la agrupación lógica. Permite que una unidad pertenezca a varios grupos (ej. Residencial y Piscina) simultáneamente.</li>
+                            <li><strong>3. Los Módulos de Contribución (La Inteligencia)</strong>: Es la agrupación lógica. Permite que una unidad pertenecer a varios grupos (ej. Residencial y Piscina) simultáneamente.</li>
                             <li><strong>4. Los Conceptos (La Regla)</strong>: Define qué se cobra, si es por coeficiente o valor fijo, y a qué cuenta contable apunta.</li>
                         </ul>
                     </div>
@@ -346,6 +346,32 @@
                             <li><strong>Identidad Contable</strong>: Cada concepto debe apuntar a una cuenta de ingreso del PUC para que el balance se alimente solo.</li>
                             <li><strong>Asociación Lógica</strong>: El concepto NO se le asigna a una unidad, se le asigna a un Módulo. Esto permite facturar a 500 unidades con una sola regla.</li>
                         </ul>
+                    </div>
+
+                    <div class="alert alert-tip">
+                        <h4 class="font-bold text-green-800 mb-2">Pro Tip de Consultoría: El Reto de los Parqueaderos Selectivos</h4>
+                        <p class="text-green-900 m-0">Imagine que solo las unidades del primer piso tienen derecho a parqueadero y deben pagar una tarifa fija. Estas unidades están regadas por 5 torres diferentes.</p>
+                        <p class="text-green-900 mt-4 leading-relaxed"><strong>La Solución Maestra:</strong> Creamos un <strong>Módulo de Parqueaderos</strong>. No importa la ubicación física (Torre), lo que importa es la pertenencia lógica. Al asociar el concepto "Cobro Parqueadero" a este módulo, la facturación se vuelve 100% automática, eliminando la necesidad de marcar unidades manualmente cada mes.</p>
+                    </div>
+
+                    <div class="mermaid">
+                    graph TD
+                        subgraph "Lógica de Cobro (Módulos)"
+                        M_PQ{Módulo Parqueadero}
+                        end
+                        subgraph "Realidad Física (Torres)"
+                        T1[Torre 1]
+                        T2[Torre 2]
+                        end
+                        T1 --- U101[Apto 101]
+                        T1 --- U201[Apto 201]
+                        T2 --- U102[Apto 102]
+                        U101 -.-> M_PQ
+                        U102 -.-> M_PQ
+                        
+                        style M_PQ fill:#FEF9C3,stroke:#CA8A04,color:#854D0E
+                        style U101 fill:#EEF2FF,stroke:#4F46E5,color:#1e1b4b
+                        style U102 fill:#EEF2FF,stroke:#4F46E5,color:#1e1b4b
                     </div>
                 </section>
 
@@ -459,7 +485,7 @@
                         <div class="mermaid">
                         flowchart LR
                             Factura[Nueva Factura] --> Deuda((Deuda 1305))
-                            Anticipo[Saldo Anticipo 2805] --> Cruce{Cruce Automático}
+                            Anticipo[Saldo Anticipo 2805] --> Cruce{¿Cruce Automático?}
                             Cruce -->|Saneamiento| Deuda
                             Deuda --> Neto[Saldo Final en Reporte]
                             
