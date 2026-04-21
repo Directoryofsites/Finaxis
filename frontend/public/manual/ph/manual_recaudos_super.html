@@ -55,6 +55,10 @@
                     <span class="w-6 h-6 flex items-center justify-center bg-white/10 rounded-md">4</span>
                     Articulación Maestra
                 </button>
+                <button onclick="showChapter(5)" id="btn-cap-5" class="sidebar-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-all flex items-center gap-3">
+                    <span class="w-6 h-6 flex items-center justify-center bg-white/10 rounded-md">5</span>
+                    Ciclo de Vida: Unidad
+                </button>
             </nav>
 
             <div class="p-6 border-t border-gray-100 bg-gray-50/50">
@@ -192,11 +196,48 @@
                     </blockquote>
                 </section>
 
+                <!-- Capítulo 5 -->
+                <section id="cap-5" class="chapter-content hidden">
+                    <h1 class="text-indigo-600">Ciclo de Vida de la Unidad</h1>
+                    <p class="text-xl text-gray-500 mb-10 italic">"Integrando lo físico, lo legal y lo financiero en un solo punto."</p>
+
+                    <h2>1. Datos Generales y Responsabilidad</h2>
+                    <p>La creación de una unidad requiere vincular un <strong>Propietario Principal</strong> (Tercero). Es la cabeza responsable de la deuda generada. Una persona puede tener múltiples unidades operando bajo su nombre.</p>
+
+                    <h2>2. Atributos Críticos de Liquidación</h2>
+                    <ul>
+                        <li><strong>Torre/Bloque:</strong> Clasificación física para gastos específicos.</li>
+                        <li><strong>Identificación:</strong> Nombre o número único de la unidad (Ej: Casa 101).</li>
+                        <li><strong>Tipo (Informativo):</strong> Clasifica si es Residencial o Comercial para reportes.</li>
+                        <li><strong>Coeficiente:</strong> Valor decimal que determina la participación en gastos comunes.</li>
+                    </ul>
+
+                    <div class="mermaid">
+                    graph TD
+                        A[Unidad Nueva] --> B1[Propietario / Tercero]
+                        A --> C1[Torre / Bloque]
+                        A --> D1[Módulos de Contribución]
+                        A --> E1[Vehículos y Mascotas]
+                        style B1 fill:#C7D2FE
+                        style C1 fill:#C7D2FE
+                        style D1 fill:#FDE68A
+                        style E1 fill:#10B981,color:#fff
+                    </div>
+
+                    <h2>3. Gestión Integral (Vehículos y Mascotas)</h2>
+                    <p>Para un control total, el sistema permite registrar los vehículos vinculados al parqueadero de la unidad y las mascotas de los residentes, centralizando la información de convivencia en la ficha financiera.</p>
+
+                    <blockquote>
+                        <strong>Nota Técnica:</strong> El campo 'Tipo' es categórico para reportes. La lógica de cobro real se aplica activando los <strong>Módulos de Contribución</strong> correspondientes.
+                    </blockquote>
+                </section>
+
                 <!-- Footer Navigation -->
                 <div class="mt-20 pt-8 border-t border-gray-100 flex justify-between items-center bg-gray-50/30 p-6 rounded-2xl">
                     <button id="prevBtn" onclick="changeStep(-1)" class="px-6 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-100 transition-all opacity-50 cursor-not-allowed">Anterior</button>
                     <div id="stepDots" class="flex gap-2">
                         <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
+                        <span class="w-2 h-2 rounded-full bg-gray-200"></span>
                         <span class="w-2 h-2 rounded-full bg-gray-200"></span>
                         <span class="w-2 h-2 rounded-full bg-gray-200"></span>
                         <span class="w-2 h-2 rounded-full bg-gray-200"></span>
@@ -240,8 +281,8 @@
 
             // Actualizar botones de pie
             document.getElementById('prevBtn').className = `px-6 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold transition-all ${n === 1 ? 'opacity-50 cursor-not-allowed text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`;
-            document.getElementById('nextBtn').innerText = n === 4 ? 'Finalizar' : 'Siguiente Capítulo';
-            document.getElementById('nextBtn').onclick = n === 4 ? () => window.close() : () => changeStep(1);
+            document.getElementById('nextBtn').innerText = n === 5 ? 'Finalizar' : 'Siguiente Capítulo';
+            document.getElementById('nextBtn').onclick = n === 5 ? () => window.close() : () => changeStep(1);
 
             currentChapter = n;
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -249,7 +290,7 @@
 
         function changeStep(dir) {
             let next = currentChapter + dir;
-            if (next >= 1 && next <= 4) {
+            if (next >= 1 && next <= 5) {
                 showChapter(next);
             }
         }
