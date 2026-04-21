@@ -212,7 +212,7 @@
             <div class="p-12 border-t border-gray-100">
                 <div class="flex items-center gap-2 text-indigo-600 font-bold text-[11px] tracking-widest uppercase">
                     <div class="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse"></div>
-                    Sincronizado • 2026.2
+                    Sincronizado • 2026.4
                 </div>
             </div>
         </aside>
@@ -227,8 +227,6 @@
                     
                     <div class="premium-card">
                         <h2>1. La Filosofía del Sistema: "Flexibilidad sin Caos"</h2>
-                        <p>En el mundo de la administración de copropiedades (y otros sectores de recaudo masivo), el mayor desafío no es cobrar, sino <strong>adaptar el cobro a la realidad física y jurídica de la entidad</strong>. No todas las unidades son iguales, no todos los bloques están en las mismas condiciones y no todos los conceptos de cobro deben afectar a todos por igual.</p>
-                        
                         <p>Nuestra plataforma ha sido diseñada bajo un paradigma de <strong>Consultoría de Negocio</strong>, donde el software no impone una estructura rígida, sino que se convierte en un lienzo para modelar la operación financiera.</p>
                         
                         <h3>¿Qué resolvemos?</h3>
@@ -241,8 +239,6 @@
                     </div>
 
                     <h2>2. La Arquitectura del Cobro (Panorama de Conexión)</h2>
-                    <p>Para entender cómo funciona el módulo de recaudos, debemos visualizarlo como una serie de capas que se conectan entre sí. Aquí es donde reside la "magia" del sistema:</p>
-
                     <div class="mermaid">
                     graph TD
                     A[Conceptos de Cobro] -->|Configuran REGLAS| B(Módulos de Contribución)
@@ -264,15 +260,6 @@
                             <li><strong>4. Los Conceptos (La regla)</strong>: Es el "qué" se cobra. Aquí definimos si el cobro es por coeficiente, si es fijo, a qué cuenta contable va y a qué <strong>Módulos</strong> afecta.</li>
                         </ul>
                     </div>
-
-                    <h2>3. Ejemplo Práctico: El caso del Condominio Mixto</h2>
-                    <p>Imagine un conjunto que tiene apartamentos y locales comerciales.</p>
-                    <div class="px-8 border-l-4 border-indigo-200 py-4 mb-8">
-                        <p><strong>Paso 1</strong>: Creamos el Concepto "Administración Residencial" y lo vinculamos al "Módulo Residencial".</p>
-                        <p><strong>Paso 2</strong>: Creamos el Concepto "Administración Comercial" y lo vinculamos al "Módulo Locales".</p>
-                        <p><strong>Paso 3</strong>: Al matricular las unidades, simplemente las "afiliamos" al módulo que les corresponde.</p>
-                    </div>
-                    <p><strong>Resultado</strong>: En un solo clic de "Facturación Masiva", el sistema discrimina automáticamente quién paga qué, sin riesgo de cruces indebidos.</p>
 
                     <div class="alert alert-tip">
                         <h4 class="font-bold text-green-800 mb-2">Visión de Negocio</h4>
@@ -297,16 +284,9 @@
                     </div>
 
                     <h2>2. Gestión de Torres: Agrupación por Ubicación</h2>
-                    <p>La <strong>Torre</strong> (o Bloque, Manzana, Zona) representa la <strong>realidad física</strong> del condominio. Mientras que las unidades son individuales, las torres nos permiten manejar la infraestructura.</p>
-                    
                     <h3>¿Por qué es vital esta separación?</h3>
                     <p>Imagine que el Condominio tiene 10 Torres. La <strong>Torre 4</strong> sufre una inundación y requiere un arreglo especial en sus tuberías que NO afecta a las demás torres.</p>
-                    <ul>
-                        <li>Si solo tuviéramos unidades sueltas, el administrador tendría que buscar una por una las unidades de la Torre 4 para cobrarles una "Cuota Extra".</li>
-                        <li>Al tener <strong>Gestión de Torres</strong>, el sistema ya sabe quién pertenece a dónde. Solo decimos: "Cobrar Concepto 'Arreglo Tubería' a la Torre 4".</li>
-                    </ul>
-
-                    <h2>3. La Relación Visual</h2>
+                    
                     <div class="mermaid">
                     graph LR
                     subgraph "Nivel Físico (Infraestructura)"
@@ -326,56 +306,20 @@
                     style T1 fill:#C7D2FE,stroke:#4F46E5
                     style T2 fill:#C7D2FE,stroke:#4F46E5
                     </div>
-
-                    <div class="premium-card">
-                        <h3>El Diferenciador: La Torre como Filtro</h3>
-                        <p>El sistema permite que las Torres actúen como un <strong>Filtro de Seguridad</strong>. Cuando usted crea una regla de cobro, puede restringirla a una torre específica. Esto evita que le cobremos el mantenimiento del ascensor de la Torre A a los residentes de la Torre B (que quizás no tienen ascensor).</p>
-                    </div>
-
-                    <div class="alert alert-important">
-                        <h4 class="font-bold text-orange-800 mb-2">Dato de Valor</h4>
-                        <p class="text-orange-900 m-0">En sectores como el transporte, una "Torre" puede ser una "Ruta" o una "Cooperativa Intermunicipal". La lógica es la misma: agrupar unidades físicas que comparten una misma realidad operativa.</p>
-                    </div>
                 </section>
 
                 <!-- Capítulo 3 -->
                 <section id="cap-3" class="chapter-content hidden">
                     <h1>Capítulo 3: La Lógica de Segmentación (Módulos y Conceptos)</h1>
-                    
                     <div class="premium-card">
                         <h2>1. Módulos de Contribución: El "Cerebro" de la Agrupación</h2>
-                        <p>Si las Torres representan la ubicación física, los <strong>Módulos de Contribución</strong> representan la <strong>Naturaleza del Cobro</strong>. Son agrupadores lógicos que permiten segmentar a las unidades sin importar dónde estén físicamente ubicadas.</p>
-                        
+                        <p>Si las Torres representan la ubicación física, los <strong>Módulos de Contribución</strong> representan la <strong>Naturaleza del Cobro</strong>.</p>
                         <h3>El Concepto de "Multi-Pertenencia"</h3>
-                        <p>A diferencia de una Torre (donde un apartamento solo puede estar en una torre), una Unidad puede pertenecer a <strong>varios Módulos</strong> al mismo tiempo. Esto es lo que da al sistema una potencia ilimitada.</p>
-                        
-                        <p><strong>Ejemplo en un Condominio Mixto:</strong></p>
-                        <ul>
-                            <li><strong>Apto 501</strong>: Pertenece al <em>Módulo Residencial</em> y al <em>Módulo de Piscina</em>.</li>
-                            <li><strong>Local 01</strong>: Pertenece al <em>Módulo Comercial</em> y al <em>Módulo de Parqueaderos Visitantes</em>.</li>
-                        </ul>
+                        <p>A diferencia de una Torre, una Unidad puede pertenecer a <strong>varios Módulos</strong> al mismo tiempo. Esto es lo que da al sistema una potencia ilimitada.</p>
                     </div>
 
-                    <h2>2. Conceptos de Cobro: Las Reglas del Juego</h2>
-                    <p>El <strong>Concepto</strong> es la definición de <strong>qué se va a cobrar y cómo</strong>. Es el puente entre la necesidad administrativa y la realidad contable.</p>
-                    
-                    <div class="premium-card">
-                        <h3>Anatomía de un Concepto:</h3>
-                        <ul>
-                            <li><strong>1. Nombre</strong>: "Administración", "Mora", "Fondo de Reserva".</li>
-                            <li><strong>2. Configuración Financiera</strong>: Fijo o Por Coeficiente.</li>
-                            <li><strong>3. Conexión Contable (Crucial)</strong>: Cada concepto apunta a una cuenta del PUC (Plan Único de Cuentas).</li>
-                            <li><strong>4. Vinculación a Módulo</strong>: El concepto NO se le asigna a una unidad, <strong>se le asigna a un Módulo</strong>.</li>
-                        </ul>
-                    </div>
-
-                    <h2>3. Visualizando la Inteligencia del Sistema</h2>
                     <div class="mermaid">
                     graph TD
-                    subgraph "Reglas de Negocio"
-                    C1[Gasto Administrativo]
-                    C2[Gasto Jardinería]
-                    end
                     subgraph "Lógica de Agrupación (Módulos)"
                     M1((Módulo Todo el Conjunto))
                     M2((Módulo Zonas Verdes))
@@ -384,137 +328,109 @@
                     U1[Torre 1]
                     U2[Torre 2]
                     end
-                    C1 --> M1
-                    C2 --> M2
                     M1 --> U1
                     M1 --> U2
                     M2 --> U1
                     style M1 fill:#FDE68A,stroke:#D97706
                     style M2 fill:#FDE68A,stroke:#D97706
                     </div>
-
-                    <div class="alert alert-tip">
-                        <h4 class="font-bold text-green-800 mb-2">Consultoría Pro</h4>
-                        <p class="text-green-900 m-0">Esta misma lógica permite crear "Módulos de Excepción". Si un propietario tiene un acuerdo especial donde no paga administración por 3 meses, simplemente lo sacamos del módulo temporalmente sin borrar facturas antiguas.</p>
-                    </div>
                 </section>
 
                 <!-- Capítulo 4 -->
                 <section id="cap-4" class="chapter-content hidden">
-                    <h1>Capítulo 4: Articulación Maestra y Casos Prácticos</h1>
-                    
+                    <h1>Capítulo 4: Articulación Maestra y Reliquidación</h1>
                     <div class="premium-card">
                         <h2>1. La Sinfonía de la Facturación Masiva</h2>
-                        <p>La <strong>Facturación Masiva</strong> no es simplemente un proceso de "generar recibos", es un motor de ejecución de reglas de negocio.</p>
-                        
-                        <h3>¿Cómo "piensa" el sistema al facturar?</h3>
-                        <ul>
-                            <li><strong>1. Identifica los Conceptos</strong>: ¿Qué vamos a cobrar hoy?</li>
-                            <li><strong>2. Busca el Destino (Módulos)</strong>: ¿A qué módulos afectan estos conceptos?</li>
-                            <li><strong>3. Filtra por Ubicación (Torres)</strong>: ¿Hay alguna restricción por torre?</li>
-                            <li><strong>4. Calcula el Valor</strong>: Aplica coeficiente o tasa de interés.</li>
-                            <li><strong>5. Cruce Automático</strong>: Descuenta anticipos de inmediato.</li>
-                        </ul>
+                        <p>La Facturación Masiva cruza conceptos, módulos y torres para generar documentos impecables aplicando coeficientes y cruces de anticipos automáticos.</p>
                     </div>
 
-                    <h2>2. Casos de Éxito: Resolviendo Problemas Reales</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 my-8">
-                        <div class="p-8 bg-indigo-50 rounded-3xl border-l-8 border-indigo-600">
-                            <h4 class="font-bold text-indigo-900 mb-4">Caso A: Pintura Selectiva</h4>
-                            <p class="text-sm">Solo se pintará el Bloque 4. Aplicamos el filtro: "Solo para la Torre: Bloque 4". El resto del conjunto factura normal.</p>
-                        </div>
-                        <div class="p-8 bg-blue-50 rounded-3xl border-l-8 border-blue-600">
-                            <h4 class="font-bold text-blue-900 mb-4">Caso B: Daño Acueducto</h4>
-                            <p class="text-sm">Un daño urgente en la Torre 1 se cobra solo a esas unidades sin afectar a la Torre 5.</p>
-                        </div>
-                    </div>
-
-                    <h2>3. Gobernanza de Reliquidación: ¿Borrar o Completar?</h2>
-                    <p>Cuando olvidamos incluir una unidad o detectamos un error después de haber liquidado, el sistema nos ofrece dos caminos estratégicos. La elección depende de la <strong>visibilidad del error</strong>.</p>
+                    <h2>2. Gobernanza de Reliquidación: ¿Borrar o Completar?</h2>
+                    <p>Cuando olvidamos incluir una unidad o detectamos un error después de haber liquidado, el sistema nos ofrece dos caminos:</p>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 my-8">
                         <div class="premium-card !mb-0 !p-10 border-t-8 border-red-500">
                             <h4 class="font-bold text-red-600 mb-3 uppercase tracking-wider">Borrar y Regenerar</h4>
-                            <p class="text-sm">Elimina todas las facturas del periodo y las crea de nuevo.</p>
-                            <ul class="text-xs !mb-0">
-                                <li><strong>Uso:</strong> Si nadie ha recibido su factura aún.</li>
-                                <li><strong>Ventaja:</strong> Mantienes orden alfabético y perfecto de consecutivos.</li>
-                            </ul>
+                            <p class="text-sm">Elimina todas las facturas del periodo y las crea de nuevo. Úselo si <strong>nadie</strong> ha recibido la información aún.</p>
                         </div>
                         <div class="premium-card !mb-0 !p-10 border-t-8 border-indigo-500">
                             <h4 class="font-bold text-indigo-600 mb-3 uppercase tracking-wider">Completar (Delta)</h4>
-                            <p class="text-sm">Genera solo lo que falta sin tocar lo que ya existe.</p>
-                            <ul class="text-xs !mb-0">
-                                <li><strong>Uso:</strong> Si ya entregaste facturas a los demás.</li>
-                                <li><strong>Ventaja:</strong> No alteras la contabilidad de los que ya tienen su documento.</li>
-                            </ul>
+                            <p class="text-sm">Genera solo lo que falta. Úselo si <strong>ya repartió</strong> las facturas y no quiere alterar los saldos contables de los demás.</p>
                         </div>
                     </div>
 
-                    <h3>Mapa de Decisión Táctica</h3>
                     <div class="mermaid">
                     graph TD
-                        Start[¿Detectó un error?] --> Sent{¿Ya lo envió?}
+                        S[¿Detectó un error?] --> Sent{¿Ya lo envió?}
                         Sent -->|No| Delete[Borrar y Regenerar]
                         Sent -->|Sí| Delta[Completar Delta]
-                        Delete -->|Resultado| Perfect[Consecutivos Perfectos]
-                        Delta -->|Resultado| Safe[Paz Contable y Vecinal]
+                        Delete -->|Res| P[Consecutivos Perfectos]
+                        Delta -->|Res| Q[Paz Contable y Vecinal]
+                    </div>
+                </section>
+
+                <!-- Capítulo 5 -->
+                <section id="cap-5" class="chapter-content hidden">
+                    <h1>Capítulo 5: El Ciclo de Vida de la Unidad</h1>
+                    <div class="premium-card">
+                        <h2>1. Creación e Integridad</h2>
+                        <p>Al crear una unidad, el sistema integra tres dimensiones críticas:</p>
+                        <ul>
+                            <li><strong>Identificación Física</strong>: Torre y número de unidad (Distribución Estructural).</li>
+                            <li><strong>Responsabilidad Jurídica</strong>: Vínculo con el módulo de Terceros (Dueño legal). Sin esto, no hay cobrabilidad real.</li>
+                            <li><strong>Contribución Económica</strong>: Coeficiente y asignación de Módulos (Naturaleza del cobro).</li>
+                        </ul>
                     </div>
 
-                    <h2>4. Flexibilidad Extensible</h2>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Sector</th>
-                                <th>¿Qué es la Unidad?</th>
-                                <th>¿Qué es the Módulo?</th>
-                                <th>¿Qué es the Torre?</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Colegios</td>
-                                <td>El Alumno</td>
-                                <td>El Grado (Primaria)</td>
-                                <td>La Jornada</td>
-                            </tr>
-                            <tr>
-                                <td>Cooperativas</td>
-                                <td>El Asociado</td>
-                                <td>Tipo de Ahorro</td>
-                                <td>El Municipio</td>
-                            </tr>
-                            <tr>
-                                <td>Transporte</td>
-                                <td>El Vehículo</td>
-                                <td>Tipo de Vehículo (Bus)</td>
-                                <td>La Ruta</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="alert alert-important">
+                        <h4 class="font-bold text-orange-800 mb-2">Aclaración Estratégica</h4>
+                        <p class="text-orange-900 m-0">El campo <strong>"Tipo"</strong> en la ficha es informativo para reportes estadísticos. Quien realmente <strong>manda</strong> en el cobro son los <strong>Módulos</strong> a los que se afilia la unidad.</p>
+                    </div>
 
-                    <h2>4. Diagrama de Articulación Final</h2>
-                    <div class="mermaid">
-                    flowchart LR
-                    subgraph INPUT
-                    C[Configuración de Conceptos]
-                    end
-                    subgraph PROCESO
-                    M[Módulos / Torres]
-                    F{Motor de Facturación}
-                    end
-                    subgraph OUTPUT
-                    FAC[Factura Individual]
-                    CON[Asiento Contable Automático]
-                    CRU[Cruce de Anticipos]
-                    end
-                    C --> M
-                    M --> F
-                    F --> FAC
-                    F --> CON
-                    FAC --> CRU
-                    style F fill:#4F46E5,color:#fff
-                    style CRU fill:#10B981,color:#fff
+                    <h2>2. Gestión de Convivencia (Vehículos y Mascotas)</h2>
+                    <p>La unidad es el centro de datos de la administración. Centraliza no solo lo financiero, sino la convivencia del día a día:</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 my-8">
+                        <div class="p-8 bg-blue-50 rounded-3xl border-l-8 border-blue-600">
+                            <h4 class="font-bold text-blue-800 mb-2 font-sans text-xs uppercase tracking-widest">Vehículos</h4>
+                            <p class="text-sm m-0">Control de Placas, Marcas y parqueaderos asignados.</p>
+                        </div>
+                        <div class="p-8 bg-indigo-50 rounded-3xl border-l-8 border-indigo-600">
+                            <h4 class="font-bold text-indigo-800 mb-2 font-sans text-xs uppercase tracking-widest">Mascotas</h4>
+                            <p class="text-sm m-0">Registro de razas y datos de sanidad para la convivencia segura.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Capítulo 6 -->
+                <section id="cap-6" class="chapter-content hidden">
+                    <h1>Capítulo 6: Mapas Lógicos Avanzados</h1>
+                    
+                    <div class="premium-card">
+                        <h2>1. El Flujo de Inteligencia Financiera</h2>
+                        <p>Este mapa resume la transformación de reglas de negocio en documentos contables maestros.</p>
+                        <div class="mermaid">
+                        graph TD
+                            C[Conceptos de Cobro] --> M[Módulos de Contribución]
+                            M --> U[Unidades de Facturación]
+                            T[Torres Físicas] --> U
+                            U --> F[Factura Masiva]
+                            F --> K[Cartera 1305]
+                            K --> B[Balance en Tiempo Real]
+                            style F fill:#10B981,color:#fff
+                        </div>
+                    </div>
+
+                    <div class="premium-card">
+                        <h2>2. Ciclo de Integridad en Cruces</h2>
+                        <p>Cómo fluye el dinero desde los anticipos hasta el saneamiento de la cartera.</p>
+                        <div class="mermaid">
+                        flowchart LR
+                            Factura --> Deuda((Deuda 1305))
+                            Anticipo[Saldo 2805] --> Cruce{¿Cruce Automático?}
+                            Cruce -->|Sí| Deuda
+                            Deuda --> Neto[Saldo Real Final]
+                            style Deuda fill:#4F46E5,color:#fff
+                            style Anticipo fill:#10B981,color:#fff
+                        </div>
                     </div>
                 </section>
 
@@ -527,6 +443,8 @@
                         <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(2)"></div>
                         <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(3)"></div>
                         <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(4)"></div>
+                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(5)"></div>
+                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(6)"></div>
                     </div>
 
                     <button id="nextBtn" onclick="changeStep(1)" class="px-10 py-4 bg-indigo-600 text-white rounded-2xl text-md font-bold hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all">Siguiente</button>
@@ -552,7 +470,7 @@
         });
 
         let currentChapter = 1;
-        const TOTAL_CHAPTERS = 4;
+        const TOTAL_CHAPTERS = 6;
 
         function showChapter(n) {
             document.querySelectorAll('.chapter-content').forEach(el => {
