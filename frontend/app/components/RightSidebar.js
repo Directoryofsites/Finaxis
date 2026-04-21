@@ -5,7 +5,8 @@ import {
     FaRobot, FaCalculator, FaStickyNote, FaBell,
     FaThumbtack, FaTimes, FaExpandAlt, FaMagic, FaPaperPlane,
     FaBackspace, FaTrash, FaMicrophone, FaStop, FaPlus, FaSave, FaList, FaShareSquare, FaHistory, FaClock,
-    FaBuilding, FaChartLine, FaBolt, FaSync, FaFilePdf, FaEdit, FaSearch, FaPrint, FaBook
+    FaBuilding, FaChartLine, FaBolt, FaSync, FaFilePdf, FaEdit, FaSearch, FaPrint, FaBook,
+    FaChalkboardTeacher
 } from 'react-icons/fa';
 import { CONTEXT_CONFIG } from '../config/rightSidebarConfig';
 import { toast } from 'react-toastify';
@@ -15,6 +16,7 @@ import EconomicIndicatorsPanel from './EconomicIndicatorsPanel';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useSmartSearch } from '@/app/hooks/useSmartSearch';
+import { useTutorAI } from '@/app/hooks/useTutorAI';
 
 // --- HELPER: FORMAT NUMBERS ---
 const formatNumber = (val) => {
@@ -388,6 +390,15 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
         updateLibraryCommand
     } = useSmartSearch();
 
+    const {
+        messages: tutorMessages,
+        sendMessage: sendTutorMessage,
+        isThinking: isTutorThinking,
+        clearChat: clearTutorChat
+    } = useTutorAI();
+
+    const [tutorInput, setTutorInput] = useState('');
+
     const [aiResponse, setAiResponse] = useState(null);
     const [listeningMode, setListeningMode] = useState(null); // 'ai' or 'notes'
     const recognitionRef = useRef(null);
@@ -547,6 +558,8 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
             <div className="w-12 flex flex-col items-center py-4 bg-gray-50/50 border-r border-gray-200 h-full flex-shrink-0">
                 <button onClick={() => handleTabClick('ai')} className={`nav-item mb-2 p-2 rounded-xl transition-all ${activeTab === 'ai' ? 'bg-indigo-100 text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-indigo-500 hover:bg-indigo-50'}`} title="Finaxis Copilot (IA)"><FaRobot className="text-xl" /></button>
 
+                <button onClick={() => handleTabClick('tutor')} className={`nav-item mb-2 p-2 rounded-xl transition-all ${activeTab === 'tutor' ? 'bg-orange-100 text-orange-600 shadow-sm' : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50'}`} title="Finaxis Tutor (Experto Virtual)"><FaChalkboardTeacher className="text-xl" /></button>
+
                 {/* BOTÓN BIBLIOTECA (NUEVO) */}
                 <button
                     onClick={() => {
@@ -621,6 +634,7 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                 <div className="h-14 border-b border-gray-100 flex items-center px-6 bg-white/50 justify-between">
                     <h2 className="font-bold text-gray-700">
                         {activeTab === 'ai' && 'Finaxis Copilot'}
+                        {activeTab === 'tutor' && 'Finaxis Tutor'}
                         {activeTab === 'monitor' && 'Monitor de Asientos'}
                         {activeTab === 'calc' && 'Calculadora'}
                         {activeTab === 'notes' && 'Mis Notas'}
@@ -795,6 +809,82 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                                     </div>
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* TUTOR AI */}
+                    {activeTab === 'tutor' && (
+                        <div className="flex flex-col h-full">
+                            <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 custom-scrollbar">
+                                {tutorMessages.map((msg, idx) => (
+                                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`max-w-[90%] p-3 rounded-2xl text-sm ${
+                                            msg.role === 'user' 
+                                            ? 'bg-orange-600 text-white rounded-br-none' 
+                                            : 'bg-gray-100 text-gray-800 rounded-bl-none shadow-sm border border-gray-200'
+                                        }`}>
+                                            {msg.role === 'assistant' && (
+                                                <div className="flex items-center gap-2 mb-1 text-[10px] font-bold text-orange-700 uppercase">
+                                                    <FaChalkboardTeacher /> Finaxis Tutor
+                                                </div>
+                                            )}
+                                            <div className="whitespace-pre-wrap leading-relaxed">
+                                                {msg.content}
+                                            </div>
+                                            {msg.toolCall && (
+                                                <div className="mt-2 pt-2 border-t border-orange-200/50">
+                                                    <button 
+                                                        onClick={() => handleAiSubmit(null, `Ver ${msg.toolCall.name}`)}
+                                                        className="text-[10px] bg-orange-200 text-orange-800 px-2 py-1 rounded hover:bg-orange-300 transition-colors"
+                                                    >
+                                                        Ejecutar Consulta de Datos
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                                {isTutorThinking && (
+                                    <div className="flex justify-start">
+                                        <div className="bg-gray-100 p-3 rounded-2xl rounded-bl-none animate-pulse flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-bounce"></div>
+                                            <div className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                                            <div className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="mt-auto border-t pt-4 bg-white/50">
+                                <div className="flex items-center justify-between mb-2 px-1">
+                                    <span className="text-[10px] text-gray-400 italic">Asistente basado en manuales y datos</span>
+                                    <button onClick={clearTutorChat} className="text-[10px] text-red-400 hover:text-red-600 transition-colors">Limpiar Chat</button>
+                                </div>
+                                <div className="relative">
+                                    <textarea
+                                        rows={3}
+                                        value={tutorInput}
+                                        onChange={(e) => setTutorInput(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                sendTutorMessage(tutorInput);
+                                                setTutorInput('');
+                                            }
+                                        }}
+                                        placeholder="Pregúntale al tutor..."
+                                        className="w-full text-sm border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none bg-white/80"
+                                        disabled={isTutorThinking}
+                                    />
+                                    <button 
+                                        onClick={() => { sendTutorMessage(tutorInput); setTutorInput(''); }}
+                                        disabled={isTutorThinking || !tutorInput.trim()}
+                                        className="absolute right-2 bottom-2 p-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 transition-all shadow-md"
+                                    >
+                                        <FaPaperPlane className="text-xs" />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     )}
 

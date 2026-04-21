@@ -13,6 +13,10 @@ class VoiceCommandRequest(BaseModel):
     command: str
     context: Optional[Dict] = None
 
+class TutorRequest(BaseModel):
+    query: str
+    history: Optional[list] = []
+
 @router.post("/process-command")
 async def process_voice_command(
     request: VoiceCommandRequest, 
@@ -46,4 +50,29 @@ async def process_voice_command_debug(request: VoiceCommandRequest):
     """
     print(f"DEBUG: Setting up AI request for '{request.command}'")
     result = await procesar_comando_natural(request.command, request.context)
+    return result
+
+@router.post("/tutor")
+async def process_tutor_query(
+    request: TutorRequest,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Procesa una consulta para el Finaxis Tutor (RAG + Tools).
+    """
+    from app.services.tutor_service import tutor_service
+    
+    try:
+        # Verificar cuota (el tutor consume saldo de IA)
+        AIQuotaService.verificar_y_descontar_cuota_ia(current_user.empresa_id, db)
+    except AIQuotaException as e:
+        raise HTTPException(status_code=403, detail=str(e))
+        
+    result = await tutor_service.process_query(
+        query=request.query,
+        history=request.history,
+        empresa_id=current_user.empresa_id,
+        user_id=current_user.id
+    )
     return result

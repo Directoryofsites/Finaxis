@@ -375,11 +375,21 @@ function ModalGestionarEmpresa({ empresa, onClose, onDataChange }) {
                     <nav className="-mb-px flex space-x-4" aria-label="Tabs">
                         <button onClick={() => setActiveTab('datos')} className={`py-2 px-3 whitespace-nowrap text-sm font-medium ${activeTab === 'datos' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>Datos</button>
                         <button onClick={() => setActiveTab('usuarios')} className={`py-2 px-3 whitespace-nowrap text-sm font-medium ${activeTab === 'usuarios' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>Usuarios</button>
+                        <button onClick={() => setActiveTab('id_tecnico')} className={`py-2 px-3 whitespace-nowrap text-sm font-medium ${activeTab === 'id_tecnico' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>ID Técnico</button>
                     </nav>
                 </div>
                 <div className="mt-4">
                     {activeTab === 'datos' && <FormularioEditarEmpresa empresa={empresa} onFinished={onDataChange} onCancel={onClose} />}
                     {activeTab === 'usuarios' && <PanelGestionUsuarios empresa={empresa} onDataChange={onDataChange} />}
+                    {activeTab === 'id_tecnico' && (
+                        <div className="p-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 text-center">
+                            <p className="text-xs text-gray-500 uppercase tracking-widest mb-2 font-bold">ID Único de Base de Datos (Sistema)</p>
+                            <span className="text-3xl font-mono font-extrabold text-indigo-600 bg-white px-4 py-2 rounded-md shadow-sm border">
+                                {empresa.id}
+                            </span>
+                            <p className="mt-4 text-[10px] text-gray-400 italic">Este ID es inmutable y es la referencia raíz para todas las tablas de la empresa.</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
