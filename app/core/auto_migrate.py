@@ -267,3 +267,16 @@ def run_auto_migrations():
             logger.info("Data fix de es_compra / es_venta aplicado correctamente.")
     except Exception as e:
         logger.error(f"Error en data fix de tipos_documento: {e}")
+
+    # 6. DATA FIX: Asegurar que todas las empresas tengan cuota de IA inicializada (Auto-healing para producción)
+    logger.info("Asegurando cuotas de IA para todas las empresas...")
+    try:
+        with engine.begin() as trans_conn:
+            trans_conn.execute(text("""
+                UPDATE empresas
+                SET limite_mensajes_ia_mensual = 100
+                WHERE limite_mensajes_ia_mensual IS NULL OR limite_mensajes_ia_mensual <= 0
+            """))
+            logger.info("Cuotas de IA inicializadas correctamente para todas las empresas.")
+    except Exception as e:
+        logger.error(f"Error inicializando cuotas de IA: {e}")
