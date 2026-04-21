@@ -32,27 +32,32 @@
         .mermaid { 
             background: #FFFFFF; 
             border-radius: 24px; 
-            padding: 2rem; 
-            margin: 2rem 0; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
+            padding: 2.5rem; 
+            margin: 2.5rem 0; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.03); 
             border: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: center;
         }
         .markdown-body h1 { 
-            font-size: 3.5rem; 
+            font-size: 3rem; 
             font-weight: 800; 
             letter-spacing: -0.02em;
             background: linear-gradient(135deg, #4F46E5 0%, #9333EA 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 2rem;
+            line-height: 1.1;
         }
         .markdown-body h2 { 
             font-size: 2rem; 
             font-weight: 700; 
             color: #1D1D1F; 
-            margin-top: 4rem; 
+            margin-top: 3.5rem; 
             margin-bottom: 1.5rem;
             letter-spacing: -0.01em;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding-bottom: 0.5rem;
         }
         .markdown-body h3 { 
             font-size: 1.5rem; 
@@ -62,8 +67,8 @@
             margin-bottom: 1rem;
         }
         .markdown-body p { 
-            font-size: 1.25rem; 
-            line-height: 1.6; 
+            font-size: 1.2rem; 
+            line-height: 1.65; 
             color: #4B5563; 
             margin-bottom: 1.5rem;
         }
@@ -73,42 +78,50 @@
             margin-bottom: 2rem;
         }
         .markdown-body li {
-            font-size: 1.2rem;
+            font-size: 1.15rem;
             color: #4B5563;
             margin-bottom: 1rem;
             display: flex;
             align-items: flex-start;
             gap: 12px;
         }
+        .markdown-body li strong {
+            color: #1D1D1F;
+        }
         .markdown-body li::before {
-            content: "→";
+            content: "•";
             color: var(--apple-accent);
             font-weight: bold;
+            font-size: 1.5rem;
+            line-height: 1;
         }
         .premium-card {
             background: var(--apple-card);
             border-radius: 32px;
             padding: 3rem;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.04);
-            border: 1px solid rgba(0,0,0,0.05);
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.04);
+            margin-bottom: 3rem;
         }
-        .premium-card:hover {
-            transform: scale(1.01);
-        }
-        .consultancy-note {
-            background: linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 100%);
-            border-left: 6px solid var(--apple-indigo);
+        .alert {
             padding: 2rem;
             border-radius: 20px;
-            margin: 3rem 0;
+            margin: 2.5rem 0;
+        }
+        .alert-tip {
+            background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+            border-left: 6px solid #10B981;
+        }
+        .alert-important {
+            background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
+            border-left: 6px solid #F97316;
         }
         .sidebar-item {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .sidebar-item-active {
             background: #FFFFFF;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
             color: var(--apple-accent) !important;
             transform: translateX(8px);
         }
@@ -125,6 +138,27 @@
             width: 32px;
             background: var(--apple-accent);
         }
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 2rem 0;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        th {
+            background: #F9FAFB;
+            padding: 1.25rem;
+            text-align: left;
+            font-weight: 700;
+            color: #1D1D1F;
+        }
+        td {
+            padding: 1.25rem;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            color: #4B5563;
+        }
         /* Custom scrollbar */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -138,283 +172,338 @@
         <aside class="w-[380px] glass h-full flex flex-col z-20">
             <div class="p-12">
                 <div class="flex items-center gap-4 mb-8">
-                    <div class="w-12 h-12 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-200">
+                    <div class="w-12 h-12 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-100">
                         <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
                     </div>
                     <div>
-                        <h1 class="text-2xl font-bold tracking-tight text-gray-900 m-0 leading-none" style="background:none; -webkit-text-fill-color: initial;">Súper Manual</h1>
-                        <p class="text-sm font-semibold text-gray-400 uppercase tracking-widest mt-1">Consultoría Experta</p>
+                        <h1 class="text-2xl font-bold tracking-tight text-gray-900 m-0 leading-none">Súper Manual</h1>
+                        <p class="text-[10px] font-extrabold text-blue-500 uppercase tracking-[0.2em] mt-1">Consultoría de Negocio</p>
                     </div>
                 </div>
-                
-                <p class="text-sm text-gray-500 leading-relaxed">Este manual ha sido diseñado por expertos para explicar la realidad operativa tras el modelo de recaudos.</p>
             </div>
 
-            <nav class="flex-1 px-8 space-y-3 overflow-y-auto">
-                <button onclick="showChapter(1)" id="btn-cap-1" class="sidebar-item w-full text-left px-6 py-5 rounded-3xl text-md font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group sidebar-item-active">
-                    <span>1. La Filosofía del Sistema</span>
+            <nav class="flex-1 px-8 space-y-2 overflow-y-auto pb-10">
+                <button onclick="showChapter(1)" id="btn-cap-1" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group sidebar-item-active">
+                    <span>1. Panorama General</span>
                     <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
                 </button>
-                <button onclick="showChapter(2)" id="btn-cap-2" class="sidebar-item w-full text-left px-6 py-5 rounded-3xl text-md font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group text-ellipsis overflow-hidden">
-                    <span>2. Inventario: El Cuerpo Físico</span>
+                <button onclick="showChapter(2)" id="btn-cap-2" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
+                    <span>2. Inventario Físico</span>
                     <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
                 </button>
-                <button onclick="showChapter(3)" id="btn-cap-3" class="sidebar-item w-full text-left px-6 py-5 rounded-3xl text-md font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
-                    <span>3. Módulos: El Cerebro Lógico</span>
+                <button onclick="showChapter(3)" id="btn-cap-3" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
+                    <span>3. Lógica de Segmentación</span>
                     <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
                 </button>
-                <button onclick="showChapter(4)" id="btn-cap-4" class="sidebar-item w-full text-left px-6 py-5 rounded-3xl text-md font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
-                    <span>4. La Sinfonía Financiera</span>
+                <button onclick="showChapter(4)" id="btn-cap-4" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
+                    <span>4. Articulación Maestra</span>
                     <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
                 </button>
-                <button onclick="showChapter(5)" id="btn-cap-5" class="sidebar-item w-full text-left px-6 py-5 rounded-3xl text-md font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group text-ellipsis overflow-hidden">
-                    <span>5. Masterclass: La Unidad</span>
+                <button onclick="showChapter(5)" id="btn-cap-5" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
+                    <span>5. Ciclo de Vida: La Unidad</span>
+                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </button>
+                <button onclick="showChapter(6)" id="btn-cap-6" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
+                    <span>6. Mapas Lógicos Avanzados</span>
                     <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
                 </button>
             </nav>
 
             <div class="p-12 border-t border-gray-100">
-                <div class="flex items-center gap-2 text-indigo-600 font-bold text-sm">
-                    <div class="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></div>
-                    Sistema Versión 2026.0
+                <div class="flex items-center gap-2 text-indigo-600 font-bold text-[11px] tracking-widest uppercase">
+                    <div class="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse"></div>
+                    Sincronizado • 2026.2
                 </div>
             </div>
         </aside>
 
         <!-- Content Area -->
-        <main id="contentArea" class="flex-1 overflow-y-auto bg-gray-50/50 scroll-smooth">
-            <div class="max-w-5xl mx-auto px-20 py-24 markdown-body">
+        <main id="contentArea" class="flex-1 overflow-y-auto bg-[#FBFBFD] scroll-smooth">
+            <div class="max-w-4xl mx-auto px-16 py-24 markdown-body">
                 
                 <!-- Capítulo 1 -->
                 <section id="cap-1" class="chapter-content block visible">
-                    <p class="text-indigo-600 font-bold tracking-widest uppercase mb-4">Módulo de Recaudos • Manual Maestro</p>
-                    <h1 class="text-indigo-600">La Filosofía del Sistema: "Flexibilidad sin Caos"</h1>
+                    <h1>Panorama General del Modelo de Recaudos (Recuperación de Cartera)</h1>
                     
                     <div class="premium-card">
-                        <p class="text-2xl font-medium text-gray-800 mb-8 leading-snug">"No construimos un software de cobros; construimos un motor de modelado de realidades empresariales."</p>
+                        <h2>1. La Filosofía del Sistema: "Flexibilidad sin Caos"</h2>
+                        <p>En el mundo de la administración de copropiedades (y otros sectores de recaudo masivo), el mayor desafío no es cobrar, sino <strong>adaptar el cobro a la realidad física y jurídica de la entidad</strong>. No todas las unidades son iguales, no todos los bloques están en las mismas condiciones y no todos los conceptos de cobro deben afectar a todos por igual.</p>
                         
-                        <p>En el mundo de la consultoría de negocios, el mayor error es obligar a la empresa a adaptarse al software. En Finaxis, hemos invertido el paradigma. Nuestra plataforma de recaudos es un lienzo donde usted diseña la conexión exacta de los elementos que pertenecen a su modelo específico.</p>
+                        <p>Nuestra plataforma ha sido diseñada bajo un paradigma de <strong>Consultoría de Negocio</strong>, donde el software no impone una estructura rígida, sino que se convierte en un lienzo para modelar la operación financiera.</p>
                         
-                        <h3>La Conexión de los Elementos</h3>
-                        <p>Imagine que el sistema es un juego de piezas inteligentes. Usted tiene <strong>Unidades</strong>, que son la base de todo. Pero una unidad no es solo un número; es el representante de una responsabilidad económica.</p>
-                        
-                        <div class="consultancy-note">
-                            <strong>Visión de Consultoría:</strong><br>
-                            Usted puede crear un apartamento y matricularlo en un módulo llamado "Residencial". Pero si crea un local comercial, las reglas cambian. El local no se matricula en el mismo sitio porque sus cobros son distintos. El sistema le permite crear esta "distinción de mundos" dentro de la misma interfaz.
-                        </div>
+                        <h3>¿Qué resolvemos?</h3>
+                        <ul>
+                            <li><strong>Segmentación Inteligente</strong>: Poder cobrar administración de locales a unos y residencial a otros en el mismo mes.</li>
+                            <li><strong>Localización de Gastos</strong>: Si una torre necesita pintura, solo esa torre paga por ella, manteniendo la equidad financiera.</li>
+                            <li><strong>Automatización Contable</strong>: Cada cobro está amarrado a una cuenta del PUC, eliminando errores manuales al facturar.</li>
+                            <li><strong>Integridad de Cartera</strong>: El sistema reconoce saldos a favor (anticipos) y los cruza automáticamente si se desea.</li>
+                        </ul>
+                    </div>
 
-                        <h2>Escenarios de Aplicación Real</h2>
-                        <p>La flexibilidad del sistema permite cubrir realidades radicalmente distintas sin cambiar una sola línea de código:</p>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 my-10">
-                            <div class="p-8 bg-white rounded-3xl shadow-sm border border-gray-100">
-                                <h4 class="text-xl font-bold text-indigo-600 mb-3">Educación</h4>
-                                <p class="text-gray-500 text-sm">Los módulos se diferencian como <strong>Bachillerato, Primaria o Preescolar</strong>. Cada uno con su propia malla de conceptos (Pensiones, Seguros, Nutrición).</p>
-                            </div>
-                            <div class="p-8 bg-white rounded-3xl shadow-sm border border-gray-100">
-                                <h4 class="text-xl font-bold text-violet-600 mb-3">Transporte</h4>
-                                <p class="text-gray-500 text-sm">Las unidades pueden ser <strong>Taxis, Buses o Rutas</strong>. Aquí la agrupación no es por piso, sino por línea de operación o contrato de vinculación.</p>
-                            </div>
-                        </div>
+                    <h2>2. La Arquitectura del Cobro (Panorama de Conexión)</h2>
+                    <p>Para entender cómo funciona el módulo de recaudos, debemos visualizarlo como una serie de capas que se conectan entre sí. Aquí es donde reside la "magia" del sistema:</p>
 
-                        <div class="mermaid">
-                        graph TD
-                            A[Mundo Real] --> B{Motor de Modelado}
-                            B --> C[Unidades Mixtas]
-                            B --> D[Segmentación Lógica]
-                            C --> C1[Aptos]
-                            C --> C2[Locales]
-                            C --> C3[Alumnos]
-                            C --> C4[Vehículos]
-                            D --> D1[Módulos]
-                            D --> D2[Conceptos]
-                            
-                            style B fill:#4F46E5,color:#fff
-                            style C fill:#EEF2FF
-                            style D fill:#EEF2FF
-                        </div>
+                    <div class="mermaid">
+                    graph TD
+                    A[Conceptos de Cobro] -->|Configuran REGLAS| B(Módulos de Contribución)
+                    B -->|Agrupan LÓGICAMENTE| C{Unidades de Cobro}
+                    D[Torres / Bloques] -->|Agrupan FÍSICAMENTE| C
+                    C -->|Generan| E[Factura Masiva]
+                    style A fill:#4F46E5,color:#fff
+                    style B fill:#818CF8,color:#fff
+                    style D fill:#C7D2FE,color:#312E81
+                    style E fill:#10B981,color:#fff
+                    </div>
+
+                    <div class="premium-card">
+                        <h3>Los Cuatro Pilares:</h3>
+                        <ul>
+                            <li><strong>1. Las Unidades (El destino)</strong>: Son los átomos del sistema. Un apartamento, un local, un bus, un alumno. Cada unidad tiene un <strong>propietario</strong> y un <strong>coeficiente</strong> (peso financiero).</li>
+                            <li><strong>2. Las Torres/Bloques (La ubicación)</strong>: Es la agrupación por ubicación física. Permite decir: "Esto es del Bloque A".</li>
+                            <li><strong>3. Los Módulos de Contribución (La lógica)</strong>: Es la agrupación por <strong>naturaleza</strong>. Un apartamento puede pertenecer al "Módulo Residencial" y al mismo tiempo una torre completa puede pertenecer al "Módulo de Pintura".</li>
+                            <li><strong>4. Los Conceptos (La regla)</strong>: Es el "qué" se cobra. Aquí definimos si el cobro es por coeficiente, si es fijo, a qué cuenta contable va y a qué <strong>Módulos</strong> afecta.</li>
+                        </ul>
+                    </div>
+
+                    <h2>3. Ejemplo Práctico: El caso del Condominio Mixto</h2>
+                    <p>Imagine un conjunto que tiene apartamentos y locales comerciales.</p>
+                    <div class="px-8 border-l-4 border-indigo-200 py-4 mb-8">
+                        <p><strong>Paso 1</strong>: Creamos el Concepto "Administración Residencial" y lo vinculamos al "Módulo Residencial".</p>
+                        <p><strong>Paso 2</strong>: Creamos el Concepto "Administración Comercial" y lo vinculamos al "Módulo Locales".</p>
+                        <p><strong>Paso 3</strong>: Al matricular las unidades, simplemente las "afiliamos" al módulo que les corresponde.</p>
+                    </div>
+                    <p><strong>Resultado</strong>: En un solo clic de "Facturación Masiva", el sistema discrimina automáticamente quién paga qué, sin riesgo de cruces indebidos.</p>
+
+                    <div class="alert alert-tip">
+                        <h4 class="font-bold text-green-800 mb-2">Visión de Negocio</h4>
+                        <p class="text-green-900 m-0">Esta estructura permite que el administrador justifique cada cobro ante una asamblea o junta con total transparencia, ya que el sistema guarda la trazabilidad de por qué una unidad está siendo afectada por un concepto específico.</p>
                     </div>
                 </section>
 
                 <!-- Capítulo 2 -->
                 <section id="cap-2" class="chapter-content hidden">
-                    <p class="text-indigo-600 font-bold tracking-widest uppercase mb-4">Inventario Estratégico</p>
-                    <h1 class="text-indigo-600">El Inventario: El Cuerpo Físico y su Distribución</h1>
+                    <h1>Capítulo 2: El Inventario Físico (Unidades y Torres)</h1>
                     
                     <div class="premium-card">
-                        <p class="text-xl font-medium text-gray-700 mb-8">"Para cobrar con precisión, primero debemos mapear la realidad con exactitud."</p>
+                        <h2>1. La Unidad: El Centro de Gravedad</h2>
+                        <p>En nuestro modelo, la <strong>Unidad</strong> es mucho más que un simple número de apartamento o local; es una <strong>Entidad Financiera Autónoma</strong>. Cada vez que creamos una unidad, estamos definiendo un punto de recaudo que tiene sus propias reglas de juego.</p>
                         
-                        <h2>1. La Unidad: El Átomo de Facturación</h2>
-                        <p>La Unidad es lo básico, pero su identidad es multifacética. Puede ser una casa, un local, un alumno o incluso un bus de transporte público. Lo fundamental es que cada unidad representa un <strong>punto de recaudo</strong>.</p>
-
-                        <h3>Distribución en Torres y Bloques</h3>
-                        <p>Necesitamos entender la relación entre las unidades y sus agrupaciones físicas. Por eso existen las <strong>Torres</strong> (o Bloques/Zonas). ¿Por qué es esto importante?</p>
-                        
+                        <h3>Atributos Clave desde la Consultoría:</h3>
                         <ul>
-                            <li><strong>Localización Geográfica:</strong> Permite segmentar por estructura física (Ej: Torre 1 vs Torre 5).</li>
-                            <li><strong>Discriminación de Gastos:</strong> Si se rompe un tubo en la Torre 2, el sistema permite cargar ese gasto exclusivamente a los propietarios de esa torre, manteniendo la equidad financiera.</li>
-                            <li><strong>Visualización de Integridad:</strong> Permite ver la copropiedad como un todo, pero actuar sobre las partes.</li>
+                            <li><strong>Código de Identificación</strong>: El nombre "público" (Ej: Ap. 501, Local 10, Bus 45).</li>
+                            <li><strong>Coeficiente de Copropiedad</strong>: Este es el factor más importante. Define qué porcentaje del gasto total le corresponde a esa unidad. Un error en el coeficiente es un error en la equidad del cobro.</li>
+                            <li><strong>Vínculo Jurídico</strong>: Cada unidad está ligada a un <strong>Propietario</strong> (Tercero) en la base de datos contable. Esto asegura que la Cartera (lo que nos deben) sea real y legalmente exigible.</li>
                         </ul>
+                    </div>
 
-                        <div class="consultancy-note">
-                            <strong>Análisis de Experto:</strong><br>
-                            Si la torre no existe, el sistema le obliga a ir a la configuración para crearla. Esto no es un obstáculo, es un <strong>Escudo de Integridad</strong>. No permitimos datos "huérfanos". Todo debe pertenecer a una estructura mayor para que la contabilidad sea perfecta.
-                        </div>
+                    <h2>2. Gestión de Torres: Agrupación por Ubicación</h2>
+                    <p>La <strong>Torre</strong> (o Bloque, Manzana, Zona) representa la <strong>realidad física</strong> del condominio. Mientras que las unidades son individuales, las torres nos permiten manejar la infraestructura.</p>
+                    
+                    <h3>¿Por qué es vital esta separación?</h3>
+                    <p>Imagine que el Condominio tiene 10 Torres. La <strong>Torre 4</strong> sufre una inundación y requiere un arreglo especial en sus tuberías que NO afecta a las demás torres.</p>
+                    <ul>
+                        <li>Si solo tuviéramos unidades sueltas, el administrador tendría que buscar una por una las unidades de la Torre 4 para cobrarles una "Cuota Extra".</li>
+                        <li>Al tener <strong>Gestión de Torres</strong>, el sistema ya sabe quién pertenece a dónde. Solo decimos: "Cobrar Concepto 'Arreglo Tubería' a la Torre 4".</li>
+                    </ul>
 
-                        <div class="mermaid">
-                        graph LR
-                            subgraph "Estructura Física"
-                                T1[Torre A]
-                                T2[Torre B]
-                            end
-                            subgraph "Unidades Finales"
-                                U1[Apto 101]
-                                U2[Apto 201]
-                                U3[Local 01]
-                                U4[Local 02]
-                            end
-                            T1 --- U1
-                            T1 --- U2
-                            T2 --- U3
-                            T2 --- U4
-                            style T1 fill:#EEF2FF,stroke:#4F46E5,stroke-width:2px
-                            style T2 fill:#EEF2FF,stroke:#4F46E5,stroke-width:2px
-                        </div>
+                    <h2>3. La Relación Visual</h2>
+                    <div class="mermaid">
+                    graph LR
+                    subgraph "Nivel Físico (Infraestructura)"
+                    T1[Torre 1]
+                    T2[Torre 2]
+                    end
+                    subgraph "Nivel Individual (Facturación)"
+                    U1[Apto 101]
+                    U2[Apto 102]
+                    U3[Apto 201]
+                    U4[Apto 202]
+                    end
+                    T1 --- U1
+                    T1 --- U2
+                    T2 --- U3
+                    T2 --- U4
+                    style T1 fill:#C7D2FE,stroke:#4F46E5
+                    style T2 fill:#C7D2FE,stroke:#4F46E5
+                    </div>
+
+                    <div class="premium-card">
+                        <h3>El Diferenciador: La Torre como Filtro</h3>
+                        <p>El sistema permite que las Torres actúen como un <strong>Filtro de Seguridad</strong>. Cuando usted crea una regla de cobro, puede restringirla a una torre específica. Esto evita que le cobremos el mantenimiento del ascensor de la Torre A a los residentes de la Torre B (que quizás no tienen ascensor).</p>
+                    </div>
+
+                    <div class="alert alert-important">
+                        <h4 class="font-bold text-orange-800 mb-2">Dato de Valor</h4>
+                        <p class="text-orange-900 m-0">En sectores como el transporte, una "Torre" puede ser una "Ruta" o una "Cooperativa Intermunicipal". La lógica es la misma: agrupar unidades físicas que comparten una misma realidad operativa.</p>
                     </div>
                 </section>
 
                 <!-- Capítulo 3 -->
                 <section id="cap-3" class="chapter-content hidden">
-                    <p class="text-indigo-600 font-bold tracking-widest uppercase mb-4">Segmentación Operativa</p>
-                    <h1 class="text-indigo-600">Módulos: El Cerebro Lógico del Recaudo</h1>
+                    <h1>Capítulo 3: La Lógica de Segmentación (Módulos y Conceptos)</h1>
                     
                     <div class="premium-card">
-                        <p class="text-xl font-medium text-gray-700 mb-8">"La diferencia entre un buen sistema y un sistema extraordinario es la capacidad de segmentar reglas de negocio."</p>
-
-                        <h2>1. ¿Módulos o Unidades? (La Conexión Crítica)</h2>
-                        <p>Usted puede crear un apartamento, y este pertenecerá a un módulo llamado "Residencial". Pero si tiene un local, sus cobros serán distintos. Aquí entra la **Matrícula de Módulos**.</p>
+                        <h2>1. Módulos de Contribución: El "Cerebro" de la Agrupación</h2>
+                        <p>Si las Torres representan la ubicación física, los <strong>Módulos de Contribución</strong> representan la <strong>Naturaleza del Cobro</strong>. Son agrupadores lógicos que permiten segmentar a las unidades sin importar dónde estén físicamente ubicadas.</p>
                         
-                        <p>El sistema permite que cada unidad se suscriba a diferentes "Módulos de Contribución". Estos módulos son los que realmente dictan quién paga qué.</p>
+                        <h3>El Concepto de "Multi-Pertenencia"</h3>
+                        <p>A diferencia de una Torre (donde un apartamento solo puede estar en una torre), una Unidad puede pertenecer a <strong>varios Módulos</strong> al mismo tiempo. Esto es lo que da al sistema una potencia ilimitada.</p>
+                        
+                        <p><strong>Ejemplo en un Condominio Mixto:</strong></p>
+                        <ul>
+                            <li><strong>Apto 501</strong>: Pertenece al <em>Módulo Residencial</em> y al <em>Módulo de Piscina</em>.</li>
+                            <li><strong>Local 01</strong>: Pertenece al <em>Módulo Comercial</em> y al <em>Módulo de Parqueaderos Visitantes</em>.</li>
+                        </ul>
+                    </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 my-8">
-                            <div class="p-10 bg-indigo-50/50 rounded-3xl border border-indigo-100">
-                                <h4 class="text-xl font-bold text-indigo-700 mb-4">Distribución Fija (Igualitario)</h4>
-                                <p class="text-gray-600 italic">"Todos pagan lo mismo."</p>
-                                <p class="text-sm mt-4">Ideal para conceptos como seguridad, limpieza básica o cuotas extraordinarias uniformes.</p>
-                            </div>
-                            <div class="p-10 bg-violet-50/50 rounded-3xl border border-violet-100">
-                                <h4 class="text-xl font-bold text-violet-700 mb-4">Distribución Proporcional (Coeficiente)</h4>
-                                <p class="text-gray-600 italic">"Paga según tu participación."</p>
-                                <p class="text-sm mt-4">Fundamental para la Ley 675. Se define un valor total (ej: $10.000.000 para pintura) y el sistema lo reparte según el coeficiente de cada unidad.</p>
-                            </div>
-                        </div>
+                    <h2>2. Conceptos de Cobro: Las Reglas del Juego</h2>
+                    <p>El <strong>Concepto</strong> es la definición de <strong>qué se va a cobrar y cómo</strong>. Es el puente entre la necesidad administrativa y la realidad contable.</p>
+                    
+                    <div class="premium-card">
+                        <h3>Anatomía de un Concepto:</h3>
+                        <ul>
+                            <li><strong>1. Nombre</strong>: "Administración", "Mora", "Fondo de Reserva".</li>
+                            <li><strong>2. Configuración Financiera</strong>: Fijo o Por Coeficiente.</li>
+                            <li><strong>3. Conexión Contable (Crucial)</strong>: Cada concepto apunta a una cuenta del PUC (Plan Único de Cuentas).</li>
+                            <li><strong>4. Vinculación a Módulo</strong>: El concepto NO se le asigna a una unidad, <strong>se le asigna a un Módulo</strong>.</li>
+                        </ul>
+                    </div>
 
-                        <blockquote>
-                            <strong>IMPORTANTE:</strong> No confunda el "Tipo" de la unidad con el "Módulo". El "Tipo" es la etiqueta (Residencial, Comercial), pero el **Módulo** es el motor que engancha los conceptos de gasto. Es lo que permite segregar o discriminar la operación a nivel quirúrgico.
-                        </blockquote>
+                    <h2>3. Visualizando la Inteligencia del Sistema</h2>
+                    <div class="mermaid">
+                    graph TD
+                    subgraph "Reglas de Negocio"
+                    C1[Gasto Administrativo]
+                    C2[Gasto Jardinería]
+                    end
+                    subgraph "Lógica de Agrupación (Módulos)"
+                    M1((Módulo Todo el Conjunto))
+                    M2((Módulo Zonas Verdes))
+                    end
+                    subgraph "Inventario (Unidades)"
+                    U1[Torre 1]
+                    U2[Torre 2]
+                    end
+                    C1 --> M1
+                    C2 --> M2
+                    M1 --> U1
+                    M1 --> U2
+                    M2 --> U1
+                    style M1 fill:#FDE68A,stroke:#D97706
+                    style M2 fill:#FDE68A,stroke:#D97706
+                    </div>
 
-                        <div class="mermaid">
-                        graph TD
-                            C1[Agua Común] -->|Paga el 100%| M1(Módulo General)
-                            C2[Seguridad Local] -->|Paga solo| M2(Módulo Comercial)
-                            M1 --> U1[Residencia 1]
-                            M1 --> U2[Local 1]
-                            M2 --> U2
-                            style M1 fill:#FDE68A,stroke:#D97706
-                            style M2 fill:#FDE68A,stroke:#D97706
-                        </div>
+                    <div class="alert alert-tip">
+                        <h4 class="font-bold text-green-800 mb-2">Consultoría Pro</h4>
+                        <p class="text-green-900 m-0">Esta misma lógica permite crear "Módulos de Excepción". Si un propietario tiene un acuerdo especial donde no paga administración por 3 meses, simplemente lo sacamos del módulo temporalmente sin borrar facturas antiguas.</p>
                     </div>
                 </section>
 
                 <!-- Capítulo 4 -->
                 <section id="cap-4" class="chapter-content hidden">
-                    <h1 class="text-indigo-600">La Sinfonía Financiera: Conceptos y Ejecución</h1>
+                    <h1>Capítulo 4: Articulación Maestra y Casos Prácticos</h1>
                     
                     <div class="premium-card">
-                        <p class="text-xl font-medium text-gray-700 mb-8 italic">"Donde la regla de negocio se convierte en número contable."</p>
-
-                        <h2>1. El Concepto como Regla Maestra</h2>
-                        <p>Los conceptos no se asignan a las unidades directamente. Esto sería una pesadilla administrativa. Se asignan a **Módulos**. Esto permite que un cambio en un concepto afecte a miles de unidades con un solo clic.</p>
-
-                        <h3>El Poder de la Automatización</h3>
+                        <h2>1. La Sinfonía de la Facturación Masiva</h2>
+                        <p>La <strong>Facturación Masiva</strong> no es simplemente un proceso de "generar recibos", es un motor de ejecución de reglas de negocio.</p>
+                        
+                        <h3>¿Cómo "piensa" el sistema al facturar?</h3>
                         <ul>
-                            <li><strong>Intereses de Mora:</strong> Configuración automática por política corporativa.</li>
-                            <li><strong>Cruce de Anticipos:</strong> Si el propietario "Juliana Guerrero" tiene un saldo a favor en la cuenta 2805, el sistema lo detecta y lo cruza antes de generar la factura.</li>
-                            <li><strong>Sincronización Contable:</strong> Cada recaudo viaja en tiempo real al PUC, garantizando que caja y bancos reflejen la realidad operativa.</li>
+                            <li><strong>1. Identifica los Conceptos</strong>: ¿Qué vamos a cobrar hoy?</li>
+                            <li><strong>2. Busca el Destino (Módulos)</strong>: ¿A qué módulos afectan estos conceptos?</li>
+                            <li><strong>3. Filtra por Ubicación (Torres)</strong>: ¿Hay alguna restricción por torre?</li>
+                            <li><strong>4. Calcula el Valor</strong>: Aplica coeficiente o tasa de interés.</li>
+                            <li><strong>5. Cruce Automático</strong>: Descuenta anticipos de inmediato.</li>
                         </ul>
+                    </div>
 
-                        <div class="consultancy-note">
-                            <strong>Pensamiento Sistémico:</strong><br>
-                            El motor de facturación recorre esta jerarquía: Concepto → Módulo → Torre → Unidad. Es un barrido en cascada que garantiza que nadie se quede sin factura y que nadie pague lo que no le corresponde.
+                    <h2>2. Casos de Éxito: Resolviendo Problemas Reales</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 my-8">
+                        <div class="p-8 bg-indigo-50 rounded-3xl border-l-8 border-indigo-600">
+                            <h4 class="font-bold text-indigo-900 mb-4">Caso A: Pintura Selectiva</h4>
+                            <p class="text-sm">Solo se pintará el Bloque 4. Aplicamos el filtro: "Solo para la Torre: Bloque 4". El resto del conjunto factura normal.</p>
                         </div>
-
-                        <div class="mermaid">
-                        flowchart LR
-                            A[Concepto] -->|Define Qué| B[Módulo]
-                            B -->|Define Quiénes| C{Motor}
-                            C -->|Aplica Coeficiente| D[Factura]
-                            C -->|Aplica Cruce| E[Contabilidad 28/13]
-                            style C fill:#4F46E5,color:#fff
-                            style D fill:#10B981,color:#fff
+                        <div class="p-8 bg-blue-50 rounded-3xl border-l-8 border-blue-600">
+                            <h4 class="font-bold text-blue-900 mb-4">Caso B: Daño Acueducto</h4>
+                            <p class="text-sm">Un daño urgente en la Torre 1 se cobra solo a esas unidades sin afectar a la Torre 5.</p>
                         </div>
                     </div>
-                </section>
 
-                <!-- Capítulo 5 -->
-                <section id="cap-5" class="chapter-content hidden">
-                    <p class="text-indigo-600 font-bold tracking-widest uppercase mb-4">Masterclass de Operación</p>
-                    <h1 class="text-indigo-600">Ciclo de Vida: La Creación de la Unidad</h1>
-                    
-                    <div class="premium-card">
-                        <p class="text-xl font-medium text-gray-700 mb-8">"La integridad del sistema nace en la captura correcta del dato inicial."</p>
+                    <h2>3. Flexibilidad Extensible</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Sector</th>
+                                <th>¿Qué es la Unidad?</th>
+                                <th>¿Qué es the Módulo?</th>
+                                <th>¿Qué es the Torre?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Colegios</td>
+                                <td>El Alumno</td>
+                                <td>El Grado (Primaria)</td>
+                                <td>La Jornada</td>
+                            </tr>
+                            <tr>
+                                <td>Cooperativas</td>
+                                <td>El Asociado</td>
+                                <td>Tipo de Ahorro</td>
+                                <td>El Municipio</td>
+                            </tr>
+                            <tr>
+                                <td>Transporte</td>
+                                <td>El Vehículo</td>
+                                <td>Tipo de Vehículo (Bus)</td>
+                                <td>La Ruta</td>
+                            </tr>
+                        </tbody>
+                    </table>
 
-                        <h2>1. El Propietario (El Responsable Legal)</h2>
-                        <p>La deuda no pertenece a una pared, pertenece a un ser humano o entidad. Por eso el vínculo con el módulo de **Terceros** es el primer paso. El sistema permite que una persona natural o jurídica sea cabeza de múltiples unidades.</p>
-
-                        <h2>2. La Identidad de la Unidad</h2>
-                        <ul>
-                            <li><strong>Código/Número:</strong> El identificador único (Bloque 5 Apto 304).</li>
-                            <li><strong>Tipo:</strong> Vital para la organización. ¿Es residencial? ¿Es comercial? ¿Es un parqueadero? Esto permite segregar gastos en el futuro.</li>
-                            <li><strong>Coeficiente (%):</strong> Fundamental. Si se definen 10 millones para un gasto extraordinario, el sistema cobrará a cada unidad su porcentaje exacto de ese presupuesto.</li>
-                        </ul>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 my-10">
-                            <div class="p-8 bg-amber-50 rounded-3xl border border-amber-200">
-                                <h4 class="text-amber-700 font-bold mb-2">Vehículos</h4>
-                                <p class="text-sm text-gray-600">Control de placas, marcas y colores. Integridad total del inventario de parqueo.</p>
-                            </div>
-                            <div class="p-8 bg-green-50 rounded-3xl border border-green-200">
-                                <h4 class="text-green-700 font-bold mb-2">Mascotas</h4>
-                                <p class="text-sm text-gray-600">Información de convivencia para una administración proactiva.</p>
-                            </div>
-                        </div>
-
-                        <blockquote>
-                            <strong>Resumen Final:</strong> Al crear la unidad, usted está "matriculando" una responsabilidad dentro de un esquema físico (Torre) y un esquema lógico (Módulo). Con esto, el sistema tiene todo lo necesario para operar de forma autónoma.
-                        </blockquote>
+                    <h2>4. Diagrama de Articulación Final</h2>
+                    <div class="mermaid">
+                    flowchart LR
+                    subgraph INPUT
+                    C[Configuración de Conceptos]
+                    end
+                    subgraph PROCESO
+                    M[Módulos / Torres]
+                    F{Motor de Facturación}
+                    end
+                    subgraph OUTPUT
+                    FAC[Factura Individual]
+                    CON[Asiento Contable Automático]
+                    CRU[Cruce de Anticipos]
+                    end
+                    C --> M
+                    M --> F
+                    F --> FAC
+                    F --> CON
+                    FAC --> CRU
+                    style F fill:#4F46E5,color:#fff
+                    style CRU fill:#10B981,color:#fff
                     </div>
                 </section>
 
                 <!-- Footer Navigation -->
-                <div class="mt-24 pt-12 border-t border-gray-100 flex justify-between items-center bg-white/50 p-10 rounded-[40px] shadow-sm">
-                    <button id="prevBtn" onclick="changeStep(-1)" class="px-8 py-4 bg-white border border-gray-200 rounded-2xl text-md font-bold text-gray-400 hover:bg-gray-100 transition-all opacity-50 cursor-not-allowed">Anterior</button>
+                <div class="mt-20 pt-10 border-t border-gray-100 flex justify-between items-center bg-white/50 p-8 rounded-[40px]">
+                    <button id="prevBtn" onclick="changeStep(-1)" class="px-8 py-4 bg-white border border-gray-100 rounded-2xl text-md font-bold text-gray-300 transition-all opacity-50 cursor-not-allowed">Anterior</button>
                     
                     <div id="stepDots" class="flex gap-3">
-                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 dot-active"></div>
-                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500"></div>
-                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500"></div>
-                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500"></div>
-                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500"></div>
+                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 dot-active cursor-pointer" onclick="showChapter(1)"></div>
+                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(2)"></div>
+                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(3)"></div>
+                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(4)"></div>
                     </div>
 
-                    <button id="nextBtn" onclick="changeStep(1)" class="px-10 py-4 bg-indigo-600 text-white rounded-2xl text-md font-bold hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all">Siguiente Capítulo</button>
+                    <button id="nextBtn" onclick="changeStep(1)" class="px-10 py-4 bg-indigo-600 text-white rounded-2xl text-md font-bold hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all">Siguiente</button>
                 </div>
             </div>
         </main>
     </div>
 
     <script>
-        // Inicializar Mermaid con tema moderno
         mermaid.initialize({ 
             startOnLoad: true, 
             theme: 'base', 
@@ -422,31 +511,34 @@
                 primaryColor: '#EEF2FF',
                 primaryTextColor: '#4F46E5',
                 primaryBorderColor: '#4F46E5',
-                lineColor: '#9333EA',
-                secondaryColor: '#F5F3FF',
-                tertiaryColor: '#FFFFFF'
+                lineColor: '#6366F1',
+                secondaryColor: '#F8FAFC',
+                tertiaryColor: '#FFFFFF',
+                fontFamily: 'Outfit'
             },
             securityLevel: 'loose' 
         });
 
         let currentChapter = 1;
+        const TOTAL_CHAPTERS = 4;
 
         function showChapter(n) {
-            // Animación suave de salida
             document.querySelectorAll('.chapter-content').forEach(el => {
                 el.classList.add('hidden');
                 el.classList.remove('block', 'visible');
             });
             
-            // Mostrar nuevo capítulo con retardo para animación
             setTimeout(() => {
                 const target = document.getElementById(`cap-${n}`);
-                target.classList.remove('hidden');
-                target.classList.add('block');
-                setTimeout(() => target.classList.add('visible'), 50);
+                if (target) {
+                    target.classList.remove('hidden');
+                    target.classList.add('block');
+                    setTimeout(() => target.classList.add('visible'), 50);
+                    // Force mermaid re-render
+                    mermaid.run({ nodes: target.querySelectorAll('.mermaid') });
+                }
             }, 300);
             
-            // Actualizar Sidebar
             document.querySelectorAll('.sidebar-item').forEach((el, index) => {
                 if (index === n-1) {
                     el.classList.add('sidebar-item-active');
@@ -457,7 +549,6 @@
                 }
             });
 
-            // Actualizar Dots
             document.querySelectorAll('#stepDots .dot').forEach((el, index) => {
                 if (index === n-1) {
                     el.classList.add('dot-active');
@@ -466,14 +557,13 @@
                 }
             });
 
-            // Actualizar botones de pie
             const prev = document.getElementById('prevBtn');
             const next = document.getElementById('nextBtn');
             
-            prev.className = `px-8 py-4 bg-white border border-gray-200 rounded-2xl text-md font-bold transition-all ${n === 1 ? 'opacity-50 cursor-not-allowed text-gray-300' : 'hover:bg-gray-100 text-gray-700 shadow-sm'}`;
-            next.innerText = n === 5 ? 'Finalizar Lectura' : 'Siguiente Capítulo';
-            next.className = `px-10 py-4 ${n === 5 ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-600 hover:bg-indigo-700'} text-white rounded-2xl text-md font-bold shadow-xl shadow-indigo-100 transition-all`;
-            next.onclick = n === 5 ? () => window.close() : () => changeStep(1);
+            prev.className = `px-8 py-4 bg-white border border-gray-200 rounded-2xl text-md font-bold transition-all ${n === 1 ? 'opacity-50 cursor-not-allowed text-gray-200' : 'hover:bg-gray-100 text-gray-700 shadow-sm'}`;
+            next.innerText = n === TOTAL_CHAPTERS ? 'Cerrar' : 'Siguiente';
+            next.className = `px-10 py-4 ${n === TOTAL_CHAPTERS ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-600 hover:bg-indigo-700'} text-white rounded-2xl text-md font-bold shadow-xl shadow-indigo-100 transition-all`;
+            next.onclick = n === TOTAL_CHAPTERS ? () => window.close() : () => changeStep(1);
 
             currentChapter = n;
             document.getElementById('contentArea').scrollTo({ top: 0, behavior: 'smooth' });
@@ -481,10 +571,12 @@
 
         function changeStep(dir) {
             let next = currentChapter + dir;
-            if (next >= 1 && next <= 5) {
+            if (next >= 1 && next <= TOTAL_CHAPTERS) {
                 showChapter(next);
             }
         }
+
+        window.onload = () => showChapter(1);
     </script>
 </body>
 </html>
