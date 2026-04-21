@@ -429,7 +429,39 @@
                         </div>
                     </div>
 
-                    <h2>3. Flexibilidad Extensible</h2>
+                    <h2>3. Gobernanza de Reliquidación: ¿Borrar o Completar?</h2>
+                    <p>Cuando olvidamos incluir una unidad o detectamos un error después de haber liquidado, el sistema nos ofrece dos caminos estratégicos. La elección depende de la <strong>visibilidad del error</strong>.</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 my-8">
+                        <div class="premium-card !mb-0 !p-10 border-t-8 border-red-500">
+                            <h4 class="font-bold text-red-600 mb-3 uppercase tracking-wider">Borrar y Regenerar</h4>
+                            <p class="text-sm">Elimina todas las facturas del periodo y las crea de nuevo.</p>
+                            <ul class="text-xs !mb-0">
+                                <li><strong>Uso:</strong> Si nadie ha recibido su factura aún.</li>
+                                <li><strong>Ventaja:</strong> Mantienes orden alfabético y perfecto de consecutivos.</li>
+                            </ul>
+                        </div>
+                        <div class="premium-card !mb-0 !p-10 border-t-8 border-indigo-500">
+                            <h4 class="font-bold text-indigo-600 mb-3 uppercase tracking-wider">Completar (Delta)</h4>
+                            <p class="text-sm">Genera solo lo que falta sin tocar lo que ya existe.</p>
+                            <ul class="text-xs !mb-0">
+                                <li><strong>Uso:</strong> Si ya entregaste facturas a los demás.</li>
+                                <li><strong>Ventaja:</strong> No alteras la contabilidad de los que ya tienen su documento.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <h3>Mapa de Decisión Táctica</h3>
+                    <div class="mermaid">
+                    graph TD
+                        Start[¿Detectó un error?] --> Sent{¿Ya lo envió?}
+                        Sent -->|No| Delete[Borrar y Regenerar]
+                        Sent -->|Sí| Delta[Completar Delta]
+                        Delete -->|Resultado| Perfect[Consecutivos Perfectos]
+                        Delta -->|Resultado| Safe[Paz Contable y Vecinal]
+                    </div>
+
+                    <h2>4. Flexibilidad Extensible</h2>
                     <table>
                         <thead>
                             <tr>
