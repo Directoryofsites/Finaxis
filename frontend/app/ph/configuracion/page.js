@@ -7,7 +7,7 @@ import { useRecaudos } from '../../../contexts/RecaudosContext';
 
 import { phService } from '../../../lib/phService';
 import BuscadorCuentas from '../../../components/BuscadorCuentas';
-import { FaCogs, FaSave, FaPlus, FaTrash, FaEdit, FaExclamationTriangle, FaListUl, FaMoneyBillWave, FaLayerGroup, FaBuilding } from 'react-icons/fa';
+import { FaCogs, FaSave, FaPlus, FaTrash, FaEdit, FaExclamationTriangle, FaListUl, FaMoneyBillWave, FaLayerGroup, FaBuilding, FaLightbulb } from 'react-icons/fa';
 import ManualButton from '../../components/ManualButton';
 
 // Estilos
@@ -116,11 +116,18 @@ export default function ConfiguracionPHPage() {
                                 <p className="text-gray-500 text-sm">Parámetros generales y conceptos de facturación.</p>
                             </div>
                         </div>
-                        <div className="mt-3">
+                        <div className="mt-3 flex gap-2">
                             <ManualButton
                                 manualPath="configuracion.html"
                                 title="Manual de Configuración"
                                 position="header"
+                            />
+                            <ManualButton
+                                manualPath="manual_recaudos_super.html"
+                                title="Súper Manual de Consultoría"
+                                position="header"
+                                icon={<FaLightbulb className="text-sm" />}
+                                className="bg-purple-600 hover:bg-purple-700 shadow-purple-100"
                             />
                         </div>
                     </div>

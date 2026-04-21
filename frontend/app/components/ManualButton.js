@@ -11,13 +11,15 @@ import { FaBook, FaQuestionCircle } from 'react-icons/fa';
  * @param {'header'|'sidebar'|'floating'} props.position - Posición del botón (default: 'header')
  * @param {string} props.className - Clases CSS adicionales
  * @param {boolean} props.showText - Mostrar texto junto al icono (default: true)
+ * @param {React.ReactNode} props.icon - Icono personalizado para el botón
  */
 const ManualButton = ({ 
     manualPath, 
     title = "Manual de Usuario", 
     position = 'header',
     className = '',
-    showText = true 
+    showText = true,
+    icon = null
 }) => {
     const handleOpenManual = () => {
         if (!manualPath) {
@@ -59,7 +61,9 @@ const ManualButton = ({
     };
 
     // Icono según la posición
+    // Icono según la posición o prop personalizada
     const getIcon = () => {
+        if (icon) return icon;
         const iconClass = position === 'floating' ? 'text-lg' : 'text-sm';
         return <FaBook className={iconClass} />;
     };
