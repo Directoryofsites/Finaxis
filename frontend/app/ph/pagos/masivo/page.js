@@ -82,15 +82,17 @@ export default function RecaudosMasivosPage() {
         try {
             setLoading(true);
             setError(null);
-            // Convertir a entero para evitar mismatch de tipos en el backend
-            const data = await phService.getUnidades({ 
-                torre_id: parseInt(torreId, 10), 
-                limit: 500 
-            });
+            
+            const params = { limit: 1000 };
+            if (torreId !== 'ALL') {
+                params.torre_id = parseInt(torreId, 10);
+            }
+
+            const data = await phService.getUnidades(params);
             setUnidades(data);
             setSelectedUnidades(data.map(u => u.id)); // Por defecto todas seleccionadas
         } catch (err) {
-            setError("Error cargando unidades de la torre. Verifique la conexión.");
+            setError("Error cargando unidades. Verifique la conexión.");
         } finally {
             setLoading(false);
         }
@@ -183,6 +185,7 @@ export default function RecaudosMasivosPage() {
                                         className={inputClass}
                                     >
                                         <option value="">-- Seleccionar --</option>
+                                        <option value="ALL" className="font-bold text-indigo-600">-- TODAS LAS TORRES --</option>
                                         {torres.map(t => (
                                             <option key={t.id} value={t.id}>{t.nombre}</option>
                                         ))}

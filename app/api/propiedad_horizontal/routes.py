@@ -146,8 +146,8 @@ def listar_unidades(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    # Permitir hasta 500 para recaudos masivos de torres grandes
-    limit = min(limit, 500)
+    # Permitir hasta 1000 para recaudos masivos de torres grandes
+    limit = min(limit, 1000)
     return unidad_service.get_unidades(db, empresa_id=current_user.empresa_id, skip=skip, limit=limit, torre_id=torre_id)
 
 @router.post("/unidades", response_model=schemas.PHUnidad, status_code=status.HTTP_201_CREATED)
