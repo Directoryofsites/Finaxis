@@ -31,501 +31,332 @@
         }
         .mermaid { 
             background: #FFFFFF; 
-            border-radius: 24px; 
-            padding: 2.5rem; 
-            margin: 2.5rem 0; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.03); 
+            border-radius: 20px; 
+            padding: 2rem; 
+            margin: 2rem 0; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05); 
             border: 1px solid rgba(0,0,0,0.05);
             display: flex;
             justify-content: center;
+            min-height: 100px;
         }
         .markdown-body h1 { 
-            font-size: 3rem; 
+            font-size: 2.8rem; 
             font-weight: 800; 
             letter-spacing: -0.02em;
-            background: linear-gradient(135deg, #4F46E5 0%, #9333EA 100%);
+            background: linear-gradient(135deg, #1e1b4b 0%, #4338ca 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 2rem;
             line-height: 1.1;
         }
         .markdown-body h2 { 
-            font-size: 2rem; 
+            font-size: 1.8rem; 
             font-weight: 700; 
-            color: #1D1D1F; 
-            margin-top: 3.5rem; 
-            margin-bottom: 1.5rem;
+            color: #111827; 
+            margin-top: 3rem; 
+            margin-bottom: 1.2rem;
             letter-spacing: -0.01em;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #F3F4F6;
+            padding-bottom: 0.4rem;
         }
         .markdown-body h3 { 
-            font-size: 1.5rem; 
+            font-size: 1.4rem; 
             font-weight: 600; 
-            color: #334155; 
-            margin-top: 2.5rem; 
-            margin-bottom: 1rem;
+            color: #374151; 
+            margin-top: 2rem; 
+            margin-bottom: 0.8rem;
         }
         .markdown-body p { 
-            font-size: 1.2rem; 
-            line-height: 1.65; 
+            font-size: 1.15rem; 
+            line-height: 1.6; 
             color: #4B5563; 
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.2rem;
         }
         .markdown-body ul { 
             list-style: none;
             padding-left: 0;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
         .markdown-body li {
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             color: #4B5563;
-            margin-bottom: 1rem;
+            margin-bottom: 0.8rem;
             display: flex;
             align-items: flex-start;
-            gap: 12px;
-        }
-        .markdown-body li strong {
-            color: #1D1D1F;
+            gap: 10px;
         }
         .markdown-body li::before {
             content: "•";
             color: var(--apple-accent);
             font-weight: bold;
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             line-height: 1;
         }
         .premium-card {
-            background: var(--apple-card);
-            border-radius: 32px;
-            padding: 3rem;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.03);
-            border: 1px solid rgba(0,0,0,0.04);
-            margin-bottom: 3rem;
+            background: #FFFFFF;
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+            border: 1px solid #F3F4F6;
+            margin-bottom: 2.5rem;
         }
         .alert {
-            padding: 2rem;
-            border-radius: 20px;
-            margin: 2.5rem 0;
+            padding: 1.5rem;
+            border-radius: 16px;
+            margin: 2rem 0;
+            font-size: 1rem;
         }
-        .alert-tip {
-            background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
-            border-left: 6px solid #10B981;
-        }
-        .alert-important {
-            background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
-            border-left: 6px solid #F97316;
-        }
-        .sidebar-item {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+        .alert-tip { background: #F0FDF4; border-left: 5px solid #22C55E; color: #166534; }
+        .alert-important { background: #FFF7ED; border-left: 5px solid #F97316; color: #9A3412; }
+        
+        .sidebar-item { transition: all 0.2s ease; }
         .sidebar-item-active {
             background: #FFFFFF;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-            color: var(--apple-accent) !important;
-            transform: translateX(8px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            color: #000000 !important;
+            transform: translateX(5px);
         }
         .chapter-content {
+            display: none;
             opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(10px);
+            transition: all 0.4s ease;
         }
         .chapter-content.visible {
+            display: block;
             opacity: 1;
             transform: translateY(0);
         }
-        .dot-active {
-            width: 32px;
-            background: var(--apple-accent);
-        }
+        .dot-active { width: 24px; background: var(--apple-accent); }
         table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            margin: 2rem 0;
-            border-radius: 16px;
-            overflow: hidden;
-            border: 1px solid rgba(0,0,0,0.05);
+            width: 100%; border-collapse: collapse; margin: 1.5rem 0;
+            border: 1px solid #E5E7EB; border-radius: 12px; overflow: hidden;
         }
-        th {
-            background: #F9FAFB;
-            padding: 1.25rem;
-            text-align: left;
-            font-weight: 700;
-            color: #1D1D1F;
-        }
-        td {
-            padding: 1.25rem;
-            border-top: 1px solid rgba(0,0,0,0.05);
-            color: #4B5563;
-        }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+        th { background: #F9FAFB; padding: 1rem; text-align: left; border-bottom: 2px solid #E5E7EB; }
+        td { padding: 1rem; border-bottom: 1px solid #E5E7EB; }
     </style>
 </head>
-<body class="transition-all duration-500 overflow-hidden">
+<body class="overflow-hidden">
 
     <div class="flex h-screen">
         <!-- Sidebar Navigation -->
-        <aside class="w-[380px] glass h-full flex flex-col z-20">
-            <div class="p-12">
-                <div class="flex items-center gap-4 mb-8">
-                    <div class="w-12 h-12 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-100">
-                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        <aside class="w-[350px] glass h-full flex flex-col z-20 border-r border-gray-200">
+            <div class="p-10">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
                     </div>
-                    <div>
-                        <h1 class="text-2xl font-bold tracking-tight text-gray-900 m-0 leading-none">Súper Manual</h1>
-                        <p class="text-[10px] font-extrabold text-blue-500 uppercase tracking-[0.2em] mt-1">Consultoría de Negocio</p>
-                    </div>
+                    <h1 class="text-xl font-bold text-gray-900 m-0">Súper Manual</h1>
                 </div>
             </div>
 
-            <nav class="flex-1 px-8 space-y-2 overflow-y-auto pb-10">
-                <button onclick="showChapter(1)" id="btn-cap-1" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group sidebar-item-active">
-                    <span>1. Panorama General</span>
-                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                </button>
-                <button onclick="showChapter(2)" id="btn-cap-2" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
-                    <span>2. Inventario Físico</span>
-                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                </button>
-                <button onclick="showChapter(3)" id="btn-cap-3" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
-                    <span>3. Lógica de Segmentación</span>
-                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                </button>
-                <button onclick="showChapter(4)" id="btn-cap-4" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
-                    <span>4. Articulación Maestra</span>
-                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                </button>
-                <button onclick="showChapter(5)" id="btn-cap-5" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
-                    <span>5. Ciclo de Vida: La Unidad</span>
-                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                </button>
-                <button onclick="showChapter(6)" id="btn-cap-6" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
-                    <span>6. Mapas Lógicos Avanzados</span>
-                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                </button>
+            <nav class="flex-1 px-6 space-y-1 overflow-y-auto">
+                <button onclick="showChapter(1)" id="btn-cap-1" class="sidebar-item w-full text-left px-5 py-3 rounded-xl text-sm font-bold text-gray-500 hover:bg-white transition-all sidebar-item-active">1. Panorama General</button>
+                <button onclick="showChapter(2)" id="btn-cap-2" class="sidebar-item w-full text-left px-5 py-3 rounded-xl text-sm font-bold text-gray-500 hover:bg-white transition-all">2. Inventario Físico</button>
+                <button onclick="showChapter(3)" id="btn-cap-3" class="sidebar-item w-full text-left px-5 py-3 rounded-xl text-sm font-bold text-gray-500 hover:bg-white transition-all">3. Lógica de Segmentación</button>
+                <button onclick="showChapter(4)" id="btn-cap-4" class="sidebar-item w-full text-left px-5 py-3 rounded-xl text-sm font-bold text-gray-500 hover:bg-white transition-all">4. Articulación Maestra</button>
+                <button onclick="showChapter(5)" id="btn-cap-5" class="sidebar-item w-full text-left px-5 py-3 rounded-xl text-sm font-bold text-gray-500 hover:bg-white transition-all">5. Ciclo de Vida: La Unidad</button>
+                <button onclick="showChapter(6)" id="btn-cap-6" class="sidebar-item w-full text-left px-5 py-3 rounded-xl text-sm font-bold text-gray-500 hover:bg-white transition-all">6. Mapas Lógicos</button>
             </nav>
-
-            <div class="p-12 border-t border-gray-100">
-                <div class="flex items-center gap-2 text-indigo-600 font-bold text-[11px] tracking-widest uppercase">
-                    <div class="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse"></div>
-                    Sincronizado • 2026.4
-                </div>
-            </div>
+            <div class="p-8"><div class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Finaxis Expert • 2026.5</div></div>
         </aside>
 
         <!-- Content Area -->
         <main id="contentArea" class="flex-1 overflow-y-auto bg-[#FBFBFD] scroll-smooth">
-            <div class="max-w-4xl mx-auto px-16 py-24 markdown-body">
+            <div class="max-w-4xl mx-auto px-12 py-20 markdown-body">
                 
                 <!-- Capítulo 1 -->
-                <section id="cap-1" class="chapter-content block visible">
-                    <h1>Panorama General del Modelo de Recaudos (Recuperación de Cartera)</h1>
-                    
+                <section id="cap-1" class="chapter-content visible">
+                    <h1>Panorama General del Modelo</h1>
                     <div class="premium-card">
-                        <h2>1. La Filosofía del Sistema: "Flexibilidad sin Caos"</h2>
-                        <p>Nuestra plataforma ha sido diseñada bajo un paradigma de <strong>Consultoría de Negocio</strong>, donde el software no impone una estructura rígida, sino que se convierte en un lienzo para modelar la operación financiera.</p>
-                        
-                        <h3>¿Qué resolvemos?</h3>
-                        <ul>
-                            <li><strong>Segmentación Inteligente</strong>: Poder cobrar administración de locales a unos y residencial a otros en el mismo mes.</li>
-                            <li><strong>Localización de Gastos</strong>: Si una torre necesita pintura, solo esa torre paga por ella, manteniendo la equidad financiera.</li>
-                            <li><strong>Automatización Contable</strong>: Cada cobro está amarrado a una cuenta del PUC, eliminando errores manuales al facturar.</li>
-                            <li><strong>Integridad de Cartera</strong>: El sistema reconoce saldos a favor (anticipos) y los cruza automáticamente si se desea.</li>
-                        </ul>
+                        <h2>1. La Filosofía del Sistema</h2>
+                        <p>Nuestra plataforma permite modelar la operación financiera de cualquier entidad de recaudo masivo adaptándose a su realidad física y jurídica.</p>
                     </div>
-
-                    <h2>2. La Arquitectura del Cobro (Panorama de Conexión)</h2>
                     <div class="mermaid">
                     graph TD
-                    A[Conceptos de Cobro] -->|Configuran REGLAS| B(Módulos de Contribución)
-                    B -->|Agrupan LÓGICAMENTE| C{Unidades de Cobro}
-                    D[Torres / Bloques] -->|Agrupan FÍSICAMENTE| C
-                    C -->|Generan| E[Factura Masiva]
-                    style A fill:#4F46E5,color:#fff
-                    style B fill:#818CF8,color:#fff
-                    style D fill:#C7D2FE,color:#312E81
-                    style E fill:#10B981,color:#fff
-                    </div>
-
-                    <div class="premium-card">
-                        <h3>Los Cuatro Pilares:</h3>
-                        <ul>
-                            <li><strong>1. Las Unidades (El destino)</strong>: Son los átomos del sistema. Un apartamento, un local, un bus, un alumno. Cada unidad tiene un <strong>propietario</strong> y un <strong>coeficiente</strong> (peso financiero).</li>
-                            <li><strong>2. Las Torres/Bloques (La ubicación)</strong>: Es la agrupación por ubicación física. Permite decir: "Esto es del Bloque A".</li>
-                            <li><strong>3. Los Módulos de Contribución (La lógica)</strong>: Es la agrupación por <strong>naturaleza</strong>. Un apartamento puede pertenecer al "Módulo Residencial" y al mismo tiempo una torre completa puede pertenecer al "Módulo de Pintura".</li>
-                            <li><strong>4. Los Conceptos (La regla)</strong>: Es el "qué" se cobra. Aquí definimos si el cobro es por coeficiente, si es fijo, a qué cuenta contable va y a qué <strong>Módulos</strong> afecta.</li>
-                        </ul>
-                    </div>
-
-                    <div class="alert alert-tip">
-                        <h4 class="font-bold text-green-800 mb-2">Visión de Negocio</h4>
-                        <p class="text-green-900 m-0">Esta estructura permite que el administrador justifique cada cobro ante una asamblea o junta con total transparencia, ya que el sistema guarda la trazabilidad de por qué una unidad está siendo afectada por un concepto específico.</p>
+                        A(Conceptos) -->|Reglas| B(Módulos)
+                        B -->|Lógica| C{Unidades}
+                        D(Torres) -->|Físico| C
+                        C -->|Generan| E[Factura]
+                        style A fill:#EEF2FF,stroke:#4F46E5,color:#1e1b4b
+                        style B fill:#EEF2FF,stroke:#4F46E5,color:#1e1b4b
+                        style C fill:#FFF,stroke:#4338ca,color:#1e1b4b
+                        style D fill:#F5F3FF,stroke:#7C3AED,color:#1e1b4b
+                        style E fill:#F0FDF4,stroke:#166534,color:#166534
                     </div>
                 </section>
 
                 <!-- Capítulo 2 -->
-                <section id="cap-2" class="chapter-content hidden">
-                    <h1>Capítulo 2: El Inventario Físico (Unidades y Torres)</h1>
-                    
+                <section id="cap-2" class="chapter-content">
+                    <h1>Inventario Físico (Unidades y Torres)</h1>
                     <div class="premium-card">
-                        <h2>1. La Unidad: El Centro de Gravedad</h2>
-                        <p>En nuestro modelo, la <strong>Unidad</strong> es mucho más que un simple número de apartamento o local; es una <strong>Entidad Financiera Autónoma</strong>. Cada vez que creamos una unidad, estamos definiendo un punto de recaudo que tiene sus propias reglas de juego.</p>
-                        
-                        <h3>Atributos Clave desde la Consultoría:</h3>
-                        <ul>
-                            <li><strong>Código de Identificación</strong>: El nombre "público" (Ej: Ap. 501, Local 10, Bus 45).</li>
-                            <li><strong>Coeficiente de Copropiedad</strong>: Este es el factor más importante. Define qué porcentaje del gasto total le corresponde a esa unidad. Un error en el coeficiente es un error en la equidad del cobro.</li>
-                            <li><strong>Vínculo Jurídico</strong>: Cada unidad está ligada a un <strong>Propietario</strong> (Tercero) en la base de datos contable. Esto asegura que la Cartera (lo que nos deben) sea real y legalmente exigible.</li>
-                        </ul>
+                        <h2>1. La Unidad: Centro de Gravedad</h2>
+                        <p>Cada unidad es una entidad financiera con Responsabilidad Jurídica (Dueño) y Peso Financiero (Coeficiente).</p>
                     </div>
-
-                    <h2>2. Gestión de Torres: Agrupación por Ubicación</h2>
-                    <h3>¿Por qué es vital esta separación?</h3>
-                    <p>Imagine que el Condominio tiene 10 Torres. La <strong>Torre 4</strong> sufre una inundación y requiere un arreglo especial en sus tuberías que NO afecta a las demás torres.</p>
-                    
                     <div class="mermaid">
                     graph LR
-                    subgraph "Nivel Físico (Infraestructura)"
-                    T1[Torre 1]
-                    T2[Torre 2]
-                    end
-                    subgraph "Nivel Individual (Facturación)"
-                    U1[Apto 101]
-                    U2[Apto 102]
-                    U3[Apto 201]
-                    U4[Apto 202]
-                    end
-                    T1 --- U1
-                    T1 --- U2
-                    T2 --- U3
-                    T2 --- U4
-                    style T1 fill:#C7D2FE,stroke:#4F46E5
-                    style T2 fill:#C7D2FE,stroke:#4F46E5
+                        T1[Torre 1] --- U1[Apto 101]
+                        T1 --- U2[Apto 102]
+                        style T1 fill:#EEF2FF,stroke:#4F46E5,color:#1e1b4b
+                        style U1 fill:#FFF,stroke:#DDD,color:#000
+                        style U2 fill:#FFF,stroke:#DDD,color:#000
                     </div>
                 </section>
 
                 <!-- Capítulo 3 -->
-                <section id="cap-3" class="chapter-content hidden">
-                    <h1>Capítulo 3: La Lógica de Segmentación (Módulos y Conceptos)</h1>
+                <section id="cap-3" class="chapter-content">
+                    <h1>Módulos y Conceptos</h1>
                     <div class="premium-card">
-                        <h2>1. Módulos de Contribución: El "Cerebro" de la Agrupación</h2>
-                        <p>Si las Torres representan la ubicación física, los <strong>Módulos de Contribución</strong> representan la <strong>Naturaleza del Cobro</strong>.</p>
-                        <h3>El Concepto de "Multi-Pertenencia"</h3>
-                        <p>A diferencia de una Torre, una Unidad puede pertenecer a <strong>varios Módulos</strong> al mismo tiempo. Esto es lo que da al sistema una potencia ilimitada.</p>
+                        <h2>Multi-Pertenencia Lógica</h2>
+                        <p>Una unidad puede estar en varios módulos a la vez (Residencial + Piscina), permitiendo cobros segmentados sin errores.</p>
                     </div>
-
                     <div class="mermaid">
                     graph TD
-                    subgraph "Lógica de Agrupación (Módulos)"
-                    M1((Módulo Todo el Conjunto))
-                    M2((Módulo Zonas Verdes))
-                    end
-                    subgraph "Inventario (Unidades)"
-                    U1[Torre 1]
-                    U2[Torre 2]
-                    end
-                    M1 --> U1
-                    M1 --> U2
-                    M2 --> U1
-                    style M1 fill:#FDE68A,stroke:#D97706
-                    style M2 fill:#FDE68A,stroke:#D97706
+                        C1(Jardín) --> M1{Módulo Casas}
+                        M1 --> U1[Unidad 1]
+                        style M1 fill:#FEF9C3,stroke:#CA8A04,color:#854D0E
+                        style C1 fill:#F0FDF4,stroke:#166534,color:#166534
                     </div>
                 </section>
 
                 <!-- Capítulo 4 -->
-                <section id="cap-4" class="chapter-content hidden">
-                    <h1>Capítulo 4: Articulación Maestra y Reliquidación</h1>
+                <section id="cap-4" class="chapter-content">
+                    <h1>Articulación y Reliquidación</h1>
                     <div class="premium-card">
-                        <h2>1. La Sinfonía de la Facturación Masiva</h2>
-                        <p>La Facturación Masiva cruza conceptos, módulos y torres para generar documentos impecables aplicando coeficientes y cruces de anticipos automáticos.</p>
-                    </div>
-
-                    <h2>2. Gobernanza de Reliquidación: ¿Borrar o Completar?</h2>
-                    <p>Cuando olvidamos incluir una unidad o detectamos un error después de haber liquidado, el sistema nos ofrece dos caminos:</p>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 my-8">
-                        <div class="premium-card !mb-0 !p-10 border-t-8 border-red-500">
-                            <h4 class="font-bold text-red-600 mb-3 uppercase tracking-wider">Borrar y Regenerar</h4>
-                            <p class="text-sm">Elimina todas las facturas del periodo y las crea de nuevo. Úselo si <strong>nadie</strong> ha recibido la información aún.</p>
-                        </div>
-                        <div class="premium-card !mb-0 !p-10 border-t-8 border-indigo-500">
-                            <h4 class="font-bold text-indigo-600 mb-3 uppercase tracking-wider">Completar (Delta)</h4>
-                            <p class="text-sm">Genera solo lo que falta. Úselo si <strong>ya repartió</strong> las facturas y no quiere alterar los saldos contables de los demás.</p>
+                        <h2>¿Borrar o Completar?</h2>
+                        <p>Elija el camino según la visibilidad del error hacia el residente.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                            <div class="p-6 bg-red-50 border-t-4 border-red-500 rounded-xl"><strong>Borrar</strong>: Si no has enviado nada. Limpieza total.</div>
+                            <div class="p-6 bg-indigo-50 border-t-4 border-indigo-500 rounded-xl"><strong>Completar</strong>: Si ya enviaste. Paz contable.</div>
                         </div>
                     </div>
-
                     <div class="mermaid">
                     graph TD
-                        S[¿Detectó un error?] --> Sent{¿Ya lo envió?}
-                        Sent -->|No| Delete[Borrar y Regenerar]
-                        Sent -->|Sí| Delta[Completar Delta]
-                        Delete -->|Res| P[Consecutivos Perfectos]
-                        Delta -->|Res| Q[Paz Contable y Vecinal]
+                        S(Error detectado) --> Se{¿Ya se envió?}
+                        Se -->|No| B[Borrar y Regenerar]
+                        Se -->|Sí| C[Completar Delta]
+                        style B fill:#FEE2E2,stroke:#EF4444,color:#991B1B
+                        style C fill:#E0E7FF,stroke:#4F46E5,color:#1E1B4B
                     </div>
                 </section>
 
                 <!-- Capítulo 5 -->
-                <section id="cap-5" class="chapter-content hidden">
-                    <h1>Capítulo 5: El Ciclo de Vida de la Unidad</h1>
+                <section id="cap-5" class="chapter-content">
+                    <h1>Ciclo de Vida de la Unidad</h1>
                     <div class="premium-card">
-                        <h2>1. Creación e Integridad</h2>
-                        <p>Al crear una unidad, el sistema integra tres dimensiones críticas:</p>
+                        <h2>Tres Dimensiones Obligatorias</h2>
                         <ul>
-                            <li><strong>Identificación Física</strong>: Torre y número de unidad (Distribución Estructural).</li>
-                            <li><strong>Responsabilidad Jurídica</strong>: Vínculo con el módulo de Terceros (Dueño legal). Sin esto, no hay cobrabilidad real.</li>
-                            <li><strong>Contribución Económica</strong>: Coeficiente y asignación de Módulos (Naturaleza del cobro).</li>
+                            <li><strong>Identificación Física</strong>: Definir a qué Torre pertenece.</li>
+                            <li><strong>Vínculo Jurídico</strong>: Asociar a un Tercero (Propietario).</li>
+                            <li><strong>Naturaleza de Cobro</strong>: Definir Módulos y Coeficiente.</li>
                         </ul>
                     </div>
-
-                    <div class="alert alert-important">
-                        <h4 class="font-bold text-orange-800 mb-2">Aclaración Estratégica</h4>
-                        <p class="text-orange-900 m-0">El campo <strong>"Tipo"</strong> en la ficha es informativo para reportes estadísticos. Quien realmente <strong>manda</strong> en el cobro son los <strong>Módulos</strong> a los que se afilia la unidad.</p>
-                    </div>
-
-                    <h2>2. Gestión de Convivencia (Vehículos y Mascotas)</h2>
-                    <p>La unidad es el centro de datos de la administración. Centraliza no solo lo financiero, sino la convivencia del día a día:</p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 my-8">
-                        <div class="p-8 bg-blue-50 rounded-3xl border-l-8 border-blue-600">
-                            <h4 class="font-bold text-blue-800 mb-2 font-sans text-xs uppercase tracking-widest">Vehículos</h4>
-                            <p class="text-sm m-0">Control de Placas, Marcas y parqueaderos asignados.</p>
-                        </div>
-                        <div class="p-8 bg-indigo-50 rounded-3xl border-l-8 border-indigo-600">
-                            <h4 class="font-bold text-indigo-800 mb-2 font-sans text-xs uppercase tracking-widest">Mascotas</h4>
-                            <p class="text-sm m-0">Registro de razas y datos de sanidad para la convivencia segura.</p>
-                        </div>
-                    </div>
+                    <div class="alert alert-important">Nota: El campo "Tipo" es solo para reportes; los "Módulos" son los que mandan en la facturación.</div>
                 </section>
 
                 <!-- Capítulo 6 -->
-                <section id="cap-6" class="chapter-content hidden">
-                    <h1>Capítulo 6: Mapas Lógicos Avanzados</h1>
-                    
+                <section id="cap-6" class="chapter-content">
+                    <h1>Mapas Lógicos Avanzados</h1>
                     <div class="premium-card">
-                        <h2>1. El Flujo de Inteligencia Financiera</h2>
-                        <p>Este mapa resume la transformación de reglas de negocio en documentos contables maestros.</p>
+                        <h3>1. Flujo de Inteligencia Financiera</h3>
+                        <p>Resumen de la transformación de reglas en documentos maestros.</p>
                         <div class="mermaid">
                         graph TD
-                            C[Conceptos de Cobro] --> M[Módulos de Contribución]
-                            M --> U[Unidades de Facturación]
-                            T[Torres Físicas] --> U
-                            U --> F[Factura Masiva]
+                            C[Conceptos] --> M[Módulos]
+                            T[Torres] --> U[Unidades]
+                            M --> U
+                            U --> F[Factura]
                             F --> K[Cartera 1305]
-                            K --> B[Balance en Tiempo Real]
-                            style F fill:#10B981,color:#fff
+                            style C fill:#DBEAFE,stroke:#1D4ED8,color:#1E3A8A
+                            style M fill:#DBEAFE,stroke:#1D4ED8,color:#1E3A8A
+                            style F fill:#D1FAE5,stroke:#059669,color:#064E3B
+                            style K fill:#F5F3FF,stroke:#6D28D9,color:#2E1065
                         </div>
                     </div>
-
                     <div class="premium-card">
-                        <h2>2. Ciclo de Integridad en Cruces</h2>
-                        <p>Cómo fluye el dinero desde los anticipos hasta el saneamiento de la cartera.</p>
+                        <h3>2. Ciclo de Cruce de Anticipos</h3>
                         <div class="mermaid">
                         flowchart LR
                             Factura --> Deuda((Deuda 1305))
-                            Anticipo[Saldo 2805] --> Cruce{¿Cruce Automático?}
-                            Cruce -->|Sí| Deuda
-                            Deuda --> Neto[Saldo Real Final]
-                            style Deuda fill:#4F46E5,color:#fff
-                            style Anticipo fill:#10B981,color:#fff
+                            Anticipo[Saldo 2805] --> Cruce{Cruce Automático}
+                            Cruce --> Deuda
+                            style Deuda fill:#4F46E5,color:#FFF
+                            style Anticipo fill:#10B981,color:#FFF
                         </div>
                     </div>
                 </section>
 
                 <!-- Footer Navigation -->
-                <div class="mt-20 pt-10 border-t border-gray-100 flex justify-between items-center bg-white/50 p-8 rounded-[40px]">
-                    <button id="prevBtn" onclick="changeStep(-1)" class="px-8 py-4 bg-white border border-gray-100 rounded-2xl text-md font-bold text-gray-300 transition-all opacity-50 cursor-not-allowed">Anterior</button>
-                    
-                    <div id="stepDots" class="flex gap-3">
-                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 dot-active cursor-pointer" onclick="showChapter(1)"></div>
-                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(2)"></div>
-                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(3)"></div>
-                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(4)"></div>
-                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(5)"></div>
-                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(6)"></div>
+                <div class="mt-12 pt-8 border-t border-gray-100 flex justify-between items-center px-4">
+                    <button id="prevBtn" onclick="changeStep(-1)" class="px-6 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold text-gray-400">Anterior</button>
+                    <div id="stepDots" class="flex gap-2">
+                        <div class="dot w-2 h-2 rounded-full bg-gray-200 dot-active"></div>
+                        <div class="dot w-2 h-2 rounded-full bg-gray-200"></div>
+                        <div class="dot w-2 h-2 rounded-full bg-gray-200"></div>
+                        <div class="dot w-2 h-2 rounded-full bg-gray-200"></div>
+                        <div class="dot w-2 h-2 rounded-full bg-gray-200"></div>
+                        <div class="dot w-2 h-2 rounded-full bg-gray-200"></div>
                     </div>
-
-                    <button id="nextBtn" onclick="changeStep(1)" class="px-10 py-4 bg-indigo-600 text-white rounded-2xl text-md font-bold hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all">Siguiente</button>
+                    <button id="nextBtn" onclick="changeStep(1)" class="px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold">Siguiente</button>
                 </div>
             </div>
         </main>
     </div>
 
     <script>
+        // Initialization
         mermaid.initialize({ 
-            startOnLoad: true, 
-            theme: 'base', 
-            themeVariables: {
-                primaryColor: '#EEF2FF',
-                primaryTextColor: '#4F46E5',
-                primaryBorderColor: '#4F46E5',
-                lineColor: '#6366F1',
-                secondaryColor: '#F8FAFC',
-                tertiaryColor: '#FFFFFF',
-                fontFamily: 'Outfit'
-            },
-            securityLevel: 'loose' 
+            startOnLoad: false, 
+            theme: 'neutral',
+            fontFamily: 'Outfit',
+            fontSize: 14,
+            flowchart: { useMaxWidth: true, htmlLabels: true }
         });
 
         let currentChapter = 1;
         const TOTAL_CHAPTERS = 6;
 
         function showChapter(n) {
+            // Hide all
             document.querySelectorAll('.chapter-content').forEach(el => {
-                el.classList.add('hidden');
-                el.classList.remove('block', 'visible');
+                el.classList.remove('visible');
             });
             
+            // Wait for transition and show
             setTimeout(() => {
                 const target = document.getElementById(`cap-${n}`);
                 if (target) {
-                    target.classList.remove('hidden');
-                    target.classList.add('block');
-                    setTimeout(() => target.classList.add('visible'), 50);
-                    // Force mermaid re-render
-                    mermaid.run({ nodes: target.querySelectorAll('.mermaid') });
+                    target.classList.add('visible');
+                    // Force mermaid INIT strictly for this section
+                    mermaid.init(undefined, target.querySelectorAll('.mermaid'));
                 }
-            }, 300);
+            }, 50);
             
+            // Sidebar
             document.querySelectorAll('.sidebar-item').forEach((el, index) => {
-                if (index === n-1) {
-                    el.classList.add('sidebar-item-active');
-                    el.classList.replace('text-gray-400', 'text-gray-900');
-                } else {
-                    el.classList.remove('sidebar-item-active');
-                    el.classList.add('text-gray-400');
-                }
+                el.classList.toggle('sidebar-item-active', index === n-1);
             });
 
+            // Dots
             document.querySelectorAll('#stepDots .dot').forEach((el, index) => {
-                if (index === n-1) {
-                    el.classList.add('dot-active');
-                } else {
-                    el.classList.remove('dot-active');
-                }
+                el.classList.toggle('dot-active', index === n-1);
             });
 
-            const prev = document.getElementById('prevBtn');
-            const next = document.getElementById('nextBtn');
+            // Buttons
+            document.getElementById('prevBtn').style.opacity = (n === 1) ? "0.3" : "1";
+            document.getElementById('nextBtn').innerText = (n === TOTAL_CHAPTERS) ? "Cerrar" : "Siguiente";
             
-            prev.className = `px-8 py-4 bg-white border border-gray-200 rounded-2xl text-md font-bold transition-all ${n === 1 ? 'opacity-50 cursor-not-allowed text-gray-200' : 'hover:bg-gray-100 text-gray-700 shadow-sm'}`;
-            next.innerText = n === TOTAL_CHAPTERS ? 'Cerrar' : 'Siguiente';
-            next.className = `px-10 py-4 ${n === TOTAL_CHAPTERS ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-600 hover:bg-indigo-700'} text-white rounded-2xl text-md font-bold shadow-xl shadow-indigo-100 transition-all`;
-            next.onclick = n === TOTAL_CHAPTERS ? () => window.close() : () => changeStep(1);
-
             currentChapter = n;
             document.getElementById('contentArea').scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function changeStep(dir) {
             let next = currentChapter + dir;
-            if (next >= 1 && next <= TOTAL_CHAPTERS) {
-                showChapter(next);
-            }
+            if (next >= 1 && next <= TOTAL_CHAPTERS) showChapter(next);
         }
 
+        // Run first chapter
         window.onload = () => showChapter(1);
     </script>
 </body>
