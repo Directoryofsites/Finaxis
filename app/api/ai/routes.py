@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import Optional, Dict
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 from app.services.ai_agent import procesar_comando_natural
 from app.core.security import get_current_user
 from app.core.database import get_db
