@@ -284,15 +284,31 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
             # Asientos Costo
             # Normal: Debito Costo, Credito Inv.
             # Nota Credito: Debito Inv, Credito Costo. (Usando costo histórico si existe referencia)
-            costo_unitario_operacion = float(producto_db.costo_promedio or 0.0)
+            
+            # --- FIX CRÍTICO: Para facturas de venta NORMALES (sin referencia a otra factura),
+            # forzamos una lectura FRESCA del costo_promedio directamente desde la BD.
+            # Esto evita que el objeto cacheado en la sesión (contaminado por movimientos previos
+            # como una NDEB procesada antes en el mismo request) devuelva un costo incorrecto.
+            if not es_nota_credito and not es_nota_debito and not factura.documento_referencia_id:
+                costo_promedio_fresco = db.query(
+                    models_producto.Producto.costo_promedio
+                ).filter(
+                    models_producto.Producto.id == item.producto_id
+                ).scalar()
+                costo_unitario_operacion = float(costo_promedio_fresco or 0.0)
+            else:
+                costo_unitario_operacion = float(producto_db.costo_promedio or 0.0)
+
             if not producto_db.es_servicio and producto_db.controlar_inventario and item.mueve_inventario:
                 
                 # --- LÓGICA DE COSTO HISTÓRICO Y VALIDACIÓN DE CANTIDAD SOBRE REFERENCIA ---
-                if factura.documento_referencia_id:
-                    # 1. Obtener cantidad y costo original del documento referenciado
+                # Solo aplica a Notas (Débito/Crédito) con referencia a un documento origen.
+                # Las facturas de venta normales NUNCA deben entrar aquí.
+                if factura.documento_referencia_id and (es_nota_credito or es_nota_debito):
+                    # 1. Obtener cantidad y costo ORIGINAL del documento referenciado (la FV original)
                     row_original = db.query(
                         func.sum(models_producto.MovimientoInventario.cantidad).label("sum_cant"),
-                        func.avg(models_producto.MovimientoInventario.costo_unitario).label("avg_costo") # Costo promedio del item en esa factura
+                        func.avg(models_producto.MovimientoInventario.costo_unitario).label("avg_costo")
                     ).filter(
                         models_producto.MovimientoInventario.documento_id == factura.documento_referencia_id,
                         models_producto.MovimientoInventario.producto_id == item.producto_id
@@ -300,10 +316,10 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
                     
                     cant_original = float(row_original.sum_cant or 0.0)
                     if row_original.avg_costo:
+                        # La nota usa el costo de la factura origen, no el promedio actual
                         costo_unitario_operacion = float(row_original.avg_costo)
 
                     # 2. VALIDACIÓN DE BLOQUEO TOTAL: No exceder la cantidad original
-                    # Consultamos otros documentos que ya hayan ajustado esta misma factura
                     ajustes_previos = db.query(
                         func.sum(models_producto.MovimientoInventario.cantidad).label("sum_adj")
                     ).join(models_doc.Documento, models_producto.MovimientoInventario.documento_id == models_doc.Documento.id)\
@@ -322,8 +338,7 @@ def crear_factura_venta(db: Session, factura: schemas_facturacion.FacturaCreate,
                                    f"de {cant_original:.2f} unidades originales. No puede exceder este límite."
                         )
 
-                # Guardamos el costo para usarlo luego en el bloque de kárdex sin repetir query
-                # (Lo guardamos en el diccionario de procesados y el mapa por ID)
+                # Guardamos el costo para usarlo luego en el bloque de kárdex
                 procesado["costo_unitario_determinado"] = costo_unitario_operacion
                 costos_por_item[item.producto_id] = costo_unitario_operacion
 
