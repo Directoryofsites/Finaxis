@@ -305,13 +305,16 @@ def recalcular_saldos_producto(db: Session, producto_id: int, commit: bool = Tru
             tiene_referencia_salida = (ref_id is not None)
             
             # ¿Es una nota que requiere blindaje histórico?
-            # Doble condición: por funcion_especial del TipoDocumento O por tipo de movimiento
-            # SALIDA_AJUSTE_VENTA es el sello explícito que asignamos a las Notas Débito.
-            # Así el blindaje funciona aunque funcion_especial no esté configurado en el TipoDoc.
+            # 
+            # REGLA: El tipo de movimiento 'SALIDA_AJUSTE_VENTA' es el sello EXCLUSIVO de las 
+            # Notas Débito. Ese sello es suficiente para blindar el costo, incluso si la 
+            # factura original ya fue eliminada (ref_id = None).
+            #
+            # También blindamos por funcion_especial del TipoDocumento como segunda vía.
             es_nota_blindada = (
-                tiene_referencia_salida and func_esp in ['nota_debito', 'nota_credito']
+                mov.tipo_movimiento == 'SALIDA_AJUSTE_VENTA'
             ) or (
-                mov.tipo_movimiento == 'SALIDA_AJUSTE_VENTA' and tiene_referencia_salida
+                tiene_referencia_salida and func_esp in ['nota_debito', 'nota_credito']
             )
 
             if not es_nota_blindada:
