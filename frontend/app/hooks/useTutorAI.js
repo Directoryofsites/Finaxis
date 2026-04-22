@@ -7,46 +7,45 @@ export function useTutorAI() {
     const [messages, setMessages] = useState([]);
     const [isThinking, setIsThinking] = useState(false);
 
-    // Cargar historial al iniciar
+    // Cargar historial desde el Servidor (Persistencia Real)
     useEffect(() => {
-        const saved = localStorage.getItem('finaxis_tutor_chat');
-        if (saved) {
+        const fetchHistory = async () => {
             try {
-                setMessages(JSON.parse(saved));
+                const response = await apiService.get('/ai/tutor/history');
+                if (response.data && response.data.length > 0) {
+                    setMessages(response.data);
+                } else {
+                    // Mensaje de bienvenida inicial si no hay historial
+                    setMessages([
+                        {
+                            role: "assistant",
+                            content: "👋 ¡Hola! Soy **Finaxis Tutor**. Estoy aquí para ayudarte a entender la plataforma y tus finanzas. ¿En qué puedo apoyarte hoy?"
+                        }
+                    ]);
+                }
             } catch (e) {
                 console.error("Error cargando historial de tutor", e);
+                // Fallback a bienvenida
+                setMessages([{ role: "assistant", content: "Error cargando historial. ¿En qué puedo apoyarte hoy?" }]);
             }
-        } else {
-            // Mensaje de bienvenida inicial
-            const welcome = [
-                {
-                    role: "assistant",
-                    content: "👋 ¡Hola! Soy **Finaxis Tutor**. Estoy aquí para ayudarte a entender la plataforma y tus finanzas. ¿En qué puedo apoyarte hoy?"
-                }
-            ];
-            setMessages(welcome);
-        }
+        };
+        
+        fetchHistory();
     }, []);
-
-    // Guardar historial cuando cambie
-    useEffect(() => {
-        if (messages.length > 0) {
-            localStorage.setItem('finaxis_tutor_chat', JSON.stringify(messages));
-        }
-    }, [messages]);
 
     const sendMessage = async (query) => {
         if (!query.trim()) return;
 
         const userMessage = { role: "user", content: query };
-        const newMessages = [...messages, userMessage];
-        setMessages(newMessages);
+        const historyForContext = messages.slice(-10); // Enviamos contexto para la respuesta inmediata
+        
+        setMessages(prev => [...prev, userMessage]);
         setIsThinking(true);
 
         try {
             const response = await apiService.post('/ai/tutor', {
                 query: query,
-                history: messages.slice(-10) // Enviamos los últimos 10 para contexto
+                history: historyForContext
             });
 
             const data = response.data;
@@ -60,15 +59,11 @@ export function useTutorAI() {
             if (data.type === 'text') {
                 setMessages(prev => [...prev, { role: "assistant", content: data.text }]);
             } else if (data.type === 'tool') {
-                // Si la IA sugiere una herramienta, informamos al usuario y podríamos ejecutar acción
                 setMessages(prev => [...prev, { 
                     role: "assistant", 
                     content: `🔍 Entendido. Voy a procesar una consulta sobre: **${data.name}**.`,
                     toolCall: data 
                 }]);
-                
-                // Aquí podrías disparar el evento para navegar al reporte si fuera necesario
-                // window.dispatchEvent(new CustomEvent('ai-tool-action', { detail: data }));
             }
 
         } catch (error) {
@@ -79,11 +74,15 @@ export function useTutorAI() {
         }
     };
 
-    const clearChat = () => {
-        if (confirm("¿Quieres borrar la conversación con el tutor?")) {
-            const welcome = [{ role: "assistant", content: "Chat reiniciado. ¿En qué puedo ayudarte?" }];
-            setMessages(welcome);
-            localStorage.removeItem('finaxis_tutor_chat');
+    const clearChat = async () => {
+        if (confirm("¿Quieres borrar permanentemente la conversación con el tutor?")) {
+            try {
+                await apiService.delete('/ai/tutor/history');
+                setMessages([{ role: "assistant", content: "Chat reiniciado. ¿En qué puedo ayudarte?" }]);
+                toast.success("Historial borrado.");
+            } catch (e) {
+                toast.error("No se pudo borrar el historial.");
+            }
         }
     };
 

@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { usePathname, useRouter } from 'next/navigation';
 import {
     FaRobot, FaCalculator, FaStickyNote, FaBell,
@@ -828,8 +829,8 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                                                     <FaChalkboardTeacher /> Finaxis Tutor
                                                 </div>
                                             )}
-                                            <div className="whitespace-pre-wrap leading-relaxed">
-                                                {msg.content}
+                                            <div className="text-sm prose prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-gray-800 prose-pre:text-white dark:prose-invert">
+                                                <ReactMarkdown>{msg.content}</ReactMarkdown>
                                             </div>
                                             {msg.toolCall && (
                                                 <div className="mt-2 pt-2 border-t border-orange-200/50">

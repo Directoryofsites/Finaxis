@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import Optional, Dict
-from sqlalchemy.orm import Session
+from sqlalchemy import text
 from app.services.ai_agent import procesar_comando_natural
 from app.core.security import get_current_user
 from app.core.database import get_db
@@ -75,4 +75,64 @@ async def process_tutor_query(
         empresa_id=current_user.empresa_id,
         user_id=current_user.id
     )
+    
+    # Guardar en base de datos si no hay error
+    if "error" not in result:
+        try:
+            # 1. Guardar mensaje del usuario
+            db.execute(text("""
+                INSERT INTO ai_tutor_messages (usuario_id, empresa_id, role, content)
+                VALUES (:uid, :eid, 'user', :content)
+            """), {"uid": current_user.id, "eid": current_user.empresa_id, "content": request.query})
+            
+            # 2. Guardar respuesta del asistente
+            db.execute(text("""
+                INSERT INTO ai_tutor_messages (usuario_id, empresa_id, role, content)
+                VALUES (:uid, :eid, 'assistant', :content)
+            """), {"uid": current_user.id, "eid": current_user.empresa_id, "content": result.get("text", "")})
+            
+            db.commit()
+        except Exception as e:
+            print(f"Error guardando historial: {e}")
+
     return result
+
+@router.get("/tutor/history")
+async def get_tutor_history(
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Recupera los últimos 30 mensajes del historial del tutor para el usuario actual.
+    """
+    try:
+        sql = text("""
+            SELECT role, content 
+            FROM ai_tutor_messages 
+            WHERE usuario_id = :uid AND empresa_id = :eid 
+            ORDER BY created_at ASC 
+            LIMIT 50
+        """)
+        res = db.execute(sql, {"uid": current_user.id, "eid": current_user.empresa_id}).fetchall()
+        return [{"role": row[0], "content": row[1]} for row in res]
+    except Exception as e:
+        print(f"Error cargando historial: {e}")
+        return []
+
+@router.delete("/tutor/history")
+async def clear_tutor_history(
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Borra el historial del chat para el usuario actual.
+    """
+    try:
+        db.execute(text("""
+            DELETE FROM ai_tutor_messages 
+            WHERE usuario_id = :uid AND empresa_id = :eid
+        """), {"uid": current_user.id, "eid": current_user.empresa_id})
+        db.commit()
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -280,3 +280,21 @@ def run_auto_migrations():
             logger.info("Cuotas de IA inicializadas correctamente para todas las empresas.")
     except Exception as e:
         logger.error(f"Error inicializando cuotas de IA: {e}")
+
+    # 7. Tabla de persistencia para el Tutor IA
+    logger.info("Verificando tabla ai_tutor_messages...")
+    try:
+        with engine.begin() as trans_conn:
+            trans_conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS ai_tutor_messages (
+                    id SERIAL PRIMARY KEY,
+                    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+                    empresa_id INTEGER NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+                    role VARCHAR(20) NOT NULL, -- 'user' o 'assistant'
+                    content TEXT NOT NULL,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+            logger.info("Tabla ai_tutor_messages verificada/creada.")
+    except Exception as e:
+        logger.error(f"Error creando tabla ai_tutor_messages: {e}")
