@@ -191,16 +191,18 @@ def run_auto_migrations():
 
 
 
-            # 3. Ejecutar migraciones en un bloque BEGIN/COMMIT
+            # 3. Ejecutar migraciones independientemente para evitar Rollbacks completos
             if migrations:
-                with engine.begin() as trans_conn:
+                with engine.connect() as conn:
                     for table, col, col_type in migrations:
                         logger.info(f"Migrando: Añadiendo {col} a {table}...")
                         try:
-                            trans_conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))
+                            conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))
+                            conn.commit()
                             logger.info(f"Columna {col} añadida con éxito.")
                         except Exception as e:
                             logger.error(f"Error añadiendo {col} a {table}: {e}")
+                            conn.rollback() # Limpiar la transacción para la siguiente
             else:
                 logger.info("No se requieren migraciones de esquema pendientes.")
 
