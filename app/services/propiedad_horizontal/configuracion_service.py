@@ -1,33 +1,80 @@
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import text
 from app.models.propiedad_horizontal import PHConfiguracion
 from app.schemas.propiedad_horizontal import configuracion as schemas
 from typing import List, Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 # --- CONFIGURACION ---
 def get_configuracion(db: Session, empresa_id: int):
-    config = (
-        db.query(PHConfiguracion)
-        .options(
-            joinedload(PHConfiguracion.tipo_documento_factura),
-            joinedload(PHConfiguracion.tipo_documento_recibo),
-            joinedload(PHConfiguracion.tipo_documento_mora),
-            joinedload(PHConfiguracion.tipo_documento_cruce),
-            joinedload(PHConfiguracion.cuenta_cartera),
-            joinedload(PHConfiguracion.cuenta_caja),
-            joinedload(PHConfiguracion.cuenta_ingreso_intereses),
-            joinedload(PHConfiguracion.cuenta_anticipos),
-            joinedload(PHConfiguracion.cuenta_descuento),
+    try:
+        config = (
+            db.query(PHConfiguracion)
+            .options(
+                joinedload(PHConfiguracion.tipo_documento_factura),
+                joinedload(PHConfiguracion.tipo_documento_recibo),
+                joinedload(PHConfiguracion.tipo_documento_mora),
+                joinedload(PHConfiguracion.tipo_documento_cruce),
+                joinedload(PHConfiguracion.cuenta_cartera),
+                joinedload(PHConfiguracion.cuenta_caja),
+                joinedload(PHConfiguracion.cuenta_ingreso_intereses),
+                joinedload(PHConfiguracion.cuenta_anticipos),
+                joinedload(PHConfiguracion.cuenta_descuento),
+            )
+            .filter(PHConfiguracion.empresa_id == empresa_id)
+            .first()
         )
-        .filter(PHConfiguracion.empresa_id == empresa_id)
-        .first()
-    )
+    except Exception as e:
+        # Column missing in DB (migration pending) — fallback to raw query with only safe columns
+        logger.error(f"get_configuracion ORM error (likely missing column): {e}")
+        db.rollback()
+        try:
+            _ensure_configuracion_columns(db)
+        except Exception as me:
+            logger.error(f"Auto-fix migration failed: {me}")
+            db.rollback()
+        # Re-try with minimal select
+        try:
+            config = (
+                db.query(PHConfiguracion)
+                .filter(PHConfiguracion.empresa_id == empresa_id)
+                .first()
+            )
+        except Exception:
+            db.rollback()
+            config = None
+
     if not config:
         # Auto-create default configuration if not exists
         config = PHConfiguracion(empresa_id=empresa_id)
         db.add(config)
-        db.commit()
-        db.refresh(config)
+        try:
+            db.commit()
+            db.refresh(config)
+        except Exception as ce:
+            logger.error(f"Error creando config por defecto: {ce}")
+            db.rollback()
     return config
+
+def _ensure_configuracion_columns(db: Session):
+    """Emergency migration: add any missing columns to ph_configuracion."""
+    cols_to_add = [
+        ("cuenta_anticipos_id", "INTEGER"),
+        ("tipo_documento_cruce_id", "INTEGER"),
+        ("cuenta_descuento_id", "INTEGER"),
+        ("tipo_documento_mora_id", "INTEGER"),
+        ("tipo_negocio", "VARCHAR(50) DEFAULT 'PH_RESIDENCIAL'"),
+    ]
+    for col, col_type in cols_to_add:
+        try:
+            db.execute(text(f"ALTER TABLE ph_configuracion ADD COLUMN IF NOT EXISTS {col} {col_type}"))
+            db.commit()
+            logger.info(f"Emergency migration: added {col} to ph_configuracion")
+        except Exception as e:
+            db.rollback()
+            logger.warning(f"Emergency migration skip {col}: {e}")
 
 def update_configuracion(db: Session, empresa_id: int, config_update: schemas.PHConfiguracionUpdate):
     config = get_configuracion(db, empresa_id)

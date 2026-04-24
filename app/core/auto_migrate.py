@@ -212,9 +212,9 @@ def run_auto_migrations():
                     for table, col, col_type in migrations:
                         logger.info(f"Migrando: Añadiendo {col} a {table}...")
                         try:
-                            conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))
+                            conn.execute(text(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col} {col_type}"))
                             conn.commit()
-                            logger.info(f"Columna {col} añadida con éxito.")
+                            logger.info(f"Columna {col} verificada/añadida en {table}.")
                         except Exception as e:
                             logger.error(f"Error añadiendo {col} a {table}: {e}")
                             conn.rollback() # Limpiar la transacción para la siguiente
