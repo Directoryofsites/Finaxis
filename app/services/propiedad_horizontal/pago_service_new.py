@@ -166,7 +166,7 @@ def get_cartera_ph_pendientes_detallada(db: Session, empresa_id: int, unidad_id:
             # Prioridad de conceptos: Mismo orden que en cartera.py
             # 1. Conceptos con ID (ordenados por el campo 'orden' de base de datos)
             # 2. Cartera General (ID 0)
-            orden_map = {c.id: c.orden for c in conceptos_db}
+            orden_map = {c.id: (c.orden if c.orden is not None else 9999) for c in conceptos_db}
             jerarquia_factura = sorted(pool.keys(), key=lambda x: (x == 0, orden_map.get(x, 9999), x))
             
             for cid in jerarquia_factura:
