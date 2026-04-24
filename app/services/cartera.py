@@ -169,7 +169,11 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
         def _identificar_concepto(texto_mov):
             if not texto_mov: return None
             t = _pnorm(texto_mov)
-            if t.startswith("CXC "): t = t[4:]
+            # Quitar prefijos comunes de PH para no confundir startswith
+            for prefijo in ["CXC ", "ABONO ", "RECAUDO ", "COBRO ", "PAGO ", "DIRIGIDO "]:
+                if t.startswith(prefijo):
+                    t = t[len(prefijo):].strip()
+            
             mejor, mejor_len = None, 0
             for cp in conceptos_ph:
                 n = _pnorm(cp.nombre)
@@ -278,7 +282,7 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
         # ============================================================
         # CRUCE CXC
         # ============================================================
-        TEXTOS_GENERICOS = ('CARTERA PH', 'ABONO PH', 'RECAUDO PH', 'ANTICIPO')
+        TEXTOS_GENERICOS = ('CARTERA PH', 'ABONO PH', 'RECAUDO PH', 'ANTICIPO', 'SALDO EXCEDENTE')
 
         for pag in pagos_cxc:
             valor_pago = pag['monto']
@@ -288,41 +292,55 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
             # Limpiar acumulador para este pago
             pending_aplica.clear()
 
-            # ── Detectar pago DIRIGIDO ──
-            concepto_dirigido_id = None
+            # ── IDENTIFICACIÓN DE CONCEPTOS DIRIGIDOS ──
+            intentos_pago = [] # List[(concepto_id, monto)]
+            monto_generico = 0
+            
             for mv in movs_pago:
                 txt = _pnorm(mv.concepto or '')
-                if not txt or any(_pnorm(g) in txt for g in TEXTOS_GENERICOS):
+                # Si el texto es genérico, ignoramos identificación específica
+                if any(_pnorm(g) in txt for g in TEXTOS_GENERICOS):
+                    monto_generico += float(mv.credito)
                     continue
+                
                 co = _identificar_concepto(mv.concepto)
                 if co:
-                    concepto_dirigido_id = co.id
-                    break
+                    intentos_pago.append((co.id, float(mv.credito)))
+                else:
+                    monto_generico += float(mv.credito)
 
-            es_dirigido = concepto_dirigido_id is not None
-            print(f"[CARTERA] Pago={pago_doc.numero} monto={valor_pago} "
-                  f"dirigido={es_dirigido} concepto_id={concepto_dirigido_id}")
+            # print(f"[CARTERA] Pago={pago_doc.numero} total={valor_pago} dirigido={len(intentos_pago) > 0} generico={monto_generico}")
 
-            if es_dirigido:
-                apply_fifo(facturas_cxc, valor_pago, pago_doc.id,
-                           solo_unidad_id=pago_doc.unidad_ph_id,
-                           concepto_id=concepto_dirigido_id)
-            else:
+            # 1. Aplicar montos DIRIGIDOS primero
+            for cid, monto in intentos_pago:
+                if monto <= 0: continue
+                # Aplicamos el monto específico al concepto específico
+                restante_dirigido = apply_fifo(facturas_cxc, monto, pago_doc.id,
+                                               solo_unidad_id=pago_doc.unidad_ph_id,
+                                               concepto_id=cid)
+                # Si sobra dinero de un abono dirigido, se suma al genérico (como anticipo o para otros conceptos)
+                if restante_dirigido > 0.01:
+                    monto_generico += restante_dirigido
+
+            # 2. Aplicar monto GENÉRICO siguiendo jerarquía
+            if monto_generico > 0.01:
                 jerarquia = [cp.id for cp in conceptos_ph] + [None]
-
+                
+                # A. Misma Unidad (Jerarquía)
                 if pago_doc.unidad_ph_id:
                     for cid in jerarquia:
-                        if valor_pago <= 0: break
-                        valor_pago = apply_fifo(
-                            facturas_cxc, valor_pago, pago_doc.id,
+                        if monto_generico <= 0.01: break
+                        monto_generico = apply_fifo(
+                            facturas_cxc, monto_generico, pago_doc.id,
                             solo_unidad_id=pago_doc.unidad_ph_id,
                             concepto_id=cid)
 
-                if valor_pago > 0:
+                # B. Otras Unidades (Fallback, poco común pero posible por Propietario)
+                if monto_generico > 0.01:
                     for cid in jerarquia:
-                        if valor_pago <= 0: break
-                        valor_pago = apply_fifo(
-                            facturas_cxc, valor_pago, pago_doc.id,
+                        if monto_generico <= 0.01: break
+                        monto_generico = apply_fifo(
+                            facturas_cxc, monto_generico, pago_doc.id,
                             concepto_id=cid)
 
             # ── Persistir UN solo AplicacionPago por par (factura, pago) ──

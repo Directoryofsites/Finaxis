@@ -840,13 +840,13 @@ def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_
 
             movimientos.append(doc_schemas.MovimientoContableCreate(
                 cuenta_id=cuenta_caja,
-                concepto=f"Recaudo {concepto.nombre} - {unidad.codigo}",
+                concepto=f"Recaudo Dirigido: {concepto.nombre} - {unidad.codigo}",
                 debito=d.monto,
                 credito=0
             ))
             movimientos.append(doc_schemas.MovimientoContableCreate(
                 cuenta_id=cuenta_cxc,
-                concepto=f"Abono {concepto.nombre} - {unidad.codigo}",
+                concepto=f"Abono Dirigido: {concepto.nombre} - {unidad.codigo}",
                 debito=0,
                 credito=d.monto
             ))
