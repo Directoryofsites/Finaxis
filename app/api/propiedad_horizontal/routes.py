@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date
 from pydantic import BaseModel
+from fastapi import UploadFile, File, Form
 
 from app.core.database import get_db
 from app.core.security import get_current_user
@@ -12,7 +13,8 @@ from app.schemas.propiedad_horizontal import configuracion as config_schemas
 from app.schemas.propiedad_horizontal import modulo_contribucion as modulo_schemas
 from app.schemas.propiedad_horizontal import recaudos as recaudo_schemas
 from app.schemas.propiedad_horizontal import presupuesto as presupuesto_schemas
-from app.services.propiedad_horizontal import unidad_service, configuracion_service, facturacion_service, pago_service, reportes as reportes_service, modulo_service, presupuesto_service
+from app.schemas.propiedad_horizontal import recaudo_masivo as rm_schemas
+from app.services.propiedad_horizontal import unidad_service, configuracion_service, facturacion_service, pago_service, reportes as reportes_service, modulo_service, presupuesto_service, recaudo_masivo_service
 
 from . import conceptos
 
@@ -63,11 +65,17 @@ class FacturacionMasivaRequest(BaseModel):
     conceptos_ids: Optional[List[int]] = None
     configuracion_conceptos: Optional[List[ConceptoConfiguracion]] = None
 
+class PagoDetalle(BaseModel):
+    concepto_id: int
+    monto: float
+
 class PagoRequest(BaseModel):
     unidad_id: int
     monto: float
     fecha: date
     forma_pago_id: int = None
+    detalles: Optional[List[PagoDetalle]] = None
+    observaciones: Optional[str] = None
 
 class PagoMasivoRequest(BaseModel):
     unidades_ids: List[int]
@@ -347,7 +355,12 @@ def get_estado_cuenta(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    return pago_service.get_estado_cuenta_unidad(db, unidad_id, current_user.empresa_id)
+    try:
+        return pago_service.get_estado_cuenta_unidad(db, unidad_id, current_user.empresa_id)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error Crítico Backend: {str(e)}")
 
 @router.post("/pagos/registrar")
 def registrar_pago(
@@ -370,7 +383,9 @@ def registrar_pago(
         usuario_id=current_user.id,
         monto=payload.monto,
         fecha_pago=payload.fecha,
-        forma_pago_id=payload.forma_pago_id
+        forma_pago_id=payload.forma_pago_id,
+        detalles=payload.detalles,
+        observaciones=payload.observaciones
     )
 
 @router.post("/pagos/masivo")
@@ -393,6 +408,31 @@ def registrar_pago_masivo(
         pagar_saldo_total=pago.pagar_saldo_total,
         observaciones=pago.observaciones
     )
+
+# --- RECAUDO MASIVO POR ARCHIVOS PLANOS ---
+@router.post("/recaudos-masivos/upload", response_model=rm_schemas.RecaudoPreviewResult)
+def upload_recaudos_masivos(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    try:
+        content = file.file.read()
+        filas = recaudo_masivo_service.parse_recaudo_file(content, file.filename)
+        return recaudo_masivo_service.generar_preview(db, current_user.empresa_id, filas)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error inesperado procesando archivo: {str(e)}")
+
+@router.post("/recaudos-masivos/process", response_model=rm_schemas.RecaudoProcessResponse)
+def process_recaudos_masivos(
+    request: rm_schemas.RecaudoProcessRequest,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    return recaudo_masivo_service.procesar_lote_pagos(db, current_user.empresa_id, request, current_user.id)
+
 
 @router.get("/pagos/historial/{unidad_id}")
 def get_historial_cuenta(
