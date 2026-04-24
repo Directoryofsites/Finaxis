@@ -171,7 +171,7 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
             t = _pnorm(texto_mov)
             original_t = t
             # Quitar prefijos comunes de PH para no confundir startswith
-            for prefijo in ["CXC ", "ABONO ", "RECAUDO ", "COBRO ", "PAGO ", "DIRIGIDO "]:
+            for prefijo in ["CXC ", "ABONO ", "RECAUDO ", "COBRO ", "PAGO ", "DIRIGIDO ", "DIRIGIDO:", "ABONO DIRIGIDO:", "RECAUDO DIRIGIDO:"]:
                 if t.startswith(prefijo):
                     t = t[len(prefijo):].strip()
             
@@ -180,7 +180,6 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
             mejor, mejor_len = None, 0
             for cp in conceptos_ph:
                 n = _pnorm(cp.nombre)
-                # print(f"       [ESPIA ID]   ? Probando con: '{n}'")
                 if n and t.startswith(n) and len(n) > mejor_len:
                     mejor = cp
                     mejor_len = len(n)
@@ -254,24 +253,30 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
         def apply_fifo(facturas, valor_restante, p_doc_id,
                        solo_unidad_id=None, concepto_id=None):
             for fac in facturas:
-                if valor_restante <= 0:
+                if valor_restante <= 0.01:
                     break
                 f_doc = fac['doc']
+                
+                # Filtrar por unidad si es necesario
                 if solo_unidad_id and f_doc.unidad_ph_id != solo_unidad_id:
                     continue
-                if fac['saldo'] <= 0:
+                
+                if fac['saldo'] <= 0.01:
                     continue
 
                 if concepto_id is not None:
                     sxc = fac.get('saldo_x_cid', {})
                     monto_concepto = sxc.get(concepto_id, 0.0)
-                    if monto_concepto <= 0:
+                    if monto_concepto <= 0.01:
                         continue
                     aplicar = min(valor_restante, monto_concepto, fac['saldo'])
+                    c_nom = next((c.nombre for c in conceptos_ph if c.id == concepto_id), "ID:"+str(concepto_id))
+                    print(f"       [ESPIA FIFO] Pago -> Factura {f_doc.numero} [{c_nom}]: Aplicando {aplicar}")
                 else:
                     aplicar = min(valor_restante, fac['saldo'])
+                    print(f"       [ESPIA FIFO] Pago -> Factura {f_doc.numero} [GENERICO]: Aplicando {aplicar}")
 
-                if aplicar <= 0:
+                if aplicar <= 0.01:
                     continue
 
                 # Acumular — no crear DB record todavía
@@ -340,9 +345,11 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
                                                concepto_id=cid)
                 
                 print(f"     [ESPIA]   - Restante tras aplicar dirigido: {restante_dirigido}")
-                if restante_dirigido > 0.01:
-                    monto_generico += restante_dirigido
-                    print(f"     [ESPIA]   - Sobrante {restante_dirigido} movido a monto_generico.")
+                # ¡OJO! Ya NO movemos el restante dirigido a monto_generico.
+                # Si el usuario dijo "esto es para Pintura", el sobrante se queda quieto como anticipo.
+                # if restante_dirigido > 0.01:
+                #    monto_generico += restante_dirigido
+                #    print(f"     [ESPIA]   - Sobrante {restante_dirigido} movido a monto_generico.")
 
             # 2. Aplicar monto GENÉRICO siguiendo jerarquía
             if monto_generico > 0.01:
