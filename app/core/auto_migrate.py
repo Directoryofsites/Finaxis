@@ -168,6 +168,11 @@ def run_auto_migrations():
             if 'tipo_documento_cruce_id' not in cols_ph_config:
                 migrations.append(('ph_configuracion', 'tipo_documento_cruce_id', 'INTEGER'))
 
+            # ph_conceptos
+            cols_ph_conceptos = get_existing_columns('ph_conceptos')
+            if 'orden' not in cols_ph_conceptos:
+                migrations.append(('ph_conceptos', 'orden', 'INTEGER DEFAULT 99'))
+
             # empresa_config_buzon (Nuevas columnas de Ventas y Soporte)
             cols_empresa_config_buzon = get_existing_columns('empresa_config_buzon')
             if cols_empresa_config_buzon: # Solo si la tabla ya existe
