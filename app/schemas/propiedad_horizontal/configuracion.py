@@ -54,12 +54,13 @@ class PHConceptoBase(BaseModel):
     valor_defecto: float = 0
     activo: bool = True
     tipo_documento_id: Optional[int] = None
-    cuenta_cartera_id: Optional[int] = None
-    tipo_documento_recibo_id: Optional[int] = None
+    cuenta_cxc_id: Optional[int] = None
+    cuenta_interes_id: Optional[int] = None
+    cuenta_ingreso_id: Optional[int] = None
     cuenta_caja_id: Optional[int] = None
 
 class PHConceptoCreate(PHConceptoBase):
-    pass
+    cuenta_ingreso_id: int
 
 class PHConceptoUpdate(BaseModel):
     nombre: Optional[str] = None
@@ -67,9 +68,9 @@ class PHConceptoUpdate(BaseModel):
     tipo_calculo: Optional[str] = None
     valor_defecto: Optional[float] = None
     activo: Optional[bool] = None
-    tipo_documento_id: Optional[int] = None
-    cuenta_cartera_id: Optional[int] = None
-    tipo_documento_recibo_id: Optional[int] = None
+    cuenta_cxc_id: Optional[int] = None
+    cuenta_interes_id: Optional[int] = None
+    cuenta_ingreso_id: Optional[int] = None
     cuenta_caja_id: Optional[int] = None
 
 
@@ -79,8 +80,10 @@ class PHConceptoResponse(PHConceptoBase):
     empresa_id: int
     
     # Nested Relationships for UI Display
-    cuenta_cartera: Optional[PlanCuentaSimple] = None
+    cuenta_cxc: Optional[PlanCuentaSimple] = None
     cuenta_caja: Optional[PlanCuentaSimple] = None
+    cuenta_interes: Optional[PlanCuentaSimple] = None
+    cuenta_ingreso: Optional[PlanCuentaSimple] = None
 
     class Config:
         from_attributes = True

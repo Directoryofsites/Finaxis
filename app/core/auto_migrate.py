@@ -167,11 +167,26 @@ def run_auto_migrations():
                 migrations.append(('ph_configuracion', 'cuenta_anticipos_id', 'INTEGER'))
             if 'tipo_documento_cruce_id' not in cols_ph_config:
                 migrations.append(('ph_configuracion', 'tipo_documento_cruce_id', 'INTEGER'))
+            if 'cuenta_descuento_id' not in cols_ph_config:
+                migrations.append(('ph_configuracion', 'cuenta_descuento_id', 'INTEGER'))
+            if 'tipo_documento_mora_id' not in cols_ph_config:
+                migrations.append(('ph_configuracion', 'tipo_documento_mora_id', 'INTEGER'))
+            if 'tipo_negocio' not in cols_ph_config:
+                migrations.append(('ph_configuracion', 'tipo_negocio', "VARCHAR(50) DEFAULT 'PH_RESIDENCIAL'"))
+
+            # ph_unidades
+            cols_ph_unidades = get_existing_columns('ph_unidades')
+            if 'referencia_recaudo' not in cols_ph_unidades:
+                migrations.append(('ph_unidades', 'referencia_recaudo', 'VARCHAR(50)'))
+            if 'aplica_pronto_pago' not in cols_ph_unidades:
+                migrations.append(('ph_unidades', 'aplica_pronto_pago', 'BOOLEAN DEFAULT TRUE'))
 
             # ph_conceptos
             cols_ph_conceptos = get_existing_columns('ph_conceptos')
             if 'orden' not in cols_ph_conceptos:
                 migrations.append(('ph_conceptos', 'orden', 'INTEGER DEFAULT 99'))
+            if 'cuenta_caja_id' not in cols_ph_conceptos:
+                migrations.append(('ph_conceptos', 'cuenta_caja_id', 'INTEGER'))
 
             # empresa_config_buzon (Nuevas columnas de Ventas y Soporte)
             cols_empresa_config_buzon = get_existing_columns('empresa_config_buzon')
