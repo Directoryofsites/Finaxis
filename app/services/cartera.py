@@ -169,14 +169,18 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
         def _identificar_concepto(texto_mov):
             if not texto_mov: return None
             t = _pnorm(texto_mov)
+            original_t = t
             # Quitar prefijos comunes de PH para no confundir startswith
             for prefijo in ["CXC ", "ABONO ", "RECAUDO ", "COBRO ", "PAGO ", "DIRIGIDO "]:
                 if t.startswith(prefijo):
                     t = t[len(prefijo):].strip()
             
+            print(f"       [ESPIA ID] Texto: '{original_t}' -> Limpio: '{t}'")
+            
             mejor, mejor_len = None, 0
             for cp in conceptos_ph:
                 n = _pnorm(cp.nombre)
+                # print(f"       [ESPIA ID]   ? Probando con: '{n}'")
                 if n and t.startswith(n) and len(n) > mejor_len:
                     mejor = cp
                     mejor_len = len(n)
@@ -188,6 +192,9 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
                     if n and n in t and len(n) > mejor_len:
                         mejor = cp
                         mejor_len = len(n)
+            
+            if mejor:
+                print(f"       [ESPIA ID]   => GANADOR: {mejor.nombre}")
                         
             return mejor
 
@@ -284,10 +291,15 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
         # ============================================================
         TEXTOS_GENERICOS = ('CARTERA PH', 'ABONO PH', 'RECAUDO PH', 'ANTICIPO', 'SALDO EXCEDENTE')
 
+        print(f"\n[ESPIA CARTERA] Iniciando cruce CXC para Tercero ID: {tercero_id}")
+        print(f"[ESPIA CARTERA] Facturas encontradas: {len(facturas_cxc)}, Pagos encontrados: {len(pagos_cxc)}")
+
         for pag in pagos_cxc:
             valor_pago = pag['monto']
             pago_doc   = pag['doc']
             movs_pago  = pag.get('movs', [])
+
+            print(f"\n---> [ESPIA] Procesando PAGO: {pago_doc.tipo_documento.codigo}-{pago_doc.numero} (Monto: {valor_pago})")
 
             # Limpiar acumulador para este pago
             pending_aplica.clear()
@@ -298,45 +310,63 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
             
             for mv in movs_pago:
                 txt = _pnorm(mv.concepto or '')
+                print(f"     [ESPIA] Analizando Movimiento: '{mv.concepto}' (Credito: {mv.credito})")
+                
                 # Si el texto es genérico, ignoramos identificación específica
                 if any(_pnorm(g) in txt for g in TEXTOS_GENERICOS):
+                    print(f"     [ESPIA]   - Es un texto GENERICO. Se suma a monto_generico.")
                     monto_generico += float(mv.credito)
                     continue
                 
                 co = _identificar_concepto(mv.concepto)
                 if co:
+                    print(f"     [ESPIA]   - Concepto IDENTIFICADO: {co.nombre} (ID: {co.id})")
                     intentos_pago.append((co.id, float(mv.credito)))
                 else:
+                    print(f"     [ESPIA]   - NO se identificó concepto. Se suma a monto_generico.")
                     monto_generico += float(mv.credito)
 
-            # print(f"[CARTERA] Pago={pago_doc.numero} total={valor_pago} dirigido={len(intentos_pago) > 0} generico={monto_generico}")
+            print(f"     [ESPIA] Resultado ID: {len(intentos_pago)} dirigidos, Generico: {monto_generico}")
 
             # 1. Aplicar montos DIRIGIDOS primero
             for cid, monto in intentos_pago:
                 if monto <= 0: continue
-                # Aplicamos el monto específico al concepto específico
+                # Buscamos el nombre del concepto para el log
+                c_nom = next((c.nombre for c in conceptos_ph if c.id == cid), "ID:"+str(cid))
+                print(f"     [ESPIA] APLICANDO DIRIGIDO -> Concepto: {c_nom}, Monto: {monto}")
+                
                 restante_dirigido = apply_fifo(facturas_cxc, monto, pago_doc.id,
                                                solo_unidad_id=pago_doc.unidad_ph_id,
                                                concepto_id=cid)
-                # Si sobra dinero de un abono dirigido, se suma al genérico (como anticipo o para otros conceptos)
+                
+                print(f"     [ESPIA]   - Restante tras aplicar dirigido: {restante_dirigido}")
                 if restante_dirigido > 0.01:
                     monto_generico += restante_dirigido
+                    print(f"     [ESPIA]   - Sobrante {restante_dirigido} movido a monto_generico.")
 
             # 2. Aplicar monto GENÉRICO siguiendo jerarquía
             if monto_generico > 0.01:
+                print(f"     [ESPIA] APLICANDO GENERICO (FIFO) -> Monto: {monto_generico}")
                 jerarquia = [cp.id for cp in conceptos_ph] + [None]
                 
                 # A. Misma Unidad (Jerarquía)
                 if pago_doc.unidad_ph_id:
                     for cid in jerarquia:
                         if monto_generico <= 0.01: break
+                        c_nom = next((c.nombre for c in conceptos_ph if c.id == cid), "ANTICIPO")
+                        
+                        antes = monto_generico
                         monto_generico = apply_fifo(
                             facturas_cxc, monto_generico, pago_doc.id,
                             solo_unidad_id=pago_doc.unidad_ph_id,
                             concepto_id=cid)
+                        
+                        if antes != monto_generico:
+                            print(f"     [ESPIA]   - Aplicado a {c_nom}: {antes - monto_generico}")
 
-                # B. Otras Unidades (Fallback, poco común pero posible por Propietario)
+                # B. Otras Unidades (Fallback)
                 if monto_generico > 0.01:
+                    print(f"     [ESPIA]   - Aplicando remanente {monto_generico} a otras unidades...")
                     for cid in jerarquia:
                         if monto_generico <= 0.01: break
                         monto_generico = apply_fifo(
