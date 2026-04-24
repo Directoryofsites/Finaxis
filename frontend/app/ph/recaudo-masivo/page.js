@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../../context/AuthContext';
+import { useAuth } from '../../../../contexts/AuthContext';
 import { phService } from '../../../lib/phService';
 import { reportesFacturacionService } from '../../../lib/reportesFacturacionService'; // para cuentas
 import BatchPreviewTable from '../../components/ph/BatchPreviewTable';
