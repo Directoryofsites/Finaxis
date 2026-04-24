@@ -173,6 +173,10 @@ def run_auto_migrations():
                 migrations.append(('ph_configuracion', 'tipo_documento_mora_id', 'INTEGER'))
             if 'tipo_negocio' not in cols_ph_config:
                 migrations.append(('ph_configuracion', 'tipo_negocio', "VARCHAR(50) DEFAULT 'PH_RESIDENCIAL'"))
+            if 'interes_mora_habilitado' not in cols_ph_config:
+                migrations.append(('ph_configuracion', 'interes_mora_habilitado', "BOOLEAN DEFAULT TRUE"))
+            if 'descuento_pronto_pago_habilitado' not in cols_ph_config:
+                migrations.append(('ph_configuracion', 'descuento_pronto_pago_habilitado', "BOOLEAN DEFAULT TRUE"))
 
             # ph_unidades
             cols_ph_unidades = get_existing_columns('ph_unidades')

@@ -66,6 +66,8 @@ def _ensure_configuracion_columns(db: Session):
         ("cuenta_descuento_id", "INTEGER"),
         ("tipo_documento_mora_id", "INTEGER"),
         ("tipo_negocio", "VARCHAR(50) DEFAULT 'PH_RESIDENCIAL'"),
+        ("interes_mora_habilitado", "BOOLEAN DEFAULT TRUE"),
+        ("descuento_pronto_pago_habilitado", "BOOLEAN DEFAULT TRUE"),
     ]
     for col, col_type in cols_to_add:
         try:

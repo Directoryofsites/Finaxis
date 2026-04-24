@@ -48,7 +48,8 @@ def get_movimientos_ph_report(
     # Para el "Extracto de Cuenta", solo nos interesan los movimientos de las cuentas 13xx (Cartera)
     # Obtenemos las cuentas configuradas en PHConfiguracion y/o las cuentas de CXC de los Tipos Doc.
     
-    config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
+    from app.services.propiedad_horizontal import configuracion_service
+    config = configuracion_service.get_configuracion(db, empresa_id)
     ids_cartera = set()
     
     if config:

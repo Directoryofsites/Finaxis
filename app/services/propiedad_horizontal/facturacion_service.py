@@ -18,7 +18,8 @@ from app.services._templates_empaquetados import TEMPLATES_EMPAQUETADOS
 def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date, usuario_id: int, conceptos_ids: List[int] = None, configuracion_conceptos: List[Any] = None):
     # 1. Obtener Configuración
     print(f"--- SUPER DEBUG: Iniciando Facturacion Masiva. Empresa: {empresa_id}, Fecha: {fecha_factura}, Conceptos IDs Seleccionados: {conceptos_ids} ---")
-    config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
+    from app.services.propiedad_horizontal import configuracion_service
+    config = configuracion_service.get_configuracion(db, empresa_id)
     
     # Procesar mapa de excepciones {concepto_id: {unidad_id, unidad_id...}}
     mapa_excepciones = {}
@@ -542,7 +543,8 @@ def get_historial_facturacion(db: Session, empresa_id: int):
     """
     from sqlalchemy import func, desc
     
-    config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
+    from app.services.propiedad_horizontal import configuracion_service
+    config = configuracion_service.get_configuracion(db, empresa_id)
     if not config or not config.tipo_documento_factura_id:
         return []
 
@@ -591,7 +593,8 @@ def eliminar_facturacion_masiva(db: Session, empresa_id: int, periodo: str, usua
     en lugar de hacerlo por cada factura eliminada. Esto reduce el tiempo de
     ejecución de minutos a segundos.
     """
-    config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
+    from app.services.propiedad_horizontal import configuracion_service
+    config = configuracion_service.get_configuracion(db, empresa_id)
     if not config or not config.tipo_documento_factura_id:
         raise Exception("Configuracion PH invalida.")
 
@@ -667,7 +670,8 @@ def check_facturacion_periodo(db: Session, empresa_id: int, fecha: date):
     """
     from sqlalchemy import func
     
-    config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
+    from app.services.propiedad_horizontal import configuracion_service
+    config = configuracion_service.get_configuracion(db, empresa_id)
     if not config or not config.tipo_documento_factura_id:
         return 0 # Si no hay config, asumimos 0 (el generador fallará despues igual)
         
@@ -692,7 +696,8 @@ def get_detalle_facturacion(db: Session, empresa_id: int, periodo: str):
         from app.models.tercero import Tercero
         from app.models.propiedad_horizontal.unidad import PHUnidad
         
-        config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
+        from app.services.propiedad_horizontal import configuracion_service
+        config = configuracion_service.get_configuracion(db, empresa_id)
         if not config or not config.tipo_documento_factura_id:
             return []
             
@@ -810,7 +815,8 @@ def recalcular_intereses_posteriores(db: Session, empresa_id: int, unidad_id: in
     from datetime import datetime, date
     from sqlalchemy import func
     
-    config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
+    from app.services.propiedad_horizontal import configuracion_service
+    config = configuracion_service.get_configuracion(db, empresa_id)
     if not config or not config.tipo_documento_factura_id:
         raise Exception("Configuración PH no encontrada")
         

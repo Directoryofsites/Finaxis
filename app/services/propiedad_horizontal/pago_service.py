@@ -592,7 +592,8 @@ def get_historial_cuenta_unidad(db: Session, unidad_id: Optional[int], empresa_i
     # Identificar cuentas de cartera validas (incluyendo la configurada en PH)
     cuentas_cxc_ids = cartera_service.get_cuentas_especiales_ids(db, empresa_id, 'cxc')
     
-    config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
+    from app.services.propiedad_horizontal import configuracion_service
+    config = configuracion_service.get_configuracion(db, empresa_id)
     cuentas_validas = set(cuentas_cxc_ids)
     if config and config.cuenta_anticipos_id:
         cuentas_validas.add(config.cuenta_anticipos_id)
@@ -798,7 +799,8 @@ def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_
     if monto <= 0:
         raise HTTPException(status_code=400, detail="El monto debe ser mayor a 0.")
     
-    config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
+    from app.services.propiedad_horizontal import configuracion_service
+    config = configuracion_service.get_configuracion(db, empresa_id)
     if not config or not config.tipo_documento_recibo_id:
         raise HTTPException(status_code=400, detail="No se ha configurado el Tipo de Documento para Recibos de Caja en PH.")
 
@@ -2529,7 +2531,8 @@ def generar_pdf_estado_cuenta(db: Session, empresa_id: int, unidad_id: int = Non
 
 
 
-    ph_config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
+    from app.services.propiedad_horizontal import configuracion_service
+    ph_config = configuracion_service.get_configuracion(db, empresa_id)
 
 
 
@@ -3068,7 +3071,8 @@ def _simular_cronologia_pagos(db: Session, docs: list, empresa_id: int, fecha_co
     # Agregamos logica antigua de carga si no se inyecto
     if injected_cuentas_interes is None:
         # Cargar tambien PHConfiguracion de interes
-        config_ph = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
+        from app.services.propiedad_horizontal import configuracion_service
+        config_ph = configuracion_service.get_configuracion(db, empresa_id)
         if config_ph and config_ph.cuenta_ingreso_intereses_id:
             cuentas_interes.add(config_ph.cuenta_ingreso_intereses_id)
             
