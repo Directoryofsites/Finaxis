@@ -34,6 +34,20 @@ export const phService = {
     },
 
     // --- MASS ACTIONS ---
+    uploadRecaudoMasivo: async (formData) => {
+        const response = await apiService.post('/ph/recaudos-masivos/upload', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    },
+
+    processRecaudoMasivo: async (data) => {
+        const response = await apiService.post('/ph/recaudos-masivos/process', data);
+        return response.data;
+    },
+
     massUpdateModules: async (payload) => {
         const response = await apiService.post('/ph/unidades/masivo/modulos', payload);
         return response.data;
@@ -88,6 +102,11 @@ export const phService = {
 
     deleteConcepto: async (id) => {
         const response = await apiService.delete(`/ph/conceptos/${id}`);
+        return response.data;
+    },
+
+    reorderConceptos: async (idsOrdenados) => {
+        const response = await apiService.put('/ph/conceptos/reordenar/batch', idsOrdenados);
         return response.data;
     },
 

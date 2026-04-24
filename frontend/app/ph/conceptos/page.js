@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { phService } from '../../../lib/phService';
 
-import { FaFileInvoiceDollar, FaPlus, FaEdit, FaTrash, FaSave, FaTimes, FaLayerGroup } from 'react-icons/fa';
+import { FaFileInvoiceDollar, FaPlus, FaEdit, FaTrash, FaSave, FaTimes, FaLayerGroup, FaGripVertical } from 'react-icons/fa';
 import BuscadorCuentas from '../../../components/BuscadorCuentas';
 import { useRecaudos } from '../../../contexts/RecaudosContext'; // IMPORT
 import ManualButton from '../../components/ManualButton';
@@ -164,6 +164,33 @@ function ConceptosContent() {
         });
     };
 
+    const handleDragStart = (e, index) => {
+        e.dataTransfer.setData('dragIndex', String(index));
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = async (e, targetIndex) => {
+        e.preventDefault();
+        const sourceIndex = parseInt(e.dataTransfer.getData('dragIndex'), 10);
+        if (isNaN(sourceIndex) || sourceIndex === targetIndex) return;
+
+        const newConceptos = [...conceptos];
+        const [movedItem] = newConceptos.splice(sourceIndex, 1);
+        newConceptos.splice(targetIndex, 0, movedItem);
+        setConceptos(newConceptos);
+
+        try {
+            await phService.reorderConceptos(newConceptos.map(c => c.id));
+        } catch (error) {
+            console.error('Error guardando orden:', error);
+            alert('No se pudo guardar el orden. Recargando...');
+            loadConceptos();
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-6xl mx-auto">
@@ -189,6 +216,7 @@ function ConceptosContent() {
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
+                                <th className="px-6 py-3 w-10"></th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Concepto</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cuenta Ingreso</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo Cobro</th>
@@ -198,8 +226,18 @@ function ConceptosContent() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                            {conceptos.map(c => (
-                                <tr key={c.id}>
+                            {conceptos.map((c, idx) => (
+                                <tr 
+                                    key={c.id}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, idx)}
+                                    onDragOver={handleDragOver}
+                                    onDrop={(e) => handleDrop(e, idx)}
+                                    className="hover:bg-indigo-50/50 cursor-move transition-colors"
+                                >
+                                    <td className="px-6 py-4 text-gray-300">
+                                        <FaGripVertical />
+                                    </td>
                                     <td className="px-6 py-4 font-medium text-gray-900">{c.nombre}</td>
                                     <td className="px-6 py-4 text-gray-500 font-mono text-sm">
                                         {c.cuenta_ingreso ? `${c.cuenta_ingreso.codigo} - ${c.cuenta_ingreso.nombre}` : 'Sin Asignar'}

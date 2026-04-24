@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 
 
-from typing import Optional
+from typing import Optional, List
 
 
 
@@ -130,7 +130,7 @@ def get_estado_cuenta_unidad(db: Session, unidad_id: int, empresa_id: int, skip_
 
 
 
-        return {"unidad": unidad.codigo, "propietario": "Sin Propietario", "saldo_total": 0, "facturas_pendientes": []}
+        return {"unidad": unidad.codigo, "propietario": "Sin Propietario", "saldo_total": 0, "facturas_pendientes": [], "detalles_por_concepto": []}
 
 
 
@@ -268,6 +268,8 @@ def get_estado_cuenta_unidad(db: Session, unidad_id: int, empresa_id: int, skip_
 
 
 
+    from app.services.propiedad_horizontal.pago_service_new import get_cartera_ph_pendientes_detallada
+    detalles_conceptos = get_cartera_ph_pendientes_detallada(db, empresa_id, unidad_id)
     saldo_total = datos_historial['saldo_actual']
 
 
@@ -310,7 +312,8 @@ def get_estado_cuenta_unidad(db: Session, unidad_id: int, empresa_id: int, skip_
 
 
 
-        "facturas_pendientes": facturas_pendientes
+        "facturas_pendientes": facturas_pendientes,
+        "detalles_por_concepto": detalles_conceptos
 
 
 
@@ -790,1096 +793,166 @@ def get_historial_cuenta_unidad(db: Session, unidad_id: Optional[int], empresa_i
 
 
 
-def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_id: int, monto: float, fecha_pago: date, forma_pago_id: int = None, skip_recalculo: bool = False, commit: bool = True):
-
-
-
-
-
+def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_id: int, monto: float, fecha_pago: date, forma_pago_id: int = None, detalles: List = None, observaciones: str = None, skip_recalculo: bool = False, commit: bool = True):
     # 1. Validaciones
-
-
-
-
-
     if monto <= 0:
-
-
-
-
-
         raise HTTPException(status_code=400, detail="El monto debe ser mayor a 0.")
-
-
-
-
-
     
-
-
-
-
-
-    print(f"DEBUG: Buscando configuración PH para empresa_id={empresa_id}")
-
-
-
-
-
     config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
-
-
-
-
-
-    
-
-
-
-
-
-    if config:
-
-
-
-
-
-        print(f"DEBUG: Config encontrada. ID={config.id}, ReciboDocID={config.tipo_documento_recibo_id}")
-
-
-
-
-
-    else:
-
-
-
-
-
-        print("DEBUG: Configuración PH es None (No existe fila en la tabla para esta empresa).")
-
-
-
-
-
-
-
-
-
-
-
     if not config or not config.tipo_documento_recibo_id:
-
-
-
-
-
         raise HTTPException(status_code=400, detail="No se ha configurado el Tipo de Documento para Recibos de Caja en PH.")
 
-
-
-
-
-
-
-
-
-
-
     tipo_doc = db.query(TipoDocumento).filter(TipoDocumento.id == config.tipo_documento_recibo_id).first()
-
-
-
-
-
     if not tipo_doc:
-
-
-
-
-
          raise HTTPException(status_code=404, detail="Tipo de Documento de Recibo no encontrado.")
 
+    unidad = db.query(PHUnidad).filter(PHUnidad.id == unidad_id).first()
+    if not unidad or not unidad.propietario_principal_id:
+        raise HTTPException(status_code=400, detail="La unidad no tiene propietario asignado.")
 
-
-
-
-
-
-
-
-
-
-    estado_cuenta = get_estado_cuenta_unidad(db, unidad_id, empresa_id)
-
-
-
-
-
-    if not estado_cuenta['propietario_id']:
-
-
-
-
-
-        raise HTTPException(status_code=400, detail="La unidad no tiene propietario asignado para registrar el pago.")
-
-
-
-
-
-
-
-
-
-
-
-    # 2. Crear Movimientos Contables
-
-
-
-
-
+    # 2. Lógica de Distribución por Conceptos (Abono Dirigido)
     movimientos = []
-
-
-
-
-
+    total_verificado = 0
     
-
-
-
-
-
-    # A. Débito (Entrada de Dinero - Caja/Banco)
-
-
-
-
-
-    # NUEVA LÓGICA (Usuario solicitó por Concepto):
-
-
-
-
-
-    # Buscamos qué conceptos debe la unidad para saber a qué cuenta de caja debe ir el dinero.
-
-
-
-
-
-    cuenta_caja_final = None
-
-
-
-
-
-    
-
-
-
-
-
-    # 1. Analizar deuda pendiente para identificar concepto mayoritario
-
-
-
-
-
-    # Obtenemos las facturas pendientes
-
-
-
-
-
-    pendientes = get_cartera_ph_pendientes(db, empresa_id, unidad_id=unidad_id)
-
-
-
-
-
-    
-
-
-
-
-
-    if pendientes:
-
-
-
-
-
-        # Si hay deuda, intentamos inferir la caja basada en el concepto de la deuda
-
-
-
-
-
-        try:
-
-
-
-
-
-            # Traemos los conceptos activos que tengan cuenta de caja configurada
-
-
-
-
-
-            from app.models.propiedad_horizontal.concepto import PHConcepto
-
-
-
-
-
-            conceptos_con_caja = db.query(PHConcepto).filter(
-
-
-
-
-
+    # Cuenta de Banco/Caja por defecto
+    cta_caja_defecto = tipo_doc.cuenta_caja_id or config.cuenta_anticipos_id
+
+    if detalles:
+        # VALIDACIÓN CRÍTICA: La suma de los detalles debe coincidir con el monto total
+        total_detalles = sum(float(d.monto) for d in detalles if d.monto > 0)
+        if abs(total_detalles - float(monto)) > 0.01:
+            raise HTTPException(status_code=400, detail=f"La suma de los abonos (${total_detalles:,.2f}) no coincide con el monto total del recibo (${monto:,.2f}).")
+
+        # EL USUARIO ESPECIFICÓ QUÉ PAGAR (Gobernanza de Fondos)
+        for d in detalles:
+            concepto = db.query(PHConcepto).filter(PHConcepto.id == d.concepto_id).first()
+            if not concepto: continue
+            
+            # Cuenta de Caja/Banco (Origen)
+            cuenta_caja = concepto.cuenta_caja_id or cta_caja_defecto
+            # Cuenta de Cartera (Destino)
+            cuenta_cxc = concepto.cuenta_cxc_id or config.cuenta_cartera_id or tipo_doc.cuenta_debito_cxc_id
+            
+            if not cuenta_caja or not cuenta_cxc:
+                raise HTTPException(status_code=400, detail=f"El concepto {concepto.nombre} no tiene configuradas sus cuentas contables.")
+
+            movimientos.append(doc_schemas.MovimientoContableCreate(
+                cuenta_id=cuenta_caja,
+                concepto=f"Recaudo {concepto.nombre} - {unidad.codigo}",
+                debito=d.monto,
+                credito=0
+            ))
+            movimientos.append(doc_schemas.MovimientoContableCreate(
+                cuenta_id=cuenta_cxc,
+                concepto=f"Abono {concepto.nombre} - {unidad.codigo}",
+                debito=0,
+                credito=d.monto
+            ))
+            total_verificado += d.monto
+            
+        # Si hay diferencia por monto total vs detalles, el excedente va a la cartera general
+        diferencia = round(monto - total_verificado, 2)
+        if diferencia > 0.01:
+             movimientos.append(doc_schemas.MovimientoContableCreate(
+                cuenta_id=cta_caja_defecto,
+                concepto=f"Excedente Recaudo - {unidad.codigo}",
+                debito=diferencia,
+                credito=0
+            ))
+             movimientos.append(doc_schemas.MovimientoContableCreate(
+                cuenta_id=config.cuenta_cartera_id or tipo_doc.cuenta_debito_cxc_id,
+                concepto=f"Abono Saldo Excedente - {unidad.codigo}",
+                debito=0,
+                credito=diferencia
+            ))
+
+    else:
+        # PAGO AUTOMÁTICO — Un movimiento genérico Caja/CXC.
+        # El cruce por factura lo realiza recalcular_aplicaciones_tercero (FIFO).
+        # El desglose por concepto en el panel lo calcula pago_service_new usando AplicacionPago.
+        cuenta_caja_final = cta_caja_defecto
+
+        # Inferir cuenta caja si no hay default
+        if not cuenta_caja_final:
+            primer_concepto_caja = db.query(PHConcepto).filter(
                 PHConcepto.empresa_id == empresa_id,
-
-
-
-
-
                 PHConcepto.cuenta_caja_id.isnot(None)
+            ).first()
+            if primer_concepto_caja:
+                cuenta_caja_final = primer_concepto_caja.cuenta_caja_id
 
+        if not cuenta_caja_final:
+            raise HTTPException(status_code=400, detail="No se ha configurado una cuenta de caja por defecto para recaudos.")
 
-
-
-
-            ).all()
-
-
-
-
-
-            
-
-
-
-
-
-            # Crear mapa: CuentaCXC -> CuentaCaja
-
-
-
-
-
-            # Asumimos que la factura afectó la cuenta_cxc del concepto.
-
-
-
-
-
-            mapa_cxc_caja = {c.cuenta_cxc_id: c.cuenta_caja_id for c in conceptos_con_caja if c.cuenta_cxc_id}
-
-
-
-
-
-            
-
-
-
-
-
-            if mapa_cxc_caja:
-
-
-
-
-
-                # Buscamos en los movimientos de las facturas pendientes qué cuenta CXC se movió
-
-
-
-
-
-                doc_ids = [p['id'] for p in pendientes]
-
-
-
-
-
-                
-
-
-
-
-
-                # Query para ver cuentas afectadas en esos documentos (limitado a las cuentas cxc mapeadas)
-
-
-
-
-
-                # Buscamos el primer match para simplificar (o el más reciente)
-
-
-
-
-
-                stmt = db.query(MovimientoContable.cuenta_id).filter(
-
-
-
-
-
-                    MovimientoContable.documento_id.in_(doc_ids),
-
-
-
-
-
-                    MovimientoContable.cuenta_id.in_(mapa_cxc_caja.keys())
-
-
-
-
-
-                ).limit(1)
-
-
-
-
-
-                
-
-
-
-
-
-                cuenta_cxc_encontrada = db.execute(stmt).scalar()
-
-
-
-
-
-                
-
-
-
-
-
-                if cuenta_cxc_encontrada and cuenta_cxc_encontrada in mapa_cxc_caja:
-
-
-
-
-
-                    cuenta_caja_final = mapa_cxc_caja[cuenta_cxc_encontrada]
-
-
-
-
-
-                    print(f"DEBUG: Caja resuelta por Concepto (CXC {cuenta_cxc_encontrada} -> Caja {cuenta_caja_final})")
-
-
-
-
-
-
-
-
-
-
-
-        except Exception as e:
-
-
-
-
-
-            print(f"WARN: Error intentando resolver caja por concepto: {e}")
-
-
-
-
-
-
-
-
-
-
-
-    # FALLBACKS para cuenta_caja_final (si no se resolvio por concepto)
-    if not cuenta_caja_final:
-        # PRIORIDAD 1: Buscar en CUALQUIER PHConcepto activo con cuenta_caja configurada
-        # Esto garantiza que incluso unidades sin facturas pendientes usen la cuenta correcta
-        from app.models.propiedad_horizontal.concepto import PHConcepto as PHConceptoCaja
-        cualquier_concepto_caja = db.query(PHConceptoCaja).filter(
-            PHConceptoCaja.empresa_id == empresa_id,
-            PHConceptoCaja.cuenta_caja_id.isnot(None)
-        ).first()
-        if cualquier_concepto_caja:
-            cuenta_caja_final = cualquier_concepto_caja.cuenta_caja_id
-            print(f"DEBUG: Caja resuelta desde concepto general: {cuenta_caja_final}")
-
-    if not cuenta_caja_final:
-        # PRIORIDAD 2: Campo personalizado del Tipo Doc (cuenta_caja_id si existe)
-        caja_custom = getattr(tipo_doc, 'cuenta_caja_id', None)
-        if caja_custom:
-            cuenta_caja_final = caja_custom
-
-    if not cuenta_caja_final:
-        # PRIORIDAD 3: Config Global PH
-        if config and config.cuenta_caja_id:
-            cuenta_caja_final = config.cuenta_caja_id
-
-    if not cuenta_caja_final:
-        # PRIORIDAD 4 (ultimo recurso): cuenta_debito_cxc del tipo doc
-        # (puede ser cartera en algunos configs - es mejor que nada)
-        cuenta_caja_final = tipo_doc.cuenta_debito_cxc_id
-
-    if not cuenta_caja_final:
-        raise HTTPException(status_code=400, detail="No se encontro cuenta de Caja/Bancos. Configure 'Cuenta Caja' en el Concepto de Facturacion.")
-
-    print(f"DEBUG: Cuenta caja final: {cuenta_caja_final}")
-
-
-
-
-
-
-
-
-
-
-
-
-    # B. Crédito a Cartera (Disminuye deuda)
-
-
-
-
-
-    # PRIORIDAD 1 (siempre): Config Global PH - garantiza consistencia entre todas las unidades
-    # Esto evita el bug donde una unidad sin deuda pendiente usaba la cuenta incorrecta
-    cuenta_cartera_final = config.cuenta_cartera_id if (config and config.cuenta_cartera_id) else None
-
-    # PRIORIDAD 2: Si no hay config global, intentar resolver por cuenta CXC del concepto de la deuda
-    if not cuenta_cartera_final and pendientes:
+        # Inferir cuenta caja desde facturas pendientes (busca la caja del concepto predominante)
         try:
-            cuenta_cxc_local = locals().get('cuenta_cxc_encontrada', None)
-            if cuenta_cxc_local:
-                cuenta_cartera_final = cuenta_cxc_local
-                print(f"DEBUG: Cartera resuelta por Concepto (CXC: {cuenta_cartera_final})")
+            pendientes_tmp = get_cartera_ph_pendientes(db, empresa_id, unidad_id=unidad_id)
+            if pendientes_tmp:
+                conceptos_con_caja = db.query(PHConcepto).filter(
+                    PHConcepto.empresa_id == empresa_id,
+                    PHConcepto.cuenta_caja_id.isnot(None)
+                ).all()
+                mapa_cxc_caja = {c.cuenta_cxc_id: c.cuenta_caja_id for c in conceptos_con_caja if c.cuenta_cxc_id}
+                if mapa_cxc_caja:
+                    doc_ids = [p['id'] for p in pendientes_tmp]
+                    res_cxc = db.query(MovimientoContable.cuenta_id).filter(
+                        MovimientoContable.documento_id.in_(doc_ids),
+                        MovimientoContable.cuenta_id.in_(mapa_cxc_caja.keys())
+                    ).first()
+                    if res_cxc:
+                        cuenta_caja_final = mapa_cxc_caja[res_cxc[0]]
         except Exception as e:
-            print(f"WARN: Error resolviendo cartera por concepto: {e}")
+            print(f"[PAGO AUTO] Error infiriendo caja: {e}")
 
-    # FALLBACK: Tipo Doc Recibo credito CXC
-    if not cuenta_cartera_final:
-        cuenta_cartera_final = tipo_doc.cuenta_credito_cxc_id
-
-    if not cuenta_cartera_final:
-        raise HTTPException(status_code=400, detail="No se encontro cuenta de Cartera. Configure Cuenta Cartera en Parametros PH.")
-
-    print(f"DEBUG: Cuenta cartera final usada: {cuenta_cartera_final}")
-
-    # B. Creditos (Disminucion de deuda / Generacion de Anticipo)
-    # Detectar deuda actual para aplicar "División Inteligente" si hay excedente
-    deuda_actual = float(estado_cuenta.get('saldo_total', 0))
-    id_propietario = estado_cuenta.get('propietario_id')
-    
-    # 1. Determinar cuánto va a Cartera y cuánto a Anticipos
-    monto_cartera = monto
-    monto_anticipo = 0
-    
-    # Solo aplicamos división si hay una cuenta de anticipos configurada
-    if config.cuenta_anticipos_id and monto > deuda_actual:
-        monto_cartera = max(0, deuda_actual)
-        monto_anticipo = monto - monto_cartera
-        print(f"DEBUG: Pago exceede deuda (${deuda_actual}). Dividiendo: Cartera ${monto_cartera}, Anticipo ${monto_anticipo}")
-
-    # 2. Agregar Movimiento Crédito a Cartera (Abono)
-    if monto_cartera > 0:
+        # Un solo movimiento de Caja (débito) y uno de Cartera CXC (crédito)
+        movimientos.append(doc_schemas.MovimientoContableCreate(
+            cuenta_id=cuenta_caja_final,
+            concepto=f"Recaudo PH - {unidad.codigo}",
+            debito=monto,
+            credito=0
+        ))
+        cuenta_cartera_final = config.cuenta_cartera_id or tipo_doc.cuenta_debito_cxc_id
+        if not cuenta_cartera_final:
+            primer_concepto_cxc = db.query(PHConcepto).filter(
+                PHConcepto.empresa_id == empresa_id,
+                PHConcepto.cuenta_cxc_id.isnot(None)
+            ).first()
+            if primer_concepto_cxc:
+                cuenta_cartera_final = primer_concepto_cxc.cuenta_cxc_id
+        if not cuenta_cartera_final:
+            raise HTTPException(status_code=400, detail="No se ha configurado una cuenta de cartera (CXC) para recaudos.")
         movimientos.append(doc_schemas.MovimientoContableCreate(
             cuenta_id=cuenta_cartera_final,
-            concepto=f"Abono/Pago Unidad {estado_cuenta['unidad']}",
+            concepto=f"Abono Cartera PH - {unidad.codigo}",
             debito=0,
-            credito=monto_cartera
+            credito=monto
         ))
 
-    # 3. Agregar Movimiento Crédito a Anticipos (Pasivo) - NUEVO
-    if monto_anticipo > 0:
-        movimientos.append(doc_schemas.MovimientoContableCreate(
-            cuenta_id=config.cuenta_anticipos_id,
-            concepto=f"Anticipo Recibido Unidad {estado_cuenta['unidad']}",
-            debito=0,
-            credito=monto_anticipo
-        ))
-
-    # C. Agregar Movimiento Débito (Entra a Caja)
-    movimientos.append(doc_schemas.MovimientoContableCreate(
-        cuenta_id=cuenta_caja_final,
-        concepto=f"Ingreso Pago Unidad {estado_cuenta['unidad']}",
-        debito=monto,
-        credito=0
-
-
-
-
-
-    ))
-
-
-
-
-
-
-
-
-
-
-
-    # C. Débito a Caja (Entra dinero)
-
-
-
-
-
-    # Necesitamos una cuenta de caja. 
-
-
-
-
-
-    # VOY A ASUMIR que por ahora usamos la cuenta DEBITO del mismo tipo de documento si está configurada, sino ERROR.
-
-
-
-
-
-
-
-
-
-
-
-    # 3. Crear Documento
-
-
-
-
-
+    # 3. Crear Documento (Recibo de Caja)
+    obs_final = observaciones or f"Recaudo PH Unidad {unidad.codigo}"
     doc_create = doc_schemas.DocumentoCreate(
-
-
-
-
-
         empresa_id=empresa_id,
-
-
-
-
-
-        tipo_documento_id=tipo_doc.id,
-
-
-
-
-
+        tipo_documento_id=config.tipo_documento_recibo_id,
         numero=0,
-
-
-
-
-
         fecha=fecha_pago,
-
-
-
-
-
-        beneficiario_id=estado_cuenta['propietario_id'],
-
-
-
-
-
-        unidad_ph_id=unidad_id, # FIX: Vincular documento a unidad PH
-
-
-
-
-
-        observaciones=f"Pago PH Unidad {estado_cuenta['unidad']}",
-
-
-
-
-
-        movimientos=movimientos
-
-
-
-
-
+        fecha_vencimiento=fecha_pago,
+        beneficiario_id=unidad.propietario_principal_id,
+        observaciones=obs_final,
+        movimientos=movimientos,
+        unidad_ph_id=unidad.id
     )
+    new_doc = documento_service.create_documento(db, doc_create, user_id=usuario_id, skip_recalculo=True)
 
+    # 4. Recalcular Cartera
+    if not skip_recalculo:
+        cartera_service.recalcular_aplicaciones_tercero(db, unidad.propietario_principal_id, empresa_id)
 
+    if commit:
+        db.commit()
 
-
-
-
-
-
-
-
-
-    new_doc = documento_service.create_documento(db, doc_create, user_id=usuario_id, skip_recalculo=skip_recalculo, commit=commit)
-
-
-
-
-
-
-
-
-
-
-
-    # --- 4. OPCIÓN 2: GENERACIÓN AUTOMÁTICA DE MORA (Late Payment Sanction) ---
-
-
-
-
-
-    # Si la fecha de pago supera el límite, generamos una Nota Débito automática.
-
-
-
-
-
-    if False and config.interes_mora_habilitado and config.dia_limite_pago: # DISABLED: Deferred Model (Cobro en Facturacion)
-
-
-
-
-
-        if fecha_pago.day > config.dia_limite_pago:
-
-
-
-
-
-            # Calcular Sanción
-
-
-
-
-
-            # Usamos el % configurado sobre el valor pagado como simplificación "Sanción por Extemporaneidad"
-
-
-
-
-
-            # Si hubiera un campo "valor_sancion_fija", lo usaríamos aquí.
-
-
-
-
-
-            tasa = config.interes_mora_mensual or 0
-
-
-
-
-
-            valor_sancion = monto * (tasa / 100.0)
-
-
-
-
-
-            
-
-
-
-
-
-            if valor_sancion > 0:
-
-
-
-
-
-                print(f"DEBUG: Pago Extemporáneo detectado (Día {fecha_pago.day} > {config.dia_limite_pago}). Generando ND por {valor_sancion}")
-
-
-
-
-
-                
-
-
-
-
-
-                # Buscar Tipo Doc para la Mora (ND)
-
-
-
-
-
-                # PRIORITY: Configurado explícitamente
-
-
-
-
-
-                tipo_nd = None
-
-
-
-
-
-                if config.tipo_documento_mora_id:
-
-
-
-
-
-                    tipo_nd = db.query(TipoDocumento).filter(TipoDocumento.id == config.tipo_documento_mora_id).first()
-
-
-
-
-
-                
-
-
-
-
-
-                # Fallback: Buscar por código 'ND'
-
-
-
-
-
-                if not tipo_nd:
-
-
-
-
-
-                    tipo_nd = db.query(TipoDocumento).filter(TipoDocumento.codigo == 'ND', TipoDocumento.empresa_id == empresa_id).first()
-
-
-
-
-
-                
-
-
-
-
-
-                # Fallback Global
-
-
-
-
-
-                if not tipo_nd:
-
-
-
-
-
-                     tipo_nd = db.query(TipoDocumento).filter(TipoDocumento.codigo == 'ND').first()
-
-
-
-
-
-                
-
-
-
-
-
-                if tipo_nd:
-
-
-
-
-
-                    # Cuentas para la Mora
-
-
-
-
-
-                    cta_cartera = cuenta_cartera_final # Aumenta la deuda (Misma cuenta del pago)
-
-
-
-
-
-                    cta_ingreso = config.cuenta_ingreso_intereses_id
-
-
-
-
-
-                    
-
-
-
-
-
-                    if not cta_ingreso:
-
-
-
-
-
-                        # Fallback: Usar cuenta credito del Tipo ND si existe
-
-
-
-
-
-                        cta_ingreso = tipo_nd.cuenta_credito_id
-
-
-
-
-
-                    
-
-
-
-
-
-                    if cta_cartera and cta_ingreso:
-
-
-
-
-
-                        movs_nd = [
-
-
-
-
-
-                            # Debito a Cartera (Aumenta la deuda del cliente)
-
-
-
-
-
-                            doc_schemas.MovimientoContableCreate(
-
-
-
-
-
-                                cuenta_id=cta_cartera,
-
-
-
-
-
-                                concepto=f"Sanción Mora ({tasa}% sobre ${monto:,.0f})",
-
-
-
-
-
-                                debito=valor_sancion,
-
-
-
-
-
-                                credito=0
-
-
-
-
-
-                            ),
-
-
-
-
-
-                            # Credito a Ingreso (Ganancia para la empresa)
-
-
-
-
-
-                            doc_schemas.MovimientoContableCreate(
-
-
-
-
-
-                                cuenta_id=cta_ingreso,
-
-
-
-
-
-                                concepto=f"Ingreso Mora ({tasa}% sobre ${monto:,.0f}) - {estado_cuenta['unidad']}",
-
-
-
-
-
-                                debito=0,
-
-
-
-
-
-                                credito=valor_sancion
-
-
-
-
-
-                            )
-
-
-
-
-
-                        ]
-
-
-
-
-
-                        
-
-
-
-
-
-                        doc_nd_create = doc_schemas.DocumentoCreate(
-
-
-
-
-
-                            empresa_id=empresa_id,
-
-
-
-
-
-                            tipo_documento_id=tipo_nd.id,
-
-
-
-
-
-                            numero=0,
-
-
-
-
-
-                            fecha=fecha_pago,
-
-
-
-
-
-                            beneficiario_id=estado_cuenta['propietario_id'],
-
-
-
-
-
-                            unidad_ph_id=unidad_id,
-
-
-
-
-
-                            observaciones=f"Sanción Mora ({tasa}% sobre ${monto:,.0f})",
-
-
-
-
-
-                            movimientos=movs_nd
-
-
-
-
-
-                        )
-
-
-
-
-
-                        documento_service.create_documento(db, doc_nd_create, user_id=usuario_id)
-
-
-
-
-
-                    else:
-
-
-
-
-
-                        print("WARN: No se pudo generar Mora Automática. Faltan cuentas contables (Cartera o Ingreso Intereses).")
-
-
-
-
-
-                else:
-
-
-
-
-
-                     print("WARN: No se pudo generar Mora Automática. Tipo Documento 'ND' no existe.")
-
-
-
-
-
-
-
-
-
-
-
-    # --- 5. DETECCIÓN DE NECESIDAD DE RECÁLCULO (Retroactivo) ---
-
-
-
-
-
+    # 5. Detección de Recálculo Retroactivo
     sugerir_recalculo = False
-
-
-
-
-
+    facturas_futuras = 0
     try:
 
 

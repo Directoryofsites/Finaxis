@@ -44,6 +44,9 @@ export default function PagosPHPage() {
     const [successMsg, setSuccessMsg] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
 
+    const [detallesAbono, setDetallesAbono] = useState([]); // [{concepto_id, nombre, monto, saldo_pendiente}]
+    const [isAbonoManual, setIsAbonoManual] = useState(false); // Modo Manual (Gobernanza) vs Automático (FIFO)
+
     useEffect(() => {
         if (!authLoading) loadInitialData();
     }, [authLoading]);
@@ -53,18 +56,18 @@ export default function PagosPHPage() {
             const [uData, tData, pData] = await Promise.all([
                 phService.getUnidades(),
                 phService.getTorres(),
-                phService.getPropietarios() // Fetch Owners
+                phService.getPropietarios()
             ]);
-            setUnidades(uData);
-            setTorres(tData);
-            setPropietarios(pData);
+            setUnidades(uData || []);
+            setTorres(tData || []);
+            setPropietarios(pData || []);
         } catch (err) {
             console.error(err);
         }
     };
 
     // Lógica de Filtrado Unidades
-    const unidadesFiltered = unidades.filter(u => {
+    const unidadesFiltered = (unidades || []).filter(u => {
         const matchesSearch = searchTerm === '' ||
             (u.codigo || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             (u.propietario?.razon_social || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -73,7 +76,7 @@ export default function PagosPHPage() {
     });
 
     // Lógica de Filtrado Propietarios
-    const propietariosFiltered = propietarios.filter(p => {
+    const propietariosFiltered = (propietarios || []).filter(p => {
         return searchTerm === '' ||
             (p.nombre || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             (p.documento || '').includes(searchTerm);
@@ -104,6 +107,8 @@ export default function PagosPHPage() {
         setErrorMsg('');
         setLastPaymentData(null);
         setPagoForm(prev => ({ ...prev, monto: '' }));
+        setDetallesAbono([]);
+        setIsAbonoManual(false); // Siempre resetear a automático
     };
 
     const fetchEstadoCuenta = async (mode, id) => {
@@ -112,14 +117,23 @@ export default function PagosPHPage() {
             let data;
             if (mode === 'UNIT') {
                 data = await phService.getEstadoCuenta(id);
-                // Data: { saldo_total, facturas_pendientes... }
+                
+                // Mapear detalles para la UI
+                if (data.detalles_por_concepto) {
+                    setDetallesAbono(data.detalles_por_concepto.map(c => ({
+                        concepto_id: c.id, 
+                        nombre: c.nombre,
+                        tipo: c.tipo,
+                        saldo_pendiente: c.saldo || 0,
+                        monto: 0 // Iniciar en 0 para que el usuario elija cuánto abonar si activa manual
+                    })));
+                }
             } else {
                 data = await phService.getEstadoCuentaPropietario(id);
-                // Data: { saldo_total_consolidado, desglose_por_unidad... }
-                // Mapeamos para que la UI lo entienda uniformemente
                 data.saldo_total = data.saldo_total_consolidado; // Alias
                 data.propietario_nombre = data.propietario.nombre;
                 data.unidad = `(Todas las Unidades)`;
+                setDetallesAbono([]); 
             }
 
             setEstadoCuenta(data);
@@ -133,11 +147,44 @@ export default function PagosPHPage() {
         }
     };
 
+    // Al cambiar a manual, podemos sugerir el pago total distribuido
+    const toggleAbonoManual = () => {
+        const newValue = !isAbonoManual;
+        setIsAbonoManual(newValue);
+        if (newValue && detallesAbono.length > 0) {
+             // Si activa manual, sugerir el saldo pendiente en cada concepto
+             setDetallesAbono(prev => prev.map(d => ({ ...d, monto: d.saldo_pendiente })));
+        } else if (!newValue) {
+             // Si desactiva manual, volver al saldo total en el campo general
+             setPagoForm(prev => ({ ...prev, monto: estadoCuenta?.saldo_total || 0 }));
+        }
+    };
+
+    // Actualizar el monto total cuando cambian los detalles (solo en modo manual)
+    const updateConceptoMonto = (idx, valor) => {
+        const newDet = [...detallesAbono];
+        newDet[idx].monto = parseFloat(valor) || 0;
+        setDetallesAbono(newDet);
+        
+        const total = newDet.reduce((sum, d) => sum + d.monto, 0);
+        setPagoForm(prev => ({ ...prev, monto: total }));
+    };
+
     // --- MODAL RECALCULO ---
     const [showRecalculoModal, setShowRecalculoModal] = useState(false);
     const [recalculoData, setRecalculoData] = useState(null);
     const [recalculando, setRecalculando] = useState(false);
     const [recalculoResult, setRecalculoResult] = useState(null);
+
+    const updateDetalleMonto = (index, val) => {
+        const newDetalles = [...detallesAbono];
+        newDetalles[index].monto = parseFloat(val) || 0;
+        setDetallesAbono(newDetalles);
+
+        // Actualizar monto total del form
+        const newTotal = newDetalles.reduce((acc, curr) => acc + curr.monto, 0);
+        setPagoForm(prev => ({ ...prev, monto: newTotal }));
+    };
 
     const handlePagoSubmit = async (e) => {
         e.preventDefault();
@@ -157,7 +204,8 @@ export default function PagosPHPage() {
                 res = await phService.registrarPago({
                     unidad_id: parseInt(selectedUnidadId),
                     monto: parseFloat(pagoForm.monto),
-                    fecha: pagoForm.fecha
+                    fecha: pagoForm.fecha,
+                    detalles: isAbonoManual ? detallesAbono.filter(d => d.monto > 0) : null
                 });
             } else {
                 // PAGO CONSOLIDADO
@@ -190,7 +238,13 @@ export default function PagosPHPage() {
             }
 
         } catch (err) {
-            setErrorMsg(err.response?.data?.detail || 'Error registrando pago.');
+            console.error("Error en registrarPago:", err);
+            let detail = err.response?.data?.detail || 'Error registrando pago.';
+            // Si el detalle es un objeto (como en 422), convertirlo a string amigable
+            if (typeof detail === 'object') {
+                detail = JSON.stringify(detail);
+            }
+            setErrorMsg(String(detail));
         } finally {
             setProcessing(false);
         }
@@ -445,11 +499,15 @@ export default function PagosPHPage() {
                                             type="number"
                                             value={pagoForm.monto}
                                             onChange={e => setPagoForm({ ...pagoForm, monto: e.target.value })}
-                                            className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-green-500 font-bold text-lg text-green-700"
+                                            readOnly={isAbonoManual}
+                                            className={`w-full pl-8 pr-4 py-2 border rounded-lg outline-none focus:ring-2 font-bold text-lg ${
+                                                isAbonoManual ? 'bg-gray-100 border-gray-200 text-gray-500' : 'border-gray-300 focus:ring-green-500 text-green-700'
+                                            }`}
                                             placeholder="0"
                                             min="1"
                                             required
                                         />
+                                        {isAbonoManual && <p className="text-[9px] text-gray-400 mt-1 italic">* Calculado desde abono por concepto</p>}
                                     </div>
                                 </div>
 
@@ -570,6 +628,69 @@ export default function PagosPHPage() {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* ABONO DIRIGIDO POR CONCEPTO */}
+                                {paymentMode === 'UNIT' && detallesAbono.length > 0 && (
+                                    <div className={`bg-white rounded-xl shadow-sm border-2 overflow-hidden animate-slideUp mb-6 transition-all ${isAbonoManual ? 'border-indigo-500' : 'border-gray-200'}`}>
+                                        <div className={`p-4 border-b flex justify-between items-center transition-colors ${isAbonoManual ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}>
+                                            <div className="flex items-center gap-2">
+                                                <FaListUl className={isAbonoManual ? "text-white" : "text-gray-500"} />
+                                                <h3 className="font-bold text-sm uppercase">Detalle de Cobros</h3>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className={`text-[10px] font-bold uppercase transition-opacity ${isAbonoManual ? 'opacity-100' : 'opacity-50'}`}>
+                                                    Abono Dirigido (Manual)
+                                                </span>
+                                                <button
+                                                    onClick={toggleAbonoManual}
+                                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors outline-none ${isAbonoManual ? 'bg-green-400' : 'bg-gray-300'}`}
+                                                >
+                                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isAbonoManual ? 'translate-x-6' : 'translate-x-1'}`} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className={`p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 transition-opacity ${isAbonoManual ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
+                                            {detallesAbono.map((d, idx) => (
+                                                <div key={idx} className={`p-4 rounded-xl border flex flex-col justify-between transition-all shadow-sm ${isAbonoManual ? 'bg-white border-indigo-100' : 'bg-gray-50 border-gray-100'}`}>
+                                                    <div className="mb-3">
+                                                        <p className={`text-[10px] font-bold uppercase tracking-tighter mb-1 ${isAbonoManual ? 'text-indigo-500' : 'text-gray-400'}`}>{d.tipo}</p>
+                                                        <p className="font-bold text-gray-800 text-xs truncate mb-1" title={d.nombre}>{d.nombre}</p>
+                                                        <div className="flex justify-between items-center bg-red-50 px-2 py-1 rounded">
+                                                            <span className="text-[10px] text-red-400 font-bold">DEUDA:</span>
+                                                            <span className="text-[11px] text-red-600 font-black">${(d.saldo_pendiente || 0).toLocaleString()}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="relative group">
+                                                        <span className={`absolute left-3 top-2.5 text-xs font-bold ${isAbonoManual ? 'text-indigo-300' : 'text-gray-300'}`}>$</span>
+                                                        <input
+                                                            type="number"
+                                                            value={d.monto}
+                                                            onChange={(e) => updateConceptoMonto(idx, e.target.value)}
+                                                            disabled={!isAbonoManual}
+                                                            className={`w-full pl-7 pr-3 py-2 border-2 rounded-lg text-right font-black text-md outline-none transition-all ${
+                                                                isAbonoManual ? 'border-indigo-100 text-indigo-700 focus:border-indigo-500' : 'border-gray-100 text-gray-300'
+                                                            }`}
+                                                        />
+                                                        {isAbonoManual && <p className="text-[9px] text-right mt-1 text-gray-400">¿Cuánto abonar?</p>}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        
+                                        {isAbonoManual && (
+                                            <div className="bg-indigo-600 p-4 text-white flex justify-between items-center shadow-inner animate-fadeIn">
+                                                <div>
+                                                    <p className="text-[10px] font-bold uppercase opacity-80">Suma Total para Registrar</p>
+                                                    <p className="text-xs italic opacity-60">(Se aplicará a estos conceptos específicos)</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-3xl font-black">${(Number(pagoForm.monto) || 0).toLocaleString()}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* TABLA ESPECÍFICA SEGÚN MODO */}
                                 {paymentMode === 'OWNER' && estadoCuenta.desglose_por_unidad && (

@@ -3,160 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balance de Prueba</title>
+    <title>Manual PRO - Balance de Prueba | Finaxis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #2563eb;
-            --secondary-color: #1e40af;
-            --bg-color: #f8fafc;
-            --text-color: #1e293b;
-            --card-bg: #ffffff;
-            --code-bg: #1e293b;
-            --code-text: #e2e8f0;
-            --border-color: #e2e8f0;
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --primary-light: #eef2ff;
+            --secondary: #0ea5e9;
+            --success: #10b981;
+            --danger: #ef4444;
+            --dark: #0f172a;
+            --slate: #475569;
+            --border: #e2e8f0;
+            --bg: #f8fafc;
         }
-        body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.6;
-            color: var(--text-color);
-            background-color: var(--bg-color);
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: var(--card-bg);
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        h1, h2, h3 {
-            color: var(--secondary-color);
-            margin-top: 1.5em;
-        }
-        h1 {
-            border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 10px;
-            margin-top: 0;
-        }
-        code {
-            font-family: 'Consolas', 'Monaco', monospace;
-            background-color: #f1f5f9;
-            padding: 2px 5px;
-            border-radius: 4px;
-            color: #d63384;
-        }
-        pre {
-            background-color: var(--code-bg);
-            color: var(--code-text);
-            padding: 15px;
-            border-radius: 8px;
-            overflow-x: auto;
-        }
-        pre code {
-            background-color: transparent;
-            color: inherit;
-            padding: 0;
-        }
-        blockquote {
-            border-left: 4px solid var(--primary-color);
-            margin: 0;
-            padding-left: 20px;
-            color: #475569;
-            background-color: #f1f5f9;
-            padding: 10px 20px;
-            border-radius: 0 4px 4px 0;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        th, td {
-            border: 1px solid var(--border-color);
-            padding: 10px;
-            text-align: left;
-        }
-        th {
-            background-color: #f1f5f9;
-            font-weight: bold;
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 4px;
-            border: 1px solid var(--border-color);
-        }
-        .back-link {
-            display: inline-block;
-            margin-bottom: 20px;
-            color: var(--primary-color);
-            text-decoration: none;
-            font-weight: bold;
-        }
-        .back-link:hover {
-            text-decoration: underline;
-        }
-        footer {
-            text-align: center;
-            margin-top: 50px;
-            font-size: 0.9em;
-            color: #64748b;
-            border-top: 1px solid var(--border-color);
-            padding-top: 20px;
-        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: var(--dark); line-height: 1.7; padding: 40px 20px; }
+        
+        .container { max-width: 1100px; margin: 0 auto; background: white; border-radius: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); padding: 50px; }
+
+        .manual-header { border-bottom: 4px solid var(--primary-light); padding-bottom: 30px; margin-bottom: 40px; }
+        .manual-header h1 { font-size: 2.8rem; font-weight: 800; color: var(--dark); letter-spacing: -1px; }
+        .manual-header p { font-size: 1.2rem; color: var(--slate); margin-top: 10px; }
+
+        section { margin-bottom: 60px; scroll-margin-top: 20px; }
+        h2 { font-size: 1.8rem; color: var(--primary); margin-bottom: 25px; display: flex; align-items: center; gap: 15px; border-left: 6px solid var(--primary); padding-left: 20px; }
+        
+        .field-guide { display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 20px; }
+        .field-card { border: 1px solid var(--border); border-radius: 16px; padding: 25px; transition: all 0.3s ease; background: #fff; }
+        .field-card:hover { border-color: var(--primary); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); transform: translateY(-2px); }
+        .field-title { font-weight: 700; color: var(--dark); font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .field-tag { font-size: 0.7rem; padding: 4px 10px; border-radius: 20px; background: var(--primary-light); color: var(--primary); text-transform: uppercase; }
+        
+        .field-desc { color: var(--slate); font-size: 0.95rem; }
+        .field-pro-tip { margin-top: 15px; padding: 12px; background: #f0fdf4; border-radius: 10px; font-size: 0.9rem; color: #166534; border-left: 3px solid var(--success); }
+        
+        .ai-box { border: 2px dashed var(--primary); background: #f5f3ff; padding: 25px; border-radius: 20px; margin: 40px 0; }
+        .ai-box h3 { color: var(--primary); margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+
+        footer { margin-top: 80px; text-align: center; color: var(--slate); border-top: 1px solid var(--border); padding-top: 30px; }
+
+        .nivel-box { display: flex; gap: 10px; margin-top: 10px; }
+        .nivel-tag { padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; }
+
+        .table-demo { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 15px; }
+        .table-demo th, .table-demo td { padding: 12px; border-bottom: 1px solid var(--border); text-align: left; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <a href="javascript:history.back()" class="back-link">← Volver</a>
-    
-    <div class="content">
-        <h1>Balance de Prueba</h1>
-<p>El <strong>Balance de Prueba</strong> es una herramienta de auditoría fundamental que permite verificar la exactitud de los registros contables. Muestra el resumen de todas las cuentas (Activo, Pasivo, Patrimonio, Ingresos, Gastos y Costos) asegurando que la contabilidad cumple con el principio de partida doble.</p>
-<h2>1. Configuración del Reporte</h2>
-<p>Este reporte es altamente personalizable para facilitar el análisis a diferentes niveles.</p>
-<ol>
-<li><strong>Rango de Fechas</strong>: Defina el periodo a auditar (Desde - Hasta).</li>
-<li><strong>Nivel de Detalle</strong>:<ul>
-<li><strong>1 (Clase)</strong>: Resumen general (Activo, Pasivo, etc.).</li>
-<li><strong>2 (Grupo)</strong>: Disponible, Inversiones, Deudores.</li>
-<li><strong>3 (Cuenta)</strong>: Caja, Bancos, Clientes.</li>
-<li><strong>4 (Subcuenta/Auxiliar)</strong>: Detalle máximo cuenta por cuenta.</li>
-</ul>
-</li>
-<li><strong>Filtro de Cuentas</strong>:<ul>
-<li><strong>Con Saldo o Movimiento</strong>: Muestra cuentas activas en el periodo (Recomendado).</li>
-<li><strong>Solo con Movimiento</strong>: Oculta cuentas estáticas aunque tengan saldo.</li>
-<li><strong>Todas las Cuentas</strong>: Muestra todo el plan de cuentas (puede ser muy extenso).</li>
-</ul>
-</li>
-</ol>
-<h2>2. Interpretación de Columnas</h2>
-<p>El reporte presenta la evolución de cada cuenta en cuatro momentos:</p>
-<ul>
-<li><strong>Saldo Inicial</strong>: Valor de la cuenta antes de iniciar el rango de fechas seleccionado.</li>
-<li><strong>Débitos</strong>: Suma de todos los movimientos débito del periodo.</li>
-<li><strong>Créditos</strong>: Suma de todos los movimientos crédito del periodo.</li>
-<li><strong>Nuevo Saldo</strong>: Valor final de la cuenta.</li>
-</ul>
-<blockquote>
-<p><strong>Nuevo Saldo</strong> = Saldo Inicial + Débitos - Créditos</p>
-</blockquote>
-<h2>3. Verificación de "Sumas Iguales"</h2>
-<p>Al final del reporte, el sistema totaliza las columnas de Débitos y Créditos.</p>
-<ul>
-<li><strong>Cuadre Correcto</strong>: Si la suma de Débitos es idéntica a la suma de Créditos, aparecerá un mensaje en <span style="color:green">verde</span> confirmando que el balance está cuadrado.</li>
-<li><strong>Descuadre</strong>: Si hay diferencias, el sistema mostrará una alerta en <span style="color:red">rojo</span> indicando el monto del error. Esto requiere revisión inmediata de los comprobantes.</li>
-</ul>
-<h2>4. Exportación</h2>
-<p>Puede generar un archivo PDF oficial haciendo clic en <strong>📄 Exportar PDF</strong>. Este documento es ideal para revisiones de revisoría fiscal o auditoría externa.</p>
-    </div>
+    <header class="manual-header">
+        <h1>⚖️ Balance de Prueba</h1>
+        <p>El reporte maestro de verificación de saldos, movimientos y salud contable de su empresa.</p>
+    </header>
+
+    <section id="concepto">
+        <h2>1. El ADN Contable</h2>
+        <p>El Balance de Prueba en Finaxis no es solo una tabla de números; es un <b>centro de auditoría inteligente</b>. Permite visualizar desde el gran total de su empresa hasta el detalle más ínfimo de cada cuenta auxiliar.</p>
+    </section>
+
+    <section id="configuracion">
+        <h2>2. Configuración de Precisión</h2>
+        <div class="field-guide">
+            <div class="field-card">
+                <div class="field-title">Niveles de Detalle <span class="field-tag">Filtro Jerárquico</span></div>
+                <div class="field-desc">Finaxis permite "expandir" o "contraer" su contabilidad dinámicamente:
+                    <div class="nivel-box">
+                        <span class="nivel-tag" style="background:#eef2ff; color:#4f46e5;">Nivel 1: Clase</span>
+                        <span class="nivel-tag" style="background:#f1f5f9; color:#475569;">Nivel 3: Cuenta</span>
+                        <span class="nivel-tag" style="background:#f0fdf4; color:#166534;">Nivel 7: Detalle Auxiliar</span>
+                    </div>
+                </div>
+                <div class="field-pro-tip"><b>Tip Profesional:</b> El sistema viene pre-configurado en Nivel 7 para que no se pierda ningún detalle al auditar diferencias.</div>
+            </div>
+
+            <div class="field-card">
+                <div class="field-title">Modo de Visualización <span class="field-tag">Filtro de Cuentas</span></div>
+                <div class="field-desc">
+                    • <b>Con Saldo o Movimiento:</b> La vista más limpia, oculta cuentas en cero.
+                    <br>• <b>Solo con Movimiento:</b> Ideal para auditar la actividad del mes actual.
+                    <br>• <b>Todas:</b> Para revisiones estructurales del PUC.
+                </div>
+            </div>
+
+            <div class="field-card">
+                <div class="field-title">Filtro de Centro de Costo <span class="field-tag">Auditoría por Áreas</span></div>
+                <div class="field-desc">Si su empresa maneja departamentos, puede generar un Balance de Prueba exclusivo para un área específica (ej: "Ventas" o "Producción").</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="ia">
+        <div class="ai-box">
+            <h3>✨ Automatización y Despacho Inteligente</h3>
+            <p>Este reporte soporta comandos avanzados del Copilot. Puede pedirle al Tutor:</p>
+            <blockquote style="font-style: italic; margin: 15px 0; padding-left: 20px; border-left: 4px solid var(--primary); color: var(--slate);">
+                "Envía el Balance de Prueba de este mes al correo del contador" o "Mándame el balance por WhatsApp al 3001234567"
+            </blockquote>
+            <p>La IA generará el PDF oficial y realizará el envío de forma autónoma.</p>
+        </div>
+    </section>
+
+    <section id="drilldown">
+        <h2>3. Navegación Profunda (Drill-Down)</h2>
+        <p>¿Vio un saldo extraño en el balance? <b>No necesita salir de la página.</b></p>
+        <div class="field-card" style="border-left: 6px solid var(--secondary);">
+            <div class="field-title">Salto al Auxiliar</div>
+            <div class="field-desc">Haga clic en el <b>Código</b> o en el <b>Nombre</b> de cualquier cuenta contable dentro del balance. Finaxis abrirá automáticamente el <b>Reporte Auxiliar</b> de esa cuenta en una nueva pestaña, mostrándole documento por documento qué originó ese saldo.</div>
+        </div>
+    </section>
+
+    <section id="cuadre">
+        <h2>4. Verificación de Sumas Iguales</h2>
+        <p>Al final del reporte, encontrará la zona de verificación legal:</p>
+        <ul style="list-style: none; padding-left: 20px;">
+            <li style="margin-bottom: 10px;">✅ <b>Balance Cuadrado:</b> Mensaje verde que garantiza la integridad de su contabilidad (Débito = Crédito).</li>
+            <li style="margin-bottom: 10px;">⚠️ <b>Alerta de Descuadre:</b> Si existe una diferencia, el sistema la resaltará en rojo parpadeante con el valor exacto del error.</li>
+        </ul>
+    </section>
 
     <footer>
-        Sistema Finaxis - Manual de Usuario
+        <p>Finaxis ERP Cloud - Potenciando la productividad contable</p>
+        <p><small>Documentación Técnica Actualizada: Abril 2026</small></p>
     </footer>
 </div>
 

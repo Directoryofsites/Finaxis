@@ -20,7 +20,9 @@ class PHConfiguracionBase(BaseModel):
     cuenta_caja_id: Optional[int] = None
     cuenta_ingreso_intereses_id: Optional[int] = None
     cuenta_anticipos_id: Optional[int] = None
+    cuenta_descuento_id: Optional[int] = None
     interes_mora_habilitado: bool = True
+    descuento_pronto_pago_habilitado: bool = True
     tipo_negocio: str = 'PH_RESIDENCIAL'
 
 class PHConfiguracionUpdate(PHConfiguracionBase):
@@ -35,6 +37,7 @@ class PHConfiguracionResponse(PHConfiguracionBase):
     cuenta_caja: Optional[PlanCuentaSimple] = None
     cuenta_ingreso_intereses: Optional[PlanCuentaSimple] = None
     cuenta_anticipos: Optional[PlanCuentaSimple] = None
+    cuenta_descuento: Optional[PlanCuentaSimple] = None
     tipo_documento_factura: Optional[TipoDocumentoSimple] = None
     tipo_documento_recibo: Optional[TipoDocumentoSimple] = None
     tipo_documento_mora: Optional[TipoDocumentoSimple] = None

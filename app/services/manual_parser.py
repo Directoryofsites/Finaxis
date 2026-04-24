@@ -25,7 +25,7 @@ class ManualHTMLParser(HTMLParser):
 
 def parse_manuals(manuals_dir):
     """
-    Lee todos los archivos HTML de un directorio y devuelve un diccionario
+    Lee todos los archivos HTML de un directorio (RECURSIVAMENTE) y devuelve un diccionario
     con {nombre_archivo: texto_limpio}.
     """
     knowledge_base = {}
@@ -34,71 +34,81 @@ def parse_manuals(manuals_dir):
         logger.warning(f"Directorio de manuales no encontrado: {manuals_dir}")
         return knowledge_base
 
-    for filename in os.listdir(manuals_dir):
-        if filename.endswith(".html"):
-            file_path = os.path.join(manuals_dir, filename)
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    html_content = f.read()
-                    parser = ManualHTMLParser()
-                    parser.feed(html_content)
-                    # Usamos el nombre del archivo sin extensión como etiqueta de contexto
-                    module_name = filename.replace(".html", "").replace("_", " ").title()
-                    knowledge_base[module_name] = parser.get_text()
-            except Exception as e:
-                logger.error(f"Error parsing {filename}: {e}")
+    # Usamos os.walk para que sea recursivo y entre a subcarpetas como /ph
+    for root, dirs, files in os.walk(manuals_dir):
+        for filename in files:
+            if filename.endswith(".html"):
+                file_path = os.path.join(root, filename)
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        html_content = f.read()
+                        parser = ManualHTMLParser()
+                        parser.feed(html_content)
+                        # Usamos el nombre del archivo como llave
+                        module_key = filename.replace(".html", "")
+                        knowledge_base[module_key] = parser.get_text()
+                except Exception as e:
+                    logger.error(f"Error parsing {filename}: {e}")
                 
     return knowledge_base
 
-def get_combined_manuals_context(manuals_dir):
-    """
-    Retorna un string formateado con todo el conocimiento de los manuales (SIN FILTRAR).
-    """
-    kb = parse_manuals(manuals_dir)
-    context_parts = []
-    for module, text in kb.items():
-        context_parts.append(f"--- MANUAL DE {module.upper()} ---\n{text}\n")
-    
-    return "\n".join(context_parts)
-
 def get_relevant_manuals_context(query, manuals_dir):
     """
-    Selecciona solo los manuales relevantes basados en la consulta del usuario.
+    Selecciona los manuales relevantes basados en la consulta.
     """
     kb = parse_manuals(manuals_dir)
     query = query.lower()
     
-    # Mapeo de términos clave a módulos/archivos
+    # Mapeo ampliado de términos clave a archivos de manual
+    # Nota: Los nombres deben coincidir con los archivos .html (sin extensión)
     mapping = {
-        "factura": ["Facturacion"],
-        "recibo": ["Manual Recaudos Super", "Pagos"],
-        "pago": ["Pagos", "Manual Recaudos Super"],
-        "recaudo": ["Manual Recaudos Super"],
-        "unidad": ["Unidades", "Propietarios"],
-        "propietario": ["Propietarios"],
-        "configuracion": ["Configuracion"],
-        "ajuste": ["Configuracion"],
-        "reporte": ["Reportes", "Dashboard"],
-        "estado": ["Estado Cuenta"],
-        "saldos": ["Estado Cuenta", "Reportes"],
-        "concepto": ["Conceptos"]
+        "factura": ["capitulo_41_facturacion", "capitulo_24_nuevo_documento"],
+        "articulo": ["capitulo_41_facturacion", "capitulo_38_gestion_inventario"],
+        "producto": ["capitulo_38_gestion_inventario", "capitulo_44_rentabilidad_producto"],
+        "inventario": ["capitulo_38_gestion_inventario", "capitulo_39_parametros_inventario"],
+        "compra": ["capitulo_40_compras"],
+        "gasto": ["capitulo_40_compras"],
+        "recaudo": ["guia_configuracion_modulos_ph", "guia_configuracion_pagos_ph"],
+        "pago": ["guia_configuracion_pagos_ph", "capitulo_36_estado_cuenta_cliente"],
+        "unidad": ["guia_configuracion_modulos_ph"],
+        "tercero": ["capitulo_34_gestion_terceros"],
+        "cliente": ["capitulo_34_gestion_terceros", "capitulo_36_estado_cuenta_cliente"],
+        "proveedor": ["capitulo_34_gestion_terceros"],
+        "cartera": ["capitulo_37_auxiliar_cartera"],
+        "contabilidad": ["capitulo_1_puc", "capitulo_27_libro_diario"],
+        "puc": ["capitulo_1_puc"],
+        "balance": ["capitulo_28_balance_general", "capitulo_30_balance_prueba"],
+        "resultado": ["capitulo_29_estado_resultados"],
+        "ia": ["capitulo_100_ia_reportes"],
+        "reporte": ["capitulo_33_super_informe"],
+        "remision": ["capitulo_64_gestion_remisiones"],
+        "cotizacion": ["capitulo_3_plantillas"]
     }
     
-    relevant_modules = {"Conceptos"} # Siempre incluimos conceptos básicos
+    relevant_keys = set()
     
-    for term, modules in mapping.items():
+    # Buscar coincidencias en el mapping
+    for term, files in mapping.items():
         if term in query:
-            for mod in modules:
-                relevant_modules.add(mod)
+            for f in files:
+                relevant_keys.add(f)
                 
-    # Si no hay coincidencias claras, incluimos Configuración y Reportes por si acaso
-    if len(relevant_modules) <= 1:
-        relevant_modules.add("Configuracion")
-        relevant_modules.add("Reportes")
+    # Si no hay coincidencias, buscar directamente en los nombres de los archivos
+    if not relevant_keys:
+        for key in kb.keys():
+            if any(word in key.lower() for word in query.split()):
+                relevant_keys.add(key)
+
+    # Fallback: si sigue vacío, enviar manuales de bienvenida/guía inicial
+    if not relevant_keys:
+        relevant_keys.add("GUIA_INICIAL_PC2")
+        relevant_keys.add("MANUAL_NUEVA_ESTRUCTURA_2025")
 
     context_parts = []
-    for module in relevant_modules:
-        if module in kb:
-            context_parts.append(f"--- MANUAL DE {module.upper()} ---\n{kb[module]}\n")
+    # Limitar a los 5 manuales más relevantes para no saturar tokens
+    for key in list(relevant_keys)[:5]:
+        if key in kb:
+            title = key.replace("capitulo_", "").replace("_", " ").title()
+            context_parts.append(f"--- MANUAL DE {title.upper()} ---\n{kb[key]}\n")
             
     return "\n".join(context_parts)

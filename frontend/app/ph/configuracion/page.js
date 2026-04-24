@@ -40,7 +40,10 @@ export default function ConfiguracionPHPage() {
         cuenta_ingreso_intereses_nombre: '',
         cuenta_anticipos_id: '',
         cuenta_anticipos_codigo: '',
-        cuenta_anticipos_nombre: ''
+        cuenta_anticipos_nombre: '',
+        cuenta_descuento_id: '',
+        cuenta_descuento_codigo: '',
+        cuenta_descuento_nombre: ''
     });
 
     const [tiposDoc, setTiposDoc] = useState([]);
@@ -65,6 +68,8 @@ export default function ConfiguracionPHPage() {
                 cuenta_ingreso_intereses_nombre: configData.cuenta_ingreso_intereses ? configData.cuenta_ingreso_intereses.nombre : '',
                 cuenta_anticipos_codigo: configData.cuenta_anticipos ? configData.cuenta_anticipos.codigo : '',
                 cuenta_anticipos_nombre: configData.cuenta_anticipos ? configData.cuenta_anticipos.nombre : '',
+                cuenta_descuento_codigo: configData.cuenta_descuento ? configData.cuenta_descuento.codigo : '',
+                cuenta_descuento_nombre: configData.cuenta_descuento ? configData.cuenta_descuento.nombre : '',
                 tipo_negocio: configData.tipo_negocio || 'PH_RESIDENCIAL'
             });
             setTiposDoc(tiposData);
@@ -81,12 +86,33 @@ export default function ConfiguracionPHPage() {
         e.preventDefault();
         try {
             setSaving(true);
-            setSaving(true);
-            await phService.updateConfiguracion(config);
+            const payload = {
+                interes_mora_mensual: parseFloat(config.interes_mora_mensual) || 0,
+                dia_corte: parseInt(config.dia_corte) || 1,
+                dia_limite_pago: parseInt(config.dia_limite_pago) || 1,
+                dia_limite_pronto_pago: parseInt(config.dia_limite_pronto_pago) || 1,
+                descuento_pronto_pago: parseFloat(config.descuento_pronto_pago) || 0,
+                mensaje_factura: config.mensaje_factura || null,
+                interes_mora_habilitado: Boolean(config.interes_mora_habilitado),
+                descuento_pronto_pago_habilitado: Boolean(config.descuento_pronto_pago_habilitado),
+                tipo_negocio: config.tipo_negocio || 'PH_RESIDENCIAL',
+                cuenta_ingreso_intereses_id: config.cuenta_ingreso_intereses_id || null,
+                cuenta_anticipos_id: config.cuenta_anticipos_id || null,
+                cuenta_descuento_id: config.cuenta_descuento_id || null,
+                tipo_documento_factura_id: config.tipo_documento_factura_id || null,
+                tipo_documento_recibo_id: config.tipo_documento_recibo_id || null,
+                tipo_documento_cruce_id: config.tipo_documento_cruce_id || null,
+                tipo_documento_mora_id: config.tipo_documento_mora_id || null,
+                cuenta_cartera_id: config.cuenta_cartera_id || null,
+                cuenta_caja_id: config.cuenta_caja_id || null
+            };
+            await phService.updateConfiguracion(payload);
             await refreshConfig(); // Actualizar el contexto con el nuevo tipo de negocio
             alert('Configuración guardada correctamente.');
         } catch (err) {
-            alert('Error guardando configuración.');
+            console.error(err);
+            console.error(err.response?.data);
+            alert(`Error guardando configuración: ${JSON.stringify(err.response?.data?.detail || err.message)}`);
         } finally {
             setSaving(false);
         }
@@ -165,92 +191,121 @@ export default function ConfiguracionPHPage() {
                             <p className="text-sm text-gray-500 mb-6">Defina aquí las reglas de negocio globales para la facturación y cartera.</p>
 
                             <div className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="md:col-span-2 space-y-4 p-4 bg-orange-50 rounded-lg border border-orange-100">
-                                        <div className="flex items-center justify-between">
+                                <div className="grid grid-cols-1 gap-6">
+                                    {/* BLOQUE 1: INTERESES DE MORA Y PARÁMETROS BÁSICOS */}
+                                    <div className="space-y-4 p-5 bg-orange-50 rounded-xl border border-orange-100 shadow-sm">
+                                        <div className="flex items-center justify-between border-b border-orange-200 pb-3">
                                             <div>
-                                                <label className="font-bold text-orange-800">Cobrar Intereses de Mora</label>
+                                                <h3 className="font-bold text-orange-800 text-lg">Cobrar Intereses de Mora</h3>
                                                 <p className="text-xs text-orange-600">Calcula y agrega intereses automáticos a unidades en mora.</p>
                                             </div>
                                             <div className="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                                                <input type="checkbox" name="interes_mora_habilitado" id="toggle" checked={config.interes_mora_habilitado} onChange={(e) => setConfig({ ...config, interes_mora_habilitado: e.target.checked })} className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" style={{ right: config.interes_mora_habilitado ? '0' : '50%' }} />
-                                                <label htmlFor="toggle" className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${config.interes_mora_habilitado ? 'bg-orange-500' : 'bg-gray-300'}`}></label>
+                                                <input type="checkbox" name="interes_mora_habilitado" id="toggle_mora" checked={config.interes_mora_habilitado} onChange={(e) => setConfig({ ...config, interes_mora_habilitado: e.target.checked })} className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" style={{ right: config.interes_mora_habilitado ? '0' : '50%' }} />
+                                                <label htmlFor="toggle_mora" className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${config.interes_mora_habilitado ? 'bg-orange-500' : 'bg-gray-300'}`}></label>
                                             </div>
                                         </div>
 
-                                        {/* SECTOR / TIPO DE NEGOCIO */}
-                                        <div className="mt-4 pt-4 border-t border-orange-200">
-                                            <label className="block text-xs font-bold text-orange-800 uppercase mb-1 tracking-wide">Tipología de Recaudo (Sector)</label>
-                                            <select
-                                                name="tipo_negocio"
-                                                value={config.tipo_negocio || 'PH_RESIDENCIAL'}
-                                                onChange={handleConfigChange}
-                                                className="w-full px-4 py-2 border border-orange-300 rounded-lg shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm bg-white"
-                                            >
-                                                <option value="PH_RESIDENCIAL">Propiedad Horizontal (Residencial)</option>
-                                                <option value="PH_COMERCIAL">Centro Comercial / Locales</option>
-                                                <option value="TRANSPORTE">Cooperativa de Transporte</option>
-                                                <option value="EDUCATIVO">Institución Educativa</option>
-                                                <option value="PARQUEADERO">Parqueadero / Alquiler Espacios</option>
-                                                <option value="CREDITO">Cartera Financiera / Créditos</option>
-                                                <option value="GENERICO">Gestión Genérica de Recaudos</option>
-                                            </select>
-                                            <p className="text-xs text-orange-700 mt-1">Ajusta la terminología del sistema según su negocio (Ej. Unidad vs Vehículo).</p>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-orange-800 uppercase mb-1 tracking-wide">Tipología de Recaudo (Sector)</label>
+                                                <select
+                                                    name="tipo_negocio"
+                                                    value={config.tipo_negocio || 'PH_RESIDENCIAL'}
+                                                    onChange={handleConfigChange}
+                                                    className="w-full px-4 py-2 border border-orange-300 rounded-lg shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm bg-white"
+                                                >
+                                                    <option value="PH_RESIDENCIAL">Propiedad Horizontal (Residencial)</option>
+                                                    <option value="PH_COMERCIAL">Centro Comercial / Locales</option>
+                                                    <option value="TRANSPORTE">Cooperativa de Transporte</option>
+                                                    <option value="EDUCATIVO">Institución Educativa</option>
+                                                    <option value="PARQUEADERO">Parqueadero / Alquiler Espacios</option>
+                                                    <option value="CREDITO">Cartera Financiera / Créditos</option>
+                                                    <option value="GENERICO">Gestión Genérica de Recaudos</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-orange-800 uppercase mb-1 tracking-wide">Día Límite de Pago (Inicio de Mora)</label>
+                                                <input type="number" min="1" max="31" name="dia_limite_pago" value={config.dia_limite_pago} onChange={handleConfigChange} className="w-full px-4 py-2 border border-orange-300 rounded-lg shadow-sm focus:ring-2 focus:ring-orange-500 text-sm bg-white" required />
+                                                <p className="text-xs text-orange-600 mt-1">Días posteriores generan mora.</p>
+                                            </div>
                                         </div>
 
                                         {config.interes_mora_habilitado && (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                                                 <div>
-                                                    <label className={labelClass}>Tasa Mensual (%)</label>
+                                                    <label className="block text-xs font-bold text-orange-800 uppercase mb-1 tracking-wide">Tasa Mensual (%)</label>
                                                     <div className="relative">
-                                                        <input type="number" step="0.01" name="interes_mora_mensual" value={config.interes_mora_mensual} onChange={handleConfigChange} className={inputClass} required />
+                                                        <input type="number" step="0.01" name="interes_mora_mensual" value={config.interes_mora_mensual} onChange={handleConfigChange} className="w-full px-4 py-2 border border-orange-300 rounded-lg shadow-sm focus:ring-2 focus:ring-orange-500 text-sm bg-white" required />
                                                         <span className="absolute right-3 top-2 text-gray-400 text-sm">%</span>
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <label className={labelClass}>Cuenta Ingreso (Intereses)</label>
+                                                    <label className="block text-xs font-bold text-orange-800 uppercase mb-1 tracking-wide">Cuenta Ingreso (Intereses)</label>
                                                     <BuscadorCuentas
-                                                        onSelect={(cta) => setConfig({ ...config, cuenta_ingreso_intereses_id: cta.id, cuenta_ingreso_intereses_codigo: cta.codigo, cuenta_ingreso_intereses_nombre: cta.nombre })}
+                                                        onSelect={(cta) => setConfig({ ...config, cuenta_ingreso_intereses_id: cta ? cta.id : null, cuenta_ingreso_intereses_codigo: cta ? cta.codigo : '', cuenta_ingreso_intereses_nombre: cta ? cta.nombre : '' })}
                                                         selectedCodigo={config.cuenta_ingreso_intereses_codigo}
                                                         placeholder="421005 - Intereses"
+                                                        filterPrefix="4"
                                                     />
-                                                    <p className="text-xs text-gray-400 mt-1">{config.cuenta_ingreso_intereses_nombre}</p>
+                                                    <p className="text-xs text-orange-600 mt-1">{config.cuenta_ingreso_intereses_nombre}</p>
                                                 </div>
                                             </div>
                                         )}
                                     </div>
-                                </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div>
-                                        <label className={labelClass}>Día Corte Factura</label>
-                                        <input type="number" min="1" max="31" name="dia_corte" value={config.dia_corte} onChange={handleConfigChange} className={inputClass} required />
-                                        <p className="text-xs text-gray-400 mt-1">Día del mes que se genera la factura.</p>
+                                    {/* BLOQUE 2: DESCUENTO PRONTO PAGO */}
+                                    <div className="space-y-4 p-5 bg-teal-50 rounded-xl border border-teal-100 shadow-sm">
+                                        <div className="border-b border-teal-200 pb-2 flex justify-between items-center">
+                                            <div>
+                                                <h3 className="font-bold text-teal-800 text-lg">Descuento por Pronto Pago</h3>
+                                                <p className="text-xs text-teal-600">Incentiva el recaudo temprano ofreciendo reducciones automáticas.</p>
+                                            </div>
+                                            <div className="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                                                <input type="checkbox" name="descuento_pronto_pago_habilitado" id="toggle_dpp" checked={config.descuento_pronto_pago_habilitado !== false} onChange={(e) => setConfig({ ...config, descuento_pronto_pago_habilitado: e.target.checked })} className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" style={{ right: config.descuento_pronto_pago_habilitado !== false ? '0' : '50%' }} />
+                                                <label htmlFor="toggle_dpp" className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${config.descuento_pronto_pago_habilitado !== false ? 'bg-teal-500' : 'bg-gray-300'}`}></label>
+                                            </div>
+                                        </div>
+                                        
+                                        {config.descuento_pronto_pago_habilitado !== false && (
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-teal-800 uppercase mb-1 tracking-wide">Día Límite (Pronto Pago)</label>
+                                                <input type="number" min="1" max="31" name="dia_limite_pronto_pago" value={config.dia_limite_pronto_pago} onChange={handleConfigChange} className="w-full px-4 py-2 border border-teal-300 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-500 text-sm bg-white" />
+                                                <p className="text-xs text-teal-600 mt-1">Pagos hasta este día tienen Dto.</p>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-teal-800 uppercase mb-1 tracking-wide">Descuento (%)</label>
+                                                <div className="relative">
+                                                    <input type="number" step="0.01" name="descuento_pronto_pago" value={config.descuento_pronto_pago} onChange={handleConfigChange} className="w-full px-4 py-2 border border-teal-300 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-500 text-sm bg-white" />
+                                                    <span className="absolute right-3 top-2 text-gray-400 text-sm">%</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-teal-800 uppercase mb-1 tracking-wide">Cuenta Contable</label>
+                                                <BuscadorCuentas
+                                                    onSelect={(cta) => setConfig({ ...config, cuenta_descuento_id: cta ? cta.id : null, cuenta_descuento_codigo: cta ? cta.codigo : '', cuenta_descuento_nombre: cta ? cta.nombre : '' })}
+                                                    selectedCodigo={config.cuenta_descuento_codigo}
+                                                    placeholder="4175... Menor Valor"
+                                                    filterPrefix="4"
+                                                />
+                                                <p className="text-xs text-teal-600 mt-1">{config.cuenta_descuento_nombre}</p>
+                                            </div>
+                                        </div>
+                                        )}
                                     </div>
-                                    <div>
-                                        <label className={labelClass}>Día Límite Pago</label>
-                                        <input type="number" min="1" max="31" name="dia_limite_pago" value={config.dia_limite_pago} onChange={handleConfigChange} className={inputClass} required />
-                                        <p className="text-xs text-gray-400 mt-1">Fecha límite sin mora.</p>
-                                    </div>
-                                    <div>
-                                        <label className={labelClass}>Día Pronto Pago</label>
-                                        <input type="number" min="1" max="31" name="dia_limite_pronto_pago" value={config.dia_limite_pronto_pago} onChange={handleConfigChange} className={inputClass} />
-                                        <p className="text-xs text-gray-400 mt-1">Límite para descuento.</p>
-                                    </div>
-                                </div>
 
-                                <div className="pt-4 border-t border-dashed">
+                                    {/* BLOQUE 3: OTRAS CONFIGURACIONES DE FACTURA */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
-                                            <label className={labelClass}>Descuento Pronto Pago (%)</label>
-                                            <input type="number" step="0.01" name="descuento_pronto_pago" value={config.descuento_pronto_pago} onChange={handleConfigChange} className={inputClass} />
+                                            <label className={labelClass}>Día Corte Factura</label>
+                                            <input type="number" min="1" max="31" name="dia_corte" value={config.dia_corte} onChange={handleConfigChange} className={inputClass} required />
+                                            <p className="text-xs text-gray-400 mt-1">Día del mes que se genera la factura.</p>
+                                        </div>
+                                        <div>
+                                            <label className={labelClass}>Mensaje Fijo en Factura</label>
+                                            <textarea name="mensaje_factura" value={config.mensaje_factura || ''} onChange={handleConfigChange} className={inputClass} rows="2" placeholder="Ej: Recuerde realizar su pago puntualmente..."></textarea>
                                         </div>
                                     </div>
-                                </div>
-
-                                <div>
-                                    <label className={labelClass}>Mensaje en Factura</label>
-                                    <textarea name="mensaje_factura" value={config.mensaje_factura || ''} onChange={handleConfigChange} className={inputClass} rows="3" placeholder="Ej: Recuerde realizar su pago puntualmente..."></textarea>
                                 </div>
 
                                 <div className="pt-6 border-t border-dashed bg-gray-50 -mx-8 px-8 pb-4">
@@ -260,7 +315,7 @@ export default function ConfiguracionPHPage() {
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         <div>
                                             <label className={labelClass}>Tipo Doc. Facturación</label>
-                                            <select name="tipo_documento_factura_id" value={config.tipo_documento_factura_id || ''} onChange={handleConfigChange} className={inputClass}>
+                                            <select name="tipo_documento_factura_id" value={config.tipo_documento_factura_id || ''} onChange={(e) => setConfig({ ...config, tipo_documento_factura_id: e.target.value ? parseInt(e.target.value) : null })} className={inputClass}>
                                                 <option value="">-- Seleccionar --</option>
                                                 {(Array.isArray(tiposDoc) ? tiposDoc : []).filter(t => t.funcion_especial !== 'PAGO_PROVEEDOR').map(t => (
                                                     <option key={t.id} value={t.id}>{t.codigo} - {t.nombre}</option>
@@ -270,7 +325,7 @@ export default function ConfiguracionPHPage() {
                                         </div>
                                         <div>
                                             <label className={labelClass}>Tipo Doc. Recaudo</label>
-                                            <select name="tipo_documento_recibo_id" value={config.tipo_documento_recibo_id || ''} onChange={handleConfigChange} className={inputClass}>
+                                            <select name="tipo_documento_recibo_id" value={config.tipo_documento_recibo_id || ''} onChange={(e) => setConfig({ ...config, tipo_documento_recibo_id: e.target.value ? parseInt(e.target.value) : null })} className={inputClass}>
                                                 <option value="">-- Seleccionar --</option>
                                                 {(Array.isArray(tiposDoc) ? tiposDoc : []).filter(t => t.funcion_especial !== 'FACTURA_VENTA').map(t => (
                                                     <option key={t.id} value={t.id}>{t.codigo} - {t.nombre}</option>
@@ -280,7 +335,7 @@ export default function ConfiguracionPHPage() {
                                         </div>
                                         <div>
                                             <label className={labelClass}>Tipo Doc. Cruce Anticipos</label>
-                                            <select name="tipo_documento_cruce_id" value={config.tipo_documento_cruce_id || ''} onChange={handleConfigChange} className={inputClass}>
+                                            <select name="tipo_documento_cruce_id" value={config.tipo_documento_cruce_id || ''} onChange={(e) => setConfig({ ...config, tipo_documento_cruce_id: e.target.value ? parseInt(e.target.value) : null })} className={inputClass}>
                                                 <option value="">-- Seleccionar --</option>
                                                 {(Array.isArray(tiposDoc) ? tiposDoc : []).map(t => (
                                                     <option key={t.id} value={t.id}>{t.codigo} - {t.nombre}</option>
@@ -291,7 +346,7 @@ export default function ConfiguracionPHPage() {
                                         <div className="md:col-span-1">
                                             <label className="block text-xs font-bold text-indigo-800 uppercase mb-1">Cuenta de Anticipos (Pasivo)</label>
                                             <BuscadorCuentas
-                                                onSelect={(cta) => setConfig({ ...config, cuenta_anticipos_id: cta.id, cuenta_anticipos_codigo: cta.codigo, cuenta_anticipos_nombre: cta.nombre })}
+                                                onSelect={(cta) => setConfig({ ...config, cuenta_anticipos_id: cta ? cta.id : null, cuenta_anticipos_codigo: cta ? cta.codigo : '', cuenta_anticipos_nombre: cta ? cta.nombre : '' })}
                                                 selectedCodigo={config.cuenta_anticipos_codigo}
                                                 placeholder="280505 - Anticipos"
                                                 filterPrefix="2"

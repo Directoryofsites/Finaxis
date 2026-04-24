@@ -24,12 +24,14 @@ export default function CrearUnidadPage() {
     // Estado del Formulario Principal
     const [formData, setFormData] = useState({
         codigo: '',
+        referencia_recaudo: '',
         tipo: 'RESIDENCIAL',
         torre_id: '',
         matricula_inmobiliaria: '',
         area_privada: 0,
         coeficiente: 0,
         observaciones: '',
+        aplica_pronto_pago: true,
         propietario_principal_id: null,
         modulos_ids: [] // IDs de módulos seleccionados
     });
@@ -206,6 +208,11 @@ export default function CrearUnidadPage() {
                                 </select>
                             </div>
                             <div>
+                                <label className={labelClass}>Ref. Recaudo (Banco)</label>
+                                <input name="referencia_recaudo" className={inputClass} placeholder="Ej: 1004" value={formData.referencia_recaudo || ''} onChange={handleChange} />
+                                <p className="text-xs text-gray-400 mt-1">Para conciliación masiva.</p>
+                            </div>
+                            <div>
                                 <label className={labelClass}>{labels.coeficiente} (%) *</label>
                                 <input type="number" step="0.000001" name="coeficiente" required className={inputClass} placeholder="0.00" value={formData.coeficiente} onChange={handleChange} />
                                 <p className="text-xs text-gray-400 mt-1">Fundamental para liquidación de cuotas.</p>
@@ -217,6 +224,18 @@ export default function CrearUnidadPage() {
                             <div>
                                 <label className={labelClass}>Matrícula / Identificador</label>
                                 <input name="matricula_inmobiliaria" className={inputClass} value={formData.matricula_inmobiliaria} onChange={handleChange} />
+                            </div>
+                            <div className="md:col-span-2 mt-2">
+                                <label className="flex items-center gap-3 p-3 bg-teal-50 border border-teal-100 rounded-lg cursor-pointer hover:bg-teal-100 transition-colors">
+                                    <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                                        <input type="checkbox" name="aplica_pronto_pago" id="toggle_aplica_dpp" checked={formData.aplica_pronto_pago} onChange={(e) => setFormData({ ...formData, aplica_pronto_pago: e.target.checked })} className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer" style={{ right: formData.aplica_pronto_pago ? '0' : '50%' }} />
+                                        <label htmlFor="toggle_aplica_dpp" className={`toggle-label block overflow-hidden h-5 rounded-full cursor-pointer ${formData.aplica_pronto_pago ? 'bg-teal-500' : 'bg-gray-300'}`}></label>
+                                    </div>
+                                    <div>
+                                        <span className="font-bold text-teal-800 text-sm block">Aplica Beneficio de Descuento por Pronto Pago</span>
+                                        <span className="text-xs text-teal-600">Si está desactivado, esta unidad nunca recibirá el descuento.</span>
+                                    </div>
+                                </label>
                             </div>
                         </div>
                     </div>

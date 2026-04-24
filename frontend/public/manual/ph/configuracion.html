@@ -122,6 +122,19 @@
                     <li>🌟 <strong>Genérico:</strong> Gestión general de recaudos</li>
                 </ul>
 
+                <h3>Políticas de Recaudo (Mora y Descuento)</h3>
+                <p>El sistema permite gestionar de forma automatizada tanto los castigos por mora como los incentivos por pronto pago:</p>
+                <ul>
+                    <li>🔥 <strong>Intereses de Mora:</strong> Se puede habilitar un interruptor global para cobrar intereses automáticos a las unidades en mora. Se parametriza el porcentaje mensual y el día límite de pago (después de este día se genera mora).</li>
+                    <li>💎 <strong>Descuento por Pronto Pago:</strong> Incentivo que reduce el valor a pagar si el residente cancela antes de cierta fecha.
+                        <ul>
+                            <li><strong>Interruptor Global:</strong> Permite encender o apagar el descuento para toda la copropiedad con un solo clic.</li>
+                            <li><strong>Día Límite:</strong> El residente debe pagar la totalidad antes de este día para ganar el descuento.</li>
+                            <li><strong>Cuenta Contable:</strong> El descuento se registra en tiempo real como un Menor Valor del Ingreso (Ej: cuenta 4175) sin afectar el saldo histórico de la cartera.</li>
+                        </ul>
+                    </li>
+                </ul>
+
                 <h3>Parámetros Contables</h3>
                 <div class="table-container">
                     <table class="manual-table">
@@ -144,14 +157,14 @@
                                 <td>1105 - Caja General</td>
                             </tr>
                             <tr>
-                                <td>Tasa de Interés Mensual</td>
-                                <td>Porcentaje de mora</td>
-                                <td>2.5%</td>
+                                <td>Cuenta Ingreso Intereses</td>
+                                <td>Cuenta donde se registran las moras</td>
+                                <td>421005 - Ingreso por Intereses</td>
                             </tr>
                             <tr>
-                                <td>Días de Gracia</td>
-                                <td>Días sin generar intereses</td>
-                                <td>5 días</td>
+                                <td>Cuenta Descuento Pronto Pago</td>
+                                <td>Cuenta para el beneficio (Menor Valor)</td>
+                                <td>417505 - Descuentos y Rebajas</td>
                             </tr>
                         </tbody>
                     </table>

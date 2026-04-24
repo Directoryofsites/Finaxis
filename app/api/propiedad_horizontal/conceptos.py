@@ -30,6 +30,20 @@ def crear_concepto(
     """
     return concepto_service.service.create(db, concepto_in, current_user.empresa_id)
 
+# ⚠️ IMPORTANTE: Este endpoint específico DEBE ir ANTES de PUT /conceptos/{id}
+# para que FastAPI no capture "reordenar" como un {id} entero.
+@router.put("/conceptos/reordenar/batch")
+def reordenar_conceptos(
+    ids_ordenados: List[int],
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Recibe una lista de IDs en el orden deseado y actualiza
+    el campo 'orden' de cada concepto. Llamado desde el Drag & Drop del frontend.
+    """
+    return concepto_service.service.reorder_concepts(db, current_user.empresa_id, ids_ordenados)
+
 @router.put("/conceptos/{id}", response_model=schemas.PHConcepto)
 def actualizar_concepto(
     id: int,

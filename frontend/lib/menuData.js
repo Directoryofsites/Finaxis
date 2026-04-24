@@ -36,6 +36,7 @@ const PH_MODULE = {
         { name: 'Conceptos de Cobro', href: '/ph/conceptos', mnemonic: 'c', icon: FaListUl, description: 'Definir cuotas y servicios recurrentes.', permission: 'ph:conceptos' },
         { name: 'Generar Recaudos', href: '/ph/facturacion', mnemonic: 'g', icon: FaFileInvoiceDollar, description: 'Generar cobros masivos.', permission: 'ph:facturacion' },
         { name: 'Recaudos (Pagos)', href: '/ph/pagos', mnemonic: 'r', icon: FaHandshake, description: 'Asentar pagos recibidos.', permission: 'ph:pagos' },
+        { name: 'Recaudo Masivo', href: '/ph/recaudo-masivo', mnemonic: 'v', icon: FaUpload, description: 'Conciliación bancaria mediante archivos.', permission: 'ph:pagos' },
         { name: 'Estado de Cuenta', href: '/ph/estado-cuenta', mnemonic: 'e', icon: FaFileContract, description: 'Consultar saldos y movimientos.', permission: 'ph:estado_cuenta' },
         { name: 'Reportes Recaudos', href: '/ph/reportes', mnemonic: 'o', icon: FaChartBar, description: 'Informes de cartera y financieros.', permission: 'ph:reportes' },
         { name: 'Cartera por Edades', href: '/ph/reportes/edades', mnemonic: 'd', icon: FaChartPie, description: 'Vencimientos 30-60-90 días.', permission: 'ph:reportes' },

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual PRO - Conciliación Bancaria | Finaxis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --primary-light: #e0e7ff;
+            --secondary: #7c3aed;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e1b4b;
+            --slate: #475569;
+            --border: #e2e8f0;
+            --bg: #f8fafc;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: var(--dark); line-height: 1.7; padding: 40px 20px; }
+        
+        .container { max-width: 1100px; margin: 0 auto; background: white; border-radius: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); padding: 50px; }
+
+        .manual-header { border-bottom: 4px solid var(--primary-light); padding-bottom: 30px; margin-bottom: 40px; }
+        .manual-header h1 { font-size: 2.8rem; font-weight: 800; color: var(--dark); letter-spacing: -1px; }
+        .manual-header p { font-size: 1.2rem; color: var(--slate); margin-top: 10px; }
+
+        section { margin-bottom: 60px; scroll-margin-top: 20px; }
+        h2 { font-size: 1.8rem; color: var(--primary-dark); margin-bottom: 25px; display: flex; align-items: center; gap: 15px; border-left: 6px solid var(--primary); padding-left: 20px; }
+        
+        .field-guide { display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 20px; }
+        .field-card { border: 1px solid var(--border); border-radius: 16px; padding: 25px; transition: all 0.3s ease; background: #fff; }
+        .field-card:hover { border-color: var(--primary); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); transform: translateY(-2px); }
+        .field-title { font-weight: 700; color: var(--dark); font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .field-tag { font-size: 0.7rem; padding: 4px 10px; border-radius: 20px; background: var(--primary-light); color: var(--primary-dark); text-transform: uppercase; }
+        
+        .field-desc { color: var(--slate); font-size: 0.95rem; }
+        .field-pro-tip { margin-top: 15px; padding: 12px; background: #f5f3ff; border-radius: 10px; font-size: 0.9rem; color: #4338ca; border-left: 3px solid var(--secondary); }
+        
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 30px 0; }
+        .feature-item { padding: 20px; background: var(--bg); border-radius: 16px; border: 1px solid var(--border); }
+        .feature-item h4 { color: var(--primary); margin-bottom: 10px; }
+
+        footer { margin-top: 80px; text-align: center; color: var(--slate); border-top: 1px solid var(--border); padding-top: 30px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header class="manual-header">
+        <h1>🏦 Conciliación Bancaria</h1>
+        <p>Garantice la integridad de su efectivo: sincronice sus extractos bancarios con la contabilidad de forma automatizada.</p>
+    </header>
+
+    <section id="concepto">
+        <h2>1. El Ciclo de Verificación</h2>
+        <p>La conciliación bancaria en Finaxis no es solo comparar saldos finales; es un proceso de <b>auditoría línea a línea</b>. Permite identificar depósitos no registrados, cheques pendientes de cobro y, lo más importante, automatizar el registro de gastos bancarios.</p>
+    </section>
+
+    <section id="importacion">
+        <h2>2. Importación de Extractos</h2>
+        <p>Olvídese de digitar movimientos. El sistema permite cargar archivos Excel o CSV de cualquier banco:</p>
+        <div class="feature-grid">
+            <div class="feature-item">
+                <h4>Configuración Flexible</h4>
+                <p>Mapee las columnas de su banco (Fecha, Descripción, Valor) una sola vez y el sistema recordará el formato para siempre.</p>
+            </div>
+            <div class="feature-item">
+                <h4>Detección de Duplicados</h4>
+                <p>El motor de importación verifica que no se carguen movimientos que ya fueron procesados anteriormente.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="conciliacion">
+        <h2>3. Conciliación Inteligente</h2>
+        <div class="field-guide">
+            <div class="field-card">
+                <div class="field-title">Match Automático <span class="field-tag">Ahorro de Tiempo</span></div>
+                <div class="field-desc">Finaxis busca coincidencias exactas por <b>Valor y Fecha</b> entre el extracto y sus libros contables. Si encuentra un par perfecto, los concilia automáticamente.</div>
+            </div>
+            <div class="field-card">
+                <div class="field-title">Interfaz Manual 1-a-N</div>
+                <div class="field-desc">Para casos complejos (ej: un solo depósito que cubre tres facturas), la interfaz manual permite seleccionar múltiples registros contables contra un solo movimiento bancario.</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="ajustes">
+        <h2>4. Gastos y Comisiones Automáticas</h2>
+        <p>¿Cansado de registrar el GMF (4x1000) o las comisiones de chequera manualmente?</p>
+        <div class="field-pro-tip">
+            <b>Poder de Ajuste:</b> Desde la pestaña de "Ajustes", puede crear documentos contables (Notas de Débito Bancarias) directamente desde la línea del extracto. Solo seleccione el concepto y el sistema hará el asiento por usted.
+        </div>
+    </section>
+
+    <section id="dashboard">
+        <h2>5. Dashboard de Control</h2>
+        <p>Mantenga un ojo en la salud de sus cuentas:</p>
+        <ul style="margin-left: 40px; margin-top: 10px; color: var(--slate);">
+            <li><b>Tasa de Conciliación:</b> Porcentaje de movimientos bancarios ya procesados.</li>
+            <li><b>Saldo Contable vs. Bancario:</b> Alerta visual si los saldos finales no coinciden tras la conciliación.</li>
+            <li><b>Pendientes:</b> Listado rápido de depósitos que aún no tienen respaldo contable.</li>
+        </ul>
+    </section>
+
+    <footer>
+        <p>Finaxis ERP Cloud - Potenciando la integridad financiera</p>
+        <p><small>Documentación Técnica Actualizada: Abril 2026</small></p>
+    </footer>
+</div>
+
+</body>
+</html>

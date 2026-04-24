@@ -18,22 +18,39 @@ class FinaxisTutorService:
         else:
             self.model_name = None
             
-        self.manuals_dir = os.path.join("c:\\ContaPY2", "frontend", "public", "manual", "ph")
+        self.manuals_dir = os.path.join("c:\\ContaPY2", "frontend", "public", "manual")
         
     def _prepare_gemini_tools(self):
         """
         Convierte el esquema de OpenAI AI_TOOLS al formato que espera Google Gemini.
-        Gemini espera una lista de funciones u objetos con estructura similar.
+        Gemini espera tipos en MAYÚSCULAS (ej: 'OBJECT', 'STRING').
         """
         gemini_tools = []
         for tool in AI_TOOLS:
             if "function" in tool:
-                # Simplificamos para Gemini
                 f = tool["function"]
+                
+                # Función recursiva para convertir tipos a mayúsculas y limpiar campos
+                def convert_types(obj):
+                    if isinstance(obj, dict):
+                        new_obj = {}
+                        for k, v in obj.items():
+                            if k in ["default", "additionalProperties"]: # Gemini no soporta estos campos en el Schema proto
+                                continue
+                            if k == "type" and isinstance(v, str):
+                                new_obj[k] = v.upper()
+                            else:
+                                new_obj[k] = convert_types(v)
+                        return new_obj
+                    elif isinstance(obj, list):
+                        return [convert_types(i) for i in obj]
+                    else:
+                        return obj
+
                 gemini_tools.append({
                     "name": f["name"],
                     "description": f["description"],
-                    "parameters": f["parameters"]
+                    "parameters": convert_types(f["parameters"])
                 })
         return gemini_tools
 
@@ -92,10 +109,26 @@ FECHA ACTUAL: {today}
                 # Verificar si Gemini quiere llamar a una función
                 if response.candidates[0].content.parts[0].function_call:
                     fc = response.candidates[0].content.parts[0].function_call
+                    args = dict(fc.args)
+                    
+                    # Generar comando natural sugerido
+                    suggested_command = f"Ver {fc.name}" # Default
+                    if fc.name == "buscar_recurso_o_reporte":
+                        suggested_command = f"Ver reporte {args.get('termino_busqueda', '')}"
+                    elif fc.name == "generar_auxiliar_cuenta":
+                        suggested_command = f"Auxiliar de la cuenta {args.get('cuenta', '')}"
+                    elif fc.name == "generar_relacion_saldos":
+                        suggested_command = f"Saldos de {args.get('cuenta', '') or args.get('tercero', '')}"
+                    elif fc.name == "generar_auditoria_avanzada":
+                        prod = args.get('producto')
+                        if prod: suggested_command = f"Movimientos de inventario de {prod}"
+                        else: suggested_command = "Auditoría avanzada"
+
                     return {
                         "type": "tool",
                         "name": fc.name,
-                        "parameters": dict(fc.args)
+                        "parameters": args,
+                        "suggested_command": suggested_command
                     }
 
                 return {

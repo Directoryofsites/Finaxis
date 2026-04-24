@@ -34,9 +34,11 @@ class PHConfiguracion(Base):
     cuenta_caja_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Para Caja/Bancos (11...)
     cuenta_ingreso_intereses_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Para Ingreso por Intereses (42...)
     cuenta_anticipos_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Para Pasivo Anticipos (2805...)
+    cuenta_descuento_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Para Menor Valor de Ingreso (4175...)
         
     # Flags Logicos
     interes_mora_habilitado = Column(Boolean, default=True)
+    descuento_pronto_pago_habilitado = Column(Boolean, default=True)
 
     empresa = relationship("app.models.empresa.Empresa", back_populates="ph_configuracion")
     tipo_documento_factura = relationship("app.models.tipo_documento.TipoDocumento", foreign_keys=[tipo_documento_factura_id])
@@ -47,6 +49,7 @@ class PHConfiguracion(Base):
     cuenta_caja = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_caja_id])
     cuenta_ingreso_intereses = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_ingreso_intereses_id])
     cuenta_anticipos = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_anticipos_id])
+    cuenta_descuento = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_descuento_id])
 
     # --- NUEVO CAMPO: TIPO DE NEGOCIO (SECTOR) ---
     # Valores: 'PH_RESIDENCIAL', 'PH_COMERCIAL', 'TRANSPORTE', 'EDUCATIVO', 'PARQUEADERO', 'GENERICO'

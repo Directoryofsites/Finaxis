@@ -256,31 +256,34 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
                 es_mora = False
                 saldo_mora = 0
 
-                # --- LÓGICA DE MÓDULOS DE CONTRIBUCIÓN (FILTRO POR TORRE) ---
+                # --- LÓGICA DE MÓDULOS DE CONTRIBUCIÓN (HÍBRIDA: TORRE + INDIVIDUAL) ---
                 if concepto.modulos:
-                    # Recopilar las torres autorizadas de TODOS los módulos del concepto
+                    # 1. Recopilar criterios de inclusión de todos los módulos vinculados al concepto
                     torres_autorizadas_ids = set()
-                    modulos_sin_torres = []  # Módulos sin torres configuradas (usan asignación directa de unidades)
+                    concept_modulos_ids = set()
                     
                     for mod in concepto.modulos:
+                        concept_modulos_ids.add(mod.id)
                         if mod.torres:
                             for t in mod.torres:
                                 torres_autorizadas_ids.add(t.id)
-                        else:
-                            modulos_sin_torres.append(mod.id)
                     
-                    # Si hay torres configuradas en los módulos, filtrar por torre_id de la unidad
-                    if torres_autorizadas_ids:
-                        if unidad.torre_id not in torres_autorizadas_ids:
-                            print(f"--- SEGURIDAD: Unidad {unidad.codigo} (Torre {unidad.torre_id}) ignorada para concepto '{concepto.nombre}'. Torres permitidas: {torres_autorizadas_ids} ---")
-                            continue
-                    elif modulos_sin_torres:
-                        # Fallback: Si el módulo no tiene torres configuradas, usar asignación directa de unidades
-                        unidad_modulos_ids = {m.id for m in unidad.modulos_contribucion}
-                        concepto_modulos_ids = set(modulos_sin_torres)
-                        if not unidad_modulos_ids & concepto_modulos_ids:
-                            print(f"--- SEGURIDAD: Unidad {unidad.codigo} ignorada (sin módulo directo) para concepto '{concepto.nombre}' ---")
-                            continue
+                    # 2. Verificar pertenencia de la unidad
+                    # A. Por Estructura (Torre)
+                    pertenece_por_torre = False
+                    if torres_autorizadas_ids and unidad.torre_id in torres_autorizadas_ids:
+                        pertenece_por_torre = True
+                    
+                    # B. Por Asignación Directa (Check individual en ficha de unidad)
+                    pertenece_por_asignacion_directa = False
+                    unidad_modulos_ids = {m.id for m in unidad.modulos_contribucion}
+                    if unidad_modulos_ids & concept_modulos_ids:
+                        pertenece_por_asignacion_directa = True
+                    
+                    # 3. Decisión Híbrida: Si no cumple NINGUNA de las dos, se ignora la unidad para este concepto
+                    if not (pertenece_por_torre or pertenece_por_asignacion_directa):
+                        continue
+                # ----------------------------------------------------------------------
                 # -------------------------------------------------------
 
                 # --- CÁLCULO DE VALOR (SMART LOGIC) ---

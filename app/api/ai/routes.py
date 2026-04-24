@@ -98,6 +98,22 @@ async def process_tutor_query(
 
     return result
 
+@router.post("/tutor-debug")
+async def process_tutor_debug(
+    request: TutorRequest
+):
+    """
+    DEBUG: Prueba el tutor sin auth para descartar errores de red/CORS.
+    """
+    from app.services.tutor_service import tutor_service
+    result = await tutor_service.process_query(
+        query=request.query,
+        history=request.history,
+        empresa_id=1,
+        user_id=1
+    )
+    return result
+
 @router.get("/tutor/history")
 async def get_tutor_history(
     current_user = Depends(get_current_user),

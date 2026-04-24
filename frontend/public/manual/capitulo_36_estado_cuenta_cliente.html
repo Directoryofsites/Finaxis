@@ -3,158 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estado de Cuenta (Clientes)</title>
+    <title>Manual PRO - Estado de Cuenta Cliente | Finaxis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #2563eb;
-            --secondary-color: #1e40af;
-            --bg-color: #f8fafc;
-            --text-color: #1e293b;
-            --card-bg: #ffffff;
-            --code-bg: #1e293b;
-            --code-text: #e2e8f0;
-            --border-color: #e2e8f0;
+            --primary: #6366f1;
+            --primary-dark: #4338ca;
+            --primary-light: #e0e7ff;
+            --secondary: #a855f7;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e1b4b;
+            --slate: #475569;
+            --border: #e2e8f0;
+            --bg: #f8fafc;
         }
-        body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.6;
-            color: var(--text-color);
-            background-color: var(--bg-color);
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: var(--card-bg);
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        h1, h2, h3 {
-            color: var(--secondary-color);
-            margin-top: 1.5em;
-        }
-        h1 {
-            border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 10px;
-            margin-top: 0;
-        }
-        code {
-            font-family: 'Consolas', 'Monaco', monospace;
-            background-color: #f1f5f9;
-            padding: 2px 5px;
-            border-radius: 4px;
-            color: #d63384;
-        }
-        pre {
-            background-color: var(--code-bg);
-            color: var(--code-text);
-            padding: 15px;
-            border-radius: 8px;
-            overflow-x: auto;
-        }
-        pre code {
-            background-color: transparent;
-            color: inherit;
-            padding: 0;
-        }
-        blockquote {
-            border-left: 4px solid var(--primary-color);
-            margin: 0;
-            padding-left: 20px;
-            color: #475569;
-            background-color: #f1f5f9;
-            padding: 10px 20px;
-            border-radius: 0 4px 4px 0;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        th, td {
-            border: 1px solid var(--border-color);
-            padding: 10px;
-            text-align: left;
-        }
-        th {
-            background-color: #f1f5f9;
-            font-weight: bold;
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 4px;
-            border: 1px solid var(--border-color);
-        }
-        .back-link {
-            display: inline-block;
-            margin-bottom: 20px;
-            color: var(--primary-color);
-            text-decoration: none;
-            font-weight: bold;
-        }
-        .back-link:hover {
-            text-decoration: underline;
-        }
-        footer {
-            text-align: center;
-            margin-top: 50px;
-            font-size: 0.9em;
-            color: #64748b;
-            border-top: 1px solid var(--border-color);
-            padding-top: 20px;
-        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: var(--dark); line-height: 1.7; padding: 40px 20px; }
+        
+        .container { max-width: 1100px; margin: 0 auto; background: white; border-radius: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); padding: 50px; }
+
+        .manual-header { border-bottom: 4px solid var(--primary-light); padding-bottom: 30px; margin-bottom: 40px; }
+        .manual-header h1 { font-size: 2.8rem; font-weight: 800; color: var(--dark); letter-spacing: -1px; }
+        .manual-header p { font-size: 1.2rem; color: var(--slate); margin-top: 10px; }
+
+        section { margin-bottom: 60px; scroll-margin-top: 20px; }
+        h2 { font-size: 1.8rem; color: var(--primary-dark); margin-bottom: 25px; display: flex; align-items: center; gap: 15px; border-left: 6px solid var(--primary); padding-left: 20px; }
+        
+        .field-guide { display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 20px; }
+        .field-card { border: 1px solid var(--border); border-radius: 16px; padding: 25px; transition: all 0.3s ease; background: #fff; }
+        .field-card:hover { border-color: var(--primary); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); transform: translateY(-2px); }
+        .field-title { font-weight: 700; color: var(--dark); font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .field-tag { font-size: 0.7rem; padding: 4px 10px; border-radius: 20px; background: var(--primary-light); color: var(--primary-dark); text-transform: uppercase; }
+        
+        .field-desc { color: var(--slate); font-size: 0.95rem; }
+        .field-pro-tip { margin-top: 15px; padding: 12px; background: #fdf4ff; border-radius: 10px; font-size: 0.9rem; color: #701a75; border-left: 3px solid var(--secondary); }
+        
+        .ai-box { border: 2px dashed var(--primary); background: #f5f3ff; padding: 25px; border-radius: 20px; margin: 40px 0; }
+        .ai-box h3 { color: var(--primary); margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+
+        footer { margin-top: 80px; text-align: center; color: var(--slate); border-top: 1px solid var(--border); padding-top: 30px; }
+
+        .aging-box { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
+        .aging-card { padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--border); }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <a href="javascript:history.back()" class="back-link">← Volver</a>
-    
-    <div class="content">
-        <h1>Estado de Cuenta (Clientes)</h1>
-<p>El reporte de <strong>Estado de Cuenta</strong> es una herramienta vital para la gestión de cartera. Proporciona una visión clara de las deudas pendientes de un cliente a una fecha de corte específica, clasificándolas por su antigüedad y estado de vencimiento.</p>
-<h2>1. Generación del Reporte</h2>
-<p>Para consultar el estado de cuenta de un cliente:</p>
-<ol>
-<li><strong>Cliente</strong>: Seleccione el cliente de la lista desplegable. Solo aparecerán los terceros marcados como "Cliente" en la gestión de terceros.</li>
-<li><strong>Fecha de Corte</strong>: Seleccione la fecha hasta la cual desea calcular la deuda.<ul>
-<li><em>Por defecto, el sistema selecciona la fecha de hoy.</em></li>
-<li>Si selecciona una fecha pasada, el sistema calculará la deuda "retroactivamente" (ideal para cierres de mes).</li>
-</ul>
-</li>
-</ol>
-<p>Haga clic en <strong>"Generar Estado"</strong> para visualizar la información.</p>
-<h2>2. Interpretación de Resultados</h2>
-<h3>Listado de Facturas</h3>
-<p>El sistema muestra una tabla con todas las facturas que tienen saldo pendiente a la fecha de corte:
--   <strong>Documento</strong>: Tipo y número de la factura.
--   <strong>Emisión</strong>: Fecha original de la factura.
--   <strong>Valor Original</strong>: Monto total inicial.
--   <strong>Abonos</strong>: Pagos recibidos hasta la fecha.
--   <strong>Saldo</strong>: Valor que el cliente aún debe.
--   <strong>Estado</strong>: Indicador visual de salud de la deuda:
-    -   <span style="color:green"><strong>Vence en X días</strong></span>: La factura está vigente.
-    -   <span style="color:red"><strong>X días mora</strong></span>: La factura ya venció y está en mora.</p>
-<h3>Análisis de Vencimientos (Aging)</h3>
-<p>En la parte inferior, encontrará un panel de colores que clasifica la deuda total según su antigüedad:
--   <strong>Por Vencer</strong>: Deuda sana, aún no exigible.
--   <strong>1-30 Días</strong>: Mora temprana.
--   <strong>31-60 Días</strong>: Mora media.
--   <strong>61-90 Días</strong>: Mora crítica.
--   <strong>+90 Días</strong>: Cartera de difícil cobro.</p>
-<h2>3. Exportación y Envío</h2>
-<p>Este reporte está diseñado para ser enviado directamente a sus clientes como cobro persuasivo:</p>
-<ul>
-<li><strong>PDF</strong>: Genera un documento formal con el logo de su empresa, listo para enviar por correo electrónico.</li>
-<li><strong>CSV</strong>: Descarga los datos en formato Excel para análisis interno.</li>
-</ul>
-    </div>
+    <header class="manual-header">
+        <h1>👤 Estado de Cuenta Cliente</h1>
+        <p>Herramienta definitiva de cobranza: visualice deudas, abonos y analice el riesgo de su cartera en tiempo real.</p>
+    </header>
+
+    <section id="concepto">
+        <h2>1. El Historial de Cartera</h2>
+        <p>El Estado de Cuenta Cliente centraliza todas las facturas pendientes de un tercero. No solo muestra lo que le deben, sino que detalla cada <b>Recibo de Caja</b> o <b>Nota Crédito</b> que ha afectado el saldo original del documento.</p>
+    </section>
+
+    <section id="aging">
+        <h2>2. Análisis de Vencimientos (Aging)</h2>
+        <p>Ubicado al final del reporte, el Dashboard de Edades clasifica la deuda por tiempo de mora. Es fundamental para priorizar las llamadas de cobranza.</p>
+        <div class="aging-box">
+            <div class="aging-card" style="background: #ecfdf5;"><b>Por Vencer</b><br><small>Cartera sana</small></div>
+            <div class="aging-card" style="background: #fffbeb;"><b>1-30 Días</b><br><small>Mora temprana</small></div>
+            <div class="aging-card" style="background: #fff7ed;"><b>31-60 Días</b><br><small>Seguimiento</small></div>
+            <div class="aging-card" style="background: #fef2f2;"><b>61-90 Días</b><br><small>Riesgo alto</small></div>
+            <div class="aging-card" style="background: #fff1f2;"><b>+90 Días</b><br><small>Difícil cobro</small></div>
+        </div>
+    </section>
+
+    <section id="interpretacion">
+        <h2>3. Interpretación de Datos</h2>
+        <div class="field-guide">
+            <div class="field-card">
+                <div class="field-title">Valor Original vs. Saldo <span class="field-tag">Auditoría</span></div>
+                <div class="field-desc">El <b>Valor Original</b> es el total de la factura emitida. El <b>Saldo</b> es lo que resta cobrar tras restar todos los abonos. Si el saldo es menor al original, significa que el cliente ya ha realizado pagos parciales.</div>
+            </div>
+            <div class="field-card">
+                <div class="field-title">Estado de Alerta</div>
+                <div class="field-desc">Las facturas resaltadas con un triángulo rojo ⚠️ están <b>Vencidas</b>. El sistema calcula automáticamente los días de retraso basándose en la fecha de corte seleccionada.</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="ia">
+        <div class="ai-box">
+            <h3>✨ Automatización de Cobro con la IA</h3>
+            <p>Puede agilizar su gestión de cartera pidiéndole al Copilot:</p>
+            <blockquote style="font-style: italic; margin: 15px 0; padding-left: 20px; border-left: 4px solid var(--primary); color: var(--slate);">
+                "Mira cuánto me debe Inversiones Jiménez y mándale su estado de cuenta por WhatsApp."
+            </blockquote>
+            <p>La IA identificará al cliente por nombre o NIT, generará el reporte a la fecha de hoy, descargará el PDF y abrirá el chat de WhatsApp con un mensaje personalizado que incluye el saldo total.</p>
+        </div>
+    </section>
 
     <footer>
-        Sistema Finaxis - Manual de Usuario
+        <p>Finaxis ERP Cloud - Potenciando la productividad contable</p>
+        <p><small>Documentación Técnica Actualizada: Abril 2026</small></p>
     </footer>
 </div>
 

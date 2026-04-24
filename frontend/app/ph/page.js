@@ -13,7 +13,8 @@ import {
     FaChartLine,
     FaCogs,
     FaList,
-    FaHome
+    FaHome,
+    FaUpload
 } from 'react-icons/fa';
 
 export default function DashboardPHPage() {
@@ -63,6 +64,13 @@ export default function DashboardPHPage() {
             icon: <FaMoneyBillWave className="text-4xl text-emerald-500" />,
             href: "/ph/pagos",
             color: "border-emerald-200 hover:border-emerald-500 hover:shadow-emerald-100"
+        },
+        {
+            title: "Recaudo Masivo",
+            desc: "Conciliación bancaria mediante archivos Excel/CSV.",
+            icon: <FaUpload className="text-4xl text-purple-600" />,
+            href: "/ph/recaudo-masivo",
+            color: "border-purple-200 hover:border-purple-600 hover:shadow-purple-100"
         },
         {
             title: "Reportes",

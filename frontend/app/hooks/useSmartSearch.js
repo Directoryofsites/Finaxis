@@ -408,12 +408,12 @@ export function useSmartSearch() {
         }
 
         // --- INTERCEPTOR: MOVIMIENTOS INVENTARIO ---
-        const isInventarioIntent = queryLower.includes('inventario') || queryLower.includes('kardex') || queryLower.includes('stock') || queryLower.includes('existencias');
-        if (isInventarioIntent && (actionName === 'generar_reporte_movimientos' || actionName === 'consultar_documento')) {
+        const isInventarioIntent = queryLower.includes('inventario') || queryLower.includes('kardex') || queryLower.includes('stock') || queryLower.includes('existencias') || queryLower.includes('saldo') || queryLower.includes('articulo') || queryLower.includes('producto');
+        if (isInventarioIntent && (actionName === 'generar_reporte_movimientos' || actionName === 'consultar_documento' || actionName === 'generar_relacion_saldos')) {
             const params = new URLSearchParams();
             if (p.fecha_inicio) params.set('fecha_inicio', p.fecha_inicio);
             if (p.fecha_fin) params.set('fecha_fin', p.fecha_fin);
-            let prod = p.producto || p.producto_nombre || p.nombre_producto || p.articulo || p.referencia || p.search_term_prod || p.concepto || p.descripcion;
+            let prod = p.producto || p.producto_nombre || p.nombre_producto || p.articulo || p.referencia || p.search_term_prod || p.concepto || p.descripcion || p.cuenta;
             const invalidPhrases = ['movimientos detallados de inventario', 'movimientos de inventario', 'reporte de inventario', 'informe de inventario', 'inventario', 'kardex', 'stock', 'existencias', 'movimientos detallados', 'movimientos'];
             if (prod && invalidPhrases.some(phrase => prod.toLowerCase().trim() === phrase)) prod = null;
             if (prod) params.set('search_term_prod', prod);

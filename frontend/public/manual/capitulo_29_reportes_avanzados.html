@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual PRO - Estados Financieros | Finaxis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4338ca;
+            --primary-light: #e0e7ff;
+            --secondary: #38bdf8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --slate: #64748b;
+            --border: #e2e8f0;
+            --bg: #f8fafc;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: var(--dark); line-height: 1.7; padding: 40px 20px; }
+        
+        .container { max-width: 1100px; margin: 0 auto; background: white; border-radius: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); padding: 50px; }
+
+        .manual-header { border-bottom: 4px solid var(--primary-light); padding-bottom: 30px; margin-bottom: 40px; }
+        .manual-header h1 { font-size: 2.8rem; font-weight: 800; color: var(--dark); letter-spacing: -1px; }
+        .manual-header p { font-size: 1.2rem; color: var(--slate); margin-top: 10px; }
+
+        section { margin-bottom: 60px; scroll-margin-top: 20px; }
+        h2 { font-size: 1.8rem; color: var(--primary-dark); margin-bottom: 25px; display: flex; align-items: center; gap: 15px; border-left: 6px solid var(--primary); padding-left: 20px; }
+        
+        .field-guide { display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 20px; }
+        .field-card { border: 1px solid var(--border); border-radius: 16px; padding: 25px; transition: all 0.3s ease; background: #fff; }
+        .field-card:hover { border-color: var(--primary); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); transform: translateY(-2px); }
+        .field-title { font-weight: 700; color: var(--dark); font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .field-tag { font-size: 0.7rem; padding: 4px 10px; border-radius: 20px; background: var(--primary-light); color: var(--primary-dark); text-transform: uppercase; }
+        
+        .field-desc { color: var(--slate); font-size: 0.95rem; }
+        .field-pro-tip { margin-top: 15px; padding: 12px; background: #f0fdf4; border-radius: 10px; font-size: 0.9rem; color: #166534; border-left: 3px solid var(--success); }
+        
+        .ai-box { border: 2px dashed var(--primary); background: #f5f3ff; padding: 25px; border-radius: 20px; margin: 40px 0; }
+        .ai-box h3 { color: var(--primary); margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+
+        footer { margin-top: 80px; text-align: center; color: var(--slate); border-top: 1px solid var(--border); padding-top: 30px; }
+
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header class="manual-header">
+        <h1>📊 Estados Financieros Premium</h1>
+        <p>Transforme datos contables en decisiones estratégicas con análisis vertical y visualización de márgenes.</p>
+    </header>
+
+    <section id="concepto">
+        <h2>1. Inteligencia Financiera</h2>
+        <p>Los estados financieros en Finaxis (Estado de Resultados y Balance General) superan el formato tradicional de columnas. Integran <b>Análisis Vertical automático</b>, permitiéndole entender no solo "cuánto" ganó, sino "cómo" lo hizo en relación a sus ventas.</p>
+    </section>
+
+    <section id="estado-resultados">
+        <h2>2. Estado de Resultados Analítico</h2>
+        <div class="field-guide">
+            <div class="field-card">
+                <div class="field-title">Análisis Vertical (Ventas %) <span class="field-tag">Filtro de Eficiencia</span></div>
+                <div class="field-desc">Cada cuenta (Costo o Gasto) muestra un porcentaje a su derecha. Este valor indica qué peso tiene ese ítem sobre el total de Ingresos. 
+                <br><b>Ejemplo:</b> Si el Gasto de Arriendo dice 5%, significa que por cada $100 vendidos, $5 se destinan al local.</div>
+            </div>
+
+            <div class="field-card">
+                <div class="field-title">Cascada de Márgenes (Waterfall) <span class="field-tag">Visualización</span></div>
+                <div class="field-desc">El panel izquierdo muestra una gráfica decreciente que inicia en sus Ingresos y va restando Costos y Gastos hasta llegar a la <b>Utilidad Neta</b>. Es la forma más rápida de ver dónde se "escapa" el dinero de la operación.</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="ia">
+        <div class="ai-box">
+            <h3>✨ Automatización y Despacho con Copilot</h3>
+            <p>Este módulo es el más utilizado para reportar a socios o gerencia. Puede pedirle al Tutor:</p>
+            <blockquote style="font-style: italic; margin: 15px 0; padding-left: 20px; border-left: 4px solid var(--primary); color: var(--slate);">
+                "Genera el P&L (Estado de Resultados) del último trimestre y mándalo por correo a la junta directiva."
+            </blockquote>
+            <p>La IA configurará las fechas, generará el análisis y realizará el despacho masivo sin que usted tenga que descargar archivos.</p>
+        </div>
+    </section>
+
+    <section id="balance-general">
+        <h2>3. Balance General (Estructura de Capital)</h2>
+        <p>Muestra la foto real de lo que la empresa <b>Tiene</b> (Activo), lo que <b>Debe</b> (Pasivo) y su <b>Riqueza Real</b> (Patrimonio).</p>
+        <div class="feature-grid">
+            <div class="field-card" style="border-left: 4px solid var(--secondary);">
+                <div class="field-title">Liquidez Inmediata</div>
+                <div class="field-desc">Visualice sus cuentas de Bancos y Caja en el primer bloque del Activo Corriente para toma de decisiones de flujo de caja.</div>
+            </div>
+            <div class="field-card" style="border-left: 4px solid var(--success);">
+                <div class="field-title">Ecuación Patrimonial</div>
+                <div class="field-desc">El sistema verifica en tiempo real que <b>Activo = Pasivo + Patrimonio</b>. Si existe un descuadre estructural, el sistema lo alertará antes de emitir el reporte.</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="salida">
+        <h2>4. Formatos de Exportación</h2>
+        <div class="grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            <div class="field-card" style="border-left: 4px solid var(--primary-dark);">
+                <div class="field-title">PDF de Presentación 📄</div>
+                <div class="field-desc">Formato limpio y profesional con logotipos de la empresa, listo para presentar en asambleas o ante entidades bancarias.</div>
+            </div>
+            <div class="field-card" style="border-left: 4px solid var(--success);">
+                <div class="field-title">CSV de Análisis 📊</div>
+                <div class="field-desc">Ideal para analistas financieros que desean llevar los datos a Excel para proyecciones o gráficos personalizados.</div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>Finaxis ERP Cloud - Potenciando la productividad contable</p>
+        <p><small>Documentación Técnica Actualizada: Abril 2026</small></p>
+    </footer>
+</div>
+
+</body>
+</html>

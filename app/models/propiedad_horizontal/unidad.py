@@ -31,6 +31,7 @@ class PHUnidad(Base):
     torre_id = Column(Integer, ForeignKey("ph_torres.id"), nullable=True)
     
     codigo = Column(String(50), nullable=False) # Ej: "501", "204", "LC-01"
+    referencia_recaudo = Column(String(50), nullable=True, index=True) # Identificador para extractos bancarios
     tipo = Column(String(50), nullable=False, default="RESIDENCIAL") # RESIDENCIAL, COMERCIAL, PARQUEADERO, DEPOSITO
     
     matricula_inmobiliaria = Column(String(100), nullable=True)
@@ -45,6 +46,7 @@ class PHUnidad(Base):
     residente_actual_id = Column(Integer, ForeignKey("terceros.id"), nullable=True)
     
     activo = Column(Boolean, default=True)
+    aplica_pronto_pago = Column(Boolean, default=True)
     observaciones = Column(Text, nullable=True)
     
     # Relaciones

@@ -130,8 +130,23 @@ export default function FacturacionPHPage() {
     const openUnitFilter = async (e, conceptoId) => {
         e.stopPropagation(); // Evitar toggle del concepto
         setCurrentConceptId(conceptoId);
-        // Cargar selección actual o vacía
-        setTempSelectedUnits(conceptConfigs[conceptoId] || []);
+        let initialSelection = conceptConfigs[conceptoId] || [];
+
+        // --- NUEVO: Pre-cargar selecciones manuales si no hay un filtro temporal activo ---
+        if (initialSelection.length === 0) {
+            const conceptObj = conceptos.find(c => c.id === conceptoId);
+            const conceptModIds = (conceptObj?.modulos || []).map(m => Number(m.id));
+            
+            // Buscar unidades que tengan al menos uno de estos módulos
+            const preSelected = unidades.filter(u => {
+                const uModIds = (u.modulos_ids || []).map(mid => Number(mid));
+                return uModIds.some(mid => conceptModIds.includes(mid));
+            }).map(u => u.id);
+            
+            initialSelection = preSelected;
+        }
+
+        setTempSelectedUnits(initialSelection);
         setSearchTerm('');
         setShowUnitModal(true);
 
@@ -141,6 +156,15 @@ export default function FacturacionPHPage() {
                 setLoadingUnits(true);
                 const data = await phService.getUnidades({ limit: 1000 });
                 setUnidades(data);
+
+                // Si acabamos de cargar las unidades por primera vez, re-calcular la pre-selección
+                const conceptObj = conceptos.find(c => c.id === conceptoId);
+                const conceptModIds = (conceptObj?.modulos || []).map(m => Number(m.id));
+                const preSelectedAfterLoad = data.filter(u => {
+                    const uModIds = (u.modulos_ids || []).map(mid => Number(mid));
+                    return uModIds.some(mid => conceptModIds.includes(mid));
+                }).map(u => u.id);
+                setTempSelectedUnits(preSelectedAfterLoad);
             } catch (err) {
                 console.error("Error cargando unidades", err);
             } finally {
@@ -337,9 +361,18 @@ export default function FacturacionPHPage() {
             .filter((id, i, arr) => arr.indexOf(id) === i) || [];
 
         return unidades.filter(u => {
-            // Filtro por torre (solo si el concepto tiene torres configuradas en sus módulos)
-            if (allowedTorresIds.length > 0 && !allowedTorresIds.includes(u.torre_id)) return false;
-            // Filtro por texto de búsqueda
+            // 1. ¿La torre de la unidad está permitida por la estructura del módulo?
+            const torrePermitida = allowedTorresIds.length === 0 || allowedTorresIds.includes(u.torre_id);
+
+            // 2. ¿La unidad tiene el módulo asignado individualmente en su ficha?
+            const conceptModIds = (activeConcept?.modulos || []).map(m => Number(m.id));
+            const uModIds = (u.modulos_ids || []).map(mid => Number(mid));
+            const tieneModuloManual = uModIds.some(mid => conceptModIds.includes(mid));
+
+            // 3. Lógica Híbrida: Mostrar si es de la torre O si tiene el módulo manual O si ya está seleccionada
+            if (!torrePermitida && !tieneModuloManual) return false;
+
+            // 4. Filtro por texto de búsqueda (Nombre o Código)
             return (
                 u.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 (u.propietario?.razon_social || u.propietario_nombre || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -605,9 +638,9 @@ export default function FacturacionPHPage() {
                                 
                                 // Si el concepto tiene módulos con torres configuradas, filtrar;
                                 // Si no, mostrar todas.
-                                const torresVisibles = allowedTorresIds.length > 0
-                                    ? torres.filter(t => allowedTorresIds.includes(t.id))
-                                    : torres;
+                                // DINÁMICO: Mostrar torres que tengan unidades en la lista filtrada actual
+                                const torresIdsEnUso = [...new Set(filteredUnits.map(u => u.torre_id))];
+                                const torresVisibles = torres.filter(t => torresIdsEnUso.includes(t.id));
 
                                 if (torresVisibles.length === 0) return null;
 

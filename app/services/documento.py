@@ -825,7 +825,7 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
 
     # PRIORIDAD 1: FACTURA ELECTRÓNICA CON CUFE (Formato Estándar Premium)
     if func_especial == 'FACTURA_VENTA' and db_doc.dian_cufe:
-        print(f"🟢 [PDF] -> TIENE CUFE. Usando premium_fe_template.html")
+        print(f"[OK] [PDF] -> TIENE CUFE. Usando premium_fe_template.html")
         html_content = TEMPLATES_EMPAQUETADOS.get('reports/premium_fe_template.html')
 
     # PRIORIDAD 2: PLANTILLA PERSONALIZADA EN BASE DE DATOS (Diseñada por el usuario)
@@ -836,7 +836,7 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
         ).first()
         
         if plantilla_db:
-            print(f"🟢 [PDF] -> Usando plantilla personalizada de BD: {plantilla_db.nombre}")
+            print(f"[OK] [PDF] -> Usando plantilla personalizada de BD: {plantilla_db.nombre}")
             html_content = plantilla_db.contenido_html
 
     # PRIORIDAD 3: FALLBACK A PLANTILLAS EMPAQUETADAS SEGÚN COMPORTAMIENTO
@@ -855,7 +855,7 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
             # Documentos CONTABLES (CC, notas, ajustes, etc.) -> formato de Débito/Crédito
             template_key = 'reports/generic_document_template.html'
         
-        print(f"🟡 [PDF] -> No hay diseño en BD. Usando fallback: {template_key}")
+        print(f"[WARN] [PDF] -> No hay diseño en BD. Usando fallback: {template_key}")
         html_content = TEMPLATES_EMPAQUETADOS.get(template_key)
 
         # Fallback extra por si el empaquetado falla (ej: desarrollo local)
@@ -874,6 +874,7 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
     # 4. LÓGICA
     items_facturables = []
     subtotal_acumulado = 0
+    subtotal_bruto_acumulado = 0.0
     impuestos_acumulados = 0
     
     # Acumuladores para bases gravables
@@ -905,7 +906,7 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
     
     # Detección por cuentas si no hay función especial (Solo si no es un Comprobante de Contabilidad explícito)
     if modo_operacion == 'GENERAL' and tipo_codigo != 'cc':
-        if any(getattr(m.cuenta, 'codigo', '').startswith('4') for m in db_doc.movimientos):
+        if any(getattr(m.cuenta, 'codigo', '').startswith('4') and m.credito > 0 for m in db_doc.movimientos):
             modo_operacion = 'VENTA'
         # Si toca inventario (14) o costo (6) al débito
         elif any(getattr(m.cuenta, 'codigo', '').startswith(('14', '6')) and m.debito > 0 for m in db_doc.movimientos):
@@ -949,7 +950,6 @@ def generar_pdf_documento(db: Session, documento_id: int, empresa_id: int):
                 tasas_impuesto = {tasa.id: tasa.tasa for tasa in tasas_db}
             
             # Variables para totalizar
-            subtotal_bruto_acumulado = 0.0
             sum_credito = sum(float(item.valor_total) for item in query_comercial)
             cargos_globales_doc = float(getattr(db_doc, 'cargos_globales_valor', 0) or 0)
             

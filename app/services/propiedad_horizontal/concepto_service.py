@@ -12,7 +12,7 @@ class PHConceptoService:
             joinedload(PHConcepto.cuenta_cxc),
             joinedload(PHConcepto.cuenta_interes),
             joinedload(PHConcepto.modulos)  # Cargar módulos del concepto
-        ).filter(PHConcepto.empresa_id == empresa_id, PHConcepto.activo == True).all()
+        ).filter(PHConcepto.empresa_id == empresa_id, PHConcepto.activo == True).order_by(PHConcepto.orden.asc(), PHConcepto.id.asc()).all()
         
         # Forzar carga de torres de cada módulo dentro de la sesión activa
         for c in conceptos:
@@ -78,5 +78,18 @@ class PHConceptoService:
         db.add(db_obj)
         db.commit()
         return db_obj
+
+    def reorder_concepts(self, db: Session, empresa_id: int, ids_ordenados: List[int]) -> bool:
+        """
+        Actualiza el campo 'orden' de los conceptos según la lista recibida.
+        """
+        for i, concepto_id in enumerate(ids_ordenados):
+            db.query(PHConcepto).filter(
+                PHConcepto.id == concepto_id, 
+                PHConcepto.empresa_id == empresa_id
+            ).update({"orden": i + 1})
+        
+        db.commit()
+        return True
 
 service = PHConceptoService()

@@ -59,9 +59,10 @@ export function useTutorAI() {
             if (data.type === 'text') {
                 setMessages(prev => [...prev, { role: "assistant", content: data.text }]);
             } else if (data.type === 'tool') {
+                const cmdDesc = data.suggested_command || data.name;
                 setMessages(prev => [...prev, { 
                     role: "assistant", 
-                    content: `🔍 Entendido. Voy a procesar una consulta sobre: **${data.name}**.`,
+                    content: `🔍 Entendido. Voy a procesar una consulta sobre: **${cmdDesc}**.`,
                     toolCall: data 
                 }]);
             }

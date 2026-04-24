@@ -16,7 +16,7 @@ class PHTorre(PHTorreBase):
     empresa_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class PHVehiculoBase(BaseModel):
     placa: str = Field(..., max_length=20)
@@ -32,7 +32,7 @@ class PHVehiculo(PHVehiculoBase):
     id: int
     unidad_id: int
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class PHMascotaBase(BaseModel):
     nombre: str = Field(..., max_length=50)
@@ -47,10 +47,11 @@ class PHMascota(PHMascotaBase):
     id: int
     unidad_id: int
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class PHUnidadBase(BaseModel):
     codigo: str = Field(..., max_length=50, title="Número de Apto/Casa")
+    referencia_recaudo: Optional[str] = Field(None, max_length=50, description="Referencia para pagos en bancos")
     tipo: str = "RESIDENCIAL" 
     torre_id: Optional[int] = None
     matricula_inmobiliaria: Optional[str] = None
@@ -61,6 +62,7 @@ class PHUnidadBase(BaseModel):
     residente_actual_id: Optional[int] = None
     
     activo: bool = True
+    aplica_pronto_pago: bool = True
     observaciones: Optional[str] = None
 
 class PHUnidadCreate(PHUnidadBase):
@@ -76,11 +78,12 @@ class PHUnidad(PHUnidadBase):
     vehiculos: List[PHVehiculo] = []
     mascotas: List[PHMascota] = []
     modulos_contribucion: List[PHModuloContribucionResponse] = []
+    modulos_ids: List[int] = [] # IDs de los módulos para filtrado rápido
     torre_nombre: Optional[str] = None
     propietario_nombre: Optional[str] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # --- NEW SCHEMA FOR MASS UPDATE ---
 class PHUnidadMassUpdateModules(BaseModel):

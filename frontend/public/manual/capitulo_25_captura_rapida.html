@@ -3,156 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Capítulo 25: Captura Rápida</title>
+    <title>Manual PRO - Captura Rápida | Finaxis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #2563eb;
-            --secondary-color: #1e40af;
-            --bg-color: #f8fafc;
-            --text-color: #1e293b;
-            --card-bg: #ffffff;
-            --code-bg: #1e293b;
-            --code-text: #e2e8f0;
-            --border-color: #e2e8f0;
+            --primary: #f59e0b; /* Amber for Bolt/Speed theme */
+            --primary-dark: #b45309;
+            --primary-light: #fef3c7;
+            --secondary: #4f46e5;
+            --success: #10b981;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --slate: #64748b;
+            --border: #e2e8f0;
+            --bg: #fffcf0; /* Light yellow tint for "Quick" theme */
         }
-        body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.6;
-            color: var(--text-color);
-            background-color: var(--bg-color);
-            margin: 0;
-            padding: 20px;
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: var(--dark); line-height: 1.7; padding: 40px 20px; }
+        
+        .container { max-width: 1100px; margin: 0 auto; background: white; border-radius: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); padding: 50px; }
+
+        .manual-header { border-bottom: 4px solid var(--primary-light); padding-bottom: 30px; margin-bottom: 40px; }
+        .manual-header h1 { font-size: 2.8rem; font-weight: 800; color: var(--dark); letter-spacing: -1px; display: flex; align-items: center; gap: 15px; }
+        .manual-header p { font-size: 1.2rem; color: var(--slate); margin-top: 10px; }
+
+        section { margin-bottom: 60px; scroll-margin-top: 20px; }
+        h2 { font-size: 1.8rem; color: var(--primary-dark); margin-bottom: 25px; display: flex; align-items: center; gap: 15px; border-left: 6px solid var(--primary); padding-left: 20px; }
+        
+        .field-guide { display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 20px; }
+        .field-card { border: 1px solid var(--border); border-radius: 16px; padding: 25px; transition: all 0.3s ease; background: #fff; }
+        .field-card:hover { border-color: var(--primary); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); transform: translateY(-2px); }
+        .field-title { font-weight: 700; color: var(--dark); font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .field-tag { font-size: 0.7rem; padding: 4px 10px; border-radius: 20px; background: var(--primary-light); color: var(--primary-dark); text-transform: uppercase; }
+        
+        .field-desc { color: var(--slate); font-size: 0.95rem; }
+        .field-pro-tip { margin-top: 15px; padding: 12px; background: #fdfae6; border-radius: 10px; font-size: 0.9rem; color: #92400e; border-left: 3px solid var(--primary); }
+        
+        kbd { background: #334155; color: white; padding: 3px 8px; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.85rem; box-shadow: 0 2px 0 #000; }
+
+        .step-list { list-style: none; counter-reset: step; }
+        .step-list li { position: relative; padding-left: 50px; margin-bottom: 30px; }
+        .step-list li::before { 
+            counter-increment: step; 
+            content: counter(step); 
+            position: absolute; 
+            left: 0; top: 0; 
+            width: 35px; height: 35px; 
+            background: var(--primary); 
+            color: white; 
+            border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: bold; 
         }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: var(--card-bg);
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        h1, h2, h3 {
-            color: var(--secondary-color);
-            margin-top: 1.5em;
-        }
-        h1 {
-            border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 10px;
-            margin-top: 0;
-        }
-        code {
-            font-family: 'Consolas', 'Monaco', monospace;
-            background-color: #f1f5f9;
-            padding: 2px 5px;
-            border-radius: 4px;
-            color: #d63384;
-        }
-        pre {
-            background-color: var(--code-bg);
-            color: var(--code-text);
-            padding: 15px;
-            border-radius: 8px;
-            overflow-x: auto;
-        }
-        pre code {
-            background-color: transparent;
-            color: inherit;
-            padding: 0;
-        }
-        blockquote {
-            border-left: 4px solid var(--primary-color);
-            margin: 0;
-            padding-left: 20px;
-            color: #475569;
-            background-color: #f1f5f9;
-            padding: 10px 20px;
-            border-radius: 0 4px 4px 0;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        th, td {
-            border: 1px solid var(--border-color);
-            padding: 10px;
-            text-align: left;
-        }
-        th {
-            background-color: #f1f5f9;
-            font-weight: bold;
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 4px;
-            border: 1px solid var(--border-color);
-        }
-        .back-link {
-            display: inline-block;
-            margin-bottom: 20px;
-            color: var(--primary-color);
-            text-decoration: none;
-            font-weight: bold;
-        }
-        .back-link:hover {
-            text-decoration: underline;
-        }
-        footer {
-            text-align: center;
-            margin-top: 50px;
-            font-size: 0.9em;
-            color: #64748b;
-            border-top: 1px solid var(--border-color);
-            padding-top: 20px;
-        }
+
+        .highlight-box { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 30px; border-radius: 20px; margin: 40px 0; }
+        .highlight-box h3 { font-size: 1.4rem; margin-bottom: 15px; }
+
+        .ai-box { border: 2px dashed var(--secondary); background: #f5f3ff; padding: 25px; border-radius: 20px; margin: 40px 0; }
+        .ai-box h3 { color: var(--secondary); margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+
+        footer { margin-top: 80px; text-align: center; color: var(--slate); border-top: 1px solid var(--border); padding-top: 30px; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <a href="javascript:history.back()" class="back-link">← Volver</a>
-    
-    <div class="content">
-        <h1>Capítulo 25: Captura Rápida</h1>
-<p>La herramienta de <strong>Captura Rápida</strong> está diseñada para acelerar drásticamente el proceso de digitación contable mediante el uso de <strong>Plantillas Predefinidas</strong>. A diferencia del formulario estándar de "Nuevo Documento", esta interfaz asume que la estructura del asiento (cuentas y naturaleza) ya está definida, permitiendo al usuario enfocarse únicamente en los valores y terceros.</p>
-<h2>1. Concepto General</h2>
-<p>El flujo de trabajo se basa en <strong>Plantillas</strong>. Una plantilla define qué cuentas se van a mover y en qué naturaleza (Débito/Crédito). Al usar esta herramienta, el sistema:
-1.  Carga las cuentas automáticamente.
-2.  Solicita un <strong>Valor Único Total</strong>.
-3.  Distribuye ese valor automáticamente en las columnas correspondientes (partida doble automática).</p>
-<h2>2. Configuración Inicial</h2>
-<p>Al ingresar, encontrará el panel de configuración del asiento:</p>
-<ul>
-<li><strong>Fecha:</strong> Fecha contable del registro.</li>
-<li><strong>⚡ Plantilla (Requerido):</strong> Seleccione el tipo de operación (ej. "Gasto de Cafetería", "Pago de Servicio Público"). <strong>Es el campo más importante</strong>, ya que define toda la estructura del asiento.</li>
-<li><strong>Beneficiario:</strong> Tercero asociado al movimiento.<ul>
-<li><strong>Botón (+):</strong> Permite crear un nuevo tercero rápidamente (NIT y Nombre) sin salir de la pantalla.</li>
-</ul>
-</li>
-<li><strong>Centro de Costo:</strong> Opcional. Asigna un centro de costo a todas las líneas del asiento.</li>
-</ul>
-<h2>3. Valores y Conceptos</h2>
-<p>Una vez seleccionada una plantilla, se despliega la sección de detalles:</p>
-<h3>Valor Total del Asiento</h3>
-<p>Un campo grande y destacado donde debe ingresar el valor total de la operación.
-*   <strong>Automatización:</strong> Al escribir el valor, el sistema lo asigna automáticamente al Débito de una cuenta y al Crédito de la otra, garantizando que el asiento siempre esté cuadrado (sumas iguales).</p>
-<h3>Detalle de Movimientos</h3>
-<p>Muestra las cuentas contables cargadas por la plantilla.
-*   <strong>Concepto / Detalle:</strong> Campo de texto libre para describir la operación.
-    *   <strong>Botón (Libro):</strong> Si escribe una descripción que usará frecuentemente, haga clic en el icono de libro para guardarla en su librería de conceptos favoritos.
-*   <strong>Débito / Crédito:</strong> Calculados automáticamente basados en el "Valor Total".</p>
-<h2>4. Validaciones y Guardado</h2>
-<ul>
-<li><strong>Balanceo:</strong> El sistema verifica en tiempo real que Débitos = Créditos. Si hay diferencias, verá una alerta parpadeante.</li>
-<li><strong>Guardar Documento:</strong> Solo se habilita si el asiento está cuadrado y la información completa. Al guardar, se genera el consecutivo y se limpia el formulario para el siguiente registro inmediato.</li>
-</ul>
-<hr />
-<p><strong>Tip de Eficiencia:</strong> Use la tecla <code>TAB</code> para navegar rápidamente entre campos. Esta pantalla está optimizada para digitación veloz sin necesidad de usar el mouse constantemente.</p>
-    </div>
+    <header class="manual-header">
+        <h1>⚡ Captura Rápida</h1>
+        <p>Digitación acelerada de documentos masivos mediante el poder de las Plantillas Inteligentes.</p>
+    </header>
+
+    <section id="concepto">
+        <h2>1. El Concepto de Velocidad</h2>
+        <p>A diferencia del módulo estándar, la <b>Captura Rápida</b> está diseñada para procesar documentos de estructura repetitiva en segundos. Aquí no armas el asiento; el asiento ya está armado en una <b>Plantilla</b>, tú solo provees el valor.</p>
+    </section>
+
+    <section id="campos">
+        <h2>2. Configuración del Asiento Paso a Paso</h2>
+        <div class="field-guide">
+            <div class="field-card">
+                <div class="field-title">Plantilla Maestro <span class="field-tag">Obligatorio</span></div>
+                <div class="field-desc">Es el motor de la página. Al seleccionar una plantilla (ej: "Pago de Servicios"), el sistema carga automáticamente las cuentas contables, los centros de costo sugeridos y la naturaleza (Débito/Crédito) de cada línea.</div>
+                <div class="field-pro-tip"><b>Importante:</b> Si el tipo de documento asociado a la plantilla es Electrónico, verás el interruptor de <b>Emitir a DIAN</b> activarse automáticamente.</div>
+            </div>
+
+            <div class="field-card">
+                <div class="field-title">Valor Único Total <span class="field-tag">Productividad</span></div>
+                <div class="field-desc">El campo más potente. Escribe aquí el valor total de la factura o gasto. El sistema <b>distribuirá el monto automáticamente</b> entre todas las cuentas del asiento para garantizar la Partida Doble inmediata.</div>
+                <div class="field-pro-tip"><b>Teclas de Poder:</b> Usa <kbd>+</kbd> para miles (000) y <kbd>-</kbd> para centenas (00). Escribir "50+" se convierte en 50,000 al instante.</div>
+            </div>
+
+            <div class="field-card">
+                <div class="field-title">Beneficiario (Tercero) <span class="field-tag">Asignación Masiva</span></div>
+                <div class="field-desc">El tercero seleccionado aquí se aplicará a <b>todas</b> las líneas del documento, ahorrándote el trabajo de asignarlo fila por fila.</div>
+                <div class="field-pro-tip"><b>Shortcut Ninja:</b> Presiona la tecla <kbd>Insert</kbd> en cualquier momento para abrir el modal de creación de terceros.</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="ia">
+        <div class="ai-box">
+            <h3>✨ Integración con Finaxis Copilot (IA)</h3>
+            <p>La Captura Rápida está totalmente integrada con nuestra IA. Puedes decirle al Tutor:</p>
+            <blockquote style="font-style: italic; margin: 15px 0; padding-left: 20px; border-left: 4px solid var(--secondary); color: var(--slate);">
+                "Carga la plantilla de Arriendo para el tercero Inmobiliaria Global por valor de 2 millones y guárdalo."
+            </blockquote>
+            <p>El sistema realizará el <b>Auto-Llenado Inteligente</b> de todos los campos y, si el asiento está cuadrado, lo guardará automáticamente por ti.</p>
+        </div>
+    </section>
+
+    <section id="grilla">
+        <h2>3. Lógica de la Grilla de Movimientos</h2>
+        <ul class="step-list">
+            <li>
+                <strong>Efecto Espejo de Conceptos:</strong> Si digitas un concepto en la primera fila, el sistema lo replicará automáticamente en la segunda. Ideal para asientos simples de dos líneas.
+            </li>
+            <li>
+                <strong>Auto-Descripción:</strong> Al ubicarte en el campo Concepto, si presionas <kbd>Tab</kbd> estando vacío, Finaxis tomará el <b>nombre de la cuenta contable</b> y lo pondrá como detalle del movimiento.
+            </li>
+            <li>
+                <strong>Guardado de Conceptos:</strong> Usa el ícono de disco <kbd>💾</kbd> junto a cada concepto para guardarlo en tu biblioteca personal y usarlo con un clic en el futuro.
+            </li>
+        </ul>
+    </section>
+
+    <section id="control">
+        <h2>4. Centro de Control y Monitoreo</h2>
+        <p>Ubicado en la parte superior derecha, te permite gestionar el flujo de salida de tus registros:</p>
+        <div class="grid">
+            <div class="field-card" style="border-left: 4px solid var(--success);">
+                <div class="field-title">Emitir al Guardar</div>
+                <div class="field-desc">Activado para Documentos Soporte o Facturas de Venta. Envía el documento a la DIAN en el milisegundo en que presionas Guardar.</div>
+            </div>
+            <div class="field-card" style="border-left: 4px solid var(--secondary);">
+                <div class="field-title">Monitor de Asientos</div>
+                <div class="field-desc">Abre un panel con los últimos registros realizados. Úsalo para verificar el consecutivo o reimprimir rápidamente.</div>
+            </div>
+            <div class="field-card" style="border-left: 4px solid var(--primary);">
+                <div class="field-title">Reimpresión Directa</div>
+                <div class="field-desc">¿Necesitas el PDF de una factura anterior? Usa el botón de lupa para buscar por número o NIT y reimprime sin salir de tu flujo de digitación.</div>
+            </div>
+        </div>
+    </section>
 
     <footer>
-        Sistema Finaxis - Manual de Usuario
+        <p>Finaxis ERP Cloud - Potenciando la productividad contable</p>
+        <p><small>Documentación Técnica Actualizada: Abril 2026</small></p>
     </footer>
 </div>
 

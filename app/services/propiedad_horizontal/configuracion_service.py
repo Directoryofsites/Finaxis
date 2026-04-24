@@ -16,6 +16,7 @@ def get_configuracion(db: Session, empresa_id: int):
             joinedload(PHConfiguracion.cuenta_caja),
             joinedload(PHConfiguracion.cuenta_ingreso_intereses),
             joinedload(PHConfiguracion.cuenta_anticipos),
+            joinedload(PHConfiguracion.cuenta_descuento),
         )
         .filter(PHConfiguracion.empresa_id == empresa_id)
         .first()
@@ -45,7 +46,9 @@ def update_configuracion(db: Session, empresa_id: int, config_update: schemas.PH
     config.cuenta_cartera_id = config_update.cuenta_cartera_id
     config.cuenta_caja_id = config_update.cuenta_caja_id
     config.cuenta_anticipos_id = config_update.cuenta_anticipos_id # Pasivo 2805
+    config.cuenta_descuento_id = config_update.cuenta_descuento_id # Menor valor 4175
     config.interes_mora_habilitado = config_update.interes_mora_habilitado
+    config.descuento_pronto_pago_habilitado = config_update.descuento_pronto_pago_habilitado
     config.tipo_negocio = config_update.tipo_negocio # Nueva asignacion
     
     db.commit()

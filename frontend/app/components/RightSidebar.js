@@ -398,6 +398,23 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
         clearChat: clearTutorChat
     } = useTutorAI();
 
+    // AUTO-EJECUCIÓN DE CONSULTAS DEL TUTOR (Si es un reporte seguro)
+    const lastProcessedToolRef = useRef(null);
+    useEffect(() => {
+        const lastMsg = tutorMessages[tutorMessages.length - 1];
+        if (lastMsg?.role === 'assistant' && lastMsg?.toolCall && lastMsg.toolCall !== lastProcessedToolRef.current) {
+            const tool = lastMsg.toolCall;
+            const safeActions = ['buscar_recurso_o_reporte', 'generar_auxiliar_cuenta', 'generar_relacion_saldos', 'generar_auditoria_avanzada'];
+            
+            if (safeActions.includes(tool.name)) {
+                lastProcessedToolRef.current = lastMsg.toolCall;
+                const cmd = tool.suggested_command || `Ver ${tool.name}`;
+                console.log("Tutor Auto-executing:", cmd);
+                handleAiSubmit(null, cmd);
+            }
+        }
+    }, [tutorMessages]);
+
     const [tutorInput, setTutorInput] = useState('');
 
     const [aiResponse, setAiResponse] = useState(null);
@@ -835,7 +852,7 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                                             {msg.toolCall && (
                                                 <div className="mt-2 pt-2 border-t border-orange-200/50">
                                                     <button 
-                                                        onClick={() => handleAiSubmit(null, `Ver ${msg.toolCall.name}`)}
+                                                        onClick={() => handleAiSubmit(null, msg.toolCall.suggested_command || `Ver ${msg.toolCall.name}`)}
                                                         className="text-[10px] bg-orange-200 text-orange-800 px-2 py-1 rounded hover:bg-orange-300 transition-colors"
                                                     >
                                                         Ejecutar Consulta de Datos
