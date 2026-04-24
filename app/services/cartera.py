@@ -4,7 +4,8 @@ from sqlalchemy import and_, func, select, or_
 from datetime import date
 
 from ..models import PlanCuenta as models_plan
-from ..models import Documento as models_doc
+from app.models.propiedad_horizontal.concepto import PHConcepto as models_ph_concepto
+from app.models.documento import Documento as models_doc
 from ..models import AplicacionPago as models_aplica
 from ..models import MovimientoContable as models_mov
 from ..models import TipoDocumento as models_tipo
@@ -150,125 +151,213 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
             )
         ).order_by(models_doc.fecha, models_doc.id).all()
 
+        # ─────────────────────────────────────────────────────────────────────
+        # UTILITARIOS (normalización e identificación)
+        # ─────────────────────────────────────────────────────────────────────
+        import unicodedata as _uda
+        def _pnorm(t):
+            if not t: return ""
+            s = "".join(c for c in _uda.normalize('NFD', str(t)) if _uda.category(c) != 'Mn')
+            return s.strip().upper()
 
+        # Cargar conceptos PH para identificación por texto
+        conceptos_ph = db.query(models_ph_concepto).filter(
+            models_ph_concepto.empresa_id == empresa_id,
+            models_ph_concepto.activo == True
+        ).order_by(models_ph_concepto.orden.asc(), models_ph_concepto.id.asc()).all()
 
-        # --- NUEVA LÓGICA ROBUSTA ---
-        # Clasificar documentos por su impacto contable real, ignorando etiquetas mal configuradas.
-        # Si (Debito - Credito) > 0 -> Es FACTURA (Aumenta deuda)
-        # Si (Debito - Credito) < 0 -> Es PAGO (Disminuye deuda)
-        
-        docs_cxc_ordenados = []
-        pagos_cxc_ordenados = []
+        def _identificar_concepto(texto_mov):
+            if not texto_mov: return None
+            t = _pnorm(texto_mov)
+            if t.startswith("CXC "): t = t[4:]
+            mejor, mejor_len = None, 0
+            for cp in conceptos_ph:
+                n = _pnorm(cp.nombre)
+                if n and t.startswith(n) and len(n) > mejor_len:
+                    mejor = cp
+                    mejor_len = len(n)
+            
+            # Fallback: si no encontró con startswith, intentar con 'in' (por si hay prefijos adicionales)
+            if not mejor:
+                for cp in conceptos_ph:
+                    n = _pnorm(cp.nombre)
+                    if n and n in t and len(n) > mejor_len:
+                        mejor = cp
+                        mejor_len = len(n)
+                        
+            return mejor
 
-        # Para proveedores (CXP), la lógica es inversa:
-        # Credito - Debito > 0 -> FACTURA COMPRA (Aumenta deuda)
-        # Credito - Debito < 0 -> PAGO (Disminuye deuda)
-        docs_cxp_ordenados = []
-        pagos_cxp_ordenados = []
+        # ============================================================
+        # SEPARAR FACTURAS Y PAGOS — AGRUPADO POR DOCUMENTO
+        # ============================================================
+        fac_cxc = {}   # doc_id -> {'doc': doc, 'saldo': float, 'saldo_x_cid': {cid: float}}
+        pag_cxc = {}   # doc_id -> {'doc': doc, 'monto': float, 'movs': [mov, ...]}
+        fac_cxp = {}   # doc_id -> {'doc': doc, 'saldo': float}
+        pag_cxp = {}   # doc_id -> {'doc': doc, 'monto': float}
 
         for d in documentos_potenciales:
-            # --- ANÁLISIS CXC ---
-            impacto_cxc = 0
-            has_cxc_mov = False
             for mov in d.movimientos:
+                # ── CARTERA (CXC) ──
                 if mov.cuenta_id in cuentas_cxc_ids:
-                    impacto_cxc += (mov.debito - mov.credito)
-                    has_cxc_mov = True
-            
-            if has_cxc_mov:
-                if impacto_cxc > 0:
-                    docs_cxc_ordenados.append({'doc': d, 'saldo': impacto_cxc})
-                elif impacto_cxc < 0:
-                    pagos_cxc_ordenados.append({'doc': d, 'monto': abs(impacto_cxc)})
+                    if mov.debito > 0:
+                        if d.id not in fac_cxc:
+                            fac_cxc[d.id] = {'doc': d, 'saldo': 0.0, 'saldo_x_cid': {}}
+                        monto = float(mov.debito)
+                        fac_cxc[d.id]['saldo'] += monto
+                        # Desglose por concepto (usando texto del débito)
+                        co = _identificar_concepto(mov.concepto)
+                        cid = co.id if co else 0
+                        sxc = fac_cxc[d.id]['saldo_x_cid']
+                        sxc[cid] = sxc.get(cid, 0.0) + monto
 
-            # --- ANÁLISIS CXP ---
-            impacto_cxp = 0
-            has_cxp_mov = False
-            for mov in d.movimientos:
-                if mov.cuenta_id in cuentas_cxp_ids:
-                    impacto_cxp += (mov.credito - mov.debito) # CXP aumenta por Haber
-                    has_cxp_mov = True
-            
-            if has_cxp_mov:
-                if impacto_cxp > 0:
-                    docs_cxp_ordenados.append({'doc': d, 'saldo': impacto_cxp})
-                elif impacto_cxp < 0:
-                    pagos_cxp_ordenados.append({'doc': d, 'monto': abs(impacto_cxp)})
+                    elif mov.credito > 0:
+                        if d.id not in pag_cxc:
+                            pag_cxc[d.id] = {'doc': d, 'monto': 0.0, 'movs': []}
+                        pag_cxc[d.id]['monto'] += float(mov.credito)
+                        pag_cxc[d.id]['movs'].append(mov)
 
-        # Procesar Cruces CXC
-        if docs_cxc_ordenados and pagos_cxc_ordenados:
-            
-            # Ordenar pagos por fecha
-            pagos_cxc_ordenados.sort(key=lambda x: (x['doc'].fecha, x['doc'].id))
-            
-            # Ordenar facturas por fecha (Base)
-            docs_cxc_ordenados.sort(key=lambda x: (x['doc'].fecha, x['doc'].id))
+                # ── PROVEEDORES (CXP) ──
+                elif mov.cuenta_id in cuentas_cxp_ids:
+                    if mov.credito > 0:
+                        if d.id not in fac_cxp:
+                            fac_cxp[d.id] = {'doc': d, 'saldo': 0.0}
+                        fac_cxp[d.id]['saldo'] += float(mov.credito)
+                    elif mov.debito > 0:
+                        if d.id not in pag_cxp:
+                            pag_cxp[d.id] = {'doc': d, 'monto': 0.0}
+                        pag_cxp[d.id]['monto'] += float(mov.debito)
 
-            for pago in pagos_cxc_ordenados:
-                valor_pago = pago['monto']
-                pago_unidad_id = pago['doc'].unidad_ph_id
-                
-                # ESTRATEGIA DE CRUCE PH (Prioridad Unidad):
-                # 1. Intentar cruzar con facturas de la MISMA UNIDAD (si el pago tiene unidad)
-                # 2. Si sobra dinero, cruzar con las demás facturas (para no dejar saldos huerfanos)
-                
-                # Fase 1: Misma Unidad
-                if pago_unidad_id:
-                    for factura_data in docs_cxc_ordenados:
+        # Listas ordenadas FIFO
+        facturas_cxc = sorted(fac_cxc.values(), key=lambda x: (x['doc'].fecha, x['doc'].id))
+        pagos_cxc    = sorted(pag_cxc.values(), key=lambda x: (x['doc'].fecha, x['doc'].id))
+        facturas_cxp = sorted(fac_cxp.values(), key=lambda x: (x['doc'].fecha, x['doc'].id))
+        pagos_cxp    = sorted(pag_cxp.values(), key=lambda x: (x['doc'].fecha, x['doc'].id))
+
+        # ─────────────────────────────────────────────────────────────────────
+        # pending_aplica: acumulador antes de persistir.
+        # Clave (fac_id, pag_id) → monto_total garantiza
+        # UN SOLO AplicacionPago por par, aunque pasen múltiples conceptos.
+        # ─────────────────────────────────────────────────────────────────────
+        pending_aplica = {}
+
+        def apply_fifo(facturas, valor_restante, p_doc_id,
+                       solo_unidad_id=None, concepto_id=None):
+            for fac in facturas:
+                if valor_restante <= 0:
+                    break
+                f_doc = fac['doc']
+                if solo_unidad_id and f_doc.unidad_ph_id != solo_unidad_id:
+                    continue
+                if fac['saldo'] <= 0:
+                    continue
+
+                if concepto_id is not None:
+                    sxc = fac.get('saldo_x_cid', {})
+                    monto_concepto = sxc.get(concepto_id, 0.0)
+                    if monto_concepto <= 0:
+                        continue
+                    aplicar = min(valor_restante, monto_concepto, fac['saldo'])
+                else:
+                    aplicar = min(valor_restante, fac['saldo'])
+
+                if aplicar <= 0:
+                    continue
+
+                # Acumular — no crear DB record todavía
+                key = (f_doc.id, p_doc_id)
+                pending_aplica[key] = pending_aplica.get(key, 0.0) + aplicar
+
+                fac['saldo'] -= aplicar
+                valor_restante -= aplicar
+                if concepto_id is not None and 'saldo_x_cid' in fac:
+                    fac['saldo_x_cid'][concepto_id] = max(
+                        0.0, fac['saldo_x_cid'].get(concepto_id, 0.0) - aplicar
+                    )
+            return valor_restante
+
+        # ============================================================
+        # CRUCE CXC
+        # ============================================================
+        TEXTOS_GENERICOS = ('CARTERA PH', 'ABONO PH', 'RECAUDO PH', 'ANTICIPO')
+
+        for pag in pagos_cxc:
+            valor_pago = pag['monto']
+            pago_doc   = pag['doc']
+            movs_pago  = pag.get('movs', [])
+
+            # Limpiar acumulador para este pago
+            pending_aplica.clear()
+
+            # ── Detectar pago DIRIGIDO ──
+            concepto_dirigido_id = None
+            for mv in movs_pago:
+                txt = _pnorm(mv.concepto or '')
+                if not txt or any(_pnorm(g) in txt for g in TEXTOS_GENERICOS):
+                    continue
+                co = _identificar_concepto(mv.concepto)
+                if co:
+                    concepto_dirigido_id = co.id
+                    break
+
+            es_dirigido = concepto_dirigido_id is not None
+            print(f"[CARTERA] Pago={pago_doc.numero} monto={valor_pago} "
+                  f"dirigido={es_dirigido} concepto_id={concepto_dirigido_id}")
+
+            if es_dirigido:
+                apply_fifo(facturas_cxc, valor_pago, pago_doc.id,
+                           solo_unidad_id=pago_doc.unidad_ph_id,
+                           concepto_id=concepto_dirigido_id)
+            else:
+                jerarquia = [cp.id for cp in conceptos_ph] + [None]
+
+                if pago_doc.unidad_ph_id:
+                    for cid in jerarquia:
                         if valor_pago <= 0: break
-                        
-                        # Solo procesar si coincide unidad y tiene saldo
-                        if factura_data['doc'].unidad_ph_id == pago_unidad_id and factura_data['saldo'] > 0:
-                            valor_a_aplicar = min(valor_pago, factura_data['saldo'])
-                            if valor_a_aplicar > 0:
-                                nueva_aplicacion = models_aplica(
-                                    documento_factura_id=factura_data['doc'].id, 
-                                    documento_pago_id=pago['doc'].id, 
-                                    valor_aplicado=valor_a_aplicar
-                                )
-                                db.add(nueva_aplicacion)
-                                factura_data['saldo'] -= valor_a_aplicar
-                                valor_pago -= valor_a_aplicar
+                        valor_pago = apply_fifo(
+                            facturas_cxc, valor_pago, pago_doc.id,
+                            solo_unidad_id=pago_doc.unidad_ph_id,
+                            concepto_id=cid)
 
-                # Fase 2: Resto (Global del tercero)
                 if valor_pago > 0:
-                    for factura_data in docs_cxc_ordenados:
+                    for cid in jerarquia:
                         if valor_pago <= 0: break
-                        if factura_data['saldo'] > 0:
-                            valor_a_aplicar = min(valor_pago, factura_data['saldo'])
-                            if valor_a_aplicar > 0:
-                                nueva_aplicacion = models_aplica(
-                                    documento_factura_id=factura_data['doc'].id, 
-                                    documento_pago_id=pago['doc'].id, 
-                                    valor_aplicado=valor_a_aplicar
-                                )
-                                db.add(nueva_aplicacion)
-                                factura_data['saldo'] -= valor_a_aplicar
-                                valor_pago -= valor_a_aplicar
+                        valor_pago = apply_fifo(
+                            facturas_cxc, valor_pago, pago_doc.id,
+                            concepto_id=cid)
 
-        # Procesar Cruces CXP (Sin cambios, FIFO puro)
-        if docs_cxp_ordenados and pagos_cxp_ordenados:
-            docs_cxp_ordenados.sort(key=lambda x: (x['doc'].fecha, x['doc'].id))
-            pagos_cxp_ordenados.sort(key=lambda x: (x['doc'].fecha, x['doc'].id))
+            # ── Persistir UN solo AplicacionPago por par (factura, pago) ──
+            for (fac_id, pag_id), total in pending_aplica.items():
+                if total > 0:
+                    db.add(models_aplica(
+                        documento_factura_id=fac_id,
+                        documento_pago_id=pag_id,
+                        valor_aplicado=total,
+                        empresa_id=empresa_id
+                    ))
 
-            for pago in pagos_cxp_ordenados:
-                valor_pago = pago['monto']
-                for factura_data in docs_cxp_ordenados:
-                    if valor_pago <= 0: break
-                    if factura_data['saldo'] > 0:
-                        valor_a_aplicar = min(valor_pago, factura_data['saldo'])
-                        if valor_a_aplicar > 0:
-                            nueva_aplicacion = models_aplica(
-                                documento_factura_id=factura_data['doc'].id, 
-                                documento_pago_id=pago['doc'].id, 
-                                valor_aplicado=valor_a_aplicar
-                            )
-                            db.add(nueva_aplicacion)
-                            factura_data['saldo'] -= valor_a_aplicar
-                            valor_pago -= valor_a_aplicar
-        
+
+        # ============================================================
+        # CRUCE CXP (FIFO simple, sin cambios)
+        # ============================================================
+        for pago_data in pagos_cxp:
+            valor_pago = pago_data['monto']
+            for fac_data in facturas_cxp:
+                if valor_pago <= 0:
+                    break
+                if fac_data['saldo'] <= 0:
+                    continue
+                valor_a_aplicar = min(valor_pago, fac_data['saldo'])
+                db.add(models_aplica(
+                    documento_factura_id=fac_data['doc'].id,
+                    documento_pago_id=pago_data['doc'].id,
+                    valor_aplicado=valor_a_aplicar,
+                    empresa_id=empresa_id
+                ))
+                fac_data['saldo'] -= valor_a_aplicar
+                valor_pago -= valor_a_aplicar
+
         if commit:
-            db.commit() # IMPORTANTE: Persistir los cambios
+            db.commit()
         else:
             db.flush()
         return {"status": "ok", "message": "Recálculo de cartera y proveedores completado."}

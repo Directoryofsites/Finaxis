@@ -1,176 +1,210 @@
+import unicodedata
 from sqlalchemy.orm import Session
-from sqlalchemy import func
-from app.models.documento import Documento
 from app.models.movimiento_contable import MovimientoContable
-from app.models.propiedad_horizontal.unidad import PHUnidad
-from app.models.tipo_documento import TipoDocumento
 from app.models.propiedad_horizontal.concepto import PHConcepto
-from app.services import cartera as cartera_service
+from app.models.aplicacion_pago import AplicacionPago
 from app.services.propiedad_horizontal import pago_service
-from collections import defaultdict
+
+
+def _norm(t):
+    if not t:
+        return ""
+    s = "".join(c for c in unicodedata.normalize('NFD', t)
+                if unicodedata.category(c) != 'Mn')
+    return s.strip().upper()
+
+
+def _tipo_concepto(co, nombre_fallback=""):
+    """Clasifica un PHConcepto en INTERES, MULTA o CAPITAL."""
+    if co is None:
+        return 'CAPITAL'
+    if co.es_interes:
+        return 'INTERES'
+    if 'MULTA' in _norm(co.nombre):
+        return 'MULTA'
+    return 'CAPITAL'
+
+
+def _concepto_desde_mov(mov_concepto_text, conceptos_db):
+    """
+    Identifica el PHConcepto desde el texto de un movimiento de recibo.
+    Ej: "Abono Multas - b2/101" → PHConcepto(nombre='Multas')
+    """
+    if not mov_concepto_text:
+        return None
+    texto = _norm(mov_concepto_text)
+    for pfx in ("ABONO ", "RECAUDO ", "CXC ", "PAGO "):
+        if texto.startswith(pfx):
+            texto = texto[len(pfx):]
+    mejor, mejor_len = None, 0
+    for c in conceptos_db:
+        nombre_norm = _norm(c.nombre)
+        if nombre_norm and nombre_norm in texto and len(nombre_norm) > mejor_len:
+            mejor = c
+            mejor_len = len(nombre_norm)
+    return mejor
+
+
+TEXTOS_GENERICOS = ('CARTERA PH', 'ABONO PH', 'RECAUDO PH', 'ANTICIPO')
+
+
+def _es_pago_dirigido(movs_credito_recibo, conceptos_db):
+    """
+    Retorna (True, PHConcepto_o_None) si el recibo está dirigido a un concepto.
+    Un recibo es dirigido cuando su texto de movimiento NO es genérico.
+    """
+    for mv in movs_credito_recibo:
+        txt = _norm(mv.concepto or '')
+        if txt and not any(g in txt for g in TEXTOS_GENERICOS):
+            co = _concepto_desde_mov(mv.concepto, conceptos_db)
+            return True, co
+    return False, None
+
 
 def get_cartera_ph_pendientes_detallada(db: Session, empresa_id: int, unidad_id: int):
-    # 1. Obtener Facturas Pendientes (Usando la lógica existente)
-    # Esto ya nos da el saldo pendiente real por factura.
+    """
+    Saldo pendiente desglosado por concepto para una unidad.
+
+    ESTRATEGIA GLOBAL:
+    ─────────────────
+    En lugar de atribuir pagos factura por factura (lo cual favorece los meses
+    más antiguos sin importar el concepto), se hace una atribución GLOBAL:
+
+    1. Se suman los débitos CXC de TODAS las facturas por concepto.
+       → total_cobrado[concepto] = suma de lo facturado en todos los meses
+
+    2. Se separan los pagos en dos grupos:
+       a. DIRIGIDOS: identificados por texto ("Abono Multas...") → atribuidos
+          directamente al concepto identificado.
+       b. AUTOMÁTICOS: sin concepto específico → su monto total se aplica al
+          pool global usando jerarquía: INTERES → MULTA → CAPITAL.
+
+    3. total_pagado_por_concepto = dirigidos + proporción de automáticos.
+
+    4. saldo = total_cobrado - total_pagado (por concepto).
+
+    Esto garantiza que:
+    - Un abono de $1M cubre Intereses ($9,600) + Multas ($800K) + lo que
+      sobre del Capital, SIN importar en qué mes está cada concepto.
+    - Un abono dirigido a Multas solo reduce Multas, nunca Admin.
+    """
     pendientes = pago_service.get_cartera_ph_pendientes(db, empresa_id, unidad_id=unidad_id)
-    
     if not pendientes:
         return []
 
-    # 2. Preparar Estructura de Resultado
-    resultado_por_concepto = defaultdict(float)
-    
-    # Cache de Conceptos para identificar prioridades
-    # Prioridad 1: Intereses (Mora)
-    # Prioridad 2: Multas
-    # Prioridad 3: Otros (Administración, Extraordinarias, etc.)
-    
-    # Identificar conceptos por sus cuentas contables o IDs
-    conceptos_db = db.query(PHConcepto).filter(PHConcepto.empresa_id == empresa_id).all()
-    
-    # Mapas para clasificación rapida
-    cuentas_interes = set()
-    cuentas_multa = set()
-    
-    for c in conceptos_db:
-        if c.es_interes and c.cuenta_interes_id:
-            cuentas_interes.add(c.cuenta_interes_id)
-            # A veces el interes se contabiliza en la cuenta ingreso directa
-            if c.cuenta_ingreso_id: cuentas_interes.add(c.cuenta_ingreso_id)
-        
-        # Heurística para multas: Nombre contiene "MULTA" o "SANCION"
-        if "MULTA" in c.nombre.upper() or "SANCION" in c.nombre.upper():
-             if c.cuenta_ingreso_id: cuentas_multa.add(c.cuenta_ingreso_id)
+    conceptos_db = db.query(PHConcepto).filter(PHConcepto.empresa_id == empresa_id).order_by(PHConcepto.orden.asc()).all()
 
-    # 3. Procesar cada factura pendiente
+    # ── Índice de conceptos por nombre normalizado (para búsqueda por texto) ──
+    # Las cuentas contables NO se usan para identificar conceptos en la distribución.
+    # El nombre del concepto en el texto del movimiento es la ÚNICA fuente de verdad.
+    conceptos_por_nombre = {_norm(c.nombre): c for c in conceptos_db if c.nombre}
+
+    # ── PASO 1: Acumular total cobrado por concepto (todas las facturas) ──
+    # pool[c_id] = {'id', 'nombre', 'tipo', 'cobrado', 'pagado'}
+    pool = {}
+
+    # También colectar todos los doc_ids pendientes para buscar APs
+    doc_ids_pendientes = set()
+
     for factura in pendientes:
         doc_id = factura['id']
-        saldo_pendiente_factura = factura['saldo_pendiente'] # Lo que aun se debe de esta factura total
-        valor_original_factura = factura['valor_total']
-        
-        # Si ya está pagada (margen error), saltar
-        if saldo_pendiente_factura <= 0.01:
-            continue
-            
-        # Analizar composición original de la factura (Que se cobró?)
-        # Buscamos movimientos CRÉDITO (Ingresos) del documento
-        movimientos = db.query(MovimientoContable).filter(
+        doc_ids_pendientes.add(doc_id)
+
+        movs_cr = db.query(MovimientoContable).filter(
             MovimientoContable.documento_id == doc_id,
             MovimientoContable.credito > 0
         ).all()
-        
-        # Estructura temporal para esta factura
-        composicion_factura = []
-        total_items_factura = 0
-        
-        for mov in movimientos:
-            tipo_concepto = 'CAPITAL' # Default (Admin, Agua, etc)
-            
-            if mov.cuenta_id in cuentas_interes:
-                tipo_concepto = 'INTERES'
-            elif mov.cuenta_id in cuentas_multa or "INTERES" in (mov.concepto or "").upper() or "MORA" in (mov.concepto or "").upper():
-                 # Segunda oportunidad para detectar Interes por texto
-                if "INTERES" in (mov.concepto or "").upper() or "MORA" in (mov.concepto or "").upper():
-                    tipo_concepto = 'INTERES'
-                else:
-                    # Chequear si es multa por texto
-                    if "MULTA" in (mov.concepto or "").upper() or "SANCION" in (mov.concepto or "").upper():
-                        tipo_concepto = 'MULTA'
-            
-            # Nombre para mostrar
-            nombre_concepto = mov.concepto or "Concepto General"
-            # Limpieza: Remover prefijos comunes si se desea
-            
-            val = float(mov.credito)
-            composicion_factura.append({
-                'tipo': tipo_concepto,
-                'nombre': nombre_concepto,
-                'valor': val,
-                'saldo_simulado': val # Inicialmente se debe todo
-            })
-            total_items_factura += val
-            
-        # Calcular Cuánto se ha Pagado de esta factura
-        # Pagado = ValorOriginal - SaldoPendiente
-        # OJO: ValorOriginal viene de la query de cartera (Suma Debitos CXC).
-        # total_items_factura viene de Suma Creditos Ingreso. Deberían matchear (Partida doble).
-        # Si no matchean (ej. impuestos), usaremos total_items_factura como base de proporción 100%.
-        
-        monto_pagado_total = max(0, total_items_factura - saldo_pendiente_factura)
-        
-        # 4. APLICAR PRELACIÓN DE PAGO (Simulación)
-        # El dinero que entró (monto_pagado_total) se usa para "matar" deudas en orden:
-        # 1. INTERES
-        # 2. MULTA
-        # 3. CAPITAL (Resto)
-        
-        # Ordenar composición para iterar
-        # Orden de prioridad para CONSUMIR EL PAGO: Interes -> Multa -> Capital
-        def priority_key(item):
-            if item['tipo'] == 'INTERES': return 1
-            if item['tipo'] == 'MULTA': return 2
-            return 3
-            
-        # Ordenamos los items para ir restando el saldo
-        # Queremos saber QUÉ QUEDA PENDIENTE.
-        # Es decir: Si pagué $100, y tenía $10 Interes y $200 Capital.
-        # Pagué primero los $10 de interes. Queda $0 Interes.
-        # Pagué $90 de Capital. Queda $110 Capital.
-        
-        items_ordenados = sorted(composicion_factura, key=priority_key)
-        
-        pago_remanente = monto_pagado_total
-        
-        for item in items_ordenados:
-            if pago_remanente <= 0:
-                break
-            
-            # Cuánto puedo pagar de este item?
-            pagar = min(item['saldo_simulado'], pago_remanente)
-            
-            item['saldo_simulado'] -= pagar
-            pago_remanente -= pagar
-            
-        # 5. Acumular lo que quedó pendiente al resultado global
-        for item in composicion_factura:
-            if item['saldo_simulado'] > 0.01:
-                # Agrupar por nombre de concepto para el reporte
-                # Podemos usar el nombre del movimiento o normalizarlo
-                key = item['nombre']
-                
-                # Normalización opcional de nombres para agrupar mejor
-                # E.g. "Administración Enero" -> "Administración" (Si se quisiera agrupar todo)
-                # El usuario pidió "Detallado", asi que "Administración Enero" está bien.
-                # Pero pidió "Discriminado multas, intereses, admin". 
-                # Quizás mejor agrupar por TIPO o CATEGORIA macro?
-                # "Que debe multas, que debe intereses, que debe administracion..."
-                
-                # Vamos a intentar agrupar por CATEGORIA MACRO y Detalle
-                # Pero para el reporte tabular, mejor una lista plana detallada con columna "Tipo".
-                
-                resultado_por_concepto[key] += item['saldo_simulado']
 
-    # 6. Formatear para retorno
-    lista_final = []
-    for concepto, valor in resultado_por_concepto.items():
-        # Inferir tipo para el icono/color en frontend
-        tipo = 'CAPITAL'
-        upper_c = concepto.upper()
-        if "INTERES" in upper_c or "MORA" in upper_c: tipo = 'INTERES'
-        elif "MULTA" in upper_c or "SANCION" in upper_c: tipo = 'MULTA'
-        
-        lista_final.append({
-            "concepto": concepto,
-            "saldo": valor,
-            "tipo": tipo
-        })
-        
-    # Ordenar: Intereses primero, luego Multas, luego el resto
-    def sort_final(x):
-        if x['tipo'] == 'INTERES': return 0
-        if x['tipo'] == 'MULTA': return 1
-        return 2
-        
-    lista_final.sort(key=sort_final)
+        for mov in movs_cr:
+            # ── IDENTIFICACIÓN 100% POR NOMBRE — el nombre debe estar al INICIO del texto ──
+            # 'startswith' evita que "Contribucion para Pintura" robe el movimiento
+            # de intereses cuyo texto dice "Intereses Mora (2%) - Contribucion para Pintura".
+            texto_mov = _norm(mov.concepto or "")
+            for pfx in ("ABONO ", "RECAUDO ", "CXC ", "PAGO "):
+                if texto_mov.startswith(pfx):
+                    texto_mov = texto_mov[len(pfx):].strip()
+            co = None
+            mejor_len = 0
+            for c in conceptos_db:
+                nombre_c = _norm(c.nombre)
+                if nombre_c and texto_mov.startswith(nombre_c) and len(nombre_c) > mejor_len:
+                    co = c
+                    mejor_len = len(nombre_c)
+
+            tipo = _tipo_concepto(co)
+            c_id = co.id if co else 0
+            nombre = co.nombre if co else (mov.concepto or 'General')
+            val = float(mov.credito)
+            if c_id not in pool:
+                pool[c_id] = {'id': c_id, 'nombre': nombre,
+                              'tipo': tipo, 'cobrado': 0.0, 'pagado': 0.0}
+            pool[c_id]['cobrado'] += val
+
+        # Si no hay movimientos de ingreso, usar el saldo total como CAPITAL
+        if not movs_cr:
+            saldo_fac = float(factura.get('saldo_pendiente', 0))
+            if 0 not in pool:
+                pool[0] = {'id': 0, 'nombre': 'Cartera General',
+                           'tipo': 'CAPITAL', 'cobrado': 0.0, 'pagado': 0.0}
+            pool[0]['cobrado'] += saldo_fac
+
+    if not pool:
+        return []
+
+    # ── PASO 2: Procesar Aplicaciones de Pago (AP) ──
+    # Atribuimos el valor de cada AP (recibo -> factura) a los conceptos de esa factura.
+    # Siguiendo el mismo orden de prioridad que el motor de cartera.py.
+    for doc_id in doc_ids_pendientes:
+        aps = db.query(AplicacionPago).filter(
+            AplicacionPago.documento_factura_id == doc_id
+        ).all()
+        for ap in aps:
+            valor_ap = float(ap.valor_aplicado)
+            if valor_ap <= 0: continue
+            
+            valor_ap_restante = valor_ap
+            # Prioridad de conceptos: Mismo orden que en cartera.py
+            # 1. Conceptos con ID (ordenados por el campo 'orden' de base de datos)
+            # 2. Cartera General (ID 0)
+            orden_map = {c.id: c.orden for c in conceptos_db}
+            jerarquia_factura = sorted(pool.keys(), key=lambda x: (x == 0, orden_map.get(x, 9999), x))
+            
+            for cid in jerarquia_factura:
+                if valor_ap_restante <= 0: break
+                c_pool = pool[cid]
+                
+                pendiente = c_pool['cobrado'] - c_pool['pagado']
+                if pendiente <= 0: continue
+                
+                restar = min(valor_ap_restante, pendiente)
+                c_pool['pagado'] += restar
+                valor_ap_restante -= restar
+
+    # ── PASO 3: Consolidar resultados finales ──
+    resultado = []
+    # Usamos la lista de conceptos originales para mantener el orden visual
+    for c_db in conceptos_db:
+        if c_db.id in pool:
+            data = pool[c_db.id]
+            saldo = round(data['cobrado'] - data['pagado'], 2)
+            if saldo > 0.01:
+                resultado.append({
+                    'id': c_db.id,
+                    'nombre': data['nombre'],
+                    'tipo': data['tipo'],
+                    'saldo': saldo
+                })
     
-    return lista_final
+    # Agregar Cartera General si tiene saldo
+    if 0 in pool:
+        data = pool[0]
+        saldo = round(data['cobrado'] - data['pagado'], 2)
+        if saldo > 0.01:
+            resultado.append({
+                'id': 0,
+                'nombre': data['nombre'],
+                'tipo': data['tipo'],
+                'saldo': saldo
+            })
+
+    return resultado
