@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatCurrency } from '../../../lib/utils';
+import { formatCurrency } from '../../../utils/format';
 import { FaCheckCircle, FaExclamationTriangle, FaTimesCircle } from 'react-icons/fa';
 
 export default function BatchPreviewTable({ previewData }) {

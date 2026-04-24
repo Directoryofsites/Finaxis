@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../../../contexts/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { phService } from '../../../lib/phService';
-import { reportesFacturacionService } from '../../../lib/reportesFacturacionService'; // para cuentas
+import { apiService } from '../../../lib/apiService';
 import BatchPreviewTable from '../../components/ph/BatchPreviewTable';
 import { FaUpload, FaCheck, FaSpinner, FaFileExcel, FaFileCsv } from 'react-icons/fa';
 
@@ -31,8 +31,9 @@ export default function RecaudoMasivoPage() {
 
     const cargarCuentas = async () => {
         try {
-            // Reutilizando el servicio de cuentas que lista cajas y bancos
-            const data = await reportesFacturacionService.getCuentasBancarias();
+            // Cargar cuentas de caja/bancos (clase 11) para selección
+            const response = await apiService.get('/plan-cuentas/?nivel=AUXILIAR&clase=11');
+            const data = response.data || [];
             setCuentasBancarias(data);
             if (data && data.length > 0) {
                 setCuentaSeleccionada(data[0].id.toString());
