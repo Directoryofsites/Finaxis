@@ -1,3 +1,4 @@
+import re
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import text
 from typing import List, Optional
@@ -8,6 +9,13 @@ from app.models.propiedad_horizontal.unidad import PHUnidad
 from app.models.propiedad_horizontal.concepto import PHConcepto
 from app.models.tercero import Tercero
 from app.models.tipo_documento import TipoDocumento
+
+def natural_sort_key(s):
+    """
+    Genera una clave para ordenamiento natural (numérico y alfabético).
+    Ej: 'B 4 / 101' vendrá antes que 'B 4 / 401'.
+    """
+    return [int(c) if c.isdigit() else c.lower() for c in re.split('([0-9]+)', str(s or ""))]
 
 def get_movimientos_ph_report(
     db: Session,
@@ -311,7 +319,8 @@ def get_cartera_edades(db: Session, empresa_id: int, fecha_corte: date = None):
     # 4. Formatear Respuesta
     items_lista = list(grupos.values())
     # Ordenar por Codigo Unidad
-    items_lista.sort(key=lambda x: x['unidad_codigo'])
+    # Ordenar por Codigo Unidad de forma natural
+    items_lista.sort(key=lambda x: natural_sort_key(x['unidad_codigo']))
     
     return {
         "items": items_lista,
@@ -463,8 +472,8 @@ def get_reporte_saldos(
                 "conceptos_count": len(deudas_filtradas)
             })
 
-    # Ordenar por Torre, luego Unidad
-    reporte_items.sort(key=lambda x: (x['torre_nombre'], x['unidad_codigo']))
+    # Ordenar por Torre, luego Unidad de forma natural/lógica
+    reporte_items.sort(key=lambda x: (natural_sort_key(x['torre_nombre']), natural_sort_key(x['unidad_codigo'])))
 
     return {
         "items": reporte_items,

@@ -666,18 +666,40 @@
 
                     <div class="premium-card">
                         <h3>¿Por qué sucede esto? (Prelación de Conceptos)</h3>
-                        <p>El sistema sigue un orden jerárquico de cobro para proteger la copropiedad:</p>
-                        <ol>
-                            <li><strong>Intereses de Mora</strong>: Lo primero que se debe sanear.</li>
-                            <li><strong>Multas y Sanciones</strong>: Cobros con alta carga punitiva.</li>
-                            <li><strong>Capital (Administración)</strong>: El sostenimiento base.</li>
-                        </ol>
-                        <p class="mt-6">En el ejemplo, como la <strong>Multa</strong> tiene mayor prioridad que la <strong>Administración</strong>, el sistema "re-clasificó" los abonos anteriores para satisfacer la deuda más importante primero.</p>
+                        <p>El sistema sigue un orden jerárquico de cobro para proteger la copropiedad. Esta jerarquía se define mediante el campo <strong>"Orden"</strong> en la configuración de cada concepto:</p>
+                        
+                        <div class="p-8 bg-gray-50 rounded-[32px] border border-gray-100 my-8">
+                            <ul class="space-y-4">
+                                <li class="flex items-center gap-4">
+                                    <span class="w-10 h-10 bg-red-600 text-white rounded-full flex items-center justify-center font-bold">1</span>
+                                    <div>
+                                        <p class="font-bold text-gray-900 m-0">Intereses de Mora (Orden Bajo/Prioritario)</p>
+                                        <p class="text-xs text-gray-500">Lo primero que se debe sanear para evitar el crecimiento exponencial de la deuda.</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-center gap-4">
+                                    <span class="w-10 h-10 bg-amber-500 text-white rounded-full flex items-center justify-center font-bold">2</span>
+                                    <div>
+                                        <p class="font-bold text-gray-900 m-0">Multas y Sanciones</p>
+                                        <p class="text-xs text-gray-500">Cobros punitivos que deben cubrirse antes que el capital ordinario.</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-center gap-4">
+                                    <span class="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">3</span>
+                                    <div>
+                                        <p class="font-bold text-gray-900 m-0">Capital (Administración)</p>
+                                        <p class="text-xs text-gray-500">El sostenimiento base de la copropiedad.</p>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <p class="mt-6"><strong>Importante:</strong> Si dos conceptos tienen el mismo orden (o ninguno), el sistema prioriza por antigüedad. Usted puede controlar el comportamiento del recaudo simplemente ajustando el número en el campo "Orden" de sus conceptos.</p>
                     </div>
 
                     <div class="alert alert-tip">
                         <h4 class="font-bold mb-2">Beneficio para el Administrador</h4>
-                        <p class="m-0 text-sm">Usted no tiene que deshacer meses de recibos de caja para corregir un error del pasado. Simplemente ingrese la operación correcta y deje que el sistema <strong>re-planee la cartera automáticamente</strong>. Sus reportes de edades de cartera siempre serán 100% veraces.</p>
+                        <p class="m-0 text-sm">Usted no tiene que deshacer meses de recibos de caja para corregir un error del pasado. Al ingresar un cobro retroactivo o ajustar una jerarquía, el sistema <strong>re-planea la cartera automáticamente</strong>, garantizando que el dinero se asiente siempre en el concepto más urgente según sus reglas de negocio.</p>
                     </div>
                 </section>
 
@@ -832,10 +854,10 @@
                                 <p class="text-gray-600 mb-4">Cuando un inquilino llega a pagar, es vital que el sistema sepa que ese dinero es para pintura y no para otra cosa.</p>
                                 <ol class="space-y-4 text-gray-600">
                                     <li>1. En la pantalla de <strong>Pagos</strong>, selecciona la unidad.</li>
-                                    <li>2. Activa el <strong>Modo Manual</strong>.</li>
-                                    <li>3. El sistema te mostrará el desglose: cuánto debe de Administración, cuánto de Intereses y cuánto de <strong>"Cuota Extra Pintura"</strong>.</li>
-                                    <li>4. Marca el checkbox de <strong>Pintura</strong> e ingresa el valor recibido.</li>
-                                    <li>5. <strong>Resultado:</strong> Gracias a la <strong>Granularidad Dual</strong> que configuramos, el sistema matará la deuda interna de pintura y reducirá el saldo global de la factura simultáneamente.</li>
+                                    <li>2. Localiza el concepto <strong>"Cuota Extra Pintura"</strong> en la tabla de deudas pendientes.</li>
+                                    <li>3. Haz clic en el icono <strong>"Cargar"</strong> (la flecha azul ⚡) que aparece justo al lado del nombre del concepto.</li>
+                                    <li>4. <strong>Resultado:</strong> El sistema cargará automáticamente el valor exacto de la deuda de pintura en el cuadro de pago, marcando el abono como <strong>"Dirigido"</strong>. Esto garantiza que el dinero se use <em>exclusivamente</em> para pintura, incluso si hay deudas de administración más antiguas.</li>
+                                    <li>5. Procesa el pago. La granularidad dual matará la deuda interna de pintura y reducirá el saldo global de la factura simultáneamente.</li>
                                 </ol>
                             </div>
 
@@ -866,8 +888,8 @@
                                         <ul class="text-xs text-indigo-800 mt-2 space-y-1 list-disc ml-4">
                                             <li>Entra en <strong>Balance General de Cartera</strong> (<a href="/ph/reportes/saldos" class="text-indigo-600 underline">/ph/reportes/saldos</a>).</li>
                                             <li>Localiza el filtro <strong>"Filtrar por Expensa/Concepto"</strong>.</li>
-                                            <li>Escribe "Pintura" y presiona <strong>"Generar Informe"</strong>.</li>
-                                            <li><strong>Resultado:</strong> El sistema calculará automáticamente los saldos netos (Facturado menos Pagos Dirigidos) y te mostrará el total pendiente en el cuadro azul.</li>
+                                            <li>Escribe "Pintura" (no importa si usas tildes o mayúsculas, el <strong>Selector Inteligente</strong> lo entenderá) y presiona <strong>"Generar Informe"</strong>.</li>
+                                            <li><strong>Resultado:</strong> El sistema calculará automáticamente los saldos netos en tiempo real, discriminando quién ha hecho abonos dirigidos a pintura y quién no. El listado se irá reduciendo automáticamente a medida que los vecinos paguen ese concepto específico.</li>
                                         </ul>
                                     </div>
                                 </div>
