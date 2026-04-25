@@ -28,6 +28,8 @@ export default function ReporteSaldosPage() {
 
     // Datos Auxiliares
     const [torres, setTorres] = useState([]);
+    const [conceptos, setConceptos] = useState([]);
+
 
     // Estado Reporte
     const [data, setData] = useState(null);
@@ -43,12 +45,17 @@ export default function ReporteSaldosPage() {
 
     const loadAuxData = async () => {
         try {
-            const t = await phService.getTorres();
+            const [t, c] = await Promise.all([
+                phService.getTorres(),
+                phService.getConceptos()
+            ]);
             setTorres(t);
+            setConceptos(c);
         } catch (e) {
-            console.error("Error cargando torres", e);
+            console.error("Error cargando datos auxiliares", e);
         }
     };
+
 
     const loadReporte = async () => {
         setLoading(true);
@@ -202,17 +209,21 @@ export default function ReporteSaldosPage() {
                                 <FaFilter className="text-indigo-500" /> Filtrar por {labels?.concepto || 'Concepto'}
                             </label>
                             <div className="relative">
-                                <FaSearch className="absolute left-3 top-3 text-gray-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Ej: Administración, Multa, Interés..."
-                                    className="w-full pl-10 px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                                <select
+                                    className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white appearance-none pr-10"
                                     value={conceptoBusqueda}
                                     onChange={(e) => setConceptoBusqueda(e.target.value)}
-                                />
+                                >
+                                    <option value="">Todos los {labels?.concepto_plural || 'Conceptos'}</option>
+                                    {conceptos.map(c => (
+                                        <option key={c.id} value={c.nombre}>{c.nombre}</option>
+                                    ))}
+                                </select>
+                                <FaSearch className="absolute right-4 top-3 text-gray-400 pointer-events-none" />
                             </div>
-                            <span className="text-xs text-gray-400 mt-1 block">Busca coincidencia en el nombre del movimiento contable.</span>
+                            <span className="text-xs text-gray-400 mt-1 block">Selecciona el concepto específico para ver sus saldos netos.</span>
                         </div>
+
 
                         {/* Botón Ejecutar */}
                         <div className="flex items-end">

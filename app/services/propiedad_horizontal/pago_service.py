@@ -1,3 +1,5 @@
+import copy
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 
@@ -3059,29 +3061,25 @@ def _simular_cronologia_pagos(db: Session, docs: list, empresa_id: int, fecha_co
     from collections import defaultdict
     import copy
 
-    # 1. Configuración de Conceptos
+    # 1. Configuración de Conceptos y Jerarquía
+    conceptos_ph = db.query(PHConcepto).filter(
+        PHConcepto.empresa_id == empresa_id,
+        PHConcepto.activo == True
+    ).order_by(func.coalesce(PHConcepto.orden, 999).asc(), PHConcepto.id.asc()).all()
+    
+    concepto_prio_map = {c.id: i for i, c in enumerate(conceptos_ph)}
+
     cuentas_interes = injected_cuentas_interes if injected_cuentas_interes is not None else set()
     cuentas_multa = injected_cuentas_multa if injected_cuentas_multa is not None else set()
     
+    # Cargar configuración de cuentas especiales si no fueron inyectadas
     if injected_cuentas_interes is None:
-        conceptos_db = db.query(PHConcepto).filter(PHConcepto.empresa_id == empresa_id).all()
-    else:
-        conceptos_db = []
-        
-    # Agregamos logica antigua de carga si no se inyecto
-    if injected_cuentas_interes is None:
-        # Cargar tambien PHConfiguracion de interes
         from app.services.propiedad_horizontal import configuracion_service
         config_ph = configuracion_service.get_configuracion(db, empresa_id)
         if config_ph and config_ph.cuenta_ingreso_intereses_id:
             cuentas_interes.add(config_ph.cuenta_ingreso_intereses_id)
             
-    # Iteramos conceptos solo si no se inyectaron cuentas (o si queremos soportar mix? Mejor solo DB si no inyectado)
-    # Pero el codigo original itera `conceptos_db`.
-    # Vamos a preservar la estuctura original ejecutandola SOLO si `conceptos_db` tiene datos.
-    
-    
-    for c in conceptos_db:
+    for c in conceptos_ph:
         if c.es_interes and c.cuenta_interes_id:
             cuentas_interes.add(c.cuenta_interes_id)
             if c.cuenta_ingreso_id: cuentas_interes.add(c.cuenta_ingreso_id)
@@ -3091,11 +3089,9 @@ def _simular_cronologia_pagos(db: Session, docs: list, empresa_id: int, fecha_co
     
     cuentas_cxc_ids = injected_cuentas_cxc if injected_cuentas_cxc is not None else cartera_service.get_cuentas_especiales_ids(db, empresa_id, 'cxc')
 
-    # 2. Definir Prioridad (LEGAL: Interes > Multa > Capital, luego Fecha por estabilidad)
+    # 2. Definir Prioridad (Jerarquía de Conceptos > Fecha > ID Doc)
     def priority_key(item):
-        if item['tipo'] == 'INTERES': return 1
-        if item['tipo'] == 'MULTA': return 2
-        return 3 # CAPITAL
+        return (item.get('priority', 9999), item['fecha'], item.get('id', 0))
 
     pending_debts = []
     transacciones_simuladas = []
@@ -3125,17 +3121,28 @@ def _simular_cronologia_pagos(db: Session, docs: list, empresa_id: int, fecha_co
                 debito_cxc += float(mov.debito)
                 credito_cxc += float(mov.credito)
             else:
-                # Clasificar concepto
-                tipo_concepto = 'CAPITAL'
-                upper_concepto = (mov.concepto or "").upper()
-                if mov.cuenta_id in cuentas_interes: tipo_concepto = 'INTERES'
-                elif mov.cuenta_id in cuentas_multa: tipo_concepto = 'MULTA'
-                elif any(x in upper_concepto for x in ["INTERES", "INTERÉS", "MORA", "FINANCIACION", "FINANCIACIÓN"]): tipo_concepto = 'INTERES'
-                elif any(x in upper_concepto for x in ["MULTA", "SANCION", "SANCIÓN"]): tipo_concepto = 'MULTA'
+                # Clasificar concepto usando identificación inteligente
+                co = cartera_service.identificar_concepto_ph(mov.concepto, conceptos_ph)
+                
+                if co:
+                    prio = concepto_prio_map.get(co.id, 9999)
+                    tipo_concepto = 'INTERES' if co.es_interes else ('MULTA' if "MULTA" in co.nombre.upper() else 'CAPITAL')
+                else:
+                    # Fallback para conceptos no tipificados
+                    prio = 9999
+                    tipo_concepto = 'CAPITAL'
+                    upper_concepto = (mov.concepto or "").upper()
+                    if mov.cuenta_id in cuentas_interes or any(x in upper_concepto for x in ["INTERES", "INTERÉS", "MORA", "FINANCIACION", "FINANCIACIÓN"]):
+                        tipo_concepto = 'INTERES'
+                        prio = -1
+                    elif mov.cuenta_id in cuentas_multa or any(x in upper_concepto for x in ["MULTA", "SANCION", "SANCIÓN"]):
+                        tipo_concepto = 'MULTA'
+                        prio = 500
 
                 if mov.credito > 0: # Ingreso (Genera Deuda si es Factura)
                     detalles_doc.append({
                         'tipo': tipo_concepto,
+                        'priority': prio,
                         'concepto': mov.concepto or "Concepto General",
                         'valor': float(mov.credito),
                         'is_deuda': True
@@ -3154,7 +3161,7 @@ def _simular_cronologia_pagos(db: Session, docs: list, empresa_id: int, fecha_co
             
             # Ordenar: FIFO (Fecha ASC) luego Tipo (Global Priority)
             # Primero por ID para estabilidad, luego Priority Key
-            current_debts.sort(key=lambda x: x['id'] if 'id' in x else x['fecha']) 
+            # Ordenar por Prioridad (Jerarquía), luego Fecha, luego ID
             current_debts.sort(key=priority_key)
             
             for debt in current_debts:
@@ -3197,14 +3204,49 @@ def _simular_cronologia_pagos(db: Session, docs: list, empresa_id: int, fecha_co
 
         elif impacto_neto < 0:
             # ES PAGO (O Nota Credito)
-            monto_pago_nuevo = abs(impacto_neto)
-            total_wallet = monto_pago_nuevo + saldo_a_favor
+            monto_pago_disponible = abs(impacto_neto)
             
-            consumed, remaining, summary = apply_payment_to_debts(total_wallet, pending_debts)
+            # --- MEJORA: SOPORTE DE ABONOS DIRIGIDOS EN SIMULACIÓN ---
+            # Identificamos movimientos que tienen una intención específica (vía descripción)
+            for mov in doc.movimientos:
+                if mov.credito > 0 and mov.cuenta_id in cuentas_cxc_ids:
+                    monto_mov = float(mov.credito)
+                    texto_mov = (mov.concepto or "").lower()
+                    
+                    # Intentar aplicar este movimiento a deudas que coincidan en texto
+                    # Solo si el texto sugiere un abono dirigido
+                    if any(x in texto_mov for x in ["abono a", "pago de", "cancelacion", "dirigido"]):
+
+                        for debt in pending_debts:
+                            if monto_mov <= 0.001: break
+                            if debt['saldo'] <= 0.001: continue
+                            
+                            # Si el nombre del concepto de la deuda coincide con el texto del abono
+                            # Limpiamos el nombre de la deuda (quitamos el mes/año después del guion) para un match flexible
+                            concepto_deuda_limpio = debt['concepto'].split(' - ')[0].lower().strip()
+                            
+                            if concepto_deuda_limpio in texto_mov:
+                                abonar = min(debt['saldo'], monto_mov)
+
+                                debt['saldo'] -= abonar
+                                monto_mov -= abonar
+                                monto_pago_disponible -= abonar # Restamos de la bolsa general para no duplicar
+                                
+                                # Registrar en el resumen del pago para el log del reporte
+                                pago_summary[(debt['tipo'], debt['concepto'])] += abonar
             
-            saldo_a_favor = remaining # Guardar excedente como anticipo
-            for k, v in summary.items():
-                pago_summary[k] += v
+            # El dinero sobrante (o si el pago era general) se aplica por la ley de prelación estándar (FIFO/Priority)
+            total_wallet = max(0, monto_pago_disponible) + saldo_a_favor
+            
+            if total_wallet > 0.001:
+                consumed, remaining, summary = apply_payment_to_debts(total_wallet, pending_debts)
+                saldo_a_favor = remaining
+                for k, v in summary.items():
+                    pago_summary[k] += v
+            else:
+                # Si se consumió todo en abonos dirigidos y no había SAF previo
+                saldo_a_favor = 0
+
             
         # Limpieza global de deudas pagadas
         pending_debts = [d for d in pending_debts if d['saldo'] > 0.001]

@@ -14,6 +14,41 @@ from app.services import documento as documento_service
 from app.core.constants import FuncionEspecial
 from ..models.propiedad_horizontal import PHConfiguracion
 
+import unicodedata as _uda
+
+def pnorm_ph(t):
+    if not t: return ""
+    s = "".join(c for c in _uda.normalize('NFD', str(t)) if _uda.category(c) != 'Mn')
+    return s.strip().upper()
+
+def identificar_concepto_ph(texto_mov, conceptos_ph):
+    """
+    Identifica un concepto PH a partir del texto de un movimiento contable.
+    """
+    if not texto_mov: return None
+    t = pnorm_ph(texto_mov)
+    # Quitar prefijos comunes de PH para no confundir startswith
+    for prefijo in ["CXC ", "ABONO ", "RECAUDO ", "COBRO ", "PAGO ", "DIRIGIDO ", "DIRIGIDO:", "ABONO DIRIGIDO:", "RECAUDO DIRIGIDO:"]:
+        if t.startswith(prefijo):
+            t = t[len(prefijo):].strip()
+    
+    mejor, mejor_len = None, 0
+    for cp in conceptos_ph:
+        n = pnorm_ph(cp.nombre)
+        if n and t.startswith(n) and len(n) > mejor_len:
+            mejor = cp
+            mejor_len = len(n)
+    
+    # Fallback: si no encontró con startswith, intentar con 'in' (por si hay prefijos adicionales)
+    if not mejor:
+        for cp in conceptos_ph:
+            n = pnorm_ph(cp.nombre)
+            if n and n in t and len(n) > mejor_len:
+                mejor = cp
+                mejor_len = len(n)
+    return mejor
+
+
 def get_cuentas_especiales_ids(db: Session, empresa_id: int, tipo: str) -> List[int]:
     cuentas_ids = set()
     query = db.query(
@@ -151,17 +186,8 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
             )
         ).order_by(models_doc.fecha, models_doc.id).all()
 
-        # ─────────────────────────────────────────────────────────────────────
-        # UTILITARIOS (normalización e identificación)
-        # ─────────────────────────────────────────────────────────────────────
-        import unicodedata as _uda
-        def _pnorm(t):
-            if not t: return ""
-            s = "".join(c for c in _uda.normalize('NFD', str(t)) if _uda.category(c) != 'Mn')
-            return s.strip().upper()
 
         # Cargar conceptos PH para identificación por texto
-        from sqlalchemy import func
         conceptos_ph = db.query(models_ph_concepto).filter(
             models_ph_concepto.empresa_id == empresa_id,
             models_ph_concepto.activo == True
@@ -171,40 +197,6 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
         nombres_c = [f"{c.nombre} (ID:{c.id}, Ord:{c.orden})" for c in conceptos_ph]
         print(f"[ESPIA CARTERA] Jerarquia Activa: {nombres_c}")
 
-        def _identificar_concepto(texto_mov):
-            if not texto_mov: return None
-            t = _pnorm(texto_mov)
-            original_t = t
-            # Quitar prefijos comunes de PH para no confundir startswith
-            for prefijo in ["CXC ", "ABONO ", "RECAUDO ", "COBRO ", "PAGO ", "DIRIGIDO ", "DIRIGIDO:", "ABONO DIRIGIDO:", "RECAUDO DIRIGIDO:"]:
-                if t.startswith(prefijo):
-                    t = t[len(prefijo):].strip()
-            
-            print(f"       [ESPIA ID] Texto: '{original_t}' -> Limpio: '{t}'")
-            
-            mejor, mejor_len = None, 0
-            for cp in conceptos_ph:
-                n = _pnorm(cp.nombre)
-                if n and t.startswith(n) and len(n) > mejor_len:
-                    mejor = cp
-                    mejor_len = len(n)
-            
-            # Fallback: si no encontró con startswith, intentar con 'in' (por si hay prefijos adicionales)
-            if not mejor:
-                for cp in conceptos_ph:
-                    n = _pnorm(cp.nombre)
-                    if n and n in t and len(n) > mejor_len:
-                        mejor = cp
-                        mejor_len = len(n)
-            
-            if mejor:
-                print(f"       [ESPIA ID]   => GANADOR: {mejor.nombre}")
-                        
-            return mejor
-
-        # ============================================================
-        # SEPARAR FACTURAS Y PAGOS — AGRUPADO POR DOCUMENTO
-        # ============================================================
         fac_cxc = {}   # doc_id -> {'doc': doc, 'saldo': float, 'saldo_x_cid': {cid: float}}
         pag_cxc = {}   # doc_id -> {'doc': doc, 'monto': float, 'movs': [mov, ...]}
         fac_cxp = {}   # doc_id -> {'doc': doc, 'saldo': float}
@@ -220,7 +212,7 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
                         monto = float(mov.debito)
                         fac_cxc[d.id]['saldo'] += monto
                         # Desglose por concepto (usando texto del débito)
-                        co = _identificar_concepto(mov.concepto)
+                        co = identificar_concepto_ph(mov.concepto, conceptos_ph)
                         cid = co.id if co else 0
                         sxc = fac_cxc[d.id]['saldo_x_cid']
                         sxc[cid] = sxc.get(cid, 0.0) + monto
@@ -319,16 +311,16 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
             monto_generico = 0
             
             for mv in movs_pago:
-                txt = _pnorm(mv.concepto or '')
+                txt = pnorm_ph(mv.concepto or '')
                 print(f"     [ESPIA] Analizando Movimiento: '{mv.concepto}' (Credito: {mv.credito})")
                 
                 # Si el texto es genérico, ignoramos identificación específica
-                if any(_pnorm(g) in txt for g in TEXTOS_GENERICOS):
+                if any(pnorm_ph(g) in txt for g in TEXTOS_GENERICOS):
                     print(f"     [ESPIA]   - Es un texto GENERICO. Se suma a monto_generico.")
                     monto_generico += float(mv.credito)
                     continue
                 
-                co = _identificar_concepto(mv.concepto)
+                co = identificar_concepto_ph(mv.concepto, conceptos_ph)
                 if co:
                     print(f"     [ESPIA]   - Concepto IDENTIFICADO: {co.nombre} (ID: {co.id})")
                     intentos_pago.append((co.id, float(mv.credito)))

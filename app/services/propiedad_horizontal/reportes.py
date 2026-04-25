@@ -407,8 +407,11 @@ def get_reporte_saldos(
         for d in active_debts:
             cumple_concepto = True
             if concepto_busqueda and concepto_busqueda.strip():
-                # Busqueda case-insensitive flexible
-                if concepto_busqueda.lower() not in d['concepto'].lower():
+                # Búsqueda inteligente: ignorar tildes y mayúsculas
+                from app.services.cartera import pnorm_ph
+                busqueda_norm = pnorm_ph(concepto_busqueda)
+                concepto_norm = pnorm_ph(d['concepto'])
+                if busqueda_norm not in concepto_norm:
                     cumple_concepto = False
             
             if cumple_concepto:
