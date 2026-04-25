@@ -9,6 +9,7 @@ from app.schemas.propiedad_horizontal import presupuesto as schemas
 from typing import List, Optional
 from datetime import date
 import calendar
+from app.utils.sorting import natural_sort_key
 
 def get_presupuestos(db: Session, empresa_id: int, anio: int):
     """
@@ -27,6 +28,9 @@ def get_presupuestos(db: Session, empresa_id: int, anio: int):
             item.cuenta_codigo = p.cuenta.codigo
             item.cuenta_nombre = p.cuenta.nombre
         response.append(item)
+        
+    # Ordenar presupuesto por código de cuenta
+    response.sort(key=lambda x: natural_sort_key(x.cuenta_codigo))
         
     return response
 

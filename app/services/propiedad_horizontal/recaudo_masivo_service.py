@@ -5,6 +5,7 @@ from typing import List, Dict, Any, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import io
+from app.utils.sorting import natural_sort_key
 
 from app.models.propiedad_horizontal.unidad import PHUnidad
 from app.schemas.propiedad_horizontal import recaudo_masivo as schemas_rm
@@ -155,6 +156,9 @@ def generar_preview(db: Session, empresa_id: int, filas: List[schemas_rm.Recaudo
             filas_error += 1
             
         detalles.append(match_info)
+        
+    # Ordenar el preview lógicamente por código de unidad
+    detalles.sort(key=lambda x: natural_sort_key(x.unidad_codigo))
         
     return schemas_rm.RecaudoPreviewResult(
         total_filas=len(filas),

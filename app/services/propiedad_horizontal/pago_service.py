@@ -1,5 +1,6 @@
 import copy
 from sqlalchemy import func
+from app.utils.sorting import natural_sort_key
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 
@@ -1277,6 +1278,9 @@ def get_estado_cuenta_propietario(db: Session, propietario_id: int, empresa_id: 
             "saldo": saldo_unidad
         })
         saldo_total_consolidado += saldo_unidad
+
+    # Ordenar unidades del propietario de forma natural
+    desglose_unidades.sort(key=lambda x: natural_sort_key(x['codigo']))
 
     # 4. Obtener Cartera REAL (Pendientes) — skip_recalculo=True porque ya se recalculó arriba
     docs_pendientes = get_cartera_ph_pendientes(db, empresa_id, propietario_id=propietario_id, skip_recalculo=True)

@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.models.propiedad_horizontal import PHUnidad, PHVehiculo, PHMascota, PHCoeficienteHistorial
 from app.schemas.propiedad_horizontal import unidad as schemas
 from typing import List, Optional
+from app.utils.sorting import natural_sort_key
 
 def get_unidades(db: Session, empresa_id: int, skip: int = 0, limit: int = 100, torre_id: Optional[int] = None):
     query = db.query(PHUnidad).filter(PHUnidad.empresa_id == empresa_id)
@@ -40,12 +41,19 @@ def get_unidades(db: Session, empresa_id: int, skip: int = 0, limit: int = 100, 
             "propietario_nombre": u.propietario_principal.razon_social if u.propietario_principal else None,
             "modulos_ids": [m.id for m in u.modulos_contribucion] if hasattr(u, 'modulos_contribucion') else []
         })
+    
+    # Ordenar lógicamente por Torre y luego por Código de Unidad
+    results.sort(key=lambda x: (natural_sort_key(x['torre_nombre']), natural_sort_key(x['codigo'])))
+    
     return results
 
 # --- TORRES ---
 def get_torres(db: Session, empresa_id: int):
     from app.models.propiedad_horizontal import PHTorre
-    return db.query(PHTorre).filter(PHTorre.empresa_id == empresa_id).all()
+    torres = db.query(PHTorre).filter(PHTorre.empresa_id == empresa_id).all()
+    # Ordenar torres lógicamente (Torre 1, Torre 2, Torre 10...)
+    torres.sort(key=lambda x: natural_sort_key(x.nombre))
+    return torres
 
 def create_torre(db: Session, torre: schemas.PHTorreCreate, empresa_id: int):
     from app.models.propiedad_horizontal import PHTorre
@@ -249,6 +257,9 @@ def get_propietarios_resumen(db: Session, empresa_id: int):
         ).all()
         
         info_unidades = [{"id": u.id, "codigo": u.codigo} for u in unidades]
+        # Ordenar unidades del propietario lógicamente
+        info_unidades.sort(key=lambda x: natural_sort_key(x['codigo']))
+        
         total_coeficiente = sum(float(u.coeficiente) if u.coeficiente else 0 for u in unidades)
         
         resultados.append({
@@ -262,6 +273,9 @@ def get_propietarios_resumen(db: Session, empresa_id: int):
             "total_coeficiente": total_coeficiente,
             "es_moroso": False # Placeholder logic for future wallet integration
         })
+        
+    # Ordenar propietarios por nombre lógicamente
+    resultados.sort(key=lambda x: natural_sort_key(x['nombre']))
         
     return resultados
 

@@ -1,4 +1,5 @@
 import re
+from app.utils.sorting import natural_sort_key
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import text
 from typing import List, Optional
@@ -10,12 +11,6 @@ from app.models.propiedad_horizontal.concepto import PHConcepto
 from app.models.tercero import Tercero
 from app.models.tipo_documento import TipoDocumento
 
-def natural_sort_key(s):
-    """
-    Genera una clave para ordenamiento natural (numérico y alfabético).
-    Ej: 'B 4 / 101' vendrá antes que 'B 4 / 401'.
-    """
-    return [int(c) if c.isdigit() else c.lower() for c in re.split('([0-9]+)', str(s or ""))]
 
 def get_movimientos_ph_report(
     db: Session,

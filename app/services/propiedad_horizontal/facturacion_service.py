@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session, joinedload
 from datetime import date, datetime, timedelta
 from typing import List, Dict, Any
 from decimal import Decimal
+from app.utils.sorting import natural_sort_key
 
 from app.models.propiedad_horizontal import PHUnidad, PHConfiguracion, PHConcepto
 from app.models.documento import Documento, MovimientoContable
@@ -755,6 +756,9 @@ def get_detalle_facturacion(db: Session, empresa_id: int, periodo: str):
                 "estado": doc.estado
             })
             
+        # Ordenar el detalle de facturación lógicamente por el campo 'detalle' (que tiene el código de unidad)
+        lista_final.sort(key=lambda x: natural_sort_key(x['detalle']))
+        
         return lista_final
     except Exception as e:
         print(f"ERROR CRITICO en get_detalle_facturacion: {str(e)}")
