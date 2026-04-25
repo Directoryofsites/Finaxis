@@ -39,36 +39,59 @@ def run_auto_migrations():
             cols_terceros = get_existing_columns('terceros')
             cols_usuarios = get_existing_columns('usuarios')
             
-            # 2. Definir migraciones pendientes
-            migrations = []
+            # --- PRIORIDAD #1: PROPIEDAD HORIZONTAL (Resuelve Problema de Abono Dirigido) ---
+            # ph_conceptos
+            cols_ph_conceptos = get_existing_columns('ph_conceptos')
+            if cols_ph_conceptos: # Solo si la tabla ya existe (evita error en primer deploy)
+                if 'orden' not in cols_ph_conceptos:
+                    migrations.append(('ph_conceptos', 'orden', 'INTEGER DEFAULT 99'))
+                if 'cuenta_caja_id' not in cols_ph_conceptos:
+                    migrations.append(('ph_conceptos', 'cuenta_caja_id', 'INTEGER'))
             
+            # ph_configuracion
+            cols_ph_config = get_existing_columns('ph_configuracion')
+            if cols_ph_config:
+                if 'cuenta_anticipos_id' not in cols_ph_config:
+                    migrations.append(('ph_configuracion', 'cuenta_anticipos_id', 'INTEGER'))
+                if 'tipo_documento_cruce_id' not in cols_ph_config:
+                    migrations.append(('ph_configuracion', 'tipo_documento_cruce_id', 'INTEGER'))
+                if 'cuenta_descuento_id' not in cols_ph_config:
+                    migrations.append(('ph_configuracion', 'cuenta_descuento_id', 'INTEGER'))
+                if 'tipo_documento_mora_id' not in cols_ph_config:
+                    migrations.append(('ph_configuracion', 'tipo_documento_mora_id', 'INTEGER'))
+                if 'tipo_negocio' not in cols_ph_config:
+                    migrations.append(('ph_configuracion', 'tipo_negocio', "VARCHAR(50) DEFAULT 'PH_RESIDENCIAL'"))
+                if 'interes_mora_habilitado' not in cols_ph_config:
+                    migrations.append(('ph_configuracion', 'interes_mora_habilitado', "BOOLEAN DEFAULT TRUE"))
+                if 'descuento_pronto_pago_habilitado' not in cols_ph_config:
+                    migrations.append(('ph_configuracion', 'descuento_pronto_pago_habilitado', "BOOLEAN DEFAULT TRUE"))
+
+            # ph_unidades
+            cols_ph_unidades = get_existing_columns('ph_unidades')
+            if cols_ph_unidades:
+                if 'referencia_recaudo' not in cols_ph_unidades:
+                    migrations.append(('ph_unidades', 'referencia_recaudo', 'VARCHAR(50)'))
+                if 'aplica_pronto_pago' not in cols_ph_unidades:
+                    migrations.append(('ph_unidades', 'aplica_pronto_pago', 'BOOLEAN DEFAULT TRUE'))
+
+            # --- OTRAS MIGRACIONES ---
             # configuracion_fe (FACTURACIÓN ELECTRÓNICA, DS, NOTAS)
             config_fe_cols = [
                 ("factura_rango_id", "INTEGER"),
                 ("ds_prefijo", "VARCHAR(10)"),
                 ("ds_resolucion_numero", "VARCHAR(50)"),
-                ("ds_rango_id", "INTEGER"),
-                ("nc_rango_id", "INTEGER"),
-                ("nd_rango_id", "INTEGER"),
-                ("habilitado", "BOOLEAN DEFAULT FALSE"),
-                ("proveedor", "VARCHAR(50) DEFAULT 'FACTUS'"),
-                ("ambiente", "VARCHAR(20) DEFAULT 'PRUEBAS'"),
-                ("api_token", "TEXT"),
-                ("api_url", "VARCHAR(255)"),
-                ("email_registro", "VARCHAR(255)")
-            ]
+            # configuracion_fe
             for col, col_type in config_fe_cols:
                 if col not in cols_config_fe:
                     migrations.append(('configuracion_fe', col, col_type))
                 
-            # empresas (is_lite_mode and friends)
+            # empresas
             empresa_lite_cols = [
                 ("is_lite_mode", "BOOLEAN DEFAULT FALSE"),
                 ("saldo_facturas_venta", "INTEGER DEFAULT 0"),
                 ("saldo_documentos_soporte", "INTEGER DEFAULT 0"),
                 ("saldo_notas_credito", "INTEGER DEFAULT 0"),
                 ("fecha_vencimiento_plan", "DATE"),
-                # --- CUOTAS IA ---
                 ("limite_mensajes_ia_mensual", "INTEGER DEFAULT 0"),
                 ("consumo_mensajes_ia_actual", "INTEGER DEFAULT 0"),
                 ("fecha_reinicio_cuota_ia", "DATE")
@@ -77,13 +100,9 @@ def run_auto_migrations():
                 if col not in cols_empresas:
                     migrations.append(('empresas', col, col_type))
 
-            # usuarios (WHATSAPP)
-            usuario_cols = [
-                ("whatsapp_number", "VARCHAR(50)")
-            ]
-            for col, col_type in usuario_cols:
-                if col not in cols_usuarios:
-                    migrations.append(('usuarios', col, col_type))
+            # usuarios
+            if 'whatsapp_number' not in cols_usuarios:
+                migrations.append(('usuarios', 'whatsapp_number', 'VARCHAR(50)'))
 
             # productos
             producto_cols = [
@@ -117,7 +136,7 @@ def run_auto_migrations():
                 if col not in cols_tasas:
                     migrations.append(('tasas_impuesto', col, col_type))
 
-            # documentos (FACTURACIÓN ELECTRÓNICA Y OTROS)
+            # documentos
             documento_cols = [
                 ("dian_estado", "VARCHAR(20)"),
                 ("dian_cufe", "VARCHAR(255)"),
@@ -129,7 +148,7 @@ def run_auto_migrations():
                 ("descuento_global_valor", "NUMERIC(15, 2) DEFAULT 0"),
                 ("cargos_globales_valor", "NUMERIC(15, 2) DEFAULT 0"),
                 ("unidad_ph_id", "INTEGER"),
-                ("vendedor_id", "INTEGER"),  # FK a terceros - seguimiento de vendedor
+                ("vendedor_id", "INTEGER"),
             ]
             for col, col_type in documento_cols:
                 if col not in cols_documentos:
@@ -145,7 +164,7 @@ def run_auto_migrations():
                 ("responsabilidad_fiscal", "VARCHAR(20)"),
                 ("lista_precio_id", "INTEGER"),
                 ("cuenta_gasto_defecto_id", "INTEGER"),
-                ("es_vendedor", "BOOLEAN DEFAULT FALSE"),  # Seguimiento fuerza de ventas
+                ("es_vendedor", "BOOLEAN DEFAULT FALSE"),
             ]
             for col, col_type in tercero_cols:
                 if col not in cols_terceros:
@@ -153,48 +172,15 @@ def run_auto_migrations():
 
             # indicadores_economicos
             cols_indicadores = get_existing_columns('indicadores_economicos')
-            indicadores_cols = [
-                ("tasa_usura", "FLOAT"),
-                ("fecha_sincronizacion", "DATE")
-            ]
-            for col, col_type in indicadores_cols:
-                if col not in cols_indicadores:
-                    migrations.append(('indicadores_economicos', col, col_type))
+            if cols_indicadores:
+                indicadores_cols = [("tasa_usura", "FLOAT"), ("fecha_sincronizacion", "DATE")]
+                for col, col_type in indicadores_cols:
+                    if col not in cols_indicadores:
+                        migrations.append(('indicadores_economicos', col, col_type))
 
-            # ph_configuracion
-            cols_ph_config = get_existing_columns('ph_configuracion')
-            if 'cuenta_anticipos_id' not in cols_ph_config:
-                migrations.append(('ph_configuracion', 'cuenta_anticipos_id', 'INTEGER'))
-            if 'tipo_documento_cruce_id' not in cols_ph_config:
-                migrations.append(('ph_configuracion', 'tipo_documento_cruce_id', 'INTEGER'))
-            if 'cuenta_descuento_id' not in cols_ph_config:
-                migrations.append(('ph_configuracion', 'cuenta_descuento_id', 'INTEGER'))
-            if 'tipo_documento_mora_id' not in cols_ph_config:
-                migrations.append(('ph_configuracion', 'tipo_documento_mora_id', 'INTEGER'))
-            if 'tipo_negocio' not in cols_ph_config:
-                migrations.append(('ph_configuracion', 'tipo_negocio', "VARCHAR(50) DEFAULT 'PH_RESIDENCIAL'"))
-            if 'interes_mora_habilitado' not in cols_ph_config:
-                migrations.append(('ph_configuracion', 'interes_mora_habilitado', "BOOLEAN DEFAULT TRUE"))
-            if 'descuento_pronto_pago_habilitado' not in cols_ph_config:
-                migrations.append(('ph_configuracion', 'descuento_pronto_pago_habilitado', "BOOLEAN DEFAULT TRUE"))
-
-            # ph_unidades
-            cols_ph_unidades = get_existing_columns('ph_unidades')
-            if 'referencia_recaudo' not in cols_ph_unidades:
-                migrations.append(('ph_unidades', 'referencia_recaudo', 'VARCHAR(50)'))
-            if 'aplica_pronto_pago' not in cols_ph_unidades:
-                migrations.append(('ph_unidades', 'aplica_pronto_pago', 'BOOLEAN DEFAULT TRUE'))
-
-            # ph_conceptos
-            cols_ph_conceptos = get_existing_columns('ph_conceptos')
-            if 'orden' not in cols_ph_conceptos:
-                migrations.append(('ph_conceptos', 'orden', 'INTEGER DEFAULT 99'))
-            if 'cuenta_caja_id' not in cols_ph_conceptos:
-                migrations.append(('ph_conceptos', 'cuenta_caja_id', 'INTEGER'))
-
-            # empresa_config_buzon (Nuevas columnas de Ventas y Soporte)
+            # empresa_config_buzon
             cols_empresa_config_buzon = get_existing_columns('empresa_config_buzon')
-            if cols_empresa_config_buzon: # Solo si la tabla ya existe
+            if cols_empresa_config_buzon:
                 empresa_config_buzon_cols = [
                     ("venta_tipo_documento_id", "INTEGER"),
                     ("venta_cuenta_ingreso_id", "INTEGER"),
