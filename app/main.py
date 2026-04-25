@@ -9,7 +9,7 @@ import os
 os.environ['GIO_USE_VOLUME_MONITOR'] = 'dummy'
 # --- FIN DE LA CORRECCIÓN DEFINITIVA ---
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 
 

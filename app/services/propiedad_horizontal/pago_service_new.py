@@ -153,19 +153,60 @@ def get_cartera_ph_pendientes_detallada(db: Session, empresa_id: int, unidad_id:
 
     # ── PASO 2: Procesar Aplicaciones de Pago (AP) ──
     # Atribuimos el valor de cada AP (recibo -> factura) a los conceptos de esa factura.
-    # Siguiendo el mismo orden de prioridad que el motor de cartera.py.
-    for doc_id in doc_ids_pendientes:
-        aps = db.query(AplicacionPago).filter(
-            AplicacionPago.documento_factura_id == doc_id
+    # Siguiendo el mismo orden de prioridad que el motor de cartera.py,
+    # PERO respetando si el recibo original fue un "Abono Dirigido".
+    
+    # 2.1 Obtener todos los IDs de pagos involucrados en las aplicaciones
+    all_aps = db.query(AplicacionPago).filter(
+        AplicacionPago.documento_factura_id.in_(list(doc_ids_pendientes))
+    ).all()
+    
+    pago_ids = list(set(ap.documento_pago_id for ap in all_aps))
+    
+    # 2.2 Pre-identificar si cada pago es dirigido
+    # Estructura: dict_pagos_dirigidos[pago_id] = PHConcepto o None
+    dict_pagos_dirigidos = {}
+    if pago_ids:
+        movs_pagos = db.query(MovimientoContable).filter(
+            MovimientoContable.documento_id.in_(pago_ids),
+            MovimientoContable.credito > 0
         ).all()
-        for ap in aps:
-            valor_ap = float(ap.valor_aplicado)
-            if valor_ap <= 0: continue
+        
+        # Agrupar movimientos por pago
+        movs_por_pago = {}
+        for m in movs_pagos:
+            if m.documento_id not in movs_por_pago:
+                movs_por_pago[m.documento_id] = []
+            movs_por_pago[m.documento_id].append(m)
             
-            valor_ap_restante = valor_ap
-            # Prioridad de conceptos: Mismo orden que en cartera.py
-            # 1. Conceptos con ID (ordenados por el campo 'orden' de base de datos)
-            # 2. Cartera General (ID 0)
+        for pid, ms in movs_por_pago.items():
+            es_dir, co_dir = _es_pago_dirigido(ms, conceptos_db)
+            if es_dir:
+                dict_pagos_dirigidos[pid] = co_dir
+
+    # 2.3 Aplicar cada AP al pool
+    for ap in all_aps:
+        valor_ap = float(ap.valor_aplicado)
+        if valor_ap <= 0: continue
+        
+        pago_id = ap.documento_pago_id
+        concepto_fijo = dict_pagos_dirigidos.get(pago_id)
+        
+        valor_ap_restante = valor_ap
+        
+        if concepto_fijo:
+            # Si el pago es DIRIGIDO, solo puede restar de ese concepto
+            cid = concepto_fijo.id
+            if cid in pool:
+                c_pool = pool[cid]
+                pendiente = c_pool['cobrado'] - c_pool['pagado']
+                if pendiente > 0:
+                    restar = min(valor_ap_restante, pendiente)
+                    c_pool['pagado'] += restar
+                    valor_ap_restante -= restar
+            # Si sobró algo (anticipo de ese concepto), no se aplica a nada más en este desglose
+        else:
+            # Si el pago es GENÉRICO, sigue la jerarquía (FIFO)
             orden_map = {c.id: (c.orden if c.orden is not None else 9999) for c in conceptos_db}
             jerarquia_factura = sorted(pool.keys(), key=lambda x: (x == 0, orden_map.get(x, 9999), x))
             

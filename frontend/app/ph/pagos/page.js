@@ -125,7 +125,8 @@ export default function PagosPHPage() {
                         nombre: c.nombre,
                         tipo: c.tipo,
                         saldo_pendiente: c.saldo || 0,
-                        monto: 0 // Iniciar en 0 para que el usuario elija cuánto abonar si activa manual
+                        monto: 0,
+                        selected: false // Iniciar desmarcado por defecto
                     })));
                 }
             } else {
@@ -152,12 +153,31 @@ export default function PagosPHPage() {
         const newValue = !isAbonoManual;
         setIsAbonoManual(newValue);
         if (newValue && detallesAbono.length > 0) {
-             // Si activa manual, sugerir el saldo pendiente en cada concepto
-             setDetallesAbono(prev => prev.map(d => ({ ...d, monto: d.saldo_pendiente })));
+             // Si activa manual, inicialmente todos desmarcados y monto 0
+             setDetallesAbono(prev => prev.map(d => ({ ...d, selected: false, monto: 0 })));
+             setPagoForm(prev => ({ ...prev, monto: 0 }));
         } else if (!newValue) {
              // Si desactiva manual, volver al saldo total en el campo general
              setPagoForm(prev => ({ ...prev, monto: estadoCuenta?.saldo_total || 0 }));
         }
+    };
+
+    const toggleConceptoSelection = (idx) => {
+        const newDet = [...detallesAbono];
+        const item = newDet[idx];
+        item.selected = !item.selected;
+        
+        if (item.selected) {
+            // Al marcar, sugerir el saldo pendiente
+            item.monto = item.saldo_pendiente;
+        } else {
+            // Al desmarcar, limpiar monto
+            item.monto = 0;
+        }
+        
+        setDetallesAbono(newDet);
+        const total = newDet.reduce((sum, d) => sum + d.monto, 0);
+        setPagoForm(prev => ({ ...prev, monto: total }));
     };
 
     // Actualizar el monto total cuando cambian los detalles (solo en modo manual)
@@ -652,27 +672,47 @@ export default function PagosPHPage() {
                                         
                                         <div className={`p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 transition-opacity ${isAbonoManual ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
                                             {detallesAbono.map((d, idx) => (
-                                                <div key={idx} className={`p-4 rounded-xl border flex flex-col justify-between transition-all shadow-sm ${isAbonoManual ? 'bg-white border-indigo-100' : 'bg-gray-50 border-gray-100'}`}>
+                                                <div 
+                                                    key={idx} 
+                                                    onClick={() => isAbonoManual && toggleConceptoSelection(idx)}
+                                                    className={`p-4 rounded-xl border flex flex-col justify-between transition-all shadow-sm cursor-pointer ${
+                                                        isAbonoManual 
+                                                            ? (d.selected ? 'bg-indigo-50 border-indigo-500 ring-1 ring-indigo-500' : 'bg-white border-gray-100 hover:border-indigo-200') 
+                                                            : 'bg-gray-50 border-gray-100'
+                                                    }`}
+                                                >
                                                     <div className="mb-3">
-                                                        <p className={`text-[10px] font-bold uppercase tracking-tighter mb-1 ${isAbonoManual ? 'text-indigo-500' : 'text-gray-400'}`}>{d.tipo}</p>
+                                                        <div className="flex justify-between items-start mb-1">
+                                                            <p className={`text-[10px] font-bold uppercase tracking-tighter ${isAbonoManual ? 'text-indigo-500' : 'text-gray-400'}`}>{d.tipo}</p>
+                                                            {isAbonoManual && (
+                                                                <input 
+                                                                    type="checkbox" 
+                                                                    checked={d.selected} 
+                                                                    onChange={() => {}} // Manejado por el onClick del div
+                                                                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                                                                />
+                                                            )}
+                                                        </div>
                                                         <p className="font-bold text-gray-800 text-xs truncate mb-1" title={d.nombre}>{d.nombre}</p>
                                                         <div className="flex justify-between items-center bg-red-50 px-2 py-1 rounded">
                                                             <span className="text-[10px] text-red-400 font-bold">DEUDA:</span>
                                                             <span className="text-[11px] text-red-600 font-black">${(d.saldo_pendiente || 0).toLocaleString()}</span>
                                                         </div>
                                                     </div>
-                                                    <div className="relative group">
-                                                        <span className={`absolute left-3 top-2.5 text-xs font-bold ${isAbonoManual ? 'text-indigo-300' : 'text-gray-300'}`}>$</span>
+                                                    <div className="relative group" onClick={(e) => e.stopPropagation()}>
+                                                        <span className={`absolute left-3 top-2.5 text-xs font-bold ${isAbonoManual && d.selected ? 'text-indigo-600' : 'text-gray-300'}`}>$</span>
                                                         <input
                                                             type="number"
                                                             value={d.monto}
                                                             onChange={(e) => updateConceptoMonto(idx, e.target.value)}
-                                                            disabled={!isAbonoManual}
+                                                            disabled={!isAbonoManual || !d.selected}
                                                             className={`w-full pl-7 pr-3 py-2 border-2 rounded-lg text-right font-black text-md outline-none transition-all ${
-                                                                isAbonoManual ? 'border-indigo-100 text-indigo-700 focus:border-indigo-500' : 'border-gray-100 text-gray-300'
+                                                                isAbonoManual && d.selected 
+                                                                    ? 'border-indigo-200 bg-white text-indigo-700 focus:border-indigo-500' 
+                                                                    : 'border-gray-50 bg-gray-50 text-gray-300'
                                                             }`}
                                                         />
-                                                        {isAbonoManual && <p className="text-[9px] text-right mt-1 text-gray-400">¿Cuánto abonar?</p>}
+                                                        {isAbonoManual && d.selected && <p className="text-[9px] text-right mt-1 text-gray-400">¿Cuánto abonar?</p>}
                                                     </div>
                                                 </div>
                                             ))}
