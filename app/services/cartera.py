@@ -161,10 +161,15 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
             return s.strip().upper()
 
         # Cargar conceptos PH para identificación por texto
+        from sqlalchemy import func
         conceptos_ph = db.query(models_ph_concepto).filter(
             models_ph_concepto.empresa_id == empresa_id,
             models_ph_concepto.activo == True
-        ).order_by(models_ph_concepto.orden.asc(), models_ph_concepto.id.asc()).all()
+        ).order_by(func.coalesce(models_ph_concepto.orden, 999).asc(), models_ph_concepto.id.asc()).all()
+        
+        # Log para debug en producción
+        nombres_c = [f"{c.nombre} (ID:{c.id}, Ord:{c.orden})" for c in conceptos_ph]
+        print(f"[ESPIA CARTERA] Jerarquia Activa: {nombres_c}")
 
         def _identificar_concepto(texto_mov):
             if not texto_mov: return None
