@@ -334,7 +334,11 @@ def get_reporte_saldos(
     unidad_id: Optional[int] = None,
     propietario_id: Optional[int] = None,
     torre_id: Optional[int] = None,
-    concepto_busqueda: Optional[str] = None
+    concepto_busqueda: Optional[str] = None,
+    modulo_id: Optional[int] = None,
+    operador_monto: Optional[str] = None,
+    valor_monto: Optional[float] = None,
+    agrupar_por_propietario: bool = False
 ):
     """
     Reporte de Saldos (Balance General) detallado.
@@ -355,6 +359,11 @@ def get_reporte_saldos(
         query_unidades = query_unidades.filter((PHUnidad.propietario_principal_id == propietario_id))
     if torre_id:
         query_unidades = query_unidades.filter(PHUnidad.torre_id == torre_id)
+    
+    if modulo_id:
+        from app.models.propiedad_horizontal.modulo_contribucion import ph_unidad_modulo_association
+        query_unidades = query_unidades.join(ph_unidad_modulo_association, PHUnidad.id == ph_unidad_modulo_association.c.unidad_id)\
+            .filter(ph_unidad_modulo_association.c.modulo_id == modulo_id)
         
     unidades_db = query_unidades.all()
     
@@ -467,11 +476,54 @@ def get_reporte_saldos(
                 "conceptos_count": len(deudas_filtradas)
             })
 
+    # 4. Filtro por Monto
+    if operador_monto and valor_monto is not None:
+        if operador_monto == ">":
+            reporte_items = [i for i in reporte_items if i['saldo'] > valor_monto]
+        elif operador_monto == "<":
+            reporte_items = [i for i in reporte_items if i['saldo'] < valor_monto]
+        elif operador_monto == "=":
+            reporte_items = [i for i in reporte_items if abs(i['saldo'] - valor_monto) < 0.01]
+
+    # Recalcular total general despues de filtros de monto
+    total_general = sum([i['saldo'] for i in reporte_items])
+
+    # 5. Ordenamiento y Agrupación
+    if agrupar_por_propietario:
+        # Agrupar items por nombre de propietario
+        agrupados = defaultdict(list)
+        for item in reporte_items:
+            agrupados[item['propietario_nombre']].append(item)
+        
+        # Transformar en lista de grupos
+        reporte_agrupado = []
+        for prop_nombre, items in agrupados.items():
+            # Ordenar unidades del propietario
+            items.sort(key=lambda x: natural_sort_key(x['unidad_codigo']))
+            reporte_agrupado.append({
+                "propietario_nombre": prop_nombre,
+                "saldo_total": sum([i['saldo'] for i in items]),
+                "unidades_count": len(items),
+                "items": items
+            })
+        
+        # Ordenar grupos por nombre de propietario
+        reporte_agrupado.sort(key=lambda x: natural_sort_key(x['propietario_nombre']))
+        
+        return {
+            "items_agrupados": reporte_agrupado,
+            "items": reporte_items, # Mantenemos lista plana por compatibilidad
+            "total_general": total_general,
+            "fecha_corte": hoy.isoformat(),
+            "is_grouped": True
+        }
+
     # Ordenar por Torre, luego Unidad de forma natural/lógica
     reporte_items.sort(key=lambda x: (natural_sort_key(x['torre_nombre']), natural_sort_key(x['unidad_codigo'])))
 
     return {
         "items": reporte_items,
         "total_general": total_general,
-        "fecha_corte": hoy.isoformat()
+        "fecha_corte": hoy.isoformat(),
+        "is_grouped": False
     }

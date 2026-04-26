@@ -11,7 +11,14 @@ import {
     FaFilter,
     FaCalendarAlt,
     FaBuilding,
-    FaPlay
+    FaPlay,
+    FaUser,
+    FaBox,
+    FaChevronDown,
+    FaChevronUp,
+    FaInfoCircle,
+    FaUsers,
+    FaCalculator
 } from 'react-icons/fa';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -25,10 +32,22 @@ export default function ReporteSaldosPage() {
     const [fechaCorte, setFechaCorte] = useState('');
     const [selectedTorre, setSelectedTorre] = useState('');
     const [conceptoBusqueda, setConceptoBusqueda] = useState('');
+    const [selectedPropietario, setSelectedPropietario] = useState('');
+    const [selectedUnidad, setSelectedUnidad] = useState('');
+    const [selectedModulo, setSelectedModulo] = useState('');
+    const [operadorMonto, setOperadorMonto] = useState('>');
+    const [valorMonto, setValorMonto] = useState('');
+    const [agruparPropietario, setAgruparPropietario] = useState(false);
 
     // Datos Auxiliares
     const [torres, setTorres] = useState([]);
     const [conceptos, setConceptos] = useState([]);
+    const [propietarios, setPropietarios] = useState([]);
+    const [modulos, setModulos] = useState([]);
+    const [unidadesRaw, setUnidadesRaw] = useState([]); // Todas las unidades para el select
+
+    // UI State
+    const [expandedGroups, setExpandedGroups] = useState({}); // {ownerName: bool}
 
 
     // Estado Reporte
@@ -45,12 +64,18 @@ export default function ReporteSaldosPage() {
 
     const loadAuxData = async () => {
         try {
-            const [t, c] = await Promise.all([
+            const [t, c, p, m, u] = await Promise.all([
                 phService.getTorres(),
-                phService.getConceptos()
+                phService.getConceptos(),
+                phService.getPropietarios(),
+                phService.getModulos(),
+                phService.getUnidades({ limit: 5000 })
             ]);
-            setTorres(t);
-            setConceptos(c);
+            setTorres(t || []);
+            setConceptos(c || []);
+            setPropietarios(p || []);
+            setModulos(m || []);
+            setUnidadesRaw(u || []);
         } catch (e) {
             console.error("Error cargando datos auxiliares", e);
         }
@@ -64,9 +89,26 @@ export default function ReporteSaldosPage() {
             if (fechaCorte) params.fecha_corte = fechaCorte;
             if (selectedTorre) params.torre_id = selectedTorre;
             if (conceptoBusqueda) params.concepto_busqueda = conceptoBusqueda;
+            if (selectedPropietario) params.propietario_id = selectedPropietario;
+            if (selectedUnidad) params.unidad_id = selectedUnidad;
+            if (selectedModulo) params.modulo_id = selectedModulo;
+            if (valorMonto !== '') {
+                params.operador_monto = operadorMonto;
+                params.valor_monto = parseFloat(valorMonto);
+            }
+            params.agrupar_por_propietario = agruparPropietario;
 
             const result = await phService.getReporteSaldos(params);
             setData(result);
+            
+            // Expandir todos los grupos por defecto si es agrupado
+            if (result.is_grouped) {
+                const initialExpanded = {};
+                result.items_agrupados.forEach(g => {
+                    initialExpanded[g.propietario_nombre] = true;
+                });
+                setExpandedGroups(initialExpanded);
+            }
         } catch (error) {
             console.error("Error loading report", error);
         } finally {
@@ -87,12 +129,22 @@ export default function ReporteSaldosPage() {
     const handleDownloadCSV = () => {
         if (!data || !data.items) return;
 
-        const headers = ["Torre;Unidad;Propietario;Saldo;Detalle"];
-        const rows = data.items.map(item =>
-            `${item.torre_nombre};${item.unidad_codigo};${item.propietario_nombre};${item.saldo};${item.detalle}`
-        );
+        let csvContent = "Torre;Unidad;Propietario;Saldo;Detalle\n";
+        
+        if (data.is_grouped && data.items_agrupados) {
+            data.items_agrupados.forEach(grupo => {
+                // Fila de cabecera de grupo
+                csvContent += `---;---;RESUMEN: ${grupo.propietario_nombre};${grupo.saldo_total};${grupo.unidades_count} Unidades\n`;
+                grupo.items.forEach(item => {
+                    csvContent += `${item.torre_nombre};${item.unidad_codigo};${item.propietario_nombre};${item.saldo};${item.detalle}\n`;
+                });
+            });
+        } else {
+            data.items.forEach(item => {
+                csvContent += `${item.torre_nombre};${item.unidad_codigo};${item.propietario_nombre};${item.saldo};${item.detalle}\n`;
+            });
+        }
 
-        const csvContent = [headers, ...rows].join("\n");
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -109,44 +161,70 @@ export default function ReporteSaldosPage() {
         if (!data) return;
 
         const doc = new jsPDF();
-        const fechaImpresion = new Date().toLocaleDateString();
-
+        
         // Header
         doc.setFontSize(18);
         doc.setTextColor(40, 40, 40);
         doc.text("Reporte de Saldos de Cartera", 14, 22);
 
         doc.setFontSize(10);
-        doc.text(`Empresa: ${user?.empresaNombre || user?.empresa?.razon_social || user?.empresa?.nombre || 'Consorcio'}`, 14, 28);
+        doc.text(`Empresa: ${user?.empresaNombre || user?.empresa?.razon_social || 'Copropiedad'}`, 14, 28);
         doc.text(`Fecha de Corte: ${fechaCorte || new Date().toLocaleDateString()}`, 14, 34);
-        if (conceptoBusqueda) doc.text(`Filtro Concepto: ${conceptoBusqueda}`, 14, 40);
+        
+        let subHeaderY = 40;
+        if (conceptoBusqueda) { doc.text(`Filtro Concepto: ${conceptoBusqueda}`, 14, subHeaderY); subHeaderY += 6; }
+        if (agruparPropietario) { doc.text(`Informe Agrupado por Propietario`, 14, subHeaderY); subHeaderY += 6; }
 
         const tableColumn = ["Torre", "Unidad", "Propietario", "Saldo", "Detalle"];
         const tableRows = [];
 
-        data.items.forEach(item => {
-            const rowData = [
-                item.torre_nombre,
-                item.unidad_codigo,
-                item.propietario_nombre,
-                `$${item.saldo.toLocaleString()}`,
-                item.detalle
-            ];
-            tableRows.push(rowData);
-        });
+        if (data.is_grouped && data.items_agrupados) {
+            data.items_agrupados.forEach(grupo => {
+                // Fila de cabecera de grupo
+                tableRows.push([
+                    { content: `PROPIETARIO: ${grupo.propietario_nombre}`, colSpan: 3, styles: { fillColor: [240, 240, 240], fontStyle: 'bold' } },
+                    { content: `$${grupo.saldo_total.toLocaleString()}`, styles: { fillColor: [240, 240, 240], fontStyle: 'bold', halign: 'right' } },
+                    { content: `${grupo.unidades_count} Unidades`, styles: { fillColor: [240, 240, 240], fontSize: 7 } }
+                ]);
+                
+                grupo.items.forEach(item => {
+                    tableRows.push([
+                        item.torre_nombre,
+                        item.unidad_codigo,
+                        item.propietario_nombre,
+                        `$${item.saldo.toLocaleString()}`,
+                        item.detalle
+                    ]);
+                });
+            });
+        } else {
+            data.items.forEach(item => {
+                tableRows.push([
+                    item.torre_nombre,
+                    item.unidad_codigo,
+                    item.propietario_nombre,
+                    `$${item.saldo.toLocaleString()}`,
+                    item.detalle
+                ]);
+            });
+        }
 
         // Add Total Row
-        tableRows.push(["", "", "TOTAL GENERAL", `$${data.total_general.toLocaleString()}`, ""]);
+        tableRows.push([
+            { content: "TOTAL GENERAL CARTERA", colSpan: 3, styles: { fillColor: [79, 70, 229], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'right' } },
+            { content: `$${data.total_general.toLocaleString()}`, styles: { fillColor: [79, 70, 229], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'right' } },
+            { content: "", styles: { fillColor: [79, 70, 229] } }
+        ]);
 
         autoTable(doc, {
             head: [tableColumn],
             body: tableRows,
-            startY: 45,
+            startY: subHeaderY + 5,
             theme: 'striped',
-            headStyles: { fillColor: [79, 70, 229] }, // Indigo
+            headStyles: { fillColor: [79, 70, 229] },
             styles: { fontSize: 8 },
             columnStyles: {
-                3: { halign: 'right', fontStyle: 'bold' }
+                3: { halign: 'right' }
             }
         });
 
@@ -168,72 +246,209 @@ export default function ReporteSaldosPage() {
                         </div>
                     </div>
                 </div>
+                {/* Resumen KPIs */}
+                {data && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div className="bg-gradient-to-br from-indigo-500 to-indigo-700 p-6 rounded-2xl shadow-lg text-white">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-indigo-100 text-xs font-bold uppercase tracking-wider mb-1">Total Cartera Bruta</p>
+                                    <h3 className="text-3xl font-black">${(data.total_general > 0 ? data.total_general : 0).toLocaleString()}</h3>
+                                </div>
+                                <div className="bg-white/20 p-3 rounded-xl backdrop-blur-md">
+                                    <FaMoneyBillWave className="text-2xl" />
+                                </div>
+                            </div>
+                            <p className="text-indigo-200 text-[10px] mt-4 flex items-center gap-1">
+                                <FaInfoCircle /> Saldo pendiente acumulado por cobrar
+                            </p>
+                        </div>
 
-                {/* Filtros */}
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Unidades Reportadas</p>
+                                    <h3 className="text-3xl font-black text-gray-800">
+                                        {data.is_grouped ? data.items_agrupados.reduce((acc, g) => acc + g.unidades_count, 0) : data.items.length}
+                                    </h3>
+                                </div>
+                                <div className="bg-indigo-50 p-3 rounded-xl">
+                                    <FaBox className="text-2xl text-indigo-500" />
+                                </div>
+                            </div>
+                            <p className="text-gray-400 text-[10px] mt-4 flex items-center gap-1">
+                                <FaBuilding /> Total de unidades con saldo pendiente
+                            </p>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Total General Neto</p>
+                                    <h3 className={`text-3xl font-black ${data.total_general < 0 ? 'text-green-600' : 'text-indigo-600'}`}>
+                                        ${data.total_general.toLocaleString()}
+                                    </h3>
+                                </div>
+                                <div className="bg-indigo-50 p-3 rounded-xl">
+                                    <FaCalculator className="text-2xl text-indigo-500" />
+                                </div>
+                            </div>
+                            <p className="text-gray-400 text-[10px] mt-4">
+                                {data.total_general < 0 ? 'Excedente (Saldos a favor superan deuda)' : 'Balance neto por recaudar'}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Filtros Avanzados */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4">
                         {/* Fecha Corte */}
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                                <FaCalendarAlt className="text-indigo-500" /> Fecha de Corte
+                        <div className="lg:col-span-1">
+                            <label className="block text-[11px] font-bold text-gray-400 uppercase mb-2 flex items-center gap-2">
+                                <FaCalendarAlt className="text-indigo-500" /> Corte
                             </label>
                             <input
                                 type="date"
-                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                                className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
                                 value={fechaCorte}
                                 onChange={(e) => setFechaCorte(e.target.value)}
                             />
-                            <span className="text-xs text-gray-400 mt-1 block">Vacío = HOY</span>
                         </div>
 
                         {/* Torre */}
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                                <FaBuilding className="text-indigo-500" /> Filtrar por {labels?.torre || 'Torre'}
+                        <div className="lg:col-span-1">
+                            <label className="block text-[11px] font-bold text-gray-400 uppercase mb-2 flex items-center gap-2">
+                                <FaBuilding className="text-indigo-500" /> {labels?.torre || 'Torre'}
                             </label>
                             <select
-                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                                className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-sm"
                                 value={selectedTorre}
                                 onChange={(e) => setSelectedTorre(e.target.value)}
                             >
-                                <option value="">Todas las {labels?.torre_plural || 'Torres'}</option>
+                                <option value="">Todas</option>
                                 {torres.map(t => (
                                     <option key={t.id} value={t.id}>{t.nombre}</option>
                                 ))}
                             </select>
                         </div>
 
-                        {/* Concepto (Texto) */}
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                                <FaFilter className="text-indigo-500" /> Filtrar por {labels?.concepto || 'Concepto'}
+                        {/* Propietario */}
+                        <div className="lg:col-span-1">
+                            <label className="block text-[11px] font-bold text-gray-400 uppercase mb-2 flex items-center gap-2">
+                                <FaUser className="text-indigo-500" /> Propietario
                             </label>
-                            <div className="relative">
-                                <select
-                                    className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white appearance-none pr-10"
-                                    value={conceptoBusqueda}
-                                    onChange={(e) => setConceptoBusqueda(e.target.value)}
-                                >
-                                    <option value="">Todos los {labels?.concepto_plural || 'Conceptos'}</option>
-                                    {conceptos.map(c => (
-                                        <option key={c.id} value={c.nombre}>{c.nombre}</option>
-                                    ))}
-                                </select>
-                                <FaSearch className="absolute right-4 top-3 text-gray-400 pointer-events-none" />
-                            </div>
-                            <span className="text-xs text-gray-400 mt-1 block">Selecciona el concepto específico para ver sus saldos netos.</span>
+                            <select
+                                className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-sm"
+                                value={selectedPropietario}
+                                onChange={(e) => setSelectedPropietario(e.target.value)}
+                            >
+                                <option value="">Todos</option>
+                                {propietarios.map(p => (
+                                    <option key={p.id} value={p.id}>{p.nombre}</option>
+                                ))}
+                            </select>
                         </div>
 
+                        {/* Unidad */}
+                        <div className="lg:col-span-1">
+                            <label className="block text-[11px] font-bold text-gray-400 uppercase mb-2 flex items-center gap-2">
+                                <FaBox className="text-indigo-500" /> Unidad
+                            </label>
+                            <select
+                                className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-sm"
+                                value={selectedUnidad}
+                                onChange={(e) => setSelectedUnidad(e.target.value)}
+                            >
+                                <option value="">Todas</option>
+                                {unidadesRaw.map(u => (
+                                    <option key={u.id} value={u.id}>{u.codigo}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Módulo */}
+                        <div className="lg:col-span-1">
+                            <label className="block text-[11px] font-bold text-gray-400 uppercase mb-2 flex items-center gap-2">
+                                <FaFilter className="text-indigo-500" /> Módulo
+                            </label>
+                            <select
+                                className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-sm"
+                                value={selectedModulo}
+                                onChange={(e) => setSelectedModulo(e.target.value)}
+                            >
+                                <option value="">Todos</option>
+                                {modulos.map(m => (
+                                    <option key={m.id} value={m.id}>{m.nombre}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Rango Monto */}
+                        <div className="lg:col-span-1">
+                            <label className="block text-[11px] font-bold text-gray-400 uppercase mb-2 flex items-center gap-2">
+                                <FaMoneyBillWave className="text-indigo-500" /> Saldo
+                            </label>
+                            <div className="flex gap-1">
+                                <select 
+                                    className="px-1 py-2 border rounded-l-xl outline-none text-xs bg-gray-50"
+                                    value={operadorMonto}
+                                    onChange={(e) => setOperadorMonto(e.target.value)}
+                                >
+                                    <option value=">">{'>'}</option>
+                                    <option value="<">{'<'}</option>
+                                    <option value="=">{'='}</option>
+                                </select>
+                                <input
+                                    type="number"
+                                    placeholder="Valor"
+                                    className="w-full px-3 py-2 border rounded-r-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                                    value={valorMonto}
+                                    onChange={(e) => setValorMonto(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Concepto (Texto) */}
+                        <div className="md:col-span-2 lg:col-span-2">
+                            <label className="block text-[11px] font-bold text-gray-400 uppercase mb-2">
+                                Filtrar por Concepto Específico
+                            </label>
+                            <select
+                                className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-sm"
+                                value={conceptoBusqueda}
+                                onChange={(e) => setConceptoBusqueda(e.target.value)}
+                            >
+                                <option value="">Todos los Conceptos</option>
+                                {conceptos.map(c => (
+                                    <option key={c.id} value={c.nombre}>{c.nombre}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Agrupación */}
+                        <div className="md:col-span-2 lg:col-span-2 flex items-center gap-3 pt-6">
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    className="sr-only peer" 
+                                    checked={agruparPropietario}
+                                    onChange={(e) => setAgruparPropietario(e.target.checked)}
+                                />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                <span className="ml-3 text-sm font-bold text-gray-700">Agrupar por Propietario</span>
+                            </label>
+                        </div>
 
                         {/* Botón Ejecutar */}
-                        <div className="flex items-end">
+                        <div className="md:col-span-4 lg:col-span-2 flex items-end">
                             <button
                                 onClick={loadReporte}
                                 disabled={loading}
                                 className="w-full py-2.5 bg-indigo-600 text-white font-bold rounded-xl shadow-md hover:bg-indigo-700 transition-all flex justify-center items-center gap-2 disabled:opacity-50"
                             >
                                 {loading ? <span className="loading loading-spinner loading-sm"></span> : <FaPlay />}
-                                {loading ? 'Procesando...' : 'Generar Informe'}
+                                {loading ? 'Cargando...' : 'Actualizar Informe'}
                             </button>
                         </div>
                     </div>
@@ -293,7 +508,42 @@ export default function ReporteSaldosPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    {data?.items.length === 0 ? (
+                                {data?.is_grouped ? (
+                                    data?.items_agrupados.map((grupo, gIdx) => (
+                                        <React.Fragment key={gIdx}>
+                                            <tr 
+                                                className="bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+                                                onClick={() => setExpandedGroups(prev => ({ ...prev, [grupo.propietario_nombre]: !prev[grupo.propietario_nombre] }))}
+                                            >
+                                                <td colSpan="4" className="p-4">
+                                                    <div className="flex items-center gap-3">
+                                                        {expandedGroups[grupo.propietario_nombre] ? <FaChevronUp className="text-gray-400 text-xs" /> : <FaChevronDown className="text-gray-400 text-xs" />}
+                                                        <FaUsers className="text-indigo-500" />
+                                                        <span className="font-bold text-gray-800">{grupo.propietario_nombre}</span>
+                                                        <span className="text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-bold">{grupo.unidades_count} Unidades</span>
+                                                    </div>
+                                                </td>
+                                                <td className="p-4 text-right font-black text-indigo-700">
+                                                    ${grupo.saldo_total.toLocaleString()}
+                                                </td>
+                                            </tr>
+                                            {expandedGroups[grupo.propietario_nombre] && grupo.items.map((item, idx) => (
+                                                <tr key={`${gIdx}-${idx}`} className="hover:bg-indigo-50 transition-colors group">
+                                                    <td className="p-4 text-xs text-gray-400 pl-10">{item.torre_nombre}</td>
+                                                    <td className="p-4 text-sm font-bold text-indigo-600">{item.unidad_codigo}</td>
+                                                    <td className="p-4 text-sm text-gray-500 italic">Unidad vinculada</td>
+                                                    <td className="p-4 text-xs text-gray-500 max-w-xs truncate" title={item.detalle}>
+                                                        {item.detalle}
+                                                    </td>
+                                                    <td className="p-4 text-sm font-bold text-right text-gray-800">
+                                                        ${item.saldo.toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </React.Fragment>
+                                    ))
+                                ) : (
+                                    data?.items.length === 0 ? (
                                         <tr>
                                             <td colSpan="5" className="p-8 text-center text-gray-400 italic">No se encontraron saldos con los filtros aplicados.</td>
                                         </tr>
@@ -311,18 +561,19 @@ export default function ReporteSaldosPage() {
                                                 </td>
                                             </tr>
                                         ))
-                                    )}
-                                </tbody>
-                                {data?.items.length > 0 && (
-                                    <tfoot className="bg-gray-100">
-                                        <tr>
-                                            <td colSpan="4" className="p-4 text-right font-bold text-gray-700 uppercase">Total General:</td>
-                                            <td className="p-4 text-right font-black text-indigo-700 text-lg">
-                                                ${data.total_general.toLocaleString()}
-                                            </td>
-                                        </tr>
-                                    </tfoot>
+                                    )
                                 )}
+                            </tbody>
+                            {data && (data?.items?.length > 0 || data?.items_agrupados?.length > 0) && (
+                                <tfoot className="bg-gray-50 border-t-2 border-gray-100">
+                                    <tr>
+                                        <td colSpan="4" className="p-6 text-right font-bold text-gray-500 uppercase tracking-widest">Total General Cartera:</td>
+                                        <td className="p-6 text-right font-black text-indigo-700 text-2xl">
+                                            ${data.total_general.toLocaleString()}
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            )}
                             </table>
                         </div>
                     )}

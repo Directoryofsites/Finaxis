@@ -599,6 +599,10 @@ def get_reporte_saldos(
     propietario_id: Optional[int] = None,
     torre_id: Optional[int] = None,
     concepto_busqueda: Optional[str] = None,
+    modulo_id: Optional[int] = None,
+    operador_monto: Optional[str] = None,
+    valor_monto: Optional[float] = None,
+    agrupar_por_propietario: bool = False,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
@@ -613,7 +617,11 @@ def get_reporte_saldos(
         unidad_id=unidad_id,
         propietario_id=propietario_id,
         torre_id=torre_id,
-        concepto_busqueda=concepto_busqueda
+        concepto_busqueda=concepto_busqueda,
+        modulo_id=modulo_id,
+        operador_monto=operador_monto,
+        valor_monto=valor_monto,
+        agrupar_por_propietario=agrupar_por_propietario
     )
 
 # --- PRESUPUESTOS ---

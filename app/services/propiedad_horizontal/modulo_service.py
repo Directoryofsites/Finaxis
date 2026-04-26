@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from app.models.propiedad_horizontal.modulo_contribucion import PHModuloContribucion
 from app.models.propiedad_horizontal.unidad import PHTorre
 from app.schemas.propiedad_horizontal.modulo_contribucion import PHModuloContribucionCreate, PHModuloContribucionUpdate
+from app.utils.sorting import natural_sort_key
 
 def _modulo_to_dict(m):
     """Convierte un PHModuloContribucion a dict incluyendo torres_ids."""
@@ -19,7 +20,10 @@ def get_modulos(db: Session, empresa_id: int):
     modulos = db.query(PHModuloContribucion)\
         .options(joinedload(PHModuloContribucion.torres))\
         .filter(PHModuloContribucion.empresa_id == empresa_id).all()
-    return [_modulo_to_dict(m) for m in modulos]
+    
+    results = [_modulo_to_dict(m) for m in modulos]
+    results.sort(key=lambda x: natural_sort_key(x['nombre']))
+    return results
 
 def create_modulo(db: Session, modulo: PHModuloContribucionCreate, empresa_id: int):
     torres_ids = modulo.torres_ids or []

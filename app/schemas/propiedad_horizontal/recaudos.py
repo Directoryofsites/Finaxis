@@ -45,7 +45,15 @@ class ReporteSaldoItem(BaseModel):
     antiguedad_promedio: float = 0
     conceptos_count: int = 0
 
+class ReporteSaldoGrupo(BaseModel):
+    propietario_nombre: str
+    saldo_total: float
+    unidades_count: int
+    items: List[ReporteSaldoItem]
+
 class ReporteSaldoResponse(BaseModel):
     items: List[ReporteSaldoItem]
+    items_agrupados: Optional[List[ReporteSaldoGrupo]] = None
     total_general: float
     fecha_corte: Optional[str] = None
+    is_grouped: bool = False
