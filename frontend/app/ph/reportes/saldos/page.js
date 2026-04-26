@@ -465,11 +465,15 @@ export default function ReporteSaldosPage() {
                         </div>
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
                             <div>
-                                <p className="text-gray-500 text-sm font-bold uppercase">{labels?.unidad_plural || labels?.unidad || 'Unidades'} con Deuda</p>
-                                <h2 className="text-3xl font-bold text-gray-800">{data.items.length}</h2>
+                                <p className="text-gray-500 text-sm font-bold uppercase">
+                                    {data.is_grouped ? 'Propietarios Responsables' : (labels?.unidad_plural || labels?.unidad || 'Unidades')}
+                                </p>
+                                <h2 className="text-3xl font-bold text-gray-800">
+                                    {data.is_grouped ? data.items_agrupados.length : data.items.length}
+                                </h2>
                             </div>
                             <div className="bg-indigo-50 p-3 rounded-full text-indigo-600">
-                                <FaBuilding className="text-xl" />
+                                {data.is_grouped ? <FaUsers className="text-xl" /> : <FaBuilding className="text-xl" />}
                             </div>
                         </div>
                         <div className="flex flex-col gap-2 justify-center">
@@ -513,31 +517,65 @@ export default function ReporteSaldosPage() {
                                     data?.items_agrupados.map((grupo, gIdx) => (
                                         <React.Fragment key={gIdx}>
                                             <tr 
-                                                className="bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+                                                className="bg-gray-50/80 cursor-pointer hover:bg-indigo-50 transition-colors border-l-4 border-indigo-500"
                                                 onClick={() => setExpandedGroups(prev => ({ ...prev, [grupo.propietario_nombre]: !prev[grupo.propietario_nombre] }))}
                                             >
                                                 <td colSpan="4" className="p-4">
-                                                    <div className="flex items-center gap-3">
-                                                        {expandedGroups[grupo.propietario_nombre] ? <FaChevronUp className="text-gray-400 text-xs" /> : <FaChevronDown className="text-gray-400 text-xs" />}
-                                                        <FaUsers className="text-indigo-500" />
-                                                        <span className="font-bold text-gray-800">{grupo.propietario_nombre}</span>
-                                                        <span className="text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-bold">{grupo.unidades_count} Unidades</span>
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`p-1.5 rounded-lg transition-transform ${expandedGroups[grupo.propietario_nombre] ? 'rotate-0' : '-rotate-90'} bg-white shadow-sm border`}>
+                                                            <FaChevronDown className="text-indigo-600 text-[10px]" />
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-black text-gray-800 tracking-tight">{grupo.propietario_nombre}</span>
+                                                                <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-black uppercase tracking-tighter">
+                                                                    {grupo.unidades_count} {grupo.unidades_count === 1 ? 'Unidad' : 'Unidades'}
+                                                                </span>
+                                                            </div>
+                                                            <span className="text-[10px] text-gray-400 font-medium">Responsable de pago consolidado</span>
+                                                        </div>
                                                     </div>
                                                 </td>
-                                                <td className="p-4 text-right font-black text-indigo-700">
-                                                    ${grupo.saldo_total.toLocaleString()}
+                                                <td className="p-4 text-right">
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-lg font-black text-indigo-700 leading-none">
+                                                            ${grupo.saldo_total.toLocaleString()}
+                                                        </span>
+                                                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Total Deuda</span>
+                                                    </div>
                                                 </td>
                                             </tr>
                                             {expandedGroups[grupo.propietario_nombre] && grupo.items.map((item, idx) => (
-                                                <tr key={`${gIdx}-${idx}`} className="hover:bg-indigo-50 transition-colors group">
-                                                    <td className="p-4 text-xs text-gray-400 pl-10">{item.torre_nombre}</td>
-                                                    <td className="p-4 text-sm font-bold text-indigo-600">{item.unidad_codigo}</td>
-                                                    <td className="p-4 text-sm text-gray-500 italic">Unidad vinculada</td>
-                                                    <td className="p-4 text-xs text-gray-500 max-w-xs truncate" title={item.detalle}>
-                                                        {item.detalle}
+                                                <tr key={`${gIdx}-${idx}`} className="hover:bg-white transition-colors group border-l-4 border-transparent hover:border-indigo-200">
+                                                    <td className="p-4 text-xs text-gray-400 pl-14">
+                                                        <div className="flex items-center gap-2">
+                                                            <FaBuilding className="text-[10px]" />
+                                                            {item.torre_nombre}
+                                                        </div>
                                                     </td>
-                                                    <td className="p-4 text-sm font-bold text-right text-gray-800">
-                                                        ${item.saldo.toLocaleString()}
+                                                    <td className="p-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-black text-indigo-600">{item.unidad_codigo}</span>
+                                                            <span className="text-[9px] text-gray-400 uppercase font-bold">Unidad Inmobiliaria</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4 text-xs text-gray-500 italic">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-2 h-2 rounded-full bg-indigo-200"></div>
+                                                            Vínculo verificado
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <div className="max-w-xs">
+                                                            <p className="text-[11px] text-gray-600 leading-tight line-clamp-2" title={item.detalle}>
+                                                                {item.detalle}
+                                                            </p>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4 text-right">
+                                                        <span className="text-sm font-bold text-gray-700">
+                                                            ${item.saldo.toLocaleString()}
+                                                        </span>
                                                     </td>
                                                 </tr>
                                             ))}

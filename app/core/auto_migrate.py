@@ -14,6 +14,7 @@ def run_auto_migrations():
     logger.info("Iniciando auto-migraciones de esquema...")
     
     try:
+        migrations = []
         # Usamos una conexión limpia para inspeccionar
         with engine.connect() as connection:
             
@@ -80,6 +81,7 @@ def run_auto_migrations():
                 ("factura_rango_id", "INTEGER"),
                 ("ds_prefijo", "VARCHAR(10)"),
                 ("ds_resolucion_numero", "VARCHAR(50)"),
+            ]
             # configuracion_fe
             for col, col_type in config_fe_cols:
                 if col not in cols_config_fe:

@@ -58,7 +58,7 @@ class ControlPlanMensual(Base):
     es_manual = Column(Boolean, default=False) # Si es True, el límite no se recalcula automáticamente
 
     # Relaciones
-    empresa = relationship("Empresa")
+    empresa = relationship("Empresa", overlaps="control_planes,empresa_ctrl_plan")
 
 class BolsaExcedente(Base):
     __tablename__ = "bolsa_excedente"
@@ -77,7 +77,7 @@ class BolsaExcedente(Base):
     
     estado = Column(String, default=EstadoBolsa.VIGENTE.value)
 
-    empresa = relationship("Empresa")
+    empresa = relationship("Empresa", overlaps="bolsas_excedentes,empresa_bolsa_exc")
 
     __table_args__ = (
         Index("idx_bolsa_fifo", "empresa_id", "fecha_vencimiento", "estado"),
@@ -104,7 +104,7 @@ class RecargaAdicional(Base):
     facturado = Column(Boolean, default=False) # Si ya se cobró en factura periódica
     fecha_facturacion = Column(DateTime, nullable=True) # Cuándo se cobró
 
-    empresa = relationship("Empresa")
+    empresa = relationship("Empresa", overlaps="recargas_adicionales,empresa_recarga")
 
 class PaqueteRecarga(Base):
     __tablename__ = "paquetes_recarga"

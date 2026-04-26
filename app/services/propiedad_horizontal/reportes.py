@@ -467,9 +467,10 @@ def get_reporte_saldos(
 
             reporte_items.append({
                 "unidad_id": u.id,
-                "unidad_codigo": u.codigo,
-                "propietario_nombre": nombre_prop,
-                "torre_nombre": nombre_torre,
+                "unidad_codigo": u.codigo.strip(),
+                "propietario_id": u.propietario_principal_id,
+                "propietario_nombre": nombre_prop.strip(),
+                "torre_nombre": nombre_torre.strip(),
                 "saldo": saldo_unidad,
                 "detalle": detalle_final,
                 "antiguedad_promedio": 0, # TODO: Calcular si se requiere, por ahora simple
@@ -501,6 +502,7 @@ def get_reporte_saldos(
             # Ordenar unidades del propietario
             items.sort(key=lambda x: natural_sort_key(x['unidad_codigo']))
             reporte_agrupado.append({
+                "propietario_id": items[0].get('propietario_id'),
                 "propietario_nombre": prop_nombre,
                 "saldo_total": sum([i['saldo'] for i in items]),
                 "unidades_count": len(items),
