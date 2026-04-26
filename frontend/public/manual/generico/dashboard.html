@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Principal - Manual de Gestión de Recaudos</title>
+    <link rel="stylesheet" href="assets/css/manual-styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">🏢 Dashboard Principal</div>
+                <div class="subtitle">Manual de Usuario - Gestión de Recaudos</div>
+                <div class="version">Sistema ContaPY2 - Módulo PH</div>
+            </div>
+        </header>
+
+        <nav class="nav">
+            <ul>
+                <li><a href="#introduccion">Introducción</a></li>
+                <li><a href="#acceso">Acceso</a></li>
+                <li><a href="#funcionalidades">Funcionalidades</a></li>
+                <li><a href="#navegacion">Navegación</a></li>
+                <li><a href="#ejemplos">Ejemplos</a></li>
+            </ul>
+        </nav>
+
+        <main class="content">
+            <!-- Tabla de Contenidos -->
+            <div class="toc">
+                <h3>📑 Contenido</h3>
+                <ul>
+                    <!-- Se genera automáticamente con JavaScript -->
+                </ul>
+            </div>
+
+            <!-- Sección de Introducción -->
+            <section id="introduccion" class="section">
+                <h2>🎯 Introducción</h2>
+                <p>El Dashboard Principal del módulo de Gestión de Recaudos es el punto central de acceso a todas las funcionalidades del sistema. Desde aquí puede navegar a las diferentes opciones para administrar unidades, propietarios, conceptos de cobro, facturación y reportes.</p>
+                
+                <div class="info">
+                    <strong>💡 Objetivo:</strong> Proporcionar acceso rápido y organizado a todas las herramientas de gestión de recaudos del sistema.
+                </div>
+
+                <h3>¿Qué puede hacer desde el Dashboard?</h3>
+                <ul>
+                    <li>✅ Acceder a la gestión de unidades y activos</li>
+                    <li>✅ Administrar el directorio de propietarios</li>
+                    <li>✅ Configurar conceptos de cobro</li>
+                    <li>✅ Generar facturación masiva</li>
+                    <li>✅ Registrar pagos y recaudos</li>
+                    <li>✅ Consultar estados de cuenta</li>
+                    <li>✅ Generar reportes financieros</li>
+                    <li>✅ Configurar parámetros del sistema</li>
+                </ul>
+            </section>
+
+            <!-- Sección de Acceso -->
+            <section id="acceso" class="section">
+                <h2>🚪 Cómo Acceder</h2>
+                <ol class="step-list">
+                    <li>Ingrese al sistema ContaPY2 con sus credenciales</li>
+                    <li>En el menú principal, localice la opción "Gestión de Recaudos" (icono de edificio)</li>
+                    <li>Haga clic en "Gestión de Recaudos" para acceder al dashboard</li>
+                </ol>
+
+                <div class="screenshot">
+                    <img src="assets/images/screenshots/menu-principal.png" alt="Menú principal del sistema" style="border: 2px solid #e5e7eb; border-radius: 8px;">
+                    <div class="screenshot-caption">Ubicación del módulo "Gestión de Recaudos" en el menú principal</div>
+                </div>
+
+                <div class="highlight">
+                    <strong>📋 Nota:</strong> El módulo también puede aparecer como "Propiedad Horizontal" o "PH" dependiendo de la configuración de su sistema.
+                </div>
+            </section>
+
+            <!-- Sección de Funcionalidades -->
+            <section id="funcionalidades" class="section">
+                <h2>⚙️ Opciones del Dashboard</h2>
+                
+                <h3>🏠 Unidades Privadas</h3>
+                <p><strong>Descripción:</strong> Administrar apartamentos, casas, locales y cualquier tipo de activo sujeto a cobro.</p>
+                <p><strong>Funciones principales:</strong></p>
+                <ul>
+                    <li>Crear y editar unidades</li>
+                    <li>Asignar propietarios</li>
+                    <li>Configurar coeficientes de participación</li>
+                    <li>Gestionar módulos de cobro</li>
+                </ul>
+
+                <h3>👥 Propietarios</h3>
+                <p><strong>Descripción:</strong> Directorio completo de copropietarios, residentes y responsables de pago.</p>
+                <p><strong>Funciones principales:</strong></p>
+                <ul>
+                    <li>Registrar información de contacto</li>
+                    <li>Gestionar datos fiscales</li>
+                    <li>Asignar unidades a propietarios</li>
+                    <li>Consultar historial de pagos</li>
+                </ul>
+
+                <h3>📋 Conceptos de Cobro</h3>
+                <p><strong>Descripción:</strong> Definir cuotas de administración, servicios adicionales y conceptos recurrentes.</p>
+                <p><strong>Funciones principales:</strong></p>
+                <ul>
+                    <li>Crear conceptos de cobro</li>
+                    <li>Configurar cuentas contables</li>
+                    <li>Establecer valores y periodicidad</li>
+                    <li>Gestionar intereses por mora</li>
+                </ul>
+
+                <h3>🧾 Facturación Masiva</h3>
+                <p><strong>Descripción:</strong> Generar cuentas de cobro mensuales de forma automática para todas las unidades.</p>
+                <p><strong>Funciones principales:</strong></p>
+                <ul>
+                    <li>Generar facturación por período</li>
+                    <li>Seleccionar conceptos a facturar</li>
+                    <li>Revisar y confirmar facturación</li>
+                    <li>Consultar historial de facturación</li>
+                </ul>
+
+                <h3>🏠 Estado de Cuenta</h3>
+                <p><strong>Descripción:</strong> Consultar saldos pendientes, movimientos y generar paz y salvos.</p>
+                <p><strong>Funciones principales:</strong></p>
+                <ul>
+                    <li>Consultar saldos por unidad</li>
+                    <li>Ver historial de movimientos</li>
+                    <li>Generar paz y salvos</li>
+                    <li>Imprimir estados de cuenta</li>
+                </ul>
+
+                <h3>💰 Registro de Pagos</h3>
+                <p><strong>Descripción:</strong> Asentar recaudos de administración y aplicar pagos a las cuentas.</p>
+                <p><strong>Funciones principales:</strong></p>
+                <ul>
+                    <li>Registrar pagos individuales</li>
+                    <li>Aplicar pagos consolidados</li>
+                    <li>Gestionar formas de pago</li>
+                    <li>Consultar cartera pendiente</li>
+                </ul>
+
+                <h3>📊 Reportes</h3>
+                <p><strong>Descripción:</strong> Informes financieros y de cartera para análisis y toma de decisiones.</p>
+                <p><strong>Funciones principales:</strong></p>
+                <ul>
+                    <li>Reportes de movimientos</li>
+                    <li>Cartera por edades</li>
+                    <li>Balance de cartera</li>
+                    <li>Ejecución presupuestal</li>
+                </ul>
+
+                <h3>⚙️ Configuración PH</h3>
+                <p><strong>Descripción:</strong> Parámetros generales del conjunto y configuración del sistema.</p>
+                <p><strong>Funciones principales:</strong></p>
+                <ul>
+                    <li>Configurar datos del conjunto</li>
+                    <li>Gestionar torres y bloques</li>
+                    <li>Configurar módulos de cobro</li>
+                    <li>Establecer parámetros contables</li>
+                </ul>
+            </section>
+
+            <!-- Sección de Navegación -->
+            <section id="navegacion" class="section">
+                <h2>🧭 Navegación en el Dashboard</h2>
+                
+                <h3>Diseño de Tarjetas</h3>
+                <p>El dashboard utiliza un diseño de tarjetas organizadas en una cuadrícula que se adapta al tamaño de la pantalla:</p>
+                
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Elemento</th>
+                                <th>Descripción</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>🎨 Icono de Color</td>
+                                <td>Cada opción tiene un icono distintivo con color específico</td>
+                                <td>Identificación visual rápida</td>
+                            </tr>
+                            <tr>
+                                <td>📝 Título</td>
+                                <td>Nombre descriptivo de la funcionalidad</td>
+                                <td>Indica el propósito principal</td>
+                            </tr>
+                            <tr>
+                                <td>📄 Descripción</td>
+                                <td>Breve explicación de lo que hace la opción</td>
+                                <td>Ayuda a entender la función</td>
+                            </tr>
+                            <tr>
+                                <td>🖱️ Hover Effect</td>
+                                <td>Efecto visual al pasar el mouse</td>
+                                <td>Indica que es clickeable</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Interacción</h3>
+                <ol class="step-list">
+                    <li>Pase el mouse sobre cualquier tarjeta para ver el efecto de elevación</li>
+                    <li>Haga clic en la tarjeta completa para acceder a la funcionalidad</li>
+                    <li>Use el botón "Manual" (si está disponible) para acceder a la ayuda específica</li>
+                </ol>
+
+                <div class="info">
+                    <strong>💡 Consejo:</strong> Las tarjetas están organizadas por flujo de trabajo típico: primero configuración (unidades, propietarios, conceptos), luego operación (facturación, pagos) y finalmente consulta (reportes).
+                </div>
+            </section>
+
+            <!-- Sección de Ejemplos -->
+            <section id="ejemplos" class="section">
+                <h2>📝 Flujo de Trabajo Típico</h2>
+                
+                <h3>Configuración Inicial (Primera vez)</h3>
+                <ol class="step-list">
+                    <li><strong>Configuración PH:</strong> Establecer datos básicos del conjunto residencial</li>
+                    <li><strong>Unidades Privadas:</strong> Registrar todas las unidades (apartamentos, locales, etc.)</li>
+                    <li><strong>Propietarios:</strong> Crear el directorio de propietarios y residentes</li>
+                    <li><strong>Conceptos de Cobro:</strong> Definir cuotas de administración y servicios</li>
+                </ol>
+
+                <h3>Operación Mensual</h3>
+                <ol class="step-list">
+                    <li><strong>Facturación Masiva:</strong> Generar las cuentas de cobro del mes</li>
+                    <li><strong>Registro de Pagos:</strong> Asentar los recaudos recibidos</li>
+                    <li><strong>Estado de Cuenta:</strong> Consultar saldos y generar paz y salvos</li>
+                    <li><strong>Reportes:</strong> Generar informes para la junta directiva</li>
+                </ol>
+
+                <div class="success">
+                    <strong>✅ Recomendación:</strong> Siga este flujo secuencial para obtener mejores resultados y evitar errores en el proceso.
+                </div>
+            </section>
+
+            <!-- Sección de Errores Comunes -->
+            <section id="errores" class="section">
+                <h2>⚠️ Problemas Comunes y Soluciones</h2>
+                
+                <h3>No aparece el módulo en el menú</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> No veo la opción "Gestión de Recaudos" en el menú principal.
+                    <br><strong>Solución:</strong> 
+                    <ul>
+                        <li>Verifique que tenga permisos para acceder al módulo PH</li>
+                        <li>Contacte al administrador del sistema</li>
+                        <li>El módulo puede aparecer con otro nombre como "Propiedad Horizontal"</li>
+                    </ul>
+                </div>
+
+                <h3>Las tarjetas no responden al clic</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> Hago clic en las tarjetas pero no pasa nada.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique su conexión a internet</li>
+                        <li>Actualice la página (F5)</li>
+                        <li>Limpie la caché del navegador</li>
+                        <li>Intente con otro navegador</li>
+                    </ul>
+                </div>
+
+                <h3>Carga muy lenta</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> El dashboard tarda mucho en cargar.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique la velocidad de su conexión a internet</li>
+                        <li>Cierre otras pestañas del navegador</li>
+                        <li>Contacte al soporte técnico si el problema persiste</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Sección de Ayuda Adicional -->
+            <section class="section">
+                <h2>🆘 ¿Necesita Más Ayuda?</h2>
+                <div class="highlight">
+                    <p><strong>Recursos Adicionales:</strong></p>
+                    <ul>
+                        <li>📖 Cada sección tiene su propio manual detallado</li>
+                        <li>🎥 Videos tutoriales disponibles en el sistema</li>
+                        <li>💬 Chat de soporte en línea</li>
+                        <li>📞 Soporte telefónico en horario laboral</li>
+                    </ul>
+                </div>
+
+                <div class="info">
+                    <p><strong>Contacto de Soporte:</strong></p>
+                    <ul>
+                        <li>📧 Email: soporte@contapy2.com</li>
+                        <li>📞 Teléfono: +57 (1) 234-5678</li>
+                        <li>💬 Chat en línea: Disponible en el sistema</li>
+                        <li>🕒 Horario: Lunes a Viernes 8:00 AM - 6:00 PM</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 ContaPY2 - Sistema de Gestión Contable Integral</p>
+            <p>Manual generado automáticamente - Versión 1.0</p>
+        </footer>
+    </div>
+
+    <script src="assets/js/manual-navigation.js"></script>
+</body>
+</html>

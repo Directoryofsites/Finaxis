@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { FaBook, FaQuestionCircle } from 'react-icons/fa';
+import { FaBook } from 'react-icons/fa';
+import { useRecaudos } from '../../contexts/RecaudosContext';
 
 /**
  * Componente reutilizable para botones de manual
@@ -21,6 +22,8 @@ const ManualButton = ({
     showText = true,
     icon = null
 }) => {
+    const { config } = useRecaudos();
+
     const handleOpenManual = () => {
         if (!manualPath) {
             console.warn('ManualButton: No se especificó ruta del manual');
@@ -28,8 +31,17 @@ const ManualButton = ({
             return;
         }
 
+        // Determinar subcarpeta según sector
+        // Si no hay config, usamos 'ph' por defecto (retrocompatibilidad)
+        const sectorFolder = config?.tipo_negocio ? config.tipo_negocio.toLowerCase() : 'ph';
+        
         // Construir la ruta completa del manual
-        const fullPath = manualPath.startsWith('/') ? manualPath : `/manual/ph/${manualPath}`;
+        let fullPath = manualPath;
+        if (!manualPath.startsWith('/')) {
+            // Si el manual está en la carpeta del sector, lo buscamos ahí
+            // Si no existe, podría fallar, pero la idea es que cada sector tenga sus clones
+            fullPath = `/manual/${sectorFolder}/${manualPath}`;
+        }
         
         // Abrir en nueva ventana
         const manualWindow = window.open(

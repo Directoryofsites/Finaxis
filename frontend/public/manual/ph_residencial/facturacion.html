@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facturación Masiva - Manual de Gestión de Recaudos</title>
+    <link rel="stylesheet" href="assets/css/manual-styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">🧾 Facturación Masiva</div>
+                <div class="subtitle">Manual de Usuario - Gestión de Recaudos</div>
+                <div class="version">Sistema ContaPY2 - Módulo PH</div>
+            </div>
+        </header>
+
+        <nav class="nav">
+            <ul>
+                <li><a href="#introduccion">Introducción</a></li>
+                <li><a href="#acceso">Acceso</a></li>
+                <li><a href="#proceso">Proceso</a></li>
+                <li><a href="#configuracion">Configuración</a></li>
+                <li><a href="#revision">Revisión</a></li>
+                <li><a href="#historial">Historial</a></li>
+                <li><a href="#errores">Errores Comunes</a></li>
+            </ul>
+        </nav>
+
+        <main class="content">
+            <div class="toc">
+                <h3>📑 Contenido</h3>
+                <ul></ul>
+            </div>
+
+            <section id="introduccion" class="section">
+                <h2>🎯 Introducción</h2>
+                <p>La Facturación Masiva es el proceso mediante el cual se generan automáticamente todas las cuentas de cobro del período (generalmente mensual) para todas las unidades de la propiedad horizontal. Este proceso aplica los conceptos de cobro configurados según los módulos asignados a cada unidad.</p>
+                
+                <div class="info">
+                    <strong>💡 Objetivo:</strong> Generar de forma automática y precisa todas las obligaciones de pago del período, aplicando los conceptos correctos a cada unidad según su configuración.
+                </div>
+
+                <h3>¿Qué hace la Facturación Masiva?</h3>
+                <ul>
+                    <li>✅ Genera cuentas de cobro para todas las unidades</li>
+                    <li>✅ Aplica conceptos según módulos asignados</li>
+                    <li>✅ Calcula valores por coeficiente o valor fijo</li>
+                    <li>✅ Crea movimientos contables automáticamente</li>
+                    <li>✅ Actualiza saldos de cuentas por cobrar</li>
+                    <li>✅ Permite revisión antes de confirmar</li>
+                    <li>✅ Genera reportes de facturación</li>
+                </ul>
+
+                <div class="warning">
+                    <strong>⚠️ Importante:</strong> La facturación masiva es un proceso crítico que afecta la contabilidad. Siempre revise cuidadosamente antes de confirmar.
+                </div>
+            </section>
+
+            <section id="acceso" class="section">
+                <h2>🚪 Cómo Acceder</h2>
+                <ol class="step-list">
+                    <li>Ingrese al sistema ContaPY2</li>
+                    <li>Navegue al módulo "Gestión de Recaudos"</li>
+                    <li>Haga clic en "Facturación Masiva" o "Generar Recaudos"</li>
+                </ol>
+            </section>
+
+            <section id="proceso" class="section">
+                <h2>⚙️ Proceso de Facturación</h2>
+                
+                <h3>Flujo General</h3>
+                <ol class="step-list">
+                    <li><strong>Selección de Fecha:</strong> Elija el período a facturar</li>
+                    <li><strong>Verificación Previa:</strong> El sistema valida si ya existe facturación</li>
+                    <li><strong>Selección de Conceptos:</strong> Elija qué conceptos incluir</li>
+                    <li><strong>Configuración Especial:</strong> Ajuste valores si es necesario</li>
+                    <li><strong>Generación:</strong> El sistema crea las facturas</li>
+                    <li><strong>Revisión:</strong> Verifique los resultados</li>
+                    <li><strong>Confirmación:</strong> Confirme o cancele la facturación</li>
+                </ol>
+
+                <h3>Selección de Período</h3>
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Campo</th>
+                                <th>Descripción</th>
+                                <th>Formato</th>
+                                <th>Ejemplo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Fecha de Facturación</td>
+                                <td>Período que se está facturando</td>
+                                <td>YYYY-MM-DD</td>
+                                <td>2024-03-01</td>
+                            </tr>
+                            <tr>
+                                <td>Descripción</td>
+                                <td>Referencia del período</td>
+                                <td>Texto libre</td>
+                                <td>Marzo 2024, Primer Trimestre</td>
+                            </tr>
+                            <tr>
+                                <td>Fecha de Vencimiento</td>
+                                <td>Cuándo vence el pago</td>
+                                <td>YYYY-MM-DD</td>
+                                <td>2024-03-15</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="info">
+                    <strong>💡 Consejo:</strong> Use siempre el primer día del mes como fecha de facturación para mantener consistencia en los reportes.
+                </div>
+
+                <h3>Verificación Previa</h3>
+                <p>Antes de generar, el sistema verifica:</p>
+                <ul>
+                    <li>🔍 Si ya existe facturación para ese período</li>
+                    <li>🔍 Si hay conceptos activos configurados</li>
+                    <li>🔍 Si hay unidades con módulos asignados</li>
+                    <li>🔍 Si las cuentas contables están configuradas</li>
+                </ul>
+
+                <div class="warning">
+                    <strong>⚠️ Atención:</strong> Si ya existe facturación para el período, debe eliminarla primero antes de generar una nueva.
+                </div>
+            </section>
+
+            <section id="configuracion" class="section">
+                <h2>⚙️ Configuración de Conceptos</h2>
+                
+                <h3>Selección de Conceptos</h3>
+                <p>Puede elegir qué conceptos incluir en la facturación:</p>
+                
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Opción</th>
+                                <th>Descripción</th>
+                                <th>Cuándo Usar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>✅ Todos los Conceptos</td>
+                                <td>Incluye todos los conceptos activos</td>
+                                <td>Facturación mensual normal</td>
+                            </tr>
+                            <tr>
+                                <td>🎯 Conceptos Específicos</td>
+                                <td>Solo los conceptos seleccionados</td>
+                                <td>Facturación parcial o especial</td>
+                            </tr>
+                            <tr>
+                                <td>🚫 Excluir Conceptos</td>
+                                <td>Todos excepto los seleccionados</td>
+                                <td>Omitir conceptos temporalmente</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Configuración Especial por Concepto</h3>
+                <p>Para cada concepto puede configurar:</p>
+                
+                <h4>💰 Ajuste de Valores</h4>
+                <ul>
+                    <li><strong>Valor Personalizado:</strong> Cambiar el valor base temporalmente</li>
+                    <li><strong>Porcentaje de Ajuste:</strong> Aplicar incremento o descuento</li>
+                    <li><strong>Valor Mínimo/Máximo:</strong> Establecer límites</li>
+                </ul>
+
+                <h4>🏗️ Filtros por Módulo</h4>
+                <ul>
+                    <li><strong>Solo Residencial:</strong> Aplicar solo a unidades residenciales</li>
+                    <li><strong>Solo Comercial:</strong> Aplicar solo a locales comerciales</li>
+                    <li><strong>Excluir Parqueaderos:</strong> No aplicar a parqueaderos</li>
+                </ul>
+
+                <h4>📅 Configuración Temporal</h4>
+                <ul>
+                    <li><strong>Fecha de Inicio:</strong> Desde cuándo aplica el concepto</li>
+                    <li><strong>Fecha de Fin:</strong> Hasta cuándo aplica</li>
+                    <li><strong>Periodicidad:</strong> Mensual, trimestral, anual</li>
+                </ul>
+
+                <div class="success">
+                    <strong>✅ Ejemplo Práctico:</strong> Para facturar solo la cuota de administración con un incremento del 5%, seleccione únicamente "Cuota de Administración" y configure un ajuste del 105%.
+                </div>
+            </section>
+
+            <section id="revision" class="section">
+                <h2>🔍 Revisión y Confirmación</h2>
+                
+                <h3>Vista Previa de Resultados</h3>
+                <p>Antes de confirmar, el sistema muestra:</p>
+                
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Información</th>
+                                <th>Descripción</th>
+                                <th>Qué Verificar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>📊 Resumen General</td>
+                                <td>Totales por concepto</td>
+                                <td>Que los montos sean razonables</td>
+                            </tr>
+                            <tr>
+                                <td>🏠 Unidades Afectadas</td>
+                                <td>Cantidad de unidades por concepto</td>
+                                <td>Que todas las unidades estén incluidas</td>
+                            </tr>
+                            <tr>
+                                <td>💰 Valor Total</td>
+                                <td>Monto total a facturar</td>
+                                <td>Que coincida con el presupuesto</td>
+                            </tr>
+                            <tr>
+                                <td>📋 Detalle por Unidad</td>
+                                <td>Facturación individual</td>
+                                <td>Casos específicos o excepciones</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Validaciones Automáticas</h3>
+                <p>El sistema verifica automáticamente:</p>
+                <ul>
+                    <li>✅ Que todas las unidades activas tengan facturación</li>
+                    <li>✅ Que los cálculos por coeficiente sean correctos</li>
+                    <li>✅ Que no haya valores negativos o cero inesperados</li>
+                    <li>✅ Que las cuentas contables estén configuradas</li>
+                    <li>✅ Que no existan duplicados</li>
+                </ul>
+
+                <h3>Opciones de Revisión</h3>
+                <ol class="step-list">
+                    <li><strong>Vista Resumen:</strong> Totales generales y por concepto</li>
+                    <li><strong>Vista Detallada:</strong> Facturación unidad por unidad</li>
+                    <li><strong>Exportar Preview:</strong> Descargar borrador en PDF</li>
+                    <li><strong>Comparar Períodos:</strong> Comparar con facturación anterior</li>
+                </ol>
+
+                <h3>Confirmación Final</h3>
+                <div class="warning">
+                    <strong>⚠️ IMPORTANTE:</strong> Una vez confirmada la facturación:
+                    <ul>
+                        <li>Se crean los movimientos contables definitivos</li>
+                        <li>Se actualizan los saldos de cuentas por cobrar</li>
+                        <li>Se genera el período en el historial</li>
+                        <li>No se puede modificar fácilmente</li>
+                    </ul>
+                    <p><strong>Asegúrese de revisar todo antes de confirmar.</strong></p>
+                </div>
+            </section>
+
+            <section id="historial" class="section">
+                <h2>📚 Historial de Facturación</h2>
+                
+                <h3>Consulta de Períodos</h3>
+                <p>El historial muestra todos los períodos facturados:</p>
+                
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Campo</th>
+                                <th>Descripción</th>
+                                <th>Acciones Disponibles</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>📅 Período</td>
+                                <td>Fecha del período facturado</td>
+                                <td>Ver detalle, Reimprimir</td>
+                            </tr>
+                            <tr>
+                                <td>💰 Valor Total</td>
+                                <td>Monto total facturado</td>
+                                <td>Comparar períodos</td>
+                            </tr>
+                            <tr>
+                                <td>🏠 Unidades</td>
+                                <td>Cantidad de unidades facturadas</td>
+                                <td>Ver listado detallado</td>
+                            </tr>
+                            <tr>
+                                <td>📊 Estado</td>
+                                <td>Confirmado, Borrador, Cancelado</td>
+                                <td>Eliminar (si es posible)</td>
+                            </tr>
+                            <tr>
+                                <td>👤 Usuario</td>
+                                <td>Quién generó la facturación</td>
+                                <td>Auditoría</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Detalle de Período</h3>
+                <p>Para cada período puede consultar:</p>
+                <ul>
+                    <li>📋 <strong>Resumen por Concepto:</strong> Totales facturados por cada concepto</li>
+                    <li>🏠 <strong>Detalle por Unidad:</strong> Facturación individual de cada unidad</li>
+                    <li>📊 <strong>Estadísticas:</strong> Comparaciones y análisis</li>
+                    <li>📄 <strong>Reportes:</strong> Exportar en PDF o Excel</li>
+                </ul>
+
+                <h3>Eliminación de Facturación</h3>
+                <div class="warning">
+                    <strong>⚠️ Eliminación de Períodos:</strong>
+                    <p>Solo se puede eliminar una facturación si:</p>
+                    <ul>
+                        <li>No tiene pagos aplicados</li>
+                        <li>No tiene movimientos contables confirmados</li>
+                        <li>Es el período más reciente</li>
+                        <li>El usuario tiene permisos de administrador</li>
+                    </ul>
+                </div>
+
+                <ol class="step-list">
+                    <li>Localice el período en el historial</li>
+                    <li>Haga clic en "Eliminar" (si está disponible)</li>
+                    <li>Confirme la eliminación</li>
+                    <li>El sistema reversa los movimientos contables</li>
+                </ol>
+            </section>
+
+            <section id="errores" class="section">
+                <h2>⚠️ Errores Comunes y Soluciones</h2>
+                
+                <h3>Error: "Ya existe facturación para este período"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> No se puede generar facturación porque ya existe.
+                    <br><strong>Causa:</strong> Ya se facturó ese período anteriormente.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique en el historial si efectivamente ya existe</li>
+                        <li>Si necesita refacturar, elimine primero la facturación existente</li>
+                        <li>Asegúrese de que no haya pagos aplicados antes de eliminar</li>
+                        <li>Use una fecha diferente si es una facturación adicional</li>
+                    </ul>
+                </div>
+
+                <h3>Error: "No hay conceptos activos"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> No se puede generar facturación sin conceptos.
+                    <br><strong>Causa:</strong> Todos los conceptos están inactivos o no hay conceptos configurados.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Vaya al módulo de Conceptos de Cobro</li>
+                        <li>Verifique que haya conceptos creados</li>
+                        <li>Active los conceptos necesarios</li>
+                        <li>Configure las cuentas contables requeridas</li>
+                    </ul>
+                </div>
+
+                <h3>Error: "Unidades sin módulos asignados"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> Algunas unidades no tienen facturación.
+                    <br><strong>Causa:</strong> Las unidades no tienen módulos asignados que coincidan con los conceptos.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Revise la configuración de módulos en las unidades</li>
+                        <li>Verifique que los conceptos tengan módulos asignados</li>
+                        <li>Use acciones masivas para asignar módulos si es necesario</li>
+                        <li>Confirme que las unidades estén activas</li>
+                    </ul>
+                </div>
+
+                <h3>Error: "Cuentas contables no configuradas"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> Error al generar movimientos contables.
+                    <br><strong>Causa:</strong> Los conceptos no tienen cuentas contables asignadas.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Edite cada concepto y configure las cuentas requeridas</li>
+                        <li>Verifique que las cuentas existan en el PUC</li>
+                        <li>Confirme que las cuentas estén activas</li>
+                        <li>Consulte con el contador sobre las cuentas apropiadas</li>
+                    </ul>
+                </div>
+
+                <h3>Problema: "Los valores no coinciden con el presupuesto"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> Los totales facturados no coinciden con lo esperado.
+                    <br><strong>Causa:</strong> Error en configuración de conceptos o coeficientes.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique que los valores base de los conceptos sean correctos</li>
+                        <li>Confirme que los coeficientes de las unidades sumen 100%</li>
+                        <li>Revise que todas las unidades tengan los módulos correctos</li>
+                        <li>Compare con la facturación del período anterior</li>
+                    </ul>
+                </div>
+
+                <h3>Problema: "Facturación muy lenta"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> El proceso de facturación tarda mucho tiempo.
+                    <br><strong>Causa:</strong> Gran cantidad de unidades o conceptos complejos.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Facture por lotes más pequeños si es posible</li>
+                        <li>Evite hacer otras operaciones durante la facturación</li>
+                        <li>Verifique la conexión a internet</li>
+                        <li>Contacte soporte si el problema persiste</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>🆘 ¿Necesita Más Ayuda?</h2>
+                <div class="highlight">
+                    <p><strong>Recursos Relacionados:</strong></p>
+                    <ul>
+                        <li>📖 Manual de Conceptos de Cobro - Para configurar qué se factura</li>
+                        <li>📖 Manual de Unidades - Para configurar módulos en las unidades</li>
+                        <li>📖 Manual de Pagos - Para aplicar pagos a las facturas generadas</li>
+                        <li>📖 Manual de Reportes - Para analizar la facturación generada</li>
+                    </ul>
+                </div>
+
+                <div class="info">
+                    <p><strong>Contacto de Soporte:</strong></p>
+                    <ul>
+                        <li>📧 Email: soporte@contapy2.com</li>
+                        <li>📞 Teléfono: +57 (1) 234-5678</li>
+                        <li>💬 Chat en línea: Disponible en el sistema</li>
+                        <li>🕒 Horario: Lunes a Viernes 8:00 AM - 6:00 PM</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 ContaPY2 - Sistema de Gestión Contable Integral</p>
+            <p>Manual generado automáticamente - Versión 1.0</p>
+        </footer>
+    </div>
+
+    <script src="assets/js/manual-navigation.js"></script>
+</body>
+</html>

@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conceptos de Cobro - Manual de Gestión de Recaudos</title>
+    <link rel="stylesheet" href="assets/css/manual-styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">📋 Conceptos de Cobro</div>
+                <div class="subtitle">Manual de Usuario - Gestión de Recaudos</div>
+                <div class="version">Sistema ContaPY2 - Módulo PH</div>
+            </div>
+        </header>
+
+        <nav class="nav">
+            <ul>
+                <li><a href="#introduccion">Introducción</a></li>
+                <li><a href="#acceso">Acceso</a></li>
+                <li><a href="#listado">Listado</a></li>
+                <li><a href="#crear">Crear Concepto</a></li>
+                <li><a href="#configuracion">Configuración</a></li>
+                <li><a href="#ejemplos">Ejemplos</a></li>
+                <li><a href="#errores">Errores Comunes</a></li>
+            </ul>
+        </nav>
+
+        <main class="content">
+            <div class="toc">
+                <h3>📑 Contenido</h3>
+                <ul></ul>
+            </div>
+
+            <section id="introduccion" class="section">
+                <h2>🎯 Introducción</h2>
+                <p>Los Conceptos de Cobro son la base del sistema de facturación. Aquí se definen todos los servicios, cuotas y cargos que se aplicarán a las unidades de la propiedad horizontal. Cada concepto determina qué se cobra, cuánto se cobra y cómo se contabiliza.</p>
+                
+                <div class="info">
+                    <strong>💡 Objetivo:</strong> Configurar de manera precisa todos los conceptos que generarán obligaciones de pago para los propietarios.
+                </div>
+
+                <h3>Tipos de Conceptos Comunes</h3>
+                <ul>
+                    <li>🏢 <strong>Cuota de Administración:</strong> Cobro mensual básico</li>
+                    <li>💡 <strong>Servicios Públicos:</strong> Agua, luz, gas común</li>
+                    <li>🛡️ <strong>Seguridad:</strong> Vigilancia y portería</li>
+                    <li>🧹 <strong>Aseo:</strong> Limpieza de áreas comunes</li>
+                    <li>🚗 <strong>Parqueadero:</strong> Uso de espacios de estacionamiento</li>
+                    <li>💰 <strong>Fondo de Reserva:</strong> Ahorro para mantenimientos</li>
+                    <li>⚖️ <strong>Multas:</strong> Sanciones por incumplimientos</li>
+                    <li>📈 <strong>Intereses:</strong> Mora por pagos tardíos</li>
+                </ul>
+            </section>
+
+            <section id="acceso" class="section">
+                <h2>🚪 Cómo Acceder</h2>
+                <ol class="step-list">
+                    <li>Ingrese al sistema ContaPY2</li>
+                    <li>Navegue al módulo "Gestión de Recaudos"</li>
+                    <li>Haga clic en "Conceptos de Cobro"</li>
+                </ol>
+            </section>
+
+            <section id="listado" class="section">
+                <h2>📋 Listado de Conceptos</h2>
+                
+                <h3>Vista Principal</h3>
+                <p>El listado muestra todos los conceptos configurados con la siguiente información:</p>
+                
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Campo</th>
+                                <th>Descripción</th>
+                                <th>Ejemplo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>📝 Nombre</td>
+                                <td>Descripción del concepto</td>
+                                <td>Cuota de Administración, Parqueadero</td>
+                            </tr>
+                            <tr>
+                                <td>💰 Valor</td>
+                                <td>Monto base del concepto</td>
+                                <td>$150,000, $50,000</td>
+                            </tr>
+                            <tr>
+                                <td>📊 Tipo</td>
+                                <td>Forma de cálculo</td>
+                                <td>Fijo, Por Coeficiente, Variable</td>
+                            </tr>
+                            <tr>
+                                <td>🏗️ Módulos</td>
+                                <td>A qué unidades aplica</td>
+                                <td>Residencial, Comercial, Todos</td>
+                            </tr>
+                            <tr>
+                                <td>📅 Estado</td>
+                                <td>Activo o inactivo</td>
+                                <td>✅ Activo, ❌ Inactivo</td>
+                            </tr>
+                            <tr>
+                                <td>⚙️ Acciones</td>
+                                <td>Opciones disponibles</td>
+                                <td>✏️ Editar, 🗑️ Eliminar</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Funciones del Listado</h3>
+                <ul>
+                    <li>🔍 <strong>Búsqueda:</strong> Filtrar conceptos por nombre</li>
+                    <li>📊 <strong>Filtros:</strong> Por tipo, estado o módulo</li>
+                    <li>➕ <strong>Nuevo:</strong> Crear nuevo concepto</li>
+                    <li>📋 <strong>Duplicar:</strong> Copiar concepto existente</li>
+                </ul>
+            </section>
+
+            <section id="crear" class="section">
+                <h2>➕ Crear Nuevo Concepto</h2>
+                
+                <h3>Proceso de Creación</h3>
+                <ol class="step-list">
+                    <li>Haga clic en "Nuevo Concepto"</li>
+                    <li>Complete la información básica</li>
+                    <li>Configure las cuentas contables</li>
+                    <li>Establezca los módulos aplicables</li>
+                    <li>Defina el tipo de cálculo</li>
+                    <li>Guarde el concepto</li>
+                </ol>
+
+                <h3>Información Básica</h3>
+                
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Campo</th>
+                                <th>Descripción</th>
+                                <th>Requerido</th>
+                                <th>Ejemplo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Nombre</td>
+                                <td>Descripción del concepto</td>
+                                <td>✅ Sí</td>
+                                <td>Cuota de Administración</td>
+                            </tr>
+                            <tr>
+                                <td>Código</td>
+                                <td>Identificador interno</td>
+                                <td>❌ No</td>
+                                <td>ADMIN-001</td>
+                            </tr>
+                            <tr>
+                                <td>Valor Base</td>
+                                <td>Monto de referencia</td>
+                                <td>✅ Sí</td>
+                                <td>150000</td>
+                            </tr>
+                            <tr>
+                                <td>Tipo de Cálculo</td>
+                                <td>Forma de aplicar el valor</td>
+                                <td>✅ Sí</td>
+                                <td>Fijo, Coeficiente, Variable</td>
+                            </tr>
+                            <tr>
+                                <td>Estado</td>
+                                <td>Activo o inactivo</td>
+                                <td>✅ Sí</td>
+                                <td>Activo</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Tipos de Cálculo</h3>
+                
+                <h4>💰 Valor Fijo</h4>
+                <p>Todas las unidades pagan el mismo monto, independiente de su tamaño o coeficiente.</p>
+                <div class="success">
+                    <strong>Ejemplo:</strong> Parqueadero = $50,000 mensuales para todas las unidades que tengan parqueadero.
+                </div>
+
+                <h4>📊 Por Coeficiente</h4>
+                <p>El valor se calcula multiplicando el valor base por el coeficiente de participación de cada unidad.</p>
+                <div class="success">
+                    <strong>Ejemplo:</strong> Cuota de Administración = $10,000,000 × (coeficiente de la unidad / 100)
+                    <br>Unidad con coeficiente 0.85% = $10,000,000 × 0.0085 = $85,000
+                </div>
+
+                <h4>🔢 Variable</h4>
+                <p>El valor se define individualmente para cada unidad o se calcula según criterios específicos.</p>
+                <div class="success">
+                    <strong>Ejemplo:</strong> Consumo de agua según lectura de medidores individuales.
+                </div>
+            </section>
+
+            <section id="configuracion" class="section">
+                <h2>⚙️ Configuración Contable</h2>
+                
+                <h3>Cuentas Contables Requeridas</h3>
+                <p>Cada concepto debe tener configuradas las siguientes cuentas:</p>
+
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Cuenta</th>
+                                <th>Propósito</th>
+                                <th>Ejemplo</th>
+                                <th>Requerida</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>🏦 Cuenta CxC</td>
+                                <td>Cuentas por Cobrar</td>
+                                <td>1305 - Cuentas por Cobrar Clientes</td>
+                                <td>✅ Sí</td>
+                            </tr>
+                            <tr>
+                                <td>💰 Cuenta Ingreso</td>
+                                <td>Reconocimiento del ingreso</td>
+                                <td>4135 - Ingresos por Administración</td>
+                                <td>✅ Sí</td>
+                            </tr>
+                            <tr>
+                                <td>📈 Cuenta Interés</td>
+                                <td>Intereses por mora</td>
+                                <td>4210 - Intereses de Mora</td>
+                                <td>❌ No</td>
+                            </tr>
+                            <tr>
+                                <td>🏛️ Cuenta Caja</td>
+                                <td>Recaudo específico</td>
+                                <td>1105 - Caja General</td>
+                                <td>❌ No</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Configuración de Intereses</h3>
+                <p>Para conceptos que generan intereses por mora:</p>
+                <ol class="step-list">
+                    <li>Active la opción "Genera Intereses"</li>
+                    <li>Defina la tasa de interés mensual (ej: 2.5%)</li>
+                    <li>Configure la cuenta contable para intereses</li>
+                    <li>Establezca los días de gracia (opcional)</li>
+                </ol>
+
+                <div class="info">
+                    <strong>💡 Consejo:</strong> La tasa de interés se aplica sobre el saldo vencido cada mes. Una tasa del 2.5% mensual equivale aproximadamente al 30% anual.
+                </div>
+
+                <h3>Módulos de Aplicación</h3>
+                <p>Defina a qué tipos de unidades aplica cada concepto:</p>
+                <ul>
+                    <li>🏠 <strong>Residencial:</strong> Apartamentos, casas</li>
+                    <li>🏪 <strong>Comercial:</strong> Locales, oficinas</li>
+                    <li>🚗 <strong>Parqueadero:</strong> Espacios de estacionamiento</li>
+                    <li>📦 <strong>Depósito:</strong> Bodegas, cuartos útiles</li>
+                    <li>🌟 <strong>Todos:</strong> Aplica a cualquier tipo de unidad</li>
+                </ul>
+            </section>
+
+            <section id="ejemplos" class="section">
+                <h2>📝 Ejemplos de Configuración</h2>
+                
+                <h3>Ejemplo 1: Cuota de Administración</h3>
+                <div class="highlight">
+                    <strong>Configuración:</strong>
+                    <ul>
+                        <li><strong>Nombre:</strong> Cuota de Administración</li>
+                        <li><strong>Valor Base:</strong> $8,000,000 (presupuesto mensual total)</li>
+                        <li><strong>Tipo:</strong> Por Coeficiente</li>
+                        <li><strong>Módulos:</strong> Residencial, Comercial</li>
+                        <li><strong>Cuenta CxC:</strong> 1305 - Cuentas por Cobrar</li>
+                        <li><strong>Cuenta Ingreso:</strong> 4135 - Ingresos Administración</li>
+                        <li><strong>Genera Intereses:</strong> Sí (2.5% mensual)</li>
+                    </ul>
+                    <strong>Resultado:</strong> Cada unidad paga según su coeficiente de participación.
+                </div>
+
+                <h3>Ejemplo 2: Parqueadero</h3>
+                <div class="highlight">
+                    <strong>Configuración:</strong>
+                    <ul>
+                        <li><strong>Nombre:</strong> Parqueadero Visitantes</li>
+                        <li><strong>Valor Base:</strong> $45,000</li>
+                        <li><strong>Tipo:</strong> Valor Fijo</li>
+                        <li><strong>Módulos:</strong> Parqueadero</li>
+                        <li><strong>Cuenta CxC:</strong> 1305 - Cuentas por Cobrar</li>
+                        <li><strong>Cuenta Ingreso:</strong> 4140 - Ingresos Parqueaderos</li>
+                        <li><strong>Genera Intereses:</strong> Sí (2.5% mensual)</li>
+                    </ul>
+                    <strong>Resultado:</strong> Solo las unidades con módulo "Parqueadero" pagan $45,000.
+                </div>
+
+                <h3>Ejemplo 3: Multa por Ruido</h3>
+                <div class="highlight">
+                    <strong>Configuración:</strong>
+                    <ul>
+                        <li><strong>Nombre:</strong> Multa por Ruido Excesivo</li>
+                        <li><strong>Valor Base:</strong> $100,000</li>
+                        <li><strong>Tipo:</strong> Valor Fijo</li>
+                        <li><strong>Módulos:</strong> Todos</li>
+                        <li><strong>Cuenta CxC:</strong> 1305 - Cuentas por Cobrar</li>
+                        <li><strong>Cuenta Ingreso:</strong> 4295 - Ingresos Multas</li>
+                        <li><strong>Genera Intereses:</strong> No</li>
+                    </ul>
+                    <strong>Resultado:</strong> Se aplica manualmente cuando sea necesario.
+                </div>
+
+                <h3>Ejemplo 4: Fondo de Reserva</h3>
+                <div class="highlight">
+                    <strong>Configuración:</strong>
+                    <ul>
+                        <li><strong>Nombre:</strong> Fondo de Reserva</li>
+                        <li><strong>Valor Base:</strong> $1,200,000 (10% del presupuesto)</li>
+                        <li><strong>Tipo:</strong> Por Coeficiente</li>
+                        <li><strong>Módulos:</strong> Residencial, Comercial</li>
+                        <li><strong>Cuenta CxC:</strong> 1305 - Cuentas por Cobrar</li>
+                        <li><strong>Cuenta Ingreso:</strong> 3605 - Fondo de Reserva</li>
+                        <li><strong>Genera Intereses:</strong> Sí (2.5% mensual)</li>
+                    </ul>
+                    <strong>Resultado:</strong> Ahorro proporcional para mantenimientos futuros.
+                </div>
+            </section>
+
+            <section id="errores" class="section">
+                <h2>⚠️ Errores Comunes y Soluciones</h2>
+                
+                <h3>Error: "Cuenta contable no válida"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> El sistema no acepta la cuenta contable seleccionada.
+                    <br><strong>Causa:</strong> La cuenta no existe en el plan de cuentas o no está activa.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique que la cuenta exista en el PUC</li>
+                        <li>Confirme que la cuenta esté activa</li>
+                        <li>Use cuentas de detalle (último nivel)</li>
+                        <li>Consulte con el contador sobre las cuentas apropiadas</li>
+                    </ul>
+                </div>
+
+                <h3>Error: "Valor base inválido"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> No se puede guardar el concepto por valor inválido.
+                    <br><strong>Causa:</strong> El valor base no tiene el formato correcto.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Use solo números, sin puntos ni comas</li>
+                        <li>Para $150,000 escriba: 150000</li>
+                        <li>No use símbolos de moneda ($)</li>
+                        <li>Asegúrese de que sea un número positivo</li>
+                    </ul>
+                </div>
+
+                <h3>Error: "No se puede eliminar concepto"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> El sistema impide eliminar un concepto.
+                    <br><strong>Causa:</strong> El concepto tiene facturas o movimientos asociados.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Marque el concepto como "Inactivo" en lugar de eliminarlo</li>
+                        <li>Verifique que no tenga facturas pendientes</li>
+                        <li>Consulte el historial de uso del concepto</li>
+                        <li>Contacte al administrador si es necesario eliminar</li>
+                    </ul>
+                </div>
+
+                <h3>Problema: "Los cálculos no coinciden"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> Los valores calculados no son los esperados.
+                    <br><strong>Causa:</strong> Error en la configuración del tipo de cálculo o coeficientes.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique el tipo de cálculo seleccionado</li>
+                        <li>Confirme que los coeficientes de las unidades sean correctos</li>
+                        <li>Revise que el valor base esté bien configurado</li>
+                        <li>Haga pruebas con una unidad antes de facturar masivamente</li>
+                    </ul>
+                </div>
+
+                <h3>Problema: "Concepto no aparece en facturación"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> Un concepto no se incluye en la facturación masiva.
+                    <br><strong>Causa:</strong> El concepto está inactivo o no tiene módulos asignados.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique que el concepto esté marcado como "Activo"</li>
+                        <li>Confirme que tenga módulos asignados</li>
+                        <li>Revise que las unidades tengan los módulos correctos</li>
+                        <li>Verifique las fechas de vigencia si aplican</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>🆘 ¿Necesita Más Ayuda?</h2>
+                <div class="highlight">
+                    <p><strong>Recursos Relacionados:</strong></p>
+                    <ul>
+                        <li>📖 Manual de Unidades - Para configurar módulos en las unidades</li>
+                        <li>📖 Manual de Facturación - Para aplicar los conceptos en la facturación</li>
+                        <li>📖 Manual de Configuración - Para gestionar módulos del sistema</li>
+                        <li>📖 Manual de Reportes - Para analizar el comportamiento de los conceptos</li>
+                    </ul>
+                </div>
+
+                <div class="info">
+                    <p><strong>Contacto de Soporte:</strong></p>
+                    <ul>
+                        <li>📧 Email: soporte@contapy2.com</li>
+                        <li>📞 Teléfono: +57 (1) 234-5678</li>
+                        <li>💬 Chat en línea: Disponible en el sistema</li>
+                        <li>🕒 Horario: Lunes a Viernes 8:00 AM - 6:00 PM</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 ContaPY2 - Sistema de Gestión Contable Integral</p>
+            <p>Manual generado automáticamente - Versión 1.0</p>
+        </footer>
+    </div>
+
+    <script src="assets/js/manual-navigation.js"></script>
+</body>
+</html>

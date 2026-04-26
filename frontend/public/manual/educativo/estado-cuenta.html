@@ -1,0 +1,397 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estado de Cuenta - Manual de Gestión de Recaudos</title>
+    <link rel="stylesheet" href="assets/css/manual-styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">🏠 Estado de Cuenta</div>
+                <div class="subtitle">Manual de Usuario - Gestión de Recaudos</div>
+                <div class="version">Sistema ContaPY2 - Módulo PH</div>
+            </div>
+        </header>
+
+        <nav class="nav">
+            <ul>
+                <li><a href="#introduccion">Introducción</a></li>
+                <li><a href="#acceso">Acceso</a></li>
+                <li><a href="#consulta">Consulta</a></li>
+                <li><a href="#pazsalvo">Paz y Salvo</a></li>
+                <li><a href="#reportes">Reportes</a></li>
+                <li><a href="#errores">Errores Comunes</a></li>
+            </ul>
+        </nav>
+
+        <main class="content">
+            <div class="toc">
+                <h3>📑 Contenido</h3>
+                <ul></ul>
+            </div>
+
+            <section id="introduccion" class="section">
+                <h2>🎯 Introducción</h2>
+                <p>El módulo de Estado de Cuenta permite consultar de forma detallada los saldos pendientes, movimientos históricos y generar certificaciones de paz y salvo para cualquier Estudiante o Acudiente del sistema.</p>
+                
+                <div class="info">
+                    <strong>💡 Objetivo:</strong> Proporcionar información completa y actualizada sobre la situación financiera de cada Estudiante, facilitando la consulta de saldos y la generación de documentos oficiales.
+                </div>
+
+                <h3>¿Qué puede consultar?</h3>
+                <ul>
+                    <li>💰 <strong>Saldo Total:</strong> Monto pendiente por pagar</li>
+                    <li>📋 <strong>Detalle por Concepto:</strong> Desglose de cada obligación</li>
+                    <li>📅 <strong>Antigüedad:</strong> Clasificación por vencimiento</li>
+                    <li>📈 <strong>Intereses:</strong> Cálculo de mora acumulada</li>
+                    <li>🏦 <strong>Historial de Pagos:</strong> Movimientos realizados</li>
+                    <li>📄 <strong>Paz y Salvo:</strong> Certificación oficial</li>
+                </ul>
+            </section>
+
+            <section id="acceso" class="section">
+                <h2>🚪 Cómo Acceder</h2>
+                <ol class="step-list">
+                    <li>Ingrese al sistema ContaPY2</li>
+                    <li>Navegue al módulo "Gestión de Recaudos"</li>
+                    <li>Haga clic en "Estado de Cuenta"</li>
+                </ol>
+            </section>
+
+            <section id="consulta" class="section">
+                <h2>🔍 Consulta de Estado de Cuenta</h2>
+                
+                <h3>Modos de Consulta</h3>
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Modo</th>
+                                <th>Descripción</th>
+                                <th>Cuándo Usar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>🏠 Por Estudiante</td>
+                                <td>Consulta específica de una Estudiante</td>
+                                <td>Consultas individuales</td>
+                            </tr>
+                            <tr>
+                                <td>👤 Por Acudiente</td>
+                                <td>Todas las Estudiantes de un Acudiente</td>
+                                <td>Acudientes con múltiples Estudiantes</td>
+                            </tr>
+                            <tr>
+                                <td>🏢 Consolidado</td>
+                                <td>Resumen general de cartera</td>
+                                <td>Análisis administrativo</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Información Mostrada</h3>
+                
+                <h4>📊 Resumen General</h4>
+                <ul>
+                    <li><strong>Saldo Total:</strong> Monto total pendiente</li>
+                    <li><strong>Saldo Corriente:</strong> Obligaciones del período actual</li>
+                    <li><strong>Saldo Vencido:</strong> Obligaciones en mora</li>
+                    <li><strong>Intereses:</strong> Mora acumulada</li>
+                    <li><strong>Último Pago:</strong> Fecha y monto del último recaudo</li>
+                </ul>
+
+                <h4>📋 Detalle por Concepto</h4>
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Campo</th>
+                                <th>Descripción</th>
+                                <th>Ejemplo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Concepto</td>
+                                <td>Tipo de obligación</td>
+                                <td>Cuota Administración, Parqueadero</td>
+                            </tr>
+                            <tr>
+                                <td>Período</td>
+                                <td>Mes/año de la obligación</td>
+                                <td>Marzo 2024, Abril 2024</td>
+                            </tr>
+                            <tr>
+                                <td>Valor Original</td>
+                                <td>Monto inicial facturado</td>
+                                <td>$150,000</td>
+                            </tr>
+                            <tr>
+                                <td>Pagos Aplicados</td>
+                                <td>Abonos realizados</td>
+                                <td>$75,000</td>
+                            </tr>
+                            <tr>
+                                <td>Saldo Pendiente</td>
+                                <td>Monto por pagar</td>
+                                <td>$75,000</td>
+                            </tr>
+                            <tr>
+                                <td>Días Vencido</td>
+                                <td>Antigüedad de la deuda</td>
+                                <td>45 días</td>
+                            </tr>
+                            <tr>
+                                <td>Intereses</td>
+                                <td>Mora acumulada</td>
+                                <td>$3,750</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4>📅 Clasificación por Antigüedad</h4>
+                <ul>
+                    <li>🟢 <strong>Corriente:</strong> 0-30 días</li>
+                    <li>🟡 <strong>Vencido 1:</strong> 31-60 días</li>
+                    <li>🟠 <strong>Vencido 2:</strong> 61-90 días</li>
+                    <li>🔴 <strong>Vencido 3:</strong> Más de 90 días</li>
+                </ul>
+            </section>
+
+            <section id="pazsalvo" class="section">
+                <h2>📄 Generación de Paz y Salvo</h2>
+                
+                <h3>¿Qué es un Paz y Salvo?</h3>
+                <p>Es un documento oficial que certifica que una Estudiante o Acudiente se encuentra al día con sus obligaciones financieras con la Gestión Educativa.</p>
+
+                <h3>Proceso de Generación</h3>
+                <ol class="step-list">
+                    <li><strong>Verificar Saldos:</strong> Confirme que no hay obligaciones pendientes</li>
+                    <li><strong>Seleccionar Tipo:</strong> Paz y salvo por Estudiante o por Acudiente</li>
+                    <li><strong>Configurar Período:</strong> Defina el rango de fechas a certificar</li>
+                    <li><strong>Generar Documento:</strong> El sistema crea el PDF oficial</li>
+                    <li><strong>Descargar/Imprimir:</strong> Obtenga el documento final</li>
+                </ol>
+
+                <h3>Tipos de Paz y Salvo</h3>
+                
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Descripción</th>
+                                <th>Cuándo Usar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>🏠 Por Estudiante</td>
+                                <td>Certifica una Estudiante específica</td>
+                                <td>Ventas, traspasos de Estudiantes</td>
+                            </tr>
+                            <tr>
+                                <td>👤 Por Acudiente</td>
+                                <td>Certifica todas las Estudiantes de un Acudiente</td>
+                                <td>Certificaciones generales</td>
+                            </tr>
+                            <tr>
+                                <td>📅 Por Período</td>
+                                <td>Certifica un rango de fechas específico</td>
+                                <td>Auditorías, requerimientos legales</td>
+                            </tr>
+                            <tr>
+                                <td>💰 Hasta Fecha</td>
+                                <td>Certifica hasta una fecha determinada</td>
+                                <td>Procesos judiciales</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Requisitos para Generar Paz y Salvo</h3>
+                <div class="success">
+                    <strong>✅ Condiciones que DEBE cumplir:</strong>
+                    <ul>
+                        <li>Saldo pendiente igual a cero ($0)</li>
+                        <li>No tener intereses de mora pendientes</li>
+                        <li>Todos los períodos al día</li>
+                        <li>No tener procesos jurídicos activos</li>
+                    </ul>
+                </div>
+
+                <div class="warning">
+                    <strong>⚠️ El sistema NO generará paz y salvo si:</strong>
+                    <ul>
+                        <li>Existe cualquier saldo pendiente</li>
+                        <li>Hay intereses de mora sin pagar</li>
+                        <li>Existen obligaciones vencidas</li>
+                        <li>Hay procesos legales en curso</li>
+                    </ul>
+                </div>
+
+                <h3>Contenido del Paz y Salvo</h3>
+                <p>El documento incluye:</p>
+                <ul>
+                    <li>📋 Datos de la Estudiante/Acudiente</li>
+                    <li>📅 Período certificado</li>
+                    <li>💰 Confirmación de saldos en cero</li>
+                    <li>📝 Observaciones especiales</li>
+                    <li>✍️ Firma digital del administrador</li>
+                    <li>📆 Fecha de expedición</li>
+                    <li>🔢 Número de certificación</li>
+                </ul>
+            </section>
+
+            <section id="reportes" class="section">
+                <h2>📊 Reportes y Exportaciones</h2>
+                
+                <h3>Formatos Disponibles</h3>
+                <ul>
+                    <li>📄 <strong>PDF:</strong> Para impresión y archivo oficial</li>
+                    <li>📊 <strong>Excel:</strong> Para análisis y procesamiento</li>
+                    <li>📧 <strong>Email:</strong> Envío directo al Acudiente</li>
+                    <li>🖨️ <strong>Impresión:</strong> Directa desde el navegador</li>
+                </ul>
+
+                <h3>Tipos de Reportes</h3>
+                
+                <h4>📋 Estado de Cuenta Detallado</h4>
+                <p>Incluye toda la información financiera de la Estudiante:</p>
+                <ul>
+                    <li>Resumen de saldos</li>
+                    <li>Detalle por concepto y período</li>
+                    <li>Historial de pagos</li>
+                    <li>Cálculo de intereses</li>
+                    <li>Proyección de vencimientos</li>
+                </ul>
+
+                <h4>📊 Reporte de Cartera</h4>
+                <p>Análisis de la situación de cartera:</p>
+                <ul>
+                    <li>Clasificación por antigüedad</li>
+                    <li>Comparativo con períodos anteriores</li>
+                    <li>Indicadores de gestión</li>
+                    <li>Tendencias de pago</li>
+                </ul>
+
+                <h4>📈 Análisis de Comportamiento</h4>
+                <p>Estadísticas de pago del Acudiente:</p>
+                <ul>
+                    <li>Puntualidad en pagos</li>
+                    <li>Montos promedio</li>
+                    <li>Frecuencia de pagos</li>
+                    <li>Historial de mora</li>
+                </ul>
+            </section>
+
+            <section id="errores" class="section">
+                <h2>⚠️ Errores Comunes y Soluciones</h2>
+                
+                <h3>Error: "Estudiante no encontrada"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> No se puede consultar el estado de cuenta de la Estudiante.
+                    <br><strong>Causa:</strong> Código de Estudiante incorrecto o Estudiante inactiva.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique el código de la Estudiante</li>
+                        <li>Use el buscador para localizar la Estudiante</li>
+                        <li>Confirme que la Estudiante esté activa en el sistema</li>
+                        <li>Revise si hay errores de digitación</li>
+                    </ul>
+                </div>
+
+                <h3>Error: "No se puede generar paz y salvo"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> El sistema impide generar el paz y salvo.
+                    <br><strong>Causa:</strong> Existen saldos pendientes o intereses de mora.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Revise detalladamente todos los saldos</li>
+                        <li>Verifique que no haya intereses de mora</li>
+                        <li>Confirme que todos los pagos estén aplicados</li>
+                        <li>Contacte administración si considera que es un error</li>
+                    </ul>
+                </div>
+
+                <h3>Error: "Información desactualizada"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> Los saldos mostrados no coinciden con los registros.
+                    <br><strong>Causa:</strong> Pagos recientes no procesados o errores de sincronización.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Actualice la página (F5)</li>
+                        <li>Verifique que los pagos recientes estén confirmados</li>
+                        <li>Espere unos minutos y vuelva a consultar</li>
+                        <li>Contacte soporte si persiste la inconsistencia</li>
+                    </ul>
+                </div>
+
+                <h3>Problema: "No se genera el PDF"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> Error al generar documentos PDF.
+                    <br><strong>Causa:</strong> Problemas del navegador o configuración de popups.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Permita popups en su navegador</li>
+                        <li>Desactive bloqueadores de anuncios temporalmente</li>
+                        <li>Intente con otro navegador</li>
+                        <li>Verifique su conexión a internet</li>
+                    </ul>
+                </div>
+
+                <h3>Problema: "Cálculo de intereses incorrecto"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> Los intereses mostrados no coinciden con el cálculo manual.
+                    <br><strong>Causa:</strong> Diferencias en fechas de cálculo o configuración de tasas.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique la configuración de tasas de interés</li>
+                        <li>Confirme las fechas de vencimiento utilizadas</li>
+                        <li>Revise si hay pagos parciales que afecten el cálculo</li>
+                        <li>Consulte con el administrador sobre la metodología</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>🆘 ¿Necesita Más Ayuda?</h2>
+                <div class="highlight">
+                    <p><strong>Recursos Relacionados:</strong></p>
+                    <ul>
+                        <li>📖 Manual de Pagos - Para registrar pagos y actualizar saldos</li>
+                        <li>📖 Manual de Facturación - Para entender el origen de las obligaciones</li>
+                        <li>📖 Manual de Reportes - Para análisis detallados de cartera</li>
+                        <li>📖 Manual de Acudientes - Para gestionar información de contacto</li>
+                    </ul>
+                </div>
+
+                <div class="info">
+                    <p><strong>Contacto de Soporte:</strong></p>
+                    <ul>
+                        <li>📧 Email: soporte@contapy2.com</li>
+                        <li>📞 Teléfono: +57 (1) 234-5678</li>
+                        <li>💬 Chat en línea: Disponible en el sistema</li>
+                        <li>🕒 Horario: Lunes a Viernes 8:00 AM - 6:00 PM</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 ContaPY2 - Sistema de Gestión Contable Integral</p>
+            <p>Manual generado automáticamente - Versión 1.0</p>
+        </footer>
+    </div>
+
+    <script src="assets/js/manual-navigation.js"></script>
+</body>
+</html>
+
+

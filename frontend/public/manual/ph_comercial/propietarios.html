@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Directorio de Propietarios - Manual de Gestión de Recaudos</title>
+    <link rel="stylesheet" href="assets/css/manual-styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">👥 Directorio de Propietarios</div>
+                <div class="subtitle">Manual de Usuario - Gestión de Recaudos</div>
+                <div class="version">Sistema ContaPY2 - Módulo PH</div>
+            </div>
+        </header>
+
+        <nav class="nav">
+            <ul>
+                <li><a href="#introduccion">Introducción</a></li>
+                <li><a href="#acceso">Acceso</a></li>
+                <li><a href="#listado">Listado</a></li>
+                <li><a href="#crear">Crear Propietario</a></li>
+                <li><a href="#editar">Editar</a></li>
+                <li><a href="#buscar">Búsqueda</a></li>
+                <li><a href="#errores">Errores Comunes</a></li>
+            </ul>
+        </nav>
+
+        <main class="content">
+            <div class="toc">
+                <h3>📑 Contenido</h3>
+                <ul></ul>
+            </div>
+
+            <section id="introduccion" class="section">
+                <h2>🎯 Introducción</h2>
+                <p>El Directorio de Propietarios es el módulo donde se gestiona toda la información de las personas responsables del pago de las obligaciones en la propiedad horizontal. Incluye propietarios, arrendatarios, representantes legales y cualquier tercero que tenga responsabilidades de pago.</p>
+                
+                <div class="info">
+                    <strong>💡 Objetivo:</strong> Mantener actualizada la información de contacto, datos fiscales y relaciones de los responsables de pago de cada unidad.
+                </div>
+
+                <h3>¿Qué puede hacer en este módulo?</h3>
+                <ul>
+                    <li>✅ Registrar nuevos propietarios y responsables</li>
+                    <li>✅ Actualizar información de contacto</li>
+                    <li>✅ Gestionar datos fiscales (NIT, RUT)</li>
+                    <li>✅ Asignar propietarios a unidades</li>
+                    <li>✅ Consultar historial de pagos por propietario</li>
+                    <li>✅ Buscar y filtrar propietarios</li>
+                    <li>✅ Exportar directorios</li>
+                </ul>
+            </section>
+
+            <section id="acceso" class="section">
+                <h2>🚪 Cómo Acceder</h2>
+                <ol class="step-list">
+                    <li>Ingrese al sistema ContaPY2</li>
+                    <li>Navegue al módulo "Gestión de Recaudos"</li>
+                    <li>Haga clic en "Propietarios" o "Terceros / Miembros"</li>
+                </ol>
+            </section>
+
+            <section id="listado" class="section">
+                <h2>📋 Listado de Propietarios</h2>
+                
+                <h3>Vista Principal</h3>
+                <p>El listado muestra todos los propietarios registrados con la siguiente información:</p>
+                
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Campo</th>
+                                <th>Descripción</th>
+                                <th>Ejemplo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>🆔 Documento</td>
+                                <td>Número de identificación</td>
+                                <td>12345678, 900123456-1</td>
+                            </tr>
+                            <tr>
+                                <td>👤 Nombre</td>
+                                <td>Nombre completo o razón social</td>
+                                <td>Juan Pérez, Empresa XYZ S.A.S.</td>
+                            </tr>
+                            <tr>
+                                <td>📞 Teléfono</td>
+                                <td>Número de contacto principal</td>
+                                <td>3001234567, (1) 2345678</td>
+                            </tr>
+                            <tr>
+                                <td>📧 Email</td>
+                                <td>Correo electrónico</td>
+                                <td>juan@email.com</td>
+                            </tr>
+                            <tr>
+                                <td>🏠 Unidades</td>
+                                <td>Cantidad de unidades asignadas</td>
+                                <td>1, 2, 5</td>
+                            </tr>
+                            <tr>
+                                <td>⚙️ Acciones</td>
+                                <td>Opciones disponibles</td>
+                                <td>✏️ Editar, 🏠 Ver Unidades</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Funciones del Listado</h3>
+                <ul>
+                    <li>🔍 <strong>Búsqueda:</strong> Filtrar por nombre o documento</li>
+                    <li>📄 <strong>Exportar:</strong> Generar listado en PDF</li>
+                    <li>➕ <strong>Nuevo:</strong> Crear nuevo propietario</li>
+                    <li>📊 <strong>Estadísticas:</strong> Ver resumen de propietarios</li>
+                </ul>
+            </section>
+
+            <section id="crear" class="section">
+                <h2>➕ Crear Nuevo Propietario</h2>
+                
+                <h3>Proceso de Creación</h3>
+                <ol class="step-list">
+                    <li>Haga clic en "Nuevo Propietario"</li>
+                    <li>Complete la información básica</li>
+                    <li>Agregue datos de contacto</li>
+                    <li>Configure información fiscal si aplica</li>
+                    <li>Guarde el registro</li>
+                </ol>
+
+                <h3>Información Requerida</h3>
+                
+                <h4>📋 Datos Básicos</h4>
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Campo</th>
+                                <th>Descripción</th>
+                                <th>Requerido</th>
+                                <th>Formato</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Tipo de Documento</td>
+                                <td>CC, NIT, CE, Pasaporte</td>
+                                <td>✅ Sí</td>
+                                <td>Selección</td>
+                            </tr>
+                            <tr>
+                                <td>Número de Documento</td>
+                                <td>Identificación única</td>
+                                <td>✅ Sí</td>
+                                <td>Solo números</td>
+                            </tr>
+                            <tr>
+                                <td>Dígito de Verificación</td>
+                                <td>Para NIT únicamente</td>
+                                <td>❌ Condicional</td>
+                                <td>0-9</td>
+                            </tr>
+                            <tr>
+                                <td>Nombre/Razón Social</td>
+                                <td>Nombre completo</td>
+                                <td>✅ Sí</td>
+                                <td>Texto</td>
+                            </tr>
+                            <tr>
+                                <td>Tipo de Persona</td>
+                                <td>Natural o Jurídica</td>
+                                <td>✅ Sí</td>
+                                <td>Selección</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4>📞 Información de Contacto</h4>
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Campo</th>
+                                <th>Descripción</th>
+                                <th>Requerido</th>
+                                <th>Ejemplo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Teléfono Principal</td>
+                                <td>Número de contacto</td>
+                                <td>❌ No</td>
+                                <td>3001234567</td>
+                            </tr>
+                            <tr>
+                                <td>Teléfono Alternativo</td>
+                                <td>Número secundario</td>
+                                <td>❌ No</td>
+                                <td>(1) 2345678</td>
+                            </tr>
+                            <tr>
+                                <td>Email</td>
+                                <td>Correo electrónico</td>
+                                <td>❌ No</td>
+                                <td>propietario@email.com</td>
+                            </tr>
+                            <tr>
+                                <td>Dirección</td>
+                                <td>Dirección de correspondencia</td>
+                                <td>❌ No</td>
+                                <td>Calle 123 #45-67</td>
+                            </tr>
+                            <tr>
+                                <td>Ciudad</td>
+                                <td>Ciudad de residencia</td>
+                                <td>❌ No</td>
+                                <td>Bogotá D.C.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4>💼 Información Fiscal</h4>
+                <p>Para personas jurídicas o propietarios que requieren facturación:</p>
+                <ul>
+                    <li><strong>Régimen Tributario:</strong> Común, Simplificado, Gran Contribuyente</li>
+                    <li><strong>Actividad Económica:</strong> Código CIIU principal</li>
+                    <li><strong>Responsabilidades Fiscales:</strong> IVA, Renta, etc.</li>
+                    <li><strong>Representante Legal:</strong> Para personas jurídicas</li>
+                </ul>
+
+                <div class="info">
+                    <strong>💡 Consejo:</strong> Complete toda la información disponible desde el inicio. Esto evitará problemas posteriores en la facturación y comunicaciones.
+                </div>
+            </section>
+
+            <section id="editar" class="section">
+                <h2>✏️ Editar Propietario</h2>
+                
+                <h3>Proceso de Edición</h3>
+                <ol class="step-list">
+                    <li>Localice el propietario en el listado</li>
+                    <li>Haga clic en el icono de editar (✏️)</li>
+                    <li>Modifique los campos necesarios</li>
+                    <li>Guarde los cambios</li>
+                </ol>
+
+                <h3>Campos Editables</h3>
+                <ul>
+                    <li>✅ Información de contacto (teléfonos, email, dirección)</li>
+                    <li>✅ Datos fiscales y tributarios</li>
+                    <li>✅ Representante legal</li>
+                    <li>❌ Número de documento (requiere validación especial)</li>
+                    <li>❌ Tipo de documento (puede afectar validaciones)</li>
+                </ul>
+
+                <div class="warning">
+                    <strong>⚠️ Precaución:</strong> Cambiar el número de documento puede afectar el historial de pagos y movimientos contables. Consulte con el administrador antes de hacer este cambio.
+                </div>
+
+                <h3>Actualización de Unidades</h3>
+                <p>Desde la edición del propietario también puede:</p>
+                <ol class="step-list">
+                    <li>Ver las unidades actualmente asignadas</li>
+                    <li>Asignar nuevas unidades</li>
+                    <li>Remover asignaciones existentes</li>
+                    <li>Cambiar el tipo de relación (propietario, arrendatario, etc.)</li>
+                </ol>
+            </section>
+
+            <section id="buscar" class="section">
+                <h2>🔍 Búsqueda y Filtros</h2>
+                
+                <h3>Opciones de Búsqueda</h3>
+                <ol class="step-list">
+                    <li><strong>Búsqueda por Texto:</strong> Escriba nombre o número de documento</li>
+                    <li><strong>Filtro por Tipo:</strong> Persona natural o jurídica</li>
+                    <li><strong>Filtro por Estado:</strong> Activos, inactivos, morosos</li>
+                    <li><strong>Búsqueda Avanzada:</strong> Combinación de múltiples criterios</li>
+                </ol>
+
+                <h3>Consejos de Búsqueda</h3>
+                <ul>
+                    <li>💡 Use palabras parciales: "Juan" encontrará "Juan Pérez"</li>
+                    <li>💡 Busque por documento sin puntos ni espacios</li>
+                    <li>💡 La búsqueda no distingue mayúsculas y minúsculas</li>
+                    <li>💡 Use filtros para reducir resultados en bases grandes</li>
+                </ul>
+
+                <h3>Búsqueda desde Otros Módulos</h3>
+                <p>El buscador de propietarios también está disponible en:</p>
+                <ul>
+                    <li>🏠 Creación/edición de unidades</li>
+                    <li>💰 Registro de pagos</li>
+                    <li>🧾 Generación de facturas</li>
+                    <li>📊 Consulta de estados de cuenta</li>
+                </ul>
+            </section>
+
+            <section id="errores" class="section">
+                <h2>⚠️ Errores Comunes y Soluciones</h2>
+                
+                <h3>Error: "Documento ya existe"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> Al crear un propietario aparece "El documento ya está registrado".
+                    <br><strong>Causa:</strong> Ya existe un propietario con ese número de documento.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Busque el propietario existente en el listado</li>
+                        <li>Verifique si es la misma persona</li>
+                        <li>Si es la misma persona, edite el registro existente</li>
+                        <li>Si es diferente, verifique el número de documento</li>
+                    </ul>
+                </div>
+
+                <h3>Error: "Email inválido"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> El sistema no acepta el email ingresado.
+                    <br><strong>Causa:</strong> El formato del email no es válido.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique que tenga el formato: usuario@dominio.com</li>
+                        <li>No use espacios ni caracteres especiales</li>
+                        <li>Confirme que el email esté escrito correctamente</li>
+                    </ul>
+                </div>
+
+                <h3>Error: "No se puede eliminar propietario"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> El sistema impide eliminar un propietario.
+                    <br><strong>Causa:</strong> El propietario tiene unidades asignadas o movimientos contables.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Desasigne todas las unidades primero</li>
+                        <li>Verifique que no tenga saldos pendientes</li>
+                        <li>Considere marcar como "inactivo" en lugar de eliminar</li>
+                    </ul>
+                </div>
+
+                <h3>Problema: "No aparecen las unidades del propietario"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> Un propietario no muestra sus unidades asignadas.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique en el módulo de unidades si están correctamente asignadas</li>
+                        <li>Actualice la página</li>
+                        <li>Revise que las unidades estén activas</li>
+                        <li>Contacte soporte si persiste el problema</li>
+                    </ul>
+                </div>
+
+                <h3>Problema: "Información desactualizada"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> La información del propietario está desactualizada.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Implemente un proceso de actualización periódica</li>
+                        <li>Solicite actualización de datos en cada comunicación</li>
+                        <li>Use formularios digitales para facilitar la actualización</li>
+                        <li>Mantenga múltiples canales de contacto</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>🆘 ¿Necesita Más Ayuda?</h2>
+                <div class="highlight">
+                    <p><strong>Recursos Relacionados:</strong></p>
+                    <ul>
+                        <li>📖 Manual de Unidades - Para asignar propietarios a unidades</li>
+                        <li>📖 Manual de Pagos - Para registrar pagos de propietarios</li>
+                        <li>📖 Manual de Estado de Cuenta - Para consultar saldos por propietario</li>
+                        <li>📖 Manual de Reportes - Para generar informes de propietarios</li>
+                    </ul>
+                </div>
+
+                <div class="info">
+                    <p><strong>Contacto de Soporte:</strong></p>
+                    <ul>
+                        <li>📧 Email: soporte@contapy2.com</li>
+                        <li>📞 Teléfono: +57 (1) 234-5678</li>
+                        <li>💬 Chat en línea: Disponible en el sistema</li>
+                        <li>🕒 Horario: Lunes a Viernes 8:00 AM - 6:00 PM</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 ContaPY2 - Sistema de Gestión Contable Integral</p>
+            <p>Manual generado automáticamente - Versión 1.0</p>
+        </footer>
+    </div>
+
+    <script src="assets/js/manual-navigation.js"></script>
+</body>
+</html>

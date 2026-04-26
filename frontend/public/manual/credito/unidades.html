@@ -1,0 +1,508 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Préstamos - Manual de Gestión de Recaudos</title>
+    <link rel="stylesheet" href="assets/css/manual-styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">🏠 Gestión de Préstamos</div>
+                <div class="subtitle">Manual de Usuario - Gestión de Recaudos</div>
+                <div class="version">Sistema ContaPY2 - Módulo PH</div>
+            </div>
+        </header>
+
+        <nav class="nav">
+            <ul>
+                <li><a href="#introduccion">Introducción</a></li>
+                <li><a href="#acceso">Acceso</a></li>
+                <li><a href="#listado">Listado</a></li>
+                <li><a href="#crear">Crear Préstamo</a></li>
+                <li><a href="#editar">Editar Préstamo</a></li>
+                <li><a href="#eliminar">Eliminar</a></li>
+                <li><a href="#masivo">Acciones Masivas</a></li>
+                <li><a href="#errores">Errores Comunes</a></li>
+            </ul>
+        </nav>
+
+        <main class="content">
+            <!-- Tabla de Contenidos -->
+            <div class="toc">
+                <h3>📑 Contenido</h3>
+                <ul>
+                    <!-- Se genera automáticamente con JavaScript -->
+                </ul>
+            </div>
+
+            <!-- Sección de Introducción -->
+            <section id="introduccion" class="section">
+                <h2>🎯 Introducción</h2>
+                <p>El módulo de Gestión de Préstamos permite administrar todos los activos sujetos a cobro en su Cartera de Crédito. Esto incluye apartamentos, casas, locales comerciales, parqueaderos, depósitos y cualquier otro tipo de Préstamo que genere obligaciones de pago.</p>
+                
+                <div class="info">
+                    <strong>💡 Objetivo:</strong> Mantener un registro completo y actualizado de todas las Préstamos, sus características, Deudores y configuraciones de cobro.
+                </div>
+
+                <h3>¿Qué puede hacer en este módulo?</h3>
+                <ul>
+                    <li>✅ Crear y registrar nuevas Préstamos</li>
+                    <li>✅ Editar información de Préstamos existentes</li>
+                    <li>✅ Asignar Deudores a las Préstamos</li>
+                    <li>✅ Configurar coeficientes de participación</li>
+                    <li>✅ Gestionar módulos de cobro</li>
+                    <li>✅ Realizar acciones masivas en múltiples Préstamos</li>
+                    <li>✅ Exportar listados a PDF</li>
+                    <li>✅ Filtrar y buscar Préstamos</li>
+                </ul>
+
+                <div class="success">
+                    <strong>🌟 Novedad: Metamorfosis Multi-Sectorial</strong>
+                    <p>El sistema ahora es inteligente y se adapta a su sector. Si su entidad es un Colegio, los botones y títulos hablarán de "Estudiantes" y "Grados". Si es una Cooperativa de Transporte, hablarán de "Vehículos" y "Rutas". Todo de forma automática.</p>
+                </div>
+            </section>
+
+            <!-- Sección de Acceso -->
+            <section id="acceso" class="section">
+                <h2>🚪 Cómo Acceder</h2>
+                <ol class="step-list">
+                    <li>Ingrese al sistema ContaPY2</li>
+                    <li>Navegue al módulo "Gestión de Recaudos"</li>
+                    <li>Haga clic en "Préstamos" o "Préstamos / Activos"</li>
+                </ol>
+
+                <div class="highlight">
+                    <strong>📋 Nota:</strong> Dependiendo de la configuración de su sistema, esta opción puede aparecer como "Préstamos", "Préstamos / Activos" o simplemente "Préstamos".
+                </div>
+            </section>
+
+            <!-- Sección de Listado -->
+            <section id="listado" class="section">
+                <h2>📋 Listado de Préstamos</h2>
+                
+                <h3>Vista Principal</h3>
+                <p>Al acceder al módulo, verá una tabla con todas las Préstamos registradas en el sistema. La tabla incluye:</p>
+                
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Campo</th>
+                                <th>Descripción</th>
+                                <th>Ejemplo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>☑️ Selección</td>
+                                <td>Checkbox para seleccionar Préstamos</td>
+                                <td>Para acciones masivas</td>
+                            </tr>
+                            <tr>
+                                <td>🏷️ Código</td>
+                                <td>Identificador único de la Préstamo</td>
+                                <td>APT-101, LOC-001, PKG-A15</td>
+                            </tr>
+                            <tr>
+                                <td>🏠 Tipo</td>
+                                <td>Clasificación de la Préstamo</td>
+                                <td>Apartamento, Local, Parqueadero</td>
+                            </tr>
+                            <tr>
+                                <td>📊 Coeficiente</td>
+                                <td>Porcentaje de participación</td>
+                                <td>0.8500%, 1.2000%</td>
+                            </tr>
+                            <tr>
+                                <td>🏢 Grupo / Ubicación</td>
+                                <td>Ubicación física o lógica (Dinámico)</td>
+                                <td>Línea A, Grado 10-A, Bus 04</td>
+                            </tr>
+                            <tr>
+                                <td>⚙️ Acciones</td>
+                                <td>Botones de editar y eliminar</td>
+                                <td>✏️ 🗑️</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Herramientas de Filtrado</h3>
+                <ol class="step-list">
+                    <li><strong>Búsqueda por texto:</strong> Escriba en el campo de búsqueda para filtrar por código o nombre</li>
+                    <li><strong>Filtro por Línea:</strong> Seleccione una Línea específica del menú desplegable</li>
+                    <li><strong>Selección múltiple:</strong> Use los checkboxes para seleccionar varias Préstamos</li>
+                </ol>
+
+                <h3>Funciones Disponibles</h3>
+                <ul>
+                    <li>🔍 <strong>Buscar:</strong> Filtrar Préstamos por código o Línea</li>
+                    <li>📄 <strong>Exportar PDF:</strong> Generar reporte en formato PDF</li>
+                    <li>➕ <strong>Nueva Préstamo:</strong> Crear una nueva Préstamo</li>
+                    <li>⚡ <strong>Acciones Masivas:</strong> Modificar múltiples Préstamos a la vez</li>
+                </ul>
+            </section>
+
+            <!-- Sección de Crear Préstamo -->
+            <section id="crear" class="section">
+                <h2>➕ Crear Nueva Préstamo</h2>
+                
+                <h3>Proceso de Creación</h3>
+                <ol class="step-list">
+                    <li>Haga clic en el botón "Nueva Préstamo" (color azul con icono +)</li>
+                    <li>Complete el formulario con la información requerida</li>
+                    <li>Configure los módulos de cobro si aplica</li>
+                    <li>Guarde la información</li>
+                </ol>
+
+                <h3>Campos del Formulario</h3>
+                
+                <h4>📋 Información Básica</h4>
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Campo</th>
+                                <th>Descripción</th>
+                                <th>Requerido</th>
+                                <th>Ejemplo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Código</td>
+                                <td>Identificador único de la Préstamo</td>
+                                <td>✅ Sí</td>
+                                <td>APT-101, LOC-001</td>
+                            </tr>
+                            <tr>
+                                <td>Tipo</td>
+                                <td>Clasificación de la Préstamo</td>
+                                <td>✅ Sí</td>
+                                <td>Apartamento, Local, Parqueadero</td>
+                            </tr>
+                            <tr>
+                                <td>Coeficiente</td>
+                                <td>Porcentaje de participación (decimal)</td>
+                                <td>✅ Sí</td>
+                                <td>0.8500 (para 0.85%)</td>
+                            </tr>
+                            <tr>
+                                <td>Línea/Grupo</td>
+                                <td>Ubicación dentro del conjunto</td>
+                                <td>❌ No</td>
+                                <td>Línea A, Bloque 1</td>
+                            </tr>
+                            <tr>
+                                <td>Aplica Pronto Pago</td>
+                                <td>Interruptor para conceder el beneficio de descuento a esta Préstamo específica si paga antes del día límite.</td>
+                                <td>✅ Sí</td>
+                                <td>ON / OFF</td>
+                            </tr>
+                            <tr>
+                                <td>Matrícula Inmobiliaria</td>
+                                <td>Número de registro catastral</td>
+                                <td>❌ No</td>
+                                <td>050-12345</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4>👤 Deudor</h4>
+                <ol class="step-list">
+                    <li>Haga clic en "Buscar Deudor"</li>
+                    <li>Seleccione un Deudor existente o cree uno nuevo</li>
+                    <li>El sistema asignará automáticamente el Deudor a la Préstamo</li>
+                </ol>
+
+                <div class="info">
+                    <strong>💡 Consejo:</strong> Si el Deudor no existe, puede crearlo directamente desde este formulario usando el botón "Nuevo Deudor".
+                </div>
+
+                <h4>🏗️ Módulos de Cobro</h4>
+                <p>Los módulos permiten aplicar diferentes conceptos de cobro según el tipo de Préstamo:</p>
+                <ul>
+                    <li><strong>Residencial:</strong> Para apartamentos y casas</li>
+                    <li><strong>Comercial:</strong> Para locales comerciales</li>
+                    <li><strong>Parqueadero:</strong> Para espacios de estacionamiento</li>
+                    <li><strong>Depósito:</strong> Para bodegas y cuartos útiles</li>
+                </ul>
+
+                <ol class="step-list">
+                    <li>Seleccione los módulos que aplican para esta Préstamo</li>
+                    <li>Los módulos determinan qué conceptos de cobro se aplicarán</li>
+                    <li>Puede modificar los módulos posteriormente</li>
+                </ol>
+
+                <h3>Validaciones del Sistema</h3>
+                <div class="warning">
+                    <strong>⚠️ Validaciones Importantes:</strong>
+                    <ul>
+                        <li>El código de Préstamo debe ser único en el sistema</li>
+                        <li>El coeficiente debe ser un número decimal positivo</li>
+                        <li>La suma de todos los coeficientes debería ser 100%</li>
+                        <li>Todos los campos marcados como requeridos deben completarse</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Sección de Editar Préstamo -->
+            <section id="editar" class="section">
+                <h2>✏️ Editar Préstamo Existente</h2>
+                
+                <h3>Proceso de Edición</h3>
+                <ol class="step-list">
+                    <li>En el listado de Préstamos, localice la Préstamo que desea editar</li>
+                    <li>Haga clic en el icono de editar (✏️) en la columna de acciones</li>
+                    <li>Modifique los campos necesarios en el formulario</li>
+                    <li>Guarde los cambios</li>
+                </ol>
+
+                <h3>Campos Editables</h3>
+                <p>Puede modificar todos los campos de la Préstamo excepto:</p>
+                <ul>
+                    <li>❌ ID interno del sistema (se genera automáticamente)</li>
+                    <li>✅ Código (con precaución, puede afectar reportes históricos)</li>
+                    <li>✅ Tipo de Préstamo</li>
+                    <li>✅ Coeficiente de participación</li>
+                    <li>✅ Deudor asignado</li>
+                    <li>✅ Línea o grupo</li>
+                    <li>✅ Aplica Beneficio de Descuento por Pronto Pago (ON/OFF)</li>
+                    <li>✅ Módulos de cobro</li>
+                </ul>
+
+                <div class="warning">
+                    <strong>⚠️ Precaución al Editar:</strong>
+                    <ul>
+                        <li>Cambiar el código puede afectar reportes históricos</li>
+                        <li>Modificar el coeficiente afecta futuros cobros</li>
+                        <li>Cambiar módulos puede alterar los conceptos aplicables</li>
+                    </ul>
+                </div>
+
+                <h3>Cambio de Deudor</h3>
+                <ol class="step-list">
+                    <li>En el formulario de edición, haga clic en "Cambiar Deudor"</li>
+                    <li>Busque y seleccione el nuevo Deudor</li>
+                    <li>Confirme el cambio</li>
+                    <li>El sistema registrará el historial del cambio</li>
+                </ol>
+
+                <div class="info">
+                    <strong>💡 Historial:</strong> El sistema mantiene un registro de todos los cambios de Deudor para efectos de auditoría y reportes.
+                </div>
+            </section>
+
+            <!-- Sección de Eliminar -->
+            <section id="eliminar" class="section">
+                <h2>🗑️ Eliminar Préstamos</h2>
+                
+                <h3>Proceso de Eliminación</h3>
+                <ol class="step-list">
+                    <li>Localice la Préstamo que desea eliminar en el listado</li>
+                    <li>Haga clic en el icono de eliminar (🗑️) en la columna de acciones</li>
+                    <li>Confirme la eliminación en el diálogo que aparece</li>
+                    <li>La Préstamo será removida del sistema</li>
+                </ol>
+
+                <div class="warning">
+                    <strong>⚠️ IMPORTANTE - Restricciones de Eliminación:</strong>
+                    <p>No podrá eliminar una Préstamo si:</p>
+                    <ul>
+                        <li>Tiene movimientos contables asociados</li>
+                        <li>Tiene facturas generadas</li>
+                        <li>Tiene pagos registrados</li>
+                        <li>Tiene saldo pendiente</li>
+                    </ul>
+                    <p><strong>Solución:</strong> En estos casos, considere marcar la Préstamo como "Inactiva" en lugar de eliminarla.</p>
+                </div>
+
+                <h3>Alternativa: Desactivar Préstamo</h3>
+                <p>Si no puede eliminar la Préstamo por restricciones del sistema:</p>
+                <ol class="step-list">
+                    <li>Edite la Préstamo</li>
+                    <li>Cambie el estado a "Inactiva" (si está disponible)</li>
+                    <li>O agregue un prefijo como "INACTIVA-" al código</li>
+                    <li>Esto mantendrá el historial pero la excluirá de procesos futuros</li>
+                </ol>
+            </section>
+
+            <!-- Sección de Acciones Masivas -->
+            <section id="masivo" class="section">
+                <h2>⚡ Acciones Masivas</h2>
+                
+                <h3>¿Qué son las Acciones Masivas?</h3>
+                <p>Las acciones masivas permiten modificar múltiples Préstamos simultáneamente, ahorrando tiempo cuando necesita hacer cambios similares en varias Préstamos.</p>
+
+                <h3>Proceso de Acciones Masivas</h3>
+                <ol class="step-list">
+                    <li><strong>Seleccionar Préstamos:</strong> Use los checkboxes para marcar las Préstamos que desea modificar</li>
+                    <li><strong>Activar Modo Masivo:</strong> Aparecerá un botón "Acciones Masivas" cuando tenga Préstamos seleccionadas</li>
+                    <li><strong>Configurar Cambios:</strong> En el modal que aparece, configure qué módulos agregar o remover</li>
+                    <li><strong>Aplicar Cambios:</strong> Confirme la operación para aplicar los cambios</li>
+                </ol>
+
+                <h3>Tipos de Acciones Masivas Disponibles</h3>
+                
+                <h4>🏗️ Gestión de Módulos</h4>
+                <p>La acción masiva más común es la gestión de módulos de cobro:</p>
+                
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Acción</th>
+                                <th>Descripción</th>
+                                <th>Ejemplo de Uso</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>🟢 Asignar Módulo</td>
+                                <td>Agregar un módulo a las Préstamos seleccionadas</td>
+                                <td>Agregar módulo "Parqueadero" a apartamentos</td>
+                            </tr>
+                            <tr>
+                                <td>🔴 Remover Módulo</td>
+                                <td>Quitar un módulo de las Préstamos seleccionadas</td>
+                                <td>Remover módulo "Comercial" de apartamentos</td>
+                            </tr>
+                            <tr>
+                                <td>🔄 Combinado</td>
+                                <td>Asignar y remover módulos en la misma operación</td>
+                                <td>Cambiar de "Residencial" a "Comercial"</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Interfaz de Acciones Masivas</h3>
+                <ol class="step-list">
+                    <li><strong>Selección Visual:</strong> Haga clic en los módulos para cambiar su estado:
+                        <ul>
+                            <li>🔘 Gris: Sin cambios</li>
+                            <li>🟢 Verde: Asignar módulo</li>
+                            <li>🔴 Rojo: Remover módulo</li>
+                        </ul>
+                    </li>
+                    <li><strong>Confirmación:</strong> Revise el resumen antes de aplicar</li>
+                    <li><strong>Aplicación:</strong> Los cambios se aplican inmediatamente</li>
+                </ol>
+
+                <div class="success">
+                    <strong>✅ Ejemplo Práctico:</strong> Si necesita agregar el módulo "Parqueadero" a 50 apartamentos, seleccione los 50 apartamentos, active acciones masivas, marque "Parqueadero" en verde y aplique. ¡Listo en segundos!
+                </div>
+
+                <h3>Consejos para Acciones Masivas</h3>
+                <ul>
+                    <li>💡 Use filtros para seleccionar Préstamos similares más fácilmente</li>
+                    <li>💡 Revise siempre el resumen antes de confirmar</li>
+                    <li>💡 Haga pruebas con pocas Préstamos primero</li>
+                    <li>💡 Mantenga respaldos antes de cambios masivos importantes</li>
+                </ul>
+            </section>
+
+            <!-- Sección de Errores Comunes -->
+            <section id="errores" class="section">
+                <h2>⚠️ Errores Comunes y Soluciones</h2>
+                
+                <h3>Error: "Código de Préstamo ya existe"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> Al crear una Préstamo, aparece el mensaje "El código ya existe".
+                    <br><strong>Causa:</strong> Está intentando usar un código que ya está asignado a otra Préstamo.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique el listado de Préstamos existentes</li>
+                        <li>Use un código diferente y único</li>
+                        <li>Considere usar un formato estándar (ej: APT-101, LOC-001)</li>
+                    </ul>
+                </div>
+
+                <h3>Error: "Coeficiente inválido"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> El sistema no acepta el coeficiente ingresado.
+                    <br><strong>Causa:</strong> El formato del coeficiente no es correcto.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Use formato decimal: 0.8500 (no 0.85% ni 85%)</li>
+                        <li>Use punto como separador decimal, no coma</li>
+                        <li>Asegúrese de que sea un número positivo</li>
+                    </ul>
+                </div>
+
+                <h3>Error: "No se puede eliminar la Préstamo"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> El sistema impide eliminar una Préstamo.
+                    <br><strong>Causa:</strong> La Préstamo tiene movimientos contables o facturas asociadas.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique si tiene saldos pendientes</li>
+                        <li>Consulte el historial de movimientos</li>
+                        <li>Considere desactivar en lugar de eliminar</li>
+                        <li>Contacte al administrador si es necesario eliminar</li>
+                    </ul>
+                </div>
+
+                <h3>Problema: "Las acciones masivas no funcionan"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> No aparece el botón de acciones masivas.
+                    <br><strong>Causa:</strong> No ha seleccionado ninguna Préstamo.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Seleccione al menos una Préstamo usando los checkboxes</li>
+                        <li>El botón aparecerá automáticamente</li>
+                        <li>Verifique que tenga permisos para acciones masivas</li>
+                    </ul>
+                </div>
+
+                <h3>Problema: "La búsqueda no encuentra Préstamos"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> El filtro de búsqueda no muestra resultados.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique que esté escribiendo correctamente</li>
+                        <li>La búsqueda requiere al menos 2 caracteres</li>
+                        <li>Limpie los filtros y intente de nuevo</li>
+                        <li>Actualice la página si persiste el problema</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Sección de Ayuda Adicional -->
+            <section class="section">
+                <h2>🆘 ¿Necesita Más Ayuda?</h2>
+                <div class="highlight">
+                    <p><strong>Recursos Relacionados:</strong></p>
+                    <ul>
+                        <li>📖 Manual de Deudores - Para gestionar la información de Deudores</li>
+                        <li>📖 Manual de Conceptos de Cobro - Para configurar qué se cobra a cada Préstamo</li>
+                        <li>📖 Manual de Configuración - Para gestionar Líneas y módulos</li>
+                        <li>📖 Manual de Facturación - Para generar cobros a las Préstamos</li>
+                    </ul>
+                </div>
+
+                <div class="info">
+                    <p><strong>Contacto de Soporte:</strong></p>
+                    <ul>
+                        <li>📧 Email: soporte@contapy2.com</li>
+                        <li>📞 Teléfono: +57 (1) 234-5678</li>
+                        <li>💬 Chat en línea: Disponible en el sistema</li>
+                        <li>🕒 Horario: Lunes a Viernes 8:00 AM - 6:00 PM</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 ContaPY2 - Sistema de Gestión Contable Integral</p>
+            <p>Manual generado automáticamente - Versión 1.0</p>
+        </footer>
+    </div>
+
+    <script src="assets/js/manual-navigation.js"></script>
+</body>
+</html>

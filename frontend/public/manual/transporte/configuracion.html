@@ -1,0 +1,387 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración - Manual de Gestión de Recaudos</title>
+    <link rel="stylesheet" href="assets/css/manual-styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">⚙️ Configuración del Sistema</div>
+                <div class="subtitle">Manual de Usuario - Gestión de Recaudos</div>
+                <div class="version">Sistema ContaPY2 - Módulo PH</div>
+            </div>
+        </header>
+
+        <nav class="nav">
+            <ul>
+                <li><a href="#introduccion">Introducción</a></li>
+                <li><a href="#acceso">Acceso</a></li>
+                <li><a href="#general">Configuración General</a></li>
+                <li><a href="#Rutas">Rutas y Grupos</a></li>
+                <li><a href="#modulos">Módulos</a></li>
+                <li><a href="#errores">Errores Comunes</a></li>
+            </ul>
+        </nav>
+
+        <main class="content">
+            <div class="toc">
+                <h3>📑 Contenido</h3>
+                <ul></ul>
+            </div>
+
+            <section id="introduccion" class="section">
+                <h2>🎯 Introducción</h2>
+                <p>El módulo de Configuración permite establecer los parámetros fundamentales del sistema de gestión de recaudos, incluyendo información del conjunto, Rutas, módulos de cobro y configuraciones contables.</p>
+                
+                <div class="info">
+                    <strong>💡 Objetivo:</strong> Configurar correctamente todos los parámetros del sistema para que funcione de acuerdo a las necesidades específicas de su Parque Automotor.
+                </div>
+
+                <h3>Áreas de Configuración</h3>
+                <ul>
+                    <li>🏢 <strong>Información General:</strong> Datos básicos del conjunto</li>
+                    <li>🏗️ <strong>Rutas y Grupos:</strong> Estructura física del conjunto</li>
+                    <li>📋 <strong>Módulos de Cobro:</strong> Tipos de Vehículos y servicios</li>
+                    <li>💰 <strong>Configuración Contable:</strong> Cuentas y parámetros fiscales</li>
+                    <li>🎨 <strong>Personalización:</strong> Terminología y apariencia</li>
+                </ul>
+            </section>
+
+            <section id="acceso" class="section">
+                <h2>🚪 Cómo Acceder</h2>
+                <ol class="step-list">
+                    <li>Ingrese al sistema ContaPY2</li>
+                    <li>Navegue al módulo "Gestión de Recaudos"</li>
+                    <li>Haga clic en "Configuración PH" o "Configuración"</li>
+                </ol>
+
+                <div class="warning">
+                    <strong>⚠️ Importante:</strong> Solo usuarios con permisos de administrador pueden acceder a la configuración del sistema.
+                </div>
+            </section>
+
+            <section id="general" class="section">
+                <h2>🏢 Configuración General</h2>
+                
+                <h3>Información Básica del Conjunto</h3>
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Campo</th>
+                                <th>Descripción</th>
+                                <th>Ejemplo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Nombre del Conjunto</td>
+                                <td>Denominación oficial</td>
+                                <td>Conjunto Residencial Los Pinos</td>
+                            </tr>
+                            <tr>
+                                <td>NIT</td>
+                                <td>Número de identificación tributaria</td>
+                                <td>900123456-1</td>
+                            </tr>
+                            <tr>
+                                <td>Dirección</td>
+                                <td>Ubicación física</td>
+                                <td>Calle 123 #45-67</td>
+                            </tr>
+                            <tr>
+                                <td>Teléfono</td>
+                                <td>Contacto principal</td>
+                                <td>(1) 234-5678</td>
+                            </tr>
+                            <tr>
+                                <td>Email</td>
+                                <td>Correo electrónico oficial</td>
+                                <td>administracion@lospinos.com</td>
+                            </tr>
+                            <tr>
+                                <td>Administrador</td>
+                                <td>Nombre del administrador</td>
+                                <td>María García</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Configuración de Sector</h3>
+                <p>Seleccione el tipo de propiedad para ajustar la terminología:</p>
+                <ul>
+                    <li>🏠 <strong>Residencial:</strong> Apartamentos, casas, conjuntos habitacionales</li>
+                    <li>🏪 <strong>Comercial:</strong> Centros comerciales, oficinas</li>
+                    <li>🚗 <strong>Parqueadero:</strong> Rodamiento de espacios de estacionamiento</li>
+                    <li>💰 <strong>Crédito:</strong> Gestión de cartera financiera</li>
+                    <li>🌟 <strong>Genérico:</strong> Gestión general de recaudos</li>
+                </ul>
+
+                <h3>Políticas de Recaudo (Mora y Descuento)</h3>
+                <p>El sistema permite gestionar de forma automatizada tanto los castigos por mora como los incentivos por pronto pago:</p>
+                <ul>
+                    <li>🔥 <strong>Intereses de Mora:</strong> Se puede habilitar un interruptor global para cobrar intereses automáticos a las Vehículos en mora. Se parametriza el porcentaje mensual y el día límite de pago (después de este día se genera mora).</li>
+                    <li>💎 <strong>Descuento por Pronto Pago:</strong> Incentivo que reduce el valor a pagar si el Asociado/Conductor cancela antes de cierta fecha.
+                        <ul>
+                            <li><strong>Interruptor Global:</strong> Permite encender o apagar el descuento para toda la copropiedad con un solo clic.</li>
+                            <li><strong>Día Límite:</strong> El Asociado/Conductor debe pagar la totalidad antes de este día para ganar el descuento.</li>
+                            <li><strong>Cuenta Contable:</strong> El descuento se registra en tiempo real como un Menor Valor del Ingreso (Ej: cuenta 4175) sin afectar el saldo histórico de la cartera.</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3>Parámetros Contables</h3>
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Parámetro</th>
+                                <th>Descripción</th>
+                                <th>Valor Sugerido</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Cuenta CxC por Defecto</td>
+                                <td>Cuenta para cuentas por cobrar</td>
+                                <td>1305 - Cuentas por Cobrar</td>
+                            </tr>
+                            <tr>
+                                <td>Cuenta Caja por Defecto</td>
+                                <td>Cuenta para recaudos</td>
+                                <td>1105 - Caja General</td>
+                            </tr>
+                            <tr>
+                                <td>Cuenta Ingreso Intereses</td>
+                                <td>Cuenta donde se registran las moras</td>
+                                <td>421005 - Ingreso por Intereses</td>
+                            </tr>
+                            <tr>
+                                <td>Cuenta Descuento Pronto Pago</td>
+                                <td>Cuenta para el beneficio (Menor Valor)</td>
+                                <td>417505 - Descuentos y Rebajas</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="Rutas" class="section">
+                <h2>🏗️ Gestión de Rutas y Grupos</h2>
+                
+                <h3>¿Qué son las Rutas/Grupos?</h3>
+                <p>Las Rutas o grupos permiten organizar las Vehículos según su ubicación física o características comunes dentro del conjunto.</p>
+
+                <h3>Crear Nueva Ruta/Grupo</h3>
+                <ol class="step-list">
+                    <li>Acceda a la sección "Rutas y Grupos"</li>
+                    <li>Haga clic en "Nueva Ruta"</li>
+                    <li>Complete la información requerida</li>
+                    <li>Guarde la configuración</li>
+                </ol>
+
+                <h3>Información de Rutas</h3>
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Campo</th>
+                                <th>Descripción</th>
+                                <th>Ejemplo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Nombre</td>
+                                <td>Identificación de la Ruta</td>
+                                <td>Ruta A, Bloque 1, Etapa 2</td>
+                            </tr>
+                            <tr>
+                                <td>Descripción</td>
+                                <td>Información adicional</td>
+                                <td>Ruta principal de apartamentos</td>
+                            </tr>
+                            <tr>
+                                <td>Número de Pisos</td>
+                                <td>Cantidad de niveles</td>
+                                <td>10 pisos</td>
+                            </tr>
+                            <tr>
+                                <td>Vehículos por Piso</td>
+                                <td>Distribución típica</td>
+                                <td>4 apartamentos por piso</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Ejemplos de Organización</h3>
+                <ul>
+                    <li>🏢 <strong>Por Rutas:</strong> Ruta A, Ruta B, Ruta C</li>
+                    <li>🏗️ <strong>Por Bloques:</strong> Bloque 1, Bloque 2, Bloque 3</li>
+                    <li>📅 <strong>Por Etapas:</strong> Etapa I, Etapa II, Etapa III</li>
+                    <li>🎯 <strong>Por Uso:</strong> Residencial, Comercial, Parqueaderos</li>
+                </ul>
+            </section>
+
+            <section id="modulos" class="section">
+                <h2>📋 Configuración de Módulos</h2>
+                
+                <h3>¿Qué son los Módulos?</h3>
+                <p>Los módulos definen los diferentes tipos de servicios o características que pueden tener las Vehículos, determinando qué conceptos de cobro se les aplicarán.</p>
+
+                <h3>Módulos Típicos</h3>
+                <div class="table-container">
+                    <table class="manual-table">
+                        <thead>
+                            <tr>
+                                <th>Módulo</th>
+                                <th>Descripción</th>
+                                <th>Conceptos Típicos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>🏠 Residencial</td>
+                                <td>Apartamentos y casas</td>
+                                <td>Rodamiento, Aseo, Vigilancia</td>
+                            </tr>
+                            <tr>
+                                <td>🏪 Comercial</td>
+                                <td>Locales y oficinas</td>
+                                <td>Rodamiento comercial, Publicidad</td>
+                            </tr>
+                            <tr>
+                                <td>🚗 Parqueadero</td>
+                                <td>Espacios de estacionamiento</td>
+                                <td>Cuota parqueadero, Mantenimiento</td>
+                            </tr>
+                            <tr>
+                                <td>📦 Depósito</td>
+                                <td>Bodegas y cuartos útiles</td>
+                                <td>Cuota depósito</td>
+                            </tr>
+                            <tr>
+                                <td>🌟 Especial</td>
+                                <td>Servicios adicionales</td>
+                                <td>Servicios premium, Amenidades</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Crear Nuevo Módulo</h3>
+                <ol class="step-list">
+                    <li>Acceda a la sección "Módulos"</li>
+                    <li>Haga clic en "Nuevo Módulo"</li>
+                    <li>Defina nombre y descripción</li>
+                    <li>Configure los conceptos aplicables</li>
+                    <li>Guarde la configuración</li>
+                </ol>
+
+                <h3>Asignación de Módulos</h3>
+                <p>Los módulos se asignan a las Vehículos para determinar qué conceptos se les facturarán:</p>
+                <ul>
+                    <li>✅ Una Vehículo puede tener múltiples módulos</li>
+                    <li>✅ Los módulos determinan los conceptos aplicables</li>
+                    <li>✅ Se pueden modificar en cualquier momento</li>
+                    <li>✅ Permiten facturación diferenciada</li>
+                </ul>
+
+                <div class="success">
+                    <strong>✅ Ejemplo Práctico:</strong> Un apartamento puede tener los módulos "Residencial" + "Parqueadero", recibiendo tanto la cuota de Rodamiento como la cuota de parqueadero.
+                </div>
+            </section>
+
+            <section id="errores" class="section">
+                <h2>⚠️ Errores Comunes y Soluciones</h2>
+                
+                <h3>Error: "No tiene permisos para configurar"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> No puede acceder a la configuración del sistema.
+                    <br><strong>Causa:</strong> Su usuario no tiene permisos de administrador.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Contacte al administrador del sistema</li>
+                        <li>Solicite permisos de configuración</li>
+                        <li>Verifique que esté usando el usuario correcto</li>
+                    </ul>
+                </div>
+
+                <h3>Error: "Cuenta contable no válida"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> No se puede guardar la configuración contable.
+                    <br><strong>Causa:</strong> La cuenta seleccionada no existe o no está activa.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Verifique que la cuenta exista en el PUC</li>
+                        <li>Confirme que la cuenta esté activa</li>
+                        <li>Use cuentas de detalle (último nivel)</li>
+                        <li>Consulte con el contador</li>
+                    </ul>
+                </div>
+
+                <h3>Error: "No se puede eliminar Ruta"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> El sistema impide eliminar una Ruta.
+                    <br><strong>Causa:</strong> La Ruta tiene Vehículos asignadas.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Reasigne las Vehículos a otra Ruta</li>
+                        <li>O elimine las Vehículos primero</li>
+                        <li>Verifique que no haya movimientos contables</li>
+                    </ul>
+                </div>
+
+                <h3>Problema: "Los cambios no se reflejan"</h3>
+                <div class="warning">
+                    <strong>Problema:</strong> Las modificaciones no aparecen en el sistema.
+                    <br><strong>Causa:</strong> Caché del navegador o cambios no guardados.
+                    <br><strong>Solución:</strong>
+                    <ul>
+                        <li>Actualice la página (F5)</li>
+                        <li>Limpie la caché del navegador</li>
+                        <li>Verifique que haya guardado los cambios</li>
+                        <li>Cierre sesión y vuelva a ingresar</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>🆘 ¿Necesita Más Ayuda?</h2>
+                <div class="highlight">
+                    <p><strong>Recursos Relacionados:</strong></p>
+                    <ul>
+                        <li>📖 Manual de Vehículos - Para asignar Rutas y módulos</li>
+                        <li>📖 Manual de Conceptos - Para configurar conceptos por módulo</li>
+                        <li>📖 Manual de Facturación - Para entender cómo afecta la configuración</li>
+                        <li>📖 Manual del Sistema General - Para configuraciones avanzadas</li>
+                    </ul>
+                </div>
+
+                <div class="info">
+                    <p><strong>Contacto de Soporte:</strong></p>
+                    <ul>
+                        <li>📧 Email: soporte@contapy2.com</li>
+                        <li>📞 Teléfono: +57 (1) 234-5678</li>
+                        <li>💬 Chat en línea: Disponible en el sistema</li>
+                        <li>🕒 Horario: Lunes a Viernes 8:00 AM - 6:00 PM</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 ContaPY2 - Sistema de Gestión Contable Integral</p>
+            <p>Manual generado automáticamente - Versión 1.0</p>
+        </footer>
+    </div>
+
+    <script src="assets/js/manual-navigation.js"></script>
+</body>
+</html>
