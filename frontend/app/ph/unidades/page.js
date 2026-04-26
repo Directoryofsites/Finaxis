@@ -257,13 +257,13 @@ export default function GestionUnidadesPage() {
             // Header
             doc.setFontSize(18);
             doc.setTextColor(40);
-            doc.text(`Reporte de ${labels.unidad}s - ${labels.module}`, 14, 22);
+            doc.text(`Reporte de ${labels.unidad_plural || 'Unidades'} - ${labels.module}`, 14, 22);
             doc.setFontSize(11);
             doc.setTextColor(100);
             doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 14, 30);
 
             // Table Data
-            const tableColumn = ["Código", "Tipo", labels.coeficiente, "Grupo/Torre", "Matrícula"];
+            const tableColumn = ["Código", "Tipo", labels.coeficiente, labels.torre || "Grupo", "Matrícula"];
             const tableRows = unidadesFiltradas.map(u => [
                 u.codigo,
                 u.tipo,
@@ -311,8 +311,8 @@ export default function GestionUnidadesPage() {
                                 <FaHome className="text-2xl" />
                             </div>
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-800">Maestro de {labels.unidad}s</h1>
-                                <p className="text-gray-500 text-sm">Administración de {labels.unidad.toLowerCase()}s y activos de cobro.</p>
+                                <h1 className="text-3xl font-bold text-gray-800">{labels?.maestro || `Maestro de ${labels.unidad_plural || 'Unidades'}`}</h1>
+                                <p className="text-gray-500 text-sm">{labels?.descripcion || `Administración de ${labels.unidad_plural?.toLowerCase() || 'unidades'} e información base.`}</p>
                             </div>
                         </div>
                     </div>
@@ -335,7 +335,7 @@ export default function GestionUnidadesPage() {
                             <FaFilePdf /> <span>PDF</span>
                         </button>
                         <Link href="/ph/unidades/crear" className="flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all shadow-md transform hover:-translate-y-0.5 font-medium">
-                            <FaPlus /> <span>Nueva {labels.unidad}</span>
+                            <FaPlus /> <span>Nueva {labels.unidad || 'Unidad'}</span>
                         </Link>
                     </div>
                 </div>
@@ -357,7 +357,7 @@ export default function GestionUnidadesPage() {
                     <div className="flex flex-col md:flex-row justify-between items-end mb-6 gap-4">
                         <div className="w-full md:w-2/3 flex gap-4">
                             <div className="flex-1">
-                                <label className={labelClass}>Buscar {labels.unidad}</label>
+                                <label className={labelClass}>Buscar {labels.unidad || 'Unidad'}</label>
                                 <div className="relative">
                                     <input
                                         type="text"
@@ -370,7 +370,7 @@ export default function GestionUnidadesPage() {
                                 </div>
                             </div>
                             <div className="w-1/3">
-                                <label className={labelClass}>Filtrar por Grupo/Torre</label>
+                                <label className={labelClass}>Filtrar por {labels.torre || 'Grupo'}</label>
                                 <select
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 text-sm outline-none"
                                     value={selectedTorre}
@@ -408,7 +408,7 @@ export default function GestionUnidadesPage() {
                                     <th className="py-3 px-4 text-left text-xs font-bold text-gray-600 uppercase w-24">Código</th>
                                     <th className="py-3 px-4 text-left text-xs font-bold text-gray-600 uppercase">Tipo</th>
                                     <th className="py-3 px-4 text-left text-xs font-bold text-gray-600 uppercase">{labels.coeficiente}</th>
-                                    <th className="py-3 px-4 text-center text-xs font-bold text-gray-600 uppercase">Grupo/Ubic</th>
+                                    <th className="py-3 px-4 text-center text-xs font-bold text-gray-600 uppercase">{labels.torre || 'Grupo'}/Ubic</th>
                                     <th className="py-3 px-4 text-center text-xs font-bold text-gray-600 uppercase w-32">Acciones</th>
                                 </tr>
                             </thead>

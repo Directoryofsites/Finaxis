@@ -373,8 +373,8 @@ export default function PagosPHPage() {
                                 <FaMoneyBillWave className="text-2xl" />
                             </div>
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-800">Recaudos y Pagos {labels.module}</h1>
-                                <p className="text-gray-500 text-sm">Gestión de recaudos por {labels.unidad} o consolidado por Propietario.</p>
+                                <h1 className="text-3xl font-bold text-gray-800">Recepción de Pagos</h1>
+                                <p className="text-gray-500 text-sm">Gestión de recaudos por {labels?.unidad || 'unidad'} o consolidado por {labels?.propietario || 'propietario'}.</p>
                             </div>
                         </div>
                         <div className="mt-3 flex items-center gap-2">
@@ -387,7 +387,7 @@ export default function PagosPHPage() {
                                 href="/ph/pagos/masivo" 
                                 className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-xs shadow-lg hover:bg-indigo-700 transition-all hover:scale-105"
                             >
-                                <FaLayerGroup /> RECAUDOS MASIVOS (POR TORRE)
+                                <FaLayerGroup /> RECAUDOS MASIVOS (POR {labels?.torre || 'TORRE'})
                             </Link>
                         </div>
                     </div>
@@ -409,12 +409,12 @@ export default function PagosPHPage() {
                                 onClick={() => { setPaymentMode('OWNER'); setSearchTerm(''); }}
                                 className={`flex-1 py-2 rounded-md text-sm font-bold transition-all ${paymentMode === 'OWNER' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
                             >
-                                Por Propietario
+                                Por {labels?.propietario || 'Propietario'}
                             </button>
                         </div>
 
                         <label className="block text-xs font-bold text-gray-500 uppercase mb-3 tracking-wide">
-                            {paymentMode === 'UNIT' ? `1. Seleccione ${labels.unidad}` : '1. Seleccione Propietario'}
+                            {paymentMode === 'UNIT' ? `1. Seleccione ${labels?.unidad || 'Unidad'}` : `1. Seleccione ${labels?.propietario || 'Propietario'}`}
                         </label>
 
                         {/* BUSCADOR */}

@@ -185,7 +185,7 @@ export default function CrearUnidadPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* TORRE SELECTOR */}
                             <div className="md:col-span-2">
-                                <label className={labelClass}>Torre / Bloque / Zona</label>
+                                <label className={labelClass}>{labels?.torre || 'Torre'} / Ubicación</label>
                                 <select name="torre_id" className={inputClass} value={formData.torre_id} onChange={handleChange}>
                                     <option value="">-- Ninguna (Zona General) --</option>
                                     {torres.map(t => (
@@ -276,10 +276,8 @@ export default function CrearUnidadPage() {
                         )}
                     </div>
 
-                    {/* VEHÍCULOS / ITEMS EXTENSIBLES */}
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                         <div className="flex justify-between items-center border-b pb-2 mb-4">
-                            <h2 className="text-lg font-bold text-gray-700 flex items-center gap-2"><FaCar /> Vehículos / Adicionales</h2>
+                            <h2 className="text-lg font-bold text-gray-700 flex items-center gap-2"><FaCar /> Otros Detalles / Vehículos</h2>
                             <button type="button" onClick={addVehiculo} className="px-3 py-1 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 text-sm font-medium flex items-center gap-1">
                                 <FaPlus /> Agregar
                             </button>

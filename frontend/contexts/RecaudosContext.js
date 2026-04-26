@@ -8,65 +8,100 @@ const SECTOR_LABELS = {
     'PH_RESIDENCIAL': {
         module: 'Propiedad Horizontal',
         unidad: 'Unidad Privada',
+        unidad_plural: 'Unidades Privadas',
         propietario: 'Propietario',
+        propietario_plural: 'Propietarios',
         coeficiente: 'Coeficiente',
         concepto: 'Expensa/Concepto',
         torre: 'Torre',
-        torre_plural: 'Torres'
+        torre_plural: 'Torres',
+        maestro: 'Maestro de Unidades',
+        descripcion: 'Gestión de saldos por unidad, torre y concepto.',
+        modulo: 'Módulo'
     },
     'PH_COMERCIAL': {
         module: 'Centro Comercial',
         unidad: 'Local Comercial',
+        unidad_plural: 'Locales Comerciales',
         propietario: 'Arrendatario/Dueño',
+        propietario_plural: 'Arrendatarios',
         coeficiente: 'Área/Coeficiente',
         concepto: 'Cuota Admin',
         torre: 'Zona',
-        torre_plural: 'Zonas'
+        torre_plural: 'Zonas',
+        maestro: 'Maestro de Locales',
+        descripcion: 'Saldos detallados por local, zona y concepto comercial.',
+        modulo: 'Sección'
     },
     'TRANSPORTE': {
         module: 'Parque Automotor',
         unidad: 'Vehículo/Móvil',
+        unidad_plural: 'Vehículos',
         propietario: 'Asociado/Propietario',
+        propietario_plural: 'Asociados',
         coeficiente: 'Cupo',
         concepto: 'Rodamiento',
         torre: 'Ruta',
-        torre_plural: 'Rutas'
+        torre_plural: 'Rutas',
+        maestro: 'Control de Parque Automotor',
+        descripcion: 'Saldos de rodamiento y aportes por vehículo y ruta.',
+        modulo: 'Línea/Ruta'
     },
     'EDUCATIVO': {
         module: 'Gestión Educativa',
         unidad: 'Estudiante',
+        unidad_plural: 'Estudiantes',
         propietario: 'Acudiente',
+        propietario_plural: 'Acudientes',
         coeficiente: 'Grado',
         concepto: 'Pensión',
         torre: 'Grado',
-        torre_plural: 'Grados'
+        torre_plural: 'Grados',
+        maestro: 'Maestro de Estudiantes',
+        descripcion: 'Saldos de pensiones y servicios por estudiante y grado.',
+        modulo: 'Grado/Curso'
     },
     'PARQUEADERO': {
         module: 'Alquiler de Espacios',
         unidad: 'Sitio/Plaza',
+        unidad_plural: 'Plazas',
         propietario: 'Cliente',
+        propietario_plural: 'Clientes',
         coeficiente: 'Área',
         concepto: 'Mensualidad',
         torre: 'Zona',
-        torre_plural: 'Zonas'
+        torre_plural: 'Zonas',
+        maestro: 'Control de Espacios',
+        descripcion: 'Saldos por plaza de parqueo y zona de ubicación.',
+        modulo: 'Zona/Sección'
     },
     'CREDITO': {
         module: 'Cartera Financiera',
         unidad: 'Préstamo',
+        unidad_plural: 'Préstamos',
         propietario: 'Deudor',
+        propietario_plural: 'Deudores',
         coeficiente: 'Tasa Interés',
         concepto: 'Cuota',
         torre: 'Línea',
-        torre_plural: 'Líneas'
+        torre_plural: 'Líneas',
+        maestro: 'Gestión de Cartera de Crédito',
+        descripcion: 'Seguimiento de cuotas pendientes por préstamo y línea.',
+        modulo: 'Producto'
     },
     'GENERICO': {
         module: 'Gestión de Recaudos',
         unidad: 'Activo/Contrato',
+        unidad_plural: 'Activos',
         propietario: 'Cliente',
+        propietario_plural: 'Clientes',
         coeficiente: 'Factor',
         concepto: 'Concepto',
         torre: 'Grupo',
-        torre_plural: 'Grupos'
+        torre_plural: 'Grupos',
+        maestro: 'Maestro de Activos',
+        descripcion: 'Saldos generales por concepto y grupo de gestión.',
+        modulo: 'Módulo'
     }
 };
 

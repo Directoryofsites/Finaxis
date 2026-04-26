@@ -132,12 +132,12 @@ export default function ReporteSaldosPage() {
     const handleDownloadCSV = () => {
         if (!data || !data.items) return;
 
-        let csvContent = "Torre;Unidad;Propietario;Saldo;Detalle\n";
+        let csvContent = `${labels?.torre || 'Torre'};${labels?.unidad || 'Unidad'};${labels?.propietario || 'Propietario'};Saldo;Detalle\n`;
         
         if (data.is_grouped && data.items_agrupados) {
             data.items_agrupados.forEach(grupo => {
                 // Fila de cabecera de grupo
-                csvContent += `---;---;RESUMEN: ${grupo.propietario_nombre};${grupo.saldo_total};${grupo.unidades_count} Unidades\n`;
+                csvContent += `---;---;RESUMEN: ${grupo.propietario_nombre};${grupo.saldo_total};${grupo.unidades_count} ${grupo.unidades_count === 1 ? (labels?.unidad || 'Unidad') : (labels?.unidad_plural || 'Unidades')}\n`;
                 
                 // Solo incluir detalles si el switch está activo
                 if (mostrarDetalleGrupos) {
@@ -180,18 +180,18 @@ export default function ReporteSaldosPage() {
         
         let subHeaderY = 40;
         if (conceptoBusqueda) { doc.text(`Filtro Concepto: ${conceptoBusqueda}`, 14, subHeaderY); subHeaderY += 6; }
-        if (agruparPropietario) { doc.text(`Informe Agrupado por Propietario`, 14, subHeaderY); subHeaderY += 6; }
+        if (agruparPropietario) { doc.text(`Informe Agrupado por ${labels?.propietario || 'Propietario'}`, 14, subHeaderY); subHeaderY += 6; }
 
-        const tableColumn = ["Torre", "Unidad", "Propietario", "Saldo", "Detalle"];
+        const tableColumn = [labels?.torre || "Torre", labels?.unidad || "Unidad", labels?.propietario || "Propietario", "Saldo", "Detalle"];
         const tableRows = [];
 
         if (data.is_grouped && data.items_agrupados) {
             data.items_agrupados.forEach(grupo => {
                 // Fila de cabecera de grupo
                 tableRows.push([
-                    { content: `PROPIETARIO: ${grupo.propietario_nombre}`, colSpan: 3, styles: { fillColor: [240, 240, 240], fontStyle: 'bold' } },
+                    { content: `TOTAL ${labels?.propietario?.toUpperCase() || 'PROPIETARIO'}: ${grupo.propietario_nombre}`, colSpan: 3, styles: { fillColor: [240, 240, 240], fontStyle: 'bold' } },
                     { content: `$${grupo.saldo_total.toLocaleString()}`, styles: { fillColor: [240, 240, 240], fontStyle: 'bold', halign: 'right' } },
-                    { content: `${grupo.unidades_count} Unidades`, styles: { fillColor: [240, 240, 240], fontSize: 7 } }
+                    { content: `${grupo.unidades_count} ${grupo.unidades_count === 1 ? (labels?.unidad || 'Unidad') : (labels?.unidad_plural || 'Unidades')}`, styles: { fillColor: [240, 240, 240], fontSize: 7 } }
                 ]);
                 
                 // Solo incluir detalles si el switch está activo
@@ -252,7 +252,7 @@ export default function ReporteSaldosPage() {
                         </div>
                         <div>
                             <h1 className="text-3xl font-bold text-gray-800">Balance General de Cartera</h1>
-                            <p className="text-gray-500">Informe detallado de saldos por unidad, torre y concepto.</p>
+                            <p className="text-gray-500">{labels?.descripcion || 'Informe detallado de saldos por concepto.'}</p>
                         </div>
                     </div>
                 </div>
@@ -277,7 +277,9 @@ export default function ReporteSaldosPage() {
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Unidades Reportadas</p>
+                                    <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">
+                                        {labels?.unidad_plural || 'Unidades'} Reportadas
+                                    </p>
                                     <h3 className="text-3xl font-black text-gray-800">
                                         {data.is_grouped ? data.items_agrupados.reduce((acc, g) => acc + g.unidades_count, 0) : data.items.length}
                                     </h3>
@@ -287,7 +289,7 @@ export default function ReporteSaldosPage() {
                                 </div>
                             </div>
                             <p className="text-gray-400 text-[10px] mt-4 flex items-center gap-1">
-                                <FaBuilding /> Total de unidades con saldo pendiente
+                                <FaBuilding /> Total de {labels?.unidad_plural?.toLowerCase() || 'unidades'} con saldo pendiente
                             </p>
                         </div>
 
@@ -346,7 +348,7 @@ export default function ReporteSaldosPage() {
                         {/* Propietario */}
                         <div className="lg:col-span-1">
                             <label className="block text-[11px] font-bold text-gray-400 uppercase mb-2 flex items-center gap-2">
-                                <FaUser className="text-indigo-500" /> Propietario
+                                <FaUser className="text-indigo-500" /> {labels?.propietario || 'Propietario'}
                             </label>
                             <select
                                 className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-sm"
@@ -363,7 +365,7 @@ export default function ReporteSaldosPage() {
                         {/* Unidad */}
                         <div className="lg:col-span-1">
                             <label className="block text-[11px] font-bold text-gray-400 uppercase mb-2 flex items-center gap-2">
-                                <FaBox className="text-indigo-500" /> Unidad
+                                <FaBox className="text-indigo-500" /> {labels?.unidad || 'Unidad'}
                             </label>
                             <select
                                 className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-sm"
@@ -380,7 +382,7 @@ export default function ReporteSaldosPage() {
                         {/* Módulo */}
                         <div className="lg:col-span-1">
                             <label className="block text-[11px] font-bold text-gray-400 uppercase mb-2 flex items-center gap-2">
-                                <FaFilter className="text-indigo-500" /> Módulo
+                                <FaFilter className="text-indigo-500" /> {labels?.modulo || 'Módulo'}
                             </label>
                             <select
                                 className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-sm"
@@ -508,7 +510,7 @@ export default function ReporteSaldosPage() {
                         <div className="bg-indigo-50/50 p-4 border-b border-indigo-100 flex justify-between items-center">
                             <div className="flex items-center gap-3">
                                 <FaLayerGroup className="text-indigo-500" />
-                                <span className="text-sm font-bold text-gray-700">Vista de Grupos por Propietario</span>
+                                <span className="text-sm font-bold text-gray-700">Vista de Grupos por {labels?.propietario || 'Responsable'}</span>
                             </div>
                             <button
                                 onClick={() => {
@@ -565,7 +567,7 @@ export default function ReporteSaldosPage() {
                                                             <div className="flex items-center gap-2">
                                                                 <span className="font-black text-gray-800 tracking-tight">{grupo.propietario_nombre}</span>
                                                                 <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-black uppercase tracking-tighter">
-                                                                    {grupo.unidades_count} {grupo.unidades_count === 1 ? 'Unidad' : 'Unidades'}
+                                                                    {grupo.unidades_count} {grupo.unidades_count === 1 ? (labels?.unidad || 'Unidad') : (labels?.unidad_plural || 'Unidades')}
                                                                 </span>
                                                             </div>
                                                             <span className="text-[10px] text-gray-400 font-medium">Responsable de pago consolidado</span>
@@ -592,7 +594,7 @@ export default function ReporteSaldosPage() {
                                                     <td className="p-4">
                                                         <div className="flex flex-col">
                                                             <span className="text-sm font-black text-indigo-600">{item.unidad_codigo}</span>
-                                                            <span className="text-[9px] text-gray-400 uppercase font-bold">Unidad Inmobiliaria</span>
+                                                            <span className="text-[9px] text-gray-400 uppercase font-bold">{labels?.unidad || 'Unidad'}</span>
                                                         </div>
                                                     </td>
                                                     <td className="p-4 text-xs text-gray-500 italic">
