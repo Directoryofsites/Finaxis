@@ -521,7 +521,10 @@ def get_reporte_saldos(
         }
 
     # Ordenar por Torre, luego Unidad de forma natural/lógica
-    reporte_items.sort(key=lambda x: (natural_sort_key(x['torre_nombre']), natural_sort_key(x['unidad_codigo'])))
+    reporte_items.sort(key=lambda x: (
+        natural_sort_key(str(x['torre_nombre'] or '').strip()), 
+        natural_sort_key(str(x['unidad_codigo'] or '').strip())
+    ))
 
     return {
         "items": reporte_items,

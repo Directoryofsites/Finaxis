@@ -43,7 +43,10 @@ def get_unidades(db: Session, empresa_id: int, skip: int = 0, limit: int = 100, 
         })
     
     # Ordenar lógicamente por Torre y luego por Código de Unidad
-    results.sort(key=lambda x: (natural_sort_key(x['torre_nombre']), natural_sort_key(x['codigo'])))
+    results.sort(key=lambda x: (
+        natural_sort_key(str(x['torre_nombre'] or '').strip()), 
+        natural_sort_key(str(x['codigo'] or '').strip())
+    ))
     
     return results
 
