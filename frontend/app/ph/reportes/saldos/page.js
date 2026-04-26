@@ -19,7 +19,8 @@ import {
     FaInfoCircle,
     FaUsers,
     FaCalculator,
-    FaMoneyBillWave
+    FaMoneyBillWave,
+    FaLayerGroup
 } from 'react-icons/fa';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -49,6 +50,7 @@ export default function ReporteSaldosPage() {
 
     // UI State
     const [expandedGroups, setExpandedGroups] = useState({}); // {ownerName: bool}
+    const [mostrarDetalleGrupos, setMostrarDetalleGrupos] = useState(true);
 
 
     // Estado Reporte
@@ -106,7 +108,7 @@ export default function ReporteSaldosPage() {
             if (result.is_grouped) {
                 const initialExpanded = {};
                 result.items_agrupados.forEach(g => {
-                    initialExpanded[g.propietario_nombre] = true;
+                    initialExpanded[g.propietario_nombre] = mostrarDetalleGrupos;
                 });
                 setExpandedGroups(initialExpanded);
             }
@@ -136,9 +138,13 @@ export default function ReporteSaldosPage() {
             data.items_agrupados.forEach(grupo => {
                 // Fila de cabecera de grupo
                 csvContent += `---;---;RESUMEN: ${grupo.propietario_nombre};${grupo.saldo_total};${grupo.unidades_count} Unidades\n`;
-                grupo.items.forEach(item => {
-                    csvContent += `${item.torre_nombre};${item.unidad_codigo};${item.propietario_nombre};${item.saldo};${item.detalle}\n`;
-                });
+                
+                // Solo incluir detalles si el switch está activo
+                if (mostrarDetalleGrupos) {
+                    grupo.items.forEach(item => {
+                        csvContent += `${item.torre_nombre};${item.unidad_codigo};${item.propietario_nombre};${item.saldo};${item.detalle}\n`;
+                    });
+                }
             });
         } else {
             data.items.forEach(item => {
@@ -188,15 +194,18 @@ export default function ReporteSaldosPage() {
                     { content: `${grupo.unidades_count} Unidades`, styles: { fillColor: [240, 240, 240], fontSize: 7 } }
                 ]);
                 
-                grupo.items.forEach(item => {
-                    tableRows.push([
-                        item.torre_nombre,
-                        item.unidad_codigo,
-                        item.propietario_nombre,
-                        `$${item.saldo.toLocaleString()}`,
-                        item.detalle
-                    ]);
-                });
+                // Solo incluir detalles si el switch está activo
+                if (mostrarDetalleGrupos) {
+                    grupo.items.forEach(item => {
+                        tableRows.push([
+                            item.torre_nombre,
+                            item.unidad_codigo,
+                            item.propietario_nombre,
+                            `$${item.saldo.toLocaleString()}`,
+                            item.detalle
+                        ]);
+                    });
+                }
             });
         } else {
             data.items.forEach(item => {
@@ -495,6 +504,33 @@ export default function ReporteSaldosPage() {
 
                 {/* Tabla Resultados */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    {data?.is_grouped && (
+                        <div className="bg-indigo-50/50 p-4 border-b border-indigo-100 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <FaLayerGroup className="text-indigo-500" />
+                                <span className="text-sm font-bold text-gray-700">Vista de Grupos por Propietario</span>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    const nextVal = !mostrarDetalleGrupos;
+                                    setMostrarDetalleGrupos(nextVal);
+                                    const newExpanded = {};
+                                    data.items_agrupados.forEach(g => {
+                                        newExpanded[g.propietario_nombre] = nextVal;
+                                    });
+                                    setExpandedGroups(newExpanded);
+                                }}
+                                className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${
+                                    mostrarDetalleGrupos 
+                                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 hover:bg-indigo-700' 
+                                        : 'bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50'
+                                }`}
+                            >
+                                {mostrarDetalleGrupos ? <FaChevronUp /> : <FaChevronDown />}
+                                {mostrarDetalleGrupos ? 'RECOGER TODOS (RESUMEN)' : 'DESPLEGAR TODOS (DETALLE)'}
+                            </button>
+                        </div>
+                    )}
                     {loading ? (
                         <div className="p-12 flex flex-col items-center justify-center">
                             <span className="loading loading-spinner loading-lg text-indigo-600 mb-4"></span>
