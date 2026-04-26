@@ -18,7 +18,8 @@ import {
     FaChevronUp,
     FaInfoCircle,
     FaUsers,
-    FaCalculator
+    FaCalculator,
+    FaMoneyBillWave
 } from 'react-icons/fa';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
