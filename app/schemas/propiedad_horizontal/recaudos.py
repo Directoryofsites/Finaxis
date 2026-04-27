@@ -25,6 +25,11 @@ class CarteraItem(BaseModel):
     edad_61_90: float = 0
     edad_mas_90: float = 0
     saldo_total: float = 0
+    # Desglose opcional de conceptos por rango
+    detalle_0_30: Optional[str] = ""
+    detalle_31_60: Optional[str] = ""
+    detalle_61_90: Optional[str] = ""
+    detalle_mas_90: Optional[str] = ""
 
 class CarteraEdadesResponse(BaseModel):
     items: List[CarteraItem]

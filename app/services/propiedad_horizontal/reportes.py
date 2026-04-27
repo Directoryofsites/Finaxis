@@ -218,7 +218,8 @@ def get_cartera_edades(db: Session, empresa_id: int, fecha_corte: date = None):
                 'fecha': d['fecha'].isoformat() if isinstance(d['fecha'], date) else d['fecha'],
                 'saldo_pendiente': d['saldo'],
                 'unidad_codigo': u_codigo,
-                'tipo': d['tipo']
+                'tipo': d['tipo'],
+                'concepto': d.get('concepto', 'Concepto General')
             })
             
         # Procesar Saldo a Favor (Como saldo negativo corriente)
@@ -282,7 +283,12 @@ def get_cartera_edades(db: Session, empresa_id: int, fecha_corte: date = None):
                 "edad_31_60": 0,
                 "edad_61_90": 0,
                 "edad_mas_90": 0,
-                "saldo_total": 0
+                "saldo_total": 0,
+                # Desgloses
+                "_desc_0_30": defaultdict(float),
+                "_desc_31_60": defaultdict(float),
+                "_desc_61_90": defaultdict(float),
+                "_desc_mas_90": defaultdict(float)
             }
             
         bucket = grupos[unidad_codigo]
@@ -297,23 +303,37 @@ def get_cartera_edades(db: Session, empresa_id: int, fecha_corte: date = None):
             
             if dias <= 30:
                 bucket["edad_0_30"] += saldo
+                bucket["_desc_0_30"][item['concepto']] += saldo
                 total_0_30 += saldo
             elif dias <= 60:
                 bucket["edad_31_60"] += saldo
+                bucket["_desc_31_60"][item['concepto']] += saldo
                 total_31_60 += saldo
             elif dias <= 90:
                 bucket["edad_61_90"] += saldo
+                bucket["_desc_61_90"][item['concepto']] += saldo
                 total_61_90 += saldo
             else:
                 bucket["edad_mas_90"] += saldo
+                bucket["_desc_mas_90"][item['concepto']] += saldo
                 total_mas_90 += saldo
                 
         bucket["saldo_total"] += saldo
         total_general += saldo
 
-    # 4. Formatear Respuesta
-    items_lista = list(grupos.values())
-    # Ordenar por Codigo Unidad
+    # 4. Formatear Respuesta y Convertir desgloses a strings
+    items_lista = []
+    for g in grupos.values():
+        # Convertir defaultdicts a strings legibles
+        for key in ["0_30", "31_60", "61_90", "mas_90"]:
+            desc_map = g.pop(f"_desc_{key}")
+            if desc_map:
+                parts = [f"{c} (${v:,.0f})" for c, v in desc_map.items()]
+                g[f"detalle_{key}"] = "; ".join(parts)
+            else:
+                g[f"detalle_{key}"] = ""
+        items_lista.append(g)
+
     # Ordenar por Codigo Unidad de forma natural
     items_lista.sort(key=lambda x: natural_sort_key(x['unidad_codigo']))
     

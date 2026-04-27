@@ -111,6 +111,46 @@ const MultiSelectDropdown = ({ label, options, selectedIds, onChange }) => {
   );
 };
 
+// Utilidad para expandir rangos de números (ej: 100-105, 200 -> 100, 101, 102, 103, 104, 105, 200)
+const expandirNumeros = (input) => {
+  if (!input) return '';
+  const partes = input.split(',');
+  const resultado = new Set();
+
+  partes.forEach(parte => {
+    const trimmed = parte.trim();
+    if (trimmed.includes('-')) {
+      const [inicioStr, finStr] = trimmed.split('-');
+      const inicio = parseInt(inicioStr.trim(), 10);
+      const fin = parseInt(finStr.trim(), 10);
+
+      if (!isNaN(inicio) && !isNaN(fin)) {
+        const min = Math.min(inicio, fin);
+        const max = Math.max(inicio, fin);
+        
+        // Límite de seguridad para evitar bloqueos del navegador
+        if (max - min > 1000) {
+          alert(`Rango demasiado grande: ${max - min + 1} números. Por favor use rangos menores a 1000.`);
+          // Agregamos solo los extremos si el rango es inválido por tamaño
+          resultado.add(inicio);
+          resultado.add(fin);
+        } else {
+          for (let i = min; i <= max; i++) {
+            resultado.add(i);
+          }
+        }
+      }
+    } else {
+      const num = parseInt(trimmed, 10);
+      if (!isNaN(num)) {
+        resultado.add(num);
+      }
+    }
+  });
+
+  return Array.from(resultado).sort((a, b) => a - b).join(', ');
+};
+
 export default function EliminacionMasivaPage() {
 
   const { user, loading: authLoading } = useAuth();
@@ -189,13 +229,14 @@ export default function EliminacionMasivaPage() {
     setFiltros(prev => ({ ...prev, tipoDocIds: newIds }));
   }
 
-  const handleBuscar = async () => {
+  const handleBuscar = async (filtrosOverride = null) => {
     setIsSearching(true);
     setMensaje({ text: '', type: 'info' });
     setDocumentosEncontrados([]);
     setSeleccionados(new Set());
     try {
-      const filtrosParaApi = { ...filtros };
+      // Usar filtros del estado o los pasados por parámetro (para evitar lag de estado en React)
+      const filtrosParaApi = { ...(filtrosOverride || filtros) };
 
       // Limpieza de campos vacíos y conversión numérica para campos simples
       const camposNumericos = ['terceroId', 'cuentaId', 'centroCostoId', 'valorMonto'];
@@ -308,7 +349,16 @@ export default function EliminacionMasivaPage() {
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
-      handleBuscar();
+      if (e.target.name === 'numero') {
+        const expandido = expandirNumeros(filtros.numero);
+        // Actualizamos el estado para que el usuario vea la expansión en el input
+        setFiltros(prev => ({ ...prev, numero: expandido }));
+        
+        // Ejecutamos la búsqueda directamente con el valor expandido para evitar el delay del estado
+        handleBuscar({ ...filtros, numero: expandido });
+      } else {
+        handleBuscar();
+      }
     }
   };
 
@@ -434,7 +484,7 @@ export default function EliminacionMasivaPage() {
                 />
               </div>
               <div><label className={labelClass}>Tercero (Beneficiario)</label><select name="terceroId" value={filtros.terceroId} onChange={handleFiltroChange} className={selectClass}><option value="">Todos</option>{terceros.map(t => <option key={t.id} value={t.id}>{t.razon_social}</option>)}</select></div>
-              <div><label className={labelClass}>Número(s) de Documento</label><input type="text" name="numero" value={filtros.numero} onChange={handleFiltroChange} onKeyDown={handleKeyDown} placeholder="Ej: 101, 105, 210" className={inputClass} /><p className="text-xs text-gray-400 mt-1">Separar por comas para varios.</p></div>
+              <div><label className={labelClass}>Número(s) de Documento</label><input type="text" name="numero" value={filtros.numero} onChange={handleFiltroChange} onKeyDown={handleKeyDown} placeholder="Ej: 1000-1010, 1050" className={inputClass} /><p className="text-xs text-gray-400 mt-1">Usa comas para individuales y guiones para rangos. Presiona <b>Enter</b> para expandir.</p></div>
             </div>
 
             {/* Columna 2: Clasificación */}

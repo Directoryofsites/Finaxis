@@ -560,30 +560,44 @@
                     </div>
 
                     <div class="premium-card border-2 border-indigo-50 shadow-xl">
-                        <h2 class="text-gray-900">3. Facturación Quirúrgica: Inclusiones por Excepción</h2>
-                        <p class="text-gray-600">¿Qué sucede si una unidad no pertenece a la torre seleccionada, pero aun así debe pagar el concepto? (Ejemplo: Un local externo que usa servicios de la Torre 1).</p>
+                        <h2 class="text-gray-900">3. Conectividad Híbrida: El Puente entre la Torre y la Unidad</h2>
+                        <p class="text-gray-600">En Finaxis, los <strong>Módulos de Contribución</strong> actúan como un "Club de Beneficios" o una lista de suscripción. Su función es servir de <strong>vínculo inteligente</strong> entre un cobro y las unidades que deben pagarlo, permitiendo una flexibilidad absoluta mediante dos vías de ingreso simultáneas:</p>
                         
-                            <div class="flex justify-center bg-white p-10 rounded-[30px] border border-gray-100">
-                                <div class="mermaid w-full">
-                                graph TD
-                                    subgraph "RUTA A: ESTRUCTURAL"
-                                    A[Selección de Torres] --> C{Motor Híbrido}
-                                    end
-                                    subgraph "RUTA B: QUIRÚRGICA"
-                                    B[Check Manual en Ficha] --> C
-                                    end
-                                    C --> D[Factura Única]
-                                    
-                                    style A fill:#FFF,stroke:#000,color:#000
-                                    style B fill:#FFF,stroke:#000,color:#000
-                                    style C fill:#FFF,stroke:#000,stroke-width:3px,color:#000
-                                    style D fill:#FFF,stroke:#000,color:#000
-                                </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 my-8">
+                            <div class="p-8 bg-blue-50 rounded-3xl border-t-8 border-blue-600">
+                                <h4 class="font-bold text-blue-900 mb-2 uppercase text-xs tracking-widest">A. Ingreso Masivo (Por Estructura)</h4>
+                                <p class="text-sm">Usted asigna el módulo a una <strong>Torre o Bloque</strong> completo. Automáticamente, todas las unidades de esa ubicación quedan "inscritas" en el módulo y recibirán los cobros asociados.</p>
                             </div>
+                            <div class="p-8 bg-indigo-50 rounded-3xl border-t-8 border-indigo-600">
+                                <h4 class="font-bold text-indigo-900 mb-2 uppercase text-xs tracking-widest">B. Invitado Especial (Por Excepción)</h4>
+                                <p class="text-sm">Si una unidad específica (ej. de la Torre 1) debe pagar un concepto diseñado para la Torre 4, usted activa el módulo directamente en la <strong>Ficha de la Unidad</strong>. Así, la unidad se "conecta" al módulo de forma individual.</p>
+                            </div>
+                        </div>
 
-                        <div class="mt-10 p-6 bg-amber-50 rounded-2xl border border-amber-200">
-                            <h4 class="font-bold text-amber-900 mb-2">💡 Caso de Uso Real: El Local de la Calle</h4>
-                            <p class="text-xs text-amber-800 italic">"Si usted tiene un módulo llamado 'Vigilancia Extrema' vinculado a la Torre 1, pero quiere cobrarle también al 'Local 02' (que físicamente está en la Calle), simplemente vaya a la ficha del Local 02 y marque el módulo manualmente. Finaxis lo invitará automáticamente a la facturación masiva."</p>
+                        <div class="flex justify-center bg-white p-10 rounded-[30px] border border-gray-100">
+                            <div class="mermaid w-full">
+                            graph TD
+                                subgraph "FUENTES DE INGRESO AL MÓDULO"
+                                T[Asignación por Torres/Bloques] --> M{MÓDULO DE GESTIÓN}
+                                U[Asignación Individual en Ficha] --> M
+                                end
+                                M -->|Vínculo Lógico| C[Concepto de Facturación]
+                                C --> D[Generación de Factura Quirúrgica]
+                                
+                                style T fill:#F0F9FF,stroke:#0EA5E9,color:#0369A1
+                                style U fill:#F5F3FF,stroke:#8B5CF6,color:#6D28D9
+                                style M fill:#FFF,stroke:#000,stroke-width:3px,color:#000
+                                style C fill:#FFF,stroke:#000,color:#000
+                                style D fill:#ECFDF5,stroke:#10B981,color:#065F46,stroke-width:2px
+                            </div>
+                        </div>
+
+                        <div class="mt-10 p-8 bg-amber-50 rounded-2xl border border-amber-200">
+                            <h4 class="font-bold text-amber-900 mb-2">💡 La Clave de la Conectividad</h4>
+                            <p class="text-sm text-amber-800 leading-relaxed">
+                                Esta lógica permite que una unidad que físicamente está "aislada" o en una distribución diferente, entre a participar de procesos financieros diseñados para otros bloques. 
+                                <strong>El Módulo es el puente:</strong> no importa dónde esté la unidad, si tiene activo el módulo, el sistema la encontrará y le aplicará la regla de cobro con precisión profesional.
+                            </p>
                         </div>
                     </div>
 

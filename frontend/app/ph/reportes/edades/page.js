@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { phService } from '../../../../lib/phService';
-import { FaChartPie, FaPrint, FaFileDownload, FaBuilding, FaExclamationTriangle } from 'react-icons/fa';
+import { FaChartPie, FaPrint, FaFileDownload, FaBuilding, FaExclamationTriangle, FaFileAlt, FaUser } from 'react-icons/fa';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -94,6 +94,103 @@ export default function CarteraEdadesPage() {
         doc.save(`Cartera_Edades_${new Date().toISOString().slice(0, 10)}.pdf`);
     };
 
+    const handlePrintDetailedPDF = (specificItem = null) => {
+        if (!data) return;
+
+        const doc = new jsPDF('p', 'mm', 'a4'); // Portrait
+        const itemsToPrint = specificItem ? [specificItem] : data.items.filter(i => i.saldo_total > 0);
+
+        if (itemsToPrint.length === 0) {
+            alert("No hay deudas pendientes para generar un reporte detallado.");
+            return;
+        }
+
+        let yPos = 20;
+
+        itemsToPrint.forEach((item, index) => {
+            if (index > 0) {
+                doc.addPage();
+                yPos = 20;
+            }
+
+            // Header por Unidad
+            doc.setFillColor(245, 247, 250);
+            doc.rect(14, yPos - 5, 182, 35, 'F');
+
+            doc.setFontSize(16);
+            doc.setTextColor(41, 128, 185);
+            doc.setFont(undefined, 'bold');
+            doc.text(`REPORTE DE COBRANZA - UNIDAD ${item.unidad_codigo}`, 16, yPos + 5);
+            
+            doc.setFontSize(10);
+            doc.setTextColor(80, 80, 80);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Propietario: ${item.propietario_nombre}`, 16, yPos + 12);
+            doc.text(`Empresa: ${user?.empresaNombre || 'Consorcio'}`, 16, yPos + 18);
+            doc.text(`Fecha de Corte: ${fechaCorte || new Date().toLocaleDateString()}`, 16, yPos + 24);
+
+            yPos += 40;
+
+            // Bloques de Edad
+            const buckets = [
+                { label: "Corriente", value: item.saldo_corriente, detail: "Saldo actual sin vencimiento" },
+                { label: "1-30 Días", value: item.edad_0_30, detail: item.detalle_0_30 },
+                { label: "31-60 Días", value: item.edad_31_60, detail: item.detalle_31_60 },
+                { label: "61-90 Días", value: item.edad_61_90, detail: item.detalle_61_90 },
+                { label: "> 90 Días", value: item.edad_mas_90, detail: item.detalle_mas_90 }
+            ];
+
+            buckets.forEach(bucket => {
+                if (bucket.value !== 0) {
+                    // Dibujar linea separadora
+                    doc.setDrawColor(230, 230, 230);
+                    doc.line(14, yPos, 196, yPos);
+                    
+                    yPos += 8;
+                    doc.setFontSize(11);
+                    doc.setFont(undefined, 'bold');
+                    doc.setTextColor(bucket.label === "> 90 Días" ? 192 : 44, bucket.label === "> 90 Días" ? 57 : 62, bucket.label === "> 90 Días" ? 43 : 80);
+                    doc.text(bucket.label, 16, yPos);
+                    
+                    doc.setFont(undefined, 'bold');
+                    doc.text(`$${bucket.value.toLocaleString()}`, 180, yPos, { align: 'right' });
+
+                    yPos += 6;
+                    doc.setFontSize(9);
+                    doc.setFont(undefined, 'normal');
+                    doc.setTextColor(100, 100, 100);
+                    
+                    // Manejar multi-linea para detalles largos
+                    const splitDetail = doc.splitTextToSize(bucket.detail || "Sin detalles adicionales", 160);
+                    doc.text(splitDetail, 20, yPos);
+                    
+                    yPos += (splitDetail.length * 5) + 5;
+                }
+            });
+
+            // Total Final de la Unidad
+            doc.setFillColor(41, 128, 185);
+            doc.rect(14, yPos, 182, 12, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text("TOTAL DEUDA PENDIENTE", 18, yPos + 8);
+            doc.text(`$${item.saldo_total.toLocaleString()}`, 190, yPos + 8, { align: 'right' });
+            
+            yPos += 20;
+
+            // Nota al pie
+            if (specificItem) {
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text("Este reporte es una simulación de cartera basada en la fecha de corte seleccionada.", 14, 280);
+            }
+        });
+
+        const filename = specificItem ? `Cobranza_${specificItem.unidad_codigo}.pdf` : `Reporte_Detallado_Cartera.pdf`;
+        doc.save(filename);
+    };
+
     if (authLoading) return <div className="p-10 text-center">Cargando...</div>;
 
     const filteredItems = data?.items.filter(i =>
@@ -118,11 +215,19 @@ export default function CarteraEdadesPage() {
 
                     <div className="flex gap-2">
                         <button
+                            onClick={() => handlePrintDetailedPDF()}
+                            disabled={loading || !data}
+                            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition-colors disabled:opacity-50 font-bold"
+                            title="Generar reporte con desglose de conceptos para todas las unidades"
+                        >
+                            <FaFileAlt /> Reporte Detallado
+                        </button>
+                        <button
                             onClick={handlePrintPDF}
                             disabled={loading || !data}
                             className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition-colors disabled:opacity-50 font-bold"
                         >
-                            <FaFileDownload /> Descargar PDF
+                            <FaFileDownload /> PDF Resumen
                         </button>
                     </div>
                 </div>
@@ -180,6 +285,10 @@ export default function CarteraEdadesPage() {
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
+                            <div className="ml-auto flex items-center gap-2 text-xs text-gray-400 italic">
+                                <FaExclamationTriangle className="text-amber-400" />
+                                Pasa el mouse sobre los valores para ver el desglose por conceptos.
+                            </div>
                         </div>
 
                         {/* Tabla */}
@@ -196,6 +305,7 @@ export default function CarteraEdadesPage() {
                                             <th className="px-4 py-4 text-right bg-orange-100">61-90</th>
                                             <th className="px-4 py-4 text-right bg-red-50 text-red-700">&gt; 90</th>
                                             <th className="px-6 py-4 text-right bg-gray-50 border-l">Total</th>
+                                            <th className="px-4 py-4 text-center">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50">
@@ -208,20 +318,29 @@ export default function CarteraEdadesPage() {
                                                 <td className="px-4 py-3 text-right text-gray-500 font-mono">
                                                     {item.saldo_corriente !== 0 ? item.saldo_corriente.toLocaleString() : '-'}
                                                 </td>
-                                                <td className="px-4 py-3 text-right text-gray-600 font-mono bg-yellow-50/30">
-                                                    {item.edad_0_30 !== 0 ? item.edad_0_30.toLocaleString() : '-'}
-                                                </td>
-                                                <td className="px-4 py-3 text-right text-gray-600 font-mono bg-orange-50/30">
-                                                    {item.edad_31_60 !== 0 ? item.edad_31_60.toLocaleString() : '-'}
-                                                </td>
-                                                <td className="px-4 py-3 text-right text-orange-700 font-mono bg-orange-100/30">
-                                                    {item.edad_61_90 !== 0 ? item.edad_61_90.toLocaleString() : '-'}
-                                                </td>
-                                                <td className="px-4 py-3 text-right text-red-600 font-bold font-mono bg-red-50/30">
-                                                    {item.edad_mas_90 !== 0 ? item.edad_mas_90.toLocaleString() : '-'}
-                                                </td>
+                                                <td className="px-4 py-3 text-right text-gray-600 font-mono bg-yellow-50/30" title={item.detalle_0_30}>
+                                                     {item.edad_0_30 !== 0 ? item.edad_0_30.toLocaleString() : '-'}
+                                                 </td>
+                                                 <td className="px-4 py-3 text-right text-gray-600 font-mono bg-orange-50/30" title={item.detalle_31_60}>
+                                                     {item.edad_31_60 !== 0 ? item.edad_31_60.toLocaleString() : '-'}
+                                                 </td>
+                                                 <td className="px-4 py-3 text-right text-orange-700 font-mono bg-orange-100/30" title={item.detalle_61_90}>
+                                                     {item.edad_61_90 !== 0 ? item.edad_61_90.toLocaleString() : '-'}
+                                                 </td>
+                                                 <td className="px-4 py-3 text-right text-red-600 font-bold font-mono bg-red-50/30" title={item.detalle_mas_90}>
+                                                     {item.edad_mas_90 !== 0 ? item.edad_mas_90.toLocaleString() : '-'}
+                                                 </td>
                                                 <td className="px-6 py-3 text-right font-bold text-gray-900 border-l bg-gray-50/50">
                                                     ${item.saldo_total.toLocaleString()}
+                                                </td>
+                                                <td className="px-4 py-3 text-center border-l">
+                                                    <button
+                                                        onClick={() => handlePrintDetailedPDF(item)}
+                                                        className="p-2 text-indigo-600 hover:bg-indigo-100 rounded-full transition-colors"
+                                                        title="Descargar Ficha de Cobranza Individual"
+                                                    >
+                                                        <FaFileAlt className="text-lg" />
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))}
@@ -235,6 +354,7 @@ export default function CarteraEdadesPage() {
                                             <td className="px-4 py-4 font-mono">${data.total_61_90.toLocaleString()}</td>
                                             <td className="px-4 py-4 font-mono text-red-300">${data.total_mas_90.toLocaleString()}</td>
                                             <td className="px-6 py-4 font-mono text-lg border-l border-gray-600">${data.total_general.toLocaleString()}</td>
+                                            <td className="px-4 py-4 border-l border-gray-600"></td>
                                         </tr>
                                     </tfoot>
                                 </table>

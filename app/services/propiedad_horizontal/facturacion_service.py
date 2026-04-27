@@ -78,6 +78,7 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
     from sqlalchemy import func as sa_func
     periodo_str = fecha_factura.strftime('%Y-%m')
     
+    # 1. Identificar unidades que ya tienen AL MENOS una factura (para saber si generamos un 'Delta')
     unidades_ya_facturadas = db.query(Documento.unidad_ph_id)\
         .filter(
             Documento.empresa_id == empresa_id,
@@ -88,6 +89,24 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
         
     ids_ya_facturados = {u.unidad_ph_id for u in unidades_ya_facturadas if u.unidad_ph_id}
     
+    # 2. Precarga de Conceptos ya facturados (Lógica Delta Inteligente)
+    # Buscamos qué cuentas de ingreso ya fueron afectadas en facturas de este periodo por unidad
+    conceptos_ya_facturados_query = db.query(Documento.unidad_ph_id, MovimientoContable.cuenta_id)\
+        .join(MovimientoContable, Documento.id == MovimientoContable.documento_id)\
+        .filter(
+            Documento.empresa_id == empresa_id,
+            Documento.tipo_documento_id == global_doc_id,
+            sa_func.to_char(Documento.fecha, 'YYYY-MM') == periodo_str,
+            Documento.estado.in_(['ACTIVO', 'PROCESADO']),
+            MovimientoContable.credito > 0 # Movimientos de ingreso (CR)
+        ).all()
+    
+    mapa_ya_facturado = {} # {unidad_id: {cuenta_id, cuenta_id...}}
+    for u_id, c_id in conceptos_ya_facturados_query:
+        if u_id not in mapa_ya_facturado:
+            mapa_ya_facturado[u_id] = set()
+        mapa_ya_facturado[u_id].add(c_id)
+
     # NUEVO: Buscar Tipo de Documento para Cruces
     tipo_nc = None
     if config and config.tipo_documento_cruce_id:
@@ -103,18 +122,13 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
             TipoDocumento.codigo == 'NC'
         ).first()
     
-    # Identificar unidades con excepciones (whitelisted)
+    # Identificar unidades con excepciones manuales (whitelisted desde UI)
     unidades_con_excepciones = set()
     for u_set in mapa_excepciones.values():
         unidades_con_excepciones.update(u_set)
         
-    unidades_a_procesar = []
-    for u in unidades:
-        # Aceptar si NO está facturada O SÍ está facturada pero tiene excepción (Delta)
-        if u.id not in ids_ya_facturados or u.id in unidades_con_excepciones:
-            unidades_a_procesar.append(u)
-    
-    unidades = unidades_a_procesar
+    # En modo Delta, procesamos TODAS las unidades para buscar conceptos faltantes
+    # No filtramos la lista 'unidades' inicial.
 
     # --- PRECARGA MASIVA DE DATOS (ANTI N+1) ---
     print(f"--- BATCH OPTIMIZATION: Iniciando precarga masiva para {len(unidades)} unidades ---")
@@ -230,7 +244,9 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
                 resultados["detalles"].append(f"Unidad {unidad.codigo}: Sin propietario asignado.")
                 continue
             
-            # Chequeo de seguridad: Si ya está facturada, solo permitir conceptos excepcionales
+            # Lógica Delta Inteligente:
+            # Si la unidad ya tiene facturas en este periodo, solo procesaremos 
+            # conceptos que aún no hayan sido cobrados (basado en su cuenta contable).
             ya_facturada = unidad.id in ids_ya_facturados
 
             movimientos = []
@@ -240,18 +256,18 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
 
             # Procesar todos los conceptos activos para esta unidad
             for concepto in conceptos:
-                # --- NUEVO FILTRO DE EXCEPCIONES ---
-                # Si el concepto está en el mapa de excepciones, verificar si esta unidad está en la lista permitida
+                # 1. BLINDAJE DELTA INTELIGENTE: 
+                # Si el concepto ya fue facturado a esta unidad en este periodo (vía su cuenta de ingreso), saltar.
+                if unidad.id in mapa_ya_facturado and concepto.cuenta_ingreso_id in mapa_ya_facturado[unidad.id]:
+                    continue
+
+                # 2. FILTRO DE EXCEPCIONES MANUALES (Desde Modal UI)
                 es_excepcion_unidad = False
                 if concepto.id in mapa_excepciones:
                     if unidad.id in mapa_excepciones[concepto.id]:
                         es_excepcion_unidad = True
                     else:
-                        continue # Este concepto ES una excepción y esta unidad NO está en la lista.
-                
-                # BLINDAJE DELTA: Si la unidad ya tiene factura, SOLO procesar si es excepción explicita
-                if ya_facturada and not es_excepcion_unidad:
-                    continue
+                        continue # El usuario filtró unidades para este concepto y esta no está incluida.
                 # -----------------------------------
 
                 valor_linea = 0
