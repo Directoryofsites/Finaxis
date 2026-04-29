@@ -3028,7 +3028,8 @@ def generar_pdf_estado_cuenta(db: Session, empresa_id: int, unidad_id: int = Non
 
 
 def _simular_cronologia_pagos(db: Session, docs: list, empresa_id: int, fecha_corte_snapshot: date = None, 
-                              injected_cuentas_interes=None, injected_cuentas_multa=None, injected_cuentas_cxc=None):
+                              injected_cuentas_interes=None, injected_cuentas_multa=None, injected_cuentas_cxc=None,
+                              injected_conceptos_ph=None, injected_config=None):
     """
     Motor Central de Simulación de Pagos (Replay).
     Si fecha_corte_snapshot es provista, captura el estado de pending_debts justo antes del primer movimiento >= fecha.
@@ -3037,10 +3038,13 @@ def _simular_cronologia_pagos(db: Session, docs: list, empresa_id: int, fecha_co
     import copy
 
     # 1. Configuración de Conceptos y Jerarquía
-    conceptos_ph = db.query(PHConcepto).filter(
-        PHConcepto.empresa_id == empresa_id,
-        PHConcepto.activo == True
-    ).order_by(func.coalesce(PHConcepto.orden, 999).asc(), PHConcepto.id.asc()).all()
+    if injected_conceptos_ph is not None:
+        conceptos_ph = injected_conceptos_ph
+    else:
+        conceptos_ph = db.query(PHConcepto).filter(
+            PHConcepto.empresa_id == empresa_id,
+            PHConcepto.activo == True
+        ).order_by(func.coalesce(PHConcepto.orden, 999).asc(), PHConcepto.id.asc()).all()
     
     concepto_prio_map = {c.id: i for i, c in enumerate(conceptos_ph)}
 
@@ -3049,8 +3053,12 @@ def _simular_cronologia_pagos(db: Session, docs: list, empresa_id: int, fecha_co
     
     # Cargar configuración de cuentas especiales si no fueron inyectadas
     if injected_cuentas_interes is None:
-        from app.services.propiedad_horizontal import configuracion_service
-        config_ph = configuracion_service.get_configuracion(db, empresa_id)
+        if injected_config is not None:
+            config_ph = injected_config
+        else:
+            from app.services.propiedad_horizontal import configuracion_service
+            config_ph = configuracion_service.get_configuracion(db, empresa_id)
+            
         if config_ph and config_ph.cuenta_ingreso_intereses_id:
             cuentas_interes.add(config_ph.cuenta_ingreso_intereses_id)
             

@@ -166,6 +166,17 @@ def get_cartera_edades(db: Session, empresa_id: int, fecha_corte: date = None):
     unidades_db = db.query(PHUnidad).options(joinedload(PHUnidad.propietario_principal))\
         .filter(PHUnidad.empresa_id == empresa_id).all()
         
+    # --- OPTIMIZACIÓN: Pre-cargar Metadatos para Simulación Masiva ---
+    from app.services.propiedad_horizontal import configuracion_service
+    from app.services import cartera as cartera_service
+    config_ph = configuracion_service.get_configuracion(db, empresa_id)
+    conceptos_ph = db.query(PHConcepto).filter(
+        PHConcepto.empresa_id == empresa_id,
+        PHConcepto.activo == True
+    ).order_by(PHConcepto.orden.asc(), PHConcepto.id.asc()).all()
+    cuentas_cxc_ids = cartera_service.get_cuentas_especiales_ids(db, empresa_id, 'cxc')
+    # ---------------------------------------------------------------
+
     mapa_unidades = {u.id: u for u in unidades_db}
     
     # 2. Obtener TODOS los documentos relevantes (para poder simular)
@@ -190,9 +201,13 @@ def get_cartera_edades(db: Session, empresa_id: int, fecha_corte: date = None):
     
     # 3. Simular por Unidad
     for unidad_id, unidad_docs in docs_por_unidad.items():
-        # Ejecutar simulación con corte
+        # Ejecutar simulación con corte (Inyectando metadatos pre-cargados)
         pending_current, _, pending_snapshot, saf_current, saf_snapshot = pago_service._simular_cronologia_pagos(
-            db, unidad_docs, empresa_id, fecha_corte_snapshot=fecha_corte
+            db, unidad_docs, empresa_id, 
+            fecha_corte_snapshot=fecha_corte,
+            injected_config=config_ph,
+            injected_conceptos_ph=conceptos_ph,
+            injected_cuentas_cxc=cuentas_cxc_ids
         )
         
         # Determinar qué set de datos usar
@@ -387,6 +402,17 @@ def get_reporte_saldos(
         
     unidades_db = query_unidades.all()
     
+    # --- OPTIMIZACIÓN: Pre-cargar Metadatos para Simulación Masiva ---
+    from app.services.propiedad_horizontal import configuracion_service
+    from app.services import cartera as cartera_service
+    config_ph = configuracion_service.get_configuracion(db, empresa_id)
+    conceptos_ph = db.query(PHConcepto).filter(
+        PHConcepto.empresa_id == empresa_id,
+        PHConcepto.activo == True
+    ).order_by(PHConcepto.orden.asc(), PHConcepto.id.asc()).all()
+    cuentas_cxc_ids = cartera_service.get_cuentas_especiales_ids(db, empresa_id, 'cxc')
+    # ---------------------------------------------------------------
+    
     # 2. Obtener Documentos (Optimización: Traer todo y filtrar en memoria o traer por lotes?)
     # Para consistencia con 'edades', traemos todo lo de la empresa.
     # Si la empresa es muy grande, esto podría optimizarse filtrando docs por unidad_ids seleccionados.
@@ -419,9 +445,13 @@ def get_reporte_saldos(
     for u in unidades_db:
         udocs = docs_por_unidad.get(u.id, [])
         
-        # Simular
+        # Simular (Inyectando metadatos pre-cargados)
         pending_current, _, pending_snapshot, saf_current, saf_snapshot = pago_service._simular_cronologia_pagos(
-            db, udocs, empresa_id, fecha_corte_snapshot=fecha_corte
+            db, udocs, empresa_id, 
+            fecha_corte_snapshot=fecha_corte,
+            injected_config=config_ph,
+            injected_conceptos_ph=conceptos_ph,
+            injected_cuentas_cxc=cuentas_cxc_ids
         )
         
         use_snapshot = fecha_corte is not None
