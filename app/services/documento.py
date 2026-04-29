@@ -460,13 +460,17 @@ def anular_documento(db: Session, documento_id: int, empresa_id: int, user_id: i
 
 # REEMPLAZO PARA app/services/documento.py (Función eliminar_documento)
 
-def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id: int, razon: str, commit: bool = True, recalc: bool = True):
+def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id: int, razon: str, commit: bool = True, recalc: bool = True,
+                       existing_doc=None, injected_cuentas_cxc=None, injected_cuentas_cxp=None):
     # 1. Buscamos el documento (Lectura simple)
-    # Usamos query directa para no cargar relaciones pesadas si va a fallar
-    db_documento_check = db.query(models_doc).filter(
-        models_doc.id == documento_id, 
-        models_doc.empresa_id == empresa_id
-    ).first()
+    # Si ya se pasó el objeto, lo usamos
+    if existing_doc:
+        db_documento_check = existing_doc
+    else:
+        db_documento_check = db.query(models_doc).filter(
+            models_doc.id == documento_id, 
+            models_doc.empresa_id == empresa_id
+        ).first()
     
     if not db_documento_check:
         raise HTTPException(status_code=404, detail="Documento no encontrado en esta empresa.")
@@ -577,8 +581,8 @@ def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id:
         if db_documento.beneficiario_id:
             terceros_recalc.add(db_documento.beneficiario_id)
         
-        cuentas_cxc = _get_cuentas_especiales_ids(db, empresa_id, 'cxc')
-        cuentas_cxp = _get_cuentas_especiales_ids(db, empresa_id, 'cxp')
+        cuentas_cxc = injected_cuentas_cxc if injected_cuentas_cxc is not None else _get_cuentas_especiales_ids(db, empresa_id, 'cxc')
+        cuentas_cxp = injected_cuentas_cxp if injected_cuentas_cxp is not None else _get_cuentas_especiales_ids(db, empresa_id, 'cxp')
         todas_cuentas = cuentas_cxc + cuentas_cxp
         
         if todas_cuentas:
@@ -2486,6 +2490,12 @@ def eliminar_documentos_masivamente(db: Session, payload: schemas_doc.DocumentoA
         ids_no_encontrados = set(payload.documentoIds) - ids_encontrados
         fallidos_ids.extend(list(ids_no_encontrados))
 
+        # --- OPTIMIZACIÓN LOTE ---
+        cuentas_cxc_batch = _get_cuentas_especiales_ids(db, empresa_id, 'cxc')
+        cuentas_cxp_batch = _get_cuentas_especiales_ids(db, empresa_id, 'cxp')
+        tipos_map = {t.id: t for t in db.query(models_tipo).filter(models_tipo.empresa_id == empresa_id).all()}
+        # -------------------------
+
         with db.begin_nested():
             for doc in docs_a_eliminar:
                 # 1. Eliminar documento silenciando el recálculo individual (recalc=False)
@@ -2493,7 +2503,10 @@ def eliminar_documentos_masivamente(db: Session, payload: schemas_doc.DocumentoA
                 res = eliminar_documento(
                     db=db, documento_id=doc.id, empresa_id=empresa_id, 
                     user_id=user_id, razon=payload.razon, 
-                    commit=False, recalc=False
+                    commit=False, recalc=False,
+                    existing_doc=doc,
+                    injected_cuentas_cxc=cuentas_cxc_batch,
+                    injected_cuentas_cxp=cuentas_cxp_batch
                 )
                 
                 # 2. Colectar productos afectados para recalcular al final
@@ -2501,7 +2514,8 @@ def eliminar_documentos_masivamente(db: Session, payload: schemas_doc.DocumentoA
                     for pid in res["productos_afectados_ids"]:
                         productos_totales_afectados.add(pid)
 
-                tipo_doc = db.query(models_tipo).filter(models_tipo.id == doc.tipo_documento_id).with_for_update().first()
+                # Optimización Consecutivo: Usar el mapa pre-cargado
+                tipo_doc = tipos_map.get(doc.tipo_documento_id)
 
                 if tipo_doc and not tipo_doc.numeracion_manual:
                     if tipo_doc.consecutivo_actual == doc.numero:
