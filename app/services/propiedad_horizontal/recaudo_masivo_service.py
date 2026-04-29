@@ -6,6 +6,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 from app.models.propiedad_horizontal.unidad import PHUnidad, PHTorre
 from app.models.propiedad_horizontal.configuracion import PHConfiguracion
+from app.models.propiedad_horizontal.concepto import PHConcepto
 from app.schemas.propiedad_horizontal import recaudo_masivo as schemas_rm
 from app.services.propiedad_horizontal import pago_service, configuracion_service
 from app.models import TipoDocumento, Documento, MovimientoContable
@@ -231,7 +232,14 @@ def procesar_lote_pagos(db: Session, empresa_id: int, request: schemas_rm.Recaud
     unidades_ids = {f.unidad_id for f in filas_a_procesar}
     unidades_map = {u.id: u for u in db.query(PHUnidad).filter(PHUnidad.id.in_(unidades_ids)).all()}
 
-    # OPTIMIZACIÓN: Colección de terceros para recálculo único al final
+    # --- OPTIMIZACIÓN LOTE ---
+    cuentas_cxc_batch = cartera_service.get_cuentas_especiales_ids(db, empresa_id, 'cxc')
+    cuentas_cxp_batch = cartera_service.get_cuentas_especiales_ids(db, empresa_id, 'cxp')
+    conceptos_ph_batch = db.query(PHConcepto).filter(
+        PHConcepto.empresa_id == empresa_id,
+        PHConcepto.activo == True
+    ).order_by(db.func.coalesce(PHConcepto.orden, 999).asc(), PHConcepto.id.asc()).all()
+    # -------------------------
     terceros_a_recalcular = set()
 
     for fila in filas_a_procesar:
@@ -310,7 +318,14 @@ def procesar_lote_pagos(db: Session, empresa_id: int, request: schemas_rm.Recaud
     # Ahora sí, recalculamos una sola vez por cada tercero involucrado
     for t_id in terceros_a_recalcular:
         try:
-            cartera_service.recalcular_aplicaciones_tercero(db, t_id, empresa_id)
+            cartera_service.recalcular_aplicaciones_tercero(
+                db, 
+                t_id, 
+                empresa_id,
+                injected_cuentas_cxc=cuentas_cxc_batch,
+                injected_cuentas_cxp=cuentas_cxp_batch,
+                injected_conceptos_ph=conceptos_ph_batch
+            )
         except:
             pass # No bloqueamos el commit por un error de aplicación
 

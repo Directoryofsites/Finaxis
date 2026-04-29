@@ -134,12 +134,13 @@ def _documento_afecta_cuentas(db: Session, documento_id: int, cuentas_ids: List[
     ).first()
     return movimiento_existente is not None
 
-def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: int, commit: bool = True):
+def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: int, commit: bool = True,
+                                    injected_cuentas_cxc=None, injected_cuentas_cxp=None, injected_conceptos_ph=None):
     # CORRECCIÓN CRÍTICA: Buscamos documentos donde el tercero aparece en el encabezado
     # O en los movimientos contables de las cuentas CXC/CXP (el caso de los CE/RC).
     try:
-        cuentas_cxc_ids = get_cuentas_especiales_ids(db, empresa_id, 'cxc')
-        cuentas_cxp_ids = get_cuentas_especiales_ids(db, empresa_id, 'cxp')
+        cuentas_cxc_ids = injected_cuentas_cxc if injected_cuentas_cxc is not None else get_cuentas_especiales_ids(db, empresa_id, 'cxc')
+        cuentas_cxp_ids = injected_cuentas_cxp if injected_cuentas_cxp is not None else get_cuentas_especiales_ids(db, empresa_id, 'cxp')
         todas_cuentas_ids = list(set(cuentas_cxc_ids + cuentas_cxp_ids))
 
         # IDs de docs donde el tercero está en el ENCABEZADO
@@ -188,10 +189,13 @@ def recalcular_aplicaciones_tercero(db: Session, tercero_id: int, empresa_id: in
 
 
         # Cargar conceptos PH para identificación por texto
-        conceptos_ph = db.query(models_ph_concepto).filter(
-            models_ph_concepto.empresa_id == empresa_id,
-            models_ph_concepto.activo == True
-        ).order_by(func.coalesce(models_ph_concepto.orden, 999).asc(), models_ph_concepto.id.asc()).all()
+        if injected_conceptos_ph is not None:
+            conceptos_ph = injected_conceptos_ph
+        else:
+            conceptos_ph = db.query(models_ph_concepto).filter(
+                models_ph_concepto.empresa_id == empresa_id,
+                models_ph_concepto.activo == True
+            ).order_by(func.coalesce(models_ph_concepto.orden, 999).asc(), models_ph_concepto.id.asc()).all()
         
         # Log para debug en producción
         nombres_c = [f"{c.nombre} (ID:{c.id}, Ord:{c.orden})" for c in conceptos_ph]

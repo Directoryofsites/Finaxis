@@ -79,6 +79,7 @@ from app.models import (
 )
 
 from app.models.grupo_inventario import GrupoInventario as models_grupo
+from app.models.propiedad_horizontal import PHConcepto as models_ph_concepto
 
 from app.schemas import documento as schemas_doc
 
@@ -107,7 +108,8 @@ def _documento_afecta_cuentas(db: Session, documento_id: int, cuentas_ids: List[
 
 # --- FIN: FUNCIONES AUXILIARES ---
 
-def trigger_recalc_if_cxc_cxp(db: Session, documento_id: int, empresa_id: int, commit: bool = False):
+def trigger_recalc_if_cxc_cxp(db: Session, documento_id: int, empresa_id: int, commit: bool = False,
+                              injected_cuentas_cxc=None, injected_cuentas_cxp=None, injected_conceptos_ph=None):
     """
     Gatillo automático: Identifica si un documento afecta cuentas de Cartera/Proveedores
     y dispara el recálculo para los terceros involucrados.
@@ -115,8 +117,8 @@ def trigger_recalc_if_cxc_cxp(db: Session, documento_id: int, empresa_id: int, c
     IMPORTANTE: Las excepciones se propagan al caller para que pueda hacer rollback.
     """
     # 1. Obtener cuentas configuradas
-    cuentas_cxc = _get_cuentas_especiales_ids(db, empresa_id, 'cxc')
-    cuentas_cxp = _get_cuentas_especiales_ids(db, empresa_id, 'cxp')
+    cuentas_cxc = injected_cuentas_cxc if injected_cuentas_cxc is not None else _get_cuentas_especiales_ids(db, empresa_id, 'cxc')
+    cuentas_cxp = injected_cuentas_cxp if injected_cuentas_cxp is not None else _get_cuentas_especiales_ids(db, empresa_id, 'cxp')
     todas_cuentas = list(set(cuentas_cxc + cuentas_cxp))
 
     if not todas_cuentas:
@@ -158,7 +160,15 @@ def trigger_recalc_if_cxc_cxp(db: Session, documento_id: int, empresa_id: int, c
     print(f"[TRIGGER CXC/CXP] Doc {documento_id}: Recalculando cartera para terceros: {terceros_ids}")
     # 4. Disparar recálculo para cada tercero (las excepciones se propagan al caller)
     for t_id in terceros_ids:
-        cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=t_id, empresa_id=empresa_id, commit=commit)
+        cartera_service.recalcular_aplicaciones_tercero(
+            db, 
+            tercero_id=t_id, 
+            empresa_id=empresa_id, 
+            commit=commit,
+            injected_cuentas_cxc=injected_cuentas_cxc,
+            injected_cuentas_cxp=injected_cuentas_cxp,
+            injected_conceptos_ph=injected_conceptos_ph
+        )
     print(f"[TRIGGER CXC/CXP] Doc {documento_id}: Recalculo completado exitosamente.")
 
 
@@ -312,7 +322,9 @@ def create_documento(db: Session, documento: schemas_doc.DocumentoCreate, user_i
         raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
 
 
-def anular_documento(db: Session, documento_id: int, empresa_id: int, user_id: int, user_email: str, razon: str, commit: bool = True):
+def anular_documento(db: Session, documento_id: int, empresa_id: int, user_id: int, user_email: str, razon: str, 
+                     commit: bool = True, skip_recalc_cartera: bool = False,
+                     injected_cuentas_cxc=None, injected_cuentas_cxp=None, injected_conceptos_ph=None):
     # 1. Buscamos el documento (Solo lectura inicial)
     db_documento = db.query(models_doc).filter(
         models_doc.id == documento_id,
@@ -440,7 +452,16 @@ def anular_documento(db: Session, documento_id: int, empresa_id: int, user_id: i
 
 
         # --- GATILLO AUTOMÁTICO DE RECÁLCULO CARTERA/PROVEEDORES ---
-        trigger_recalc_if_cxc_cxp(db, db_documento.id, empresa_id, commit=commit)
+        if not skip_recalc_cartera:
+            trigger_recalc_if_cxc_cxp(
+                db, 
+                db_documento.id, 
+                empresa_id, 
+                commit=commit,
+                injected_cuentas_cxc=injected_cuentas_cxc,
+                injected_cuentas_cxp=injected_cuentas_cxp,
+                injected_conceptos_ph=injected_conceptos_ph
+            )
         if commit:
             db.commit()
         else:
@@ -2433,6 +2454,17 @@ def anular_documentos_masivamente(db: Session, payload: schemas_doc.DocumentoAcc
     productos_totales_afectados = set()
 
     try:
+        # --- OPTIMIZACIÓN LOTE ---
+        cuentas_cxc_batch = _get_cuentas_especiales_ids(db, empresa_id, 'cxc')
+        cuentas_cxp_batch = _get_cuentas_especiales_ids(db, empresa_id, 'cxp')
+        conceptos_ph_batch = db.query(models_ph_concepto).filter(
+            models_ph_concepto.empresa_id == empresa_id,
+            models_ph_concepto.activo == True
+        ).order_by(func.coalesce(models_ph_concepto.orden, 999).asc(), models_ph_concepto.id.asc()).all()
+        # -------------------------
+
+        terceros_a_recalcular = set()
+
         # Iniciamos un savepoint para que el rollback sea total pero podamos manejar excepciones
         with db.begin_nested():
             for doc_id in payload.documentoIds:
@@ -2443,9 +2475,17 @@ def anular_documentos_masivamente(db: Session, payload: schemas_doc.DocumentoAcc
                     user_id=user_id,
                     user_email=user_email,
                     razon=payload.razon,
-                    commit=False # <--- IMPORTANTE: No commit individual
+                    commit=False, # <--- IMPORTANTE: No commit individual
+                    skip_recalc_cartera=True, # Lo haremos al final en lote
+                    injected_cuentas_cxc=cuentas_cxc_batch,
+                    injected_cuentas_cxp=cuentas_cxp_batch,
+                    injected_conceptos_ph=conceptos_ph_batch
                 )
                 documentos_anulados_count += 1
+                
+                # Colectar terceros para el recálculo final
+                if res.beneficiario_id:
+                    terceros_a_recalcular.add(res.beneficiario_id)
                 
                 # Colectar productos afectados para recálculo optimizado
                 # Buscamos los productos que acabamos de afectar con las anulaciones
@@ -2460,6 +2500,15 @@ def anular_documentos_masivamente(db: Session, payload: schemas_doc.DocumentoAcc
             from app.services.inventario import recalcular_saldos_producto
             for p_id in productos_totales_afectados:
                 recalcular_saldos_producto(db, p_id, commit=False)
+
+        # Recálculo único de Cartera/Proveedores
+        for t_id in terceros_a_recalcular:
+            cartera_service.recalcular_aplicaciones_tercero(
+                db, t_id, empresa_id, commit=False,
+                injected_cuentas_cxc=cuentas_cxc_batch,
+                injected_cuentas_cxp=cuentas_cxp_batch,
+                injected_conceptos_ph=conceptos_ph_batch
+            )
 
         db.commit()
 
@@ -2494,6 +2543,12 @@ def eliminar_documentos_masivamente(db: Session, payload: schemas_doc.DocumentoA
         cuentas_cxc_batch = _get_cuentas_especiales_ids(db, empresa_id, 'cxc')
         cuentas_cxp_batch = _get_cuentas_especiales_ids(db, empresa_id, 'cxp')
         tipos_map = {t.id: t for t in db.query(models_tipo).filter(models_tipo.empresa_id == empresa_id).all()}
+        
+        # Pre-cargar conceptos PH para el recálculo final de cartera
+        conceptos_ph_batch = db.query(models_ph_concepto).filter(
+            models_ph_concepto.empresa_id == empresa_id,
+            models_ph_concepto.activo == True
+        ).order_by(func.coalesce(models_ph_concepto.orden, 999).asc(), models_ph_concepto.id.asc()).all()
         # -------------------------
 
         with db.begin_nested():
@@ -2533,7 +2588,15 @@ def eliminar_documentos_masivamente(db: Session, payload: schemas_doc.DocumentoA
         terceros_afectados_ids = {doc.beneficiario_id for doc in docs_a_eliminar if doc.beneficiario_id}
 
         for tercero_id in terceros_afectados_ids:
-            cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=tercero_id, empresa_id=empresa_id, commit=False)
+            cartera_service.recalcular_aplicaciones_tercero(
+                db, 
+                tercero_id=tercero_id, 
+                empresa_id=empresa_id, 
+                commit=False,
+                injected_cuentas_cxc=cuentas_cxc_batch,
+                injected_cuentas_cxp=cuentas_cxp_batch,
+                injected_conceptos_ph=conceptos_ph_batch
+            )
         
         db.commit() # Commit final de eliminación + inventario + cartera
 
