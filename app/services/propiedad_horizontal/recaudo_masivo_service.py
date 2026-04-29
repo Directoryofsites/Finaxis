@@ -127,11 +127,34 @@ def generar_preview(db: Session, empresa_id: int, filas: List[schemas_rm.Recaudo
     filas_validas = 0
     filas_error = 0
     
-    # Carga de unidades y sus propietarios
+    # 1. OPTIMIZACIÓN: Carga masiva de unidades para mapeo rápido
     unidades_db = db.query(PHUnidad).filter(PHUnidad.empresa_id == empresa_id, PHUnidad.activo == True).all()
-    
     map_por_ref = {u.referencia_recaudo.strip().lower(): u for u in unidades_db if u.referencia_recaudo}
     map_por_codigo = {u.codigo.strip().lower(): u for u in unidades_db if u.codigo}
+
+    # 2. OPTIMIZACIÓN "CAPA ESTÁTICA": Obtener saldos de TODAS las unidades de la empresa de una vez
+    from app.models.movimiento_contable import MovimientoContable
+    from app.models.documento import Documento
+    from sqlalchemy import func
+
+    # Identificar cuentas de cartera para el cálculo masivo
+    config = configuracion_service.get_configuracion(db, empresa_id)
+    cuentas_cxc_ids = cartera_service.get_cuentas_especiales_ids(db, empresa_id, 'cxc')
+    cuentas_validas = set(cuentas_cxc_ids)
+    if config and config.cuenta_anticipos_id:
+        cuentas_validas.add(config.cuenta_anticipos_id)
+
+    saldos_raw = db.query(
+        Documento.unidad_ph_id,
+        func.sum(MovimientoContable.debito - MovimientoContable.credito).label('saldo')
+    ).join(MovimientoContable, Documento.id == MovimientoContable.documento_id)\
+     .filter(
+         Documento.empresa_id == empresa_id,
+         Documento.estado.in_(['ACTIVO', 'PROCESADO']),
+         MovimientoContable.cuenta_id.in_(list(cuentas_validas))
+     ).group_by(Documento.unidad_ph_id).all()
+
+    map_saldos = {s.unidad_ph_id: Decimal(str(s.saldo or 0)) for s in saldos_raw}
     
     for fila in filas:
         match_info = schemas_rm.RecaudoMatch(
@@ -153,12 +176,11 @@ def generar_preview(db: Session, empresa_id: int, filas: List[schemas_rm.Recaudo
             
         match_info.unidad_id = unidad.id
         match_info.unidad_codigo = f"{unidad.torre.nombre if unidad.torre else ''} - {unidad.codigo}"
-        match_info.unidad_propietario = unidad.propietario_nombre # Usando la property del modelo
+        match_info.unidad_propietario = unidad.propietario_nombre
         
         try:
-            # Obtener estado de cuenta para calcular excedente
-            estado = pago_service.get_estado_cuenta_unidad(db, unidad.id, empresa_id, True)
-            deuda = Decimal(str(estado.get('saldo_total', 0)))
+            # OPTIMIZACIÓN: Usar el saldo del mapa pre-cargado en lugar de llamar al servicio N veces
+            deuda = map_saldos.get(unidad.id, Decimal('0.0'))
             match_info.deuda_total = deuda
             
             if fila.monto > deuda:
@@ -193,30 +215,32 @@ def procesar_lote_pagos(db: Session, empresa_id: int, request: schemas_rm.Recaud
     fallidos = 0
     errores = []
     
+    # OPTIMIZACIÓN: Cargar configuración y tipos de documento FUERA del bucle
     config = configuracion_service.get_configuracion(db, empresa_id)
     tipo_doc_recibo = db.query(TipoDocumento).filter(TipoDocumento.id == config.tipo_documento_recibo_id).first()
     
+    if not config.cuenta_cartera_id and (not tipo_doc_recibo or not tipo_doc_recibo.cuenta_debito_cxc_id):
+        raise ValueError("No se ha configurado la cuenta de cartera (1305).")
+
+    cuenta_cxc_global = config.cuenta_cartera_id or tipo_doc_recibo.cuenta_debito_cxc_id
+    cuenta_anticipos_global = config.cuenta_anticipos_id
+
     filas_a_procesar = [f for f in request.filas if f.is_valid and f.unidad_id]
     
+    # Mapear unidades necesarias para evitar consultas individuales
+    unidades_ids = {f.unidad_id for f in filas_a_procesar}
+    unidades_map = {u.id: u for u in db.query(PHUnidad).filter(PHUnidad.id.in_(unidades_ids)).all()}
+
     for fila in filas_a_procesar:
         try:
-            unidad = db.query(PHUnidad).filter(PHUnidad.id == fila.unidad_id).first()
+            unidad = unidades_map.get(fila.unidad_id)
             if not unidad: continue
             
-            # Determinar cuentas para el pago
-            # Si hay excedente, debemos separar los movimientos contables
-            # registrar_pago_unidad genera un documento, pero si pasamos skip_recalculo=True
-            # podemos manejar los movimientos nosotros o dejar que el motor FIFO lo tome.
-            
-            # REGLA DE NEGOCIO: Si hay excedente y cuenta de anticipos (2805) configurada, movemos el excedente allá.
             monto_cartera = fila.monto_a_aplicar
             monto_anticipo = fila.excedente_anticipo
             
-            if not config.cuenta_cartera_id and (not tipo_doc_recibo or not tipo_doc_recibo.cuenta_debito_cxc_id):
-                raise ValueError("No se ha configurado la cuenta de cartera (1305) en la Configuración Global de PH o en el Tipo de Documento.")
-
             movimientos = []
-            # 1. Entrada a Banco (Débito total) - USAMOS LA CUENTA SELECCIONADA POR EL USUARIO
+            # 1. Entrada a Banco
             movimientos.append(doc_schemas.MovimientoContableCreate(
                 cuenta_id=request.cuenta_bancaria_id,
                 concepto=f"Recaudo Masivo {unidad.codigo} - {fila.referencia}",
@@ -224,11 +248,10 @@ def procesar_lote_pagos(db: Session, empresa_id: int, request: schemas_rm.Recaud
                 credito=0
             ))
             
-            # 2. Crédito a Cartera (Hasta el tope de la deuda)
+            # 2. Crédito a Cartera
             if monto_cartera > 0:
-                cuenta_cxc = config.cuenta_cartera_id or tipo_doc_recibo.cuenta_debito_cxc_id
                 movimientos.append(doc_schemas.MovimientoContableCreate(
-                    cuenta_id=cuenta_cxc,
+                    cuenta_id=cuenta_cxc_global,
                     concepto=f"Abono Cartera {unidad.codigo}",
                     debito=0,
                     credito=monto_cartera
@@ -236,22 +259,20 @@ def procesar_lote_pagos(db: Session, empresa_id: int, request: schemas_rm.Recaud
             
             # 3. Crédito a Anticipos (El excedente)
             if monto_anticipo > 0:
-                cuenta_2805 = config.cuenta_anticipos_id
-                if not cuenta_2805:
-                    # Si no hay cuenta de anticipos, todo va a cartera (quedará saldo a favor en 1305)
-                    cuenta_cxc = config.cuenta_cartera_id or tipo_doc_recibo.cuenta_debito_cxc_id
-                    if not movimientos or movimientos[-1].cuenta_id != cuenta_cxc:
+                if not cuenta_anticipos_global:
+                    # Si no hay cuenta de anticipos, todo va a cartera
+                    if movimientos[-1].cuenta_id == cuenta_cxc_global:
+                        movimientos[-1].credito += monto_anticipo
+                    else:
                         movimientos.append(doc_schemas.MovimientoContableCreate(
-                            cuenta_id=cuenta_cxc,
+                            cuenta_id=cuenta_cxc_global,
                             concepto=f"Excedente Cartera {unidad.codigo}",
                             debito=0,
                             credito=monto_anticipo
                         ))
-                    else:
-                        movimientos[-1].credito += monto_anticipo
                 else:
                     movimientos.append(doc_schemas.MovimientoContableCreate(
-                        cuenta_id=cuenta_2805,
+                        cuenta_id=cuenta_anticipos_global,
                         concepto=f"Excedente Recaudo -> Anticipo {unidad.codigo}",
                         debito=0,
                         credito=monto_anticipo
@@ -272,7 +293,9 @@ def procesar_lote_pagos(db: Session, empresa_id: int, request: schemas_rm.Recaud
             
             new_doc = documento_service.create_documento(db, doc_create, user_id=usuario_id, skip_recalculo=True)
             
-            # Recalcular aplicaciones para que el pago se cruce con las facturas
+            # OPTIMIZACIÓN: El recálculo de aplicaciones es pesado. 
+            # Se hace por cada pago para asegurar integridad, pero podríamos agruparlo al final si es necesario.
+            # Por ahora, al haber optimizado la lectura, esto ya debería ser mucho más fluido.
             cartera_service.recalcular_aplicaciones_tercero(db, unidad.propietario_principal_id, empresa_id)
             
             exitosos += 1
@@ -282,8 +305,6 @@ def procesar_lote_pagos(db: Session, empresa_id: int, request: schemas_rm.Recaud
             
     db.commit()
     mensaje = f"Lote procesado: {exitosos} exitosos, {fallidos} fallidos."
-    if fallidos > 0 and errores:
-        mensaje += f" Ejemplo de error: {errores[0]}"
         
     return schemas_rm.RecaudoProcessResponse(
         exitosos=exitosos,
