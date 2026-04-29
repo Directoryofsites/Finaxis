@@ -231,6 +231,9 @@ def procesar_lote_pagos(db: Session, empresa_id: int, request: schemas_rm.Recaud
     unidades_ids = {f.unidad_id for f in filas_a_procesar}
     unidades_map = {u.id: u for u in db.query(PHUnidad).filter(PHUnidad.id.in_(unidades_ids)).all()}
 
+    # OPTIMIZACIÓN: Colección de terceros para recálculo único al final
+    terceros_a_recalcular = set()
+
     for fila in filas_a_procesar:
         try:
             unidad = unidades_map.get(fila.unidad_id)
@@ -291,18 +294,26 @@ def procesar_lote_pagos(db: Session, empresa_id: int, request: schemas_rm.Recaud
                 unidad_ph_id=unidad.id
             )
             
+            # skip_recalculo=True es CLAVE aquí para que no se dispare el motor contable en cada inserción
             new_doc = documento_service.create_documento(db, doc_create, user_id=usuario_id, skip_recalculo=True)
             
-            # OPTIMIZACIÓN: El recálculo de aplicaciones es pesado. 
-            # Se hace por cada pago para asegurar integridad, pero podríamos agruparlo al final si es necesario.
-            # Por ahora, al haber optimizado la lectura, esto ya debería ser mucho más fluido.
-            cartera_service.recalcular_aplicaciones_tercero(db, unidad.propietario_principal_id, empresa_id)
+            # Guardamos el tercero para procesarlo al final
+            if unidad.propietario_principal_id:
+                terceros_a_recalcular.add(unidad.propietario_principal_id)
             
             exitosos += 1
         except Exception as e:
             fallidos += 1
             errores.append(f"Fila {fila.line_number}: {str(e)}")
             
+    # --- PROCESAMIENTO FINAL (FUERA DEL BUCLE) ---
+    # Ahora sí, recalculamos una sola vez por cada tercero involucrado
+    for t_id in terceros_a_recalcular:
+        try:
+            cartera_service.recalcular_aplicaciones_tercero(db, t_id, empresa_id)
+        except:
+            pass # No bloqueamos el commit por un error de aplicación
+
     db.commit()
     mensaje = f"Lote procesado: {exitosos} exitosos, {fallidos} fallidos."
         
