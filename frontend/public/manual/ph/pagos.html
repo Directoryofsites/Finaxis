@@ -151,6 +151,10 @@
                     <p>Cuando un propietario realiza un abono a un concepto específico, el sistema aplica el dinero automáticamente a las deudas <strong>más antiguas</strong> (First-In, First-Out). Esto permite que, si usted identifica una deuda de más de 90 días en el <strong>Reporte de Edades</strong>, pueda "limpiarla" simplemente registrando el pago por el valor exacto indicado en dicho reporte para ese concepto.</p>
                 </div>
 
+                <div class="success">
+                    <strong>🚀 Tip de Productividad:</strong> Al registrar un pago manual, el sistema pre-seleccionará automáticamente la <em>Cuenta de Recaudo (Caja/Manual)</em> que usted haya configurado globalmente. Ya no tiene que buscar la cuenta en cada recibo.
+                </div>
+
                 <h3>Consulta de Cartera Pendiente</h3>
                 <p>Antes de registrar el pago, puede consultar:</p>
                 <ul>
@@ -232,6 +236,25 @@
 
                 <div class="warning">
                     <strong>⚠️ Importante:</strong> En distribución manual, asegúrese de que la suma de los montos asignados sea igual al valor total del pago.
+                </div>
+            </section>
+
+            <section id="masivo" class="section">
+                <h2>📊 Recaudo Masivo (Archivo Plano)</h2>
+                <p>El módulo de Recaudo Masivo permite procesar cientos de pagos simultáneamente cargando un archivo plano del banco (Bancolombia, Davivienda, Aval, etc.).</p>
+
+                <h3>Integración Selectiva (Nueva Funcionalidad)</h3>
+                <p>A diferencia de sistemas tradicionales que integran todo a ciegas, Finaxis permite una <strong>Validación Final Selectiva</strong>:</p>
+                <ol class="step-list">
+                    <li><strong>Carga del Archivo:</strong> Suba el archivo .txt o .csv del banco.</li>
+                    <li><strong>Previsualización:</strong> El sistema lee el archivo y muestra una tabla con los nombres de los propietarios, montos y fechas detectadas.</li>
+                    <li><strong>Selección por Checkboxes:</strong> Cada fila tiene una casilla de verificación. Por defecto, todos están marcados, pero usted puede <strong>desmarcar</strong> aquellos registros que tengan dudas o inconsistencias.</li>
+                    <li><strong>Contador Dinámico:</strong> En la parte inferior verá cuántos pagos ha seleccionado y el monto total que se va a contabilizar.</li>
+                    <li><strong>Ejecución:</strong> Solo los registros marcados se convertirán en recibos de caja oficiales.</li>
+                </ol>
+
+                <div class="success">
+                    <strong>✅ Control Total:</strong> Esta funcionalidad evita que errores en el archivo del banco (como pagos duplicados o mal referenciados) lleguen a la contabilidad sin su aprobación previa.
                 </div>
             </section>
 

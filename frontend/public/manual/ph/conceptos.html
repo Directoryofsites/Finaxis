@@ -230,38 +230,25 @@
                             </tr>
                             <tr>
                                 <td>💰 Cuenta Ingreso</td>
-                                <td>Reconocimiento del ingreso</td>
+                                <td>Reconocimiento del ingreso (Crédito)</td>
                                 <td>4135 - Ingresos por Administración</td>
                                 <td>✅ Sí</td>
-                            </tr>
-                            <tr>
-                                <td>📈 Cuenta Interés</td>
-                                <td>Intereses por mora</td>
-                                <td>4210 - Intereses de Mora</td>
-                                <td>❌ No</td>
-                            </tr>
-                            <tr>
-                                <td>🏛️ Cuenta Caja</td>
-                                <td>Recaudo específico</td>
-                                <td>1105 - Caja General</td>
-                                <td>❌ No</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
-                <h3>Configuración de Intereses</h3>
-                <p>Para conceptos que generan intereses por mora:</p>
-                <ol class="step-list">
-                    <li>Active la opción "Genera Intereses"</li>
-                    <li>Defina la tasa de interés mensual (ej: 2.5%)</li>
-                    <li>Configure la cuenta contable para intereses</li>
-                    <li>Establezca los días de gracia (opcional)</li>
-                </ol>
+                <h3>🧠 El "Smart Check": ¿Es Interés de Mora?</h3>
+                <p>Esta es la configuración más importante para la automatización contable:</p>
+                <ul>
+                    <li><strong>Si se activa:</strong> El sistema identifica este concepto como el receptor de los intereses calculados automáticamente. <strong>No necesita configurar una cuenta de interés aquí</strong>, ya que el sistema usará la cuenta centralizada definida en los <em>Parámetros Globales</em>.</li>
+                    <li><strong>Si se desactiva:</strong> Es un concepto de cobro estándar (Administración, Multa, etc.).</li>
+                </ul>
 
                 <div class="info">
-                    <strong>💡 Consejo:</strong> La tasa de interés se aplica sobre el saldo vencido cada mes. Una tasa del 2.5% mensual equivale aproximadamente al 30% anual.
+                    <strong>💡 Simplificación Operativa:</strong> Hemos eliminado la necesidad de configurar cuentas de interés y caja por cada concepto. Ahora el sistema es más inteligente: usa una sola cuenta de ingreso por concepto y centraliza las cuentas de dinero en la Configuración Global.
                 </div>
+            </section>
 
                 <h3>Módulos de Aplicación</h3>
                 <p>Defina a qué tipos de unidades aplica cada concepto:</p>
