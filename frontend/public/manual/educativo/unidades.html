@@ -1,510 +1,183 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Estudiantes - Manual de Gestión de Recaudos</title>
-    <link rel="stylesheet" href="assets/css/manual-styles.css">
+    <title>Gestión de Estudiantes - Manual de Consultoría Finaxis</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Outfit -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Mermaid.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --apple-bg: #F5F5F7;
+            --apple-card: #FFFFFF;
+            --apple-accent: #0071E3;
+        }
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            background-color: var(--apple-bg);
+            color: #1D1D1F;
+        }
+        .premium-card {
+            background: var(--apple-card);
+            border-radius: 32px;
+            padding: 3rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.04);
+            margin-bottom: 3rem;
+        }
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .mermaid { 
+            background: #FFFFFF; 
+            border-radius: 24px; 
+            padding: 2rem; 
+            margin: 2rem 0; 
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .tag-blue { background: #E0F2FE; color: #0369A1; padding: 0.25rem 0.75rem; border-radius: 100px; font-size: 0.7rem; font-weight: 700; }
+        .tag-green { background: #DCFCE7; color: #166534; padding: 0.25rem 0.75rem; border-radius: 100px; font-size: 0.7rem; font-weight: 700; }
+        table { width: 100%; border-collapse: collapse; margin: 2rem 0; font-size: 0.9rem; }
+        th { background: #F9FAFB; padding: 1.25rem; text-align: left; font-weight: 700; border-bottom: 2px solid #F2F2F7; }
+        td { padding: 1.25rem; border-bottom: 1px solid #F2F2F7; color: #4B5563; }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <header class="header">
-            <div class="header-content">
-                <div class="logo">🏠 Gestión de Estudiantes</div>
-                <div class="subtitle">Manual de Usuario - Gestión de Recaudos</div>
-                <div class="version">Sistema ContaPY2 - Módulo PH</div>
+<body class="antialiased">
+
+    <!-- Navigation -->
+    <nav class="glass-nav px-8 py-6">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                </div>
+                <span class="text-xl font-bold tracking-tight text-gray-900">Módulo de Estudiantes</span>
             </div>
-        </header>
-
-        <nav class="nav">
-            <ul>
-                <li><a href="#introduccion">Introducción</a></li>
-                <li><a href="#acceso">Acceso</a></li>
-                <li><a href="#listado">Listado</a></li>
-                <li><a href="#crear">Crear Estudiante</a></li>
-                <li><a href="#editar">Editar Estudiante</a></li>
-                <li><a href="#eliminar">Eliminar</a></li>
-                <li><a href="#masivo">Acciones Masivas</a></li>
-                <li><a href="#errores">Errores Comunes</a></li>
-            </ul>
-        </nav>
-
-        <main class="content">
-            <!-- Tabla de Contenidos -->
-            <div class="toc">
-                <h3>📑 Contenido</h3>
-                <ul>
-                    <!-- Se genera automáticamente con JavaScript -->
-                </ul>
+            <div class="flex gap-6 text-sm font-medium text-gray-500">
+                <a href="#ficha" class="hover:text-blue-600 transition-colors">La Ficha</a>
+                <a href="#configuracion" class="hover:text-blue-600 transition-colors">Configuración</a>
+                <a href="#masivo" class="hover:text-blue-600 transition-colors">Acciones Masivas</a>
             </div>
+        </div>
+    </nav>
 
-            <!-- Sección de Introducción -->
-            <section id="introduccion" class="section">
-                <h2>🎯 Introducción</h2>
-                <p>El módulo de Gestión de Estudiantes permite administrar todos los activos sujetos a cobro en su Gestión Educativa. Esto incluye Estudiantes, casas, locales comerciales, parqueaderos, depósitos y cualquier otro tipo de Estudiante que genere obligaciones de pago.</p>
+    <main class="max-w-4xl mx-auto px-8 py-16">
+        
+        <!-- Concepto -->
+        <section class="mb-24">
+            <h1 class="text-5xl font-extrabold tracking-tight mb-8 leading-tight">Gestión del Alumno como Unidad Contable</h1>
+            <p class="text-xl text-gray-500 leading-relaxed mb-10">
+                En la plataforma Finaxis, el <strong>Estudiante</strong> es el eje central de toda la operación. No es solo un registro académico; es una <strong>entidad financiera</strong> vinculada a un acudiente, un grado y una serie de servicios (módulos).
+            </p>
+            
+            <div class="mermaid">
+            graph LR
+                A[Estudiante] --> B(Grado / Nivel)
+                A --> C(Acudiente / Responsable)
+                A --> D(Módulos de Cobro)
+                D --> D1[Pensión]
+                D --> D2[Transporte]
+                D --> D3[Alimentación]
+                style A fill:#0071E3,color:#fff,stroke-width:0px
+            </div>
+        </section>
+
+        <!-- La Ficha del Estudiante -->
+        <section id="ficha" class="mb-24">
+            <h2 class="text-3xl font-bold mb-10 tracking-tight">Anatomía de la Ficha del Estudiante</h2>
+            
+            <div class="premium-card">
+                <p class="text-gray-500 mb-8">Cada campo en la ficha tiene un propósito estratégico para la facturación automática:</p>
                 
-                <div class="info">
-                    <strong>💡 Objetivo:</strong> Mantener un registro completo y actualizado de todas las Estudiantes, sus características, Acudientes y configuraciones de cobro.
+                <div class="space-y-8">
+                    <div class="flex gap-6">
+                        <div class="w-1.5 h-12 bg-blue-500 rounded-full"></div>
+                        <div>
+                            <h4 class="font-bold text-lg">Código Estudiantil</h4>
+                            <p class="text-sm text-gray-400">Identificador único. Recomendamos usar el número de matrícula o el ID institucional.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-6">
+                        <div class="w-1.5 h-12 bg-purple-500 rounded-full"></div>
+                        <div>
+                            <h4 class="font-bold text-lg">Grado y Sección</h4>
+                            <p class="text-sm text-gray-400">Determina el agrupador académico para reportes y facturaciones por nivel.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-6">
+                        <div class="w-1.5 h-12 bg-green-500 rounded-full"></div>
+                        <div>
+                            <h4 class="font-bold text-lg">Acudiente Principal</h4>
+                            <p class="text-sm text-gray-400">Persona a quien se le emitirá la cuenta de cobro y los recordatorios de pago.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-6">
+                        <div class="w-1.5 h-12 bg-orange-500 rounded-full"></div>
+                        <div>
+                            <h4 class="font-bold text-lg">Check "Aplica Pronto Pago"</h4>
+                            <p class="text-sm text-gray-400">Si está activo, el sistema aplicará automáticamente el descuento de beneficio si el acudiente paga en la fecha estipulada.</p>
+                        </div>
+                    </div>
                 </div>
+            </div>
+        </section>
 
-                <h3>¿Qué puede hacer en este módulo?</h3>
-                <ul>
-                    <li>✅ Crear y registrar nuevas Estudiantes</li>
-                    <li>✅ Editar información de Estudiantes existentes</li>
-                    <li>✅ Asignar Acudientes a las Estudiantes</li>
-                    <li>✅ Configurar Grados de participación</li>
-                    <li>✅ Gestionar módulos de cobro</li>
-                    <li>✅ Realizar acciones masivas en múltiples Estudiantes</li>
-                    <li>✅ Exportar listados a PDF</li>
-                    <li>✅ Filtrar y buscar Estudiantes</li>
-                </ul>
-
-                <div class="success">
-                    <strong>🌟 Novedad: Metamorfosis Multi-Sectorial</strong>
-                    <p>El sistema ahora es inteligente y se adapta a su sector. Si su entidad es un Colegio, los botones y títulos hablarán de "Estudiantes" y "Grados". Si es una Cooperativa de Transporte, hablarán de "Vehículos" y "Rutas". Todo de forma automática.</p>
+        <!-- Configuración de Módulos -->
+        <section id="configuracion" class="mb-24">
+            <h2 class="text-3xl font-bold mb-8 tracking-tight">Módulos de Cobro</h2>
+            <p class="text-gray-500 mb-10">Los módulos son "etiquetas inteligentes" que le dicen al sistema qué conceptos cobrarle a cada estudiante.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                <div class="p-8 bg-white rounded-3xl border border-gray-100 shadow-sm">
+                    <span class="tag-blue mb-4 inline-block">Módulo Académico</span>
+                    <h4 class="font-bold mb-2">Pensión Básica</h4>
+                    <p class="text-xs text-gray-400 leading-relaxed">Incluye los derechos académicos estándar según el grado del alumno.</p>
                 </div>
-            </section>
+                <div class="p-8 bg-white rounded-3xl border border-gray-100 shadow-sm">
+                    <span class="tag-green mb-4 inline-block">Módulo Transporte</span>
+                    <h4 class="font-bold mb-2">Ruta Escolar</h4>
+                    <p class="text-xs text-gray-400 leading-relaxed">Activa el cobro de transporte puerta a puerta o paradero.</p>
+                </div>
+            </div>
+        </section>
 
-            <!-- Sección de Acceso -->
-            <section id="acceso" class="section">
-                <h2>🚪 Cómo Acceder</h2>
-                <ol class="step-list">
-                    <li>Ingrese al sistema ContaPY2</li>
-                    <li>Navegue al módulo "Gestión de Recaudos"</li>
-                    <li>Haga clic en "Estudiantes" o "Estudiantes / Activos"</li>
+        <!-- Acciones Masivas -->
+        <section id="masivo" class="mb-24">
+            <h2 class="text-3xl font-bold mb-8 tracking-tight">Acciones Masivas: Productividad Extrema</h2>
+            <p class="text-gray-500 mb-10">¿Necesita matricular a 200 alumnos en el módulo de "Alimentación" al iniciar el año? No lo haga uno por uno.</p>
+            
+            <div class="premium-card bg-blue-600 text-white">
+                <h3 class="text-2xl font-bold mb-4">Protocolo de Asignación Masiva</h3>
+                <ol class="space-y-4 text-sm opacity-90">
+                    <li>1. Use los filtros del listado para seleccionar a los estudiantes (ej: filtrar por Grado 5°).</li>
+                    <li>2. Marque el checkbox maestro para seleccionar a todos.</li>
+                    <li>3. Haga clic en el botón <strong>"Acciones Masivas"</strong>.</li>
+                    <li>4. Seleccione el módulo a asignar (aparecerá en verde).</li>
+                    <li>5. Confirme. Finaxis actualizará las 200 fichas en menos de 3 segundos.</li>
                 </ol>
+            </div>
+        </section>
 
-                <div class="highlight">
-                    <strong>📋 Nota:</strong> Dependiendo de la configuración de su sistema, esta opción puede aparecer como "Estudiantes", "Estudiantes / Activos" o simplemente "Estudiantes".
-                </div>
-            </section>
-
-            <!-- Sección de Listado -->
-            <section id="listado" class="section">
-                <h2>📋 Listado de Estudiantes</h2>
-                
-                <h3>Vista Principal</h3>
-                <p>Al acceder al módulo, verá una tabla con todas las Estudiantes registradas en el sistema. La tabla incluye:</p>
-                
-                <div class="table-container">
-                    <table class="manual-table">
-                        <thead>
-                            <tr>
-                                <th>Campo</th>
-                                <th>Descripción</th>
-                                <th>Ejemplo</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>☑️ Selección</td>
-                                <td>Checkbox para seleccionar Estudiantes</td>
-                                <td>Para acciones masivas</td>
-                            </tr>
-                            <tr>
-                                <td>🏷️ Código</td>
-                                <td>Identificador único de la Estudiante</td>
-                                <td>APT-101, LOC-001, PKG-A15</td>
-                            </tr>
-                            <tr>
-                                <td>🏠 Tipo</td>
-                                <td>Clasificación de la Estudiante</td>
-                                <td>Estudiante, Local, Parqueadero</td>
-                            </tr>
-                            <tr>
-                                <td>📊 Grado</td>
-                                <td>Porcentaje de participación</td>
-                                <td>0.8500%, 1.2000%</td>
-                            </tr>
-                            <tr>
-                                <td>🏢 Grupo / Ubicación</td>
-                                <td>Ubicación física o lógica (Dinámico)</td>
-                                <td>Grado A, Grado 10-A, Bus 04</td>
-                            </tr>
-                            <tr>
-                                <td>⚙️ Acciones</td>
-                                <td>Botones de editar y eliminar</td>
-                                <td>✏️ 🗑️</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <h3>Herramientas de Filtrado</h3>
-                <ol class="step-list">
-                    <li><strong>Búsqueda por texto:</strong> Escriba en el campo de búsqueda para filtrar por código o nombre</li>
-                    <li><strong>Filtro por Grado:</strong> Seleccione una Grado específica del menú desplegable</li>
-                    <li><strong>Selección múltiple:</strong> Use los checkboxes para seleccionar varias Estudiantes</li>
-                </ol>
-
-                <h3>Funciones Disponibles</h3>
-                <ul>
-                    <li>🔍 <strong>Buscar:</strong> Filtrar Estudiantes por código o Grado</li>
-                    <li>📄 <strong>Exportar PDF:</strong> Generar reporte en formato PDF</li>
-                    <li>➕ <strong>Nueva Estudiante:</strong> Crear una nueva Estudiante</li>
-                    <li>⚡ <strong>Acciones Masivas:</strong> Modificar múltiples Estudiantes a la vez</li>
-                </ul>
-            </section>
-
-            <!-- Sección de Crear Estudiante -->
-            <section id="crear" class="section">
-                <h2>➕ Crear Nueva Estudiante</h2>
-                
-                <h3>Proceso de Creación</h3>
-                <ol class="step-list">
-                    <li>Haga clic en el botón "Nueva Estudiante" (color azul con icono +)</li>
-                    <li>Complete el formulario con la información requerida</li>
-                    <li>Configure los módulos de cobro si aplica</li>
-                    <li>Guarde la información</li>
-                </ol>
-
-                <h3>Campos del Formulario</h3>
-                
-                <h4>📋 Información Básica</h4>
-                <div class="table-container">
-                    <table class="manual-table">
-                        <thead>
-                            <tr>
-                                <th>Campo</th>
-                                <th>Descripción</th>
-                                <th>Requerido</th>
-                                <th>Ejemplo</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Código</td>
-                                <td>Identificador único de la Estudiante</td>
-                                <td>✅ Sí</td>
-                                <td>APT-101, LOC-001</td>
-                            </tr>
-                            <tr>
-                                <td>Tipo</td>
-                                <td>Clasificación de la Estudiante</td>
-                                <td>✅ Sí</td>
-                                <td>Estudiante, Local, Parqueadero</td>
-                            </tr>
-                            <tr>
-                                <td>Grado</td>
-                                <td>Porcentaje de participación (decimal)</td>
-                                <td>✅ Sí</td>
-                                <td>0.8500 (para 0.85%)</td>
-                            </tr>
-                            <tr>
-                                <td>Grado/Grupo</td>
-                                <td>Ubicación dentro del conjunto</td>
-                                <td>❌ No</td>
-                                <td>Grado A, Bloque 1</td>
-                            </tr>
-                            <tr>
-                                <td>Aplica Pronto Pago</td>
-                                <td>Interruptor para conceder el beneficio de descuento a esta Estudiante específica si paga antes del día límite.</td>
-                                <td>✅ Sí</td>
-                                <td>ON / OFF</td>
-                            </tr>
-                            <tr>
-                                <td>Matrícula Inmobiliaria</td>
-                                <td>Número de registro catastral</td>
-                                <td>❌ No</td>
-                                <td>050-12345</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <h4>👤 Acudiente</h4>
-                <ol class="step-list">
-                    <li>Haga clic en "Buscar Acudiente"</li>
-                    <li>Seleccione un Acudiente existente o cree uno nuevo</li>
-                    <li>El sistema asignará automáticamente el Acudiente a la Estudiante</li>
-                </ol>
-
-                <div class="info">
-                    <strong>💡 Consejo:</strong> Si el Acudiente no existe, puede crearlo directamente desde este formulario usando el botón "Nuevo Acudiente".
-                </div>
-
-                <h4>🏗️ Módulos de Cobro</h4>
-                <p>Los módulos permiten aplicar diferentes conceptos de cobro según el tipo de Estudiante:</p>
-                <ul>
-                    <li><strong>Residencial:</strong> Para Estudiantes y casas</li>
-                    <li><strong>Comercial:</strong> Para locales comerciales</li>
-                    <li><strong>Parqueadero:</strong> Para espacios de estacionamiento</li>
-                    <li><strong>Depósito:</strong> Para bodegas y cuartos útiles</li>
-                </ul>
-
-                <ol class="step-list">
-                    <li>Seleccione los módulos que aplican para esta Estudiante</li>
-                    <li>Los módulos determinan qué conceptos de cobro se aplicarán</li>
-                    <li>Puede modificar los módulos posteriormente</li>
-                </ol>
-
-                <h3>Validaciones del Sistema</h3>
-                <div class="warning">
-                    <strong>⚠️ Validaciones Importantes:</strong>
-                    <ul>
-                        <li>El código de Estudiante debe ser único en el sistema</li>
-                        <li>El Grado debe ser un número decimal positivo</li>
-                        <li>La suma de todos los Grados debería ser 100%</li>
-                        <li>Todos los campos marcados como requeridos deben completarse</li>
-                    </ul>
-                </div>
-            </section>
-
-            <!-- Sección de Editar Estudiante -->
-            <section id="editar" class="section">
-                <h2>✏️ Editar Estudiante Existente</h2>
-                
-                <h3>Proceso de Edición</h3>
-                <ol class="step-list">
-                    <li>En el listado de Estudiantes, localice la Estudiante que desea editar</li>
-                    <li>Haga clic en el icono de editar (✏️) en la columna de acciones</li>
-                    <li>Modifique los campos necesarios en el formulario</li>
-                    <li>Guarde los cambios</li>
-                </ol>
-
-                <h3>Campos Editables</h3>
-                <p>Puede modificar todos los campos de la Estudiante excepto:</p>
-                <ul>
-                    <li>❌ ID interno del sistema (se genera automáticamente)</li>
-                    <li>✅ Código (con precaución, puede afectar reportes históricos)</li>
-                    <li>✅ Tipo de Estudiante</li>
-                    <li>✅ Grado de participación</li>
-                    <li>✅ Acudiente asignado</li>
-                    <li>✅ Grado o grupo</li>
-                    <li>✅ Aplica Beneficio de Descuento por Pronto Pago (ON/OFF)</li>
-                    <li>✅ Módulos de cobro</li>
-                </ul>
-
-                <div class="warning">
-                    <strong>⚠️ Precaución al Editar:</strong>
-                    <ul>
-                        <li>Cambiar el código puede afectar reportes históricos</li>
-                        <li>Modificar el Grado afecta futuros cobros</li>
-                        <li>Cambiar módulos puede alterar los conceptos aplicables</li>
-                    </ul>
-                </div>
-
-                <h3>Cambio de Acudiente</h3>
-                <ol class="step-list">
-                    <li>En el formulario de edición, haga clic en "Cambiar Acudiente"</li>
-                    <li>Busque y seleccione el nuevo Acudiente</li>
-                    <li>Confirme el cambio</li>
-                    <li>El sistema registrará el historial del cambio</li>
-                </ol>
-
-                <div class="info">
-                    <strong>💡 Historial:</strong> El sistema mantiene un registro de todos los cambios de Acudiente para efectos de auditoría y reportes.
-                </div>
-            </section>
-
-            <!-- Sección de Eliminar -->
-            <section id="eliminar" class="section">
-                <h2>🗑️ Eliminar Estudiantes</h2>
-                
-                <h3>Proceso de Eliminación</h3>
-                <ol class="step-list">
-                    <li>Localice la Estudiante que desea eliminar en el listado</li>
-                    <li>Haga clic en el icono de eliminar (🗑️) en la columna de acciones</li>
-                    <li>Confirme la eliminación en el diálogo que aparece</li>
-                    <li>La Estudiante será removida del sistema</li>
-                </ol>
-
-                <div class="warning">
-                    <strong>⚠️ IMPORTANTE - Restricciones de Eliminación:</strong>
-                    <p>No podrá eliminar una Estudiante si:</p>
-                    <ul>
-                        <li>Tiene movimientos contables asociados</li>
-                        <li>Tiene facturas generadas</li>
-                        <li>Tiene pagos registrados</li>
-                        <li>Tiene saldo pendiente</li>
-                    </ul>
-                    <p><strong>Solución:</strong> En estos casos, considere marcar la Estudiante como "Inactiva" en lugar de eliminarla.</p>
-                </div>
-
-                <h3>Alternativa: Desactivar Estudiante</h3>
-                <p>Si no puede eliminar la Estudiante por restricciones del sistema:</p>
-                <ol class="step-list">
-                    <li>Edite la Estudiante</li>
-                    <li>Cambie el estado a "Inactiva" (si está disponible)</li>
-                    <li>O agregue un prefijo como "INACTIVA-" al código</li>
-                    <li>Esto mantendrá el historial pero la excluirá de procesos futuros</li>
-                </ol>
-            </section>
-
-            <!-- Sección de Acciones Masivas -->
-            <section id="masivo" class="section">
-                <h2>⚡ Acciones Masivas</h2>
-                
-                <h3>¿Qué son las Acciones Masivas?</h3>
-                <p>Las acciones masivas permiten modificar múltiples Estudiantes simultáneamente, ahorrando tiempo cuando necesita hacer cambios similares en varias Estudiantes.</p>
-
-                <h3>Proceso de Acciones Masivas</h3>
-                <ol class="step-list">
-                    <li><strong>Seleccionar Estudiantes:</strong> Use los checkboxes para marcar las Estudiantes que desea modificar</li>
-                    <li><strong>Activar Modo Masivo:</strong> Aparecerá un botón "Acciones Masivas" cuando tenga Estudiantes seleccionadas</li>
-                    <li><strong>Configurar Cambios:</strong> En el modal que aparece, configure qué módulos agregar o remover</li>
-                    <li><strong>Aplicar Cambios:</strong> Confirme la operación para aplicar los cambios</li>
-                </ol>
-
-                <h3>Tipos de Acciones Masivas Disponibles</h3>
-                
-                <h4>🏗️ Gestión de Módulos</h4>
-                <p>La acción masiva más común es la gestión de módulos de cobro:</p>
-                
-                <div class="table-container">
-                    <table class="manual-table">
-                        <thead>
-                            <tr>
-                                <th>Acción</th>
-                                <th>Descripción</th>
-                                <th>Ejemplo de Uso</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>🟢 Asignar Módulo</td>
-                                <td>Agregar un módulo a las Estudiantes seleccionadas</td>
-                                <td>Agregar módulo "Parqueadero" a Estudiantes</td>
-                            </tr>
-                            <tr>
-                                <td>🔴 Remover Módulo</td>
-                                <td>Quitar un módulo de las Estudiantes seleccionadas</td>
-                                <td>Remover módulo "Comercial" de Estudiantes</td>
-                            </tr>
-                            <tr>
-                                <td>🔄 Combinado</td>
-                                <td>Asignar y remover módulos en la misma operación</td>
-                                <td>Cambiar de "Residencial" a "Comercial"</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <h3>Interfaz de Acciones Masivas</h3>
-                <ol class="step-list">
-                    <li><strong>Selección Visual:</strong> Haga clic en los módulos para cambiar su estado:
-                        <ul>
-                            <li>🔘 Gris: Sin cambios</li>
-                            <li>🟢 Verde: Asignar módulo</li>
-                            <li>🔴 Rojo: Remover módulo</li>
-                        </ul>
-                    </li>
-                    <li><strong>Confirmación:</strong> Revise el resumen antes de aplicar</li>
-                    <li><strong>Aplicación:</strong> Los cambios se aplican inmediatamente</li>
-                </ol>
-
-                <div class="success">
-                    <strong>✅ Ejemplo Práctico:</strong> Si necesita agregar el módulo "Parqueadero" a 50 Estudiantes, seleccione los 50 Estudiantes, active acciones masivas, marque "Parqueadero" en verde y aplique. ¡Listo en segundos!
-                </div>
-
-                <h3>Consejos para Acciones Masivas</h3>
-                <ul>
-                    <li>💡 Use filtros para seleccionar Estudiantes similares más fácilmente</li>
-                    <li>💡 Revise siempre el resumen antes de confirmar</li>
-                    <li>💡 Haga pruebas con pocas Estudiantes primero</li>
-                    <li>💡 Mantenga respaldos antes de cambios masivos importantes</li>
-                </ul>
-            </section>
-
-            <!-- Sección de Errores Comunes -->
-            <section id="errores" class="section">
-                <h2>⚠️ Errores Comunes y Soluciones</h2>
-                
-                <h3>Error: "Código de Estudiante ya existe"</h3>
-                <div class="warning">
-                    <strong>Problema:</strong> Al crear una Estudiante, aparece el mensaje "El código ya existe".
-                    <br><strong>Causa:</strong> Está intentando usar un código que ya está asignado a otra Estudiante.
-                    <br><strong>Solución:</strong>
-                    <ul>
-                        <li>Verifique el listado de Estudiantes existentes</li>
-                        <li>Use un código diferente y único</li>
-                        <li>Considere usar un formato estándar (ej: APT-101, LOC-001)</li>
-                    </ul>
-                </div>
-
-                <h3>Error: "Grado inválido"</h3>
-                <div class="warning">
-                    <strong>Problema:</strong> El sistema no acepta el Grado ingresado.
-                    <br><strong>Causa:</strong> El formato del Grado no es correcto.
-                    <br><strong>Solución:</strong>
-                    <ul>
-                        <li>Use formato decimal: 0.8500 (no 0.85% ni 85%)</li>
-                        <li>Use punto como separador decimal, no coma</li>
-                        <li>Asegúrese de que sea un número positivo</li>
-                    </ul>
-                </div>
-
-                <h3>Error: "No se puede eliminar la Estudiante"</h3>
-                <div class="warning">
-                    <strong>Problema:</strong> El sistema impide eliminar una Estudiante.
-                    <br><strong>Causa:</strong> La Estudiante tiene movimientos contables o facturas asociadas.
-                    <br><strong>Solución:</strong>
-                    <ul>
-                        <li>Verifique si tiene saldos pendientes</li>
-                        <li>Consulte el historial de movimientos</li>
-                        <li>Considere desactivar en lugar de eliminar</li>
-                        <li>Contacte al administrador si es necesario eliminar</li>
-                    </ul>
-                </div>
-
-                <h3>Problema: "Las acciones masivas no funcionan"</h3>
-                <div class="warning">
-                    <strong>Problema:</strong> No aparece el botón de acciones masivas.
-                    <br><strong>Causa:</strong> No ha seleccionado ninguna Estudiante.
-                    <br><strong>Solución:</strong>
-                    <ul>
-                        <li>Seleccione al menos una Estudiante usando los checkboxes</li>
-                        <li>El botón aparecerá automáticamente</li>
-                        <li>Verifique que tenga permisos para acciones masivas</li>
-                    </ul>
-                </div>
-
-                <h3>Problema: "La búsqueda no encuentra Estudiantes"</h3>
-                <div class="warning">
-                    <strong>Problema:</strong> El filtro de búsqueda no muestra resultados.
-                    <br><strong>Solución:</strong>
-                    <ul>
-                        <li>Verifique que esté escribiendo correctamente</li>
-                        <li>La búsqueda requiere al menos 2 caracteres</li>
-                        <li>Limpie los filtros y intente de nuevo</li>
-                        <li>Actualice la página si persiste el problema</li>
-                    </ul>
-                </div>
-            </section>
-
-            <!-- Sección de Ayuda Adicional -->
-            <section class="section">
-                <h2>🆘 ¿Necesita Más Ayuda?</h2>
-                <div class="highlight">
-                    <p><strong>Recursos Relacionados:</strong></p>
-                    <ul>
-                        <li>📖 Manual de Acudientes - Para gestionar la información de Acudientes</li>
-                        <li>📖 Manual de Conceptos de Cobro - Para configurar qué se cobra a cada Estudiante</li>
-                        <li>📖 Manual de Configuración - Para gestionar Grados y módulos</li>
-                        <li>📖 Manual de Facturación - Para generar cobros a las Estudiantes</li>
-                    </ul>
-                </div>
-
-                <div class="info">
-                    <p><strong>Contacto de Soporte:</strong></p>
-                    <ul>
-                        <li>📧 Email: soporte@contapy2.com</li>
-                        <li>📞 Teléfono: +57 (1) 234-5678</li>
-                        <li>💬 Chat en línea: Disponible en el sistema</li>
-                        <li>🕒 Horario: Lunes a Viernes 8:00 AM - 6:00 PM</li>
-                    </ul>
-                </div>
-            </section>
-        </main>
-
-        <footer class="footer">
-            <p>&copy; 2024 ContaPY2 - Sistema de Gestión Contable Integral</p>
-            <p>Manual generado automáticamente - Versión 1.0</p>
+        <footer class="mt-32 pt-12 border-t border-gray-100 text-center text-gray-400 text-sm">
+            <p>© 2026 Finaxis Consultoría Educativa - Gestión de Alumnos de Alto Desempeño</p>
         </footer>
-    </div>
+    </main>
 
-    <script src="assets/js/manual-navigation.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'neutral', fontFamily: 'Outfit' });
+    </script>
 </body>
 </html>
-
-

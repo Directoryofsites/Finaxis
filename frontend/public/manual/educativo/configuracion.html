@@ -1,18 +1,18 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configuración - Manual de Gestión de Recaudos</title>
-    <link rel="stylesheet" href="assets/css/manual-styles.css">
+    <title>Configuración Institucional - Manual de Gestión Educativa</title>
+    <link rel="stylesheet" href="../assets/css/manual-styles.css">
 </head>
 <body>
     <div class="container">
         <header class="header">
             <div class="header-content">
-                <div class="logo">⚙️ Configuración del Sistema</div>
-                <div class="subtitle">Manual de Usuario - Gestión de Recaudos</div>
-                <div class="version">Sistema ContaPY2 - Módulo PH</div>
+                <div class="logo">⚙️ Configuración Institucional</div>
+                <div class="subtitle">Manual de Usuario - Gestión de Recaudos Educativos</div>
+                <div class="version">Sistema Finaxis - Sector Educativo</div>
             </div>
         </header>
 
@@ -20,9 +20,10 @@
             <ul>
                 <li><a href="#introduccion">Introducción</a></li>
                 <li><a href="#acceso">Acceso</a></li>
-                <li><a href="#general">Configuración General</a></li>
-                <li><a href="#Grados">Grados y Grupos</a></li>
-                <li><a href="#modulos">Módulos</a></li>
+                <li><a href="#general">Información Institucional</a></li>
+                <li><a href="#grados">Grados y Grupos</a></li>
+                <li><a href="#modulos">Módulos de Cobro</a></li>
+                <li><a href="#productividad">Tips de Productividad</a></li>
                 <li><a href="#errores">Errores Comunes</a></li>
             </ul>
         </nav>
@@ -35,355 +36,128 @@
 
             <section id="introduccion" class="section">
                 <h2>🎯 Introducción</h2>
-                <p>El módulo de Configuración permite establecer los parámetros fundamentales del sistema de gestión de recaudos, incluyendo información del conjunto, Grados, módulos de cobro y configuraciones contables.</p>
+                <p>La Configuración Institucional es el corazón del sistema. Aquí se definen los parámetros que rigen la lógica de cobro para Pensiones, Matrículas y otros servicios educativos.</p>
                 
                 <div class="info">
-                    <strong>💡 Objetivo:</strong> Configurar correctamente todos los parámetros del sistema para que funcione de acuerdo a las necesidades específicas de su Gestión Educativa.
+                    <strong>💡 Objetivo:</strong> Establecer los cimientos contables y operativos para una gestión de cartera eficiente y automatizada.
                 </div>
 
-                <h3>Áreas de Configuración</h3>
+                <h3>Ejes de Configuración</h3>
                 <ul>
-                    <li>🏢 <strong>Información General:</strong> Datos básicos del conjunto</li>
-                    <li>🏗️ <strong>Grados y Grupos:</strong> Estructura física del conjunto</li>
-                    <li>📋 <strong>Módulos de Cobro:</strong> Tipos de Estudiantes y servicios</li>
-                    <li>💰 <strong>Configuración Contable:</strong> Cuentas y parámetros fiscales</li>
-                    <li>🎨 <strong>Personalización:</strong> Terminología y apariencia</li>
+                    <li>🏫 <strong>Datos de la Institución:</strong> NIT, Razón Social y contacto.</li>
+                    <li>🎓 <strong>Estructura Académica:</strong> Grados, Niveles y Grupos.</li>
+                    <li>📋 <strong>Módulos de Servicio:</strong> Clasificación de cobros (Pensión, Transporte, etc.).</li>
+                    <li>💰 <strong>Parámetros de Recaudo:</strong> Cuentas de banco y lógica de mora.</li>
                 </ul>
             </section>
 
             <section id="acceso" class="section">
                 <h2>🚪 Cómo Acceder</h2>
                 <ol class="step-list">
-                    <li>Ingrese al sistema ContaPY2</li>
+                    <li>Ingrese al sistema Finaxis</li>
                     <li>Navegue al módulo "Gestión de Recaudos"</li>
-                    <li>Haga clic en "Configuración PH" o "Configuración"</li>
+                    <li>Haga clic en el botón <strong>"Configuración"</strong> en el panel lateral.</li>
                 </ol>
 
                 <div class="warning">
-                    <strong>⚠️ Importante:</strong> Solo usuarios con permisos de administrador pueden acceder a la configuración del sistema.
+                    <strong>⚠️ Seguridad:</strong> Solo usuarios con rol de "Rectoría" o "Contador" deben modificar estos parámetros, ya que afectan directamente la contabilidad.
                 </div>
             </section>
 
             <section id="general" class="section">
-                <h2>🏢 Configuración General</h2>
+                <h2>🏫 Información Institucional</h2>
+                <p>Complete los datos legales de la institución. Estos aparecerán en los estados de cuenta y facturas enviadas a los acudientes.</p>
                 
-                <h3>Información Básica del Conjunto</h3>
-                <div class="table-container">
-                    <table class="manual-table">
-                        <thead>
-                            <tr>
-                                <th>Campo</th>
-                                <th>Descripción</th>
-                                <th>Ejemplo</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Nombre del Conjunto</td>
-                                <td>Denominación oficial</td>
-                                <td>Conjunto Residencial Los Pinos</td>
-                            </tr>
-                            <tr>
-                                <td>NIT</td>
-                                <td>Número de identificación tributaria</td>
-                                <td>900123456-1</td>
-                            </tr>
-                            <tr>
-                                <td>Dirección</td>
-                                <td>Ubicación física</td>
-                                <td>Calle 123 #45-67</td>
-                            </tr>
-                            <tr>
-                                <td>Teléfono</td>
-                                <td>Contacto principal</td>
-                                <td>(1) 234-5678</td>
-                            </tr>
-                            <tr>
-                                <td>Email</td>
-                                <td>Correo electrónico oficial</td>
-                                <td>administracion@lospinos.com</td>
-                            </tr>
-                            <tr>
-                                <td>Administrador</td>
-                                <td>Nombre del administrador</td>
-                                <td>María García</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <h3>Configuración de Sector</h3>
-                <p>Seleccione el tipo de propiedad para ajustar la terminología:</p>
+                <h3>Políticas de Recaudo Automático</h3>
                 <ul>
-                    <li>🏠 <strong>Residencial:</strong> Estudiantes, casas, conjuntos habitacionales</li>
-                    <li>🏪 <strong>Comercial:</strong> Centros comerciales, oficinas</li>
-                    <li>🚗 <strong>Parqueadero:</strong> Administración de espacios de estacionamiento</li>
-                    <li>💰 <strong>Crédito:</strong> Gestión de cartera financiera</li>
-                    <li>🌟 <strong>Genérico:</strong> Gestión general de recaudos</li>
+                    <li>🔥 <strong>Intereses de Mora:</strong> Defina el porcentaje mensual. El sistema calculará automáticamente la mora basada en el "Smart Check" de los conceptos.</li>
+                    <li>💎 <strong>Descuento por Pronto Pago:</strong> Establezca un incentivo (ej. 5%) para quienes paguen antes del día 5 de cada mes.</li>
                 </ul>
 
-                <h3>Políticas de Recaudo (Mora y Descuento)</h3>
-                <p>El sistema permite gestionar de forma automatizada tanto los castigos por mora como los incentivos por pronto pago:</p>
-                <ul>
-                    <li>🔥 <strong>Intereses de Mora:</strong> Se puede habilitar un interruptor global para cobrar intereses automáticos a las Estudiantes en mora. Se parametriza el porcentaje mensual y el día límite de pago (después de este día se genera mora).</li>
-                    <li>💎 <strong>Descuento por Pronto Pago:</strong> Incentivo que reduce el valor a pagar si el Estudiante/Acudiente cancela antes de cierta fecha.
-                        <ul>
-                            <li><strong>Interruptor Global:</strong> Permite encender o apagar el descuento para toda la Institución con un solo clic.</li>
-                            <li><strong>Día Límite:</strong> El Estudiante/Acudiente debe pagar la totalidad antes de este día para ganar el descuento.</li>
-                            <li><strong>Cuenta Contable:</strong> El descuento se registra en tiempo real como un Menor Valor del Ingreso (Ej: cuenta 4175) sin afectar el saldo histórico de la cartera.</li>
-                        </ul>
-                    </li>
-                </ul>
-
-                <h3>Parámetros Contables</h3>
-                <div class="table-container">
-                    <table class="manual-table">
-                        <thead>
-                            <tr>
-                                <th>Parámetro</th>
-                                <th>Descripción</th>
-                                <th>Valor Sugerido</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Cuenta CxC por Defecto</td>
-                                <td>Cuenta para cuentas por cobrar</td>
-                                <td>1305 - Cuentas por Cobrar</td>
-                            </tr>
-                            <tr>
-                                <td>Cuenta Caja por Defecto</td>
-                                <td>Cuenta para recaudos</td>
-                                <td>1105 - Caja General</td>
-                            </tr>
-                            <tr>
-                                <td>Cuenta Ingreso Intereses</td>
-                                <td>Cuenta donde se registran las moras</td>
-                                <td>421005 - Ingreso por Intereses</td>
-                            </tr>
-                            <tr>
-                                <td>Cuenta Descuento Pronto Pago</td>
-                                <td>Cuenta para el beneficio (Menor Valor)</td>
-                                <td>417505 - Descuentos y Rebajas</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="alert-tip">
+                    <strong>🚀 Tip de Consultoría:</strong> Configure el "Día de Corte" cuidadosamente. La mayoría de colegios usan el día 10 para generar el primer aviso de mora.
                 </div>
             </section>
 
-            <section id="Grados" class="section">
+            <section id="grados" class="section">
                 <h2>🏗️ Gestión de Grados y Grupos</h2>
-                
-                <h3>¿Qué son las Grados/Grupos?</h3>
-                <p>Las Grados o grupos permiten organizar las Estudiantes según su ubicación física o características comunes dentro del conjunto.</p>
+                <p>Organice su institución por niveles académicos. Esto facilita la facturación masiva por grupos específicos.</p>
 
-                <h3>Crear Nueva Grado/Grupo</h3>
-                <ol class="step-list">
-                    <li>Acceda a la sección "Grados y Grupos"</li>
-                    <li>Haga clic en "Nueva Grado"</li>
-                    <li>Complete la información requerida</li>
-                    <li>Guarde la configuración</li>
-                </ol>
-
-                <h3>Información de Grados</h3>
                 <div class="table-container">
                     <table class="manual-table">
                         <thead>
                             <tr>
-                                <th>Campo</th>
-                                <th>Descripción</th>
-                                <th>Ejemplo</th>
+                                <th>Nivel</th>
+                                <th>Grados Típicos</th>
+                                <th>Uso en Sistema</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td>Nombre</td>
-                                <td>Identificación de la Grado</td>
-                                <td>Grado A, Bloque 1, Etapa 2</td>
+                                <td>Preescolar</td>
+                                <td>Pre-jardín, Jardín, Transición</td>
+                                <td>Cobros diferenciados por edad</td>
                             </tr>
                             <tr>
-                                <td>Descripción</td>
-                                <td>Información adicional</td>
-                                <td>Grado principal de Estudiantes</td>
+                                <td>Primaria</td>
+                                <td>Primero a Quinto</td>
+                                <td>Matrícula estándar</td>
                             </tr>
                             <tr>
-                                <td>Número de Pisos</td>
-                                <td>Cantidad de niveles</td>
-                                <td>10 pisos</td>
-                            </tr>
-                            <tr>
-                                <td>Estudiantes por Piso</td>
-                                <td>Distribución típica</td>
-                                <td>4 Estudiantes por piso</td>
+                                <td>Secundaria</td>
+                                <td>Sexto a Undécimo</td>
+                                <td>Derechos de grado (en 11°)</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
-
-                <h3>Ejemplos de Organización</h3>
-                <ul>
-                    <li>🏢 <strong>Por Grados:</strong> Grado A, Grado B, Grado C</li>
-                    <li>🏗️ <strong>Por Bloques:</strong> Bloque 1, Bloque 2, Bloque 3</li>
-                    <li>📅 <strong>Por Etapas:</strong> Etapa I, Etapa II, Etapa III</li>
-                    <li>🎯 <strong>Por Uso:</strong> Residencial, Comercial, Parqueaderos</li>
-                </ul>
             </section>
 
             <section id="modulos" class="section">
-                <h2>📋 Configuración de Módulos</h2>
+                <h2>📋 Módulos de Cobro</h2>
+                <p>Los módulos agrupan a los estudiantes por servicios. Un estudiante puede pertenecer a varios módulos simultáneamente.</p>
                 
-                <h3>¿Qué son los Módulos?</h3>
-                <p>Los módulos definen los diferentes tipos de servicios o características que pueden tener las Estudiantes, determinando qué conceptos de cobro se les aplicarán.</p>
+                <div class="highlight">
+                    <strong>Ejemplo de Módulos:</strong>
+                    <ul>
+                        <li>🚌 <strong>Módulo Transporte:</strong> Solo estudiantes que usan la ruta.</li>
+                        <li>🍽️ <strong>Módulo Alimentación:</strong> Estudiantes con plan de almuerzo.</li>
+                        <li>🎨 <strong>Módulo Extracurriculares:</strong> Clubes de arte o deportes.</li>
+                    </ul>
+                </div>
+            </section>
 
-                <h3>Módulos Típicos</h3>
-                <div class="table-container">
-                    <table class="manual-table">
-                        <thead>
-                            <tr>
-                                <th>Módulo</th>
-                                <th>Descripción</th>
-                                <th>Conceptos Típicos</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>🏠 Residencial</td>
-                                <td>Estudiantes y casas</td>
-                                <td>Administración, Aseo, Vigilancia</td>
-                            </tr>
-                            <tr>
-                                <td>🏪 Comercial</td>
-                                <td>Locales y oficinas</td>
-                                <td>Administración comercial, Publicidad</td>
-                            </tr>
-                            <tr>
-                                <td>🚗 Parqueadero</td>
-                                <td>Espacios de estacionamiento</td>
-                                <td>Cuota parqueadero, Mantenimiento</td>
-                            </tr>
-                            <tr>
-                                <td>📦 Depósito</td>
-                                <td>Bodegas y cuartos útiles</td>
-                                <td>Cuota depósito</td>
-                            </tr>
-                            <tr>
-                                <td>🌟 Especial</td>
-                                <td>Servicios adicionales</td>
-                                <td>Servicios premium, Amenidades</td>
-                            </tr>
-                        </tbody>
-                    </table>
+            <section id="productividad" class="section">
+                <h2>🚀 Tips de Productividad (Finaxis Pro)</h2>
+                
+                <div class="premium-card">
+                    <h3>🏦 Cuenta de Recaudo Predeterminada</h3>
+                    <p>En la configuración contable, puede asignar una <strong>Cuenta Recaudo (Manual/Caja)</strong> por defecto.</p>
+                    <p><strong>Ventaja:</strong> Al registrar un pago manual en la ventanilla del colegio, el sistema ya tendrá seleccionada la cuenta de caja, ahorrando miles de clics al mes al cajero.</p>
                 </div>
 
-                <h3>Crear Nuevo Módulo</h3>
-                <ol class="step-list">
-                    <li>Acceda a la sección "Módulos"</li>
-                    <li>Haga clic en "Nuevo Módulo"</li>
-                    <li>Defina nombre y descripción</li>
-                    <li>Configure los conceptos aplicables</li>
-                    <li>Guarde la configuración</li>
-                </ol>
-
-                <h3>Asignación de Módulos</h3>
-                <p>Los módulos se asignan a las Estudiantes para determinar qué conceptos se les facturarán:</p>
-                <ul>
-                    <li>✅ Una Estudiante puede tener múltiples módulos</li>
-                    <li>✅ Los módulos determinan los conceptos aplicables</li>
-                    <li>✅ Se pueden modificar en cualquier momento</li>
-                    <li>✅ Permiten facturación diferenciada</li>
-                </ul>
-
-                <div class="success">
-                    <strong>✅ Ejemplo Práctico:</strong> Un Estudiante puede tener los módulos "Residencial" + "Parqueadero", recibiendo tanto la cuota de administración como la cuota de parqueadero.
+                <div class="premium-card">
+                    <h3>🧠 El "Smart Check" de Mora</h3>
+                    <p>No todos los cobros deben generar intereses. Al configurar conceptos, marque solo <strong>Pensión</strong> con el Smart Check de Mora.</p>
+                    <p><strong>Resultado:</strong> El sistema ignorará deudas de "Papelería" o "Seguros" al calcular intereses, evitando conflictos legales con los acudientes.</p>
                 </div>
             </section>
 
             <section id="errores" class="section">
-                <h2>⚠️ Errores Comunes y Soluciones</h2>
-                
-                <h3>Error: "No tiene permisos para configurar"</h3>
+                <h2>⚠️ Errores Comunes</h2>
                 <div class="warning">
-                    <strong>Problema:</strong> No puede acceder a la configuración del sistema.
-                    <br><strong>Causa:</strong> Su usuario no tiene permisos de administrador.
-                    <br><strong>Solución:</strong>
-                    <ul>
-                        <li>Contacte al administrador del sistema</li>
-                        <li>Solicite permisos de configuración</li>
-                        <li>Verifique que esté usando el usuario correcto</li>
-                    </ul>
-                </div>
-
-                <h3>Error: "Cuenta contable no válida"</h3>
-                <div class="warning">
-                    <strong>Problema:</strong> No se puede guardar la configuración contable.
-                    <br><strong>Causa:</strong> La cuenta seleccionada no existe o no está activa.
-                    <br><strong>Solución:</strong>
-                    <ul>
-                        <li>Verifique que la cuenta exista en el PUC</li>
-                        <li>Confirme que la cuenta esté activa</li>
-                        <li>Use cuentas de detalle (último nivel)</li>
-                        <li>Consulte con el contador</li>
-                    </ul>
-                </div>
-
-                <h3>Error: "No se puede eliminar Grado"</h3>
-                <div class="warning">
-                    <strong>Problema:</strong> El sistema impide eliminar una Grado.
-                    <br><strong>Causa:</strong> La Grado tiene Estudiantes asignadas.
-                    <br><strong>Solución:</strong>
-                    <ul>
-                        <li>Reasigne las Estudiantes a otra Grado</li>
-                        <li>O elimine las Estudiantes primero</li>
-                        <li>Verifique que no haya movimientos contables</li>
-                    </ul>
-                </div>
-
-                <h3>Problema: "Los cambios no se reflejan"</h3>
-                <div class="warning">
-                    <strong>Problema:</strong> Las modificaciones no aparecen en el sistema.
-                    <br><strong>Causa:</strong> Caché del navegador o cambios no guardados.
-                    <br><strong>Solución:</strong>
-                    <ul>
-                        <li>Actualice la página (F5)</li>
-                        <li>Limpie la caché del navegador</li>
-                        <li>Verifique que haya guardado los cambios</li>
-                        <li>Cierre sesión y vuelva a ingresar</li>
-                    </ul>
-                </div>
-            </section>
-
-            <section class="section">
-                <h2>🆘 ¿Necesita Más Ayuda?</h2>
-                <div class="highlight">
-                    <p><strong>Recursos Relacionados:</strong></p>
-                    <ul>
-                        <li>📖 Manual de Estudiantes - Para asignar Grados y módulos</li>
-                        <li>📖 Manual de Conceptos - Para configurar conceptos por módulo</li>
-                        <li>📖 Manual de Facturación - Para entender cómo afecta la configuración</li>
-                        <li>📖 Manual del Sistema General - Para configuraciones avanzadas</li>
-                    </ul>
-                </div>
-
-                <div class="info">
-                    <p><strong>Contacto de Soporte:</strong></p>
-                    <ul>
-                        <li>📧 Email: soporte@contapy2.com</li>
-                        <li>📞 Teléfono: +57 (1) 234-5678</li>
-                        <li>💬 Chat en línea: Disponible en el sistema</li>
-                        <li>🕒 Horario: Lunes a Viernes 8:00 AM - 6:00 PM</li>
-                    </ul>
+                    <strong>Error: "La cuenta contable no existe"</strong>
+                    <br><strong>Causa:</strong> El contador eliminó la cuenta del PUC pero sigue vinculada en configuración.
+                    <br><strong>Solución:</strong> Actualice la cuenta en la pestaña "Contabilidad" de este módulo.
                 </div>
             </section>
         </main>
 
         <footer class="footer">
-            <p>&copy; 2024 ContaPY2 - Sistema de Gestión Contable Integral</p>
-            <p>Manual generado automáticamente - Versión 1.0</p>
+            <p>&copy; 2024 Finaxis - Gestión Educativa Inteligente</p>
         </footer>
     </div>
 
-    <script src="assets/js/manual-navigation.js"></script>
+    <script src="../assets/js/manual-navigation.js"></script>
 </body>
 </html>
-
-

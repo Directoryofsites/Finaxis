@@ -1,29 +1,28 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conceptos de Cobro - Manual de Gestión de Recaudos</title>
-    <link rel="stylesheet" href="assets/css/manual-styles.css">
+    <title>Conceptos de Cobro - Manual de Gestión Educativa</title>
+    <link rel="stylesheet" href="../assets/css/manual-styles.css">
 </head>
 <body>
     <div class="container">
         <header class="header">
             <div class="header-content">
                 <div class="logo">📋 Conceptos de Cobro</div>
-                <div class="subtitle">Manual de Usuario - Gestión de Recaudos</div>
-                <div class="version">Sistema ContaPY2 - Módulo PH</div>
+                <div class="subtitle">Manual de Usuario - Gestión de Recaudos Educativos</div>
+                <div class="version">Sistema Finaxis - Sector Educativo</div>
             </div>
         </header>
 
         <nav class="nav">
             <ul>
                 <li><a href="#introduccion">Introducción</a></li>
-                <li><a href="#acceso">Acceso</a></li>
-                <li><a href="#listado">Listado</a></li>
                 <li><a href="#crear">Crear Concepto</a></li>
-                <li><a href="#configuracion">Configuración</a></li>
-                <li><a href="#ejemplos">Ejemplos</a></li>
+                <li><a href="#contabilidad">Vínculo Contable</a></li>
+                <li><a href="#mora">Smart Check (Mora)</a></li>
+                <li><a href="#ejemplos">Ejemplos Educativos</a></li>
                 <li><a href="#errores">Errores Comunes</a></li>
             </ul>
         </nav>
@@ -36,409 +35,115 @@
 
             <section id="introduccion" class="section">
                 <h2>🎯 Introducción</h2>
-                <p>Los Conceptos de Cobro son la base del sistema de facturación. Aquí se definen todos los servicios, cuotas y cargos que se aplicarán a las Estudiantes de la Gestión Educativa. Cada concepto determina qué se cobra, cuánto se cobra y cómo se contabiliza.</p>
+                <p>Los Conceptos de Cobro son los "items" que el colegio factura. Cada concepto tiene su propia naturaleza contable (Ingreso vs CxC) y reglas de negocio específicas.</p>
                 
                 <div class="info">
-                    <strong>💡 Objetivo:</strong> Configurar de manera precisa todos los conceptos que generarán obligaciones de pago para los Acudientes.
+                    <strong>💡 Regla de Oro:</strong> Antes de crear un concepto, asegúrese de tener la cuenta de ingreso habilitada en su plan de cuentas (PUC).
                 </div>
-
-                <h3>Tipos de Conceptos Comunes</h3>
-                <ul>
-                    <li>🏢 <strong>Cuota de Administración:</strong> Cobro mensual básico</li>
-                    <li>💡 <strong>Servicios Públicos:</strong> Agua, luz, gas común</li>
-                    <li>🛡️ <strong>Seguridad:</strong> Vigilancia y portería</li>
-                    <li>🧹 <strong>Aseo:</strong> Limpieza de áreas comunes</li>
-                    <li>🚗 <strong>Parqueadero:</strong> Uso de espacios de estacionamiento</li>
-                    <li>💰 <strong>Fondo de Reserva:</strong> Ahorro para mantenimientos</li>
-                    <li>⚖️ <strong>Multas:</strong> Sanciones por incumplimientos</li>
-                    <li>📈 <strong>Intereses:</strong> Mora por pagos tardíos</li>
-                </ul>
-            </section>
-
-            <section id="acceso" class="section">
-                <h2>🚪 Cómo Acceder</h2>
-                <ol class="step-list">
-                    <li>Ingrese al sistema ContaPY2</li>
-                    <li>Navegue al módulo "Gestión de Recaudos"</li>
-                    <li>Haga clic en "Conceptos de Cobro"</li>
-                </ol>
-            </section>
-
-            <section id="listado" class="section">
-                <h2>📋 Listado de Conceptos</h2>
-                
-                <h3>Vista Principal</h3>
-                <p>El listado muestra todos los conceptos configurados con la siguiente información:</p>
-                
-                <div class="table-container">
-                    <table class="manual-table">
-                        <thead>
-                            <tr>
-                                <th>Campo</th>
-                                <th>Descripción</th>
-                                <th>Ejemplo</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>📝 Nombre</td>
-                                <td>Descripción del concepto</td>
-                                <td>Cuota de Administración, Parqueadero</td>
-                            </tr>
-                            <tr>
-                                <td>💰 Valor</td>
-                                <td>Monto base del concepto</td>
-                                <td>$150,000, $50,000</td>
-                            </tr>
-                            <tr>
-                                <td>📊 Tipo</td>
-                                <td>Forma de cálculo</td>
-                                <td>Fijo, Por Grado, Variable</td>
-                            </tr>
-                            <tr>
-                                <td>🏗️ Módulos</td>
-                                <td>A qué Estudiantes aplica</td>
-                                <td>Residencial, Comercial, Todos</td>
-                            </tr>
-                            <tr>
-                                <td>📅 Estado</td>
-                                <td>Activo o inactivo</td>
-                                <td>✅ Activo, ❌ Inactivo</td>
-                            </tr>
-                            <tr>
-                                <td>⚙️ Acciones</td>
-                                <td>Opciones disponibles</td>
-                                <td>✏️ Editar, 🗑️ Eliminar</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <h3>Funciones del Listado</h3>
-                <ul>
-                    <li>🔍 <strong>Búsqueda:</strong> Filtrar conceptos por nombre</li>
-                    <li>📊 <strong>Filtros:</strong> Por tipo, estado o módulo</li>
-                    <li>➕ <strong>Nuevo:</strong> Crear nuevo concepto</li>
-                    <li>📋 <strong>Duplicar:</strong> Copiar concepto existente</li>
-                </ul>
             </section>
 
             <section id="crear" class="section">
-                <h2>➕ Crear Nuevo Concepto</h2>
-                
-                <h3>Proceso de Creación</h3>
+                <h2>➕ Cómo Crear un Concepto</h2>
                 <ol class="step-list">
-                    <li>Haga clic en "Nuevo Concepto"</li>
-                    <li>Complete la información básica</li>
-                    <li>Configure las cuentas contables</li>
-                    <li>Establezca los módulos aplicables</li>
-                    <li>Defina el tipo de cálculo</li>
-                    <li>Guarde el concepto</li>
+                    <li>Vaya a <strong>Gestión de Recaudos > Conceptos</strong>.</li>
+                    <li>Haga clic en <strong>"+ Nuevo Concepto"</strong>.</li>
+                    <li>Asigne un nombre claro (ej. "Pensión Grado 11").</li>
+                    <li>Defina el <strong>Valor Base</strong>.</li>
                 </ol>
 
-                <h3>Información Básica</h3>
+                <div class="premium-card">
+                    <h3>💡 Tip de Clasificación</h3>
+                    <p>Use prefijos para mantener el orden: <code>[PEN]</code> para pensiones, <code>[MAT]</code> para matrículas, <code>[RUT]</code> para transporte.</p>
+                </div>
+            </section>
+
+            <section id="contabilidad" class="section">
+                <h2>⚙️ Vínculo Contable</h2>
+                <p>Para que el sistema sea automatizado, cada concepto debe estar "enganchado" a sus cuentas contables:</p>
                 
                 <div class="table-container">
                     <table class="manual-table">
                         <thead>
                             <tr>
                                 <th>Campo</th>
-                                <th>Descripción</th>
-                                <th>Requerido</th>
-                                <th>Ejemplo</th>
+                                <th>Cuenta Sugerida</th>
+                                <th>Función</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td>Nombre</td>
-                                <td>Descripción del concepto</td>
-                                <td>✅ Sí</td>
-                                <td>Cuota de Administración</td>
+                                <td><strong>Cta. CxC</strong></td>
+                                <td>130505...</td>
+                                <td>Registra la deuda del estudiante.</td>
                             </tr>
                             <tr>
-                                <td>Código</td>
-                                <td>Identificador interno</td>
-                                <td>❌ No</td>
-                                <td>ADMIN-001</td>
+                                <td><strong>Cta. Ingreso</strong></td>
+                                <td>416005...</td>
+                                <td>Registra el ingreso de la institución.</td>
                             </tr>
                             <tr>
-                                <td>Valor Base</td>
-                                <td>Monto de referencia</td>
-                                <td>✅ Sí</td>
-                                <td>150000</td>
-                            </tr>
-                            <tr>
-                                <td>Tipo de Cálculo</td>
-                                <td>Forma de aplicar el valor</td>
-                                <td>✅ Sí</td>
-                                <td>Fijo, Grado, Variable</td>
-                            </tr>
-                            <tr>
-                                <td>Estado</td>
-                                <td>Activo o inactivo</td>
-                                <td>✅ Sí</td>
-                                <td>Activo</td>
+                                <td><strong>Cta. Recaudo</strong></td>
+                                <td>110505...</td>
+                                <td>(Opcional) Cuenta por defecto para pagos en caja.</td>
                             </tr>
                         </tbody>
                     </table>
-                </div>
-
-                <h3>Tipos de Cálculo</h3>
-                
-                <h4>💰 Valor Fijo</h4>
-                <p>Todas las Estudiantes pagan el mismo monto, independiente de su tamaño o Grado.</p>
-                <div class="success">
-                    <strong>Ejemplo:</strong> Parqueadero = $50,000 mensuales para todas las Estudiantes que tengan parqueadero.
-                </div>
-
-                <h4>📊 Por Grado</h4>
-                <p>El valor se calcula multiplicando el valor base por el Grado de participación de cada Estudiante.</p>
-                <div class="success">
-                    <strong>Ejemplo:</strong> Cuota de Administración = $10,000,000 × (Grado de la Estudiante / 100)
-                    <br>Estudiante con Grado 0.85% = $10,000,000 × 0.0085 = $85,000
-                </div>
-
-                <h4>🔢 Variable</h4>
-                <p>El valor se define individualmente para cada Estudiante o se calcula según criterios específicos.</p>
-                <div class="success">
-                    <strong>Ejemplo:</strong> Consumo de agua según lectura de medidores individuales.
                 </div>
             </section>
 
-            <section id="configuracion" class="section">
-                <h2>⚙️ Configuración Contable</h2>
+            <section id="mora" class="section">
+                <h2>🧠 El "Smart Check" de Interés de Mora</h2>
+                <p>En el sector educativo, no todos los cobros pueden legalmente generar intereses. Finaxis le permite controlar esto con precisión quirúrgica.</p>
                 
-                <h3>Cuentas Contables Requeridas</h3>
-                <p>Cada concepto debe tener configuradas las siguientes cuentas:</p>
-
-                <div class="table-container">
-                    <table class="manual-table">
-                        <thead>
-                            <tr>
-                                <th>Cuenta</th>
-                                <th>Propósito</th>
-                                <th>Ejemplo</th>
-                                <th>Requerida</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>🏦 Cuenta CxC</td>
-                                <td>Cuentas por Cobrar</td>
-                                <td>1305 - Cuentas por Cobrar Clientes</td>
-                                <td>✅ Sí</td>
-                            </tr>
-                            <tr>
-                                <td>💰 Cuenta Ingreso</td>
-                                <td>Reconocimiento del ingreso</td>
-                                <td>4135 - Ingresos por Administración</td>
-                                <td>✅ Sí</td>
-                            </tr>
-                            <tr>
-                                <td>📈 Cuenta Interés</td>
-                                <td>Intereses por mora</td>
-                                <td>4210 - Intereses de Mora</td>
-                                <td>❌ No</td>
-                            </tr>
-                            <tr>
-                                <td>🏛️ Cuenta Caja</td>
-                                <td>Recaudo específico</td>
-                                <td>1105 - Caja General</td>
-                                <td>❌ No</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="alert-tip">
+                    <strong>¿Es Interés de Mora?</strong>
+                    <br>Al marcar este checkbox, le indica al sistema: <em>"Este concepto NO es un cobro fijo, sino que es la cuenta donde se guardarán los intereses calculados automáticamente"</em>.
                 </div>
 
-                <h3>Configuración de Intereses</h3>
-                <p>Para conceptos que generan intereses por mora:</p>
-                <ol class="step-list">
-                    <li>Active la opción "Genera Intereses"</li>
-                    <li>Defina la tasa de interés mensual (ej: 2.5%)</li>
-                    <li>Configure la cuenta contable para intereses</li>
-                    <li>Establezca los días de gracia (opcional)</li>
-                </ol>
-
-                <div class="info">
-                    <strong>💡 Consejo:</strong> La tasa de interés se aplica sobre el saldo vencido cada mes. Una tasa del 2.5% mensual equivale aproximadamente al 30% anual.
-                </div>
-
-                <h3>Módulos de Aplicación</h3>
-                <p>Defina a qué tipos de Estudiantes aplica cada concepto:</p>
+                <p><strong>Configuración recomendada:</strong></p>
                 <ul>
-                    <li>🏠 <strong>Residencial:</strong> Estudiantes, casas</li>
-                    <li>🏪 <strong>Comercial:</strong> Locales, oficinas</li>
-                    <li>🚗 <strong>Parqueadero:</strong> Espacios de estacionamiento</li>
-                    <li>📦 <strong>Depósito:</strong> Bodegas, cuartos útiles</li>
-                    <li>🌟 <strong>Todos:</strong> Aplica a cualquier tipo de Estudiante</li>
+                    <li>✅ <strong>Pensión:</strong> Marcar "Calcula Mora" pero NO marcar "¿Es Interés de Mora?".</li>
+                    <li>✅ <strong>Intereses de Mora:</strong> Marcar "¿Es Interés de Mora?". El valor base debe ser 0, ya que el sistema lo calcula dinámicamente.</li>
                 </ul>
             </section>
 
             <section id="ejemplos" class="section">
-                <h2>📝 Ejemplos de Configuración</h2>
+                <h2>📝 Ejemplos Educativos</h2>
                 
-                <h3>Ejemplo 1: Cuota de Administración</h3>
                 <div class="highlight">
-                    <strong>Configuración:</strong>
+                    <strong>Caso 1: Matrícula Anual</strong>
                     <ul>
-                        <li><strong>Nombre:</strong> Cuota de Administración</li>
-                        <li><strong>Valor Base:</strong> $8,000,000 (presupuesto mensual total)</li>
-                        <li><strong>Tipo:</strong> Por Grado</li>
-                        <li><strong>Módulos:</strong> Residencial, Comercial</li>
-                        <li><strong>Cuenta CxC:</strong> 1305 - Cuentas por Cobrar</li>
-                        <li><strong>Cuenta Ingreso:</strong> 4135 - Ingresos Administración</li>
-                        <li><strong>Genera Intereses:</strong> Sí (2.5% mensual)</li>
+                        <li><strong>Tipo:</strong> Único (una vez al año).</li>
+                        <li><strong>Mora:</strong> No calcula (cobro administrativo).</li>
+                        <li><strong>Vínculo:</strong> Cuenta de Ingresos por Matrícula.</li>
                     </ul>
-                    <strong>Resultado:</strong> Cada Estudiante paga según su Grado de participación.
                 </div>
 
-                <h3>Ejemplo 2: Parqueadero</h3>
                 <div class="highlight">
-                    <strong>Configuración:</strong>
+                    <strong>Caso 2: Servicio de Restaurante</strong>
                     <ul>
-                        <li><strong>Nombre:</strong> Parqueadero Visitantes</li>
-                        <li><strong>Valor Base:</strong> $45,000</li>
-                        <li><strong>Tipo:</strong> Valor Fijo</li>
-                        <li><strong>Módulos:</strong> Parqueadero</li>
-                        <li><strong>Cuenta CxC:</strong> 1305 - Cuentas por Cobrar</li>
-                        <li><strong>Cuenta Ingreso:</strong> 4140 - Ingresos Parqueaderos</li>
-                        <li><strong>Genera Intereses:</strong> Sí (2.5% mensual)</li>
+                        <li><strong>Tipo:</strong> Mensual.</li>
+                        <li><strong>Mora:</strong> Opcional.</li>
+                        <li><strong>Módulos:</strong> Asignar solo al módulo "Comedor".</li>
                     </ul>
-                    <strong>Resultado:</strong> Solo las Estudiantes con módulo "Parqueadero" pagan $45,000.
-                </div>
-
-                <h3>Ejemplo 3: Multa por Ruido</h3>
-                <div class="highlight">
-                    <strong>Configuración:</strong>
-                    <ul>
-                        <li><strong>Nombre:</strong> Multa por Ruido Excesivo</li>
-                        <li><strong>Valor Base:</strong> $100,000</li>
-                        <li><strong>Tipo:</strong> Valor Fijo</li>
-                        <li><strong>Módulos:</strong> Todos</li>
-                        <li><strong>Cuenta CxC:</strong> 1305 - Cuentas por Cobrar</li>
-                        <li><strong>Cuenta Ingreso:</strong> 4295 - Ingresos Multas</li>
-                        <li><strong>Genera Intereses:</strong> No</li>
-                    </ul>
-                    <strong>Resultado:</strong> Se aplica manualmente cuando sea necesario.
-                </div>
-
-                <h3>Ejemplo 4: Fondo de Reserva</h3>
-                <div class="highlight">
-                    <strong>Configuración:</strong>
-                    <ul>
-                        <li><strong>Nombre:</strong> Fondo de Reserva</li>
-                        <li><strong>Valor Base:</strong> $1,200,000 (10% del presupuesto)</li>
-                        <li><strong>Tipo:</strong> Por Grado</li>
-                        <li><strong>Módulos:</strong> Residencial, Comercial</li>
-                        <li><strong>Cuenta CxC:</strong> 1305 - Cuentas por Cobrar</li>
-                        <li><strong>Cuenta Ingreso:</strong> 3605 - Fondo de Reserva</li>
-                        <li><strong>Genera Intereses:</strong> Sí (2.5% mensual)</li>
-                    </ul>
-                    <strong>Resultado:</strong> Ahorro proporcional para mantenimientos futuros.
                 </div>
             </section>
 
             <section id="errores" class="section">
-                <h2>⚠️ Errores Comunes y Soluciones</h2>
-                
-                <h3>Error: "Cuenta contable no válida"</h3>
+                <h2>⚠️ Errores Comunes</h2>
                 <div class="warning">
-                    <strong>Problema:</strong> El sistema no acepta la cuenta contable seleccionada.
-                    <br><strong>Causa:</strong> La cuenta no existe en el plan de cuentas o no está activa.
-                    <br><strong>Solución:</strong>
-                    <ul>
-                        <li>Verifique que la cuenta exista en el PUC</li>
-                        <li>Confirme que la cuenta esté activa</li>
-                        <li>Use cuentas de detalle (último nivel)</li>
-                        <li>Consulte con el contador sobre las cuentas apropiadas</li>
-                    </ul>
-                </div>
-
-                <h3>Error: "Valor base inválido"</h3>
-                <div class="warning">
-                    <strong>Problema:</strong> No se puede guardar el concepto por valor inválido.
-                    <br><strong>Causa:</strong> El valor base no tiene el formato correcto.
-                    <br><strong>Solución:</strong>
-                    <ul>
-                        <li>Use solo números, sin puntos ni comas</li>
-                        <li>Para $150,000 escriba: 150000</li>
-                        <li>No use símbolos de moneda ($)</li>
-                        <li>Asegúrese de que sea un número positivo</li>
-                    </ul>
-                </div>
-
-                <h3>Error: "No se puede eliminar concepto"</h3>
-                <div class="warning">
-                    <strong>Problema:</strong> El sistema impide eliminar un concepto.
-                    <br><strong>Causa:</strong> El concepto tiene facturas o movimientos asociados.
-                    <br><strong>Solución:</strong>
-                    <ul>
-                        <li>Marque el concepto como "Inactivo" en lugar de eliminarlo</li>
-                        <li>Verifique que no tenga facturas pendientes</li>
-                        <li>Consulte el historial de uso del concepto</li>
-                        <li>Contacte al administrador si es necesario eliminar</li>
-                    </ul>
-                </div>
-
-                <h3>Problema: "Los cálculos no coinciden"</h3>
-                <div class="warning">
-                    <strong>Problema:</strong> Los valores calculados no son los esperados.
-                    <br><strong>Causa:</strong> Error en la configuración del tipo de cálculo o Grados.
-                    <br><strong>Solución:</strong>
-                    <ul>
-                        <li>Verifique el tipo de cálculo seleccionado</li>
-                        <li>Confirme que los Grados de las Estudiantes sean correctos</li>
-                        <li>Revise que el valor base esté bien configurado</li>
-                        <li>Haga pruebas con una Estudiante antes de facturar masivamente</li>
-                    </ul>
-                </div>
-
-                <h3>Problema: "Concepto no aparece en facturación"</h3>
-                <div class="warning">
-                    <strong>Problema:</strong> Un concepto no se incluye en la facturación masiva.
-                    <br><strong>Causa:</strong> El concepto está inactivo o no tiene módulos asignados.
-                    <br><strong>Solución:</strong>
-                    <ul>
-                        <li>Verifique que el concepto esté marcado como "Activo"</li>
-                        <li>Confirme que tenga módulos asignados</li>
-                        <li>Revise que las Estudiantes tengan los módulos correctos</li>
-                        <li>Verifique las fechas de vigencia si aplican</li>
-                    </ul>
-                </div>
-            </section>
-
-            <section class="section">
-                <h2>🆘 ¿Necesita Más Ayuda?</h2>
-                <div class="highlight">
-                    <p><strong>Recursos Relacionados:</strong></p>
-                    <ul>
-                        <li>📖 Manual de Estudiantes - Para configurar módulos en las Estudiantes</li>
-                        <li>📖 Manual de Facturación - Para aplicar los conceptos en la facturación</li>
-                        <li>📖 Manual de Configuración - Para gestionar módulos del sistema</li>
-                        <li>📖 Manual de Reportes - Para analizar el comportamiento de los conceptos</li>
-                    </ul>
-                </div>
-
-                <div class="info">
-                    <p><strong>Contacto de Soporte:</strong></p>
-                    <ul>
-                        <li>📧 Email: soporte@contapy2.com</li>
-                        <li>📞 Teléfono: +57 (1) 234-5678</li>
-                        <li>💬 Chat en línea: Disponible en el sistema</li>
-                        <li>🕒 Horario: Lunes a Viernes 8:00 AM - 6:00 PM</li>
-                    </ul>
+                    <strong>"El concepto no aparece al facturar"</strong>
+                    <br><strong>Causa:</strong> El concepto está marcado como "Inactivo" o no tiene ningún <strong>Módulo</strong> asociado.
+                    <br><strong>Solución:</strong> Edite el concepto y asegúrese de que esté vinculado al menos a un módulo (ej. "Todos" o "Académico").
                 </div>
             </section>
         </main>
 
         <footer class="footer">
-            <p>&copy; 2024 ContaPY2 - Sistema de Gestión Contable Integral</p>
-            <p>Manual generado automáticamente - Versión 1.0</p>
+            <p>&copy; 2024 Finaxis - Gestión Educativa Inteligente</p>
         </footer>
     </div>
 
-    <script src="assets/js/manual-navigation.js"></script>
+    <script src="../assets/js/manual-navigation.js"></script>
 </body>
 </html>
-
-

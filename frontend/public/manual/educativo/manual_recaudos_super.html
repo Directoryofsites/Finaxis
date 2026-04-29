@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Súper Manual de Gestión Educativa - Finaxis Consultoría</title>
+    <title>Súper Manual de Recaudos Educativos - Finaxis Consultoría Experta</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Outfit -->
+    <!-- Google Fonts: Outfit (Apple-style) -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Mermaid.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
@@ -14,7 +14,9 @@
         :root {
             --apple-bg: #F5F5F7;
             --apple-card: #FFFFFF;
-            --apple-accent: #4F46E5;
+            --apple-accent: #0071E3;
+            --apple-indigo: #6366F1;
+            --apple-violet: #8B5CF6;
         }
         body { 
             font-family: 'Outfit', sans-serif; 
@@ -24,171 +26,661 @@
         .glass {
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-right: 1px solid rgba(0, 0, 0, 0.1);
         }
+        .mermaid { 
+            background: #FFFFFF; 
+            border-radius: 24px; 
+            padding: 2.5rem; 
+            margin: 2.5rem 0; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.03); 
+            border: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: center;
+        }
         .markdown-body h1 { 
-            font-size: 2.5rem; 
+            font-size: 3rem; 
             font-weight: 800; 
-            background: linear-gradient(135deg, #4F46E5 0%, #9333EA 100%);
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #0071E3 0%, #6366F1 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 2rem;
+            line-height: 1.1;
         }
         .markdown-body h2 { 
-            font-size: 1.8rem; 
+            font-size: 2rem; 
             font-weight: 700; 
-            margin-top: 3rem; 
-            margin-bottom: 1.2rem;
+            color: #1D1D1F; 
+            margin-top: 3.5rem; 
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.01em;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding-bottom: 0.5rem;
+        }
+        .markdown-body h3 { 
+            font-size: 1.5rem; 
+            font-weight: 600; 
+            color: #334155; 
+            margin-top: 2.5rem; 
+            margin-bottom: 1rem;
+        }
+        .markdown-body p { 
+            font-size: 1.25rem; 
+            line-height: 1.7; 
+            color: #4B5563; 
+            margin-bottom: 1.5rem;
+        }
+        .markdown-body ul { 
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 2rem;
+        }
+        .markdown-body li {
+            font-size: 1.2rem;
+            color: #4B5563;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .markdown-body li strong {
+            color: #1D1D1F;
+        }
+        .markdown-body li::before {
+            content: "•";
+            color: var(--apple-accent);
+            font-weight: bold;
+            font-size: 1.5rem;
+            line-height: 1;
         }
         .premium-card {
             background: var(--apple-card);
-            border-radius: 24px;
+            border-radius: 32px;
+            padding: 3.5rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.04);
+            margin-bottom: 3.5rem;
+        }
+        .alert {
             padding: 2.5rem;
-            margin-bottom: 2.5rem;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.04);
-            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 20px;
+            margin: 3.0rem 0;
+        }
+        .alert-tip {
+            background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+            border-left: 8px solid #10B981;
+        }
+        .alert-important {
+            background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
+            border-left: 8px solid #F97316;
+        }
+        .sidebar-item {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .sidebar-item-active {
-            background: rgba(79, 70, 229, 0.1);
-            color: #4F46E5 !important;
+            background: #FFFFFF;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            color: var(--apple-accent) !important;
+            transform: translateX(10px);
         }
-        .chapter-content { display: none; }
-        .visible { display: block; }
+        .chapter-content {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .chapter-content.visible {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .dot-active {
+            width: 32px;
+            background: var(--apple-accent);
+        }
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 2.5rem 0;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        th {
+            background: #F9FAFB;
+            padding: 1.5rem;
+            text-align: left;
+            font-weight: 700;
+            color: #1D1D1F;
+        }
+        td {
+            padding: 1.5rem;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            color: #4B5563;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
     </style>
 </head>
-<body class="overflow-hidden">
+<body class="transition-all duration-500 overflow-hidden">
+
     <div class="flex h-screen">
-        <aside class="w-[350px] glass h-full flex flex-col z-20">
-            <div class="p-10">
-                <h1 class="text-xl font-bold">Manual Educativo</h1>
-                <p class="text-xs text-blue-500 font-bold uppercase tracking-widest mt-1">Gestión de Pensiones</p>
+        <!-- Sidebar Navigation -->
+        <aside class="w-[380px] glass h-full flex flex-col z-20 border-r border-gray-100">
+            <div class="p-12">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-100">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight text-gray-900 m-0 leading-none">Súper Manual</h1>
+                        <p class="text-[10px] font-extrabold text-blue-500 uppercase tracking-[0.2em] mt-1">Gestión Educativa Experta</p>
+                    </div>
+                </div>
             </div>
-            <nav class="flex-1 px-6 space-y-2 overflow-y-auto">
-                <button onclick="showChapter(1)" id="btn-cap-1" class="sidebar-item w-full text-left px-6 py-3 rounded-xl font-bold text-gray-500 sidebar-item-active">1. Panorama General</button>
-                <button onclick="showChapter(2)" id="btn-cap-2" class="sidebar-item w-full text-left px-6 py-3 rounded-xl font-bold text-gray-500">2. Estructura Académica</button>
-                <button onclick="showChapter(3)" id="btn-cap-3" class="sidebar-item w-full text-left px-6 py-3 rounded-xl font-bold text-gray-500">3. Categorías de Cobro</button>
-                <button onclick="showChapter(4)" id="btn-cap-4" class="sidebar-item w-full text-left px-6 py-3 rounded-xl font-bold text-gray-500">4. Facturación Masiva</button>
-                <button onclick="showChapter(5)" id="btn-cap-5" class="sidebar-item w-full text-left px-6 py-3 rounded-xl font-bold text-gray-500">5. Recaudos y Becas</button>
-                <button onclick="showChapter(6)" id="btn-cap-6" class="sidebar-item w-full text-left px-6 py-3 rounded-xl font-bold text-gray-500">6. Cobranza Estratégica</button>
+
+            <nav class="flex-1 px-8 space-y-2 overflow-y-auto pb-10">
+                <button onclick="showChapter(1)" id="btn-cap-1" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group sidebar-item-active">
+                    <span>1. Panorama Educativo</span>
+                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </button>
+                <button onclick="showChapter(2)" id="btn-cap-2" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
+                    <span>2. Estructura Académica</span>
+                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </button>
+                <button onclick="showChapter(3)" id="btn-cap-3" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
+                    <span>3. Segmentación de Cobros</span>
+                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </button>
+                <button onclick="showChapter(4)" id="btn-cap-4" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
+                    <span>4. Ciclo de Facturación</span>
+                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </button>
+                <button onclick="showChapter(5)" id="btn-cap-5" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
+                    <span>5. Ficha del Estudiante</span>
+                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </button>
+                <button onclick="showChapter(6)" id="btn-cap-6" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
+                    <span>6. Módulos Especiales</span>
+                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </button>
+                <button onclick="showChapter(7)" id="btn-cap-7" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
+                    <span>7. Inteligencia de Recruce</span>
+                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </button>
+                <button onclick="showChapter(8)" id="btn-cap-8" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
+                    <span>8. Gobernanza de Fondos</span>
+                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </button>
+                <button onclick="showChapter(9)" id="btn-cap-9" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
+                    <span>9. Proyectos Académicos</span>
+                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </button>
+                <button onclick="showChapter(10)" id="btn-cap-10" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
+                    <span>10. Cobranza Táctica</span>
+                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </button>
+                <button onclick="showChapter(11)" id="btn-cap-11" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
+                    <span>11. Recaudo Masivo</span>
+                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </button>
             </nav>
+
+            <div class="p-12 border-t border-gray-100">
+                <div class="flex items-center gap-2 text-blue-600 font-bold text-[11px] tracking-widest uppercase">
+                    <div class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></div>
+                    Sincronizado Académico • 2026.7
+                </div>
+            </div>
         </aside>
 
-        <main id="contentArea" class="flex-1 overflow-y-auto p-20 markdown-body">
-            <!-- Capítulo 1 -->
-            <section id="cap-1" class="chapter-content visible">
-                <h1>Capítulo 1: La Filosofía de la Gestión Educativa</h1>
-                <div class="premium-card">
-                    <h2>Bienvenido al Modelo Académico</h2>
-                    <p>En una institución educativa, el recaudo no es una transacción inmobiliaria, es el motor de la pedagogía. Este sistema ha sido transformado para que usted gestione <strong>Estudiantes, Acudientes y Pensiones</strong> con la misma precisión que una gran corporación, pero con la calidez que su comunidad requiere.</p>
-                    
-                    <h3>Diferenciales para Colegios:</h3>
-                    <ul>
-                        <li><strong>Gestión de Acudientes</strong>: El sistema vincula al alumno con su responsable legal (Tercero) para una facturación transparente.</li>
-                        <li><strong>Segmentación por Grados</strong>: Cree reglas de cobro para 1°, 2°, 11° o cualquier nivel de forma independiente.</li>
-                        <li><strong>Servicios Extra</strong>: Administre rutas, restaurante y actividades extracurriculares sin mezclar los saldos académicos.</li>
-                    </ul>
-                </div>
-            </section>
-
-            <!-- Capítulo 2 -->
-            <section id="cap-2" class="chapter-content">
-                <h1>Capítulo 2: Estructura Académica (Grados y Alumnos)</h1>
-                <div class="premium-card">
-                    <h2>Organización del Plantel</h2>
-                    <p>El sistema organiza la información siguiendo el organigrama escolar. El <strong>Grado</strong> es el contenedor físico y el <strong>Estudiante</strong> es el sujeto financiero.</p>
-                    <div class="mermaid">
-                        graph TD
-                            A[Colegio] --> B[Bachillerato]
-                            A --> C[Primaria]
-                            B --> D[Grado 10-01]
-                            D --> E[Juan Pérez]
-                            D --> F[Maria Ruiz]
-                    </div>
-                </div>
-            </section>
-
-            <!-- Capítulo 3 -->
-            <section id="cap-3" class="chapter-content">
-                <h1>Capítulo 3: Categorías de Cobro y Personalización</h1>
-                <div class="premium-card">
-                    <h2>Segmentación Inteligente</h2>
-                    <p>Un estudiante puede estar en el módulo de "Pensión Regular", pero también en el de "Equipo de Fútbol" y "Ruta Norte". El sistema permite que un solo alumno pertenezca a múltiples categorías de cobro simultáneamente.</p>
-                    <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100">
-                        <p class="font-bold text-blue-900">Ejemplo:</p>
-                        <p class="text-blue-800">El Alumno 101 paga pensión, pero solo si usa el restaurante se le genera ese cargo adicional automáticamente cada mes.</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Capítulos 4 y 5 simplificados para esta demo -->
-            <section id="cap-4" class="chapter-content">
-                <h1>Capítulo 4: Facturación Masiva de Pensiones</h1>
-                <div class="premium-card">
-                    <p>Emita 500 o 1000 facturas en un solo clic. El sistema toma los conceptos de cada grado y genera el documento contable para cada acudiente.</p>
-                </div>
-            </section>
-
-            <section id="cap-5" class="chapter-content">
-                <h1>Capítulo 5: Gestión de Recaudos y Aplicación de Becas</h1>
-                <div class="premium-card">
-                    <p>Cuando un padre paga en el banco, el sistema cruza la referencia de pago y aplica el dinero a los conceptos adeudados siguiendo su orden de prioridad (ej. primero seguros, luego pensión).</p>
-                </div>
-            </section>
-
-            <!-- Capítulo 6 -->
-            <section id="cap-6" class="chapter-content">
-                <h1>Capítulo 6: Cobranza Estratégica (Mora y FIFO)</h1>
+        <!-- Content Area -->
+        <main id="contentArea" class="flex-1 overflow-y-auto bg-[#FBFBFD] scroll-smooth">
+            <div class="max-w-4xl mx-auto px-16 py-24 markdown-body">
                 
-                <div class="premium-card">
-                    <h2>1. El Motor de Inteligencia de Cartera</h2>
-                    <p>En el sector educativo, la mora puede acumularse por pensiones, rutas o matrículas. Nuestra plataforma implementa una estrategia de <strong>"Loop de Saneamiento"</strong> que combina el Reporte de Edades con el motor de pagos FIFO.</p>
+                <!-- Capítulo 1 -->
+                <section id="cap-1" class="chapter-content visible">
+                    <h1>Capítulo 1: Panorama General del Modelo Educativo</h1>
+                    
+                    <div class="premium-card">
+                        <h2>1. La Filosofía del Sistema: "Gestión Académica Ágil"</h2>
+                        <p>En el sector educativo, el desafío financiero no es solo cobrar una pensión, sino <strong>gestionar la relación económica con los acudientes</strong> de forma transparente y automatizada. La plataforma Finaxis ha sido adaptada para entender la dinámica de colegios, institutos y universidades.</p>
+                        
+                        <p>Nuestro enfoque se basa en la <strong>Consultoría de Gestión</strong>, donde el software modela la realidad de su institución: desde la matrícula inicial hasta los derechos de grado finales.</p>
+                        
+                        <h3>¿Qué resolvemos?</h3>
+                        <ul>
+                            <li><strong>Metamorfosis Sectorial</strong>: El sistema habla su lenguaje. Usamos términos como <em>Estudiantes</em>, <em>Acudientes</em>, <em>Grados</em> y <em>Pensiones</em> para que la curva de aprendizaje sea nula.</li>
+                            <li><strong>Segmentación por Grados</strong>: Facture pensiones diferenciadas por nivel académico (Preescolar, Primaria, Bachillerato) en un solo proceso masivo.</li>
+                            <li><strong>Cobros Localizados</strong>: Gestione servicios opcionales como Rutas de Transporte o Alimentación solo para los estudiantes que realmente los utilizan.</li>
+                            <li><strong>Integridad de Cartera</strong>: Cruce automático de anticipos de matrícula con deudas vigentes, garantizando que el saldo del padre de familia sea siempre exacto.</li>
+                        </ul>
+                    </div>
+
+                    <h2>2. La Arquitectura Estratégica del Recaudo</h2>
+                    <p>Para lograr precisión quirúrgica, el sistema orquestas los datos en una jerarquía lógica que permite al Rector y al Contador tener control total.</p>
                     
                     <div class="mt-12 mb-16 p-12 bg-white rounded-[40px] border border-gray-100 shadow-sm flex justify-center">
                         <div class="mermaid w-full max-w-2xl">
                         graph TD
-                            A[Reporte de Edades] -->|Identificación| B(Mora > 90 días)
-                            B -->|Negociación| C{Acuerdo de Pago}
-                            C -->|Abono Dirigido| D[Motor FIFO]
-                            D -->|Resultado| E[Saneamiento de Cartera Vieja]
+                            subgraph "CONFIGURACIÓN MAESTRA"
+                            A[Conceptos: Pensión, Matrícula] -->|Reglas| B(Módulos de Servicio)
+                            end
+                            subgraph "ESTRUCTURA FÍSICA/ACADÉMICA"
+                            D[Grados / Niveles] -->|Ubicación Académica| C{Estudiantes}
+                            end
+                            B -->|Agrupación Lógica| C
+                            C -->|Motor Finaxis| E[Facturación Masiva]
                             
-                            style A fill:#FFF,stroke:#000,stroke-width:2px
-                            style B fill:#FEE2E2,stroke:#EF4444,stroke-width:2px
-                            style E fill:#ECFDF5,stroke:#10B981,stroke-width:3px
+                            style A fill:#FFF,stroke:#000,stroke-width:2px,color:#000
+                            style B fill:#FFF,stroke:#000,stroke-width:2px,color:#000
+                            style C fill:#FFF,stroke:#000,stroke-width:2px,color:#000
+                            style D fill:#FFF,stroke:#000,stroke-width:2px,color:#000
+                            style E fill:#FFF,stroke:#000,stroke-width:2px,color:#000
                         </div>
                     </div>
-                </div>
 
-                <div class="premium-card">
-                    <h2>2. Operativa del Reporte de Edades (Aging Report)</h2>
-                    <p>Acceda desde <strong>Reportes > Cartera por Edades</strong>. Este informe permite una gestión táctica con los padres de familia:</p>
-                    <ul>
-                        <li><strong>Tooltips de Concepto:</strong> Al pasar el cursor, el sistema desglosa si la deuda es de Pensión, Restaurante o Seguros.</li>
-                        <li><strong>Discriminación por Período:</strong> Identifica exactamente qué mes dejó de pagar el acudiente.</li>
-                    </ul>
-                </div>
+                    <div class="premium-card">
+                        <h3>Los Cuatro Pilares del Sistema</h3>
+                        <ul>
+                            <li><strong>1. Estudiantes (El Núcleo)</strong>: Cada alumno es una unidad contable. Posee un código, un grado y un acudiente responsable.</li>
+                            <li><strong>2. Grados / Niveles (La Estructura)</strong>: Agrupador que permite gestionar la facturación por grupos (ej: Todos los de Grado 5°).</li>
+                            <li><strong>3. Módulos de Servicio (La Inteligencia)</strong>: Permite que un estudiante pertenezca a grupos de servicio (ej: Módulo Almuerzo) de forma independiente a su grado.</li>
+                            <li><strong>4. Conceptos (La Regla)</strong>: Define qué se cobra, si genera intereses de mora y a qué cuenta contable apunta el ingreso.</li>
+                        </ul>
+                    </div>
+                </section>
 
-                <div class="alert alert-tip bg-yellow-50 p-6 rounded-2xl border border-yellow-100 mb-8">
-                    <h4 class="font-bold mb-2">💡 La Regla de Oro: Lógica FIFO (First-In, First-Out)</h4>
-                    <p class="m-0 text-sm">El sistema siempre aplicará los pagos a la obligación <strong>más antigua</strong> del concepto seleccionado. Esto garantiza que la mora se desplace cronológicamente hacia el presente.</p>
-                </div>
+                <!-- Capítulo 2 -->
+                <section id="cap-2" class="chapter-content">
+                    <h1>Capítulo 2: Estructura Académica (Estudiantes y Grados)</h1>
+                    
+                    <div class="premium-card">
+                        <h2>1. El Estudiante: Unidad de Cartera Autónoma</h2>
+                        <p>En Finaxis, el <strong>Estudiante</strong> no es solo un nombre en una lista; es el eje de una operación financiera. Cada alumno tiene su propia "hoja de vida contable".</p>
+                        
+                        <h3>Ficha del Estudiante:</h3>
+                        <ul>
+                            <li><strong>Código Estudiantil</strong>: Identificador único (Matrícula o ID).</li>
+                            <li><strong>Vínculo al Acudiente</strong>: El responsable legal del pago. El sistema permite consolidar deudas si un acudiente tiene varios hijos en el colegio.</li>
+                            <li><strong>Grado Asignado</strong>: Determina la base de cobro para pensiones y derechos académicos.</li>
+                        </ul>
+                    </div>
 
-                <div class="premium-card border-2 border-indigo-50 shadow-xl mt-12">
-                    <h2 class="text-gray-900">3. Soporte Documental para el Acudiente</h2>
-                    <p class="text-gray-600">Desde el mismo reporte, puede generar la <strong>Ficha Individual de Cobro</strong>. Este documento es vital para reuniones con padres de familia, ya que explica de forma irrefutable la antigüedad de sus compromisos financieros.</p>
+                    <h2>2. Gestión de Grados: Organización de la Facturación</h2>
+                    <p>El <strong>Grado</strong> es el agrupador físico/académico. Facilita la aplicación de cargos que son propios de un nivel específico.</p>
+                    
+                    <div class="alert alert-tip">
+                        <h4 class="font-bold mb-2">Caso de Éxito: Derechos de Grado</h4>
+                        <p class="m-0">En Noviembre, solo los estudiantes de "Undécimo" deben pagar derechos de grado. El administrador selecciona el Grado 11, aplica el concepto y el sistema factura a los 80 alumnos en un solo clic.</p>
+                    </div>
+
+                    <div class="mermaid">
+                    graph LR
+                        subgraph "Niveles Académicos"
+                        G1[Grado 1°]
+                        G2[Grado 2°]
+                        end
+                        G1 --- U1[Alumno A]
+                        G1 --- U2[Alumno B]
+                        G2 --- U3[Alumno C]
+                        G2 --- U4[Alumno D]
+                        
+                        style G1 fill:#F0F9FF,stroke:#0071E3,color:#1e1b4b
+                        style G2 fill:#F0F9FF,stroke:#0071E3,color:#1e1b4b
+                    </div>
+                </section>
+
+                <!-- Capítulo 3 -->
+                <section id="cap-3" class="chapter-content">
+                    <h1>Capítulo 3: Lógica de Segmentación (Módulos y Conceptos)</h1>
+                    
+                    <div class="premium-card">
+                        <h2>1. Módulos de Servicio: El Cerebro de los Extras</h2>
+                        <p>Mientras que los Grados agrupan por nivel, los <strong>Módulos</strong> agrupan por <strong>Servicios Consumidos</strong>. Esto permite que el sistema sepa quién toma ruta y quién no, independientemente de su salón.</p>
+                        
+                        <h3>Pertenencia Múltiple</h3>
+                        <p>Un estudiante de <strong>Grado 4°</strong> puede pertenecer al <em>Módulo Transporte</em>, al <em>Módulo Almuerzo</em> y al <em>Módulo Club de Fútbol</em> simultáneamente. El sistema sumará todos sus conceptos en una sola factura mensual.</p>
+                    </div>
+
+                    <h2>2. Conceptos de Cobro: Las Reglas del Juego</h2>
+                    <p>El <strong>Concepto</strong> es el puente entre la necesidad educativa y el registro contable.</p>
+                    
+                    <div class="mermaid">
+                    graph TD
+                        C1(Pensión Mensual) --> M1{Módulo Académico}
+                        C2(Ruta Escolar) --> M2{Módulo Transporte}
+                        M1 --> U1[Estudiante X]
+                        M2 --> U1
+                        style M1 fill:#FEF9C3,stroke:#CA8A04,color:#854D0E
+                        style M2 fill:#FEF9C3,stroke:#CA8A04,color:#854D0E
+                    </div>
+
+                    <div class="premium-card">
+                        <h3>Anatomía de un Concepto Educativo:</h3>
+                        <ul>
+                            <li><strong>Valor Base</strong>: El monto a cobrar mensualmente.</li>
+                            <li><strong>Smart Check (Mora)</strong>: Marque <em>"Calcula Mora"</em> para Pensiones, pero déjelo apagado para "Seguro Estudiantil" o "Carnetización".</li>
+                            <li><strong>Check "¿Es Interés de Mora?"</strong>: Este es el concepto "recipiente" donde el sistema guardará los cálculos de intereses. Déjelo con valor 0.</li>
+                            <li><strong>Asociación a Módulos</strong>: El concepto se vincula al Módulo, no al estudiante individual.</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Capítulo 4 -->
+                <section id="cap-4" class="chapter-content">
+                    <h1>Capítulo 4: El Ciclo de Facturación Maestra</h1>
+                    
+                    <div class="premium-card">
+                        <h2>1. Facturación Masiva de Pensiones</h2>
+                        <p>Al llegar el día de facturación (ej: día 1 de cada mes), el motor de Finaxis ejecuta 5 pasos críticos:</p>
+                        <ol>
+                            <li><strong>Filtra</strong>: Identifica qué conceptos están activos para el mes.</li>
+                            <li><strong>Localiza</strong>: Busca los estudiantes vinculados a los módulos de esos conceptos.</li>
+                            <li><strong>Calcula</strong>: Aplica valores fijos o descuentos por becas si existen.</li>
+                            <li><strong>Cruza</strong>: Aplica automáticamente saldos a favor (Anticipos de matrícula).</li>
+                            <li><strong>Sella</strong>: Genera el asiento contable y la factura digital para el acudiente.</li>
+                        </ol>
+                    </div>
+
+                    <div class="alert alert-important">
+                        <h4 class="font-bold mb-2">Reliquidación Inteligente</h4>
+                        <p class="m-0">Si olvidó facturar el transporte a un estudiante, no necesita borrar todo el mes. Use el modo <strong>"Delta" (Completar)</strong>. El sistema identificará que ese estudiante no tiene factura de transporte para ese mes y generará solo el documento faltante.</p>
+                    </div>
+                </section>
+
+                <!-- Capítulo 5 -->
+                <section id="cap-5" class="chapter-content">
+                    <h1>Capítulo 5: Ciclo de Vida del Estudiante</h1>
+                    
+                    <div class="premium-card">
+                        <h2>1. Ingreso y Matrícula</h2>
+                        <p>El registro del estudiante es el punto de partida de la confianza financiera. Asegúrese de completar:</p>
+                        <ul>
+                            <li><strong>Grado y Sección</strong>: Para la organización académica.</li>
+                            <li><strong>Datos del Acudiente</strong>: Para la gestión de cobranza y envío de correos.</li>
+                            <li><strong>Módulos Opcionales</strong>: Marque si el estudiante usará ruta, comedor o extracurriculares.</li>
+                        </ul>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 my-8">
+                        <div class="p-8 bg-blue-50 rounded-3xl border-l-8 border-blue-600">
+                            <h4 class="font-bold text-blue-900 mb-2 uppercase text-xs tracking-widest">Becas y Convenios</h4>
+                            <p class="text-sm">Asigne descuentos porcentuales directos en la ficha del estudiante. El sistema los aplicará automáticamente cada mes en la pensión.</p>
+                        </div>
+                        <div class="p-8 bg-indigo-50 rounded-3xl border-l-8 border-indigo-600">
+                            <h4 class="font-bold text-indigo-900 mb-2 uppercase text-xs tracking-widest">Alertas Médicas</h4>
+                            <p class="text-sm">Registro de EPS y RH. Aunque es un dato administrativo, Finaxis lo mantiene centralizado para emergencias en la ruta escolar.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Capítulo 6 -->
+                <section id="cap-6" class="chapter-content">
+                    <h1>Capítulo 6: Módulos Especiales (Cobros Quirúrgicos)</h1>
+                    
+                    <div class="premium-card">
+                        <h2>1. Restricción por Nivel Académico</h2>
+                        <p>¿Necesita cobrar una salida pedagógica solo a los estudiantes de Bachillerato? Finaxis le permite crear "islas financieras".</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-10">
+                            <div class="p-6 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                                <span class="text-blue-500 font-black text-2xl">01</span>
+                                <h4 class="font-bold mt-2">Módulo por Grado</h4>
+                                <p class="text-xs text-gray-500 mt-2">Cree un módulo (ej: Salida Museos) y vincúlelo solo a los grados 6° a 11°.</p>
+                            </div>
+                            <div class="p-6 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                                <span class="text-purple-500 font-black text-2xl">02</span>
+                                <h4 class="font-bold mt-2">Restricción Lógica</h4>
+                                <p class="text-xs text-gray-500 mt-2">En el concepto, active la restricción para que solo los estudiantes de esos grados sean facturados.</p>
+                            </div>
+                            <div class="p-6 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                                <span class="text-green-500 font-black text-2xl">03</span>
+                                <h4 class="font-bold mt-2">Facturación Auto</h4>
+                                <p class="text-xs text-gray-500 mt-2">El motor ignorará a Primaria y Preescolar automáticamente, evitando cobros erróneos.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Capítulo 7 -->
+                <section id="cap-7" class="chapter-content">
+                    <h1>Capítulo 7: Inteligencia de Recruce y Prelación</h1>
+                    
+                    <div class="premium-card">
+                        <h2>1. El Cerebro de Recruce Educativo</h2>
+                        <p>Los pagos en un colegio suelen ser parciales o cubrir meses anteriores. Finaxis garantiza que el dinero del acudiente cubra primero lo más crítico.</p>
+                    </div>
+
+                    <div class="alert alert-important">
+                        <h4 class="font-bold mb-2">Jerarquía de Cobro (Orden de Aplicación)</h4>
+                        <p class="m-0 text-sm">Configure sus conceptos con un número de orden. Recomendamos:</p>
+                        <ol class="text-xs mt-2 space-y-1">
+                            <li><strong>1. Intereses de Mora:</strong> Para que la deuda no crezca indefinidamente.</li>
+                            <li><strong>2. Matrícula / Otros:</strong> Cargos administrativos.</li>
+                            <li><strong>3. Pensión Mensual:</strong> El capital base de la institución.</li>
+                        </ol>
+                    </div>
+
+                    <div class="mermaid">
+                    sequenceDiagram
+                        participant Ene as Mes Enero
+                        participant Feb as Mes Febrero
+                        participant Sis as Motor Finaxis
+                        
+                        Ene->>Sis: Factura Pensión $500.000
+                        Feb->>Sis: Acudiente paga $200.000
+                        Note over Sis: El pago cubre parte de Enero (Mantenimiento de Cartera)
+                        
+                        Ene->>Sis: El Colegio inserta cobro de Seguro Estudiantil (Retroactivo)
+                        Sis->>Sis: TRIGGER RECRUCE
+                        Note over Sis: El sistema re-distribuye los $200.000 según la nueva prioridad.
+                    </div>
+                </section>
+
+                <!-- Capítulo 8 -->
+                <section id="cap-8" class="chapter-content">
+                    <h1>Capítulo 8: Gobernanza de Fondos y Abonos Dirigidos</h1>
+                    
+                    <div class="premium-card">
+                        <h2>1. El Fin de la "Bolsa Común"</h2>
+                        <p>En la gestión educativa, es vital separar el dinero de Pensiones del de Rutas o Comedor, ya que suelen ser contratistas diferentes.</p>
+                        
+                        <div class="mt-10 flex flex-col items-center bg-white p-12 rounded-[40px] border border-gray-100 shadow-sm">
+                            <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.3em] mb-8">Flujo de Abono Dirigido</h4>
+                            <div class="mermaid w-full max-w-3xl">
+                            graph TD
+                                R[Acudiente paga $300.000] --> D{¿Qué desea pagar?}
+                                D -->|Opción A| A[100% a la Pensión]
+                                D -->|Opción B| B[Cubre exclusivamente la Ruta]
+                                D -->|Opción C| C[Prioridad FIFO (Automático)]
+                                
+                                style R fill:#FFF,stroke:#000,stroke-width:2px
+                                style B fill:#ECFDF5,stroke:#10B981,color:#064E3B
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-tip">
+                        <h4 class="font-bold mb-2">🚀 Tip de Productividad: Cuenta Recaudo Predeterminada</h4>
+                        <p class="m-0 text-sm">En la configuración, asigne una <strong>Cuenta de Caja/Ventanilla</strong>. Al recibir un pago manual en la oficina del colegio, el sistema ya tendrá seleccionada la cuenta, ahorrando cientos de clics al mes al cajero.</p>
+                    </div>
+                </section>
+
+                <!-- Capítulo 9 -->
+                <section id="cap-9" class="chapter-content">
+                    <h1>Capítulo 9: Proyectos Académicos Especiales</h1>
+                    
+                    <div class="premium-card">
+                        <h2>Guía para Recaudos de Destinación Específica</h2>
+                        <p>Si su institución necesita recoger fondos para un proyecto (ej: Laboratorio de Ciencias), siga este flujo maestro:</p>
+                        
+                        <div class="space-y-6 mt-8">
+                            <div class="p-6 bg-gray-50 rounded-2xl">
+                                <h4 class="font-bold text-gray-900">1. Crear Módulo "Proyecto Lab"</h4>
+                                <p class="text-xs text-gray-500">Asigne a este módulo solo los grados que participarán (ej: 9° a 11°).</p>
+                            </div>
+                            <div class="p-6 bg-gray-50 rounded-2xl">
+                                <h4 class="font-bold text-gray-900">2. Configurar Concepto "Cuota Laboratorio"</h4>
+                                <p class="text-xs text-gray-500">Vincúlelo a una cuenta contable de pasivo o ingreso especial para auditoría.</p>
+                            </div>
+                            <div class="p-6 bg-blue-50 rounded-2xl border border-blue-100">
+                                <h4 class="font-bold text-blue-900">3. Informe de Avance</h4>
+                                <p class="text-xs text-blue-700">En <strong>Reportes > Movimientos por Concepto</strong>, elija "Cuota Laboratorio". Verá en tiempo real quién ha pagado y cuánto falta por recaudar para el proyecto.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Capítulo 10 -->
+                <section id="cap-10" class="chapter-content">
+                    <h1>Capítulo 10: Cobranza Táctica (Saneamiento de Cartera)</h1>
+                    
+                    <div class="premium-card">
+                        <h2>1. Reporte de Edades (Mora > 90 días)</h2>
+                        <p>Para recuperar cartera vencida, el <strong>Aging Report</strong> es su mejor aliado. Permite ver la deuda segmentada por antigüedad:</p>
+                        <ul>
+                            <li><strong>30-60 días:</strong> Alerta preventiva (Correo recordatorio).</li>
+                            <li><strong>60-90 días:</strong> Cobro persuasivo (Llamada al acudiente).</li>
+                            <li><strong>+90 días:</strong> Proceso de cartera o acuerdo de pago.</li>
+                        </ul>
+                    </div>
+
+                    <div class="premium-card border-2 border-indigo-50 shadow-xl">
+                        <h3>Ficha Individual de Cobro</h3>
+                        <p class="text-sm">Genere el PDF de estado de cuenta detallado por edades. Esto le da al acudiente una visión clara de qué meses debe y facilita la firma de compromisos de pago.</p>
+                    </div>
+                </section>
+
+                <!-- Capítulo 11 -->
+                <section id="cap-11" class="chapter-content">
+                    <h1>Capítulo 11: Conciliación Bancaria Masiva (Asobancaria)</h1>
+                    
+                    <div class="premium-card">
+                        <h2>1. El Motor de Recaudo Masivo</h2>
+                        <p>Elimine la digitación manual. Finaxis lee los archivos de su banco (Bancolombia, Davivienda, etc.) y aplica los pagos a 1000 estudiantes en segundos.</p>
+                        
+                        <div class="alert alert-tip">
+                            <h4 class="font-bold mb-2">Semáforo de Seguridad</h4>
+                            <p class="m-0 text-sm">Antes de integrar, el sistema muestra una tabla de previsualización. Si una referencia no coincide, el sistema lo marca en <strong>Rojo</strong>, permitiéndole corregir la unidad antes de afectar la contabilidad.</p>
+                        </div>
+                    </div>
+
+                    <div class="premium-card border-2 border-blue-100 shadow-2xl">
+                        <h2>2. Integración Selectiva: Control Total</h2>
+                        <p>Usted decide qué integrar. Si hay un pago dudoso en el archivo bancario, simplemente desmarque el <strong>Checkbox</strong> de ese registro. El sistema integrará solo los pagos confirmados, manteniendo su contabilidad impecable.</p>
+                    </div>
+
+                    <div class="premium-card">
+                        <h2>3. Lógica de Anticipos (Matrículas por Adelantado)</h2>
+                        <div class="mermaid">
+                        graph TD
+                            P[Acudiente paga $1.000.000] --> D{¿Debe Pensión?}
+                            D -->|Sí, debe $600.000| A[Cubre Deuda Pendiente]
+                            A --> B[Excedente $400.000]
+                            B --> C[Mueve a Anticipos - Cuenta 2805]
+                            D -->|No debe nada| E[Mueve 100% a Anticipos]
+                            
+                            style C fill:#ECFDF5,stroke:#10B981,color:#064E3B
+                            style E fill:#ECFDF5,stroke:#10B981,color:#064E3B
+                        </div>
+                    </div>
+                </section>
+
+                <div class="mt-20 pt-10 border-t border-gray-100 flex justify-between items-center bg-white/50 p-8 rounded-[40px]">
+                    <button id="prevBtn" onclick="changeStep(-1)" class="px-8 py-4 bg-white border border-gray-100 rounded-2xl text-md font-bold text-gray-300 transition-all opacity-50 cursor-not-allowed">Anterior</button>
+                    
+                    <div id="stepDots" class="flex gap-3">
+                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 dot-active cursor-pointer" onclick="showChapter(1)"></div>
+                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(2)"></div>
+                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(3)"></div>
+                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(4)"></div>
+                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(5)"></div>
+                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(6)"></div>
+                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(7)"></div>
+                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(8)"></div>
+                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(9)"></div>
+                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(10)"></div>
+                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(11)"></div>
+                    </div>
+
+                    <button id="nextBtn" onclick="changeStep(1)" class="px-10 py-4 bg-blue-600 text-white rounded-2xl text-md font-bold hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all">Siguiente</button>
                 </div>
-            </section>
+            </div>
         </main>
     </div>
 
     <script>
+        // Mermaid Configuration
+        mermaid.initialize({ 
+            startOnLoad: false, 
+            theme: 'neutral', 
+            fontFamily: 'Outfit',
+            fontSize: 16,
+            flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' }
+        });
+
+        let currentChapter = 1;
+        const TOTAL_CHAPTERS = 11;
+
         function showChapter(n) {
-            document.querySelectorAll('.chapter-content').forEach(c => c.classList.remove('visible'));
-            document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('sidebar-item-active'));
-            document.getElementById('cap-' + n).classList.add('visible');
-            document.getElementById('btn-cap-' + n).classList.add('sidebar-item-active');
-            document.getElementById('contentArea').scrollTop = 0;
+            document.querySelectorAll('.chapter-content').forEach(el => {
+                el.classList.remove('visible');
+            });
+            
+            setTimeout(() => {
+                const target = document.getElementById(`cap-${n}`);
+                if (target) {
+                    target.classList.add('visible');
+                    const diagrams = target.querySelectorAll('.mermaid');
+                    if (diagrams.length > 0) {
+                        mermaid.init(undefined, diagrams);
+                    }
+                }
+            }, 300);
+            
+            document.querySelectorAll('.sidebar-item').forEach((el, index) => {
+                if (index === n-1) {
+                    el.classList.add('sidebar-item-active');
+                    el.classList.replace('text-gray-400', 'text-gray-900');
+                } else {
+                    el.classList.remove('sidebar-item-active');
+                    el.classList.add('text-gray-400');
+                }
+            });
+
+            document.querySelectorAll('#stepDots .dot').forEach((el, index) => {
+                if (index === n-1) {
+                    el.classList.add('dot-active');
+                } else {
+                    el.classList.remove('dot-active');
+                }
+            });
+
+            const prev = document.getElementById('prevBtn');
+            const next = document.getElementById('nextBtn');
+            
+            prev.className = `px-8 py-4 bg-white border border-gray-200 rounded-2xl text-md font-bold transition-all ${n === 1 ? 'opacity-30 cursor-not-allowed text-gray-200' : 'hover:bg-gray-50 text-gray-700 shadow-sm'}`;
+            next.innerText = n === TOTAL_CHAPTERS ? 'Finalizar' : 'Siguiente';
+            next.className = `px-10 py-4 ${n === TOTAL_CHAPTERS ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-2xl text-md font-bold shadow-xl shadow-blue-100 transition-all`;
+            
+            currentChapter = n;
+            document.getElementById('contentArea').scrollTo({ top: 0, behavior: 'smooth' });
         }
-        mermaid.initialize({ startOnLoad: true });
+
+        function changeStep(dir) {
+            let next = currentChapter + dir;
+            if (next >= 1 && next <= TOTAL_CHAPTERS) {
+                showChapter(next);
+            }
+        }
+
+        window.onload = () => showChapter(1);
     </script>
 </body>
 </html>

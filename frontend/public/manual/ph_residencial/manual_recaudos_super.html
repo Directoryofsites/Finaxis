@@ -366,7 +366,8 @@
                         <h3>Anatomía de un Concepto Maestro:</h3>
                         <ul>
                             <li><strong>Parámetro de Cálculo</strong>: ¿Es por Coeficiente o es un Valor Fijo?</li>
-                            <li><strong>Identidad Contable</strong>: Cada concepto debe apuntar a una cuenta de ingreso del PUC para que el balance se alimente solo.</li>
+                            <li><strong>Identidad Contable</strong>: Ahora simplificada. Solo requiere la <strong>Cuenta de Ingreso</strong>. El sistema se encarga del resto.</li>
+                            <li><strong>Smart Check (Intereses de Mora)</strong>: Si marca el check <em>"¿Es Interés de Mora?"</em>, el concepto se vuelve inteligente. El sistema usará automáticamente las cuentas de mora globales, ahorrándole configuraciones manuales por cada concepto.</li>
                             <li><strong>Asociación Lógica</strong>: El concepto NO se le asigna a una unidad, se le asigna a un Módulo. Esto permite facturar a 500 unidades con una sola regla.</li>
                         </ul>
                     </div>
@@ -649,6 +650,11 @@
                     <div class="alert alert-important">
                         <h4 class="font-bold mb-4 uppercase tracking-[0.2em] text-xs">Anatomía de la "Magia" Financiera</h4>
                         <p class="m-0 italic leading-relaxed">"Si usted inserta una deuda en Enero, pero ya estamos en Mayo, el sistema 'manda a llamar' a los pagos de Febrero en adelante para que vengan a rescatar el saldo de Enero. Esto no es un error, es <strong>Integridad de Cartera Real</strong>."</p>
+                    </div>
+
+                    <div class="alert alert-tip">
+                        <h4 class="font-bold mb-2">🚀 Tip de Productividad: Pre-llenado de Cuentas</h4>
+                        <p class="m-0 text-sm">Al registrar un pago manual en la oficina, el sistema pre-seleccionará automáticamente la <strong>Cuenta de Caja</strong> configurada en los parámetros globales. Esto reduce el tiempo de registro en un 40%, permitiendo una operación fluida y sin errores de selección de cuenta.</p>
                     </div>
 
                     <h2>2. Caso de Éxito: La Multa Retroactiva ($800.000)</h2>
@@ -964,6 +970,11 @@
                         <h2 class="text-gray-900">4. Soporte Documental para el Residente</h2>
                         <p class="text-gray-600">Desde el mismo reporte, puede generar la <strong>Ficha Individual de Cobro</strong>. Este PDF no solo muestra el saldo, sino que le explica al residente la composición de su mora por edades, facilitando el recaudo emocional y legal.</p>
                     </div>
+
+                    <div class="alert alert-tip bg-blue-50 border-blue-200">
+                        <h4 class="font-bold text-blue-800 mb-2">Productivity Tip: Configuración de Cuenta Predeterminada</h4>
+                        <p class="text-blue-900 m-0">Evite seleccionar la cuenta contable en cada pago manual. En <strong>Parámetros Globales > PH > Configuración</strong>, defina la "Cuenta Recaudo (Manual/Caja)". Finaxis la pre-cargará automáticamente en cada nuevo abono, permitiéndole registrar pagos en tiempo récord.</p>
+                    </div>
                 </section>
 
                 <!-- Capítulo 11 -->
@@ -981,6 +992,26 @@
                     <div class="alert alert-tip">
                         <h4 class="font-bold mb-2">Integridad Contable: El Semáforo de Riesgo</h4>
                         <p class="m-0 text-sm">Antes de procesar, el sistema presenta una <strong>Tabla de Previsualización Inteligente</strong>. Si el nombre del pagador en el banco no coincide con el propietario en Finaxis, el sistema lanzará una alerta visual, permitiendo al administrador validar el cruce antes de generar el asiento contable.</p>
+                    </div>
+
+                    <div class="premium-card border-2 border-blue-100 shadow-2xl">
+                        <h2 class="text-blue-900">3. Integración Selectiva: Control Total</h2>
+                        <p>No todos los registros de un archivo bancario son necesariamente válidos o están listos para ser integrados. Finaxis introduce el concepto de <strong>Integración Selectiva</strong>:</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 my-8">
+                            <div class="p-6 bg-white rounded-2xl border border-gray-100">
+                                <h4 class="font-bold text-gray-800">✅ Selección Individual</h4>
+                                <p class="text-xs text-gray-500">Cada registro cuenta con un selector (Checkbox). Usted puede desmarcar pagos en disputa o registros que requieran una validación manual previa.</p>
+                            </div>
+                            <div class="p-6 bg-white rounded-2xl border border-gray-100">
+                                <h4 class="font-bold text-gray-800">🚀 Procesamiento Maestro</h4>
+                                <p class="text-xs text-gray-500">Al hacer clic en "Integrar Pagos", el sistema procesará <strong>únicamente</strong> los registros marcados, dejando los demás en pantalla para su revisión o eliminación.</p>
+                            </div>
+                        </div>
+
+                        <div class="p-6 bg-blue-50 rounded-2xl border border-blue-200">
+                            <p class="text-sm text-blue-800 m-0"><strong>Seguridad de Datos:</strong> Esta capa de validación actúa como un filtro de calidad, evitando que errores del archivo bancario contaminen la contabilidad de la copropiedad.</p>
+                        </div>
                     </div>
 
                     <div class="premium-card">

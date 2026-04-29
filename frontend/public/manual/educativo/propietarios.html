@@ -1,407 +1,174 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Directorio de Acudientes - Manual de Gestión de Recaudos</title>
-    <link rel="stylesheet" href="assets/css/manual-styles.css">
+    <title>Directorio de Acudientes - Manual de Consultoría Finaxis</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Outfit -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Mermaid.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --apple-bg: #F5F5F7;
+            --apple-card: #FFFFFF;
+            --apple-accent: #0071E3;
+        }
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            background-color: var(--apple-bg);
+            color: #1D1D1F;
+        }
+        .premium-card {
+            background: var(--apple-card);
+            border-radius: 32px;
+            padding: 3rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.04);
+            margin-bottom: 3rem;
+        }
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .mermaid { 
+            background: #FFFFFF; 
+            border-radius: 24px; 
+            padding: 2rem; 
+            margin: 2rem 0; 
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .contact-pill {
+            background: #F2F2F7;
+            padding: 0.75rem 1.5rem;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #4B5563;
+        }
+        table { width: 100%; border-collapse: collapse; margin: 2rem 0; font-size: 0.9rem; }
+        th { background: #F9FAFB; padding: 1.25rem; text-align: left; font-weight: 700; border-bottom: 2px solid #F2F2F7; }
+        td { padding: 1.25rem; border-bottom: 1px solid #F2F2F7; color: #4B5563; }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <header class="header">
-            <div class="header-content">
-                <div class="logo">👥 Directorio de Acudientes</div>
-                <div class="subtitle">Manual de Usuario - Gestión de Recaudos</div>
-                <div class="version">Sistema ContaPY2 - Módulo PH</div>
+<body class="antialiased">
+
+    <!-- Navigation -->
+    <nav class="glass-nav px-8 py-6">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                </div>
+                <span class="text-xl font-bold tracking-tight text-gray-900">Directorio de Acudientes</span>
             </div>
-        </header>
-
-        <nav class="nav">
-            <ul>
-                <li><a href="#introduccion">Introducción</a></li>
-                <li><a href="#acceso">Acceso</a></li>
-                <li><a href="#listado">Listado</a></li>
-                <li><a href="#crear">Crear Acudiente</a></li>
-                <li><a href="#editar">Editar</a></li>
-                <li><a href="#buscar">Búsqueda</a></li>
-                <li><a href="#errores">Errores Comunes</a></li>
-            </ul>
-        </nav>
-
-        <main class="content">
-            <div class="toc">
-                <h3>📑 Contenido</h3>
-                <ul></ul>
+            <div class="flex gap-6 text-sm font-medium text-gray-500">
+                <a href="#perfil" class="hover:text-indigo-600 transition-colors">Perfil</a>
+                <a href="#vinculos" class="hover:text-indigo-600 transition-colors">Vínculos</a>
+                <a href="#fiscal" class="hover:text-indigo-600 transition-colors">Datos Fiscales</a>
             </div>
+        </div>
+    </nav>
 
-            <section id="introduccion" class="section">
-                <h2>🎯 Introducción</h2>
-                <p>El Directorio de Acudientes es el módulo donde se gestiona toda la información de las personas responsables del pago de las obligaciones en la Gestión Educativa. Incluye Acudientes, arrendatarios, representantes legales y cualquier tercero que tenga responsabilidades de pago.</p>
+    <main class="max-w-4xl mx-auto px-8 py-16">
+        
+        <!-- Introducción -->
+        <section class="mb-24">
+            <h1 class="text-5xl font-extrabold tracking-tight mb-8 leading-tight">Gestión de Relaciones con los Padres</h1>
+            <p class="text-xl text-gray-500 leading-relaxed">
+                El módulo de <strong>Acudientes</strong> es la base de datos maestra de los responsables económicos de la institución. Aquí se centraliza la información de contacto, fiscal y el historial de pagos de los padres de familia.
+            </p>
+        </section>
+
+        <!-- El Perfil del Acudiente -->
+        <section id="perfil" class="mb-24">
+            <h2 class="text-3xl font-bold mb-10 tracking-tight">El Perfil Digital del Acudiente</h2>
+            
+            <div class="premium-card">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                    <div class="contact-pill">
+                        <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                        📧 Email para Facturación Electrónica
+                    </div>
+                    <div class="contact-pill">
+                        <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                        📱 WhatsApp para Recordatorios
+                    </div>
+                    <div class="contact-pill">
+                        <div class="w-2 h-2 rounded-full bg-purple-500"></div>
+                        🆔 Documento de Identidad (Cédula/NIT)
+                    </div>
+                    <div class="contact-pill">
+                        <div class="w-2 h-2 rounded-full bg-orange-500"></div>
+                        🏠 Dirección de Residencia
+                    </div>
+                </div>
+
+                <h3 class="text-xl font-bold mb-4">¿Por qué es vital la información completa?</h3>
+                <p class="text-sm text-gray-400 leading-relaxed">
+                    Finaxis utiliza estos datos para automatizar el envío de estados de cuenta y la generación de facturas electrónicas ante la DIAN. Un correo mal escrito significa un recaudo que podría retrasarse.
+                </p>
+            </div>
+        </section>
+
+        <!-- Vínculos Académicos -->
+        <section id="vinculos" class="mb-24">
+            <h2 class="text-3xl font-bold mb-8 tracking-tight">Relación Acudiente-Estudiante</h2>
+            <p class="text-gray-500 mb-10">Un solo acudiente puede ser responsable de múltiples estudiantes (ej: hermanos en diferentes grados). El sistema consolida esta visión.</p>
+            
+            <div class="mermaid">
+            graph TD
+                P[Acudiente: Juan Pérez] --> S1[Estudiante: Mateo Pérez - 5°A]
+                P --> S2[Estudiante: Lucía Pérez - 2°B]
+                P --> S3[Estudiante: Sofía Pérez - Jardín]
                 
-                <div class="info">
-                    <strong>💡 Objetivo:</strong> Mantener actualizada la información de contacto, datos fiscales y relaciones de los responsables de pago de cada Estudiante.
-                </div>
+                style P fill:#4F46E5,color:#fff,stroke-width:0px
+                style S1 fill:#F2F2F7,stroke:#D1D1D6
+                style S2 fill:#F2F2F7,stroke:#D1D1D6
+                style S3 fill:#F2F2F7,stroke:#D1D1D6
+            </div>
+        </section>
 
-                <h3>¿Qué puede hacer en este módulo?</h3>
-                <ul>
-                    <li>✅ Registrar nuevos Acudientes y responsables</li>
-                    <li>✅ Actualizar información de contacto</li>
-                    <li>✅ Gestionar datos fiscales (NIT, RUT)</li>
-                    <li>✅ Asignar Acudientes a Estudiantes</li>
-                    <li>✅ Consultar historial de pagos por Acudiente</li>
-                    <li>✅ Buscar y filtrar Acudientes</li>
-                    <li>✅ Exportar directorios</li>
-                </ul>
-            </section>
-
-            <section id="acceso" class="section">
-                <h2>🚪 Cómo Acceder</h2>
-                <ol class="step-list">
-                    <li>Ingrese al sistema ContaPY2</li>
-                    <li>Navegue al módulo "Gestión de Recaudos"</li>
-                    <li>Haga clic en "Acudientes" o "Terceros / Miembros"</li>
-                </ol>
-            </section>
-
-            <section id="listado" class="section">
-                <h2>📋 Listado de Acudientes</h2>
+        <!-- Datos Fiscales -->
+        <section id="fiscal" class="mb-24">
+            <h2 class="text-3xl font-bold mb-8 tracking-tight">Configuración Fiscal</h2>
+            <div class="premium-card">
+                <p class="text-gray-500 mb-8">Para cumplir con la normativa vigente, asegúrese de configurar:</p>
                 
-                <h3>Vista Principal</h3>
-                <p>El listado muestra todos los Acudientes registrados con la siguiente información:</p>
-                
-                <div class="table-container">
-                    <table class="manual-table">
-                        <thead>
-                            <tr>
-                                <th>Campo</th>
-                                <th>Descripción</th>
-                                <th>Ejemplo</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>🆔 Documento</td>
-                                <td>Número de identificación</td>
-                                <td>12345678, 900123456-1</td>
-                            </tr>
-                            <tr>
-                                <td>👤 Nombre</td>
-                                <td>Nombre completo o razón social</td>
-                                <td>Juan Pérez, Empresa XYZ S.A.S.</td>
-                            </tr>
-                            <tr>
-                                <td>📞 Teléfono</td>
-                                <td>Número de contacto principal</td>
-                                <td>3001234567, (1) 2345678</td>
-                            </tr>
-                            <tr>
-                                <td>📧 Email</td>
-                                <td>Correo electrónico</td>
-                                <td>juan@email.com</td>
-                            </tr>
-                            <tr>
-                                <td>🏠 Estudiantes</td>
-                                <td>Cantidad de Estudiantes asignadas</td>
-                                <td>1, 2, 5</td>
-                            </tr>
-                            <tr>
-                                <td>⚙️ Acciones</td>
-                                <td>Opciones disponibles</td>
-                                <td>✏️ Editar, 🏠 Ver Estudiantes</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="space-y-6">
+                    <div class="p-6 bg-gray-50 rounded-2xl">
+                        <h4 class="font-bold text-gray-900">Tipo de Obligación</h4>
+                        <p class="text-xs text-gray-400 mt-1">Persona Natural o Jurídica. Crucial para los reportes de medios magnéticos.</p>
+                    </div>
+                    <div class="p-6 bg-gray-50 rounded-2xl">
+                        <h4 class="font-bold text-gray-900">Responsabilidad de IVA</h4>
+                        <p class="text-xs text-gray-400 mt-1">Aunque la mayoría de servicios educativos están excluidos, algunos servicios adicionales pueden requerir esta distinción.</p>
+                    </div>
+                    <div class="p-6 bg-blue-50 rounded-2xl border border-blue-100">
+                        <h4 class="font-bold text-blue-900">Validación de NIT</h4>
+                        <p class="text-xs text-blue-700 mt-1">El sistema verifica el dígito de verificación automáticamente para evitar errores en la DIAN.</p>
+                    </div>
                 </div>
+            </div>
+        </section>
 
-                <h3>Funciones del Listado</h3>
-                <ul>
-                    <li>🔍 <strong>Búsqueda:</strong> Filtrar por nombre o documento</li>
-                    <li>📄 <strong>Exportar:</strong> Generar listado en PDF</li>
-                    <li>➕ <strong>Nuevo:</strong> Crear nuevo Acudiente</li>
-                    <li>📊 <strong>Estadísticas:</strong> Ver resumen de Acudientes</li>
-                </ul>
-            </section>
-
-            <section id="crear" class="section">
-                <h2>➕ Crear Nuevo Acudiente</h2>
-                
-                <h3>Proceso de Creación</h3>
-                <ol class="step-list">
-                    <li>Haga clic en "Nuevo Acudiente"</li>
-                    <li>Complete la información básica</li>
-                    <li>Agregue datos de contacto</li>
-                    <li>Configure información fiscal si aplica</li>
-                    <li>Guarde el registro</li>
-                </ol>
-
-                <h3>Información Requerida</h3>
-                
-                <h4>📋 Datos Básicos</h4>
-                <div class="table-container">
-                    <table class="manual-table">
-                        <thead>
-                            <tr>
-                                <th>Campo</th>
-                                <th>Descripción</th>
-                                <th>Requerido</th>
-                                <th>Formato</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Tipo de Documento</td>
-                                <td>CC, NIT, CE, Pasaporte</td>
-                                <td>✅ Sí</td>
-                                <td>Selección</td>
-                            </tr>
-                            <tr>
-                                <td>Número de Documento</td>
-                                <td>Identificación única</td>
-                                <td>✅ Sí</td>
-                                <td>Solo números</td>
-                            </tr>
-                            <tr>
-                                <td>Dígito de Verificación</td>
-                                <td>Para NIT únicamente</td>
-                                <td>❌ Condicional</td>
-                                <td>0-9</td>
-                            </tr>
-                            <tr>
-                                <td>Nombre/Razón Social</td>
-                                <td>Nombre completo</td>
-                                <td>✅ Sí</td>
-                                <td>Texto</td>
-                            </tr>
-                            <tr>
-                                <td>Tipo de Persona</td>
-                                <td>Natural o Jurídica</td>
-                                <td>✅ Sí</td>
-                                <td>Selección</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <h4>📞 Información de Contacto</h4>
-                <div class="table-container">
-                    <table class="manual-table">
-                        <thead>
-                            <tr>
-                                <th>Campo</th>
-                                <th>Descripción</th>
-                                <th>Requerido</th>
-                                <th>Ejemplo</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Teléfono Principal</td>
-                                <td>Número de contacto</td>
-                                <td>❌ No</td>
-                                <td>3001234567</td>
-                            </tr>
-                            <tr>
-                                <td>Teléfono Alternativo</td>
-                                <td>Número secundario</td>
-                                <td>❌ No</td>
-                                <td>(1) 2345678</td>
-                            </tr>
-                            <tr>
-                                <td>Email</td>
-                                <td>Correo electrónico</td>
-                                <td>❌ No</td>
-                                <td>Acudiente@email.com</td>
-                            </tr>
-                            <tr>
-                                <td>Dirección</td>
-                                <td>Dirección de correspondencia</td>
-                                <td>❌ No</td>
-                                <td>Calle 123 #45-67</td>
-                            </tr>
-                            <tr>
-                                <td>Ciudad</td>
-                                <td>Ciudad de residencia</td>
-                                <td>❌ No</td>
-                                <td>Bogotá D.C.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <h4>💼 Información Fiscal</h4>
-                <p>Para personas jurídicas o Acudientes que requieren facturación:</p>
-                <ul>
-                    <li><strong>Régimen Tributario:</strong> Común, Simplificado, Gran Contribuyente</li>
-                    <li><strong>Actividad Económica:</strong> Código CIIU principal</li>
-                    <li><strong>Responsabilidades Fiscales:</strong> IVA, Renta, etc.</li>
-                    <li><strong>Representante Legal:</strong> Para personas jurídicas</li>
-                </ul>
-
-                <div class="info">
-                    <strong>💡 Consejo:</strong> Complete toda la información disponible desde el inicio. Esto evitará problemas posteriores en la facturación y comunicaciones.
-                </div>
-            </section>
-
-            <section id="editar" class="section">
-                <h2>✏️ Editar Acudiente</h2>
-                
-                <h3>Proceso de Edición</h3>
-                <ol class="step-list">
-                    <li>Localice el Acudiente en el listado</li>
-                    <li>Haga clic en el icono de editar (✏️)</li>
-                    <li>Modifique los campos necesarios</li>
-                    <li>Guarde los cambios</li>
-                </ol>
-
-                <h3>Campos Editables</h3>
-                <ul>
-                    <li>✅ Información de contacto (teléfonos, email, dirección)</li>
-                    <li>✅ Datos fiscales y tributarios</li>
-                    <li>✅ Representante legal</li>
-                    <li>❌ Número de documento (requiere validación especial)</li>
-                    <li>❌ Tipo de documento (puede afectar validaciones)</li>
-                </ul>
-
-                <div class="warning">
-                    <strong>⚠️ Precaución:</strong> Cambiar el número de documento puede afectar el historial de pagos y movimientos contables. Consulte con el administrador antes de hacer este cambio.
-                </div>
-
-                <h3>Actualización de Estudiantes</h3>
-                <p>Desde la edición del Acudiente también puede:</p>
-                <ol class="step-list">
-                    <li>Ver las Estudiantes actualmente asignadas</li>
-                    <li>Asignar nuevas Estudiantes</li>
-                    <li>Remover asignaciones existentes</li>
-                    <li>Cambiar el tipo de relación (Acudiente, arrendatario, etc.)</li>
-                </ol>
-            </section>
-
-            <section id="buscar" class="section">
-                <h2>🔍 Búsqueda y Filtros</h2>
-                
-                <h3>Opciones de Búsqueda</h3>
-                <ol class="step-list">
-                    <li><strong>Búsqueda por Texto:</strong> Escriba nombre o número de documento</li>
-                    <li><strong>Filtro por Tipo:</strong> Persona natural o jurídica</li>
-                    <li><strong>Filtro por Estado:</strong> Activos, inactivos, morosos</li>
-                    <li><strong>Búsqueda Avanzada:</strong> Combinación de múltiples criterios</li>
-                </ol>
-
-                <h3>Consejos de Búsqueda</h3>
-                <ul>
-                    <li>💡 Use palabras parciales: "Juan" encontrará "Juan Pérez"</li>
-                    <li>💡 Busque por documento sin puntos ni espacios</li>
-                    <li>💡 La búsqueda no distingue mayúsculas y minúsculas</li>
-                    <li>💡 Use filtros para reducir resultados en bases grandes</li>
-                </ul>
-
-                <h3>Búsqueda desde Otros Módulos</h3>
-                <p>El buscador de Acudientes también está disponible en:</p>
-                <ul>
-                    <li>🏠 Creación/edición de Estudiantes</li>
-                    <li>💰 Registro de pagos</li>
-                    <li>🧾 Generación de facturas</li>
-                    <li>📊 Consulta de estados de cuenta</li>
-                </ul>
-            </section>
-
-            <section id="errores" class="section">
-                <h2>⚠️ Errores Comunes y Soluciones</h2>
-                
-                <h3>Error: "Documento ya existe"</h3>
-                <div class="warning">
-                    <strong>Problema:</strong> Al crear un Acudiente aparece "El documento ya está registrado".
-                    <br><strong>Causa:</strong> Ya existe un Acudiente con ese número de documento.
-                    <br><strong>Solución:</strong>
-                    <ul>
-                        <li>Busque el Acudiente existente en el listado</li>
-                        <li>Verifique si es la misma persona</li>
-                        <li>Si es la misma persona, edite el registro existente</li>
-                        <li>Si es diferente, verifique el número de documento</li>
-                    </ul>
-                </div>
-
-                <h3>Error: "Email inválido"</h3>
-                <div class="warning">
-                    <strong>Problema:</strong> El sistema no acepta el email ingresado.
-                    <br><strong>Causa:</strong> El formato del email no es válido.
-                    <br><strong>Solución:</strong>
-                    <ul>
-                        <li>Verifique que tenga el formato: usuario@dominio.com</li>
-                        <li>No use espacios ni caracteres especiales</li>
-                        <li>Confirme que el email esté escrito correctamente</li>
-                    </ul>
-                </div>
-
-                <h3>Error: "No se puede eliminar Acudiente"</h3>
-                <div class="warning">
-                    <strong>Problema:</strong> El sistema impide eliminar un Acudiente.
-                    <br><strong>Causa:</strong> El Acudiente tiene Estudiantes asignadas o movimientos contables.
-                    <br><strong>Solución:</strong>
-                    <ul>
-                        <li>Desasigne todas las Estudiantes primero</li>
-                        <li>Verifique que no tenga saldos pendientes</li>
-                        <li>Considere marcar como "inactivo" en lugar de eliminar</li>
-                    </ul>
-                </div>
-
-                <h3>Problema: "No aparecen las Estudiantes del Acudiente"</h3>
-                <div class="warning">
-                    <strong>Problema:</strong> Un Acudiente no muestra sus Estudiantes asignadas.
-                    <br><strong>Solución:</strong>
-                    <ul>
-                        <li>Verifique en el módulo de Estudiantes si están correctamente asignadas</li>
-                        <li>Actualice la página</li>
-                        <li>Revise que las Estudiantes estén activas</li>
-                        <li>Contacte soporte si persiste el problema</li>
-                    </ul>
-                </div>
-
-                <h3>Problema: "Información desactualizada"</h3>
-                <div class="warning">
-                    <strong>Problema:</strong> La información del Acudiente está desactualizada.
-                    <br><strong>Solución:</strong>
-                    <ul>
-                        <li>Implemente un proceso de actualización periódica</li>
-                        <li>Solicite actualización de datos en cada comunicación</li>
-                        <li>Use formularios digitales para facilitar la actualización</li>
-                        <li>Mantenga múltiples canales de contacto</li>
-                    </ul>
-                </div>
-            </section>
-
-            <section class="section">
-                <h2>🆘 ¿Necesita Más Ayuda?</h2>
-                <div class="highlight">
-                    <p><strong>Recursos Relacionados:</strong></p>
-                    <ul>
-                        <li>📖 Manual de Estudiantes - Para asignar Acudientes a Estudiantes</li>
-                        <li>📖 Manual de Pagos - Para registrar pagos de Acudientes</li>
-                        <li>📖 Manual de Estado de Cuenta - Para consultar saldos por Acudiente</li>
-                        <li>📖 Manual de Reportes - Para generar informes de Acudientes</li>
-                    </ul>
-                </div>
-
-                <div class="info">
-                    <p><strong>Contacto de Soporte:</strong></p>
-                    <ul>
-                        <li>📧 Email: soporte@contapy2.com</li>
-                        <li>📞 Teléfono: +57 (1) 234-5678</li>
-                        <li>💬 Chat en línea: Disponible en el sistema</li>
-                        <li>🕒 Horario: Lunes a Viernes 8:00 AM - 6:00 PM</li>
-                    </ul>
-                </div>
-            </section>
-        </main>
-
-        <footer class="footer">
-            <p>&copy; 2024 ContaPY2 - Sistema de Gestión Contable Integral</p>
-            <p>Manual generado automáticamente - Versión 1.0</p>
+        <footer class="mt-32 pt-12 border-t border-gray-100 text-center text-gray-400 text-sm">
+            <p>© 2026 Finaxis Consultoría Educativa - Gestión Humana y Financiera</p>
         </footer>
-    </div>
+    </main>
 
-    <script src="assets/js/manual-navigation.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'neutral', fontFamily: 'Outfit' });
+    </script>
 </body>
 </html>
-
-
