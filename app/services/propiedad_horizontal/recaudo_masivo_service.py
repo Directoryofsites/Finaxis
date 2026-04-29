@@ -295,16 +295,43 @@ def procesar_lote_pagos(db: Session, empresa_id: int, request: schemas_rm.Recaud
 def generar_archivo_asobancaria_test(db: Session, empresa_id: int) -> str:
     """
     Genera un archivo plano Asobancaria 2001 representativo de la cartera actual.
-    Sirve para pruebas: todas las unidades con saldo > 0 pagan su deuda total.
+    OPTIMIZACIÓN: Usa una sola consulta para obtener todos los saldos en lugar de N consultas.
     """
+    from app.models.movimiento_contable import MovimientoContable
+    from app.models.documento import Documento
+    from sqlalchemy import func
+
+    # 1. Obtener Unidades
     unidades = db.query(PHUnidad).filter(PHUnidad.empresa_id == empresa_id, PHUnidad.activo == True).all()
+    if not unidades:
+        return ""
+
+    # 2. OPTIMIZACIÓN "CAPA ESTÁTICA": Obtener configuración una sola vez
+    config = configuracion_service.get_configuracion(db, empresa_id)
+    cuentas_cxc_ids = cartera_service.get_cuentas_especiales_ids(db, empresa_id, 'cxc')
+    cuentas_validas = set(cuentas_cxc_ids)
+    if config and config.cuenta_anticipos_id:
+        cuentas_validas.add(config.cuenta_anticipos_id)
+
+    # 3. BATCH QUERY: Obtener saldos de todas las unidades en una sola pasada
+    # Sumamos (debito - credito) de los movimientos en cuentas de cartera agrupados por unidad
+    saldos_raw = db.query(
+        Documento.unidad_ph_id,
+        func.sum(MovimientoContable.debito - MovimientoContable.credito).label('saldo')
+    ).join(MovimientoContable, Documento.id == MovimientoContable.documento_id)\
+     .filter(
+         Documento.empresa_id == empresa_id,
+         Documento.estado.in_(['ACTIVO', 'PROCESADO']),
+         MovimientoContable.cuenta_id.in_(list(cuentas_validas))
+     ).group_by(Documento.unidad_ph_id).all()
+
+    map_saldos = {s.unidad_ph_id: s.saldo for s in saldos_raw}
+
     hoy = datetime.now()
     fecha_str = hoy.strftime('%Y%m%d')
-    
     lines = []
     
-    # Registro de Control (Tipo 01) - Header (Simplificado para pruebas)
-    # Pos 1-2: 01, Pos 3-12: NIT Empresa
+    # Registro de Control (Tipo 01) - Header
     nit = "900000000"
     header = f"01{nit.zfill(10)}{' ' * 150}"
     lines.append(header[:162])
@@ -313,34 +340,23 @@ def generar_archivo_asobancaria_test(db: Session, empresa_id: int) -> str:
     count = 0
     
     for u in unidades:
-        try:
-            estado = pago_service.get_estado_cuenta_unidad(db, u.id, empresa_id, True)
-            deuda = Decimal(str(estado.get('saldo_total', 0)))
-            
-            if deuda <= 0:
-                continue
-                
-            count += 1
-            total_monto += deuda
-            
-            # Registro de Detalle (Tipo 06)
-            # Pos 1-2: 06
-            # Pos 17-64: Referencia (index 16:64)
-            # Pos 65-82: Valor (index 64:82)
-            # Pos 117-124: Fecha (index 116:124)
-            
-            referencia = (u.referencia_recaudo or u.codigo or "").ljust(48)
-            valor_str = str(int(deuda * 100)).zfill(18)
-            
-            # Construir línea de detalle (162 caracteres)
-            # Tipo(2) + Reservado(14) + Referencia(48) + Valor(18) + Otros(34) + Fecha(8) + Final(38)
-            line_content = f"06{'0' * 14}{referencia}{valor_str}{'0' * 34}{fecha_str}{' ' * 38}"
-            lines.append(line_content[:162])
-        except:
+        # Consultamos el "caché local" (map_saldos) en lugar de llamar a pago_service (DB)
+        deuda = map_saldos.get(u.id, Decimal('0.0'))
+        
+        if deuda <= 0:
             continue
+            
+        count += 1
+        total_monto += deuda
+        
+        referencia = (u.referencia_recaudo or u.codigo or "").ljust(48)
+        valor_str = str(int(deuda * 100)).zfill(18)
+        
+        # Construir línea de detalle (162 caracteres)
+        line_content = f"06{'0' * 14}{referencia}{valor_str}{'0' * 34}{fecha_str}{' ' * 38}"
+        lines.append(line_content[:162])
         
     # Registro de Control (Tipo 09) - Footer
-    # Pos 1-2: 09, Pos 3-11: Total Registros, Pos 12-29: Valor Total
     footer = f"09{str(count).zfill(9)}{str(int(total_monto * 100)).zfill(18)}{' ' * 135}"
     lines.append(footer[:162])
     

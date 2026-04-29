@@ -23,15 +23,18 @@ export const AuthProvider = ({ children }) => {
       const savedData = {};
       
       try {
+        // 1. Guardar llaves exactas
         keysToKeep.forEach(key => {
           const val = localStorage.getItem(key);
           if (val) savedData[key] = val;
         });
 
+        // 2. Guardar llaves dinámicas (Historiales por usuario e Indicadores)
         for (let i = 0; i < localStorage.length; i++) {
            const key = localStorage.key(i);
-           // Conservar indicadores económicos
-           if (key && key.startsWith('indicadores_')) {
+           if (!key) continue;
+
+           if (key.startsWith('indicadores_') || key.startsWith('app_history_')) {
                savedData[key] = localStorage.getItem(key);
            }
         }
