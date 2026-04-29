@@ -1,68 +1,106 @@
-import pandas as pd
-from decimal import Decimal
-from datetime import datetime, date
-from typing import List, Dict, Any, Tuple
-from sqlalchemy.orm import Session
-from sqlalchemy import func
+from typing import List
 import io
+import pandas as pd
+from datetime import datetime, date
+from decimal import Decimal
+from sqlalchemy.orm import Session
+from app.models.propiedad_horizontal.unidad import PHUnidad, PHTorre
+from app.models.propiedad_horizontal.configuracion import PHConfiguracion
+from app.schemas.propiedad_horizontal import recaudo_masivo as schemas_rm
+from app.services.propiedad_horizontal import pago_service, configuracion_service
+from app.models import TipoDocumento, Documento, MovimientoContable
+from app.schemas import documento as doc_schemas
+from app.services import documento as documento_service, cartera as cartera_service
 from app.utils.sorting import natural_sort_key
 
-from app.models.propiedad_horizontal.unidad import PHUnidad
-from app.schemas.propiedad_horizontal import recaudo_masivo as schemas_rm
-from app.services.propiedad_horizontal import pago_service
+def parse_asobancaria_2001(file_content: bytes) -> List[schemas_rm.RecaudoFila]:
+    """
+    Parsea un archivo plano en formato Asobancaria 2001.
+    Estructura básica:
+    - Registro de detalle (Tipo 06)
+    - Referencia 1: Posiciones 17-64 (Depende del convenio, a veces es menos)
+    - Valor: Posiciones 65-82 (14 enteros, 2 decimales)
+    - Fecha: Posiciones 117-124 (AAAAMMDD)
+    """
+    filas = []
+    content = file_content.decode('utf-8', errors='ignore')
+    lines = content.splitlines()
+    
+    for i, line in enumerate(lines):
+        if not line.startswith('06'): # Registro de detalle
+            continue
+            
+        try:
+            # Referencia 1 (Suele ser de 48 chars, pero el ID real suele estar al inicio)
+            # En muchos casos de PH es de 10-15 chars
+            referencia_raw = line[16:64].strip()
+            
+            # Valor (18 chars, los últimos 2 son decimales)
+            valor_raw = line[64:82].strip()
+            monto = Decimal(valor_raw) / 100
+            
+            # Fecha (AAAAMMDD)
+            fecha_raw = line[116:124].strip()
+            fecha = datetime.strptime(fecha_raw, '%Y%m%d').date()
+            
+            filas.append(schemas_rm.RecaudoFila(
+                referencia=referencia_raw,
+                fecha=fecha,
+                monto=monto,
+                descripcion="Recaudo Asobancaria 2001",
+                line_number=i + 1
+            ))
+        except Exception as e:
+            # Ignorar líneas mal formadas
+            continue
+            
+    return filas
 
 def parse_recaudo_file(file_content: bytes, file_name: str) -> List[schemas_rm.RecaudoFila]:
     """
-    Parsea un archivo CSV o Excel buscando columnas clave.
-    Columnas esperadas (flexibles, case insensitive):
-    - Referencia, Ref, Codigo
-    - Fecha
-    - Monto, Valor, Pago
-    - Descripcion, Detalle (Opcional)
+    Parsea un archivo detectando su formato (CSV, Excel o Asobancaria .TXT).
     """
     try:
-        if file_name.endswith('.csv'):
+        if file_name.lower().endswith('.txt'):
+            # Intentar Asobancaria 2001
+            return parse_asobancaria_2001(file_content)
+            
+        if file_name.lower().endswith('.csv'):
             df = pd.read_csv(io.BytesIO(file_content))
-        elif file_name.endswith('.xlsx') or file_name.endswith('.xls'):
+        elif file_name.lower().endswith(('.xlsx', '.xls')):
             df = pd.read_excel(io.BytesIO(file_content))
         else:
-            raise ValueError("Formato de archivo no soportado. Debe ser .csv, .xls o .xlsx")
+            raise ValueError("Formato no soportado. Use .csv, .xls, .xlsx o .txt (Asobancaria)")
         
-        # Normalizar nombres de columnas a minúsculas
+        # Normalizar nombres de columnas
         df.columns = [str(c).strip().lower() for c in df.columns]
         
-        # Mapear columnas reales a lógicas
-        col_ref = next((c for c in df.columns if 'ref' in c or 'cod' in c or 'iden' in c), None)
-        col_fecha = next((c for c in df.columns if 'fecha' in c or 'date' in c), None)
-        col_monto = next((c for c in df.columns if 'monto' in c or 'valor' in c or 'pago' in c or 'total' in c), None)
-        col_desc = next((c for c in df.columns if 'desc' in c or 'det' in c or 'obs' in c), None)
+        # Mapeo flexible
+        col_ref = next((c for c in df.columns if any(x in c for x in ['ref', 'cod', 'iden', 'torre', 'apto'])), None)
+        col_fecha = next((c for c in df.columns if any(x in c for x in ['fecha', 'date'])), None)
+        col_monto = next((c for c in df.columns if any(x in c for x in ['monto', 'valor', 'pago', 'total'])), None)
+        col_desc = next((c for c in df.columns if any(x in c for x in ['desc', 'det', 'obs'])), None)
         
         if not col_ref or not col_fecha or not col_monto:
-            raise ValueError(f"Faltan columnas requeridas. Encontradas: {list(df.columns)}")
+            raise ValueError(f"No se identificaron las columnas requeridas (Referencia, Fecha, Monto). Columnas: {list(df.columns)}")
             
         filas = []
         for index, row in df.iterrows():
             try:
-                # Extraer y limpiar
                 referencia = str(row[col_ref]).strip()
                 if pd.isna(row[col_ref]) or not referencia:
                     continue
                     
-                # Parsing fecha
                 raw_fecha = row[col_fecha]
                 if pd.isna(raw_fecha):
                     fecha = date.today()
-                elif isinstance(raw_fecha, datetime):
-                    fecha = raw_fecha.date()
+                elif isinstance(raw_fecha, (datetime, date)):
+                    fecha = raw_fecha if isinstance(raw_fecha, date) else raw_fecha.date()
                 else:
-                    # Intento genérico
                     fecha = pd.to_datetime(raw_fecha, dayfirst=True).date()
                 
-                # Parsing monto
                 raw_monto = row[col_monto]
-                if pd.isna(raw_monto):
-                    continue
-                # Limpiar signos $ y comas
+                if pd.isna(raw_monto): continue
                 if isinstance(raw_monto, str):
                     raw_monto = raw_monto.replace('$', '').replace(',', '').strip()
                 monto = Decimal(str(raw_monto))
@@ -76,26 +114,20 @@ def parse_recaudo_file(file_content: bytes, file_name: str) -> List[schemas_rm.R
                     descripcion=desc,
                     line_number=index + 1
                 ))
-            except Exception as e:
-                # Skip invalid rows or log them
-                pass
+            except:
+                continue
                 
         return filas
     except Exception as e:
         raise ValueError(f"Error parseando el archivo: {str(e)}")
 
 def generar_preview(db: Session, empresa_id: int, filas: List[schemas_rm.RecaudoFila]) -> schemas_rm.RecaudoPreviewResult:
-    """
-    Cruza las filas extraídas contra la base de datos de unidades
-    y simula financieramente el recaudo.
-    """
     detalles = []
     total_recaudado = Decimal('0.0')
     filas_validas = 0
     filas_error = 0
     
-    # Cargar unidades en memoria usando un diccionario para busqueda O(1)
-    # Buscamos por referencia_recaudo primero, si no, por codigo.
+    # Carga de unidades y sus propietarios
     unidades_db = db.query(PHUnidad).filter(PHUnidad.empresa_id == empresa_id, PHUnidad.activo == True).all()
     
     map_por_ref = {u.referencia_recaudo.strip().lower(): u for u in unidades_db if u.referencia_recaudo}
@@ -111,33 +143,22 @@ def generar_preview(db: Session, empresa_id: int, filas: List[schemas_rm.Recaudo
         )
         
         ref_busqueda = fila.referencia.lower()
-        unidad = map_por_ref.get(ref_busqueda)
-        if not unidad:
-            unidad = map_por_codigo.get(ref_busqueda)
+        unidad = map_por_ref.get(ref_busqueda) or map_por_codigo.get(ref_busqueda)
             
         if not unidad:
-            match_info.error_msg = f"Unidad no encontrada con referencia/código: {fila.referencia}"
+            match_info.error_msg = f"No se encontró unidad con referencia '{fila.referencia}'"
             filas_error += 1
             detalles.append(match_info)
             continue
             
-        # Unidad encontrada
         match_info.unidad_id = unidad.id
-        match_info.unidad_codigo = unidad.codigo
+        match_info.unidad_codigo = f"{unidad.torre.nombre if unidad.torre else ''} - {unidad.codigo}"
+        match_info.unidad_propietario = unidad.propietario_nombre # Usando la property del modelo
         
-        # Simular deuda de la unidad usando el servicio de pago
         try:
-            # Creamos un pseudo doc vacio, get_pago_distribucion_detalle asume un pago,
-            # pero necesitamos saber cuanto debe ANTES del pago.
-            # En pago_service.py hay un calculo de "estado_cuenta_actual"
-            # get_pago_distribucion_detalle requiere un documento de pago existente. 
-            # Mejor usar obtener_datos_pago o get_estado_cuenta
-            
-            # Para masividad, simplificaremos trayendo la deuda por medio del estado de cuenta
-            estado_cuenta = pago_service.get_estado_cuenta_unidad(db, unidad.id, empresa_id, True)
-            
-            # estado_cuenta['resumen']['total_adeudado'] tiene la deuda
-            deuda = Decimal(str(estado_cuenta.get('resumen', {}).get('total_adeudado', 0)))
+            # Obtener estado de cuenta para calcular excedente
+            estado = pago_service.get_estado_cuenta_unidad(db, unidad.id, empresa_id, True)
+            deuda = Decimal(str(estado.get('saldo_total', 0)))
             match_info.deuda_total = deuda
             
             if fila.monto > deuda:
@@ -152,13 +173,12 @@ def generar_preview(db: Session, empresa_id: int, filas: List[schemas_rm.Recaudo
             total_recaudado += fila.monto
             
         except Exception as e:
-            match_info.error_msg = f"Error calculando estado: {str(e)}"
+            match_info.error_msg = f"Error financiero: {str(e)}"
             filas_error += 1
             
         detalles.append(match_info)
         
-    # Ordenar el preview lógicamente por código de unidad
-    detalles.sort(key=lambda x: natural_sort_key(x.unidad_codigo))
+    detalles.sort(key=lambda x: natural_sort_key(x.unidad_codigo or ""))
         
     return schemas_rm.RecaudoPreviewResult(
         total_filas=len(filas),
@@ -173,37 +193,155 @@ def procesar_lote_pagos(db: Session, empresa_id: int, request: schemas_rm.Recaud
     fallidos = 0
     errores = []
     
-    # Solo procesamos los válidos
+    config = configuracion_service.get_configuracion(db, empresa_id)
+    tipo_doc_recibo = db.query(TipoDocumento).filter(TipoDocumento.id == config.tipo_documento_recibo_id).first()
+    
     filas_a_procesar = [f for f in request.filas if f.is_valid and f.unidad_id]
     
     for fila in filas_a_procesar:
         try:
-            pago_service.registrar_pago_unidad(
-                db,
-                unidad_id=fila.unidad_id,
+            unidad = db.query(PHUnidad).filter(PHUnidad.id == fila.unidad_id).first()
+            if not unidad: continue
+            
+            # Determinar cuentas para el pago
+            # Si hay excedente, debemos separar los movimientos contables
+            # registrar_pago_unidad genera un documento, pero si pasamos skip_recalculo=True
+            # podemos manejar los movimientos nosotros o dejar que el motor FIFO lo tome.
+            
+            # REGLA DE NEGOCIO: Si hay excedente y cuenta de anticipos (2805) configurada, movemos el excedente allá.
+            monto_cartera = fila.monto_a_aplicar
+            monto_anticipo = fila.excedente_anticipo
+            
+            if not config.cuenta_cartera_id and (not tipo_doc_recibo or not tipo_doc_recibo.cuenta_debito_cxc_id):
+                raise ValueError("No se ha configurado la cuenta de cartera (1305) en la Configuración Global de PH o en el Tipo de Documento.")
+
+            movimientos = []
+            # 1. Entrada a Banco (Débito total) - USAMOS LA CUENTA SELECCIONADA POR EL USUARIO
+            movimientos.append(doc_schemas.MovimientoContableCreate(
+                cuenta_id=request.cuenta_bancaria_id,
+                concepto=f"Recaudo Masivo {unidad.codigo} - {fila.referencia}",
+                debito=fila.monto_recibido,
+                credito=0
+            ))
+            
+            # 2. Crédito a Cartera (Hasta el tope de la deuda)
+            if monto_cartera > 0:
+                cuenta_cxc = config.cuenta_cartera_id or tipo_doc_recibo.cuenta_debito_cxc_id
+                movimientos.append(doc_schemas.MovimientoContableCreate(
+                    cuenta_id=cuenta_cxc,
+                    concepto=f"Abono Cartera {unidad.codigo}",
+                    debito=0,
+                    credito=monto_cartera
+                ))
+            
+            # 3. Crédito a Anticipos (El excedente)
+            if monto_anticipo > 0:
+                cuenta_2805 = config.cuenta_anticipos_id
+                if not cuenta_2805:
+                    # Si no hay cuenta de anticipos, todo va a cartera (quedará saldo a favor en 1305)
+                    cuenta_cxc = config.cuenta_cartera_id or tipo_doc_recibo.cuenta_debito_cxc_id
+                    if not movimientos or movimientos[-1].cuenta_id != cuenta_cxc:
+                        movimientos.append(doc_schemas.MovimientoContableCreate(
+                            cuenta_id=cuenta_cxc,
+                            concepto=f"Excedente Cartera {unidad.codigo}",
+                            debito=0,
+                            credito=monto_anticipo
+                        ))
+                    else:
+                        movimientos[-1].credito += monto_anticipo
+                else:
+                    movimientos.append(doc_schemas.MovimientoContableCreate(
+                        cuenta_id=cuenta_2805,
+                        concepto=f"Excedente Recaudo -> Anticipo {unidad.codigo}",
+                        debito=0,
+                        credito=monto_anticipo
+                    ))
+            
+            # Crear el documento
+            doc_create = doc_schemas.DocumentoCreate(
                 empresa_id=empresa_id,
-                usuario_id=usuario_id,
-                monto=fila.monto_recibido,
-                fecha_pago=fila.fecha_pago,
-                forma_pago_id=request.cuenta_bancaria_id,
-                skip_recalculo=True,
-                commit=False # Procesar todo en una transacción
+                tipo_documento_id=config.tipo_documento_recibo_id,
+                numero=0,
+                fecha=fila.fecha_pago,
+                fecha_vencimiento=fila.fecha_pago,
+                beneficiario_id=unidad.propietario_principal_id,
+                observaciones=f"Recaudo Masivo Automatizado - Unidad {unidad.codigo}",
+                movimientos=movimientos,
+                unidad_ph_id=unidad.id
             )
+            
+            new_doc = documento_service.create_documento(db, doc_create, user_id=usuario_id, skip_recalculo=True)
+            
+            # Recalcular aplicaciones para que el pago se cruce con las facturas
+            cartera_service.recalcular_aplicaciones_tercero(db, unidad.propietario_principal_id, empresa_id)
+            
             exitosos += 1
         except Exception as e:
             fallidos += 1
-            errores.append(f"Linea {fila.line_number} (Unidad {fila.unidad_codigo}): {str(e)}")
+            errores.append(f"Fila {fila.line_number}: {str(e)}")
             
-    # Hacemos commit final
-    try:
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        raise e
-    
+    db.commit()
+    mensaje = f"Lote procesado: {exitosos} exitosos, {fallidos} fallidos."
+    if fallidos > 0 and errores:
+        mensaje += f" Ejemplo de error: {errores[0]}"
+        
     return schemas_rm.RecaudoProcessResponse(
         exitosos=exitosos,
         fallidos=fallidos,
         errores=errores,
-        mensaje=f"Proceso masivo completado. {exitosos} pagos registrados correctamente."
+        mensaje=mensaje
     )
+
+def generar_archivo_asobancaria_test(db: Session, empresa_id: int) -> str:
+    """
+    Genera un archivo plano Asobancaria 2001 representativo de la cartera actual.
+    Sirve para pruebas: todas las unidades con saldo > 0 pagan su deuda total.
+    """
+    unidades = db.query(PHUnidad).filter(PHUnidad.empresa_id == empresa_id, PHUnidad.activo == True).all()
+    hoy = datetime.now()
+    fecha_str = hoy.strftime('%Y%m%d')
+    
+    lines = []
+    
+    # Registro de Control (Tipo 01) - Header (Simplificado para pruebas)
+    # Pos 1-2: 01, Pos 3-12: NIT Empresa
+    nit = "900000000"
+    header = f"01{nit.zfill(10)}{' ' * 150}"
+    lines.append(header[:162])
+    
+    total_monto = Decimal('0.0')
+    count = 0
+    
+    for u in unidades:
+        try:
+            estado = pago_service.get_estado_cuenta_unidad(db, u.id, empresa_id, True)
+            deuda = Decimal(str(estado.get('saldo_total', 0)))
+            
+            if deuda <= 0:
+                continue
+                
+            count += 1
+            total_monto += deuda
+            
+            # Registro de Detalle (Tipo 06)
+            # Pos 1-2: 06
+            # Pos 17-64: Referencia (index 16:64)
+            # Pos 65-82: Valor (index 64:82)
+            # Pos 117-124: Fecha (index 116:124)
+            
+            referencia = (u.referencia_recaudo or u.codigo or "").ljust(48)
+            valor_str = str(int(deuda * 100)).zfill(18)
+            
+            # Construir línea de detalle (162 caracteres)
+            # Tipo(2) + Reservado(14) + Referencia(48) + Valor(18) + Otros(34) + Fecha(8) + Final(38)
+            line_content = f"06{'0' * 14}{referencia}{valor_str}{'0' * 34}{fecha_str}{' ' * 38}"
+            lines.append(line_content[:162])
+        except:
+            continue
+        
+    # Registro de Control (Tipo 09) - Footer
+    # Pos 1-2: 09, Pos 3-11: Total Registros, Pos 12-29: Valor Total
+    footer = f"09{str(count).zfill(9)}{str(int(total_monto * 100)).zfill(18)}{' ' * 135}"
+    lines.append(footer[:162])
+    
+    return "\n".join(lines)

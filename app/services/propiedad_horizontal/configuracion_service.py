@@ -22,6 +22,7 @@ def get_configuracion(db: Session, empresa_id: int):
                 joinedload(PHConfiguracion.cuenta_ingreso_intereses),
                 joinedload(PHConfiguracion.cuenta_anticipos),
                 joinedload(PHConfiguracion.cuenta_descuento),
+                joinedload(PHConfiguracion.cuenta_caja_manual),
             )
             .filter(PHConfiguracion.empresa_id == empresa_id)
             .first()
@@ -68,6 +69,7 @@ def _ensure_configuracion_columns(db: Session):
         ("tipo_negocio", "VARCHAR(50) DEFAULT 'PH_RESIDENCIAL'"),
         ("interes_mora_habilitado", "BOOLEAN DEFAULT TRUE"),
         ("descuento_pronto_pago_habilitado", "BOOLEAN DEFAULT TRUE"),
+        ("cuenta_caja_manual_id", "INTEGER"),
     ]
     for col, col_type in cols_to_add:
         try:
@@ -96,6 +98,7 @@ def update_configuracion(db: Session, empresa_id: int, config_update: schemas.PH
     config.cuenta_caja_id = config_update.cuenta_caja_id
     config.cuenta_anticipos_id = config_update.cuenta_anticipos_id # Pasivo 2805
     config.cuenta_descuento_id = config_update.cuenta_descuento_id # Menor valor 4175
+    config.cuenta_caja_manual_id = config_update.cuenta_caja_manual_id # Caja Manual
     config.interes_mora_habilitado = config_update.interes_mora_habilitado
     config.descuento_pronto_pago_habilitado = config_update.descuento_pronto_pago_habilitado
     config.tipo_negocio = config_update.tipo_negocio # Nueva asignacion

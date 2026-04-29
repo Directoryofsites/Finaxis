@@ -23,6 +23,7 @@
                 <li><a href="#general">Configuración General</a></li>
                 <li><a href="#torres">Torres y Grupos</a></li>
                 <li><a href="#modulos">Módulos</a></li>
+                <li><a href="#cobranza-estratégica">Capítulo 10: Cobranza Estratégica</a></li>
                 <li><a href="#errores">Errores Comunes</a></li>
             </ul>
         </nav>
@@ -296,6 +297,42 @@
                 <div class="success">
                     <strong>✅ Ejemplo Práctico:</strong> Un apartamento puede tener los módulos "Residencial" + "Parqueadero", recibiendo tanto la cuota de administración como la cuota de parqueadero.
                 </div>
+            </section>
+
+            <section id="cobranza-estratégica" class="section">
+                <h2>📈 Capítulo 10: Cobranza Estratégica (Mora y FIFO)</h2>
+                <p>Esta sección detalla cómo utilizar la inteligencia del sistema para recuperar carteras de difícil cobro o de larga data (más de 90 días).</p>
+
+                <div class="info">
+                    <strong>💡 Lógica FIFO (First-In, First-Out):</strong> El motor de pagos de Finaxis siempre aplica el recaudo a la obligación <strong>más antigua</strong> de un concepto específico. Esto garantiza que la mora se vaya "empujando" hacia adelante, saneando primero los periodos más viejos.
+                </div>
+
+                <h3>1. Análisis con el Reporte de Edades</h3>
+                <p>Antes de cualquier gestión de cobro, consulte el <strong>Reporte de Cartera por Edades</strong> (Aging Report). Este reporte le permite:</p>
+                <ul>
+                    <li>Visualizar la mora segmentada en rangos: 0-30, 31-60, 61-90 y <strong>+90 días</strong>.</li>
+                    <li><strong>Tooltips Informativos:</strong> Al pasar el cursor sobre cualquier valor, el sistema le dirá exactamente qué conceptos (Administración, Multas, etc.) componen esa deuda.</li>
+                </ul>
+
+                <h3>2. Aplicación de Pagos Dirigidos</h3>
+                <p>Si llega a un acuerdo con un deudor para sanear su deuda de más de 90 días, siga este procedimiento:</p>
+                <ol class="step-list">
+                    <li><strong>Identifique el monto:</strong> Vea en el reporte de edades cuánto debe el usuario en el rango "+90" para el concepto deseado.</li>
+                    <li><strong>Recaudo exacto:</strong> Al realizar el recibo de caja, abone exactamente ese valor al concepto.</li>
+                    <li><strong>Efecto en Cartera:</strong> El sistema buscará la factura más antigua de ese concepto y le dará de baja. En el próximo reporte, ese rango de mora aparecerá saneado.</li>
+                </ol>
+
+                <div class="warning">
+                    <strong>⚠️ Nota sobre Abonos:</strong> No intente "escoger" facturas manualmente. El sistema lo hace por usted siguiendo el principio contable de prelación de antigüedad, lo cual evita errores en los saldos históricos.
+                </div>
+
+                <h3>3. Soporte Documental (Fichas de Cobro)</h3>
+                <p>Desde el reporte de edades, puede generar <strong>Fichas Individuales de Cobro</strong>. Use estos PDFs para:</p>
+                <ul>
+                    <li>Enviar citaciones de administración con soporte detallado.</li>
+                    <li>Explicar al residente el desglose de su deuda por conceptos y edades.</li>
+                    <li>Soportar procesos legales de cobro coactivo.</li>
+                </ul>
             </section>
 
             <section id="errores" class="section">

@@ -69,6 +69,7 @@
                 <button onclick="showChapter(3)" id="btn-cap-3" class="sidebar-item w-full text-left px-6 py-3 rounded-xl font-bold text-gray-500">3. Categorías de Cobro</button>
                 <button onclick="showChapter(4)" id="btn-cap-4" class="sidebar-item w-full text-left px-6 py-3 rounded-xl font-bold text-gray-500">4. Facturación Masiva</button>
                 <button onclick="showChapter(5)" id="btn-cap-5" class="sidebar-item w-full text-left px-6 py-3 rounded-xl font-bold text-gray-500">5. Recaudos y Becas</button>
+                <button onclick="showChapter(6)" id="btn-cap-6" class="sidebar-item w-full text-left px-6 py-3 rounded-xl font-bold text-gray-500">6. Cobranza Estratégica</button>
             </nav>
         </aside>
 
@@ -131,6 +132,49 @@
                 <h1>Capítulo 5: Gestión de Recaudos y Aplicación de Becas</h1>
                 <div class="premium-card">
                     <p>Cuando un padre paga en el banco, el sistema cruza la referencia de pago y aplica el dinero a los conceptos adeudados siguiendo su orden de prioridad (ej. primero seguros, luego pensión).</p>
+                </div>
+            </section>
+
+            <!-- Capítulo 6 -->
+            <section id="cap-6" class="chapter-content">
+                <h1>Capítulo 6: Cobranza Estratégica (Mora y FIFO)</h1>
+                
+                <div class="premium-card">
+                    <h2>1. El Motor de Inteligencia de Cartera</h2>
+                    <p>En el sector educativo, la mora puede acumularse por pensiones, rutas o matrículas. Nuestra plataforma implementa una estrategia de <strong>"Loop de Saneamiento"</strong> que combina el Reporte de Edades con el motor de pagos FIFO.</p>
+                    
+                    <div class="mt-12 mb-16 p-12 bg-white rounded-[40px] border border-gray-100 shadow-sm flex justify-center">
+                        <div class="mermaid w-full max-w-2xl">
+                        graph TD
+                            A[Reporte de Edades] -->|Identificación| B(Mora > 90 días)
+                            B -->|Negociación| C{Acuerdo de Pago}
+                            C -->|Abono Dirigido| D[Motor FIFO]
+                            D -->|Resultado| E[Saneamiento de Cartera Vieja]
+                            
+                            style A fill:#FFF,stroke:#000,stroke-width:2px
+                            style B fill:#FEE2E2,stroke:#EF4444,stroke-width:2px
+                            style E fill:#ECFDF5,stroke:#10B981,stroke-width:3px
+                        </div>
+                    </div>
+                </div>
+
+                <div class="premium-card">
+                    <h2>2. Operativa del Reporte de Edades (Aging Report)</h2>
+                    <p>Acceda desde <strong>Reportes > Cartera por Edades</strong>. Este informe permite una gestión táctica con los padres de familia:</p>
+                    <ul>
+                        <li><strong>Tooltips de Concepto:</strong> Al pasar el cursor, el sistema desglosa si la deuda es de Pensión, Restaurante o Seguros.</li>
+                        <li><strong>Discriminación por Período:</strong> Identifica exactamente qué mes dejó de pagar el acudiente.</li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-tip bg-yellow-50 p-6 rounded-2xl border border-yellow-100 mb-8">
+                    <h4 class="font-bold mb-2">💡 La Regla de Oro: Lógica FIFO (First-In, First-Out)</h4>
+                    <p class="m-0 text-sm">El sistema siempre aplicará los pagos a la obligación <strong>más antigua</strong> del concepto seleccionado. Esto garantiza que la mora se desplace cronológicamente hacia el presente.</p>
+                </div>
+
+                <div class="premium-card border-2 border-indigo-50 shadow-xl mt-12">
+                    <h2 class="text-gray-900">3. Soporte Documental para el Acudiente</h2>
+                    <p class="text-gray-600">Desde el mismo reporte, puede generar la <strong>Ficha Individual de Cobro</strong>. Este documento es vital para reuniones con padres de familia, ya que explica de forma irrefutable la antigüedad de sus compromisos financieros.</p>
                 </div>
             </section>
         </main>

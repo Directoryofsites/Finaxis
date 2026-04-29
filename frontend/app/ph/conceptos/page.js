@@ -26,9 +26,6 @@ function ConceptosContent() {
         cuenta_cxc_id: null,
         cuenta_cxc_codigo: '',
         cuenta_cxc_nombre: '',
-        cuenta_interes_id: null,
-        cuenta_interes_codigo: '',
-        cuenta_interes_nombre: '',
         cuenta_caja_id: null,
         cuenta_caja_codigo: '',
         cuenta_caja_nombre: '',
@@ -103,9 +100,6 @@ function ConceptosContent() {
             cuenta_cxc_id: c.cuenta_cxc_id,
             cuenta_cxc_codigo: c.cuenta_cxc ? c.cuenta_cxc.codigo : '',
             cuenta_cxc_nombre: c.cuenta_cxc ? `${c.cuenta_cxc.codigo} - ${c.cuenta_cxc.nombre}` : '',
-            cuenta_interes_id: c.cuenta_interes_id,
-            cuenta_interes_codigo: c.cuenta_interes ? c.cuenta_interes.codigo : '',
-            cuenta_interes_nombre: c.cuenta_interes ? `${c.cuenta_interes.codigo} - ${c.cuenta_interes.nombre}` : '',
             cuenta_caja_id: c.cuenta_caja_id,
             cuenta_caja_codigo: c.cuenta_caja ? c.cuenta_caja.codigo : '',
             cuenta_caja_nombre: c.cuenta_caja ? `${c.cuenta_caja.codigo} - ${c.cuenta_caja.nombre}` : '',
@@ -138,9 +132,6 @@ function ConceptosContent() {
             cuenta_cxc_id: null,
             cuenta_cxc_codigo: '',
             cuenta_cxc_nombre: '',
-            cuenta_interes_id: null,
-            cuenta_interes_codigo: '',
-            cuenta_interes_nombre: '',
             cuenta_caja_id: null,
             cuenta_caja_codigo: '',
             cuenta_caja_nombre: '',
@@ -328,7 +319,8 @@ function ConceptosContent() {
                             </div>
 
                             <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                <label className="label mb-2 block font-bold text-gray-700">1. Cuenta de Ingreso (Crédito) *</label>
+                                <label className="label mb-2 block font-bold text-gray-700 italic">Configuración Contable</label>
+                                <label className="label mb-2 block text-xs font-semibold text-indigo-600 uppercase">1. Cuenta de Ingreso (Crédito) *</label>
                                 <BuscadorCuentas
                                     onSelect={(cta) => setFormData({ ...formData, cuenta_ingreso_id: cta.id, cuenta_ingreso_codigo: cta.codigo, cuenta_ingreso_nombre: cta.nombre })}
                                     selectedCodigo={formData.cuenta_ingreso_codigo}
@@ -336,33 +328,7 @@ function ConceptosContent() {
                                 <p className="text-xs text-gray-500 mt-1">Cuenta donde se registra el ingreso (Ej: 4170 Cuotas de Administración).</p>
                             </div>
 
-                            <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                                <label className="label mb-2 block font-bold text-gray-700">2. Cuenta de Cartera (Débito) <span className="text-gray-400 font-normal">(Opcional)</span></label>
-                                <BuscadorCuentas
-                                    onSelect={(cta) => setFormData({ ...formData, cuenta_cxc_id: cta.id, cuenta_cxc_codigo: cta.codigo, cuenta_cxc_nombre: cta.nombre })}
-                                    selectedCodigo={formData.cuenta_cxc_codigo}
-                                />
-                                <p className="text-xs text-gray-500 mt-1">Cuenta por cobrar. Si se deja vacía, se usa la cuenta global del {labels.propietario} o del Sistema (Ej: 1305).</p>
-                            </div>
-
-                            <div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
-                                <label className="label mb-2 block font-bold text-gray-700">3. Cuenta Mora / Interés <span className="text-gray-400 font-normal">(Opcional)</span></label>
-                                <BuscadorCuentas
-                                    onSelect={(cta) => setFormData({ ...formData, cuenta_interes_id: cta.id, cuenta_interes_codigo: cta.codigo, cuenta_interes_nombre: cta.nombre })}
-                                    selectedCodigo={formData.cuenta_interes_codigo}
-                                />
-                                <p className="text-xs text-gray-500 mt-1">Cuenta para registrar intereses de mora específicos de este concepto.</p>
-                            </div>
-
-                            <div className="p-4 bg-green-50 rounded-lg border border-green-100">
-                                <label className="label mb-2 block font-bold text-gray-700">4. Cuenta de Caja (Recaudo) <span className="text-indigo-500 font-bold">(Nueva)</span></label>
-                                <BuscadorCuentas
-                                    onSelect={(cta) => setFormData({ ...formData, cuenta_caja_id: cta.id, cuenta_caja_codigo: cta.codigo, cuenta_caja_nombre: cta.nombre })}
-                                    selectedCodigo={formData.cuenta_caja_codigo}
-                                    placeholder="Ej: 110505 - Caja General"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">Cuenta Débito donde entra el dinero cuando se paga este concepto.</p>
-                            </div>
+                            {/* BLOQUE DE CAJA ELIMINADO PARA MANTENER CONSISTENCIA GLOBAL */}
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>

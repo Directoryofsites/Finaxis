@@ -23,6 +23,7 @@
                 <li><a href="#general">Configuración General</a></li>
                 <li><a href="#torres">Torres y Grupos</a></li>
                 <li><a href="#modulos">Módulos</a></li>
+                <li><a href="#cobranza">Cobranza Estratégica</a></li>
                 <li><a href="#errores">Errores Comunes</a></li>
             </ul>
         </nav>
@@ -296,6 +297,31 @@
                 <div class="success">
                     <strong>✅ Ejemplo Práctico:</strong> Un apartamento puede tener los módulos "Residencial" + "Parqueadero", recibiendo tanto la cuota de administración como la cuota de parqueadero.
                 </div>
+            </section>
+
+            <section id="cobranza" class="section">
+                <h2>📈 Cobranza Estratégica</h2>
+                <p>La configuración de políticas de cobranza permite al administrador tomar decisiones tácticas basadas en la antigüedad de la deuda y la prioridad de los conceptos.</p>
+
+                <h3>Reporte de Edades (Aging Report)</h3>
+                <p>Esta herramienta permite visualizar la mora segmentada por rangos de tiempo (0-30, 31-60, 61-90, >90 días). Es fundamental para:</p>
+                <ul>
+                    <li>🎯 <strong>Negociación Táctica:</strong> Identificar qué residentes tienen deudas críticas.</li>
+                    <li>📊 <strong>Proyección de Flujo:</strong> Saber cuánto dinero entrará en el corto vs largo plazo.</li>
+                    <li>📋 <strong>Fichas de Cobro:</strong> Generar soportes detallados para citaciones.</li>
+                </ul>
+
+                <div class="info">
+                    <strong>💡 Lógica FIFO (First-In, First-Out):</strong> El sistema aplica automáticamente los abonos a la deuda más antigua primero, garantizando que el saneamiento sea contablemente coherente.
+                </div>
+
+                <h3>Flujo de Saneamiento</h3>
+                <ol class="step-list">
+                    <li>Consulte el <strong>Reporte de Edades</strong> para identificar saldos en el rango >90 días.</li>
+                    <li>Acuerde un <strong>Abono Dirigido</strong> con el deudor para cubrir específicamente esa mora antigua.</li>
+                    <li>Registre el recaudo; el sistema aplicará la lógica <strong>FIFO</strong> para dar de baja las facturas más viejas.</li>
+                    <li>Genere la <strong>Ficha de Cobro</strong> actualizada como comprobante de saneamiento.</li>
+                </ol>
             </section>
 
             <section id="errores" class="section">

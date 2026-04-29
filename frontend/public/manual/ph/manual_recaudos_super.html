@@ -221,6 +221,10 @@
                     <span>9. Proyectos Especiales</span>
                     <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
                 </button>
+                <button onclick="showChapter(10)" id="btn-cap-10" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
+                    <span>10. Cobranza Estratégica (Mora)</span>
+                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </button>
             </nav>
 
             <div class="p-12 border-t border-gray-100">
@@ -918,6 +922,59 @@
                         </div>
                     </div>
                 </section>
+                <!-- Capítulo 10 -->
+                <section id="cap-10" class="chapter-content">
+                    <h1>Capítulo 10: Estrategia de Cobranza de Larga Data (Loop FIFO)</h1>
+                    
+                    <div class="premium-card">
+                        <h2>1. El Reporte de Edades: Su Brújula de Cobro</h2>
+                        <p>El <strong>Reporte de Cartera por Edades</strong> no es solo una lista de morosos; es una herramienta analítica de precisión quirúrgica. Gracias a la integración con el motor de simulación, usted puede ver exactamente qué conceptos componen la deuda de cada unidad en rangos de 0-30, 31-60, 61-90 y más de 90 días.</p>
+                        
+                        <div class="alert alert-tip">
+                            <h4 class="font-bold mb-2">Visibilidad Total</h4>
+                            <p class="m-0">Al pasar el mouse sobre cualquier valor en el reporte web, el sistema le mostrará un <strong>Tooltip Informativo</strong> con el desglose conceptual (ej: Administración: $800k, Multas: $200k). Esto permite negociaciones transparentes con el residente.</p>
+                        </div>
+                    </div>
+
+                    <div class="premium-card border-2 border-indigo-100 shadow-2xl">
+                        <h2>2. La Estrategia del "Saneamiento Inteligente"</h2>
+                        <p>Cuando un residente con mora antigua (>90 días) desea ponerse al día parcialmente, la administración debe utilizar la lógica <strong>FIFO (First-In, First-Out)</strong> a su favor.</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-10 mt-8">
+                            <div class="space-y-6">
+                                <div class="p-8 bg-blue-50 rounded-3xl border-l-8 border-blue-600">
+                                    <h4 class="font-bold text-blue-900">1. Identificación</h4>
+                                    <p class="text-sm">Localice en el reporte de edades el valor exacto de la deuda más antigua (Rango > 90 días) para un concepto específico.</p>
+                                </div>
+                                <div class="p-8 bg-indigo-50 rounded-3xl border-l-8 border-indigo-600">
+                                    <h4 class="font-bold text-indigo-900">2. Recaudo Preciso</h4>
+                                    <p class="text-sm">Realice el pago por ese valor exacto. El motor de Finaxis aplicará el dinero automáticamente a las obligaciones <strong>más viejas</strong> primero.</p>
+                                </div>
+                            </div>
+                            <div class="bg-white p-8 rounded-[40px] border border-gray-100 flex items-center justify-center">
+                                <div class="mermaid w-full">
+                                graph TD
+                                    A[Deuda > 90 días] -->|Reporte de Edades| B{Identificar Valor}
+                                    B -->|Pago exacto| C[Aplicación FIFO]
+                                    C -->|Resultado| D[Mora antigua saneada]
+                                    D -->|Reporte actualizado| A
+                                    
+                                    style A fill:#FEE2E2,stroke:#EF4444
+                                    style D fill:#ECFDF5,stroke:#10B981,stroke-width:3px
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="premium-card">
+                        <h3>3. Herramientas de Comunicación (Fichas de Cobro)</h3>
+                        <p>Desde el reporte de edades, usted puede generar <strong>Fichas Individuales de Cobro</strong> en PDF. Estas fichas no solo muestran el saldo total, sino que desglosan la deuda por concepto y por edad, sirviendo como soporte legal y comercial indiscutible para la gestión de cobranza.</p>
+                        
+                        <div class="mt-8 p-6 bg-gray-50 rounded-2xl border border-gray-200">
+                            <p class="text-xs text-gray-500 m-0"><strong>Nota Pro:</strong> Use estas fichas en las citaciones de administración para evitar discusiones sobre el origen de la deuda. La claridad conceptual reduce la fricción en el recaudo.</p>
+                        </div>
+                    </div>
+                </section>
 
                 <div class="mt-20 pt-10 border-t border-gray-100 flex justify-between items-center bg-white/50 p-8 rounded-[40px]">
                     <button id="prevBtn" onclick="changeStep(-1)" class="px-8 py-4 bg-white border border-gray-100 rounded-2xl text-md font-bold text-gray-300 transition-all opacity-50 cursor-not-allowed">Anterior</button>
@@ -932,6 +989,7 @@
                         <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(7)"></div>
                         <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(8)"></div>
                         <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(9)"></div>
+                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(10)"></div>
                     </div>
 
                     <button id="nextBtn" onclick="changeStep(1)" class="px-10 py-4 bg-indigo-600 text-white rounded-2xl text-md font-bold hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all">Siguiente</button>
@@ -951,7 +1009,7 @@
         });
 
         let currentChapter = 1;
-        const TOTAL_CHAPTERS = 9;
+        const TOTAL_CHAPTERS = 10;
 
         function showChapter(n) {
             // 1. Hide all contents

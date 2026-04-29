@@ -23,6 +23,7 @@
                 <li><a href="#general">Configuración General</a></li>
                 <li><a href="#torres">Torres y Grupos</a></li>
                 <li><a href="#modulos">Módulos</a></li>
+                <li><a href="#cobranza">Cobranza Estratégica</a></li>
                 <li><a href="#errores">Errores Comunes</a></li>
             </ul>
         </nav>
@@ -296,6 +297,32 @@
                 <div class="success">
                     <strong>✅ Ejemplo Práctico:</strong> Un apartamento puede tener los módulos "Residencial" + "Parqueadero", recibiendo tanto la cuota de administración como la cuota de parqueadero.
                 </div>
+            </section>
+
+            <section id="cobranza" class="section">
+                <h2>📈 Cobranza Estratégica (Edades y FIFO)</h2>
+                <p>Nuestra plataforma no solo factura; proporciona inteligencia para recuperar cartera difícil mediante el Reporte de Edades y el motor FIFO.</p>
+
+                <h3>1. Reporte de Cartera por Edades (Aging Report)</h3>
+                <p>Herramienta clave para negociaciones de deuda. Clasifica la mora en rangos (1-30, 31-60, 61-90, >90 días) permitiendo:</p>
+                <ul>
+                    <li><strong>Identificación de Cartera Crítica:</strong> Localice deudas de más de 90 días para procesos coactivos.</li>
+                    <li><strong>Abonos Dirigidos:</strong> Si un deudor pacta pagar solo la deuda antigua, el sistema lo permite.</li>
+                </ul>
+
+                <h3>2. Motor FIFO (First-In, First-Out)</h3>
+                <div class="info">
+                    <strong>⚠️ Lógica de Recruce:</strong> El sistema siempre aplicará los pagos a la factura/obligación <strong>más antigua</strong> dentro de cada concepto.
+                </div>
+                <p>Esto garantiza que la mora se desplace cronológicamente hacia el presente de forma automática, sin intervención manual del contador, asegurando integridad total.</p>
+
+                <h3>3. Flujo de Saneamiento</h3>
+                <ol class="step-list">
+                    <li>Genere el Reporte de Edades para identificar deudores antiguos.</li>
+                    <li>Realice el recaudo mediante <strong>Abonos Dirigidos</strong> si el pago es parcial.</li>
+                    <li>El motor FIFO cruza automáticamente la deuda más vieja primero.</li>
+                    <li>Genere la <strong>Ficha de Cobro</strong> para certificar el saneamiento al residente.</li>
+                </ol>
             </section>
 
             <section id="errores" class="section">

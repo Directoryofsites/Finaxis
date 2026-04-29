@@ -11,11 +11,12 @@ import {
 } from 'react-icons/fa';
 import { useRecaudos } from '../../../contexts/RecaudosContext'; // IMPORT
 import ManualButton from '../../components/ManualButton';
+import BuscadorCuentas from '../../../components/BuscadorCuentas';
 import Link from 'next/link';
 
 export default function PagosPHPage() {
     const { user, loading: authLoading } = useAuth();
-    const { labels } = useRecaudos(); // HOOK
+    const { labels, config } = useRecaudos(); // HOOK
 
     // Estados
     const [paymentMode, setPaymentMode] = useState('UNIT'); // 'UNIT' | 'OWNER'
@@ -36,7 +37,10 @@ export default function PagosPHPage() {
 
     const [pagoForm, setPagoForm] = useState({
         monto: '',
-        fecha: new Date().toISOString().slice(0, 10)
+        fecha: new Date().toISOString().slice(0, 10),
+        cuenta_caja_id: '',
+        cuenta_caja_codigo: '',
+        cuenta_caja_nombre: ''
     });
     const [processing, setProcessing] = useState(false);
     const [lastPaymentData, setLastPaymentData] = useState(null);
@@ -50,6 +54,24 @@ export default function PagosPHPage() {
     useEffect(() => {
         if (!authLoading) loadInitialData();
     }, [authLoading]);
+
+    // Pre-rellenar cuenta por defecto desde configuración tan pronto esté lista
+    useEffect(() => {
+        if (config && !pagoForm.cuenta_caja_id) {
+            const defaultCajaId = config.cuenta_caja_manual_id;
+            const defaultCajaCodigo = config.cuenta_caja_manual?.codigo || '';
+            const defaultCajaNombre = config.cuenta_caja_manual?.nombre || '';
+
+            if (defaultCajaId) {
+                setPagoForm(prev => ({
+                    ...prev,
+                    cuenta_caja_id: defaultCajaId,
+                    cuenta_caja_codigo: defaultCajaCodigo,
+                    cuenta_caja_nombre: defaultCajaNombre
+                }));
+            }
+        }
+    }, [config]);
 
     const loadInitialData = async () => {
         try {
@@ -138,6 +160,7 @@ export default function PagosPHPage() {
             }
 
             setEstadoCuenta(data);
+            
             if (data.saldo_total > 0) {
                 setPagoForm(prev => ({ ...prev, monto: data.saldo_total }));
             }
@@ -222,17 +245,17 @@ export default function PagosPHPage() {
             let res;
             if (paymentMode === 'UNIT') {
                 res = await phService.registrarPago({
+                    ...pagoForm,
                     unidad_id: parseInt(selectedUnidadId),
                     monto: parseFloat(pagoForm.monto),
-                    fecha: pagoForm.fecha,
                     detalles: isAbonoManual ? detallesAbono.filter(d => d.monto > 0) : null
                 });
             } else {
                 // PAGO CONSOLIDADO
                 res = await phService.registrarPagoConsolidado({
+                    ...pagoForm,
                     propietario_id: parseInt(selectedPropietarioId),
                     monto_total: parseFloat(pagoForm.monto),
-                    fecha: pagoForm.fecha,
                     observaciones: "Pago Consolidado Web"
                 });
                 // Res: { total_recibos, detalle_pagos ... }
@@ -529,6 +552,27 @@ export default function PagosPHPage() {
                                         />
                                         {isAbonoManual && <p className="text-[9px] text-gray-400 mt-1 italic">* Calculado desde abono por concepto</p>}
                                     </div>
+                                </div>
+
+                                <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl">
+                                    <label className="block text-[10px] font-bold text-indigo-500 uppercase mb-2 tracking-wider">
+                                        Cuenta de Destino (Caja o Banco)
+                                    </label>
+                                    <BuscadorCuentas
+                                        onSelect={(cta) => setPagoForm({
+                                            ...pagoForm,
+                                            cuenta_caja_id: cta ? cta.id : null,
+                                            cuenta_caja_codigo: cta ? cta.codigo : '',
+                                            cuenta_caja_nombre: cta ? cta.nombre : ''
+                                        })}
+                                        selectedCodigo={pagoForm.cuenta_caja_codigo}
+                                        label=""
+                                        placeholder="¿A qué cuenta ingresa el dinero?"
+                                        filterPrefix="11"
+                                    />
+                                    <p className="text-[9px] text-indigo-400 mt-2 italic">
+                                        * Use esta opción para diferenciar si el pago fue en efectivo (Caja) o transferencia (Banco).
+                                    </p>
                                 </div>
 
                                 <button

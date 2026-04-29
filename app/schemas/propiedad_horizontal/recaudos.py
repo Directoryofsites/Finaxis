@@ -8,6 +8,7 @@ class PagoConsolidadoCreate(BaseModel):
     monto_total: float
     observaciones: Optional[str] = None
     forma_pago_id: Optional[int] = None
+    cuenta_caja_id: Optional[int] = None
 
 class PagoConsolidadoResponse(BaseModel):
     message: str

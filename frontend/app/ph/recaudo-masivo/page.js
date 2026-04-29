@@ -22,6 +22,7 @@ export default function RecaudoMasivoPage() {
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
+    const [selectedRows, setSelectedRows] = useState(new Set()); // Almacena índices de filas seleccionadas
 
     useEffect(() => {
         if (!authLoading && user) {
@@ -68,6 +69,14 @@ export default function RecaudoMasivoPage() {
         try {
             const data = await phService.uploadRecaudoMasivo(formData);
             setPreviewData(data);
+            
+            // Inicializar selección: todos los que sean válidos por defecto
+            if (data && data.detalles) {
+                const indicesValidos = data.detalles
+                    .map((f, idx) => f.is_valid ? idx : null)
+                    .filter(idx => idx !== null);
+                setSelectedRows(new Set(indicesValidos));
+            }
         } catch (err) {
             setError(err.message || "Error procesando el archivo. Verifica el formato.");
         } finally {
@@ -81,8 +90,8 @@ export default function RecaudoMasivoPage() {
             return;
         }
         
-        if (!previewData || previewData.filas_validas === 0) {
-            setError("No hay filas válidas para procesar.");
+        if (!previewData || selectedRows.size === 0) {
+            setError("No hay filas seleccionadas para procesar.");
             return;
         }
 
@@ -92,7 +101,7 @@ export default function RecaudoMasivoPage() {
         const requestBody = {
             cuenta_bancaria_id: parseInt(cuentaSeleccionada),
             fecha_consignacion: fechaConsignacion,
-            filas: previewData.detalles
+            filas: previewData.detalles.filter((_, idx) => selectedRows.has(idx))
         };
 
         try {
@@ -107,6 +116,28 @@ export default function RecaudoMasivoPage() {
             setError(err.message || "Error registrando los pagos en lote.");
         } finally {
             setProcessing(false);
+        }
+    };
+
+    const toggleRow = (idx) => {
+        const newSelected = new Set(selectedRows);
+        if (newSelected.has(idx)) {
+            newSelected.delete(idx);
+        } else {
+            newSelected.add(idx);
+        }
+        setSelectedRows(newSelected);
+    };
+
+    const toggleAll = () => {
+        if (!previewData) return;
+        if (selectedRows.size === previewData.detalles.filter(f => f.is_valid).length) {
+            setSelectedRows(new Set());
+        } else {
+            const validIndices = previewData.detalles
+                .map((f, idx) => f.is_valid ? idx : null)
+                .filter(idx => idx !== null);
+            setSelectedRows(new Set(validIndices));
         }
     };
 
@@ -144,12 +175,12 @@ export default function RecaudoMasivoPage() {
                         
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Archivo del Banco (.csv, .xlsx)</label>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Archivo del Banco (.csv, .xlsx, .txt)</label>
                                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center bg-gray-50 hover:bg-indigo-50 transition-colors">
                                     <input 
                                         id="file-upload"
                                         type="file" 
-                                        accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" 
+                                        accept=".csv, .txt, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" 
                                         onChange={handleFileChange}
                                         className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
                                     />
@@ -203,15 +234,20 @@ export default function RecaudoMasivoPage() {
                                     </div>
                                     <button 
                                         onClick={handleProcess}
-                                        disabled={processing || previewData.filas_validas === 0}
+                                        disabled={processing || selectedRows.size === 0}
                                         className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg shadow-lg flex items-center gap-2 transition-transform active:scale-95 disabled:opacity-50"
                                     >
                                         {processing ? <FaSpinner className="animate-spin" /> : <FaCheck />}
-                                        {processing ? 'Generando Recibos...' : `Registrar ${previewData.filas_validas} Pagos`}
+                                        {processing ? 'Generando Recibos...' : `Registrar ${selectedRows.size} Pago${selectedRows.size !== 1 ? 's' : ''}`}
                                     </button>
                                 </div>
 
-                                <BatchPreviewTable previewData={previewData} />
+                                <BatchPreviewTable 
+                                    previewData={previewData} 
+                                    selectedRows={selectedRows}
+                                    onToggleRow={toggleRow}
+                                    onToggleAll={toggleAll}
+                                />
                             </div>
                         ) : (
                             <div className="bg-white p-10 rounded-xl shadow-sm border border-gray-100 h-full flex flex-col items-center justify-center text-gray-400">

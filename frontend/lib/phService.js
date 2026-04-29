@@ -274,5 +274,12 @@ export const phService = {
             fecha_pago: fechaPago
         });
         return response.data;
+    },
+
+    generateAsobancariaTestFile: async () => {
+        const response = await apiService.get('/ph/recaudos-masivos/generate-test', {
+            responseType: 'blob'
+        });
+        return response.data;
     }
 };

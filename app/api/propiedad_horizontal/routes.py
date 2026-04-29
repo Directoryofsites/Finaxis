@@ -74,6 +74,7 @@ class PagoRequest(BaseModel):
     monto: float
     fecha: date
     forma_pago_id: int = None
+    cuenta_caja_id: Optional[int] = None # Cuenta de destino (Caja/Banco)
     detalles: Optional[List[PagoDetalle]] = None
     observaciones: Optional[str] = None
 
@@ -235,6 +236,7 @@ def registrar_pago_consolidado(
         empresa_id=current_user.empresa_id,
         usuario_id=current_user.id,
         forma_pago_id=payload.forma_pago_id,
+        cuenta_caja_id=payload.cuenta_caja_id, # Nueva cuenta flexible
         observaciones=payload.observaciones
     )
 
@@ -384,6 +386,7 @@ def registrar_pago(
         monto=payload.monto,
         fecha_pago=payload.fecha,
         forma_pago_id=payload.forma_pago_id,
+        cuenta_caja_id=payload.cuenta_caja_id, # Nueva cuenta flexible
         detalles=payload.detalles,
         observaciones=payload.observaciones
     )
@@ -432,6 +435,24 @@ def process_recaudos_masivos(
     current_user: Usuario = Depends(get_current_user)
 ):
     return recaudo_masivo_service.procesar_lote_pagos(db, current_user.empresa_id, request, current_user.id)
+
+@router.get("/recaudos-masivos/generate-test")
+def generate_asobancaria_test_file(
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Genera un archivo plano Asobancaria de prueba con la deuda actual de todas las unidades.
+    """
+    try:
+        content = recaudo_masivo_service.generar_archivo_asobancaria_test(db, current_user.empresa_id)
+        filename = f"PRUEBA_ASOBANCARIA_{date.today()}.txt"
+        headers = {
+            'Content-Disposition': f'attachment; filename="{filename}"'
+        }
+        return Response(content=content, media_type="text/plain", headers=headers)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/pagos/historial/{unidad_id}")

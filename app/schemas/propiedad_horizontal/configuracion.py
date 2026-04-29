@@ -18,6 +18,7 @@ class PHConfiguracionBase(BaseModel):
     tipo_documento_cruce_id: Optional[int] = None
     cuenta_cartera_id: Optional[int] = None
     cuenta_caja_id: Optional[int] = None
+    cuenta_caja_manual_id: Optional[int] = None
     cuenta_ingreso_intereses_id: Optional[int] = None
     cuenta_anticipos_id: Optional[int] = None
     cuenta_descuento_id: Optional[int] = None
@@ -35,6 +36,7 @@ class PHConfiguracionResponse(PHConfiguracionBase):
     # Objetos nested correctamente tipados para que el frontend pueda mostrar nombres
     cuenta_cartera: Optional[PlanCuentaSimple] = None
     cuenta_caja: Optional[PlanCuentaSimple] = None
+    cuenta_caja_manual: Optional[PlanCuentaSimple] = None
     cuenta_ingreso_intereses: Optional[PlanCuentaSimple] = None
     cuenta_anticipos: Optional[PlanCuentaSimple] = None
     cuenta_descuento: Optional[PlanCuentaSimple] = None

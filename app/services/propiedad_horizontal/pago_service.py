@@ -797,7 +797,7 @@ def get_historial_cuenta_unidad(db: Session, unidad_id: Optional[int], empresa_i
 
 
 
-def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_id: int, monto: float, fecha_pago: date, forma_pago_id: int = None, detalles: List = None, observaciones: str = None, skip_recalculo: bool = False, commit: bool = True):
+def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_id: int, monto: float, fecha_pago: date, forma_pago_id: int = None, cuenta_caja_id: int = None, detalles: List = None, observaciones: str = None, skip_recalculo: bool = False, commit: bool = True):
     # 1. Validaciones
     if monto <= 0:
         raise HTTPException(status_code=400, detail="El monto debe ser mayor a 0.")
@@ -819,8 +819,8 @@ def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_
     movimientos = []
     total_verificado = 0
     
-    # Cuenta de Banco/Caja por defecto
-    cta_caja_defecto = tipo_doc.cuenta_caja_id or config.cuenta_anticipos_id
+    # Cuenta de Banco/Caja: Prioridad 1: Recibida por parámetro, Prioridad 2: Configuración Global PH, Prioridad 3: Defecto Tipo Doc
+    cta_caja_defecto = cuenta_caja_id or config.cuenta_caja_id or tipo_doc.cuenta_caja_id or config.cuenta_anticipos_id
 
     if detalles:
         # VALIDACIÓN CRÍTICA: La suma de los detalles debe coincidir con el monto total
@@ -833,10 +833,10 @@ def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_
             concepto = db.query(PHConcepto).filter(PHConcepto.id == d.concepto_id).first()
             if not concepto: continue
             
-            # Cuenta de Caja/Banco (Origen)
-            cuenta_caja = concepto.cuenta_caja_id or cta_caja_defecto
-            # Cuenta de Cartera (Destino)
-            cuenta_cxc = concepto.cuenta_cxc_id or config.cuenta_cartera_id or tipo_doc.cuenta_debito_cxc_id
+            # Cuenta de Caja/Banco (Origen) - AHORA SIEMPRE GLOBAL O ELEGIDA
+            cuenta_caja = cta_caja_defecto
+            # Cuenta de Cartera (Destino) - SIEMPRE GLOBAL
+            cuenta_cxc = config.cuenta_cartera_id or tipo_doc.cuenta_debito_cxc_id
             
             if not cuenta_caja or not cuenta_cxc:
                 raise HTTPException(status_code=400, detail=f"El concepto {concepto.nombre} no tiene configuradas sus cuentas contables.")
@@ -874,40 +874,11 @@ def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_
     else:
         # PAGO AUTOMÁTICO — Un movimiento genérico Caja/CXC.
         # El cruce por factura lo realiza recalcular_aplicaciones_tercero (FIFO).
-        # El desglose por concepto en el panel lo calcula pago_service_new usando AplicacionPago.
         cuenta_caja_final = cta_caja_defecto
-
-        # Inferir cuenta caja si no hay default
-        if not cuenta_caja_final:
-            primer_concepto_caja = db.query(PHConcepto).filter(
-                PHConcepto.empresa_id == empresa_id,
-                PHConcepto.cuenta_caja_id.isnot(None)
-            ).first()
-            if primer_concepto_caja:
-                cuenta_caja_final = primer_concepto_caja.cuenta_caja_id
 
         if not cuenta_caja_final:
             raise HTTPException(status_code=400, detail="No se ha configurado una cuenta de caja por defecto para recaudos.")
 
-        # Inferir cuenta caja desde facturas pendientes (busca la caja del concepto predominante)
-        try:
-            pendientes_tmp = get_cartera_ph_pendientes(db, empresa_id, unidad_id=unidad_id)
-            if pendientes_tmp:
-                conceptos_con_caja = db.query(PHConcepto).filter(
-                    PHConcepto.empresa_id == empresa_id,
-                    PHConcepto.cuenta_caja_id.isnot(None)
-                ).all()
-                mapa_cxc_caja = {c.cuenta_cxc_id: c.cuenta_caja_id for c in conceptos_con_caja if c.cuenta_cxc_id}
-                if mapa_cxc_caja:
-                    doc_ids = [p['id'] for p in pendientes_tmp]
-                    res_cxc = db.query(MovimientoContable.cuenta_id).filter(
-                        MovimientoContable.documento_id.in_(doc_ids),
-                        MovimientoContable.cuenta_id.in_(mapa_cxc_caja.keys())
-                    ).first()
-                    if res_cxc:
-                        cuenta_caja_final = mapa_cxc_caja[res_cxc[0]]
-        except Exception as e:
-            print(f"[PAGO AUTO] Error infiriendo caja: {e}")
 
         # Un solo movimiento de Caja (débito) y uno de Cartera CXC (crédito)
         movimientos.append(doc_schemas.MovimientoContableCreate(
@@ -3414,7 +3385,7 @@ def get_historial_cuenta_ph_detailed(db: Session, empresa_id: int, unidad_id: in
 
 
 
-def registrar_pago_consolidado(db: Session, propietario_id: int, monto_total: float, fecha: date, empresa_id: int, usuario_id: int, forma_pago_id: int = None, observaciones: str = None):
+def registrar_pago_consolidado(db: Session, propietario_id: int, monto_total: float, fecha: date, empresa_id: int, usuario_id: int, forma_pago_id: int = None, cuenta_caja_id: int = None, observaciones: str = None):
 
 
 
@@ -3776,7 +3747,8 @@ def registrar_pago_consolidado(db: Session, propietario_id: int, monto_total: fl
 
 
 
-                    forma_pago_id=forma_pago_id
+                    forma_pago_id=forma_pago_id,
+                    cuenta_caja_id=cuenta_caja_id,
 
 
 

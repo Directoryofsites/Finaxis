@@ -38,12 +38,21 @@ export default function ConfiguracionPHPage() {
         cuenta_ingreso_intereses_id: '',
         cuenta_ingreso_intereses_codigo: '',
         cuenta_ingreso_intereses_nombre: '',
+        cuenta_cartera_id: '',
+        cuenta_cartera_codigo: '',
+        cuenta_cartera_nombre: '',
         cuenta_anticipos_id: '',
         cuenta_anticipos_codigo: '',
         cuenta_anticipos_nombre: '',
         cuenta_descuento_id: '',
         cuenta_descuento_codigo: '',
-        cuenta_descuento_nombre: ''
+        cuenta_descuento_nombre: '',
+        cuenta_caja_id: '',
+        cuenta_caja_codigo: '',
+        cuenta_caja_nombre: '',
+        cuenta_caja_manual_id: '',
+        cuenta_caja_manual_codigo: '',
+        cuenta_caja_manual_nombre: ''
     });
 
     const [tiposDoc, setTiposDoc] = useState([]);
@@ -66,10 +75,19 @@ export default function ConfiguracionPHPage() {
                 interes_mora_habilitado: configData.interes_mora_habilitado ?? true,
                 cuenta_ingreso_intereses_codigo: configData.cuenta_ingreso_intereses ? configData.cuenta_ingreso_intereses.codigo : '',
                 cuenta_ingreso_intereses_nombre: configData.cuenta_ingreso_intereses ? configData.cuenta_ingreso_intereses.nombre : '',
+                cuenta_cartera_id: configData.cuenta_cartera_id || '',
+                cuenta_cartera_codigo: configData.cuenta_cartera ? configData.cuenta_cartera.codigo : '',
+                cuenta_cartera_nombre: configData.cuenta_cartera ? configData.cuenta_cartera.nombre : '',
                 cuenta_anticipos_codigo: configData.cuenta_anticipos ? configData.cuenta_anticipos.codigo : '',
                 cuenta_anticipos_nombre: configData.cuenta_anticipos ? configData.cuenta_anticipos.nombre : '',
                 cuenta_descuento_codigo: configData.cuenta_descuento ? configData.cuenta_descuento.codigo : '',
                 cuenta_descuento_nombre: configData.cuenta_descuento ? configData.cuenta_descuento.nombre : '',
+                cuenta_caja_id: configData.cuenta_caja_id || '',
+                cuenta_caja_codigo: configData.cuenta_caja ? configData.cuenta_caja.codigo : '',
+                cuenta_caja_nombre: configData.cuenta_caja ? configData.cuenta_caja.nombre : '',
+                cuenta_caja_manual_id: configData.cuenta_caja_manual_id || '',
+                cuenta_caja_manual_codigo: configData.cuenta_caja_manual ? configData.cuenta_caja_manual.codigo : '',
+                cuenta_caja_manual_nombre: configData.cuenta_caja_manual ? configData.cuenta_caja_manual.nombre : '',
                 tipo_negocio: configData.tipo_negocio || 'PH_RESIDENCIAL'
             });
             setTiposDoc(tiposData);
@@ -104,7 +122,8 @@ export default function ConfiguracionPHPage() {
                 tipo_documento_cruce_id: config.tipo_documento_cruce_id || null,
                 tipo_documento_mora_id: config.tipo_documento_mora_id || null,
                 cuenta_cartera_id: config.cuenta_cartera_id || null,
-                cuenta_caja_id: config.cuenta_caja_id || null
+                cuenta_caja_id: config.cuenta_caja_id || null,
+                cuenta_caja_manual_id: config.cuenta_caja_manual_id || null
             };
             await phService.updateConfiguracion(payload);
             await refreshConfig(); // Actualizar el contexto con el nuevo tipo de negocio
@@ -344,6 +363,16 @@ export default function ConfiguracionPHPage() {
                                             <p className="text-xs text-gray-400 mt-1">Usado para aplicar saldos a favor (Ej. NC).</p>
                                         </div>
                                         <div className="md:col-span-1">
+                                            <label className="block text-xs font-bold text-indigo-800 uppercase mb-1">Cuenta de Cartera (CXC Default)</label>
+                                            <BuscadorCuentas
+                                                onSelect={(cta) => setConfig({ ...config, cuenta_cartera_id: cta ? cta.id : null, cuenta_cartera_codigo: cta ? cta.codigo : '', cuenta_cartera_nombre: cta ? cta.nombre : '' })}
+                                                selectedCodigo={config.cuenta_cartera_codigo}
+                                                placeholder="130505 - Cartera"
+                                                filterPrefix="13"
+                                            />
+                                            <p className="text-xs text-indigo-700 mt-1">{config.cuenta_cartera_nombre || 'Cuenta principal para abonos y pagos masivos.'}</p>
+                                        </div>
+                                        <div className="md:col-span-1">
                                             <label className="block text-xs font-bold text-indigo-800 uppercase mb-1">Cuenta de Anticipos (Pasivo)</label>
                                             <BuscadorCuentas
                                                 onSelect={(cta) => setConfig({ ...config, cuenta_anticipos_id: cta ? cta.id : null, cuenta_anticipos_codigo: cta ? cta.codigo : '', cuenta_anticipos_nombre: cta ? cta.nombre : '' })}
@@ -352,6 +381,26 @@ export default function ConfiguracionPHPage() {
                                                 filterPrefix="2"
                                             />
                                             <p className="text-xs text-indigo-700 mt-1">{config.cuenta_anticipos_nombre || 'Mueve excedentes de pago a este Pasivo automáticamente.'}</p>
+                                        </div>
+                                        <div className="md:col-span-1">
+                                            <label className="block text-xs font-bold text-green-700 uppercase mb-1">Cuenta Recaudo (Masivo/Bancos)</label>
+                                            <BuscadorCuentas
+                                                onSelect={(cta) => setConfig({ ...config, cuenta_caja_id: cta ? cta.id : null, cuenta_caja_codigo: cta ? cta.codigo : '', cuenta_caja_nombre: cta ? cta.nombre : '' })}
+                                                selectedCodigo={config.cuenta_caja_codigo}
+                                                placeholder="111005 - Bancos"
+                                                filterPrefix="11"
+                                            />
+                                            <p className="text-xs text-green-700 mt-1">{config.cuenta_caja_nombre || 'Usada para archivos planos bancarios.'}</p>
+                                        </div>
+                                        <div className="md:col-span-1">
+                                            <label className="block text-xs font-bold text-green-700 uppercase mb-1">Cuenta Recaudo (Manual/Caja)</label>
+                                            <BuscadorCuentas
+                                                onSelect={(cta) => setConfig({ ...config, cuenta_caja_manual_id: cta ? cta.id : null, cuenta_caja_manual_codigo: cta ? cta.codigo : '', cuenta_caja_manual_nombre: cta ? cta.nombre : '' })}
+                                                selectedCodigo={config.cuenta_caja_manual_codigo}
+                                                placeholder="110505 - Caja"
+                                                filterPrefix="11"
+                                            />
+                                            <p className="text-xs text-green-700 mt-1">{config.cuenta_caja_manual_nombre || 'Aparecerá por defecto en recibos manuales.'}</p>
                                         </div>
                                     </div>
                                 </div>

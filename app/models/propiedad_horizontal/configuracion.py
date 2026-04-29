@@ -31,7 +31,8 @@ class PHConfiguracion(Base):
     
     # Cuentas Contables Centralizadas (Overrides)
     cuenta_cartera_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Para CXC (13, 14, 16...)
-    cuenta_caja_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Para Caja/Bancos (11...)
+    cuenta_caja_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Para Caja/Bancos Masivos (Bancos)
+    cuenta_caja_manual_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Para Caja/Bancos Manuales (Caja/Oficina)
     cuenta_ingreso_intereses_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Para Ingreso por Intereses (42...)
     cuenta_anticipos_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Para Pasivo Anticipos (2805...)
     cuenta_descuento_id = Column(Integer, ForeignKey("plan_cuentas.id"), nullable=True) # Para Menor Valor de Ingreso (4175...)
@@ -47,6 +48,7 @@ class PHConfiguracion(Base):
     tipo_documento_cruce = relationship("app.models.tipo_documento.TipoDocumento", foreign_keys=[tipo_documento_cruce_id])
     cuenta_cartera = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_cartera_id])
     cuenta_caja = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_caja_id])
+    cuenta_caja_manual = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_caja_manual_id])
     cuenta_ingreso_intereses = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_ingreso_intereses_id])
     cuenta_anticipos = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_anticipos_id])
     cuenta_descuento = relationship("app.models.plan_cuenta.PlanCuenta", foreign_keys=[cuenta_descuento_id])

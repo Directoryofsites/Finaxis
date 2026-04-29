@@ -230,12 +230,17 @@ export default function EliminacionMasivaPage() {
   }
 
   const handleBuscar = async (filtrosOverride = null) => {
+    // Si filtrosOverride es un evento (viniendo de onClick), lo ignoramos
+    if (filtrosOverride && filtrosOverride.nativeEvent) {
+      filtrosOverride = null;
+    }
+    
     setIsSearching(true);
     setMensaje({ text: '', type: 'info' });
     setDocumentosEncontrados([]);
     setSeleccionados(new Set());
     try {
-      // Usar filtros del estado o los pasados por parámetro (para evitar lag de estado en React)
+      // Usar filtros del estado o los pasados por parámetro
       const filtrosParaApi = { ...(filtrosOverride || filtros) };
 
       // Limpieza de campos vacíos y conversión numérica para campos simples

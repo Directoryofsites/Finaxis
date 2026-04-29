@@ -20,7 +20,8 @@ import {
     FaUsers,
     FaCalculator,
     FaMoneyBillWave,
-    FaLayerGroup
+    FaLayerGroup,
+    FaFlask
 } from 'react-icons/fa';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -239,6 +240,22 @@ export default function ReporteSaldosPage() {
         });
 
         doc.save(`Reporte_Saldos_${fechaCorte || 'HOY'}.pdf`);
+    };
+
+    const handleDownloadTestAsobancaria = async () => {
+        try {
+            const blob = await phService.generateAsobancariaTestFile();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `PRUEBA_ASOBANCARIA_${new Date().toISOString().split('T')[0]}.txt`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            console.error("Error downloading test file", error);
+            alert("Error al generar archivo de prueba");
+        }
     };
 
     return (
@@ -490,15 +507,22 @@ export default function ReporteSaldosPage() {
                         <div className="flex flex-col gap-2 justify-center">
                             <button
                                 onClick={handleDownloadPDF}
-                                className="flex items-center justify-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl shadow-lg hover:bg-red-700 transition-all font-bold w-full"
+                                className="flex items-center justify-center gap-2 px-6 py-2 bg-red-600 text-white rounded-xl shadow-lg hover:bg-red-700 transition-all font-bold text-sm"
                             >
-                                <FaFileDownload className="text-xl" /> PDF
+                                <FaFileDownload /> PDF
                             </button>
                             <button
                                 onClick={handleDownloadCSV}
-                                className="flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl shadow-lg hover:bg-green-700 transition-all font-bold w-full"
+                                className="flex items-center justify-center gap-2 px-6 py-2 bg-green-600 text-white rounded-xl shadow-lg hover:bg-green-700 transition-all font-bold text-sm"
                             >
-                                <FaFileCsv className="text-xl" /> CSV / Excel
+                                <FaFileCsv /> CSV / Excel
+                            </button>
+                            <button
+                                onClick={handleDownloadTestAsobancaria}
+                                className="flex items-center justify-center gap-2 px-6 py-2 bg-amber-500 text-white rounded-xl shadow-lg hover:bg-amber-600 transition-all font-black text-xs uppercase tracking-tighter"
+                                title="Generar archivo plano con deudas actuales para pruebas de recaudo masivo"
+                            >
+                                <FaFlask /> Generar TXT Asobancaria (Prueba)
                             </button>
                         </div>
                     </div>

@@ -65,13 +65,37 @@
                 
                 <h3>📊 Reportes de Cartera</h3>
                 
-                <h4>🕒 Cartera por Edades</h4>
-                <p><strong>Propósito:</strong> Clasificar la cartera según su antigüedad de vencimiento.</p>
+                <h4>🕒 Cartera por Edades (Aging Report)</h4>
+                <p><strong>Propósito:</strong> Clasificar la cartera según su antigüedad de vencimiento para una gestión de cobranza estratégica.</p>
+                
+                <div class="info">
+                    <strong>💡 Inteligencia de Negocio:</strong> Este reporte no solo muestra cuánto se debe, sino qué tan vieja es la deuda, permitiendo priorizar la gestión sobre los saldos más críticos.
+                </div>
+
+                <h5>Características Principales:</h5>
                 <ul>
-                    <li><strong>Información incluida:</strong> Saldos por rangos de días vencidos</li>
-                    <li><strong>Clasificación:</strong> 0-30, 31-60, 61-90, +90 días</li>
-                    <li><strong>Uso:</strong> Control de gestión de cobranza</li>
+                    <li><strong>Desglose por Conceptos (Visualización):</strong> Al pasar el mouse sobre cualquier cifra en la tabla, el sistema despliega un tooltip con el detalle exacto de qué conceptos componen esa deuda (ej: Administración, Multas, Intereses).</li>
+                    <li><strong>Clasificación Estándar:</strong> Corriente, 0-30, 31-60, 61-90 y +90 días.</li>
+                    <li><strong>Filtros Dinámicos:</strong> Búsqueda por unidad o propietario y selección de fecha de corte personalizada.</li>
                 </ul>
+
+                <h5>Herramientas de Exportación (PDF):</h5>
+                <ul>
+                    <li>📄 <strong>PDF Resumen:</strong> Listado general ideal para juntas directivas y análisis global.</li>
+                    <li>📋 <strong>Reporte Detallado (Maestro):</strong> Genera un documento tipo "fichas" con el desglose completo de conceptos para todas las unidades con mora.</li>
+                    <li>📑 <strong>Ficha de Cobranza Individual:</strong> (Disponible en la columna de Acciones) Crea un documento vertical diseñado para entregar al residente, detallando por qué debe cada centavo en cada rango de edad.</li>
+                </ul>
+
+                <div class="success">
+                    <strong>🚀 Estrategia de Saneamiento de Cartera:</strong>
+                    <p>El sistema permite un flujo de trabajo inteligente para recuperar deudas antiguas:</p>
+                    <ol>
+                        <li><strong>Identificación:</strong> Localice las deudas en el rango de <strong>+90 días</strong> usando este reporte.</li>
+                        <li><strong>Acuerdo:</strong> Pacte con el deudor el pago exacto de los conceptos que componen esa mora antigua.</li>
+                        <li><strong>Recaudo:</strong> Registre el pago en el módulo de pagos seleccionando los conceptos correspondientes.</li>
+                        <li><strong>Cierre Automático (FIFO):</strong> El sistema, de forma inteligente, aplicará el dinero a las facturas más viejas de ese concepto, "limpiando" automáticamente el rango de mayor morosidad en el próximo reporte.</li>
+                    </ol>
+                </div>
 
                 <h4>💰 Balance de Cartera (Súper Balance)</h4>
                 <p><strong>Propósito:</strong> Detalle completo de saldos por unidad y concepto con capacidad de agrupación inteligente.</p>

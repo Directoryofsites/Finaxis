@@ -221,6 +221,14 @@
                     <span>9. Proyectos Especiales</span>
                     <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
                 </button>
+                <button onclick="showChapter(10)" id="btn-cap-10" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
+                    <span>10. Cobranza Estratégica</span>
+                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </button>
+                <button onclick="showChapter(11)" id="btn-cap-11" class="sidebar-item w-full text-left px-6 py-4 rounded-[20px] text-[15px] font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center justify-between group">
+                    <span>11. Recaudo Masivo (Asobancaria)</span>
+                    <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </button>
             </nav>
 
             <div class="p-12 border-t border-gray-100">
@@ -905,6 +913,121 @@
                     </div>
                 </section>
 
+                <!-- Capítulo 10 -->
+                <section id="cap-10" class="chapter-content">
+                    <h1>Capítulo 10: Cobranza Estratégica (Saneamiento de Mora > 90 días)</h1>
+                    
+                    <div class="premium-card">
+                        <h2>1. El Motor de Inteligencia de Cartera</h2>
+                        <p>Cuando una copropiedad se enfrenta a deudas de larga data, la gestión no puede ser genérica. Nuestra plataforma implementa una estrategia de <strong>"Loop de Saneamiento"</strong> que combina el Reporte de Edades con el motor de pagos FIFO.</p>
+                        
+                        <div class="mt-12 mb-16 p-12 bg-white rounded-[40px] border border-gray-100 shadow-sm flex justify-center">
+                            <div class="mermaid w-full max-w-2xl">
+                            graph TD
+                                A[Reporte de Edades] -->|Identificación| B(Mora > 90 días)
+                                B -->|Negociación| C{Acuerdo de Pago}
+                                C -->|Abono Dirigido| D[Motor FIFO]
+                                D -->|Resultado| E[Saneamiento de Cartera Vieja]
+                                
+                                style A fill:#FFF,stroke:#000,stroke-width:2px
+                                style B fill:#FEE2E2,stroke:#EF4444,stroke-width:2px
+                                style E fill:#ECFDF5,stroke:#10B981,stroke-width:3px
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="premium-card">
+                        <h2>2. Operativa del Reporte de Edades (Aging Report)</h2>
+                        <p>Acceda desde <strong>Reportes > Cartera por Edades</strong>. Este no es un informe estático; es una herramienta de gestión táctica:</p>
+                        <ul>
+                            <li><strong>Tooltips de Concepto:</strong> Al pasar el cursor sobre un valor (ej: $1.360.000 en el rango +90), el sistema desglosa exactamente qué se debe (Multas, Administración, Intereses).</li>
+                            <li><strong>Discriminación por Período:</strong> El sistema identifica a qué mes corresponde cada peso, permitiendo saber si la deuda es una bola de nieve o un cargo puntual.</li>
+                        </ul>
+                    </div>
+
+                    <div class="alert alert-tip">
+                        <h4 class="font-bold mb-2">💡 La Regla de Oro: Lógica FIFO (First-In, First-Out)</h4>
+                        <p class="m-0 text-sm">El sistema siempre aplicará los pagos a la obligación <strong>más antigua</strong> del concepto seleccionado. Si un usuario paga "Administración", el motor busca la factura de administración más vieja y le da de baja primero. Esto garantiza que la mora se desplace cronológicamente hacia el presente.</p>
+                    </div>
+
+                    <div class="premium-card">
+                        <h2>3. Ejecución del Saneamiento Táctico</h2>
+                        <p>Para limpiar la cartera de más de 90 días de forma quirúrgica:</p>
+                        <ol class="space-y-4 mt-6">
+                            <li><strong>Consulte el Reporte:</strong> Identifique que la Unidad X debe $500.000 en el rango ">90 días" para el concepto "Multas".</li>
+                            <li><strong>Recibo de Caja:</strong> Realice el pago dirigiendo el abono específicamente al concepto "Multas" por el valor exacto ($500.000).</li>
+                            <li><strong>Validación:</strong> Al regenerar el reporte de edades, el rango de +90 días aparecerá en cero, mientras que los rangos más recientes (30-60 días) permanecerán intactos si no fueron cubiertos.</li>
+                        </ol>
+                    </div>
+
+                    <div class="premium-card border-2 border-indigo-50 shadow-xl mt-12">
+                        <h2 class="text-gray-900">4. Soporte Documental para el Residente</h2>
+                        <p class="text-gray-600">Desde el mismo reporte, puede generar la <strong>Ficha Individual de Cobro</strong>. Este PDF no solo muestra el saldo, sino que le explica al residente la composición de su mora por edades, facilitando el recaudo emocional y legal.</p>
+                    </div>
+                </section>
+
+                <!-- Capítulo 11 -->
+                <section id="cap-11" class="chapter-content">
+                    <h1>Capítulo 11: Conciliación Bancaria Masiva (Asobancaria)</h1>
+                    
+                    <div class="premium-card">
+                        <h2>1. La Revolución del Recaudo: De Manual a Masivo</h2>
+                        <p>En copropiedades de alto tráfico (colegios de 1000 alumnos o conjuntos de 500 unidades), la digitación manual de recibos de caja es una fuente de error y pérdida de tiempo. Finaxis implementa el módulo de <strong>Recaudo Masivo</strong> para procesar cientos de pagos en segundos.</p>
+                        
+                        <h3>¿Cómo funciona?</h3>
+                        <p>El sistema lee los archivos planos entregados por los bancos (formato Asobancaria 2001/2011) o plantillas Excel, identifica la unidad mediante la <strong>Referencia de Pago</strong> y aplica la lógica contable automáticamente.</p>
+                    </div>
+
+                    <div class="alert alert-tip">
+                        <h4 class="font-bold mb-2">Integridad Contable: El Semáforo de Riesgo</h4>
+                        <p class="m-0 text-sm">Antes de procesar, el sistema presenta una <strong>Tabla de Previsualización Inteligente</strong>. Si el nombre del pagador en el banco no coincide con el propietario en Finaxis, el sistema lanzará una alerta visual, permitiendo al administrador validar el cruce antes de generar el asiento contable.</p>
+                    </div>
+
+                    <div class="premium-card">
+                        <h2>2. Lógica de Excedentes y Anticipos (Cuenta 2805)</h2>
+                        <p>¿Qué sucede si un residente paga más de lo que debe? Finaxis lo resuelve con inteligencia financiera:</p>
+                        <div class="mermaid">
+                        graph TD
+                            P[Pago Recibido $250.000] --> D{¿Debe algo?}
+                            D -->|Sí, debe $200.000| A[Cubre Deuda 1305]
+                            A --> B[Excedente $50.000]
+                            B --> C[Mueve a Anticipos 2805]
+                            D -->|No debe nada| E[Mueve 100% a Anticipos 2805]
+                            
+                            style P fill:#FFF,stroke:#000
+                            style C fill:#ECFDF5,stroke:#10B981,color:#064E3B
+                            style E fill:#ECFDF5,stroke:#10B981,color:#064E3B
+                        </div>
+                        <p class="mt-6 text-sm">Este proceso garantiza que la cartera no tenga saldos negativos (créditos en 1305) y que el pasivo por anticipos sea real y auditable.</p>
+                    </div>
+
+                    <div class="premium-card border-2 border-indigo-50 shadow-xl">
+                        <h2>3. Pasos para la Conciliación Exitosa</h2>
+                        <ol class="space-y-4 mt-4">
+                            <li><strong>Cargar Archivo:</strong> Suba el archivo .txt (Asobancaria), .xlsx o .csv.</li>
+                            <li><strong>Previsualizar:</strong> Revise la columna <strong>"Propietario"</strong> y <strong>"Unidad"</strong>. Verifique que el cruce sea coherente.</li>
+                            <li><strong>Configurar Cuenta:</strong> Seleccione la cuenta de Banco (clase 11) donde ingresó el dinero.</li>
+                            <li><strong>Procesar:</strong> El sistema genera todos los Recibos de Caja y recalcula la cartera de cada unidad en un solo paso.</li>
+                        </ol>
+                    </div>
+
+                    <div class="premium-card border-2 border-amber-50 shadow-xl mt-12">
+                        <h2 class="text-gray-900">4. Sandbox de Pruebas: Generador Asobancaria</h2>
+                        <p class="text-gray-600">Para facilitar la implementación, Finaxis incluye una herramienta de <strong>Generación de Archivos de Prueba</strong>. Esto permite al administrador simular un recaudo masivo sin depender del banco durante la fase de capacitación.</p>
+                        
+                        <div class="p-6 bg-amber-50 rounded-2xl border border-amber-100 my-6">
+                            <h4 class="font-bold text-amber-900 mb-2">¿Cómo realizar una prueba real?</h4>
+                            <ol class="text-sm text-amber-800 space-y-2">
+                                <li>Vaya al reporte <strong>"Balance General de Cartera"</strong>.</li>
+                                <li>Haga clic en el botón naranja <strong>"Generar TXT Asobancaria (Prueba)"</strong>.</li>
+                                <li>El sistema descargará un archivo real con las deudas actuales de todas las unidades.</li>
+                                <li>Usted puede abrir este archivo con un editor de texto, modificar valores o borrar líneas para simular pagos parciales.</li>
+                                <li>Cargue el archivo modificado en el módulo de <strong>Recaudo Masivo</strong> para validar el semáforo y la aplicación contable.</li>
+                            </ol>
+                        </div>
+                    </div>
+                </section>
+
                 <div class="mt-20 pt-10 border-t border-gray-100 flex justify-between items-center bg-white/50 p-8 rounded-[40px]">
                     <button id="prevBtn" onclick="changeStep(-1)" class="px-8 py-4 bg-white border border-gray-100 rounded-2xl text-md font-bold text-gray-300 transition-all opacity-50 cursor-not-allowed">Anterior</button>
                     
@@ -918,6 +1041,8 @@
                         <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(7)"></div>
                         <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(8)"></div>
                         <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(9)"></div>
+                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(10)"></div>
+                        <div class="dot w-3 h-3 rounded-full bg-gray-200 transition-all duration-500 cursor-pointer" onclick="showChapter(11)"></div>
                     </div>
 
                     <button id="nextBtn" onclick="changeStep(1)" class="px-10 py-4 bg-indigo-600 text-white rounded-2xl text-md font-bold hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all">Siguiente</button>
@@ -937,7 +1062,7 @@
         });
 
         let currentChapter = 1;
-        const TOTAL_CHAPTERS = 9;
+        const TOTAL_CHAPTERS = 11;
 
         function showChapter(n) {
             // 1. Hide all contents

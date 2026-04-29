@@ -20,6 +20,7 @@ class RecaudoMatch(BaseModel):
     is_valid: bool
     unidad_id: Optional[int] = None
     unidad_codigo: Optional[str] = None
+    unidad_propietario: Optional[str] = None
     
     # Financial preview
     deuda_total: Decimal = Decimal('0.0')
