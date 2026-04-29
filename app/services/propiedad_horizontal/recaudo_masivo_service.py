@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import datetime, date
 from decimal import Decimal
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from app.models.propiedad_horizontal.unidad import PHUnidad, PHTorre
 from app.models.propiedad_horizontal.configuracion import PHConfiguracion
 from app.models.propiedad_horizontal.concepto import PHConcepto
@@ -238,7 +239,7 @@ def procesar_lote_pagos(db: Session, empresa_id: int, request: schemas_rm.Recaud
     conceptos_ph_batch = db.query(PHConcepto).filter(
         PHConcepto.empresa_id == empresa_id,
         PHConcepto.activo == True
-    ).order_by(db.func.coalesce(PHConcepto.orden, 999).asc(), PHConcepto.id.asc()).all()
+    ).order_by(func.coalesce(PHConcepto.orden, 999).asc(), PHConcepto.id.asc()).all()
     # -------------------------
     terceros_a_recalcular = set()
 
