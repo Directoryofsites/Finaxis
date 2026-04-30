@@ -534,15 +534,14 @@ export default function UsuariosRolesPage() {
                     </div>
                 </div>
             )}
-        </div>
 
-        {/* DRAWER: EXCEPCIONES DE PERMISOS */}
-        {usuarioExcepciones && (
-            <PanelExcepciones
-                usuario={usuarioExcepciones}
-                onClose={() => setUsuarioExcepciones(null)}
-            />
-        )}
-    </div>
+            {/* DRAWER: EXCEPCIONES DE PERMISOS */}
+            {usuarioExcepciones && (
+                <PanelExcepciones
+                    usuario={usuarioExcepciones}
+                    onClose={() => setUsuarioExcepciones(null)}
+                />
+            )}
+        </div>
     );
 }
