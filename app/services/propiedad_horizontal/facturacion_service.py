@@ -73,6 +73,9 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
     
     if not tipo_doc_obj:
          raise HTTPException(status_code=400, detail="El Tipo de Documento configurado no existe.")
+
+    # --- OPTIMIZACIÓN EMPRESA (Inyectar para evitar N+1 en create_documento) ---
+    empresa_info_obj = db.query(Empresa).filter(Empresa.id == empresa_id).first()
          
     # --- LÓGICA DE GENERACIÓN DELTA (EVITAR DUPLICADOS) ---
     from sqlalchemy import func as sa_func
@@ -470,7 +473,11 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
                     unidad_ph_id=unidad.id
                 )
 
-                new_doc = documento_service.create_documento(db, doc_create, user_id=usuario_id, skip_recalculo=True, commit=False)
+                new_doc = documento_service.create_documento(
+                    db, doc_create, user_id=usuario_id, 
+                    skip_recalculo=True, commit=False,
+                    injected_empresa_info=empresa_info_obj
+                )
                 db.flush()  # Forzar asignación de ID sin confirmar transacción
                 resultados["generadas"] += 1
                 resultados["detalles"].append(f"Unidad {unidad.codigo}: Doc {new_doc.numero} por ${total_factura:,.0f}")
@@ -513,7 +520,11 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
                             unidad_ph_id=unidad.id
                         )
                         
-                        cruce_obj = documento_service.create_documento(db, doc_cruce, user_id=usuario_id, skip_recalculo=True, commit=False)
+                        cruce_obj = documento_service.create_documento(
+                            db, doc_create, user_id=usuario_id, 
+                            skip_recalculo=True, commit=False,
+                            injected_empresa_info=empresa_info_obj
+                        )
                         db.flush()
                         
                         # --- APLICACION DIRECTA DE PAGO (ALTO RENDIMIENTO) ---
@@ -638,6 +649,19 @@ def eliminar_facturacion_masiva(db: Session, empresa_id: int, periodo: str, usua
         if doc.beneficiario_id:
             terceros_a_recalcular.add(doc.beneficiario_id)
 
+    # --- OPTIMIZACIÓN LOTE (Precarga de metadatos) ---
+    from app.services.documento import _get_cuentas_especiales_ids
+    from app.models.propiedad_horizontal.concepto import PHConcepto as models_ph_concepto
+    from sqlalchemy import func as sa_func
+    
+    cuentas_cxc_batch = _get_cuentas_especiales_ids(db, empresa_id, 'cxc')
+    cuentas_cxp_batch = _get_cuentas_especiales_ids(db, empresa_id, 'cxp')
+    conceptos_ph_batch = db.query(models_ph_concepto).filter(
+        models_ph_concepto.empresa_id == empresa_id,
+        models_ph_concepto.activo == True
+    ).order_by(sa_func.coalesce(models_ph_concepto.orden, 999).asc(), models_ph_concepto.id.asc()).all()
+    # -------------------------------------------------
+
     # BUCLE DE ELIMINACIÓN: Sin commit ni recálculo de cartera por iteración
     # commit=True es necesario por la arquitectura de eliminar_documento (maneja su propia transacción)
     # pero le decimos recalc=False para que NO recalcule inventario (las facturas PH no tienen inventario)
@@ -650,7 +674,11 @@ def eliminar_facturacion_masiva(db: Session, empresa_id: int, periodo: str, usua
                 usuario_id,
                 "Eliminacion Masiva Facturacion PH",
                 commit=True,
-                recalc=False  # CLAVE: Evita X recálculos de inventario (no aplica aquí)
+                recalc=False,  # CLAVE: Evita X recálculos de inventario (no aplica aquí)
+                skip_recalc_cartera=True, # Lo haremos al final en lote
+                injected_cuentas_cxc=cuentas_cxc_batch,
+                injected_cuentas_cxp=cuentas_cxp_batch,
+                injected_conceptos_ph=conceptos_ph_batch
             )
             count += 1
             if count % 20 == 0:
@@ -669,7 +697,15 @@ def eliminar_facturacion_masiva(db: Session, empresa_id: int, periodo: str, usua
     print(f"[ELIMINACION PH] Iniciando recálculo de cartera para {len(terceros_a_recalcular)} propietarios únicos...")
     for t_id in terceros_a_recalcular:
         try:
-            cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=t_id, empresa_id=empresa_id, commit=True)
+            cartera_service.recalcular_aplicaciones_tercero(
+                db, 
+                tercero_id=t_id, 
+                empresa_id=empresa_id, 
+                commit=True,
+                injected_cuentas_cxc=cuentas_cxc_batch,
+                injected_cuentas_cxp=cuentas_cxp_batch,
+                injected_conceptos_ph=conceptos_ph_batch
+            )
         except Exception as e_recalc:
             print(f"[ELIMINACION PH] Error recalculando cartera tercero {t_id}: {str(e_recalc)}")
 

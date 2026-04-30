@@ -175,14 +175,16 @@ def trigger_recalc_if_cxc_cxp(db: Session, documento_id: int, empresa_id: int, c
 
 # Dentro de app/services/documento.py
 
-def create_documento(db: Session, documento: schemas_doc.DocumentoCreate, user_id: int, commit: bool = True, skip_recalculo: bool = False):
+def create_documento(db: Session, documento: schemas_doc.DocumentoCreate, user_id: int, commit: bool = True, skip_recalculo: bool = False, injected_empresa_info=None):
     try:
         # 1. BLINDAJE CONTABLE: Validar período cerrado
         periodo_service.validar_periodo_abierto(db, documento.empresa_id, documento.fecha)
         
         # 2. Obtener datos de la empresa
-        # Nota: Usamos la consulta completa para tener acceso a todos los campos si es necesario
-        empresa_info = db.query(models_empresa).filter(models_empresa.id == documento.empresa_id).first()
+        if injected_empresa_info:
+            empresa_info = injected_empresa_info
+        else:
+            empresa_info = db.query(models_empresa).filter(models_empresa.id == documento.empresa_id).first()
         
         if not empresa_info:
             raise HTTPException(status_code=404, detail="La empresa especificada no existe.")
@@ -481,8 +483,9 @@ def anular_documento(db: Session, documento_id: int, empresa_id: int, user_id: i
 
 # REEMPLAZO PARA app/services/documento.py (Función eliminar_documento)
 
-def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id: int, razon: str, commit: bool = True, recalc: bool = True,
-                       existing_doc=None, injected_cuentas_cxc=None, injected_cuentas_cxp=None):
+def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id: int, razon: str, 
+                       commit: bool = True, recalc: bool = True, skip_recalc_cartera: bool = False,
+                       existing_doc=None, injected_cuentas_cxc=None, injected_cuentas_cxp=None, injected_conceptos_ph=None):
     # 1. Buscamos el documento (Lectura simple)
     # Si ya se pasó el objeto, lo usamos
     if existing_doc:
@@ -643,8 +646,17 @@ def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id:
             db.commit() 
         
         # G. RECALCULAR CARTERA (Post-Eliminación)
-        for t_id in terceros_recalc:
-            cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=t_id, empresa_id=empresa_id, commit=commit)
+        if not skip_recalc_cartera:
+            for t_id in terceros_recalc:
+                cartera_service.recalcular_aplicaciones_tercero(
+                    db, 
+                    tercero_id=t_id, 
+                    empresa_id=empresa_id, 
+                    commit=commit,
+                    injected_cuentas_cxc=injected_cuentas_cxc,
+                    injected_cuentas_cxp=injected_cuentas_cxp,
+                    injected_conceptos_ph=injected_conceptos_ph
+                )
         
         if commit:
             if terceros_recalc:
