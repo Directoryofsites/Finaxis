@@ -360,7 +360,9 @@ def list_company_backups(db: Session = Depends(get_db), current_user: models_usu
             archivos.append({
                 "filename": b.nombre_archivo,
                 "size_mb": float(b.tamanio_mb) if b.tamanio_mb else 0.0,
-                "created_at": b.fecha.isoformat()
+                "created_at": b.fecha.isoformat(),
+                "es_valido": b.es_valido,
+                "error_verificacion": b.error_verificacion
             })
         return archivos
     except Exception as e:

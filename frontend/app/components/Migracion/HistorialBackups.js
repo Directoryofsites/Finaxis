@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { FaDownload, FaHistory, FaSpinner, FaArchive } from 'react-icons/fa';
+import { FaDownload, FaHistory, FaSpinner, FaArchive, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
 import { apiService, API_URL } from '../../../lib/apiService';
 
 export default function HistorialBackups() {
@@ -95,8 +95,18 @@ export default function HistorialBackups() {
                                     </div>
                                     <div>
                                         <p className="font-mono text-sm font-bold text-gray-800">{backup.filename}</p>
-                                        <p className="text-xs text-gray-500">
-                                            Fecha: {new Date(backup.created_at).toLocaleString()} | Peso: {(backup.size_mb).toFixed(2)} MB
+                                        <p className="text-xs text-gray-500 flex items-center gap-2 mt-1">
+                                            <span>Fecha: {new Date(backup.created_at).toLocaleString()} | Peso: {(backup.size_mb).toFixed(2)} MB</span>
+                                            {backup.es_valido === 1 && (
+                                                <span className="flex items-center gap-1 text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[10px]">
+                                                    <FaCheckCircle className="text-[10px]" /> PRUEBA DE RESTAURACIÓN: OK
+                                                </span>
+                                            )}
+                                            {backup.es_valido === 2 && (
+                                                <span className="flex items-center gap-1 text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded-full border border-red-200 text-[10px]" title={backup.error_verificacion}>
+                                                    <FaExclamationTriangle className="text-[10px]" /> CORRUPTO / ILEGIBLE
+                                                </span>
+                                            )}
                                         </p>
                                     </div>
                                 </div>
