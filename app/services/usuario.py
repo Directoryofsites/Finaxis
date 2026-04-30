@@ -2,6 +2,7 @@
 
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 from typing import List
 
@@ -39,6 +40,14 @@ def get_users_by_company(db: Session, empresa_id: int):
     ).filter(models_usuario.Usuario.empresa_id == empresa_id).all()
 
 def create_user_in_company(db: Session, user_data: schemas_usuario.UserCreateInCompany, empresa_id: int):
+    # --- Validación previa: email duplicado ---
+    existente = get_user_by_email(db, user_data.email)
+    if existente:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"El email '{user_data.email}' ya está registrado en el sistema. Use otro email."
+        )
+
     hashed_password = get_password_hash(user_data.password)
     
     roles = db.query(models_permiso.Rol).filter(models_permiso.Rol.id.in_(user_data.roles_ids)).all()
@@ -49,18 +58,23 @@ def create_user_in_company(db: Session, user_data: schemas_usuario.UserCreateInC
     for rol in roles:
         if rol.empresa_id is not None and rol.empresa_id != empresa_id:
              raise HTTPException(status_code=403, detail=f"El rol '{rol.nombre}' no pertenece a esta empresa.")
-        # Opcional: Bloquear asignación de rol 'soporte' por usuarios normales si fuera necesario.
 
     db_user = models_usuario.Usuario(
         email=user_data.email,
-        # --- CORRECCIÓN APLICADA AQUÍ ---
         password_hash=hashed_password,
         nombre_completo=user_data.nombre_completo,
         empresa_id=empresa_id,
         roles=roles
     )
     db.add(db_user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"El email '{user_data.email}' ya está registrado. No se puede crear el usuario."
+        )
     db.refresh(db_user)
     return db_user
 
@@ -145,23 +159,36 @@ def get_soporte_users(db: Session) -> List[models_usuario.Usuario]:
     return db.query(models_usuario.Usuario).filter(models_usuario.Usuario.empresa_id == None).all()
 
 def create_soporte_user(db: Session, user_data: schemas_usuario.SoporteUserCreate):
+    # --- Validación previa: email duplicado ---
+    existente = get_user_by_email(db, user_data.email)
+    if existente:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"El email '{user_data.email}' ya está registrado en el sistema."
+        )
+
     hashed_password = get_password_hash(user_data.password)
     
-    # Asignar rol de soporte por defecto
     soporte_role = db.query(models_permiso.Rol).filter(models_permiso.Rol.nombre == 'soporte').first()
     if not soporte_role:
         raise HTTPException(status_code=500, detail="El rol 'soporte' no está definido en la base de datos.")
 
     db_user = models_usuario.Usuario(
         email=user_data.email,
-        # --- CORRECCIÓN APLICADA AQUÍ ---
         password_hash=hashed_password,
         nombre_completo=user_data.nombre_completo,
         empresa_id=None,
         roles=[soporte_role]
     )
     db.add(db_user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"El email '{user_data.email}' ya está registrado."
+        )
     db.refresh(db_user)
     return db_user
 
