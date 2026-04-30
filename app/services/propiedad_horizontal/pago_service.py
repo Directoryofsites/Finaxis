@@ -797,21 +797,25 @@ def get_historial_cuenta_unidad(db: Session, unidad_id: Optional[int], empresa_i
 
 
 
-def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_id: int, monto: float, fecha_pago: date, forma_pago_id: int = None, cuenta_caja_id: int = None, detalles: List = None, observaciones: str = None, skip_recalculo: bool = False, commit: bool = True):
+def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_id: int, monto: float, fecha_pago: date, 
+                           forma_pago_id: int = None, cuenta_caja_id: int = None, detalles: List = None, 
+                           observaciones: str = None, skip_recalculo: bool = False, commit: bool = True,
+                           injected_config=None, injected_tipo_doc=None, injected_unidad=None, 
+                           injected_empresa_info=None):
     # 1. Validaciones
     if monto <= 0:
         raise HTTPException(status_code=400, detail="El monto debe ser mayor a 0.")
     
     from app.services.propiedad_horizontal import configuracion_service
-    config = configuracion_service.get_configuracion(db, empresa_id)
+    config = injected_config if injected_config else configuracion_service.get_configuracion(db, empresa_id)
     if not config or not config.tipo_documento_recibo_id:
         raise HTTPException(status_code=400, detail="No se ha configurado el Tipo de Documento para Recibos de Caja en PH.")
 
-    tipo_doc = db.query(TipoDocumento).filter(TipoDocumento.id == config.tipo_documento_recibo_id).first()
+    tipo_doc = injected_tipo_doc if injected_tipo_doc else db.query(TipoDocumento).filter(TipoDocumento.id == config.tipo_documento_recibo_id).first()
     if not tipo_doc:
          raise HTTPException(status_code=404, detail="Tipo de Documento de Recibo no encontrado.")
 
-    unidad = db.query(PHUnidad).filter(PHUnidad.id == unidad_id).first()
+    unidad = injected_unidad if injected_unidad else db.query(PHUnidad).filter(PHUnidad.id == unidad_id).first()
     if not unidad or not unidad.propietario_principal_id:
         raise HTTPException(status_code=400, detail="La unidad no tiene propietario asignado.")
 
@@ -917,11 +921,23 @@ def registrar_pago_unidad(db: Session, unidad_id: int, empresa_id: int, usuario_
         movimientos=movimientos,
         unidad_ph_id=unidad.id
     )
-    new_doc = documento_service.create_documento(db, doc_create, user_id=usuario_id, skip_recalculo=True)
+    new_doc = documento_service.create_documento(
+        db, 
+        doc_create, 
+        user_id=usuario_id, 
+        skip_recalculo=True, 
+        commit=False,
+        injected_empresa_info=injected_empresa_info
+    )
 
     # 4. Recalcular Cartera
     if not skip_recalculo:
-        cartera_service.recalcular_aplicaciones_tercero(db, unidad.propietario_principal_id, empresa_id)
+        cartera_service.recalcular_aplicaciones_tercero(
+            db, 
+            tercero_id=unidad.propietario_principal_id, 
+            empresa_id=empresa_id,
+            commit=commit
+        )
 
     if commit:
         db.commit()
@@ -4028,8 +4044,50 @@ def registrar_pago_masivo(
     total_unidades = len(unidades_ids)
     
     print(f"--- INICIANDO PAGO MASIVO: {total_unidades} unidades ---")
+
+    # 1. PRECARGA DE METADATOS (Anti N+1)
+    from app.models.empresa import Empresa
+    from app.models.propiedad_horizontal.configuracion import PHConfiguracion
+    from app.models.tipos_documento import TipoDocumento
+    from app.models.propiedad_horizontal.concepto import PHConcepto
+    from app.models.documento import Documento, MovimientoContable
+    from sqlalchemy import func as sa_func
+
+    empresa_info_obj = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    config = db.query(PHConfiguracion).filter(PHConfiguracion.empresa_id == empresa_id).first()
     
-    # 1. Obtener datos de las unidades en una sola consulta
+    tipo_doc_recibo = None
+    if config and config.tipo_documento_recibo_id:
+        tipo_doc_recibo = db.query(TipoDocumento).filter(TipoDocumento.id == config.tipo_documento_recibo_id).first()
+
+    cuentas_cxc_batch = cartera_service.get_cuentas_especiales_ids(db, empresa_id, 'cxc')
+    cuentas_cxp_batch = cartera_service.get_cuentas_especiales_ids(db, empresa_id, 'cxp')
+    conceptos_ph_batch = db.query(PHConcepto).filter(
+        PHConcepto.empresa_id == empresa_id,
+        PHConcepto.activo == True
+    ).order_by(sa_func.coalesce(PHConcepto.orden, 999).asc(), PHConcepto.id.asc()).all()
+
+    # 2. PRECARGA DE SALDOS (Si aplica)
+    mapa_saldos = {}
+    if pagar_saldo_total:
+        print(f"DEBUG MASIVO: Calculando saldos en lote para {total_unidades} unidades...")
+        cuentas_validas = set(cuentas_cxc_batch)
+        if config and config.cuenta_anticipos_id:
+            cuentas_validas.add(config.cuenta_anticipos_id)
+        
+        saldos_query = db.query(
+            Documento.unidad_ph_id,
+            sa_func.sum(MovimientoContable.debito - MovimientoContable.credito)
+        ).join(MovimientoContable).filter(
+            Documento.empresa_id == empresa_id,
+            Documento.unidad_ph_id.in_(unidades_ids),
+            MovimientoContable.cuenta_id.in_(list(cuentas_validas)),
+            Documento.estado.in_(['ACTIVO', 'PROCESADO'])
+        ).group_by(Documento.unidad_ph_id).all()
+        
+        mapa_saldos = {row[0]: float(row[1] or 0) for row in saldos_query}
+
+    # 3. Obtener datos de las unidades en una sola consulta
     unidades = db.query(PHUnidad).filter(
         PHUnidad.id.in_(unidades_ids),
         PHUnidad.empresa_id == empresa_id
@@ -4048,19 +4106,12 @@ def registrar_pago_masivo(
 
             monto_final = 0
             if pagar_saldo_total:
-                # Usamos la misma funcion de estado de cuenta que registrar_pago_unidad usa internamente
-                try:
-                    edo = get_estado_cuenta_unidad(db, u_id, empresa_id, skip_recalculo=True)
-                    saldo = float(edo.get('saldo_total', 0))
-                    if saldo <= 0:
-                        resultados["detalles"].append(f"Unidad {unidad.codigo}: Sin deuda pendiente. Omitido.")
-                        continue
-                    monto_final = saldo
-                    print(f"DEBUG MASIVO: Unidad {unidad.codigo} -> saldo={monto_final}")
-                except Exception as e_saldo:
-                    resultados["errores"] += 1
-                    resultados["detalles"].append(f"Unidad {unidad.codigo}: Error leyendo saldo - {str(e_saldo)}")
+                # Usamos el mapa de saldos precargado en lugar de llamar a la base de datos por cada unidad
+                saldo = mapa_saldos.get(u_id, 0)
+                if saldo <= 0:
+                    resultados["detalles"].append(f"Unidad {unidad.codigo}: Sin deuda pendiente. Omitido.")
                     continue
+                monto_final = saldo
             else:
                 monto_final = monto_fijo or 0
 
@@ -4068,7 +4119,7 @@ def registrar_pago_masivo(
                 resultados["detalles"].append(f"Unidad {unidad.codigo}: Monto 0. Omitido.")
                 continue
 
-            # Registrar pago con recalculo diferido
+            # Registrar pago con recalculo diferido e inyección de dependencias
             registrar_pago_unidad(
                 db,
                 unidad_id=u_id,
@@ -4078,7 +4129,11 @@ def registrar_pago_masivo(
                 fecha_pago=fecha_pago,
                 forma_pago_id=forma_pago_id,
                 skip_recalculo=True,
-                commit=False
+                commit=False,
+                injected_config=config,
+                injected_tipo_doc=tipo_doc_recibo,
+                injected_unidad=unidad,
+                injected_empresa_info=empresa_info_obj
             )
 
             if unidad.propietario_principal_id:
@@ -4109,7 +4164,15 @@ def registrar_pago_masivo(
     print(f"--- INICIANDO RECALCULO DE CARTERA PARA {len(terceros_a_recalcular)} PROPIETARIOS ---")
     for t_id in terceros_a_recalcular:
         try:
-            cartera_service.recalcular_aplicaciones_tercero(db, tercero_id=t_id, empresa_id=empresa_id, commit=True)
+            cartera_service.recalcular_aplicaciones_tercero(
+                db, 
+                tercero_id=t_id, 
+                empresa_id=empresa_id, 
+                commit=True,
+                injected_cuentas_cxc=cuentas_cxc_batch,
+                injected_cuentas_cxp=cuentas_cxp_batch,
+                injected_conceptos_ph=conceptos_ph_batch
+            )
         except Exception as e_recalc:
             print(f"WARN: Error recalculando cartera tercero {t_id}: {e_recalc}")
 
