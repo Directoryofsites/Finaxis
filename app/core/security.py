@@ -332,3 +332,76 @@ async def get_current_tercero(
         raise credentials_exception
         
     return tercero
+
+
+# ==========================================
+# 🔐 2FA — TOTP (Google Authenticator)
+# ==========================================
+import pyotp
+
+# Roles que deben completar el segundo factor de autenticación
+ROLES_REQUIRING_2FA = {"soporte", "Administrador"}
+
+def generate_totp_secret() -> str:
+    """Genera un secreto base32 aleatorio para el autenticador del usuario."""
+    return pyotp.random_base32()
+
+def verify_totp_code(secret: str, code: str) -> bool:
+    """
+    Verifica si el código TOTP de 6 dígitos es válido.
+    valid_window=1 acepta el código del intervalo anterior/siguiente (±30s)
+    para compensar pequeñas desincronizaciones de reloj del usuario.
+    """
+    totp = pyotp.TOTP(secret)
+    return totp.verify(code, valid_window=1)
+
+def get_totp_uri(secret: str, email: str) -> str:
+    """
+    Genera el URI otpauth:// estándar para mostrar como código QR.
+    Compatible con Google Authenticator, Authy, Microsoft Authenticator, etc.
+    Formato: otpauth://totp/Finaxis:email?secret=XXX&issuer=Finaxis
+    """
+    totp = pyotp.TOTP(secret)
+    return totp.provisioning_uri(name=email, issuer_name="Finaxis")
+
+def create_temp_2fa_token(email: str, empresa_id: int, roles: list) -> str:
+    """
+    Crea un JWT temporal de corta vida (5 minutos) para el flujo de 2FA.
+    CRÍTICO: scope='2fa_pending' lo hace INÚTIL para acceder al sistema.
+    Solo el endpoint /verify-2fa lo acepta.
+    """
+    expire = datetime.now(timezone.utc) + timedelta(minutes=5)
+    to_encode = {
+        "exp": expire,
+        "sub": email,
+        "empresa_id": empresa_id,
+        "roles": roles,
+        "scope": "2fa_pending"
+    }
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+def decode_temp_2fa_token(token: str) -> Optional[dict]:
+    """
+    Decodifica y valida el token temporal de 2FA.
+    Devuelve None si el token expiró, es inválido, o no tiene el scope correcto.
+    """
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        if payload.get("scope") != "2fa_pending":
+            return None
+        return payload
+    except JWTError:
+        return None
+
+def user_requires_2fa(user) -> bool:
+    """
+    Determina si el usuario debe completar el segundo factor.
+    Condición dual: tener rol privilegiado AND tener 2FA habilitado.
+    Si el usuario es admin pero no configuró 2FA → flujo normal.
+    """
+    user_roles = {rol.nombre for rol in user.roles}
+    is_privileged = bool(user_roles & ROLES_REQUIRING_2FA)
+    return is_privileged and bool(user.totp_enabled)
+# ==========================================
+# 🔐 FIN: 2FA — TOTP
+# ==========================================

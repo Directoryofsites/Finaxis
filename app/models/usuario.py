@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Table, Boolean
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Table, Boolean, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -20,6 +20,10 @@ class Usuario(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     whatsapp_number = Column(String(50), nullable=True, unique=True, index=True) # Para interacción con la IA vía Meta
     password_hash = Column(String, nullable=False)
+
+    # --- 2FA (TOTP / Google Authenticator) ---
+    totp_secret = Column(String(64), nullable=True)   # Secreto base32; NULL = 2FA no configurado
+    totp_enabled = Column(Boolean, default=False, nullable=False)  # True = 2FA activo
     
     nombre_completo = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

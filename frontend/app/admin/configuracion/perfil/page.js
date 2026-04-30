@@ -5,7 +5,7 @@ import { useAuth } from '@/app/context/AuthContext';
 import { apiService } from '@/lib/apiService';
 import { toast } from 'react-toastify';
 import {
-    FaBuilding, FaUserLock, FaSave, FaExclamationTriangle, FaUser
+    FaBuilding, FaUserLock, FaSave, FaExclamationTriangle, FaUser, FaShieldAlt, FaQrcode, FaCheckCircle, FaTimesCircle
 } from 'react-icons/fa';
 
 export default function PerfilConfigPage() {
@@ -38,6 +38,12 @@ export default function PerfilConfigPage() {
     // Estado Template
     const [templateModalOpen, setTemplateModalOpen] = useState(false);
     const [newTemplateName, setNewTemplateName] = useState('');
+
+    // --- Estado 2FA ---
+    const [twoFAStatus, setTwoFAStatus] = useState(null);   // null = desconocido, true/false
+    const [twoFASetup, setTwoFASetup] = useState(null);     // { secret, qr_uri } cuando se inicia setup
+    const [twoFACode, setTwoFACode] = useState('');          // Código de confirmación
+    const [is2FALoading, setIs2FALoading] = useState(false);
 
     const handleExtractTemplate = async () => {
         if (!newTemplateName.trim()) return toast.warning("Ingrese un nombre para la plantilla");
@@ -74,6 +80,8 @@ export default function PerfilConfigPage() {
             setUsuarioData({
                 whatsapp_number: res.data.whatsapp_number || ''
             });
+            // Cargar estado 2FA del usuario actual
+            setTwoFAStatus(res.data.totp_enabled || false);
         } catch (error) {
             console.error("Error loading usuario:", error);
         }
@@ -166,6 +174,54 @@ export default function PerfilConfigPage() {
             toast.error(error.response?.data?.detail || "Error al cambiar contraseña");
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    // --- Handlers 2FA ---
+    const handleStart2FASetup = async () => {
+        setIs2FALoading(true);
+        try {
+            const res = await apiService.get('/auth/setup-2fa');
+            setTwoFASetup(res.data);  // { secret, qr_uri }
+            setTwoFACode('');
+            toast.info('Escanea el código QR con tu app autenticadora.');
+        } catch (error) {
+            toast.error(error.response?.data?.detail || 'Error al iniciar configuración 2FA');
+        } finally {
+            setIs2FALoading(false);
+        }
+    };
+
+    const handleActivate2FA = async (e) => {
+        e.preventDefault();
+        if (twoFACode.length !== 6) return toast.warning('El código debe tener 6 dígitos.');
+        setIs2FALoading(true);
+        try {
+            await apiService.post('/auth/activate-2fa', { totp_code: twoFACode });
+            setTwoFAStatus(true);
+            setTwoFASetup(null);
+            setTwoFACode('');
+            toast.success('✅ Autenticación de dos factores activada correctamente.');
+        } catch (error) {
+            toast.error(error.response?.data?.detail || 'Código incorrecto. Intenta nuevamente.');
+            setTwoFACode('');
+        } finally {
+            setIs2FALoading(false);
+        }
+    };
+
+    const handleDisable2FA = async () => {
+        if (!confirm('¿Estás seguro de que deseas desactivar el 2FA? Tu cuenta quedará protegida solo con contraseña.')) return;
+        setIs2FALoading(true);
+        try {
+            await apiService.delete('/auth/disable-2fa');
+            setTwoFAStatus(false);
+            setTwoFASetup(null);
+            toast.success('2FA desactivado.');
+        } catch (error) {
+            toast.error(error.response?.data?.detail || 'Error al desactivar 2FA.');
+        } finally {
+            setIs2FALoading(false);
         }
     };
 
@@ -371,48 +427,161 @@ export default function PerfilConfigPage() {
                     )}
 
                     {activeTab === 'seguridad' && (
-                        <form onSubmit={handleChangePassword} className="space-y-6 max-w-md animate-fadeIn">
-                            {/* ... Content remains same ... */}
-                            <h3 className="text-lg font-bold text-gray-800 border-b pb-2">Cambiar Contraseña</h3>
+                        <div className="space-y-8 max-w-md animate-fadeIn">
 
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">Nueva Contraseña</label>
-                                <input
-                                    type="password"
-                                    value={passData.newPassword}
-                                    onChange={e => setPassData({ ...passData, newPassword: e.target.value })}
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none"
-                                    required
-                                    minLength={6}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">Confirmar Nueva Contraseña</label>
-                                <input
-                                    type="password"
-                                    value={passData.confirmPassword}
-                                    onChange={e => setPassData({ ...passData, confirmPassword: e.target.value })}
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none"
-                                    required
-                                    minLength={6}
-                                />
-                            </div>
+                            {/* ===== SECCIÓN: Cambiar Contraseña ===== */}
+                            <form onSubmit={handleChangePassword} className="space-y-4">
+                                <h3 className="text-lg font-bold text-gray-800 border-b pb-2">Cambiar Contraseña</h3>
 
-                            <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded">
-                                Nota: Al cambiar su contraseña, es posible que deba iniciar sesión nuevamente en otros dispositivos.
-                            </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">Nueva Contraseña</label>
+                                    <input
+                                        type="password"
+                                        value={passData.newPassword}
+                                        onChange={e => setPassData({ ...passData, newPassword: e.target.value })}
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        required minLength={6}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">Confirmar Nueva Contraseña</label>
+                                    <input
+                                        type="password"
+                                        value={passData.confirmPassword}
+                                        onChange={e => setPassData({ ...passData, confirmPassword: e.target.value })}
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        required minLength={6}
+                                    />
+                                </div>
 
-                            <div className="flex justify-start pt-2">
-                                <button
-                                    type="submit"
-                                    disabled={isLoading}
-                                    className="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold hover:bg-black transition-colors flex items-center gap-2"
-                                >
-                                    {isLoading ? 'Actualizando...' : 'Actualizar Contraseña'}
-                                </button>
+                                <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded">
+                                    Nota: Al cambiar su contraseña, es posible que deba iniciar sesión nuevamente en otros dispositivos.
+                                </div>
+
+                                <div className="flex justify-start pt-2">
+                                    <button
+                                        type="submit" disabled={isLoading}
+                                        className="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold hover:bg-black transition-colors flex items-center gap-2"
+                                    >
+                                        {isLoading ? 'Actualizando...' : 'Actualizar Contraseña'}
+                                    </button>
+                                </div>
+                            </form>
+
+                            {/* ===== SECCIÓN: Autenticación de Dos Factores (2FA) ===== */}
+                            <div className="border-t pt-6">
+                                <h3 className="text-lg font-bold text-gray-800 pb-2 flex items-center gap-2">
+                                    <FaShieldAlt className="text-indigo-500" />
+                                    Autenticación de Dos Factores (2FA)
+                                </h3>
+
+                                {/* Estado: 2FA YA ACTIVO */}
+                                {twoFAStatus === true && !twoFASetup && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-4">
+                                            <FaCheckCircle className="text-green-500 text-xl flex-shrink-0" />
+                                            <div>
+                                                <p className="font-semibold text-green-800">2FA Activado</p>
+                                                <p className="text-sm text-green-600">Tu cuenta requiere el código del autenticador al iniciar sesión.</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={handleDisable2FA}
+                                            disabled={is2FALoading}
+                                            className="text-red-600 border border-red-200 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors"
+                                        >
+                                            <FaTimesCircle /> {is2FALoading ? 'Desactivando...' : 'Desactivar 2FA'}
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Estado: 2FA NO CONFIGURADO */}
+                                {twoFAStatus === false && !twoFASetup && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                                            <FaShieldAlt className="text-amber-500 text-xl flex-shrink-0" />
+                                            <div>
+                                                <p className="font-semibold text-amber-800">2FA No configurado</p>
+                                                <p className="text-sm text-amber-600">Tu cuenta solo está protegida por contraseña. Se recomienda activar el 2FA.</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={handleStart2FASetup}
+                                            disabled={is2FALoading}
+                                            className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-bold hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-sm"
+                                        >
+                                            <FaQrcode /> {is2FALoading ? 'Generando...' : 'Activar Autenticador'}
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Estado: SETUP EN PROCESO — mostrar QR */}
+                                {twoFASetup && (
+                                    <div className="space-y-5">
+                                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+                                            <strong>Instrucciones:</strong>
+                                            <ol className="list-decimal list-inside mt-2 space-y-1">
+                                                <li>Abre <strong>Google Authenticator</strong>, <strong>Authy</strong> o cualquier app TOTP.</li>
+                                                <li>Toca «Añadir cuenta» → «Escanear código QR».</li>
+                                                <li>Escanea el código de abajo.</li>
+                                                <li>Ingresa el código de 6 dígitos para confirmar.</li>
+                                            </ol>
+                                        </div>
+
+                                        {/* QR generado con Google Charts API */}
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className="bg-white p-3 rounded-xl border-2 border-indigo-200 shadow-sm">
+                                                <img
+                                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(twoFASetup.qr_uri)}`}
+                                                    alt="QR Code para autenticador"
+                                                    width={180} height={180}
+                                                    className="rounded"
+                                                />
+                                            </div>
+                                            <div className="text-center">
+                                                <p className="text-xs text-gray-500 mb-1">¿No puedes escanear? Ingresa este código manualmente:</p>
+                                                <code className="text-xs font-mono bg-gray-100 px-3 py-1.5 rounded-lg text-gray-700 break-all select-all">
+                                                    {twoFASetup.secret}
+                                                </code>
+                                            </div>
+                                        </div>
+
+                                        {/* Confirmación con código */}
+                                        <form onSubmit={handleActivate2FA} className="space-y-3">
+                                            <label className="block text-sm font-bold text-gray-700">Confirmar con el código de 6 dígitos</label>
+                                            <input
+                                                type="text"
+                                                inputMode="numeric"
+                                                maxLength={6}
+                                                autoComplete="one-time-code"
+                                                value={twoFACode}
+                                                onChange={e => setTwoFACode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                                className="w-full border-2 border-indigo-300 rounded-xl px-4 py-3 text-center text-2xl font-mono tracking-[0.4em] focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                placeholder="000000"
+                                            />
+                                            <div className="flex gap-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setTwoFASetup(null); setTwoFACode(''); }}
+                                                    className="flex-1 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+                                                >
+                                                    Cancelar
+                                                </button>
+                                                <button
+                                                    type="submit"
+                                                    disabled={is2FALoading || twoFACode.length !== 6}
+                                                    className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                                                >
+                                                    {is2FALoading ? 'Activando...' : '✓ Activar 2FA'}
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                )}
                             </div>
-                        </form>
+                        </div>
                     )}
+
 
                 </div>
             </div>
