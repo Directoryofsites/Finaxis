@@ -19,12 +19,23 @@ from fastapi.staticfiles import StaticFiles
 async def run_startup_tasks():
     print("Iniciando secuencia de arranque de base de datos...")
     
-    # 1. Ejecutar auto-migraciones de forma INCONDICIONAL (CRÍTICO PARA PRODUCCIÓN)
+    # 1. Ejecutar migraciones de Alembic (FLUJO PROFESIONAL)
+    try:
+        print("Sincronizando base de datos con Alembic...")
+        from alembic.config import Config
+        from alembic import command
+        alembic_cfg = Config("alembic.ini")
+        command.upgrade(alembic_cfg, "head")
+        print("✅ Migraciones de Alembic aplicadas (o ya al día).")
+    except Exception as e:
+        print(f"Advertencia en Alembic: {e} (Continuando con auto-migraciones de respaldo...)")
+
+    # 2. Ejecutar auto-migraciones de respaldo (Legacy)
     try:
         from app.core.auto_migrate import run_auto_migrations
         run_auto_migrations()
     except Exception as e:
-        print(f"ERROR CRÍTICO en auto-migraciones: {e}")
+        print(f"ERROR en auto-migraciones de respaldo: {e}")
 
     # 2. Ejecutar Seeds y creación de tablas si RUN_SEEDS está activo
     if os.getenv("RUN_SEEDS", "true").lower() == "true":
