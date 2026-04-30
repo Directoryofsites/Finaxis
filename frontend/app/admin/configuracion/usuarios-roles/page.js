@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-    FaUsers, FaUserShield, FaEdit, FaTrash, FaPlus, FaCheck, FaTimes, FaShieldAlt
+    FaUsers, FaUserShield, FaEdit, FaTrash, FaPlus, FaCheck, FaTimes, FaShieldAlt, FaKey
 } from 'react-icons/fa';
 import {
     getRoles, createRol, updateRol, deleteRol, getPermisos,
@@ -10,10 +10,12 @@ import {
 } from '@/lib/rolesApiService';
 import { useAuth } from '@/app/context/AuthContext';
 import { menuStructure } from '@/lib/menuData';
+import PanelExcepciones from '@/app/components/Permisos/PanelExcepciones';
 
 export default function UsuariosRolesPage() {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('usuarios');
+    const [usuarioExcepciones, setUsuarioExcepciones] = useState(null); // usuario al que se le gestionan excepciones
     const [isLoading, setIsLoading] = useState(false);
 
     // --- DATA STATE ---
@@ -298,6 +300,13 @@ export default function UsuariosRolesPage() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 flex justify-center gap-3">
+                                                <button
+                                                    onClick={() => setUsuarioExcepciones(u)}
+                                                    title="Gestionar permisos personalizados"
+                                                    className="text-gray-400 hover:text-amber-500 transition-colors"
+                                                >
+                                                    <FaKey />
+                                                </button>
                                                 <button onClick={() => openUserModal(u)} className="text-gray-400 hover:text-indigo-600"><FaEdit /></button>
                                                 <button
                                                     onClick={async () => {
@@ -526,5 +535,14 @@ export default function UsuariosRolesPage() {
                 </div>
             )}
         </div>
+
+        {/* DRAWER: EXCEPCIONES DE PERMISOS */}
+        {usuarioExcepciones && (
+            <PanelExcepciones
+                usuario={usuarioExcepciones}
+                onClose={() => setUsuarioExcepciones(null)}
+            />
+        )}
+    </div>
     );
 }
