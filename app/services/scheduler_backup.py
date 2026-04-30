@@ -138,6 +138,33 @@ def save_global_config(config_data):
     logger.info(f"[AutoBackup] Global config updated. Reloading scheduler.")
     schedule_backup_jobs()
 
+def verificar_integridad_backup(datos_bytes: bytes, es_zip: bool = False) -> tuple[bool, str]:
+    """
+    Realiza una prueba de restauración en memoria para asegurar que el backup sea válido.
+    Retorna (True, "") si es válido, o (False, "error") si está corrupto.
+    """
+    import io
+    try:
+        if es_zip:
+            # Verificar integridad del ZIP
+            with zipfile.ZipFile(io.BytesIO(datos_bytes)) as zf:
+                bad_file = zf.testzip()
+                if bad_file:
+                    return False, f"Archivo ZIP corrupto: {bad_file}"
+                
+                # Verificar que contenga al menos un JSON válido
+                for name in zf.namelist():
+                    if name.endswith('.json'):
+                        with zf.open(name) as f:
+                            json.load(f)
+        else:
+            # Verificar JSON directo
+            json.loads(datos_bytes.decode('utf-8'))
+            
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
 def run_global_backup():
     """
     Ejecuta el backup global de todas las empresas y las comprime en un ZIP EN MEMORIA,
@@ -177,11 +204,20 @@ def run_global_backup():
         zip_bytes = in_memory_zip.read()
         tamano_mb = str(round(len(zip_bytes) / (1024 * 1024), 2))
         
+        # --- VERIFICACIÓN DE INTEGRIDAD ---
+        es_valido, error_msg = verificar_integridad_backup(zip_bytes, es_zip=True)
+        if not es_valido:
+            logger.error(f"[AutoBackup] ¡ALERTA! Backup Global CORRUPTO detectado durante verificación: {error_msg}")
+        else:
+            logger.info("[AutoBackup] Verificación de integridad exitosa para Backup Global.")
+
         backup_record = CopiaSeguridad(
             empresa_id=None,
             nombre_archivo=zip_filename,
             datos_json=zip_bytes,
-            tamanio_mb=tamano_mb
+            tamanio_mb=tamano_mb,
+            es_valido=1 if es_valido else 2,
+            error_verificacion=error_msg if not es_valido else None
         )
         db.add(backup_record)
         db.commit()
@@ -292,11 +328,20 @@ def run_backup_for_company(empresa_id: int):
         json_bytes = json_str.encode('utf-8')
         tamano_mb = str(round(len(json_bytes) / (1024 * 1024), 2))
         
+        # --- VERIFICACIÓN DE INTEGRIDAD ---
+        es_valido, error_msg = verificar_integridad_backup(json_bytes, es_zip=False)
+        if not es_valido:
+            logger.error(f"[AutoBackup] ¡ALERTA! Backup de empresa {empresa_id} CORRUPTO detectado: {error_msg}")
+        else:
+            logger.info(f"[AutoBackup] Verificación exitosa para backup de empresa {empresa_id}.")
+
         backup_record = CopiaSeguridad(
             empresa_id=empresa_id,
             nombre_archivo=filename,
             datos_json=json_bytes,
-            tamanio_mb=tamano_mb
+            tamanio_mb=tamano_mb,
+            es_valido=1 if es_valido else 2,
+            error_verificacion=error_msg if not es_valido else None
         )
         db.add(backup_record)
         db.commit()

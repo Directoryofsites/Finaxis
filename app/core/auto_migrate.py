@@ -202,6 +202,14 @@ def run_auto_migrations():
 
 
 
+            # copia_seguridad
+            cols_copia_seguridad = get_existing_columns('copia_seguridad')
+            if cols_copia_seguridad:
+                if 'es_valido' not in cols_copia_seguridad:
+                    migrations.append(('copia_seguridad', 'es_valido', 'INTEGER DEFAULT 0'))
+                if 'error_verificacion' not in cols_copia_seguridad:
+                    migrations.append(('copia_seguridad', 'error_verificacion', 'TEXT'))
+
             # 3. Ejecutar migraciones independientemente para evitar Rollbacks completos
             if migrations:
                 with engine.connect() as conn:
