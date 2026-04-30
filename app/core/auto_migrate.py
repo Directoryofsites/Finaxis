@@ -105,6 +105,10 @@ def run_auto_migrations():
             # usuarios
             if 'whatsapp_number' not in cols_usuarios:
                 migrations.append(('usuarios', 'whatsapp_number', 'VARCHAR(50)'))
+            if 'totp_secret' not in cols_usuarios:
+                migrations.append(('usuarios', 'totp_secret', 'VARCHAR(64)'))
+            if 'totp_enabled' not in cols_usuarios:
+                migrations.append(('usuarios', 'totp_enabled', 'BOOLEAN DEFAULT FALSE'))
 
             # productos
             producto_cols = [
