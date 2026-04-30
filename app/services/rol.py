@@ -59,8 +59,142 @@ def update_rol(db: Session, rol: models.Rol, rol_update: schemas.RolUpdate) -> m
 
 def delete_rol(db: Session, rol: models.Rol):
     """Elimina un rol."""
-    # SQLAlchemy maneja la eliminación de la tabla de asociación automáticamente si está configurado cascade,
-    # pero por defecto 'secondary' no hace cascade delete. 
-    # Sin embargo, simplemente quitando el rol, la asociación desaparece.
     db.delete(rol)
     db.commit()
+
+
+# ============================================================
+# SERVICIOS PARA EXCEPCIONES DE PERMISOS POR USUARIO
+# ============================================================
+
+def get_permisos_con_estado(db: Session, usuario_id: int, empresa_id: int) -> list:
+    """
+    Retorna TODOS los permisos del sistema con el estado real de ese usuario:
+    - si lo hereda del rol
+    - si tiene una excepción (CONCEDIDO/REVOCADO)
+    - cuál es el resultado final (estado_efectivo)
+
+    Esta es la fuente de datos para la pantalla de edición de permisos del usuario.
+    """
+    from app.models.usuario import Usuario
+    from app.schemas.permiso import PermisoConEstado
+
+    usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+    if not usuario:
+        return []
+
+    # 1. Construir set de permisos que el usuario TIENE por su rol
+    permisos_por_rol: set[int] = set()
+    for rol in usuario.roles:
+        for p in rol.permisos:
+            permisos_por_rol.add(p.id)
+
+    # 2. Construir mapa de excepciones: {permiso_id: permitido(bool)}
+    mapa_excepciones: dict[int, bool] = {
+        exc.permiso_id: exc.permitido
+        for exc in usuario.excepciones
+    }
+
+    # 3. Obtener todos los permisos del sistema (filtrados por empresa si fuera necesario)
+    todos_los_permisos = db.query(models.Permiso).order_by(models.Permiso.nombre).all()
+
+    resultado = []
+    for permiso in todos_los_permisos:
+        tiene_por_rol = permiso.id in permisos_por_rol
+        tiene_excepcion = permiso.id in mapa_excepciones
+        excepcion_permitido = mapa_excepciones.get(permiso.id)  # None si no hay excepción
+
+        # Estado efectivo: la excepción manda sobre el rol
+        if tiene_excepcion:
+            estado_efectivo = excepcion_permitido
+        else:
+            estado_efectivo = tiene_por_rol
+
+        resultado.append(PermisoConEstado(
+            id=permiso.id,
+            nombre=permiso.nombre,
+            descripcion=permiso.descripcion,
+            tiene_por_rol=tiene_por_rol,
+            tiene_excepcion=tiene_excepcion,
+            excepcion_permitido=excepcion_permitido,
+            estado_efectivo=estado_efectivo,
+        ))
+
+    return resultado
+
+
+def upsert_excepciones(db: Session, usuario_id: int, excepciones_data: list) -> int:
+    """
+    Guarda un batch de excepciones para un usuario.
+    Si ya existe una excepción para ese permiso, la actualiza (upsert).
+    Retorna la cantidad de excepciones procesadas.
+    """
+    from app.models.usuario import Usuario
+
+    usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+    if not usuario:
+        return 0
+
+    # Mapa actual de excepciones en BD
+    mapa_actual: dict[int, models.UsuarioPermisoExcepcion] = {
+        exc.permiso_id: exc for exc in usuario.excepciones
+    }
+
+    count = 0
+    for item in excepciones_data:
+        permiso_id = item["permiso_id"]
+        permitido = item["permitido"]
+
+        # Verificar que el permiso existe
+        permiso = db.query(models.Permiso).filter(models.Permiso.id == permiso_id).first()
+        if not permiso:
+            continue
+
+        if permiso_id in mapa_actual:
+            # Actualizar existente
+            mapa_actual[permiso_id].permitido = permitido
+        else:
+            # Crear nueva excepción
+            nueva = models.UsuarioPermisoExcepcion(
+                usuario_id=usuario_id,
+                permiso_id=permiso_id,
+                permitido=permitido,
+            )
+            db.add(nueva)
+
+        count += 1
+
+    db.commit()
+    return count
+
+
+def delete_excepcion(db: Session, usuario_id: int, permiso_id: int) -> bool:
+    """
+    Elimina una excepción específica de un usuario.
+    Al eliminarla, el usuario vuelve a heredar el comportamiento de su rol.
+    Retorna True si existía y fue eliminada, False si no existía.
+    """
+    excepcion = db.query(models.UsuarioPermisoExcepcion).filter(
+        models.UsuarioPermisoExcepcion.usuario_id == usuario_id,
+        models.UsuarioPermisoExcepcion.permiso_id == permiso_id,
+    ).first()
+
+    if not excepcion:
+        return False
+
+    db.delete(excepcion)
+    db.commit()
+    return True
+
+
+def clear_all_excepciones(db: Session, usuario_id: int) -> int:
+    """
+    Elimina TODAS las excepciones de un usuario.
+    Usado cuando el admin quiere "resetear" al usuario a su rol puro.
+    Retorna la cantidad de excepciones eliminadas.
+    """
+    deleted = db.query(models.UsuarioPermisoExcepcion).filter(
+        models.UsuarioPermisoExcepcion.usuario_id == usuario_id
+    ).delete(synchronize_session=False)
+    db.commit()
+    return deleted

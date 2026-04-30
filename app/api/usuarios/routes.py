@@ -190,3 +190,117 @@ def change_soporte_user_password(
 
     services_usuario.update_password(db, user_to_update, password_update.nuevaPassword)
     return {"message": "Contraseña actualizada."}
+
+
+# ============================================================
+# ENDPOINTS: EXCEPCIONES DE PERMISOS POR USUARIO (Capa 3)
+# ============================================================
+from app.schemas.permiso import ExcepcionPermisoBatch, PermisoConEstado
+from app.services import rol as rol_service
+
+def _validar_acceso_a_usuario(
+    usuario_id: int,
+    current_user: models_usuario.Usuario,
+    db: Session
+) -> models_usuario.Usuario:
+    """
+    Valida que el current_user tenga derecho a gestionar las excepciones del usuario objetivo.
+    Reglas: Soporte puede todo. Admin de empresa solo puede gestionar usuarios de SU empresa.
+    """
+    is_soporte = any(r.nombre == 'soporte' for r in current_user.roles)
+    user_permissions = get_user_permissions(current_user)
+
+    if not is_soporte and "empresa:usuarios_roles" not in user_permissions:
+        raise HTTPException(status_code=403, detail="No tiene permiso para gestionar usuarios.")
+
+    usuario_objetivo = services_usuario.get_user_by_id(db, usuario_id=usuario_id)
+    if not usuario_objetivo:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+
+    if not is_soporte and usuario_objetivo.empresa_id != current_user.empresa_id:
+        raise HTTPException(status_code=403, detail="No puede gestionar usuarios de otra empresa.")
+
+    return usuario_objetivo
+
+
+@router.get(
+    "/{usuario_id}/permisos",
+    response_model=List[PermisoConEstado],
+    summary="Ver permisos con estado de un usuario",
+    description="Retorna todos los permisos del sistema indicando para cada uno: "
+                "si viene del rol, si tiene excepción, y cuál es el resultado final."
+)
+def get_permisos_usuario(
+    usuario_id: int,
+    db: Session = Depends(get_db),
+    current_user: models_usuario.Usuario = Depends(get_current_user),
+):
+    usuario_objetivo = _validar_acceso_a_usuario(usuario_id, current_user, db)
+    return rol_service.get_permisos_con_estado(
+        db=db,
+        usuario_id=usuario_id,
+        empresa_id=usuario_objetivo.empresa_id,
+    )
+
+
+@router.put(
+    "/{usuario_id}/permisos/excepciones",
+    summary="Guardar excepciones de permisos",
+    description="Aplica un batch de excepciones (CONCEDER / REVOCAR) a un usuario. "
+                "Si la excepción ya existe, la actualiza. Si no, la crea."
+)
+def upsert_excepciones_usuario(
+    usuario_id: int,
+    payload: ExcepcionPermisoBatch,
+    db: Session = Depends(get_db),
+    current_user: models_usuario.Usuario = Depends(get_current_user),
+):
+    _validar_acceso_a_usuario(usuario_id, current_user, db)
+
+    excepciones_data = [
+        {"permiso_id": e.permiso_id, "permitido": e.permitido}
+        for e in payload.excepciones
+    ]
+    count = rol_service.upsert_excepciones(db=db, usuario_id=usuario_id, excepciones_data=excepciones_data)
+    return {
+        "msg": f"Se aplicaron {count} excepción(es) correctamente.",
+        "total": count,
+    }
+
+
+@router.delete(
+    "/{usuario_id}/permisos/excepciones/{permiso_id}",
+    summary="Eliminar una excepción específica",
+    description="Elimina la excepción de un permiso puntual. "
+                "El usuario vuelve a heredar ese permiso de su rol."
+)
+def delete_excepcion_usuario(
+    usuario_id: int,
+    permiso_id: int,
+    db: Session = Depends(get_db),
+    current_user: models_usuario.Usuario = Depends(get_current_user),
+):
+    _validar_acceso_a_usuario(usuario_id, current_user, db)
+    eliminada = rol_service.delete_excepcion(db=db, usuario_id=usuario_id, permiso_id=permiso_id)
+    if not eliminada:
+        raise HTTPException(status_code=404, detail="No existe esa excepción para este usuario.")
+    return {"msg": "Excepción eliminada. El usuario hereda el comportamiento de su rol."}
+
+
+@router.delete(
+    "/{usuario_id}/permisos/excepciones",
+    summary="Resetear todas las excepciones",
+    description="Elimina TODAS las excepciones del usuario. "
+                "Queda con los permisos puros de su rol, sin ninguna personalización."
+)
+def reset_excepciones_usuario(
+    usuario_id: int,
+    db: Session = Depends(get_db),
+    current_user: models_usuario.Usuario = Depends(get_current_user),
+):
+    _validar_acceso_a_usuario(usuario_id, current_user, db)
+    total = rol_service.clear_all_excepciones(db=db, usuario_id=usuario_id)
+    return {
+        "msg": f"Se eliminaron {total} excepción(es). El usuario quedó con los permisos puros de su rol.",
+        "total": total,
+    }
