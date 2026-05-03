@@ -14,17 +14,33 @@ export default function CarteraEdadesPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [fechaCorte, setFechaCorte] = useState('');
 
+    const [camposPersonalizados, setCamposPersonalizados] = useState([]);
+    const [filtroExtraLlave, setFiltroExtraLlave] = useState('');
+    const [filtroExtraValor, setFiltroExtraValor] = useState('');
+
     useEffect(() => {
         if (!authLoading && user?.empresaId) {
+            loadCampos();
             loadReporte();
         }
-    }, [authLoading, user, fechaCorte]);
+    }, [authLoading, user, fechaCorte]); // No metemos filtroExtraValor para no recargar en cada tecla
+
+    const loadCampos = async () => {
+        try {
+            const dataCampos = await phService.getCamposPersonalizados();
+            setCamposPersonalizados(dataCampos);
+        } catch (error) {
+            console.error("Error loading campos", error);
+        }
+    };
 
     const loadReporte = async () => {
         setLoading(true);
         try {
             const params = {};
             if (fechaCorte) params.fecha_corte = fechaCorte;
+            if (filtroExtraLlave) params.filtro_metadato_llave = filtroExtraLlave;
+            if (filtroExtraValor) params.filtro_metadato_valor = filtroExtraValor;
             const result = await phService.getReporteEdades(params);
             setData(result);
         } catch (error) {
@@ -232,15 +248,56 @@ export default function CarteraEdadesPage() {
                     </div>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 flex items-center gap-4">
-                    <label className="label-text font-bold">Fecha de Corte:</label>
-                    <input
-                        type="date"
-                        className="input input-sm border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
-                        value={fechaCorte}
-                        onChange={(e) => setFechaCorte(e.target.value)}
-                    />
-                    <span className="text-xs text-gray-500">(Dejar vacío para HOY)</span>
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row items-start md:items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        <label className="label-text font-bold whitespace-nowrap">Fecha de Corte:</label>
+                        <input
+                            type="date"
+                            className="input input-sm border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
+                            value={fechaCorte}
+                            onChange={(e) => setFechaCorte(e.target.value)}
+                        />
+                    </div>
+                    
+                    <div className="h-6 w-px bg-gray-300 hidden md:block"></div>
+
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                        <label className="label-text font-bold whitespace-nowrap">Filtro Extra:</label>
+                        <select 
+                            className="select select-sm border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
+                            value={filtroExtraLlave}
+                            onChange={(e) => {
+                                setFiltroExtraLlave(e.target.value);
+                                if(!e.target.value) {
+                                    setFiltroExtraValor('');
+                                    setTimeout(() => loadReporte(), 100); // Reload if cleared
+                                }
+                            }}
+                        >
+                            <option value="">-- No Filtrar --</option>
+                            {camposPersonalizados.map(c => (
+                                <option key={c.llave_json} value={c.llave_json}>{c.etiqueta}</option>
+                            ))}
+                        </select>
+                        {filtroExtraLlave && (
+                            <div className="flex items-center gap-2">
+                                <input 
+                                    type="text" 
+                                    placeholder="Valor a buscar..."
+                                    className="input input-sm border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
+                                    value={filtroExtraValor}
+                                    onChange={(e) => setFiltroExtraValor(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && loadReporte()}
+                                />
+                                <button 
+                                    onClick={loadReporte}
+                                    className="btn btn-sm bg-indigo-600 text-white hover:bg-indigo-700"
+                                >
+                                    Buscar
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {loading ? (

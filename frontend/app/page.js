@@ -838,6 +838,8 @@ const FinancialAnalysisModule = ({ user }) => {
  * Implementa la lógica de 2 Niveles para Administración y Configuración.
  */
 const ExplorerView = ({ activeModuleId, router }) => {
+    const { user, getEffectivePermissions } = useAuth();
+    const userPermissions = useMemo(() => getEffectivePermissions(), [user]);
 
     // 1. Encontrar la configuración del módulo activo
     const module = useMemo(() => menuStructure.find(m => m.id === activeModuleId), [activeModuleId]);
@@ -882,7 +884,9 @@ const ExplorerView = ({ activeModuleId, router }) => {
                         Selecciona un Área de Configuración
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {module.subgroups.map((subgroup, index) => (
+                        {module.subgroups
+                            .filter(subgroup => subgroup.links.some(link => !link.permission || userPermissions.includes(link.permission)))
+                            .map((subgroup, index) => (
                             <ModuleTile
                                 key={subgroup.title}
                                 index={index}
@@ -917,7 +921,9 @@ const ExplorerView = ({ activeModuleId, router }) => {
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {currentSubgroup.links.map((link, index) => (
+                    {currentSubgroup.links
+                        .filter(link => !link.permission || userPermissions.includes(link.permission))
+                        .map((link, index) => (
                         <Link key={link.href} href={link.href} passHref>
                             <ModuleTile
                                 index={index}
@@ -933,7 +939,7 @@ const ExplorerView = ({ activeModuleId, router }) => {
     }
 
     // --- Lógica para el resto de módulos (Nivel Único de Enlaces) ---
-    const explorerItems = module.links || [];
+    const explorerItems = (module.links || []).filter(link => !link.permission || userPermissions.includes(link.permission));
 
     return (
         <div className="p-6 w-full">

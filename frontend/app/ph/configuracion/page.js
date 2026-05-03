@@ -180,6 +180,16 @@ export default function ConfiguracionPHPage() {
 
                 {/* NAV CARDS */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 max-w-4xl mx-auto">
+                    <Link href="/ph/configuracion/campos" className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all group cursor-pointer flex items-center gap-4">
+                        <div className="p-4 bg-pink-100 text-pink-600 rounded-full group-hover:scale-110 transition-transform">
+                            <FaPlus className="text-xl" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-gray-800 group-hover:text-pink-700 transition-colors">Campos Dinámicos</h3>
+                            <p className="text-xs text-gray-500 mt-1">Personaliza la data de las unidades.</p>
+                        </div>
+                    </Link>
+
                     <Link href="/ph/configuracion/modulos" className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all group cursor-pointer flex items-center gap-4">
                         <div className="p-4 bg-purple-100 text-purple-600 rounded-full group-hover:scale-110 transition-transform">
                             <FaLayerGroup className="text-xl" />

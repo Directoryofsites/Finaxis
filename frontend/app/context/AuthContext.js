@@ -54,8 +54,11 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const initializeAuth = useCallback(async (token) => {
+    // Si no se pasa token, intentar leerlo del localStorage (para refresco de perfil)
+    const activeToken = token || (typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null);
+    if (!activeToken) return false;
     try {
-      const decodedUser = jwtDecode(token);
+      const decodedUser = jwtDecode(activeToken);
       if (decodedUser.exp * 1000 < Date.now()) {
         throw new Error('Token expirado');
       }
@@ -73,7 +76,7 @@ export const AuthProvider = ({ children }) => {
 
       console.log("Initial User Data mapped:", initialUserData);
 
-      setAuthToken(token);
+      setAuthToken(activeToken);
       setUser(initialUserData);
 
       // 2. Fetch del perfil completo (Roles y Permisos) desde backend
@@ -161,7 +164,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const value = { user, authLoading, login, logout, switchCompany };
+  // Helper centralizado: devuelve permisos efectivos con fallback a roles si 'permissions' llegó vacío
+  const getEffectivePermissions = useCallback(() => {
+    if (!user) return [];
+    // Si el backend ya entregó permisos calculados (Capa 3), usarlos
+    if (user.permissions && user.permissions.length > 0) {
+      return user.permissions;
+    }
+    // Fallback: calcular desde roles (sin excepciones individuales)
+    if (user.roles && user.roles.length > 0) {
+      const fromRoles = new Set();
+      user.roles.forEach(role => {
+        (role.permisos || []).forEach(p => fromRoles.add(p.nombre));
+      });
+      return Array.from(fromRoles);
+    }
+    return [];
+  }, [user]);
+
+  const value = { user, authLoading, login, logout, switchCompany, initializeAuth, getEffectivePermissions };
 
   return (
     <AuthContext.Provider value={value}>

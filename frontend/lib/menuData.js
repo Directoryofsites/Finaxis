@@ -282,3 +282,30 @@ export const menuStructure = [
         ]
     },
 ];
+
+/**
+ * Helper para obtener el permiso asociado a una ruta específica.
+ * Recorre la estructura del menú para encontrar el link que coincida con la ruta.
+ */
+export const getPermissionForRoute = (route) => {
+    if (!route) return null;
+    
+    // Normalizar ruta (quitar parámetros de consulta para la búsqueda)
+    const baseUrl = route.split('?')[0];
+
+    for (const module of menuStructure) {
+        // Buscar en links directos
+        if (module.links) {
+            const link = module.links.find(l => l.href.split('?')[0] === baseUrl);
+            if (link) return link.permission;
+        }
+        // Buscar en subgrupos
+        if (module.subgroups) {
+            for (const subgroup of module.subgroups) {
+                const link = subgroup.links.find(l => l.href.split('?')[0] === baseUrl);
+                if (link) return link.permission;
+            }
+        }
+    }
+    return null;
+};

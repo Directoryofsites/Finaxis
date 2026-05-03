@@ -135,11 +135,13 @@ export default function GestionUnidadesPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedTorre, setSelectedTorre] = useState(''); // New Filter State
 
-    // Mass Edit State
     const [selectedUnits, setSelectedUnits] = useState(new Set());
     const [showMassEditModal, setShowMassEditModal] = useState(false);
     const [availableModules, setAvailableModules] = useState([]);
     const [massActionLoading, setMassActionLoading] = useState(false);
+
+    // Campos Dinámicos
+    const [camposPersonalizados, setCamposPersonalizados] = useState([]);
 
     // Carga de datos
     useEffect(() => {
@@ -149,14 +151,16 @@ export default function GestionUnidadesPage() {
                     try {
                         setLoading(true);
                         setError(null);
-                        const [unitsData, torresData, modulosData] = await Promise.all([
+                        const [unitsData, torresData, modulosData, camposData] = await Promise.all([
                             phService.getUnidades(),
                             phService.getTorres(),
-                            phService.getModulos()
+                            phService.getModulos(),
+                            phService.getCamposPersonalizados('unidades')
                         ]);
                         setUnidades(unitsData);
                         setTorres(torresData);
                         setAvailableModules(modulosData);
+                        setCamposPersonalizados(camposData);
                     } catch (err) {
                         setError(err.response?.data?.detail || 'Error al obtener los datos');
                     } finally {
@@ -409,6 +413,14 @@ export default function GestionUnidadesPage() {
                                     <th className="py-3 px-4 text-left text-xs font-bold text-gray-600 uppercase">Tipo</th>
                                     <th className="py-3 px-4 text-left text-xs font-bold text-gray-600 uppercase">{labels.coeficiente}</th>
                                     <th className="py-3 px-4 text-center text-xs font-bold text-gray-600 uppercase">{labels.torre || 'Grupo'}/Ubic</th>
+                                    
+                                    {/* COLUMNAS DINÁMICAS */}
+                                    {camposPersonalizados.map(campo => (
+                                        <th key={campo.id} className="py-3 px-4 text-center text-xs font-bold text-indigo-600 uppercase">
+                                            {campo.etiqueta}
+                                        </th>
+                                    ))}
+
                                     <th className="py-3 px-4 text-center text-xs font-bold text-gray-600 uppercase w-32">Acciones</th>
                                 </tr>
                             </thead>
@@ -438,6 +450,14 @@ export default function GestionUnidadesPage() {
                                                     {u.torre && <span title={`Grupo: ${u.torre.nombre}`}><FaBuilding className="text-gray-500" /> {u.torre.nombre}</span>}
                                                 </div>
                                             </td>
+
+                                            {/* CELDAS DINÁMICAS */}
+                                            {camposPersonalizados.map(campo => (
+                                                <td key={campo.id} className="py-3 px-4 text-center text-sm font-medium text-gray-700 bg-indigo-50/10">
+                                                    {u.metadatos_extra ? u.metadatos_extra[campo.llave_json] || '-' : '-'}
+                                                </td>
+                                            ))}
+
                                             <td className="py-3 px-4 text-center">
                                                 <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <Link href={`/ph/unidades/editar/${u.id}`} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="Editar">

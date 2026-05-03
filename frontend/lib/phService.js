@@ -12,6 +12,26 @@ export const phService = {
         return response.data;
     },
 
+    getCamposPersonalizados: async (entidad = 'unidades') => {
+        const response = await apiService.get(`/ph/campos-personalizados?entidad=${entidad}`);
+        return response.data;
+    },
+
+    createCampoPersonalizado: async (data) => {
+        const response = await apiService.post('/ph/campos-personalizados', data);
+        return response.data;
+    },
+
+    updateCampoPersonalizado: async (id, data) => {
+        const response = await apiService.put(`/ph/campos-personalizados/${id}`, data);
+        return response.data;
+    },
+
+    deleteCampoPersonalizado: async (id) => {
+        const response = await apiService.delete(`/ph/campos-personalizados/${id}`);
+        return response.data;
+    },
+
     // --- TORRES ---
     getTorres: async () => {
         const response = await apiService.get('/ph/torres');
@@ -234,7 +254,7 @@ export const phService = {
     },
 
     getReporteSaldos: async (params = {}) => {
-        // params: { fecha_corte, unidad_id, propietario_id, torre_id, concepto_busqueda }
+        // params: { fecha_corte, unidad_id, propietario_id, torre_id, concepto_busqueda, filtro_metadato_llave, filtro_metadato_valor }
         const response = await apiService.get('/ph/reportes/saldos', { params });
         return response.data;
     },

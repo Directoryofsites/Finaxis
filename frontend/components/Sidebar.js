@@ -9,7 +9,8 @@ export default function Sidebar({
     isMenuOpen,
     setIsMenuOpen,
     user,
-    logout
+    logout,
+    getEffectivePermissions
 }) {
     return (
         <aside
@@ -35,7 +36,7 @@ export default function Sidebar({
                 {menuStructure.map((module) => {
                     // Verificar permisos
                     if (module.permission) {
-                        const userPermissions = user?.roles?.flatMap(r => r.permisos?.map(p => p.nombre)) || [];
+                        const userPermissions = getEffectivePermissions ? getEffectivePermissions() : (user?.permissions || []);
                         if (!userPermissions.includes(module.permission)) {
                             // Si no tiene el permiso del módulo, verificar si tiene AL MENOS UN permiso de los sub-items (fallback inteligente)
                             // Esto es opcional, pero ayuda si el permiso padre no está asignado explícitamente pero sí uno hijo.

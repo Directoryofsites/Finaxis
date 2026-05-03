@@ -13,7 +13,7 @@ limiter = Limiter(
 )
 
 from .config import settings
-from app.core.database import get_db
+from app.core.database import get_db, current_empresa_id
 from app.schemas import token as schemas_token
 from app.models import usuario as models_usuario
 from app.models import permiso as models_permiso
@@ -208,6 +208,9 @@ async def get_current_user(
     # --- FIX CRÍTICO: CONTEXT SWITCHING ---
     token_empresa_id = payload.get("empresa_id")
     if token_empresa_id:
+        # Configurar Middleware de Multitenancy para SQLAlchemy
+        current_empresa_id.set(token_empresa_id)
+        
         # 1. Override ID
         user.empresa_id = token_empresa_id
         

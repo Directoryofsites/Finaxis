@@ -33,12 +33,14 @@ export default function CrearUnidadPage() {
         observaciones: '',
         aplica_pronto_pago: true,
         propietario_principal_id: null,
-        modulos_ids: [] // IDs de módulos seleccionados
+        modulos_ids: [], // IDs de módulos seleccionados
+        metadatos_extra: {} // Caja fuerte dinámica
     });
 
     const [selectedPropietario, setSelectedPropietario] = useState(null);
     const [availableModulos, setAvailableModulos] = useState([]);
     const [torres, setTorres] = useState([]);
+    const [camposPersonalizados, setCamposPersonalizados] = useState([]);
 
     // Cargar Módulos al inicio
     React.useEffect(() => {
@@ -48,6 +50,8 @@ export default function CrearUnidadPage() {
                 setAvailableModulos(mods);
                 const torresData = await phService.getTorres();
                 setTorres(torresData);
+                const campos = await phService.getCamposPersonalizados('unidades');
+                setCamposPersonalizados(campos);
             } catch (error) {
                 console.error("Error loading dependencies", error);
             }
@@ -81,6 +85,13 @@ export default function CrearUnidadPage() {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleMetadatoChange = (llave, valor) => {
+        setFormData(prev => ({
+            ...prev,
+            metadatos_extra: { ...prev.metadatos_extra, [llave]: valor }
+        }));
     };
 
     // ... (Handlers vehículos y mascotas igual) ...
@@ -275,6 +286,29 @@ export default function CrearUnidadPage() {
                             </div>
                         )}
                     </div>
+
+                    {/* SECCIÓN DINÁMICA: CAMPOS PERSONALIZADOS */}
+                    {camposPersonalizados.length > 0 && (
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-indigo-200">
+                            <h2 className={`${sectionTitleClass} text-indigo-700`}><FaPlus /> Información Adicional (Campos Personalizados)</h2>
+                            <p className="text-xs text-gray-500 mb-4">Estos campos fueron configurados dinámicamente por la administración.</p>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {camposPersonalizados.map(campo => (
+                                    <div key={campo.id}>
+                                        <label className={labelClass}>{campo.etiqueta}</label>
+                                        <input 
+                                            type={campo.tipo === 'number' ? 'number' : 'text'}
+                                            className={inputClass} 
+                                            placeholder={`Ingrese ${campo.etiqueta}`}
+                                            value={formData.metadatos_extra[campo.llave_json] || ''} 
+                                            onChange={(e) => handleMetadatoChange(campo.llave_json, e.target.value)} 
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* VEHÍCULOS / ITEMS EXTENSIBLES */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">

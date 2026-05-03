@@ -41,6 +41,10 @@ export default function ReporteSaldosPage() {
     const [operadorMonto, setOperadorMonto] = useState('>');
     const [valorMonto, setValorMonto] = useState('');
     const [agruparPropietario, setAgruparPropietario] = useState(false);
+    
+    // Filtro por Metadato
+    const [filtroMetadatoLlave, setFiltroMetadatoLlave] = useState('');
+    const [filtroMetadatoValor, setFiltroMetadatoValor] = useState('');
 
     // Datos Auxiliares
     const [torres, setTorres] = useState([]);
@@ -48,6 +52,7 @@ export default function ReporteSaldosPage() {
     const [propietarios, setPropietarios] = useState([]);
     const [modulos, setModulos] = useState([]);
     const [unidadesRaw, setUnidadesRaw] = useState([]); // Todas las unidades para el select
+    const [camposPersonalizados, setCamposPersonalizados] = useState([]);
 
     // UI State
     const [expandedGroups, setExpandedGroups] = useState({}); // {ownerName: bool}
@@ -68,18 +73,20 @@ export default function ReporteSaldosPage() {
 
     const loadAuxData = async () => {
         try {
-            const [t, c, p, m, u] = await Promise.all([
+            const [t, c, p, m, u, cp] = await Promise.all([
                 phService.getTorres(),
                 phService.getConceptos(),
                 phService.getPropietarios(),
                 phService.getModulos(),
-                phService.getUnidades({ limit: 5000 })
+                phService.getUnidades({ limit: 5000 }),
+                phService.getCamposPersonalizados()
             ]);
             setTorres(t || []);
             setConceptos(c || []);
             setPropietarios(p || []);
             setModulos(m || []);
             setUnidadesRaw(u || []);
+            setCamposPersonalizados(cp || []);
         } catch (e) {
             console.error("Error cargando datos auxiliares", e);
         }
@@ -99,6 +106,10 @@ export default function ReporteSaldosPage() {
             if (valorMonto !== '') {
                 params.operador_monto = operadorMonto;
                 params.valor_monto = parseFloat(valorMonto);
+            }
+            if (filtroMetadatoLlave && filtroMetadatoValor) {
+                params.filtro_metadato_llave = filtroMetadatoLlave;
+                params.filtro_metadato_valor = filtroMetadatoValor;
             }
             params.agrupar_por_propietario = agruparPropietario;
 
@@ -440,8 +451,8 @@ export default function ReporteSaldosPage() {
 
                         {/* Concepto (Texto) */}
                         <div className="md:col-span-2 lg:col-span-2">
-                            <label className="block text-[11px] font-bold text-gray-400 uppercase mb-2">
-                                Filtrar por Concepto Específico
+                            <label className="block text-[11px] font-bold text-gray-400 uppercase mb-2 flex items-center gap-2">
+                                <FaLayerGroup className="text-indigo-500" /> Filtrar por Concepto Específico
                             </label>
                             <select
                                 className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-sm"
@@ -453,6 +464,33 @@ export default function ReporteSaldosPage() {
                                     <option key={c.id} value={c.nombre}>{c.nombre}</option>
                                 ))}
                             </select>
+                        </div>
+
+                        {/* Filtro por Campo Personalizado */}
+                        <div className="md:col-span-2 lg:col-span-2">
+                            <label className="block text-[11px] font-bold text-gray-400 uppercase mb-2 flex items-center gap-2">
+                                <FaFilter className="text-indigo-500" /> Filtro Personalizado
+                            </label>
+                            <div className="flex gap-1">
+                                <select
+                                    className="w-1/2 px-3 py-2 border rounded-l-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-xs"
+                                    value={filtroMetadatoLlave}
+                                    onChange={(e) => setFiltroMetadatoLlave(e.target.value)}
+                                >
+                                    <option value="">Seleccione Campo</option>
+                                    {camposPersonalizados.map(cp => (
+                                        <option key={cp.llave_json} value={cp.llave_json}>{cp.etiqueta}</option>
+                                    ))}
+                                </select>
+                                <input
+                                    type="text"
+                                    placeholder="Valor..."
+                                    className="w-1/2 px-3 py-2 border rounded-r-xl focus:ring-2 focus:ring-indigo-500 outline-none text-xs"
+                                    value={filtroMetadatoValor}
+                                    onChange={(e) => setFiltroMetadatoValor(e.target.value)}
+                                    disabled={!filtroMetadatoLlave}
+                                />
+                            </div>
                         </div>
 
                         {/* Agrupación */}

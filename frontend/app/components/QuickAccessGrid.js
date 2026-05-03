@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
 import Link from 'next/link';
+import { useAuth } from '../context/AuthContext';
+import { getPermissionForRoute } from '../../lib/menuData';
 // BIBLIOTECA EXTENSA DE ÍCONOS ESPECÍFICOS - IGUAL QUE EN MENUDATA.JS
 import {
     FaPlus, FaCog, FaRocket, FaGem, FaBolt, FaMagic,
@@ -241,15 +243,23 @@ const getSmartIconForRoute = (route) => {
 
 
 const QuickAccessGrid = ({ favoritos, router }) => {
+    const { user, getEffectivePermissions } = useAuth();
+    const userPermissions = useMemo(() => getEffectivePermissions(), [user]);
 
     // Rellenar la lista de favoritos con placeholders hasta 24
     const accessItems = useMemo(() => {
-        const items = [...favoritos];
+        // Filtrar favoritos por permiso antes de rellenar
+        const filteredFavoritos = favoritos.filter(fav => {
+            const perm = getPermissionForRoute(fav.ruta_enlace);
+            return !perm || userPermissions.includes(perm);
+        });
+
+        const items = [...filteredFavoritos];
         while (items.length < MAX_FAVORITOS) {
             items.push(null);
         }
         return items;
-    }, [favoritos]);
+    }, [favoritos, userPermissions]);
 
     return (
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">

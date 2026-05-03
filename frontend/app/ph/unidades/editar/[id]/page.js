@@ -43,9 +43,11 @@ export default function EditarUnidadPage() {
     const [availableModulos, setAvailableModulos] = useState([]);
     const [torres, setTorres] = useState([]);
 
-    // Estado para Listas Anidadas
+    // Estado para Listas Anidadas y Metadatos Dinámicos
     const [vehiculos, setVehiculos] = useState([]);
     const [mascotas, setMascotas] = useState([]);
+    const [camposPersonalizados, setCamposPersonalizados] = useState([]);
+    const [metadatosExtra, setMetadatosExtra] = useState({});
 
     // Cargar Datos
     useEffect(() => {
@@ -54,15 +56,17 @@ export default function EditarUnidadPage() {
                 try {
                     setLoading(true);
 
-                    // Cargar Unidad, Módulos y Torres en paralelo
-                    const [data, mods, torresData] = await Promise.all([
+                    // Cargar Unidad, Módulos, Torres y Campos Personalizados en paralelo
+                    const [data, mods, torresData, camposData] = await Promise.all([
                         phService.getUnidadById(id),
                         phService.getModulos(),
-                        phService.getTorres()
+                        phService.getTorres(),
+                        phService.getCamposPersonalizados()
                     ]);
 
                     setAvailableModulos(mods);
                     setTorres(torresData);
+                    setCamposPersonalizados(camposData || []);
 
                     setFormData({
                         codigo: data.codigo,
@@ -79,6 +83,7 @@ export default function EditarUnidadPage() {
                     });
                     setVehiculos(data.vehiculos || []);
                     setMascotas(data.mascotas || []);
+                    setMetadatosExtra(data.metadatos_extra || {});
 
                     // Cargar Propietario si existe
                     if (data.propietario_principal_id) {
@@ -161,7 +166,8 @@ export default function EditarUnidadPage() {
                 ...formData,
                 torre_id: formData.torre_id === '' ? null : parseInt(formData.torre_id),
                 vehiculos: vehiculos,
-                mascotas: mascotas
+                mascotas: mascotas,
+                metadatos_extra: metadatosExtra
             };
 
             await phService.updateUnidad(id, payload);
@@ -344,6 +350,35 @@ export default function EditarUnidadPage() {
                             </div>
                         )}
                     </div>
+
+                    {/* SECCIÓN DINÁMICA: CAMPOS PERSONALIZADOS */}
+                    {camposPersonalizados.length > 0 && (
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-indigo-200">
+                            <h2 className={`${sectionTitleClass} text-indigo-700`}><FaPlus /> Información Adicional (Campos Personalizados)</h2>
+                            <p className="text-xs text-gray-500 mb-4">Estos campos fueron configurados dinámicamente por la administración.</p>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {camposPersonalizados.map(campo => (
+                                    <div key={campo.id}>
+                                        <label className={labelClass}>{campo.etiqueta}</label>
+                                        <input 
+                                            type={campo.tipo_dato === 'NUMERICO' ? 'number' : 'text'}
+                                            className={inputClass} 
+                                            placeholder={`Ingrese ${campo.etiqueta}...`}
+                                            value={metadatosExtra[campo.llave_json] || ''}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setMetadatosExtra(prev => ({
+                                                    ...prev,
+                                                    [campo.llave_json]: val
+                                                }));
+                                            }}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* VEHÍCULOS / ITEMS EXTENSIBLES */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">

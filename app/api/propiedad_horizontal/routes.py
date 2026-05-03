@@ -21,6 +21,93 @@ from . import conceptos
 router = APIRouter()
 router.include_router(conceptos.router)
 
+# --- CAMPOS PERSONALIZADOS (MOTOR DINÁMICO) ---
+from app.models.propiedad_horizontal.campo_personalizado import PHCampoPersonalizado
+
+class PHCampoPersonalizadoSchema(BaseModel):
+    id: Optional[int] = None
+    entidad: str
+    etiqueta: str
+    llave_json: str
+    tipo: str = "text"
+    activo: bool = True
+
+    class Config:
+        from_attributes = True
+
+@router.get("/campos-personalizados", response_model=List[PHCampoPersonalizadoSchema])
+def get_campos_personalizados(
+    entidad: str = "unidades",
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    campos = db.query(PHCampoPersonalizado).filter(
+        PHCampoPersonalizado.empresa_id == current_user.empresa_id,
+        PHCampoPersonalizado.entidad == entidad,
+        PHCampoPersonalizado.activo == True
+    ).all()
+    return campos
+
+@router.post("/campos-personalizados", response_model=PHCampoPersonalizadoSchema)
+def crear_campo_personalizado(
+    payload: PHCampoPersonalizadoSchema,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    nuevo_campo = PHCampoPersonalizado(
+        empresa_id=current_user.empresa_id,
+        entidad=payload.entidad,
+        etiqueta=payload.etiqueta,
+        llave_json=payload.llave_json,
+        tipo=payload.tipo,
+        activo=payload.activo
+    )
+    db.add(nuevo_campo)
+    db.commit()
+    db.refresh(nuevo_campo)
+    return nuevo_campo
+
+@router.put("/campos-personalizados/{id}", response_model=PHCampoPersonalizadoSchema)
+def actualizar_campo_personalizado(
+    id: int,
+    payload: PHCampoPersonalizadoSchema,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    campo = db.query(PHCampoPersonalizado).filter(
+        PHCampoPersonalizado.id == id,
+        PHCampoPersonalizado.empresa_id == current_user.empresa_id
+    ).first()
+    if not campo:
+        raise HTTPException(status_code=404, detail="Campo personalizado no encontrado")
+    
+    campo.etiqueta = payload.etiqueta
+    campo.llave_json = payload.llave_json
+    campo.tipo = payload.tipo
+    campo.activo = payload.activo
+    
+    db.commit()
+    db.refresh(campo)
+    return campo
+
+@router.delete("/campos-personalizados/{id}")
+def eliminar_campo_personalizado(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    campo = db.query(PHCampoPersonalizado).filter(
+        PHCampoPersonalizado.id == id,
+        PHCampoPersonalizado.empresa_id == current_user.empresa_id
+    ).first()
+    if not campo:
+        raise HTTPException(status_code=404, detail="Campo personalizado no encontrado")
+    
+    db.delete(campo)
+    db.commit()
+    return {"status": "ok"}
+
+
 # --- MÓDULOS DE CONTRIBUCIÓN (PH Mixta) ---
 
 @router.get("/modulos", response_model=List[modulo_schemas.PHModuloContribucionResponse])
@@ -585,6 +672,8 @@ def get_reporte_movimientos(
     concepto_id: Optional[int] = None,
     numero_doc: Optional[str] = None,
     tipo_movimiento: Optional[str] = None, # Nuevo filtro
+    filtro_metadato_llave: Optional[str] = None,
+    filtro_metadato_valor: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
@@ -598,12 +687,16 @@ def get_reporte_movimientos(
         tipo_documento_id=tipo_documento_id,
         concepto_id=concepto_id,
         numero_doc=numero_doc,
-        tipo_movimiento=tipo_movimiento
+        tipo_movimiento=tipo_movimiento,
+        filtro_metadato_llave=filtro_metadato_llave,
+        filtro_metadato_valor=filtro_metadato_valor
     )
 
 @router.get("/reportes/cartera-edades", response_model=recaudo_schemas.CarteraEdadesResponse)
 def get_reporte_cartera_edades(
     fecha_corte: Optional[date] = None,
+    filtro_metadato_llave: Optional[str] = None,
+    filtro_metadato_valor: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
@@ -611,7 +704,13 @@ def get_reporte_cartera_edades(
     Reporte de cartera clasificada por edades: 0-30, 31-60, 61-90, >90
     Soporta fecha de corte histórica.
     """
-    return reportes_service.get_cartera_edades(db, current_user.empresa_id, fecha_corte=fecha_corte)
+    return reportes_service.get_cartera_edades(
+        db, 
+        current_user.empresa_id, 
+        fecha_corte=fecha_corte,
+        filtro_metadato_llave=filtro_metadato_llave,
+        filtro_metadato_valor=filtro_metadato_valor
+    )
 
 @router.get("/reportes/saldos", response_model=recaudo_schemas.ReporteSaldoResponse)
 def get_reporte_saldos(
@@ -624,12 +723,14 @@ def get_reporte_saldos(
     operador_monto: Optional[str] = None,
     valor_monto: Optional[float] = None,
     agrupar_por_propietario: bool = False,
+    filtro_metadato_llave: Optional[str] = None,
+    filtro_metadato_valor: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
     """
     Reporte de Saldos (Balance General) detallado.
-    Permite filtrar por Torre, Unidad, Prop y Concepto.
+    Permite filtrar por Torre, Unidad, Prop, Concepto y Metadatos Dinámicos.
     """
     return reportes_service.get_reporte_saldos(
         db, 
@@ -642,7 +743,9 @@ def get_reporte_saldos(
         modulo_id=modulo_id,
         operador_monto=operador_monto,
         valor_monto=valor_monto,
-        agrupar_por_propietario=agrupar_por_propietario
+        agrupar_por_propietario=agrupar_por_propietario,
+        filtro_metadato_llave=filtro_metadato_llave,
+        filtro_metadato_valor=filtro_metadato_valor
     )
 
 # --- PRESUPUESTOS ---

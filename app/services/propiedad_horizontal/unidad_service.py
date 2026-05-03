@@ -39,7 +39,8 @@ def get_unidades(db: Session, empresa_id: int, skip: int = 0, limit: int = 100, 
             "torre_nombre": u.torre.nombre if u.torre else None,
             "propietario": {"razon_social": u.propietario_principal.razon_social} if u.propietario_principal else None,
             "propietario_nombre": u.propietario_principal.razon_social if u.propietario_principal else None,
-            "modulos_ids": [m.id for m in u.modulos_contribucion] if hasattr(u, 'modulos_contribucion') else []
+            "modulos_ids": [m.id for m in u.modulos_contribucion] if hasattr(u, 'modulos_contribucion') else [],
+            "metadatos_extra": u.metadatos_extra
         })
     
     # Ordenar lógicamente por Torre y luego por Código de Unidad
@@ -109,7 +110,8 @@ def crear_unidad(db: Session, unidad: schemas.PHUnidadCreate, empresa_id: int):
         residente_actual_id=unidad.residente_actual_id,
         referencia_recaudo=getattr(unidad, 'referencia_recaudo', None),
         aplica_pronto_pago=getattr(unidad, 'aplica_pronto_pago', True),
-        observaciones=unidad.observaciones
+        observaciones=unidad.observaciones,
+        metadatos_extra=unidad.metadatos_extra
     )
     db.add(db_unidad)
     db.flush() # Para obtener ID
@@ -186,6 +188,7 @@ def update_unidad(db: Session, unidad_id: int, unidad_update: schemas.PHUnidadCr
     db_unidad.observaciones = unidad_update.observaciones
     db_unidad.propietario_principal_id = unidad_update.propietario_principal_id
     db_unidad.residente_actual_id = unidad_update.residente_actual_id
+    db_unidad.metadatos_extra = unidad_update.metadatos_extra
     
     if hasattr(unidad_update, 'referencia_recaudo'):
         db_unidad.referencia_recaudo = getattr(unidad_update, 'referencia_recaudo', None)

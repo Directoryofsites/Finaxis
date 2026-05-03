@@ -1,12 +1,13 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.core.database import get_db
 from app.services import usuario as services_usuario
 from app.schemas import usuario as schemas_usuario
 from app.core.security import get_current_user, has_permission, get_user_permissions
 from app.models import usuario as models_usuario
+from app.models import permiso as models_permiso
 
 router = APIRouter()
 
@@ -31,34 +32,49 @@ def read_users_me(
     Retorna el perfil del usuario actual, incluyendo ROLES y PERMISOS.
     Esencial para que el frontend pueda renderizar los menús correctamente.
     """
-    # 1. Obtener Empresa Original (sin contexto switch) usando una Sesión LIMPIA
-    # Esto es necesario porque get_current_user modifica el objeto user en la sesión principal para simular el contexto
     from app.core.database import SessionLocal
     
     clean_db = SessionLocal()
     try:
         # Consultamos el usuario "puro" de la BD
-        db_user = clean_db.query(models_usuario.Usuario).filter(models_usuario.Usuario.id == current_user.id).first()
-        
+        db_user = clean_db.query(models_usuario.Usuario).filter(
+            models_usuario.Usuario.id == current_user.id
+        ).first()
         
         home_company = "Consorcio"
         if db_user and db_user.empresa:
             curr_emp = db_user.empresa
-            # Traverse up to the root parent
             while curr_emp.padre:
                 print(f"DEBUG WELCOME: Climbing up from {curr_emp.razon_social} to parent...")
                 curr_emp = curr_emp.padre
-            
             home_company = curr_emp.razon_social
             print(f"DEBUG WELCOME: Root Company Found: {home_company}")
             
-        # Asignamos al objeto de respuesta current_user (que es el que se serializa)
         current_user.empresa_original_nombre = home_company
         print(f"DEBUG WELCOME: Final Field Set: {current_user.empresa_original_nombre}")
+        
+        # CAPA 3: Recargar el usuario CON TODAS SUS RELACIONES desde clean_db
+        # Esto garantiza que roles, permisos y excepciones estén cargados correctamente
+        # sin depender del estado de la sesión principal de la request.
+        user_for_perms = clean_db.query(models_usuario.Usuario).options(
+            selectinload(models_usuario.Usuario.roles).selectinload(models_permiso.Rol.permisos),
+            selectinload(models_usuario.Usuario.excepciones).selectinload(
+                models_permiso.UsuarioPermisoExcepcion.permiso
+            ),
+        ).filter(models_usuario.Usuario.id == current_user.id).first()
+        
+        if user_for_perms:
+            calculated_permissions = list(get_user_permissions(user_for_perms))
+            print(f"DEBUG PERMISOS: Calculados para {current_user.email}: {calculated_permissions}")
+        else:
+            calculated_permissions = []
+            
+        current_user.permissions = calculated_permissions
+        
     finally:
         clean_db.close()
     
-    return current_user 
+    return current_user
 
 
 

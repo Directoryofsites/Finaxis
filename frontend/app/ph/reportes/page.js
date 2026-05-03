@@ -31,6 +31,11 @@ export default function ReportesPHPage() {
     const [unidades, setUnidades] = useState([]);
     const [propietarios, setPropietarios] = useState([]);
     const [conceptos, setConceptos] = useState([]);
+    const [camposPersonalizados, setCamposPersonalizados] = useState([]);
+
+    // Filtros de metadatos dinámicos
+    const [filtroExtraLlave, setFiltroExtraLlave] = useState('');
+    const [filtroExtraValor, setFiltroExtraValor] = useState('');
 
     // Resultados
     const [reporte, setReporte] = useState([]);
@@ -56,6 +61,10 @@ export default function ReportesPHPage() {
             const dataConceptos = await phService.getConceptos();
             setConceptos(dataConceptos);
 
+            // Cargar Campos Personalizados
+            const dataCampos = await phService.getCamposPersonalizados();
+            setCamposPersonalizados(dataCampos);
+
         } catch (error) {
             console.error("Error cargando maestros:", error);
         }
@@ -71,7 +80,9 @@ export default function ReportesPHPage() {
                 propietario_id: propietario?.id,
                 concepto_id: concepto || undefined,
                 numero_doc: numeroDoc || undefined,
-                tipo_movimiento: tipoDoc || undefined // Enviamos el valor del select ('FACTURAS', 'RECIBOS' o '')
+                tipo_movimiento: tipoDoc || undefined, // Enviamos el valor del select ('FACTURAS', 'RECIBOS' o '')
+                filtro_metadato_llave: filtroExtraLlave || undefined,
+                filtro_metadato_valor: filtroExtraValor || undefined
             };
 
             const data = await phService.getReporteMovimientos(params);
@@ -100,6 +111,8 @@ export default function ReportesPHPage() {
         setTipoDoc(''); // Limpiar filtro
         setNumeroDoc('');
         setFilterText('');
+        setFiltroExtraLlave('');
+        setFiltroExtraValor('');
         setReporte([]);
     };
 
@@ -333,6 +346,40 @@ export default function ReportesPHPage() {
                                 value={filterText}
                                 onChange={(e) => setFilterText(e.target.value)} onKeyDown={handleKeyDown}
                             />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                        <div className="md:col-span-2 flex flex-col md:flex-row gap-4">
+                            <div className="flex-1">
+                                <label className="block text-gray-600 mb-1 font-medium text-xs">Campo Personalizado</label>
+                                <select 
+                                    className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-100 outline-none transition-all bg-gray-50 text-sm"
+                                    value={filtroExtraLlave}
+                                    onChange={(e) => {
+                                        setFiltroExtraLlave(e.target.value);
+                                        if(!e.target.value) setFiltroExtraValor('');
+                                    }}
+                                >
+                                    <option value="">-- No Filtrar --</option>
+                                    {camposPersonalizados.map(c => (
+                                        <option key={c.llave_json} value={c.llave_json}>{c.etiqueta}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            {filtroExtraLlave && (
+                                <div className="flex-1">
+                                    <label className="block text-gray-600 mb-1 font-medium text-xs">Valor del Campo</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Ej. Taxis"
+                                        className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-100 outline-none transition-all bg-white text-sm"
+                                        value={filtroExtraValor}
+                                        onChange={(e) => setFiltroExtraValor(e.target.value)}
+                                        onKeyDown={handleKeyDown}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

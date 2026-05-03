@@ -23,12 +23,27 @@ export default function EstadoCuentaPage() {
     const [reporte, setReporte] = useState(null);
     const [error, setError] = useState(null);
 
-    // Cargar Lista de Unidades
+    const [camposPersonalizados, setCamposPersonalizados] = useState([]);
+    const [filtroExtraLlave, setFiltroExtraLlave] = useState('');
+    const [filtroExtraValor, setFiltroExtraValor] = useState('');
+
+    // Cargar Lista de Unidades y Campos
     useEffect(() => {
         if (!authLoading && user?.empresaId) {
             phService.getUnidades().then(setUnidades).catch(console.error);
+            phService.getCamposPersonalizados().then(setCamposPersonalizados).catch(console.error);
         }
     }, [user, authLoading]);
+
+    const unidadesFiltradas = unidades.filter(u => {
+        if (filtroExtraLlave && filtroExtraValor) {
+            const val = u.metadatos_extra?.[filtroExtraLlave];
+            if (!val || !val.toString().toLowerCase().includes(filtroExtraValor.toLowerCase())) {
+                return false;
+            }
+        }
+        return true;
+    });
 
     // Generar Reporte
     const handleGenerar = async () => {
@@ -136,10 +151,37 @@ export default function EstadoCuentaPage() {
                                 onChange={(e) => setSelectedUnidad(e.target.value)}
                             >
                                 <option value="">-- Seleccionar Unidad --</option>
-                                {unidades.map(u => (
+                                {unidadesFiltradas.map(u => (
                                     <option key={u.id} value={u.id}>{u.codigo} - {u.propietario_nombre || 'Sin Asignar'} {u.torre ? `(${u.torre.nombre})` : ''}</option>
                                 ))}
                             </select>
+                        </div>
+                        <div className="flex flex-col gap-2 flex-1 md:flex-initial">
+                            <label className={labelClass}>Filtrar Opciones Por:</label>
+                            <div className="flex gap-2">
+                                <select 
+                                    className={inputClass + " max-w-[150px]"}
+                                    value={filtroExtraLlave}
+                                    onChange={(e) => {
+                                        setFiltroExtraLlave(e.target.value);
+                                        if(!e.target.value) setFiltroExtraValor('');
+                                    }}
+                                >
+                                    <option value="">Ninguno</option>
+                                    {camposPersonalizados.map(c => (
+                                        <option key={c.llave_json} value={c.llave_json}>{c.etiqueta}</option>
+                                    ))}
+                                </select>
+                                {filtroExtraLlave && (
+                                    <input 
+                                        type="text" 
+                                        placeholder="Valor..."
+                                        className={inputClass + " max-w-[150px]"}
+                                        value={filtroExtraValor}
+                                        onChange={(e) => setFiltroExtraValor(e.target.value)}
+                                    />
+                                )}
+                            </div>
                         </div>
                         <button
                             type="submit"

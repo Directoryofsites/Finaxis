@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { FaTimes, FaSpinner, FaShieldAlt, FaCheck, FaBan, FaUndo, FaTrash, FaSave, FaSearch } from 'react-icons/fa';
 import { getPermisosConEstado, upsertExcepciones, resetExcepciones } from '@/lib/rolesApiService';
+import { useAuth } from '@/app/context/AuthContext';
 
 /**
  * Drawer lateral para gestionar las excepciones de permisos de un usuario específico.
@@ -16,6 +17,7 @@ export default function PanelExcepciones({ usuario, onClose }) {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [busqueda, setBusqueda] = useState('');
+    const { user: currentUser, initializeAuth } = useAuth();
     // pendientes: mapa { permiso_id -> true(conceder)|false(revocar)|null(limpiar) }
     const [pendientes, setPendientes] = useState({});
     const [toast, setToast] = useState(null);
@@ -129,6 +131,12 @@ export default function PanelExcepciones({ usuario, onClose }) {
 
             setPendientes({});
             showToast('Permisos guardados correctamente');
+            
+            // Si el usuario editado es el mismo que está logueado, refrescamos el contexto de Auth
+            if (usuario.id === currentUser?.id) {
+                await initializeAuth();
+            }
+
             cargar();
         } catch {
             showToast('Error al guardar los cambios', 'error');

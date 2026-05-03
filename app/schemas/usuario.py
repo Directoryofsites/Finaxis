@@ -52,6 +52,7 @@ class User(UserBasic):
         from .empresa import EmpresaBase
     empresa: Optional['EmpresaBase'] = None
     empresa_original_nombre: Optional[str] = None # Nombre de la empresa raíz/original (Permanente)
+    permissions: List[str] = [] # Permisos efectivos (Calculados con excepciones)
 
     class Config:
         from_attributes = True

@@ -45,7 +45,7 @@ const MODULE_COLORS = {
  * TopNavigationBar - Premium App Launcher & Smart AI Search
  */
 export default function TopNavigationBar() {
-    const { user, logout } = useAuth();
+    const { user, logout, getEffectivePermissions } = useAuth();
     const router = useRouter();
 
     // Hooks para el buscador global de IA extraídos del SmartSearch viejo
@@ -317,7 +317,7 @@ export default function TopNavigationBar() {
                                         <div className="grid grid-cols-3 gap-y-7 gap-x-2">
                                             {menuStructure.map((module) => {
                                                 if (module.permission) {
-                                                    const userPermissions = user?.roles?.flatMap(r => r.permisos?.map(p => p.nombre)) || [];
+                                                    const userPermissions = getEffectivePermissions();
                                                     if (!userPermissions.includes(module.permission)) return null;
                                                 }
                                                 const colorClasses = MODULE_COLORS[module.id] || MODULE_COLORS['default'];
@@ -376,6 +376,12 @@ export default function TopNavigationBar() {
                                                         const userRoles = user?.roles?.map(r => r.nombre) || [];
                                                         if (link.onlySoporte && !userRoles.includes('soporte')) return null;
 
+                                                        // CAPA 3: Validar permisos efectivos del enlace
+                                                        if (link.permission) {
+                                                            const userPermissions = getEffectivePermissions();
+                                                            if (!userPermissions.includes(link.permission)) return null;
+                                                        }
+
                                                         const itemColor = MODULE_COLORS[waffleActiveModule.id] || MODULE_COLORS['default'];
 
                                                         return (
@@ -404,6 +410,12 @@ export default function TopNavigationBar() {
                                                             // Validar botón de Soporte God-Mode en subgrupos
                                                             const userRoles = user?.roles?.map(r => r.nombre) || [];
                                                             if (link.onlySoporte && !userRoles.includes('soporte')) return null;
+
+                                                            // CAPA 3: Validar permisos efectivos del enlace (Subgrupos)
+                                                            if (link.permission) {
+                                                                const userPermissions = getEffectivePermissions();
+                                                                if (!userPermissions.includes(link.permission)) return null;
+                                                            }
 
                                                             const cIdx = (waffleActiveModule.links?.length || 0) + (sIdx * 3) + lIdx;
                                                             const itemColor = MODULE_COLORS[waffleActiveModule.id] || MODULE_COLORS['default'];

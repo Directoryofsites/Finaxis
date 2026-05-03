@@ -23,6 +23,7 @@
                 <li><a href="#general">Configuración General</a></li>
                 <li><a href="#torres">Torres y Grupos</a></li>
                 <li><a href="#modulos">Módulos</a></li>
+                <li><a href="#campos-personalizados">Campos Dinámicos (Metadatos)</a></li>
                 <li><a href="#cobranza-estratégica">Capítulo 10: Cobranza Estratégica</a></li>
                 <li><a href="#errores">Errores Comunes</a></li>
             </ul>
@@ -307,6 +308,44 @@
                 <div class="success">
                     <strong>✅ Ejemplo Práctico:</strong> Un apartamento puede tener los módulos "Residencial" + "Parqueadero", recibiendo tanto la cuota de administración como la cuota de parqueadero.
                 </div>
+            </section>
+
+            <section id="campos-personalizados" class="section">
+                <h2>🏷️ Campos Dinámicos (Metadatos)</h2>
+                
+                <h3>¿Qué son los Campos Dinámicos?</h3>
+                <p>Esta potente característica, también conocida como "Form Builder", le permite crear información personalizada a la medida para las unidades de la copropiedad. Si necesita registrar datos que no vienen por defecto en el sistema (por ejemplo, "Placa del Vehículo", "Tipo de Mascota" o "Fecha de Trasteo"), puede crear estos campos libremente.</p>
+
+                <h3>1. Crear un Nuevo Campo</h3>
+                <ol class="step-list">
+                    <li>Vaya a <strong>Configuración PH</strong> y seleccione la opción <strong>Campos Dinámicos</strong>.</li>
+                    <li>Haga clic en el botón <strong>+ Nuevo Campo</strong>.</li>
+                    <li><strong>Entidad:</strong> Seleccione "Unidades" para asociar la información a las unidades de la copropiedad.</li>
+                    <li><strong>Etiqueta:</strong> Ingrese el nombre visible (ej. "Tipo de Vehículo"). El sistema generará la llave interna automáticamente.</li>
+                    <li><strong>Tipo de Dato:</strong> Seleccione si la información será texto, número, fecha, etc.</li>
+                    <li>Haga clic en <strong>Guardar Campo</strong>.</li>
+                </ol>
+
+                <h3>2. Asignar la Información en las Unidades</h3>
+                <ol class="step-list">
+                    <li>Vaya al menú de <strong>Unidades</strong> y seleccione <strong>Crear o Editar</strong> una unidad.</li>
+                    <li>Al final del formulario principal, verá listados automáticamente los nuevos campos que acaba de crear en la configuración.</li>
+                    <li>Ingrese la información respectiva y guarde los cambios en la unidad.</li>
+                </ol>
+
+                <div class="info">
+                    <strong>💡 Inteligencia en Reportes:</strong> Toda la información capturada en los campos personalizados se integra inmediatamente al motor de búsqueda de la plataforma, volviéndose consultable.
+                </div>
+
+                <h3>3. Generar Reportes Inteligentes</h3>
+                <p>Una vez alimentada la información, usted podrá emitir reportes cruzados sin ayuda de soporte técnico:</p>
+                <ol class="step-list">
+                    <li>Navegue a los módulos de reportes: <strong>Estado de Cuenta</strong>, <strong>Reporte de Movimientos</strong> o <strong>Cartera por Edades</strong>.</li>
+                    <li>Identifique la nueva barra de filtros <strong>"Filtrar opciones por Metadato"</strong>.</li>
+                    <li>Seleccione del listado el campo personalizado que desea analizar (ej. "Tipo de Vehículo").</li>
+                    <li>En el recuadro <strong>"Valor exacto o parcial"</strong>, escriba la palabra a buscar (ej. "TAXI").</li>
+                    <li>El reporte recalculará su tabla o lista de unidades para mostrarle <strong>sólo</strong> aquellos registros financieros asociados a la unidad que coincide con su filtro.</li>
+                </ol>
             </section>
 
             <section id="cobranza-estratégica" class="section">

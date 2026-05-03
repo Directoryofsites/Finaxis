@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Numeric, Date, DateTime, Text, Float, func
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Numeric, Date, DateTime, Text, Float, func, JSON
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from datetime import datetime
@@ -48,6 +48,12 @@ class PHUnidad(Base):
     activo = Column(Boolean, default=True)
     aplica_pronto_pago = Column(Boolean, default=True)
     observaciones = Column(Text, nullable=True)
+    
+    # --- MOTOR DE FORMULARIOS DINÁMICOS ---
+    # Aquí se guardarán todos los campos inventados por el usuario (ej: Placa, Color, Tipo)
+    # sin necesidad de crear nuevas columnas o tablas rígidas.
+    metadatos_extra = Column(JSON, nullable=True, default=dict)
+    # --------------------------------------
     
     # Relaciones
     empresa = relationship("Empresa")

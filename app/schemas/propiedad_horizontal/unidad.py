@@ -64,6 +64,9 @@ class PHUnidadBase(BaseModel):
     activo: bool = True
     aplica_pronto_pago: bool = True
     observaciones: Optional[str] = None
+    
+    # --- MOTOR DE FORMULARIOS DINÁMICOS ---
+    metadatos_extra: Optional[dict] = Field(default_factory=dict, description="Almacena campos dinámicos configurados por el usuario")
 
 class PHUnidadCreate(PHUnidadBase):
     vehiculos: List[PHVehiculoCreate] = []

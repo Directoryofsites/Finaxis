@@ -23,6 +23,10 @@ export default function EstadoCuentaPage() {
     const [unidades, setUnidades] = useState([]);
     const [propietarios, setPropietarios] = useState([]);
 
+    const [camposPersonalizados, setCamposPersonalizados] = useState([]);
+    const [filtroExtraLlave, setFiltroExtraLlave] = useState('');
+    const [filtroExtraValor, setFiltroExtraValor] = useState('');
+
     // Selección Actual
     const [selectedId, setSelectedId] = useState(null); // ID de unidad o propietario segun modo
     const [selectedItem, setSelectedItem] = useState(null); // Objeto completo seleccionado
@@ -63,12 +67,14 @@ export default function EstadoCuentaPage() {
     const loadMaestros = async () => {
         setLoadingMaestros(true);
         try {
-            const [dataUnidades, dataPropietarios] = await Promise.all([
+            const [dataUnidades, dataPropietarios, dataCampos] = await Promise.all([
                 phService.getUnidades(),
-                phService.getPropietarios()
+                phService.getPropietarios(),
+                phService.getCamposPersonalizados()
             ]);
             setUnidades(dataUnidades);
             setPropietarios(dataPropietarios);
+            setCamposPersonalizados(dataCampos || []);
         } catch (error) {
             console.error("Error loading masters", error);
         } finally {
@@ -291,12 +297,54 @@ export default function EstadoCuentaPage() {
 
                     {/* Autocomplete */}
                     <div className="relative">
+                        {searchMode === 'UNIT' && (
+                            <div className="mb-4 bg-gray-50 p-4 rounded-lg border border-gray-100 flex flex-col md:flex-row gap-4 items-end">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">Filtrar opciones por Metadato:</label>
+                                    <select 
+                                        className="input-sm border rounded w-full min-w-[200px]"
+                                        value={filtroExtraLlave}
+                                        onChange={(e) => {
+                                            setFiltroExtraLlave(e.target.value);
+                                            if(!e.target.value) setFiltroExtraValor('');
+                                        }}
+                                    >
+                                        <option value="">Ninguno</option>
+                                        {camposPersonalizados.map(c => (
+                                            <option key={c.llave_json} value={c.llave_json}>{c.etiqueta}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {filtroExtraLlave && (
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-1">Valor exacto o parcial:</label>
+                                        <input 
+                                            type="text" 
+                                            placeholder="Buscar valor..."
+                                            className="input-sm border rounded w-full min-w-[200px]"
+                                            value={filtroExtraValor}
+                                            onChange={(e) => setFiltroExtraValor(e.target.value)}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        )}
                         <label className="block text-sm font-bold text-gray-700 mb-2">
                             {searchMode === 'UNIT' ? `Buscar ${labels.unidad}` : `Buscar ${labels.propietario} (Nombre, Razón Social)`}
                         </label>
-                        {searchMode === 'UNIT' ? (
+                        {searchMode === 'UNIT' ? (() => {
+                            const unidadesFiltradas = unidades.filter(u => {
+                                if (filtroExtraLlave && filtroExtraValor) {
+                                    const val = u.metadatos_extra?.[filtroExtraLlave];
+                                    if (!val || !val.toString().toLowerCase().includes(filtroExtraValor.toLowerCase())) {
+                                        return false;
+                                    }
+                                }
+                                return true;
+                            });
+                            return (
                             <AutocompleteInput
-                                items={unidades}
+                                items={unidadesFiltradas}
                                 value={selectedItem?.codigo || ''}
                                 placeholder={`Escriba código de ${labels.unidad}...`}
                                 searchKey="codigo"
@@ -312,7 +360,8 @@ export default function EstadoCuentaPage() {
                                     </div>
                                 )}
                             />
-                        ) : (
+                            );
+                        })() : (
                             <AutocompleteInput
                                 items={propietarios}
                                 value={selectedItem?.nombre || ''}

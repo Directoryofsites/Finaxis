@@ -22,7 +22,9 @@ def get_movimientos_ph_report(
     tipo_documento_id: Optional[int] = None,
     concepto_id: Optional[int] = None,
     numero_doc: Optional[str] = None,
-    tipo_movimiento: Optional[str] = None # 'FACTURAS', 'RECIBOS', 'TODOS'
+    tipo_movimiento: Optional[str] = None, # 'FACTURAS', 'RECIBOS', 'TODOS'
+    filtro_metadato_llave: Optional[str] = None,
+    filtro_metadato_valor: Optional[str] = None
 ):
     """
     Genera un reporte detallado de movimientos para PH.
@@ -101,6 +103,11 @@ def get_movimientos_ph_report(
         from sqlalchemy import cast, String
         query = query.filter(cast(Documento.numero, String).ilike(f"%{numero_doc}%"))
 
+    if filtro_metadato_llave and filtro_metadato_valor:
+        query = query.filter(
+            PHUnidad.metadatos_extra.op('->>')(filtro_metadato_llave).ilike(f"%{filtro_metadato_valor}%")
+        )
+
     # Filtro por Tipo de Movimiento (Facturas vs Recibos)
     if tipo_movimiento and tipo_movimiento in ['FACTURAS', 'RECIBOS']:
         
@@ -150,7 +157,7 @@ def get_movimientos_ph_report(
     
     return reporte
 
-def get_cartera_edades(db: Session, empresa_id: int, fecha_corte: date = None):
+def get_cartera_edades(db: Session, empresa_id: int, fecha_corte: date = None, filtro_metadato_llave: str = None, filtro_metadato_valor: str = None):
     """
     Calcula la cartera clasificada por edades (vencimiento) para todas las unidades.
     Rangos: Corriente (0-30), 31-60, 61-90, >90.
@@ -163,8 +170,15 @@ def get_cartera_edades(db: Session, empresa_id: int, fecha_corte: date = None):
     from sqlalchemy.orm import joinedload, selectinload
     
     # 1. Obtener Unidades
-    unidades_db = db.query(PHUnidad).options(joinedload(PHUnidad.propietario_principal))\
-        .filter(PHUnidad.empresa_id == empresa_id).all()
+    query_unidades = db.query(PHUnidad).options(joinedload(PHUnidad.propietario_principal))\
+        .filter(PHUnidad.empresa_id == empresa_id)
+        
+    if filtro_metadato_llave and filtro_metadato_valor:
+        query_unidades = query_unidades.filter(
+            PHUnidad.metadatos_extra.op('->>')(filtro_metadato_llave).ilike(f"%{filtro_metadato_valor}%")
+        )
+        
+    unidades_db = query_unidades.all()
         
     # --- OPTIMIZACIÓN: Pre-cargar Metadatos para Simulación Masiva ---
     from app.services.propiedad_horizontal import configuracion_service
@@ -373,7 +387,9 @@ def get_reporte_saldos(
     modulo_id: Optional[int] = None,
     operador_monto: Optional[str] = None,
     valor_monto: Optional[float] = None,
-    agrupar_por_propietario: bool = False
+    agrupar_por_propietario: bool = False,
+    filtro_metadato_llave: Optional[str] = None,
+    filtro_metadato_valor: Optional[str] = None
 ):
     """
     Reporte de Saldos (Balance General) detallado.
@@ -394,6 +410,12 @@ def get_reporte_saldos(
         query_unidades = query_unidades.filter((PHUnidad.propietario_principal_id == propietario_id))
     if torre_id:
         query_unidades = query_unidades.filter(PHUnidad.torre_id == torre_id)
+        
+    if filtro_metadato_llave and filtro_metadato_valor:
+        # Filtro dinámico JSON usando operador ->> (compatible con Postgres)
+        query_unidades = query_unidades.filter(
+            PHUnidad.metadatos_extra.op('->>')(filtro_metadato_llave).ilike(f"%{filtro_metadato_valor}%")
+        )
     
     if modulo_id:
         from app.models.propiedad_horizontal.modulo_contribucion import ph_unidad_modulo_association
