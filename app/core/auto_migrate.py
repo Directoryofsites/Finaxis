@@ -74,6 +74,8 @@ def run_auto_migrations():
                     migrations.append(('ph_unidades', 'referencia_recaudo', 'VARCHAR(50)'))
                 if 'aplica_pronto_pago' not in cols_ph_unidades:
                     migrations.append(('ph_unidades', 'aplica_pronto_pago', 'BOOLEAN DEFAULT TRUE'))
+                if 'metadatos_extra' not in cols_ph_unidades:
+                    migrations.append(('ph_unidades', 'metadatos_extra', "JSONB DEFAULT '{}'"))
 
             # --- OTRAS MIGRACIONES ---
             # configuracion_fe (FACTURACIÓN ELECTRÓNICA, DS, NOTAS)
@@ -236,6 +238,24 @@ def run_auto_migrations():
                     )
                 """))
                 logger.info("Tabla ph_modulo_torre_association verificada/creada.")
+
+            # 4b. Crear tabla ph_campos_personalizados si no existe
+            logger.info("Verificando tabla ph_campos_personalizados...")
+            with engine.begin() as trans_conn:
+                trans_conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS ph_campos_personalizados (
+                        id SERIAL PRIMARY KEY,
+                        empresa_id INTEGER NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+                        entidad VARCHAR(50) NOT NULL,
+                        etiqueta VARCHAR(100) NOT NULL,
+                        llave_json VARCHAR(100) NOT NULL,
+                        tipo VARCHAR(50),
+                        obligatorio BOOLEAN DEFAULT FALSE,
+                        activo BOOLEAN DEFAULT TRUE
+                    )
+                """))
+                logger.info("Tabla ph_campos_personalizados verificada/creada.")
+
 
             # 4. Auto-configuración de Rangos Sandbox (Self-healing)
             # Si estamos en PRUEBAS y los rangos son NULL, poner los defaults conocidos
