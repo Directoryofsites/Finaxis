@@ -48,12 +48,20 @@ from app.models import (
     Producto,
     StockBodega,
     MovimientoInventario,
+    # Modelos de Propiedad Horizontal
+    PHTorre,
+    PHUnidad,
+    PHVehiculo,
+    PHMascota,
+    PHConcepto,
+    PHCampoPersonalizado,
+    PHConfiguracion,
+    PHModuloContribucion,
+    PHPresupuesto,
     # Cotizaciones
     Cotizacion,
     CotizacionDetalle,
     # Activos Fijos
-    ActivoCategoria,
-    ActivoFijo,
     ActivoCategoria,
     ActivoFijo,
     ActivoNovedad
