@@ -1127,7 +1127,21 @@ function GeneradorLicenciasPanel() {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        
+        // Lógica inteligente: Si cambia la versión, sugerir un límite automático
+        if (name === 'version') {
+            let sugerenciaLimite = -1;
+            if (value === 'LITE') sugerenciaLimite = 200;
+            if (value === 'DEMO') sugerenciaLimite = 50;
+            
+            setFormData(prev => ({ 
+                ...prev, 
+                version: value,
+                max_registros: sugerenciaLimite
+            }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleGenerate = async (e) => {
@@ -1192,9 +1206,9 @@ function GeneradorLicenciasPanel() {
                             onChange={handleChange} 
                             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500"
                         >
-                            <option value="FULL">FULL (Ilimitada)</option>
-                            <option value="LITE">LITE (Básica)</option>
-                            <option value="DEMO">DEMO (Temporal)</option>
+                            <option value="FULL">FULL (Ilimitada - 1M reg)</option>
+                            <option value="LITE">LITE (Básica - 200 reg)</option>
+                            <option value="DEMO">DEMO (Prueba - 50 reg)</option>
                         </select>
                     </div>
                     <div>
