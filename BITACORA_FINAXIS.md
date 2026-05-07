@@ -122,4 +122,31 @@ Permitir que el usuario final pregunte cosas como: *"¿Por qué mi balance no cu
 Transformar Finaxis de una herramienta pasiva a una plataforma que se "auto-diagnóstica", reduciendo la carga de soporte humano en un 80% y eliminando la fricción para el usuario final.
 
 ---
+
+## 🏁 Actualización de Sesión (7 de mayo de 2026)
+
+### 1. Generador de Licencias Móvil (Soporte-Only) ✅
+- **Objetivo:** Permitir la generación de seriales de activación desde cualquier lugar (móvil) sin exponer la clave maestra.
+- **Implementación:**
+    - **Backend:** Nuevo endpoint seguro `/api/soporte/licencias/generar` protegido por el permiso `soporte:acceder_panel`.
+    - **Sincronización:** La lógica utiliza el mismo algoritmo `itsdangerous` y `CLAVE_MAESTRA` que el validador local, garantizando compatibilidad total.
+    - **Frontend:** Pestaña "Generar Licencia 🔑" integrada en el panel de utilidades de soporte.
+
+### 2. Lógica Inteligente de Límites (Full, Lite, Demo) ✅
+- **Mejora:** El generador ahora es "inteligente" y ajusta automáticamente los límites de registros según la versión elegida:
+    - **FULL:** Ilimitado (-1).
+    - **LITE:** 200 registros mensuales.
+    - **DEMO:** 50 registros mensuales.
+- **Visual:** Se añadieron etiquetas dinámicas en el selector para evitar errores de soporte durante la fabricación del serial.
+
+### 3. Robustez en Creación de Empresas ✅
+- **Self-Healing de Roles:** Se corrigió el error 500 que ocurría al crear empresas si el rol "Administrador" no existía en la base de datos local del cliente.
+- **Solución:** El servicio `empresa.py` ahora busca el rol de forma insensible a mayúsculas y, si no lo encuentra, lo crea dinámicamente con los permisos base necesarios.
+
+### 4. Definición de Estrategia de Datos (El Secreto de Soporte) 🔒
+- **Clasificación:** Se estableció que `finaxis_local.db` es un archivo técnico de **uso exclusivo para soporte**.
+- **Seguridad:** No se recomienda informar al cliente sobre la existencia de este archivo para evitar manipulaciones externas de la licencia o la estructura.
+- **Backup vs DB:** El backup del menú (JSON) es la herramienta de usuario para portabilidad de datos; el `.db` es el contenedor maestro para recuperación forense y gestión de licencias.
+
+---
 *Esta bitácora se actualizará cada vez que realicemos un cambio estructural importante para mantener la coherencia del proyecto.*
