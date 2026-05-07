@@ -24,6 +24,22 @@ export default function LoginPage() {
   const [totpTimer, setTotpTimer] = useState(30);
   const totpInputRef = useRef(null);
 
+  // --- VERIFICAR INSTALACIÓN NUEVA ---
+  useEffect(() => {
+    const checkSetup = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/setup/check`);
+        const data = await res.json();
+        if (data.setup_needed) {
+          router.push('/setup');
+        }
+      } catch (err) {
+        console.error("Error checking setup status", err);
+      }
+    };
+    checkSetup();
+  }, [router]);
+
   // Temporizador visual del ciclo TOTP (30 segundos)
   useEffect(() => {
     if (!show2FA) return;

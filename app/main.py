@@ -18,13 +18,26 @@ from fastapi.staticfiles import StaticFiles
 # Se movió al evento de startup para evitar bloqueos en el arranque del worker
 async def run_startup_tasks():
     print("Iniciando secuencia de arranque de base de datos...")
+
+    # ── Detectar directorio base según entorno (PyInstaller vs desarrollo) ──
+    import sys as _sys
+    if getattr(_sys, 'frozen', False):
+        # Corriendo dentro del .exe — los datos están en _MEIPASS
+        _app_base = _sys._MEIPASS
+    else:
+        # Desarrollo normal — raíz del proyecto
+        _app_base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
     # 1. Ejecutar migraciones de Alembic (FLUJO PROFESIONAL)
     try:
         print("Sincronizando base de datos con Alembic...")
         from alembic.config import Config
         from alembic import command
-        alembic_cfg = Config("alembic.ini")
+        _alembic_ini = os.path.join(_app_base, "alembic.ini")
+        print(f"  [Alembic] ini path: {_alembic_ini}")
+        alembic_cfg = Config(_alembic_ini)
+        # Asegurar que Alembic encuentre los scripts de migración
+        alembic_cfg.set_main_option("script_location", os.path.join(_app_base, "alembic"))
         command.upgrade(alembic_cfg, "head")
         print("✅ Migraciones de Alembic aplicadas (o ya al día).")
     except Exception as e:
@@ -37,7 +50,7 @@ async def run_startup_tasks():
     except Exception as e:
         print(f"ERROR en auto-migraciones de respaldo: {e}")
 
-    # 2. Ejecutar Seeds y creación de tablas si RUN_SEEDS está activo
+    # 3. Ejecutar Seeds y creación de tablas
     if os.getenv("RUN_SEEDS", "true").lower() == "true":
         print("Ejecutando tareas de mantenimiento de DB (Startup)...")
         from app.core.database import engine, Base
@@ -46,12 +59,12 @@ async def run_startup_tasks():
         try:
             # Crear tablas faltantes
             Base.metadata.create_all(bind=engine)
-            
             # Sembrar datos maestros
             seed_database()
         except Exception as e:
             print(f"Error en tareas de startup (Mantenimiento DB): {e}")
 # --- FIN: LÓGICA DE AUTO-CREACIÓN ---
+
 
 
 
@@ -203,14 +216,18 @@ app.add_middleware(SecurityHeadersMiddleware)
 # --- FIN: MIDDLEWARE DE SEGURIDAD ---
 
 # Servir los archivos del Add-in de Excel de forma pública
+# Detectar si corremos dentro de un ejecutable PyInstaller
+import sys as _sys
+if getattr(_sys, 'frozen', False):
+    # Dentro del .exe: buscamos junto al ejecutable
+    _base = os.path.dirname(_sys.executable)
+else:
+    _base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-EXCEL_ADDON_PATH = os.path.join(os.path.dirname(BASE_DIR), "excel-addon")
+EXCEL_ADDON_PATH = os.path.join(_base, "excel-addon")
 
 # --- MIDDLEWARE PARA EXCEL ADDON (CORS + NO CACHÉ) ---
-# En Excel Web, la carga de manifest.xml y functions.json requiere CORS.
-# Dado que usamos allow_credentials=True, no podemos usar allow_origins=["*"].
-# Usamos allow_origin_regex para permitir de forma segura los dominios de Office.
-
 @app.middleware("http")
 async def excel_addon_headers(request, call_next):
     response = await call_next(request)
@@ -220,7 +237,9 @@ async def excel_addon_headers(request, call_next):
         response.headers["Expires"] = "0"
     return response
 
-app.mount("/excel-addon", StaticFiles(directory=EXCEL_ADDON_PATH), name="excel-addon")
+# Solo montar si la carpeta existe (en producción offline puede no estar)
+if os.path.isdir(EXCEL_ADDON_PATH):
+    app.mount("/excel-addon", StaticFiles(directory=EXCEL_ADDON_PATH), name="excel-addon")
 
 # --- INICIO: SCHEDULER DE COPIAS (AUTO-BACKUP) ---
 # ... (omni-existing code) ...
@@ -545,13 +564,17 @@ app.include_router(indicadores_router.router, prefix="/api", tags=["Indicadores 
 from app.api.api_v1.endpoints import facturacion_electronica
 app.include_router(facturacion_electronica.router, prefix="/api/fe", tags=["Facturación Electrónica DIAN"])
 
+# --- MODULO LICENCIAMIENTO (Instalador Local) ---
+from app.api.licencia import routes as licencia_router
+app.include_router(licencia_router.router, tags=["Licencia"])
+
 # --- MODULO WHATSAPP (META API) ---
 from app.api.whatsapp import routes as whatsapp_routes
 app.include_router(whatsapp_routes.router, prefix="/api/whatsapp", tags=["WhatsApp"])
 
-# --- MODULO BUZON TRIBUTARIO ---
-from app.api.buzon_tributario import routes as buzon_routes
-app.include_router(buzon_routes.router, prefix="/api/buzon-tributario", tags=["Buzón Tributario"])
+# --- MODULO SETUP (Asistente de Bienvenida) ---
+from app.api.setup import routes as setup_router
+app.include_router(setup_router.router, prefix="/api", tags=["Setup Inicial"])
 
 if __name__ == "__main__":
     import uvicorn

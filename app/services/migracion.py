@@ -1,13 +1,14 @@
 # app/services/migracion.py (Versión Maestra v7.0 - Modo Fusión Segura / Sin Borrado Masivo)
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func, delete, select, or_, and_, case, literal
+from sqlalchemy import func, delete, select, or_, and_, case, literal, DateTime, Date, TIMESTAMP
 from datetime import datetime, date
 from decimal import Decimal
 from fastapi import HTTPException
 import traceback
 import json
 import os
+import sys
 import hmac
 import hashlib
 from app.core.config import settings
@@ -832,9 +833,33 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
         print(f"🔍 [RESTORE] Módulos solicitados: {modules_to_restore}")
 
         safety_snapshot = generar_backup_json(db, target_empresa_id)
-        filename = f"SAFETY_RESTORE_{target_empresa_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        os.makedirs("backups/safety", exist_ok=True)
-        with open(f"backups/safety/{filename}", "w", encoding="utf-8") as f:
+        fecha_str = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"SAFETY_RESTORE_{target_empresa_id}_{fecha_str}.json"
+        
+        # --- MEJORA SEGURIDAD v7.7: RUTA ABSOLUTA SEGURA ---
+        # Determinamos una base de almacenamiento que sepamos que es escribible.
+        # Por defecto la raíz, pero si es SQLite usamos la carpeta de la DB.
+        base_storage = os.path.abspath(".")
+        if settings.DATABASE_URL.startswith("sqlite"):
+            db_path = settings.DATABASE_URL.replace("sqlite:///", "").split("?")[0]
+            if db_path and not db_path.startswith(":memory:"):
+                try:
+                    base_storage = os.path.dirname(os.path.abspath(db_path))
+                except:
+                    pass
+        
+        # Si es un ejecutable empaquetado, asegurar que no escribimos en carpetas protegidas
+        if getattr(sys, 'frozen', False):
+            appdata = os.getenv('APPDATA')
+            if appdata:
+                base_storage = os.path.join(appdata, "Finaxis")
+
+        safety_dir = os.path.join(base_storage, "backups", "safety")
+        os.makedirs(safety_dir, exist_ok=True)
+        
+        full_path = os.path.join(safety_dir, filename)
+        
+        with open(full_path, "w", encoding="utf-8") as f:
             json.dump(safety_snapshot, f, cls=AlchemyEncoder)
             
         resumen["acciones_realizadas"].append(f"🔒 Snapshot de seguridad creado: {filename}")
@@ -2387,6 +2412,22 @@ def _upsert_manual_seguro(db, model, json_key, natural_key, data_source, target_
                 user_exists = db.query(Usuario).filter(Usuario.id == clean_data[user_field]).first()
                 if not user_exists:
                     clean_data[user_field] = user_id
+
+        # ARREGLO: Convertir strings de fecha a objetos datetime/date para SQLite
+        for k, v in list(clean_data.items()):
+            if isinstance(v, str) and v and k in model.__table__.columns:
+                col_type = model.__table__.columns[k].type
+                if isinstance(col_type, (DateTime, Date, TIMESTAMP)):
+                    try:
+                        # Limpiar formato ISO (manejar Z y offsets)
+                        iso_str = v.replace('Z', '+00:00')
+                        dt_obj = datetime.fromisoformat(iso_str)
+                        if isinstance(col_type, Date) and not isinstance(col_type, (DateTime, TIMESTAMP)):
+                            clean_data[k] = dt_obj.date()
+                        else:
+                            clean_data[k] = dt_obj
+                    except (ValueError, TypeError):
+                        pass # Dejar como string si falla la conversión
         
         if id_maps:
             for field, mapping in id_maps.items():

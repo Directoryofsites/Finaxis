@@ -223,6 +223,17 @@ async def get_current_user(
         if empresa_context:
             user.empresa = empresa_context
             
+    # --- VERIFICACIÓN DE LICENCIA (HARDWARE LOCK) ---
+    # Si la aplicación detecta que la licencia no corresponde a este hardware, bloqueamos el acceso.
+    # Esto evita que se copie y pegue la carpeta en otros computadores sin autorización.
+    from app.core.licencia import obtener_estado_licencia
+    estado_lic = obtener_estado_licencia(db, user.empresa_id)
+    if estado_lic.get("modo") == "BLOQUEADO":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=estado_lic.get("error")
+        )
+
     return user
 
 async def get_current_user_optional(

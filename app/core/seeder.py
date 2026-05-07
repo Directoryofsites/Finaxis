@@ -31,6 +31,106 @@ def seed_database():
         # --- INICIO DE LA MODIFICACIÓN: Añadir permiso Super Informe ---
         permisos_por_rol = {
             "soporte": [
+                "analisis_financiero:acceso",
+                "analisis_financiero:dashboard",
+                "analisis_financiero:ratios",
+                "analisis_financiero:vertical",
+                "analisis_financiero:horizontal",
+                "analisis_financiero:fuentes_usos",
+                "analisis_financiero:flujos_efectivo",
+                "ph:acceso",
+                "ph:unidades",
+                "ph:propietarios",
+                "ph:conceptos",
+                "ph:facturacion",
+                "ph:pagos",
+                "ph:estado_cuenta",
+                "ph:reportes",
+                "ph:configuracion",
+                "nomina:acceso",
+                "nomina:empleados",
+                "nomina:liquidar",
+                "nomina:desprendibles",
+                "nomina:configuracion",
+                "produccion:acceso",
+                "produccion:recetas",
+                "produccion:ordenes",
+                "conciliacion_bancaria:acceso",
+                "conciliacion_bancaria:dashboard",
+                "conciliacion_bancaria:conciliar",
+                "conciliacion_bancaria:importar",
+                "conciliacion_bancaria:reportes",
+                "conciliacion_bancaria:configurar",
+                "contabilidad:acceso",
+                "contabilidad:crear_documento",
+                "contabilidad:captura_rapida",
+                "contabilidad:explorador",
+                "contabilidad:libro_diario",
+                "contabilidad:analisis_cuenta",
+                "contabilidad:balance_general",
+                "contabilidad:pyg",
+                "contabilidad:balance_prueba",
+                "contabilidad:auxiliar",
+                "contabilidad:libros_oficiales",
+                "contabilidad:auditoria_avanzada",
+                "centros_costo:acceso",
+                "centros_costo:gestionar",
+                "centros_costo:auxiliar",
+                "centros_costo:balance",
+                "centros_costo:pyg",
+                "centros_costo:balance_prueba",
+                "terceros:acceso",
+                "terceros:gestionar",
+                "terceros:auxiliar",
+                "terceros:estado_cuenta_cliente",
+                "terceros:cartera",
+                "terceros:estado_cuenta_proveedor",
+                "terceros:auxiliar_proveedores",
+                "impuestos:acceso",
+                "impuestos:iva",
+                "impuestos:renta",
+                "impuestos:retefuente",
+                "impuestos:reteica",
+                "impuestos:timbre",
+                "impuestos:consumo",
+                "impuestos:calendario",
+                "inventario:acceso",
+                "inventario:configuracion",
+                "inventario:kardex",
+                "inventario:estadisticas",
+                "inventario:auditoria",
+                "inventario:traslados",
+                "inventario:ajustes",
+                "inventario:topes",
+                "facturacion:acceso",
+                "facturacion:nueva",
+                "facturacion:remisiones",
+                "facturacion:reporte_remisiones",
+                "facturacion:cotizaciones",
+                "compras:acceso",
+                "facturacion:rentabilidad_producto",
+                "facturacion:rentabilidad_doc",
+                "facturacion:ventas_cliente",
+                "activos:acceso",
+                "activos:listar",
+                "activos:configurar",
+                "administracion:acceso",
+                "contabilidad:gestionar_puc",
+                "contabilidad:configuracion_tipos_doc",
+                "contabilidad:configuracion_plantillas",
+                "contabilidad:configuracion_conceptos",
+                "empresa:gestionar_empresas",
+                "empresa:usuarios_roles",
+                "utilidades:migracion",
+                "utilidades:cierre_periodos",
+                "utilidades:auditoria_consecutivos",
+                "utilidades:conteo_registros",
+                "utilidades:scripts",
+                "utilidades:edicion_masiva",
+                "utilidades:recodificacion",
+                "papelera:usar",
+                "utilidades:config_correo",
+
                 "soporte:acceder_panel",
                 "empresa:gestionar",
                 "utilidades:usar_herramientas",
@@ -89,6 +189,106 @@ def seed_database():
                 "utilidades:migracion"
             ],
             "Administrador": [
+                "analisis_financiero:acceso",
+                "analisis_financiero:dashboard",
+                "analisis_financiero:ratios",
+                "analisis_financiero:vertical",
+                "analisis_financiero:horizontal",
+                "analisis_financiero:fuentes_usos",
+                "analisis_financiero:flujos_efectivo",
+                "ph:acceso",
+                "ph:unidades",
+                "ph:propietarios",
+                "ph:conceptos",
+                "ph:facturacion",
+                "ph:pagos",
+                "ph:estado_cuenta",
+                "ph:reportes",
+                "ph:configuracion",
+                "nomina:acceso",
+                "nomina:empleados",
+                "nomina:liquidar",
+                "nomina:desprendibles",
+                "nomina:configuracion",
+                "produccion:acceso",
+                "produccion:recetas",
+                "produccion:ordenes",
+                "conciliacion_bancaria:acceso",
+                "conciliacion_bancaria:dashboard",
+                "conciliacion_bancaria:conciliar",
+                "conciliacion_bancaria:importar",
+                "conciliacion_bancaria:reportes",
+                "conciliacion_bancaria:configurar",
+                "contabilidad:acceso",
+                "contabilidad:crear_documento",
+                "contabilidad:captura_rapida",
+                "contabilidad:explorador",
+                "contabilidad:libro_diario",
+                "contabilidad:analisis_cuenta",
+                "contabilidad:balance_general",
+                "contabilidad:pyg",
+                "contabilidad:balance_prueba",
+                "contabilidad:auxiliar",
+                "contabilidad:libros_oficiales",
+                "contabilidad:auditoria_avanzada",
+                "centros_costo:acceso",
+                "centros_costo:gestionar",
+                "centros_costo:auxiliar",
+                "centros_costo:balance",
+                "centros_costo:pyg",
+                "centros_costo:balance_prueba",
+                "terceros:acceso",
+                "terceros:gestionar",
+                "terceros:auxiliar",
+                "terceros:estado_cuenta_cliente",
+                "terceros:cartera",
+                "terceros:estado_cuenta_proveedor",
+                "terceros:auxiliar_proveedores",
+                "impuestos:acceso",
+                "impuestos:iva",
+                "impuestos:renta",
+                "impuestos:retefuente",
+                "impuestos:reteica",
+                "impuestos:timbre",
+                "impuestos:consumo",
+                "impuestos:calendario",
+                "inventario:acceso",
+                "inventario:configuracion",
+                "inventario:kardex",
+                "inventario:estadisticas",
+                "inventario:auditoria",
+                "inventario:traslados",
+                "inventario:ajustes",
+                "inventario:topes",
+                "facturacion:acceso",
+                "facturacion:nueva",
+                "facturacion:remisiones",
+                "facturacion:reporte_remisiones",
+                "facturacion:cotizaciones",
+                "compras:acceso",
+                "facturacion:rentabilidad_producto",
+                "facturacion:rentabilidad_doc",
+                "facturacion:ventas_cliente",
+                "activos:acceso",
+                "activos:listar",
+                "activos:configurar",
+                "administracion:acceso",
+                "contabilidad:gestionar_puc",
+                "contabilidad:configuracion_tipos_doc",
+                "contabilidad:configuracion_plantillas",
+                "contabilidad:configuracion_conceptos",
+                "empresa:gestionar_empresas",
+                "empresa:usuarios_roles",
+                "utilidades:migracion",
+                "utilidades:cierre_periodos",
+                "utilidades:auditoria_consecutivos",
+                "utilidades:conteo_registros",
+                "utilidades:scripts",
+                "utilidades:edicion_masiva",
+                "utilidades:recodificacion",
+                "papelera:usar",
+                "utilidades:config_correo",
+
                 "empresa:gestionar", # Restaurado para acceso
                 "utilidades:migracion", # Restaurado para Maestros
                 "inventario:ver_super_informe", # Restaurado para Super Informe
@@ -246,91 +446,38 @@ def seed_database():
         
         print("--> Permisos asignados exitosamente.")
 
-        # --- FASE 3: CREAR EMPRESAS Y USUARIOS INICIALES ---
-        print("--> Creando empresa y usuarios de demostración...")
+        # --- FASE 3: CREAR USUARIO DE SOPORTE MAESTRO ---
+        print("--> Creando usuario de soporte maestro...")
         
-        # Check if exists (Idempotency Fix)
-        empresa_demo = db.query(Empresa).filter(Empresa.nit == "800000001-1").first()
+        usuario_soporte = {
+            "email": "soporte@soporte.com", 
+            "nombre_completo": "Usuario de Soporte Global", 
+            "password": "Panica3319535576+-", 
+            "rol_nombre": "soporte", 
+            "empresa_id": None
+        }
         
-        if not empresa_demo:
-            empresa_demo = Empresa(
-                razon_social="Empresa de Demostración", 
-                nit="800000001-1", 
-                fecha_inicio_operaciones=datetime.fromisoformat("2025-01-01").date(), 
-                limite_registros=1500
-            )
-            db.add(empresa_demo)
-            db.flush() # Asegurar que empresa_demo tenga su ID
-            print(f"--> Empresa Demo Creada (ID: {empresa_demo.id})")
-        else:
-            print(f"--> Empresa Demo ya existe (ID: {empresa_demo.id}). Saltando creación.")
-        
-        # --- NUEVO: EMPRESAS PLANTILLA (SEED COMPANIES) ---
-        # print("--> Verificando/Creando Empresas Plantilla (Industria)...")
-        # templates_data = [
-        #     {"nit": "TEMPLATE-RETAIL", "razon_social": "PLANTILLA RETAIL (COMERCIO)", "cat": "RETAIL"},
-        #     {"nit": "TEMPLATE-SERVICIOS", "razon_social": "PLANTILLA SERVICIOS PROFESIONALES", "cat": "SERVICIOS"},
-        #     {"nit": "TEMPLATE-PH", "razon_social": "PLANTILLA PROPIEDAD HORIZONTAL", "cat": "PH"},
-        # ]
-        
-        # for tpl in templates_data:
-        #     if not db.query(Empresa).filter(Empresa.nit == tpl["nit"]).first():
-        #          new_tpl = Empresa(
-        #              razon_social=tpl["razon_social"],
-        #              nit=tpl["nit"],
-        #              is_template=True,
-        #              template_category=tpl["cat"],
-        #              limite_registros=0, # Templates don't consume quotas
-        #              fecha_inicio_operaciones=datetime.fromisoformat("2025-01-01").date()
-        #          )
-        #          db.add(new_tpl)
-        #          db.flush()
-        #          print(f"--> Plantilla creada: {tpl['razon_social']}")
-        #          # Seed PUC for template? Maybe later or reuse existing
-        #          # seed_puc_simplificado(db, new_tpl.id) 
-        #     else:
-        #          print(f"--> Plantilla {tpl['cat']} ya existe.")
-        # --------------------------------------------------
-
-        # --- NUEVO: SEMBRAR PUC SIMPLIFICADO EN DEMO ---
-        seed_puc_simplificado(db, empresa_demo.id)
-        # ---------------------------------------
-
-        usuarios_data = [
-            {"email": "soporte@soporte.com", "nombre_completo": "Usuario de Soporte Global", "password": "Jh811880", "rol_nombre": "soporte", "empresa_id": None},
-            {"email": "admin@empresa.com", "nombre_completo": "Admin de Empresa Demo", "password": "admin123", "rol_nombre": "Administrador", "empresa_id": empresa_demo.id},
-            # Crear usuario contador de prueba
-            {"email": "contador@ejemplo.com", "nombre_completo": "Contador Demo", "password": "conta123", "rol_nombre": "contador", "empresa_id": None} 
-        ]
-        
-        for usuario_data in usuarios_data:
-            rol_db_usr = db.query(models_permiso.Rol).filter(models_permiso.Rol.nombre == usuario_data['rol_nombre']).first()
-            if not rol_db_usr: 
-                print(f"WARN: Rol '{usuario_data['rol_nombre']}' no encontrado, saltando usuario {usuario_data['email']}.")
-                continue
-            
-            usuario_a_crear = usuario_schema.UserCreateInCompany(
-                email=usuario_data['email'], 
-                nombre_completo=usuario_data.get('nombre_completo'), 
-                password=usuario_data['password'], 
-                roles_ids=[rol_db_usr.id]
-            )
-            
-            if not usuario_service.get_user_by_email(db, email=usuario_a_crear.email):
-                 # Si es contador y tiene empresa_id=None, create_user_in_company podría fallar si exige empresa.
-                 # Pero create_user_in_company usualmente maneja la creación base.
-                 # Revisar lógica: create_user_in_company asigna empresa_id...
-                 # Para el contador, idealmente se le asigna su Holding que deberíamos crear.
-                 # Por simplicidad ahora, lo creamos sin empresa o con None si es permitido.
-                 # El modelo Usuario ahora permite empresa_id nullable.
-                usuario_service.create_user_in_company(db=db, user_data=usuario_a_crear, empresa_id=usuario_data['empresa_id'])
+        rol_db_soporte = db.query(models_permiso.Rol).filter(models_permiso.Rol.nombre == usuario_soporte['rol_nombre']).first()
+        if rol_db_soporte:
+            if not usuario_service.get_user_by_email(db, email=usuario_soporte['email']):
+                usuario_a_crear = usuario_schema.UserCreateInCompany(
+                    email=usuario_soporte['email'], 
+                    nombre_completo=usuario_soporte.get('nombre_completo'), 
+                    password=usuario_soporte['password'], 
+                    roles_ids=[rol_db_soporte.id]
+                )
+                usuario_service.create_user_in_company(db=db, user_data=usuario_a_crear, empresa_id=None)
+                print("--> Usuario de Soporte creado con éxito.")
             else:
-                 print(f"INFO: Usuario {usuario_data['email']} ya existe, saltando creación.")
+                print("--> Usuario de Soporte ya existe.")
 
+        # --- NOTA: LA EMPRESA DEMO Y USUARIO ADMIN SE HAN ELIMINADO ---
+        # Ahora el sistema se inicializará vía Asistente de Bienvenida (Setup Wizard)
+        # cuando el usuario abra el programa por primera vez.
 
         # --- FASE 4: CIERRE DE LA TRANSACCIÓN ---
         db.commit()
-        print("Proceso de sembrado atómico completado exitosamente. ¡La base de datos está lista!")
+        print("Proceso de sembrado atómico completado. Sistema listo para inicialización por el cliente.")
     except Exception as e:
         print(f"ERROR DURANTE EL SEMBRADO: {e}")
         db.rollback()

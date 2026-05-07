@@ -23,7 +23,8 @@ import {
     runGlobalBackupManually,
     getGlobalBackupFiles,
     downloadGlobalBackupFile,
-    deleteGlobalBackupFile
+    deleteGlobalBackupFile,
+    generarLicencia
 } from '@/lib/soporteApiService';
 
 import ConteoRegistros from './components/ConteoRegistros';
@@ -1111,6 +1112,142 @@ function PanelCopiasSeguridad() {
 }
 
 // ##################################################################
+// ########### PANEL DE GENERACIÓN DE LICENCIAS ###########
+// ##################################################################
+function GeneradorLicenciasPanel() {
+    const [formData, setFormData] = useState({
+        cliente: '',
+        machine_id: '',
+        version: 'FULL',
+        max_registros: -1
+    });
+    const [serialGenerado, setSerialGenerado] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleGenerate = async (e) => {
+        e.preventDefault();
+        setIsProcessing(true);
+        setMensaje({ texto: '', tipo: '' });
+        setSerialGenerado('');
+        try {
+            const response = await generarLicencia({
+                ...formData,
+                max_registros: parseInt(formData.max_registros)
+            });
+            setSerialGenerado(response.data.serial);
+            setMensaje({ texto: '¡Licencia generada con éxito!', tipo: 'success' });
+        } catch (error) {
+            setMensaje({ texto: 'Error al generar la licencia.', tipo: 'error' });
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    return (
+        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Generador de Licencias Finaxis</h2>
+            <p className="text-sm text-gray-500 mb-6">Genera seriales de activación vinculados a hardware para instalaciones locales.</p>
+
+            {mensaje.texto && <div className={`p-4 mb-4 rounded-md ${mensaje.tipo === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{mensaje.texto}</div>}
+
+            <form onSubmit={handleGenerate} className="space-y-4 max-w-2xl">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Nombre del Cliente / Empresa</label>
+                        <input 
+                            type="text" 
+                            name="cliente" 
+                            value={formData.cliente} 
+                            onChange={handleChange} 
+                            required 
+                            placeholder="Ej. Juan Perez o Empresa S.A.S"
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500" 
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Machine ID (Opcional pero recomendado)</label>
+                        <input 
+                            type="text" 
+                            name="machine_id" 
+                            value={formData.machine_id} 
+                            onChange={handleChange} 
+                            placeholder="Ej. A1B2C3D4E5F6"
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 font-mono" 
+                        />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Versión</label>
+                        <select 
+                            name="version" 
+                            value={formData.version} 
+                            onChange={handleChange} 
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500"
+                        >
+                            <option value="FULL">FULL (Ilimitada)</option>
+                            <option value="LITE">LITE (Básica)</option>
+                            <option value="DEMO">DEMO (Temporal)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Límite Registros (-1 = Sin Límite)</label>
+                        <input 
+                            type="number" 
+                            name="max_registros" 
+                            value={formData.max_registros} 
+                            onChange={handleChange} 
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500" 
+                        />
+                    </div>
+                </div>
+
+                <button 
+                    type="submit" 
+                    disabled={isProcessing}
+                    className="w-full bg-emerald-600 text-white py-2 px-4 rounded-md hover:bg-emerald-700 transition-colors font-bold disabled:bg-gray-400"
+                >
+                    {isProcessing ? 'Generando...' : 'Generar Serial de Activación'}
+                </button>
+            </form>
+
+            {serialGenerado && (
+                <div className="mt-8 p-4 bg-gray-900 rounded-lg border-2 border-emerald-500 shadow-inner">
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="text-emerald-400 text-xs font-bold uppercase tracking-wider">Serial Generado para {formData.cliente}</span>
+                        <button 
+                            type="button"
+                            onClick={() => {
+                                navigator.clipboard.writeText(serialGenerado);
+                                alert('Serial copiado al portapapeles');
+                            }}
+                            className="text-[10px] bg-emerald-800 text-emerald-100 px-2 py-1 rounded hover:bg-emerald-700 transition-colors"
+                        >
+                            COPIAR
+                        </button>
+                    </div>
+                    <div className="break-all font-mono text-white text-sm bg-black/50 p-3 rounded border border-emerald-900/50">
+                        {serialGenerado}
+                    </div>
+                    <p className="mt-2 text-[10px] text-gray-400 italic">
+                        {formData.machine_id 
+                            ? `⚠️ Esta llave solo funcionará en el equipo con ID: ${formData.machine_id}`
+                            : "ℹ️ Llave universal generada (No amarrada a hardware)."}
+                    </p>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ##################################################################
 // ########### FIN DE LA MODIFICACIÓN ###########
 // ##################################################################
 
@@ -1241,9 +1378,10 @@ function SoporteUtilContent() {
                     {/* Panel Lateral (Navegación Vertical) */}
                     <div className="w-full md:w-72 flex-shrink-0">
                         <nav className="flex flex-col space-y-1 bg-white p-4 rounded-xl shadow-sm border border-gray-200" aria-label="Tabs">
-                            {['gestionSoporte', 'gestionEmpresas', 'crearEmpresa', 'copias', 'conteo', 'roles', 'auditoria', 'utilidades', 'erradicador', 'maestros'].map((tab) => {
+                            {['gestionSoporte', 'licenciamiento', 'gestionEmpresas', 'crearEmpresa', 'copias', 'conteo', 'roles', 'auditoria', 'utilidades', 'erradicador', 'maestros'].map((tab) => {
                                 const labels = {
                                     gestionSoporte: 'Usuarios Soporte',
+                                    licenciamiento: 'Generar Licencia 🔑',
                                     gestionEmpresas: 'Gestión Empresas',
                                     crearEmpresa: 'Crear Empresa',
                                     copias: 'Copias de Seguridad',
@@ -1279,6 +1417,10 @@ function SoporteUtilContent() {
                                 <GestionSoportePanel soporteUsers={dashboardData.usuarios_soporte} onDataChange={fetchDashboardData} />
                                 <UltimasOperaciones todasLasEmpresas={dashboardData.empresas || []} limit={5} />
                             </div>
+                        )}
+
+                        {activeTab === 'licenciamiento' && (
+                            <GeneradorLicenciasPanel />
                         )}
 
                         {activeTab === 'gestionEmpresas' && (

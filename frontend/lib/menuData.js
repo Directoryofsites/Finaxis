@@ -4,7 +4,7 @@ import {
     FaClipboardList, FaWrench, FaHandshake, FaTruckMoving, FaReceipt, FaLock,
     FaListUl, FaDollarSign, FaChartLine, FaChartPie, FaPercentage, FaFileContract,
     FaRedoAlt, FaCalendarAlt, FaTools, FaTimes, FaChartArea, FaStar, FaBuilding,
-    FaTractor, FaCogs, FaHome, FaIndustry, FaExchangeAlt, FaUpload, FaEye, FaArrowUp, FaDatabase, FaEnvelope, FaGem
+    FaTractor, FaCogs, FaHome, FaIndustry, FaExchangeAlt, FaUpload, FaEye, FaArrowUp, FaDatabase, FaEnvelope, FaGem, FaKey
 } from 'react-icons/fa';
 
 // Módulos definidos externamente para claridad
@@ -265,6 +265,7 @@ export const menuStructure = [
                     { name: 'Conteo Registros', href: '/admin/utilidades/conteo-registros', mnemonic: 'o', icon: FaDatabase, permission: 'utilidades:conteo_registros' },
                     { name: 'Buzón de PQRs', href: '/admin/pqrs', mnemonic: 'q', icon: FaEnvelope, description: 'Tickets de soporte de tus clientes.', permission: 'utilidades:scripts' },
                     { name: 'Mi Plan y Consumo', href: '/contabilidad/consumo', mnemonic: 'n', icon: FaChartPie, description: 'Estado de cupos y recargas.', permission: 'contabilidad:acceso' },
+                    { name: 'Licencia del Programa', href: '/admin/configuracion/licencia', mnemonic: 'k', icon: FaKey, description: 'Activar o consultar la licencia de Finaxis.', permission: 'empresa:gestionar_empresas' },
                 ]
             },
             {

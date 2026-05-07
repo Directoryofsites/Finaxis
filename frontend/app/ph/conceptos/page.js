@@ -328,6 +328,26 @@ function ConceptosContent() {
                                 <p className="text-xs text-gray-500 mt-1">Cuenta donde se registra el ingreso (Ej: 4170 Cuotas de Administración).</p>
                             </div>
 
+                            <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                                <label className="label mb-2 block text-xs font-semibold text-blue-600 uppercase">2. Cuenta de Cartera (Débito)</label>
+                                <BuscadorCuentas
+                                    onSelect={(cta) => setFormData({ ...formData, cuenta_cxc_id: cta.id, cuenta_cxc_codigo: cta.codigo, cuenta_cxc_nombre: cta.nombre })}
+                                    selectedCodigo={formData.cuenta_cxc_codigo}
+                                    filterPrefix="13"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Si se deja vacío, usará la cuenta de cartera global (1305). <strong>Evite usar cuentas de Banco aquí.</strong></p>
+                            </div>
+
+                            <div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
+                                <label className="label mb-2 block text-xs font-semibold text-orange-600 uppercase">3. Cuenta de Intereses (Opcional)</label>
+                                <BuscadorCuentas
+                                    onSelect={(cta) => setFormData({ ...formData, cuenta_interes_id: cta.id, cuenta_interes_codigo: cta.codigo, cuenta_interes_nombre: cta.nombre })}
+                                    selectedCodigo={formData.cuenta_interes_codigo}
+                                    filterPrefix="4"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Cuenta para registrar intereses específicos de este concepto (Ej: 4210).</p>
+                            </div>
+
                             {/* BLOQUE DE CAJA ELIMINADO PARA MANTENER CONSISTENCIA GLOBAL */}
 
                             <div className="grid grid-cols-2 gap-4">

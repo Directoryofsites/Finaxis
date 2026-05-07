@@ -38,3 +38,12 @@ class GlobalBackupConfig(BaseModel):
     ruta_local: str
     dias_retencion: int
     last_run: Optional[str] = None
+
+class LicenseGenerateRequest(BaseModel):
+    cliente: str
+    machine_id: Optional[str] = None
+    version: str = "FULL"
+    max_registros: int = -1
+
+class LicenseResponse(BaseModel):
+    serial: str

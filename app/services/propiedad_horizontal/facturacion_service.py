@@ -15,6 +15,7 @@ from weasyprint import HTML
 from jinja2 import Environment, select_autoescape
 from app.models.empresa import Empresa
 from app.services._templates_empaquetados import TEMPLATES_EMPAQUETADOS
+from app.core.database import sql_periodo_mes
 
 def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date, usuario_id: int, conceptos_ids: List[int] = None, configuracion_conceptos: List[Any] = None):
     # 1. Obtener Configuración
@@ -86,7 +87,7 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
         .filter(
             Documento.empresa_id == empresa_id,
             Documento.tipo_documento_id == global_doc_id,
-            sa_func.to_char(Documento.fecha, 'YYYY-MM') == periodo_str,
+            sql_periodo_mes(Documento.fecha) == periodo_str,
             Documento.estado.in_(['ACTIVO', 'PROCESADO'])
         ).all()
         
@@ -99,7 +100,7 @@ def generar_facturacion_masiva(db: Session, empresa_id: int, fecha_factura: date
         .filter(
             Documento.empresa_id == empresa_id,
             Documento.tipo_documento_id == global_doc_id,
-            sa_func.to_char(Documento.fecha, 'YYYY-MM') == periodo_str,
+            sql_periodo_mes(Documento.fecha) == periodo_str,
             Documento.estado.in_(['ACTIVO', 'PROCESADO']),
             MovimientoContable.credito > 0 # Movimientos de ingreso (CR)
         ).all()
@@ -589,9 +590,10 @@ def get_historial_facturacion(db: Session, empresa_id: int):
             ids_cxc = [tipo_doc.cuenta_debito_cxc_id]
     
     # 2. Consulta Agregada: Agrupar por mes, contar documentos únicos y sumar débitos a CXC
-    # Usamos func.to_char para compatibilidad con PostgreSQL (entorno Render)
+    # Usamos sql_periodo_mes para compatibilidad bilingüe (PostgreSQL / SQLite)
+    periodo_expr = sql_periodo_mes(Documento.fecha)
     resumen_query = db.query(
-        func.to_char(Documento.fecha, 'YYYY-MM').label('mes'),
+        periodo_expr.label('mes'),
         func.count(Documento.id.distinct()).label('cantidad'),
         func.sum(MovimientoContable.debito).label('total')
     ).join(MovimientoContable, MovimientoContable.documento_id == Documento.id)\
@@ -601,8 +603,8 @@ def get_historial_facturacion(db: Session, empresa_id: int):
         Documento.estado.in_(['ACTIVO', 'PROCESADO']),
         MovimientoContable.cuenta_id.in_(ids_cxc) if ids_cxc else True
     )\
-    .group_by('mes')\
-    .order_by(desc('mes'))
+    .group_by(periodo_expr)\
+    .order_by(desc(periodo_expr))
     
     stats = resumen_query.all()
     
@@ -631,7 +633,7 @@ def eliminar_facturacion_masiva(db: Session, empresa_id: int, periodo: str, usua
     docs = db.query(Documento).filter(
         Documento.empresa_id == empresa_id,
         Documento.tipo_documento_id == config.tipo_documento_factura_id,
-        func.to_char(Documento.fecha, 'YYYY-MM') == periodo,
+        sql_periodo_mes(Documento.fecha) == periodo,
         Documento.estado.in_(['ACTIVO', 'PROCESADO'])
     ).all()
 
@@ -734,7 +736,7 @@ def check_facturacion_periodo(db: Session, empresa_id: int, fecha: date):
     count = db.query(Documento).filter(
         Documento.empresa_id == empresa_id,
         Documento.tipo_documento_id == tipo_doc_id,
-        func.to_char(Documento.fecha, 'YYYY-MM') == periodo_str,
+        sql_periodo_mes(Documento.fecha) == periodo_str,
         Documento.estado.in_(['ACTIVO', 'PROCESADO'])
     ).count()
     
@@ -761,7 +763,7 @@ def get_detalle_facturacion(db: Session, empresa_id: int, periodo: str):
             .filter(
                 Documento.empresa_id == empresa_id,
                 Documento.tipo_documento_id == config.tipo_documento_factura_id,
-                func.to_char(Documento.fecha, 'YYYY-MM') == periodo,
+                sql_periodo_mes(Documento.fecha) == periodo,
                 Documento.estado.in_(['ACTIVO', 'PROCESADO'])
             ).order_by(Documento.numero.desc()).all()
         

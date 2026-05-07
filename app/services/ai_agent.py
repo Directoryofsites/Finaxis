@@ -2,7 +2,16 @@ import os
 import json
 from datetime import datetime
 from dotenv import load_dotenv
-from openai import AsyncOpenAI
+
+# Import condicional: openai no está disponible en el instalador de escritorio (modo LOCAL)
+try:
+    from openai import AsyncOpenAI
+    _OPENAI_AVAILABLE = True
+except ImportError:
+    AsyncOpenAI = None
+    _OPENAI_AVAILABLE = False
+    print("AI_DEBUG: Módulo 'openai' no disponible (modo LOCAL sin IA en la nube).")
+
 from app.services.ai_tools_schema import AI_TOOLS
 
 load_dotenv()
@@ -10,13 +19,16 @@ load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY", "").strip()
 client = None
 
-if api_key:
-    # Debug: Mostrar parte de la llave para verificar
+if _OPENAI_AVAILABLE and api_key:
     masked_key = f"{api_key[:10]}...{api_key[-4:]}" if len(api_key) > 15 else "INVALID"
     print(f"AI_DEBUG: Usando OpenAI API Key: {masked_key}")
     client = AsyncOpenAI(api_key=api_key)
 else:
-    print("AI_DEBUG: OPENAI_API_KEY no configurada.")
+    if not _OPENAI_AVAILABLE:
+        print("AI_DEBUG: OpenAI no disponible en este entorno.")
+    else:
+        print("AI_DEBUG: OPENAI_API_KEY no configurada.")
+
 
 # --- CARGA DE REGLAS DE ENTRENAMIENTO ---
 TRAINING_RULES_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "ai_training_rules.json")

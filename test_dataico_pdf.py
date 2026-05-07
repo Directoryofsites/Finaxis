@@ -1,3 +1,4 @@
+import os
 import requests
 
 cufe = "8128cff5f4fb5c4a18a6ce2dcf1e3703b741a0a9ef9ad5b32e70911bc313ac4363fb8db95450467047bbdab0e923bf88"

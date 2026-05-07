@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, TIMESTAMP, text
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, TIMESTAMP, text, func
 from sqlalchemy import JSON
 from sqlalchemy.orm import relationship # <--- Importar relationship
 from ..core.database import Base
@@ -13,8 +13,8 @@ class FormatoImpresion(Base):
     contenido_html = Column(Text, nullable=False)
     variables_ejemplo_json = Column(JSON, nullable=True)
     creado_por_usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
-    fecha_creacion = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
-    ultima_modificacion = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'), onupdate=text('now()'))
+    fecha_creacion = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    ultima_modificacion = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
 
     # --- AGREGA ESTA LÍNEA ---
     tipo_documento = relationship("TipoDocumento") 

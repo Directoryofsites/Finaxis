@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Numeric, ForeignKey, TIMESTAMP, text
+from sqlalchemy import Column, Integer, Numeric, ForeignKey, TIMESTAMP, text, func
 from sqlalchemy.orm import relationship # <-- IMPORTACIÓN CORREGIDA
 from ..core.database import Base
 
@@ -9,7 +9,7 @@ class AplicacionPago(Base):
     documento_factura_id = Column(Integer, ForeignKey("documentos.id", ondelete="CASCADE"), nullable=False)
     documento_pago_id = Column(Integer, ForeignKey("documentos.id", ondelete="CASCADE"), nullable=False)
     valor_aplicado = Column(Numeric(18, 2), nullable=False)
-    fecha_aplicacion = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
+    fecha_aplicacion = Column(TIMESTAMP(timezone=True), server_default=func.now())
     empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"))
 
     # --- RELACIONES BIDIRECCIONALES ---

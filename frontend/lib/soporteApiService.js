@@ -290,3 +290,7 @@ export const getTicketsAdmin = () => {
 export const updateTicketAdmin = (ticketId, data) => {
   return soporteApiService.patch(`/soporte/tickets/admin/${ticketId}`, data);
 };
+
+export const generarLicencia = (data) => {
+  return soporteApiService.post('/soporte/licencias/generar', data);
+};

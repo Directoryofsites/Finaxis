@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, TIMESTAMP, text, Date, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, TIMESTAMP, text, Date, ForeignKey, Boolean, func
 from sqlalchemy.orm import relationship, backref
 from ..core.database import Base
 
@@ -8,7 +8,7 @@ class Empresa(Base):
     id = Column(Integer, primary_key=True)
     razon_social = Column(String(255), nullable=False)
     nit = Column(String(20), unique=True, index=True)
-    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
     fecha_inicio_operaciones = Column(Date, nullable=True)
     limite_registros = Column(Integer, nullable=True, default=None)
     precio_por_registro = Column(Integer, nullable=True, default=None) # Precio personalizado por registro (NULL = Usa Global)
@@ -60,7 +60,7 @@ class Empresa(Base):
                         foreign_keys=[padre_id])
 
     # Control de Cupos (Administrativo)
-    limite_registros_mensual = Column(Integer, nullable=True, default=1000)
+    limite_registros_mensual = Column(Integer, nullable=True, default=200)
 
     # --- CONTROL DE CUOTAS DE INTELIGENCIA ARTIFICIAL ---
     limite_mensajes_ia_mensual = Column(Integer, nullable=False, default=0)
@@ -78,6 +78,13 @@ class Empresa(Base):
     saldo_notas_credito = Column(Integer, default=0, nullable=False)
     fecha_vencimiento_plan = Column(Date, nullable=True)
     # ------------------------------------------------------
+
+    # --- SISTEMA DE LICENCIAMIENTO (Instalador Local) ---
+    licencia_key = Column(String, nullable=True)          # La llave de activación ingresada por el cliente
+    licencia_version = Column(String(20), nullable=True)  # "FULL", "DEMO"
+    licencia_cliente = Column(String(255), nullable=True) # Nombre del cliente registrado en la llave
+    licencia_activada_en = Column(String(20), nullable=True) # Fecha de emisión (ISO format)
+    # -----------------------------------------------------
 
     # Propiedad y Desacople
     owner_id = Column(Integer, ForeignKey('usuarios.id'), nullable=True)

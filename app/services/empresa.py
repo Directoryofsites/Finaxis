@@ -59,7 +59,7 @@ def create_empresa_con_usuarios(
             owner_id=owner_id,
             padre_id=padre_id,
             # NUEVO MODELO BOLSA: Si tiene padre (es hija), límite local es 0/Infinito.
-            limite_registros_mensual=0 if padre_id else 1000, 
+            limite_registros_mensual=0 if padre_id else 200, 
             
             created_at=datetime.utcnow()
         )
@@ -111,13 +111,18 @@ def create_empresa_con_usuarios(
 
         # FALLBACK: Si no se especifica, usar el nombre por defecto
         if not rol_asignar:
-            admin_role = db.query(permiso_model.Rol).filter(permiso_model.Rol.nombre == rol_nombre).first()
-            # Renombramos variable para usarla abajo consistentemente
-            rol_asignar = admin_role
+            # Buscamos de forma insensible a mayúsculas/minúsculas para evitar el error 500
+            from sqlalchemy import func
+            rol_asignar = db.query(permiso_model.Rol).filter(
+                func.lower(permiso_model.Rol.nombre) == func.lower(rol_nombre)
+            ).first()
 
+        # Si aún no existe, lo creamos dinámicamente para no romper el flujo
         if not rol_asignar:
-            db.rollback()
-            raise HTTPException(status_code=500, detail=f"CRÍTICO: El rol '{rol_nombre}' no está definido en la base de datos.")
+            print(f"INFO: Creando rol '{rol_nombre}' dinámicamente porque no existía.")
+            rol_asignar = permiso_model.Rol(nombre=rol_nombre, descripcion="Creado automáticamente por el sistema")
+            db.add(rol_asignar)
+            db.flush()
 
         # --- VARIABLE PARA CAPTURAR AL PRIMER ADMIN/CONTADOR CREADO ---
         # Esto es crucial para solucionar el problema de "Empresas Huérfanas".
@@ -620,7 +625,7 @@ def create_empresa_from_template(
         # LINKING
         padre_id=padre_id,
         owner_id=owner_id,
-        limite_registros_mensual=0 if padre_id else 500, # 0 para hijas (consumo padre), 500 default para independientes
+        limite_registros_mensual=0 if padre_id else 200, # 0 para hijas (consumo padre), 200 default para independientes
         
         created_at=datetime.utcnow()
     )
@@ -1206,7 +1211,7 @@ def create_empresa_from_template(
         # LINKING
         padre_id=padre_id,
         owner_id=owner_id,
-        limite_registros_mensual=0 if padre_id else 500, # 0 para hijas (consumo padre), 500 default para independientes
+        limite_registros_mensual=0 if padre_id else 200, # 0 para hijas (consumo padre), 200 default para independientes
         
         created_at=datetime.utcnow()
     )

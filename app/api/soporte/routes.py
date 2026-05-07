@@ -183,6 +183,18 @@ def delete_specific_backup_route(filename: str):
     return {"message": f"Archivo {filename} eliminado correctamente"}
 
 
+@router.post(
+    "/licencias/generar",
+    response_model=schemas_soporte.LicenseResponse,
+    dependencies=[Depends(has_permission("soporte:acceder_panel"))]
+)
+def generar_licencia_route(data: schemas_soporte.LicenseGenerateRequest):
+    """
+    Endpoint para generar seriales de activación desde el panel de soporte.
+    """
+    return services_soporte.generar_licencia_soporte(data)
+
+
 # ==========================================
 # PORTAL DE SOPORTE INTEGRADO (NUEVO)
 # ==========================================

@@ -73,11 +73,19 @@ def _ensure_configuracion_columns(db: Session):
     ]
     for col, col_type in cols_to_add:
         try:
-            db.execute(text(f"ALTER TABLE ph_configuracion ADD COLUMN IF NOT EXISTS {col} {col_type}"))
+            # PostgreSQL soporta IF NOT EXISTS, SQLite no.
+            if db.bind.name == 'postgresql':
+                db.execute(text(f"ALTER TABLE ph_configuracion ADD COLUMN IF NOT EXISTS {col} {col_type}"))
+            else:
+                # En SQLite intentamos añadirla directamente, si ya existe saltará al except.
+                db.execute(text(f"ALTER TABLE ph_configuracion ADD COLUMN {col} {col_type}"))
             db.commit()
             logger.info(f"Emergency migration: added {col} to ph_configuracion")
         except Exception as e:
             db.rollback()
+            # Si el error es que la columna ya existe, lo ignoramos silenciosamente
+            if "already exists" in str(e).lower() or "duplicate column" in str(e).lower():
+                continue
             logger.warning(f"Emergency migration skip {col}: {e}")
 
 def update_configuracion(db: Session, empresa_id: int, config_update: schemas.PHConfiguracionUpdate):

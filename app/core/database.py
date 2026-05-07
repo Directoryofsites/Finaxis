@@ -6,17 +6,32 @@ from sqlalchemy.orm import sessionmaker, ORMExecuteState, with_loader_criteria
 from contextvars import ContextVar
 from ..core.config import settings
 
-# --- INICIO DE LA CORRECCIÓN ---
-# Se cambia el parámetro echo=True por echo=False para desactivar
-# el registro detallado de consultas SQL en la terminal.
-# Esto resultará en un arranque del servidor mucho más limpio.
+import os
+import sys
+
+# Lógica para determinar la URL de la base de datos según el entorno
+database_url = settings.DATABASE_URL
+
+# Si estamos en modo empaquetado (.exe), redirigimos la BD a APPDATA para evitar problemas de permisos
+if getattr(sys, 'frozen', False):
+    appdata = os.getenv('APPDATA')
+    if appdata:
+        db_dir = os.path.join(appdata, "Finaxis")
+        if not os.path.exists(db_dir):
+            os.makedirs(db_dir, exist_ok=True)
+        
+        # Si la URL original es SQLite relativa, la convertimos a absoluta en APPDATA
+        if database_url.startswith("sqlite:///./"):
+            db_path = os.path.join(db_dir, "contapy.db")
+            database_url = f"sqlite:///{db_path}"
+
 engine = create_engine(
-    settings.DATABASE_URL, 
+    database_url, 
     echo=False,
     pool_size=20,
-    max_overflow=40
+    max_overflow=40,
+    connect_args={"check_same_thread": False} if database_url.startswith("sqlite") else {}
 )
-# --- FIN DE LA CORRECCIÓN ---
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -27,6 +42,16 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def sql_periodo_mes(field):
+    """
+    Retorna la expresión SQL adecuada para obtener el periodo YYYY-MM
+    detectando si el motor es PostgreSQL o SQLite.
+    """
+    from sqlalchemy import func
+    if engine.name == 'postgresql':
+        return func.to_char(field, 'YYYY-MM')
+    return func.strftime('%Y-%m', field)
 
 # =========================================================================
 # MIDDLEWARE MULTITENANCY (SEGURIDAD AISLAMIENTO POR EMPRESA)

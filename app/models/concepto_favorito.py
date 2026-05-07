@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, TIMESTAMP, text
+from sqlalchemy import Column, Integer, String, ForeignKey, TIMESTAMP, text, func
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -9,7 +9,7 @@ class ConceptoFavorito(Base):
     id = Column(Integer, primary_key=True, index=True)
     empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=False)
     descripcion = Column(String(255), nullable=False)
-    created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     created_by = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
     updated_by = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
     

@@ -3,6 +3,7 @@ from typing import List, Optional
 from app.models.propiedad_horizontal.concepto import PHConcepto
 from app.schemas.propiedad_horizontal.concepto import PHConceptoCreate, PHConceptoUpdate
 from fastapi import HTTPException
+from app.models.plan_cuenta import PlanCuenta
 
 class PHConceptoService:
     def get_all(self, db: Session, empresa_id: int) -> List[PHConcepto]:
@@ -25,6 +26,12 @@ class PHConceptoService:
         return db.query(PHConcepto).filter(PHConcepto.id == id).first()
 
     def create(self, db: Session, obj_in: PHConceptoCreate, empresa_id: int) -> PHConcepto:
+        # Validación de Cuenta Cartera (CXC)
+        if obj_in.cuenta_cxc_id:
+            cta = db.query(PlanCuenta).filter(PlanCuenta.id == obj_in.cuenta_cxc_id).first()
+            if cta and not cta.codigo.startswith('13'):
+                raise HTTPException(status_code=400, detail=f"La cuenta de cartera debe ser de clase 13 (Cuentas por cobrar). La cuenta {cta.codigo} no es válida.")
+
         db_obj = PHConcepto(
             empresa_id=empresa_id,
             nombre=obj_in.nombre,
@@ -52,6 +59,12 @@ class PHConceptoService:
     def update(self, db: Session, db_obj: PHConcepto, obj_in: PHConceptoUpdate) -> PHConcepto:
         update_data = obj_in.dict(exclude_unset=True)
         
+        # Validación de Cuenta Cartera (CXC)
+        if 'cuenta_cxc_id' in update_data and update_data['cuenta_cxc_id']:
+            cta = db.query(PlanCuenta).filter(PlanCuenta.id == update_data['cuenta_cxc_id']).first()
+            if cta and not cta.codigo.startswith('13'):
+                raise HTTPException(status_code=400, detail=f"La cuenta de cartera debe ser de clase 13 (Cuentas por cobrar). La cuenta {cta.codigo} no es válida.")
+
         # Extraer modulos_ids para manejo manual (no es campo directo)
         if 'modulos_ids' in update_data:
             mod_ids = update_data.pop('modulos_ids')

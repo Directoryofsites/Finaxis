@@ -10,6 +10,12 @@ from app.models import permiso as models_permiso  # <--- NUEVO IMPORT
 # Importamos los schemas que acabamos de crear para dar forma a la respuesta
 from app.schemas import soporte as schemas_soporte
 from app.schemas import usuario as schemas_usuario
+import datetime
+from itsdangerous import URLSafeSerializer
+
+# Constantes sincronizadas con app.core.licencia
+_CLAVE_MAESTRA = "FINAXIS_LOCAL_MASTER_KEY_2026_VERY_SECRET_DO_NOT_SHARE_THIS_123456789"
+_SALT = "finaxis-local-activation-salt"
 
 def get_dashboard_data(db: Session) -> schemas_soporte.DashboardData:
     """
@@ -150,3 +156,20 @@ def create_empresa_from_template(db: Session, data: schemas_soporte.EmpresaCreat
         template_category=data.template_category,
         owner_id=data.owner_id
     )
+
+def generar_licencia_soporte(data: schemas_soporte.LicenseGenerateRequest) -> schemas_soporte.LicenseResponse:
+    """
+    Genera una llave de activación segura usando itsdangerous.
+    """
+    s = URLSafeSerializer(_CLAVE_MAESTRA, salt=_SALT)
+    
+    payload = {
+        "version": data.version,
+        "cliente": data.cliente,
+        "emitida": datetime.datetime.now().date().isoformat(),
+        "max_registros": data.max_registros,
+        "machine_id": data.machine_id
+    }
+    
+    serial = s.dumps(payload)
+    return schemas_soporte.LicenseResponse(serial=serial)

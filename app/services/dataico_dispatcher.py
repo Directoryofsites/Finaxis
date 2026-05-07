@@ -80,12 +80,9 @@ class DataicoDispatcher:
 
 
 async def run_test():
-    # TEST DRIVER
+    # TEST DRIVER (Corregido: Usa variables de entorno)
     print("Iniciando prueba de conexión Dataico...")
-    client = DataicoDispatcher(
-        dataico_account_id="002979c5-7c23-43ab-aa98-3fa7dce6e4d0",
-        auth_token="a4afb1e20e856e8fb031b487efbfd239"
-    )
+    client = DataicoDispatcher()
     # Test validación conexión (GET genérico que no existe el param)
     res = await client.get_invoice("DUMMY-UUID-TEST")
     print(json.dumps(res, indent=2))

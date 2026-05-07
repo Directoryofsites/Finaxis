@@ -98,7 +98,11 @@ def run_auto_migrations():
                 ("fecha_vencimiento_plan", "DATE"),
                 ("limite_mensajes_ia_mensual", "INTEGER DEFAULT 0"),
                 ("consumo_mensajes_ia_actual", "INTEGER DEFAULT 0"),
-                ("fecha_reinicio_cuota_ia", "DATE")
+                ("fecha_reinicio_cuota_ia", "DATE"),
+                ("licencia_key", "TEXT"),
+                ("licencia_version", "VARCHAR(20)"),
+                ("licencia_cliente", "VARCHAR(255)"),
+                ("licencia_activada_en", "VARCHAR(20)")
             ]
             for col, col_type in empresa_lite_cols:
                 if col not in cols_empresas:
@@ -218,12 +222,19 @@ def run_auto_migrations():
                     for table, col, col_type in migrations:
                         logger.info(f"Migrando: Añadiendo {col} a {table}...")
                         try:
-                            conn.execute(text(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col} {col_type}"))
+                            # En SQLite no existe 'IF NOT EXISTS' para ADD COLUMN.
+                            # Como ya estamos dentro de un bloque try/except que ignora errores, 
+                            # simplemente ejecutamos la sentencia estándar.
+                            conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))
                             conn.commit()
-                            logger.info(f"Columna {col} verificada/añadida en {table}.")
+                            logger.info(f"Columna {col} añadida en {table}.")
                         except Exception as e:
-                            logger.error(f"Error añadiendo {col} a {table}: {e}")
-                            conn.rollback() # Limpiar la transacción para la siguiente
+                            # Si la columna ya existe, SQLite lanzará un error. Lo ignoramos.
+                            if "duplicate column name" in str(e).lower() or "already exists" in str(e).lower():
+                                logger.info(f"La columna {col} ya existe en {table}. Omitiendo.")
+                            else:
+                                logger.error(f"Error añadiendo {col} a {table}: {e}")
+                            conn.rollback()
             else:
                 logger.info("No se requieren migraciones de esquema pendientes.")
 

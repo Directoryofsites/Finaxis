@@ -351,8 +351,8 @@ def anular_documento(db: Session, documento_id: int, empresa_id: int, user_id: i
         movimientos_snapshot = []
         for mov in db_documento.movimientos:
             movimientos_snapshot.append({
-                "cuenta_codigo": mov.cuenta.codigo,
-                "cuenta_nombre": mov.cuenta.nombre,
+                "cuenta_codigo": mov.cuenta.codigo if mov.cuenta else "N/A",
+                "cuenta_nombre": mov.cuenta.nombre if mov.cuenta else "Sin cuenta",
                 "concepto": mov.concepto,
                 "debito": float(mov.debito),
                 "credito": float(mov.credito)
@@ -360,7 +360,7 @@ def anular_documento(db: Session, documento_id: int, empresa_id: int, user_id: i
 
         documento_snapshot = {
             "id": db_documento.id,
-            "tipo_documento": db_documento.tipo_documento.nombre,
+            "tipo_documento": db_documento.tipo_documento.nombre if db_documento.tipo_documento else "N/A",
             "numero": db_documento.numero,
             "fecha": db_documento.fecha.isoformat(),
             "beneficiario": db_documento.beneficiario.razon_social if db_documento.beneficiario else None,
@@ -539,12 +539,12 @@ def eliminar_documento(db: Session, documento_id: int, empresa_id: int, user_id:
         movimientos_a_eliminar = db_documento.movimientos[:]
 
         movimientos_para_log = [{
-            "cuenta": mov.cuenta.codigo, "concepto": mov.concepto,
+            "cuenta": mov.cuenta.codigo if mov.cuenta else "N/A", "concepto": mov.concepto,
             "debito": float(mov.debito), "credito": float(mov.credito)
         } for mov in movimientos_a_eliminar]
 
         detalle_json_log = {
-            "tipo_doc": db_documento.tipo_documento.codigo, "numero": db_documento.numero,
+            "tipo_doc": db_documento.tipo_documento.codigo if db_documento.tipo_documento else "N/A", "numero": db_documento.numero,
             "fecha": db_documento.fecha.isoformat(),
             "beneficiario": db_documento.beneficiario.razon_social if db_documento.beneficiario else None,
             "movimientos": movimientos_para_log
