@@ -252,119 +252,11 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
         return () => window.removeEventListener('show-ai-library', handleShowLibrary);
     }, []);
 
-    // --- MONITOR STATE ---
-    const [monitorData, setMonitorData] = useState([]);
-    const [monitorLoading, setMonitorLoading] = useState(false);
-    const [monitorFilters, setMonitorFilters] = useState({
-        fechaInicio: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-        fechaFin: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
-        tipo: '',
-        numero: '',
-        beneficiario: '',
-        concepto: ''
-    });
 
-    const fetchMonitorData = async () => {
-        setMonitorLoading(true);
-        try {
-            const inicio = monitorFilters.fechaInicio.toISOString().split('T')[0];
-            const fin = monitorFilters.fechaFin.toISOString().split('T')[0];
 
-            const res = await apiService.get('/reports/journal', {
-                params: {
-                    fecha_inicio: inicio,
-                    fecha_fin: fin
-                }
-            });
 
-            const sorted = Array.isArray(res.data) ? res.data.sort((a, b) => b.id - a.id) : [];
-            setMonitorData(sorted);
-        } catch (err) {
-            console.error("Error fetching monitor data", err);
-        } finally {
-            setMonitorLoading(false);
-        }
-    };
 
-    useEffect(() => {
-        if (activeTab === 'monitor') {
-            fetchMonitorData();
-        }
-    }, [activeTab, monitorFilters.fechaInicio, monitorFilters.fechaFin]);
 
-    const handlePrintDoc = async (id) => {
-        if (!id) return;
-        toast.info("Generando PDF... ⏳", { autoClose: 2000 });
-        try {
-            const response = await apiService.get(`/documentos/${id}/pdf`, {
-                responseType: 'blob'
-            });
-            const file = new Blob([response.data], { type: 'application/pdf' });
-            const fileURL = URL.createObjectURL(file);
-            window.open(fileURL, '_blank');
-        } catch (err) {
-            console.error("Error generating PDF", err);
-            toast.error("No se pudo generar el PDF del documento.");
-        }
-    };
-
-    const handleEditDoc = (id) => {
-        if (!id) return;
-        window.open(`/contabilidad/documentos/${id}?edit=true`, '_blank');
-    };
-
-    const handleViewAuxiliar = (codigo) => {
-        if (!codigo) return;
-        const inicio = monitorFilters.fechaInicio.toISOString().split('T')[0];
-        const fin = monitorFilters.fechaFin.toISOString().split('T')[0];
-        window.open(`/contabilidad/reportes/auxiliar-cuenta?cuenta=${codigo}&fecha_inicio=${inicio}&fecha_fin=${fin}`, '_blank');
-    };
-
-    const handleExportMonitorPDF = async () => {
-        try {
-            const inicio = monitorFilters.fechaInicio.toISOString().split('T')[0];
-            const fin = monitorFilters.fechaFin.toISOString().split('T')[0];
-
-            const res = await apiService.get('/reports/journal/get-signed-url', {
-                params: {
-                    fecha_inicio: inicio,
-                    fecha_fin: fin,
-                    numero_documento: monitorFilters.numero || '',
-                    beneficiario_filtro: monitorFilters.beneficiario || '',
-                    concepto_filtro: monitorFilters.concepto || ''
-                }
-            });
-
-            const data = res.data;
-            if (data.signed_url_token) {
-                // Obtenemos la URL de la API desde la configuración global o fallback
-                const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
-                window.open(`${baseUrl}/api/reports/journal/imprimir?signed_token=${data.signed_url_token}`, '_blank');
-            }
-        } catch (error) {
-            console.error("Error al exportar monitor:", error);
-            toast.error("Error al exportar monitor");
-        }
-    };
-
-    const monitorFiltrado = monitorData.filter(mov => {
-        if (monitorFilters.tipo && mov.tipo_documento_codigo !== monitorFilters.tipo) return false;
-        if (monitorFilters.numero && !String(mov.numero_documento).includes(monitorFilters.numero)) return false;
-        if (monitorFilters.beneficiario && monitorFilters.beneficiario.length >= 2) {
-            const term = monitorFilters.beneficiario.toLowerCase();
-            const nombre = (mov.beneficiario_nombre || '').toLowerCase();
-            const nit = (mov.beneficiario_nit || '').toLowerCase();
-            if (!nombre.includes(term) && !nit.includes(term)) return false;
-        }
-        if (monitorFilters.concepto && monitorFilters.concepto.length >= 3) {
-            const term = monitorFilters.concepto.toLowerCase();
-            const concepto = (mov.concepto || '').toLowerCase();
-            if (!concepto.includes(term)) return false;
-        }
-        return true;
-    });
-
-    const tiposMonitor = Array.from(new Set(monitorData.map(m => m.tipo_documento_codigo).filter(Boolean))).sort();
 
 
     // Hooks
@@ -591,7 +483,7 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                 >
                     <FaBook className="text-xl" />
                 </button>
-                <button onClick={() => handleTabClick('monitor')} className={`nav-item mb-6 p-2 rounded-xl transition-all ${activeTab === 'monitor' ? 'bg-emerald-100 text-emerald-700 shadow-sm' : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'}`} title="Monitor de Asientos"><FaBolt className="text-xl" /></button>
+                <button onClick={() => router.push('/contabilidad/captura-rapida/monitor')} className={`nav-item mb-6 p-2 rounded-xl transition-all ${pathname === '/contabilidad/captura-rapida/monitor' ? 'bg-emerald-100 text-emerald-700 shadow-sm' : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'}`} title="Monitor de Asientos"><FaBolt className="text-xl" /></button>
                 <div className="w-6 h-[1px] bg-gray-200 mb-4"></div>
                 <button onClick={() => handleTabClick('calc')} className={`nav-item p-2 mb-2 rounded-xl transition-all ${activeTab === 'calc' ? 'bg-blue-100 text-blue-600 shadow-sm' : 'text-gray-400 hover:bg-blue-50 hover:text-blue-600'}`} title="Calculadora"><FaCalculator /></button>
                 <button onClick={() => handleTabClick('notes')} className={`nav-item p-2 mb-2 rounded-xl transition-all ${activeTab === 'notes' ? 'bg-yellow-100 text-yellow-600 shadow-sm' : 'text-gray-400 hover:bg-yellow-50 hover:text-yellow-600'}`} title="Notas Rápidas"><FaStickyNote /></button>
@@ -653,7 +545,7 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                     <h2 className="font-bold text-gray-700">
                         {activeTab === 'ai' && 'Finaxis Copilot'}
                         {activeTab === 'tutor' && 'Finaxis Tutor'}
-                        {activeTab === 'monitor' && 'Monitor de Asientos'}
+
                         {activeTab === 'calc' && 'Calculadora'}
                         {activeTab === 'notes' && 'Mis Notas'}
                         {activeTab === 'notif' && 'Notificaciones'}
@@ -906,149 +798,7 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                         </div>
                     )}
 
-                    {/* MONITOR DE ASIENTOS */}
-                    {activeTab === 'monitor' && (
-                        <div className="flex flex-col h-full space-y-4 animate-fadeIn">
-                            {/* BARRA DE ACCIONES Y FILTROS RÁPIDOS */}
-                            <div className="flex flex-col gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100 shadow-sm transition-all">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-lg border border-gray-200 shadow-inner">
-                                        <DatePicker
-                                            selected={monitorFilters.fechaInicio}
-                                            onChange={date => setMonitorFilters(prev => ({ ...prev, fechaInicio: date }))}
-                                            dateFormat="dd/MM"
-                                            className="w-12 bg-transparent text-center text-xs font-bold focus:outline-none cursor-pointer text-gray-700"
-                                        />
-                                        <span className="text-gray-400">-</span>
-                                        <DatePicker
-                                            selected={monitorFilters.fechaFin}
-                                            onChange={date => setMonitorFilters(prev => ({ ...prev, fechaFin: date }))}
-                                            dateFormat="dd/MM"
-                                            className="w-12 bg-transparent text-center text-xs font-bold focus:outline-none cursor-pointer text-gray-700"
-                                        />
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={fetchMonitorData}
-                                            disabled={monitorLoading}
-                                            className={`p-2 rounded-lg transition-all ${monitorLoading ? 'bg-gray-100 text-gray-400' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200'}`}
-                                            title="Actualizar"
-                                        >
-                                            <FaSync className={monitorLoading ? 'animate-spin' : ''} />
-                                        </button>
-                                        <button
-                                            onClick={handleExportMonitorPDF}
-                                            disabled={monitorLoading || monitorFiltrado.length === 0}
-                                            className={`p-2 rounded-lg transition-all ${monitorLoading || monitorFiltrado.length === 0 ? 'bg-gray-100 text-gray-400' : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'}`}
-                                            title="Exportar PDF General"
-                                        >
-                                            <FaFilePdf />
-                                        </button>
-                                    </div>
-                                </div>
 
-                                <div className="grid grid-cols-2 gap-2">
-                                    <select
-                                        value={monitorFilters.tipo}
-                                        onChange={(e) => setMonitorFilters(prev => ({ ...prev, tipo: e.target.value }))}
-                                        className="text-xs p-2 border border-gray-200 rounded-lg bg-white outline-none focus:ring-1 focus:ring-purple-400 transition-all"
-                                    >
-                                        <option value="">Todos Tipos</option>
-                                        {tiposMonitor.map(t => <option key={t} value={t}>{t}</option>)}
-                                    </select>
-                                    <input
-                                        type="text"
-                                        placeholder="Número..."
-                                        value={monitorFilters.numero}
-                                        onChange={(e) => setMonitorFilters(prev => ({ ...prev, numero: e.target.value }))}
-                                        className="text-xs p-2 border border-gray-200 rounded-lg bg-white outline-none focus:ring-1 focus:ring-purple-400 transition-all"
-                                    />
-                                </div>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        placeholder="Beneficiario o Concepto..."
-                                        value={monitorFilters.beneficiario}
-                                        onChange={(e) => setMonitorFilters(prev => ({ ...prev, beneficiario: e.target.value }))}
-                                        className="text-xs p-2 pl-8 border border-gray-200 rounded-lg bg-white outline-none focus:ring-1 focus:ring-purple-400 w-full transition-all"
-                                    />
-                                    <FaSearch className="absolute left-2.5 top-2.5 text-gray-300 text-xs" />
-                                </div>
-                            </div>
-
-                            {/* LISTA DE MOVIMIENTOS */}
-                            <div className="flex-grow space-y-2 pb-10">
-                                {monitorLoading && monitorData.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-20 text-gray-400 animate-pulse">
-                                        <FaBolt className="text-4xl mb-2" />
-                                        <p className="text-xs">Cargando monitor...</p>
-                                    </div>
-                                ) : monitorFiltrado.length === 0 ? (
-                                    <div className="text-center py-20 text-gray-400 italic text-xs">
-                                        No se encontraron movimientos.
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase flex justify-between">
-                                            <span>{monitorFiltrado.length} Registros</span>
-                                            <span>Desliza para ver más</span>
-                                        </p>
-                                        {monitorFiltrado.map((mov, idx) => (
-                                            <div key={idx} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:border-purple-300 hover:shadow-md transition-all group">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <div className="flex flex-col">
-                                                        <button
-                                                            onClick={() => handleEditDoc(mov.documento_id)}
-                                                            className="text-xs font-bold text-indigo-700 hover:text-purple-600 hover:underline transition-colors flex items-center gap-1"
-                                                            title="Editar Documento"
-                                                        >
-                                                            {mov.tipo_documento_codigo} {mov.numero_documento}
-                                                            <FaEdit className="text-[9px] opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                        </button>
-                                                        <span className="text-[10px] text-gray-400">{new Date(mov.fecha).toLocaleDateString()}</span>
-                                                    </div>
-                                                    <div className="flex gap-1">
-                                                        <button
-                                                            onClick={() => handlePrintDoc(mov.documento_id)}
-                                                            className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                                                            title="Ver PDF"
-                                                        >
-                                                            <FaPrint className="text-sm" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-1 mb-2">
-                                                    <p className="text-[11px] text-gray-800 font-semibold truncate" title={mov.beneficiario_nombre}>
-                                                        {mov.beneficiario_nombre || 'Sin Beneficiario'}
-                                                    </p>
-                                                    <p className="text-[10px] text-gray-500 italic line-clamp-1" title={mov.concepto}>
-                                                        {mov.concepto}
-                                                    </p>
-                                                </div>
-
-                                                <div className="flex justify-between items-center border-t border-gray-50 pt-2 mt-1">
-                                                    <button
-                                                        onClick={() => handleViewAuxiliar(mov.cuenta_codigo)}
-                                                        className="text-[10px] font-mono bg-slate-50 px-2 py-0.5 rounded border border-gray-100 text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-all"
-                                                        title="Ver Auxiliar de Cuenta"
-                                                    >
-                                                        {mov.cuenta_codigo}
-                                                    </button>
-                                                    <div className="text-[11px] font-bold text-gray-900 bg-gray-50/50 px-2 py-0.5 rounded-lg border border-gray-50">
-                                                        {mov.debito > 0 ? `$${parseFloat(mov.debito).toLocaleString('es-CO')}` : `$${parseFloat(mov.credito).toLocaleString('es-CO')}`}
-                                                        <span className={`ml-1 text-[8px] font-bold ${mov.debito > 0 ? 'text-blue-600' : 'text-red-500'}`}>
-                                                            {mov.debito > 0 ? 'DB' : 'CR'}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
 
                     {/* CALCULATOR */}
                     {activeTab === 'calc' && (

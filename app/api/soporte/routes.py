@@ -272,6 +272,16 @@ class EstadoCuentaPortal(BaseModel):
     mensajes_no_leidos: int
     ultimas_facturas: list[dict]
 
+class TicketTerceroResponse(BaseModel):
+    id: int
+    asunto: str
+    tipo: str
+    mensaje: str
+    estado: str
+    respuesta_soporte: str | None = None
+    fecha_creacion: datetime
+    fecha_actualizacion: datetime | None = None
+
 class TicketAdminResponse(BaseModel):
     id: int
     asunto: str
@@ -285,6 +295,25 @@ class TicketAdminResponse(BaseModel):
 class TicketUpdate(BaseModel):
     estado: str | None = None
     respuesta_soporte: str | None = None
+
+@router.get(
+    "/tickets/me",
+    response_model=list[TicketTerceroResponse],
+    dependencies=[Depends(get_current_tercero)]
+)
+def get_tickets_me(
+    db: Session = Depends(get_db), 
+    current_tercero: models_tercero.Tercero = Depends(get_current_tercero)
+):
+    """
+    Lista los tickets radicados por el tercero logueado en el portal.
+    """
+    tickets = db.query(models_soporte.SoporteTicket).filter(
+        models_soporte.SoporteTicket.tercero_id == current_tercero.id,
+        models_soporte.SoporteTicket.empresa_id == current_tercero.empresa_id
+    ).order_by(models_soporte.SoporteTicket.fecha_creacion.desc()).all()
+    
+    return tickets
 
 @router.get(
     "/cuenta/estado",

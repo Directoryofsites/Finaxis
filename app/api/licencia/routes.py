@@ -14,7 +14,7 @@ from app.models.usuario import Usuario
 router = APIRouter(prefix="/api/licencia", tags=["Licencia"])
 
 # Roles que pueden gestionar la licencia
-_ROLES_ADMIN = {"administrador", "superadmin", "soporte"}
+_ROLES_ADMIN = {"administrador", "superadmin", "soporte", "contador"}
 
 
 class ActivarLicenciaRequest(BaseModel):

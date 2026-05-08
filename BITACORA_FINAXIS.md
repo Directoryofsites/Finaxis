@@ -149,4 +149,26 @@ Transformar Finaxis de una herramienta pasiva a una plataforma que se "auto-diag
 - **Backup vs DB:** El backup del menú (JSON) es la herramienta de usuario para portabilidad de datos; el `.db` es el contenedor maestro para recuperación forense y gestión de licencias.
 
 ---
+
+## 🏁 Actualización de Sesión (8 de mayo de 2026)
+
+### 1. Estabilización de Creación de Empresas Locales (SQLite)
+- **Fix UnboundLocalError (`or_`):** Se corrigió un error en `dashboard.py` que impedía ver el consumo de registros en instalaciones locales debido a un alcance de variable incorrecto en SQLAlchemy.
+- **Estabilización de Roles en SQLite:** Se implementó una lógica de `roles_override` en `empresa.py` para evitar errores 404 al crear empresas en ambientes locales donde los roles "Administrador" o "Contador" se crean dinámicamente y no son visibles inmediatamente por sub-procesos de base de datos.
+- **Robustez del Instalador:** Se verificó que el sistema de "Autocuración" sea capaz de inicializar una base de datos vacía (`finaxis_local.db`) sin fallar si faltan roles base, garantizando que el primer inicio sea exitoso para el cliente.
+### 2. Soporte Bidireccional y Portal Público ✅
+- **Implementación:** Se habilitó el endpoint `GET /api/soporte/tickets/me` para que los terceros (clientes) puedan ver el historial de sus PQRs desde el portal.
+- **Visualización:** Se actualizó `CustomerPortalFull.js` para mostrar las respuestas del administrador (`respuesta_soporte`), permitiendo una comunicación fluida entre el cliente y el soporte técnico.
+
+### 3. Flexibilidad en Licenciamiento Local (Rol Contador) ✅
+- **Permisos:** Se modificó `app/api/licencia/routes.py` para incluir al rol `contador` en la lista de administradores autorizados (`_ROLES_ADMIN`).
+- **Contexto:** Esto permite que los usuarios que instalan Finaxis localmente (usualmente contadores independientes) puedan activar y gestionar sus llaves de licencia sin requerir un usuario con rol "administrador" explícito.
+
+### 4. Mejora de UX: Monitor de Asientos Rediseñado ✅
+- **Cambio:** Se eliminó el panel lateral estrecho ("el pedacito") que se abría al hacer clic en el rayito de la barra fija.
+- **Redirección:** Ahora el botón redirige directamente a `/contabilidad/captura-rapida/monitor` (página completa), aprovechando todo el ancho de pantalla para la auditoría de movimientos.
+- **Optimización:** Se eliminó el código muerto y el estado de monitorización del componente `RightSidebar.js`.
+
+---
 *Esta bitácora se actualizará cada vez que realicemos un cambio estructural importante para mantener la coherencia del proyecto.*
+

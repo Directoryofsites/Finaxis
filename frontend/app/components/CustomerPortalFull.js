@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import {
     User, CreditCard, MessageSquare, LogOut,
-    AlertCircle, CheckCircle2, Clock, Send, Loader2
+    AlertCircle, CheckCircle2, Clock, Send, Loader2,
+    ChevronRight, Info, MessageCircle
 } from 'lucide-react';
 import { apiService } from '../../lib/apiService';
 
@@ -16,6 +17,7 @@ const CustomerPortalFull = ({ empresaSlug }) => {
 
     // Data State
     const [accountData, setAccountData] = useState({ total_adeudado: 0, facturas: [] });
+    const [tickets, setTickets] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
 
@@ -23,18 +25,26 @@ const CustomerPortalFull = ({ empresaSlug }) => {
         setIsLoading(true);
         setErrorMsg('');
         try {
-            // Usando token propio del portal (tercero) en vez del de FINAXIS admin
             const headers = {
                 'Authorization': `Bearer ${userToken}`,
                 'Content-Type': 'application/json'
             };
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002';
+            
+            // Cargar Cartera
             const response = await fetch(`${apiUrl}/api/soporte/cuenta/estado`, { headers });
             if (!response.ok) throw new Error("Error cargando el estado de cartera");
             const data = await response.json();
             setAccountData(data);
+
+            // Cargar Tickets
+            const tResponse = await fetch(`${apiUrl}/api/soporte/tickets/me`, { headers });
+            if (tResponse.ok) {
+                const tData = await tResponse.json();
+                setTickets(tData);
+            }
         } catch (err) {
-            setErrorMsg(err.message || "Error cargando el estado de cartera");
+            setErrorMsg(err.message || "Error cargando datos del portal");
         } finally {
             setIsLoading(false);
         }
@@ -69,7 +79,10 @@ const CustomerPortalFull = ({ empresaSlug }) => {
             const err = await response.json();
             throw new Error(err.detail || "Error enviando PQR");
         }
-        return await response.json();
+        const res = await response.json();
+        // Recargar tickets para mostrar el nuevo
+        loadDashboardData(userToken);
+        return res;
     };
 
     const onLogout = () => {
@@ -135,6 +148,8 @@ const CustomerPortalFull = ({ empresaSlug }) => {
 
                         {currentView === 'pqr' && user && (
                             <PQRView
+                                tickets={tickets}
+                                isLoading={isLoading}
                                 setCurrentView={setCurrentView}
                                 setErrorMsg={setErrorMsg}
                                 apiSubmitPQR={(data) => submitPQR(data, token)}
@@ -352,14 +367,16 @@ const DashboardView = ({ user, accountData, isLoading }) => {
     );
 };
 
-const PQRView = ({ setCurrentView, setErrorMsg, apiSubmitPQR }) => {
+const PQRView = ({ tickets, isLoading, setCurrentView, setErrorMsg, apiSubmitPQR }) => {
+    const [viewMode, setViewMode] = useState('list'); // 'list' | 'new' | 'detail'
+    const [selectedTicket, setSelectedTicket] = useState(null);
     const [formData, setFormData] = useState({ asunto: '', tipo: 'peticion', mensaje: '' });
-    const [loading, setLoading] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
     const [successMsg, setSuccessMsg] = useState('');
 
     const onSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
+        setSubmitting(true);
         setErrorMsg('');
         setSuccessMsg('');
 
@@ -367,85 +384,202 @@ const PQRView = ({ setCurrentView, setErrorMsg, apiSubmitPQR }) => {
             const resp = await apiSubmitPQR(formData);
             setSuccessMsg(resp.mensaje);
             setFormData({ asunto: '', tipo: 'peticion', mensaje: '' });
-            setTimeout(() => setCurrentView('dashboard'), 4000);
+            setTimeout(() => setViewMode('list'), 3000);
         } catch (err) {
             setErrorMsg(err.message);
         } finally {
-            setLoading(false);
+            setSubmitting(false);
         }
     };
 
-    return (
-        <div className="max-w-2xl mx-auto animate-in fade-in zoom-in-95 duration-500 h-full flex flex-col justify-center">
-            <div className="mb-8 text-center">
-                <h3 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">Centro de Soporte</h3>
-                <p className="text-base text-gray-500">Radica tus Peticiones, Quejas o Reclamos asociados a tu cuenta.</p>
-            </div>
-
-            {successMsg ? (
-                <div className="bg-emerald-50 text-emerald-800 p-8 sm:p-12 rounded-3xl border border-emerald-100 text-center shadow-lg shadow-emerald-900/5 animate-in slide-in-from-bottom-4">
-                    <div className="w-20 h-20 bg-emerald-100 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-emerald-600 shadow-inner">
-                        <CheckCircle2 size={40} />
-                    </div>
-                    <h4 className="text-2xl font-extrabold mb-3">¡Ticket Radicado con Éxito!</h4>
-                    <p className="text-base text-emerald-700/80 mb-8 max-w-sm mx-auto">{successMsg}</p>
-                    <button
-                        onClick={() => setCurrentView('dashboard')}
-                        className="w-full sm:w-auto px-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl transition-all shadow-md"
-                    >
-                        Regresar a Detalles de Facturas
+    if (viewMode === 'new') {
+        return (
+            <div className="max-w-2xl mx-auto animate-in fade-in zoom-in-95 duration-500 h-full flex flex-col justify-center">
+                <div className="mb-6 flex items-center justify-between">
+                    <button onClick={() => setViewMode('list')} className="text-indigo-600 font-bold flex items-center gap-2 hover:underline">
+                        ← Volver al Historial
                     </button>
                 </div>
+                <div className="mb-8 text-center">
+                    <h3 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">Nueva Solicitud</h3>
+                    <p className="text-base text-gray-500">Radica tus Peticiones, Quejas o Reclamos.</p>
+                </div>
+
+                {successMsg ? (
+                    <div className="bg-emerald-50 text-emerald-800 p-8 rounded-3xl border border-emerald-100 text-center shadow-lg">
+                        <CheckCircle2 size={40} className="mx-auto mb-4 text-emerald-600" />
+                        <h4 className="text-2xl font-extrabold mb-3">¡Radicado con Éxito!</h4>
+                        <p className="text-base text-emerald-700/80">{successMsg}</p>
+                    </div>
+                ) : (
+                    <form onSubmit={onSubmit} className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 space-y-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Tipo</label>
+                                <select
+                                    value={formData.tipo}
+                                    onChange={e => setFormData({ ...formData, tipo: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none bg-gray-50 focus:bg-white"
+                                >
+                                    <option value="peticion">Petición</option>
+                                    <option value="queja">Queja</option>
+                                    <option value="reclamo">Reclamo</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Asunto</label>
+                                <input
+                                    type="text" required
+                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none bg-gray-50"
+                                    placeholder="Ej. Error en cobro"
+                                    value={formData.asunto}
+                                    onChange={e => setFormData({ ...formData, asunto: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Mensaje</label>
+                            <textarea
+                                required rows="4"
+                                className="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none bg-gray-50 resize-none"
+                                placeholder="Escribe aquí..."
+                                value={formData.mensaje}
+                                onChange={e => setFormData({ ...formData, mensaje: e.target.value })}
+                            ></textarea>
+                        </div>
+                        <button
+                            type="submit" disabled={submitting}
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg flex justify-center items-center gap-3"
+                        >
+                            {submitting ? <Loader2 className="animate-spin" /> : <Send size={20} />}
+                            Enviar Solicitud
+                        </button>
+                    </form>
+                )}
+            </div>
+        );
+    }
+
+    if (viewMode === 'detail' && selectedTicket) {
+        return (
+            <div className="max-w-2xl mx-auto animate-in slide-in-from-right-4 duration-300 h-full flex flex-col">
+                <button onClick={() => setViewMode('list')} className="text-indigo-600 font-bold flex items-center gap-2 mb-6 hover:underline">
+                    ← Volver a la Lista
+                </button>
+
+                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex-1 flex flex-col">
+                    <div className="p-6 bg-gray-50 border-b border-gray-100">
+                        <div className="flex justify-between items-start mb-2">
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ticket #TKT-{selectedTicket.id}</span>
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${selectedTicket.estado === 'ABIERTO' ? 'bg-red-50 text-red-700' : selectedTicket.estado === 'CERRADO' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                                {selectedTicket.estado}
+                            </span>
+                        </div>
+                        <h3 className="text-2xl font-black text-gray-900 leading-tight">{selectedTicket.asunto}</h3>
+                    </div>
+
+                    <div className="p-6 flex-1 space-y-8">
+                        <div>
+                            <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                <User size={14} /> Tu Mensaje
+                            </h4>
+                            <p className="text-gray-700 bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100/50 italic leading-relaxed">
+                                "{selectedTicket.mensaje}"
+                            </p>
+                        </div>
+
+                        {selectedTicket.respuesta_soporte ? (
+                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <MessageCircle size={14} /> Respuesta de Soporte
+                                </h4>
+                                <div className="bg-indigo-600 text-white p-6 rounded-2xl shadow-xl shadow-indigo-200 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                                        <MessageSquare size={80} />
+                                    </div>
+                                    <p className="relative z-10 font-medium leading-relaxed">
+                                        {selectedTicket.respuesta_soporte}
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex items-start gap-3">
+                                <Clock className="text-amber-500 shrink-0 mt-0.5" size={18} />
+                                <div>
+                                    <p className="text-amber-800 font-bold text-sm">Esperando Respuesta</p>
+                                    <p className="text-amber-700 text-xs mt-1">Nuestro equipo está revisando tu caso. Te responderemos lo antes posible.</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="animate-in fade-in duration-500 h-full flex flex-col">
+            <div className="mb-8 flex justify-between items-center">
+                <div>
+                    <h3 className="text-2xl font-black text-gray-900">Buzón de Soporte</h3>
+                    <p className="text-gray-500 text-sm">Consulta el estado de tus solicitudes.</p>
+                </div>
+                <button
+                    onClick={() => setViewMode('new')}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-2"
+                >
+                    <Send size={16} /> Nueva Solicitud
+                </button>
+            </div>
+
+            {isLoading ? (
+                <div className="flex flex-col items-center justify-center p-20">
+                    <Loader2 className="animate-spin text-indigo-500 w-10 h-10" />
+                </div>
+            ) : tickets.length === 0 ? (
+                <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-[2rem] p-16 text-center flex flex-col items-center justify-center">
+                    <MessageSquare size={48} className="text-gray-300 mb-4" />
+                    <h4 className="text-gray-400 font-bold text-lg">No tienes solicitudes previas</h4>
+                    <p className="text-gray-400 text-sm mt-1 max-w-xs">Si tienes alguna duda o problema, radica una nueva solicitud arriba.</p>
+                </div>
             ) : (
-                <form onSubmit={onSubmit} className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 sm:p-8 space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div className="sm:col-span-1">
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Tipo de Solicitud</label>
-                            <select
-                                value={formData.tipo}
-                                onChange={e => setFormData({ ...formData, tipo: e.target.value })}
-                                className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:ring-4 focus:ring-indigo-500/20 outline-none text-base bg-gray-50 focus:bg-white cursor-pointer"
-                            >
-                                <option value="peticion">Petición Formal</option>
-                                <option value="queja">Queja sobre el Servicio</option>
-                                <option value="reclamo">Reclamo de Facturación</option>
-                            </select>
+                <div className="space-y-3 overflow-y-auto max-h-[500px] pr-2 custom-scrollbar">
+                    {tickets.map(ticket => (
+                        <div
+                            key={ticket.id}
+                            onClick={() => { setSelectedTicket(ticket); setViewMode('detail'); }}
+                            className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-lg hover:border-indigo-100 transition-all cursor-pointer group flex items-center justify-between"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${ticket.respuesta_soporte ? 'bg-indigo-100 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white' : 'bg-gray-50 text-gray-400'}`}>
+                                    {ticket.respuesta_soporte ? <MessageCircle size={20} /> : <Clock size={20} />}
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900 group-hover:text-indigo-700 transition-colors">{ticket.asunto}</h4>
+                                    <div className="flex items-center gap-2 text-xs text-gray-400 font-medium">
+                                        <span className="uppercase tracking-widest">#{ticket.id}</span>
+                                        <span>•</span>
+                                        <span>{new Date(ticket.fecha_creacion).toLocaleDateString()}</span>
+                                        {ticket.respuesta_soporte && (
+                                            <>
+                                                <span>•</span>
+                                                <span className="text-indigo-600 font-bold flex items-center gap-1">
+                                                    <Info size={10} /> Respuesta Recibida
+                                                </span>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter ${ticket.estado === 'ABIERTO' ? 'bg-red-50 text-red-600 border border-red-100' : ticket.estado === 'CERRADO' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'}`}>
+                                    {ticket.estado}
+                                </span>
+                                <ChevronRight className="text-gray-300 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" size={20} />
+                            </div>
                         </div>
-
-                        <div className="sm:col-span-1">
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Asunto Principal</label>
-                            <input
-                                type="text"
-                                required
-                                className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:ring-4 focus:ring-indigo-500/20 outline-none text-base bg-gray-50 focus:bg-white transition-colors"
-                                placeholder="Ej. Cobro doble en factura"
-                                value={formData.asunto}
-                                onChange={e => setFormData({ ...formData, asunto: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Detalles del Caso</label>
-                        <textarea
-                            required
-                            rows="5"
-                            className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:ring-4 focus:ring-indigo-500/20 outline-none text-base bg-gray-50 focus:bg-white transition-colors resize-none"
-                            placeholder="Describe detalladamente los motivos de tu solicitud para que nuestro equipo pueda ayudarte rápidamente..."
-                            value={formData.mensaje}
-                            onChange={e => setFormData({ ...formData, mensaje: e.target.value })}
-                        ></textarea>
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-gray-900 hover:bg-black text-white font-bold py-4 rounded-xl transition-all shadow hover:shadow-lg flex justify-center items-center gap-3 text-lg"
-                    >
-                        {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <Send className="w-5 h-5" />}
-                        <span>Radicar Solicitud Oficial</span>
-                    </button>
-                </form>
+                    ))}
+                </div>
             )}
         </div>
     );
