@@ -134,7 +134,7 @@ def create_empresa_con_usuarios(
             user_payload = usuario_schema.UserCreateInCompany(
                 email=usuario_data.email, password=usuario_data.password, roles_ids=[rol_asignar.id]
             )
-            created_user = usuario_service.create_user_in_company(db=db, user_data=user_payload, empresa_id=nueva_empresa.id)
+            created_user = usuario_service.create_user_in_company(db=db, user_data=user_payload, empresa_id=nueva_empresa.id, roles_override=[rol_asignar])
             
             # Si aún no tenemos un dueño candidato, tomamos al primero que creamos...
             # PERO: Solo si el rol asignado es 'contador' o similar.

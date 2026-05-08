@@ -413,6 +413,8 @@ def get_limite_real_mes(db: Session, empresa_id: int, anio: int, mes: int) -> in
     now = datetime.now()
     is_current_month = (anio == now.year and mes == now.month)
 
+    from sqlalchemy import and_, or_, desc, asc
+
     # 3. Lógica Diferenciada
     if not is_current_month:
         # --- MES PASADO / FUTURO (Cálculo Estático / Snapshot) ---
@@ -443,7 +445,6 @@ def get_limite_real_mes(db: Session, empresa_id: int, anio: int, mes: int) -> in
         # Limit = Plan Base + Rolling Disponible (Planes Pasados) + Recargas Vigentes (Saldo)
         
         # A. Rolling Quota (Planes Pasados con Saldo)
-        from sqlalchemy import and_, desc, asc
         
         # FIX: Strict Past Logic for Dashboard as well
         query_rolling = db.query(ControlPlanMensual).filter(
@@ -459,7 +460,6 @@ def get_limite_real_mes(db: Session, empresa_id: int, anio: int, mes: int) -> in
         if empresa.created_at:
             c_year = empresa.created_at.year
             c_month = empresa.created_at.month
-            from sqlalchemy import or_
             query_rolling = query_rolling.filter(
                 or_(
                     ControlPlanMensual.anio > c_year,

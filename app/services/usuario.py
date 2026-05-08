@@ -39,7 +39,7 @@ def get_users_by_company(db: Session, empresa_id: int):
         joinedload(models_usuario.Usuario.roles)
     ).filter(models_usuario.Usuario.empresa_id == empresa_id).all()
 
-def create_user_in_company(db: Session, user_data: schemas_usuario.UserCreateInCompany, empresa_id: int):
+def create_user_in_company(db: Session, user_data: schemas_usuario.UserCreateInCompany, empresa_id: int, roles_override: List[models_permiso.Rol] = None):
     # --- Validación previa: email duplicado ---
     existente = get_user_by_email(db, user_data.email)
     if existente:
@@ -50,9 +50,12 @@ def create_user_in_company(db: Session, user_data: schemas_usuario.UserCreateInC
 
     hashed_password = get_password_hash(user_data.password)
     
-    roles = db.query(models_permiso.Rol).filter(models_permiso.Rol.id.in_(user_data.roles_ids)).all()
-    if len(roles) != len(user_data.roles_ids):
-        raise HTTPException(status_code=404, detail="Uno o más roles no fueron encontrados.")
+    if roles_override:
+        roles = roles_override
+    else:
+        roles = db.query(models_permiso.Rol).filter(models_permiso.Rol.id.in_(user_data.roles_ids)).all()
+        if len(roles) != len(user_data.roles_ids):
+            raise HTTPException(status_code=404, detail="Uno o más roles no fueron encontrados.")
 
     # Validar que los roles pertenezcan a la empresa o sean globales
     for rol in roles:
