@@ -176,7 +176,20 @@ Transformar Finaxis de una herramienta pasiva a una plataforma que se "auto-diag
 
 ### 6. Herencia de Licencia para Empresas Hijas (Contadores) ✅
 - **Problema:** Las empresas hijas creadas por contadores licenciados aparecían "bloqueadas" o sin cupo debido a que la lógica no propagaba la licencia del padre.
-- **Solución:** Se implementó lógica de herencia dinámica en `consumo_service.py`. Si la empresa padre (Contador) está licenciada (Cupo >= 999,999 o `licencia_key` válida), todas sus empresas hijas heredan automáticamente el estatus de cupo ILIMITADO.
+- **Solución:** Se implementó compatibilidad multi-dialecto en `consumo_service.py`.
+
+### [2026-05-08] Estabilización de Visibilidad en Monitor de Asientos
+- **Problema**: Las Facturas de Propiedad Horizontal (FPH) eran invisibles en el Monitor de Asientos, aunque aparecían en el Super Informe.
+- **Causa Raíz**: 
+    1. El Monitor solo filtraba terceros por la cabecera del documento, mientras que las FPH suelen tener el tercero en los movimientos contables.
+    2. Inconsistencia de parámetros: el frontend enviaba `tipo_documento_id` y el backend esperaba `tipos_documento_ids`.
+    3. Desajuste de fechas: El monitor abre por defecto el mes actual (Mayo), mientras que los datos de prueba eran de Abril.
+- **Solución**:
+    - Se actualizó `libros_oficiales.py` con `LEFT JOIN` y lógica de `COALESCE` para terceros.
+    - Se flexibilizó la ruta `/journal` en `api/reports/routes.py` para aceptar ambos formatos de ID de tipo.
+    - Se alinearon los labels de las columnas con las expectativas del frontend.
+    - Se añadieron logs `[ESPIA-MONITOR]` para depuración en tiempo real.
+ Si la empresa padre (Contador) está licenciada (Cupo >= 999,999 o `licencia_key` válida), todas sus empresas hijas heredan automáticamente el estatus de cupo ILIMITADO.
 - **Impacto:** Un contador licencia su oficina una sola vez y puede crear infinitas empresas clientes que funcionan de inmediato sin configuraciones adicionales.
 
 ### 7. Estabilización de Atributos y Compatibilidad Proxy ✅

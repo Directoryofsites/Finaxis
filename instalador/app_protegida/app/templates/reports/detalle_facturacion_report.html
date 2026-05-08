@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Detalle de Facturación - PH</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1C3A18;
+            --primary-light: #2D5A27;
+            --accent: #C9A84C;
+            --bg-soft: #F9FAF8;
+            --text-main: #2D3436;
+            --text-light: #636E72;
+            --white: #FFFFFF;
+            --border: #E0E0E0;
+        }
+
+        @page {
+            size: letter;
+            margin: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', sans-serif;
+            color: var(--text-main);
+            background-color: var(--white);
+            -webkit-print-color-adjust: exact;
+        }
+
+        .container {
+            width: 100%;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+
+        /* Encabezado Premium */
+        header {
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .company-info h1 {
+            margin: 0;
+            font-size: 24px;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .company-info p {
+            margin: 4px 0 0 0;
+            font-size: 12px;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .report-title {
+            text-align: right;
+        }
+
+        .report-title h2 {
+            margin: 0;
+            font-size: 18px;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .period-badge {
+            background-color: var(--primary);
+            color: var(--white);
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 8px;
+            display: inline-block;
+        }
+
+        /* Resumen Ejecutivo */
+        .summary-box {
+            background-color: var(--bg-soft);
+            border-left: 5px solid var(--accent);
+            padding: 15px 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .summary-item label {
+            display: block;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: var(--text-light);
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .summary-item span {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        /* Tabla de Detalle */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            table-layout: fixed;
+        }
+
+        thead th {
+            background-color: var(--primary);
+            color: var(--white);
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 12px 10px;
+            text-align: left;
+            letter-spacing: 0.5px;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #FAFAFA;
+        }
+
+        tbody td {
+            padding: 12px 10px;
+            font-size: 11px;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+
+        .col-idx { width: 80px; font-weight: 600; color: var(--primary-light); }
+        .col-date { width: 85px; color: var(--text-light); }
+        .col-tercero { width: auto; }
+        .col-unidad { width: 100px; font-weight: 500; }
+        .col-total { width: 110px; text-align: right; font-weight: 700; color: var(--primary); }
+
+        .tercero-nit {
+            display: block;
+            font-size: 9px;
+            color: var(--text-light);
+            margin-top: 2px;
+        }
+
+        /* Sub-items (Desglose) */
+        .sub-items-container {
+            margin-top: 6px;
+            padding-top: 4px;
+            border-top: 1px dashed #EEE;
+        }
+
+        .sub-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            color: var(--text-light);
+            margin-bottom: 2px;
+            font-style: italic;
+        }
+
+        .sub-item-val {
+            font-weight: 500;
+        }
+
+        /* Footer del Reporte */
+        .footer-totals {
+            margin-top: 30px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .total-card {
+            background-color: var(--primary);
+            color: var(--white);
+            padding: 20px 40px;
+            text-align: right;
+            border-radius: 4px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .total-card label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.8;
+        }
+
+        .total-card h3 {
+            margin: 5px 0 0 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .legal-notice {
+            margin-top: 50px;
+            font-size: 8px;
+            color: var(--text-light);
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .page-number:after { content: counter(page); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="company-info">
+                <h1>{{ empresa.razon_social }}</h1>
+                <p>NIT: {{ empresa.nit }}</p>
+            </div>
+            <div class="report-title">
+                <h2>Detalle de Facturación Masiva</h2>
+                <div class="period-badge">PERIODO: {{ periodo }}</div>
+            </div>
+        </header>
+
+        <div class="summary-box">
+            <div class="summary-item">
+                <label>Total Documentos</label>
+                <span>{{ items|length }}</span>
+            </div>
+            <div class="summary-item">
+                <label>Gran Total Facturado</label>
+                <span>$ {{ "{:,.0f}".format(total_periodo).replace(',', '.') }}</span>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-idx">Nro. Factura</th>
+                    <th class="col-date">Fecha</th>
+                    <th class="col-tercero">Residente / Tercero</th>
+                    <th class="col-unidad">{{ labels.entidad_secundaria_short or 'Unidad' }}</th>
+                    <th class="col-total">Valor Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td class="col-idx"># {{ item.consecutivo }}</td>
+                    <td class="col-date">{{ item.fecha.strftime('%Y-%m-%d') if item.fecha else '-' }}</td>
+                    <td class="col-tercero">
+                        <strong>{{ item.tercero_nombre }}</strong>
+                        <span class="tercero-nit">NIT/CC: {{ item.tercero_nit }}</span>
+                        
+                        {% if item.sub_items %}
+                        <div class="sub-items-container">
+                            {% for sub in item.sub_items %}
+                            <div class="sub-item">
+                                <span>{{ sub.nombre }}</span>
+                                <span class="sub-item-val">$ {{ "{:,.0f}".format(sub.valor).replace(',', '.') }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td class="col-unidad">{{ item.detalle }}</td>
+                    <td class="col-total">$ {{ "{:,.0f}".format(item.total).replace(',', '.') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="footer-totals">
+            <div class="total-card">
+                <label>Total Consolidado</label>
+                <h3>$ {{ "{:,.0f}".format(total_periodo).replace(',', '.') }}</h3>
+            </div>
+        </div>
+
+        <div class="legal-notice">
+            Este documento es un reporte informativo del proceso de facturación masiva.<br>
+            Generado digitalmente por Finaxis Intelligence.
+        </div>
+    </div>
+</body>
+</html>

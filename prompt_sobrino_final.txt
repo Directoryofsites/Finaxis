@@ -1,0 +1,14 @@
+INSTRUCCIONES PARA EL SOBRINO (PROMPT PARA ANTIGRAVITY)
+======================================================
+
+Copia y pega este texto en tu sesión de Antigravity:
+
+"Necesito crear un script de Python para exportar el historial completo de este chat a un archivo Markdown (.md) limpio para copiar a Microsoft Word. 
+
+Requisitos técnicos críticos:
+1. El script debe leer el archivo overview.txt que está en la carpeta de logs del sistema (.system_generated/logs/overview.txt).
+2. MUY IMPORTANTE: El script debe extraer el campo 'content' pero también procesar los 'tool_calls'. Muchos comandos e instrucciones clave están dentro de las herramientas 'run_command' y 'write_to_file'. Si solo exportas el 'content', el historial saldrá incompleto o con avisos de 'truncated'.
+3. El script debe filtrar y eliminar automáticamente los bloques de <ADDITIONAL_METADATA> y etiquetas como <USER_REQUEST> para que el texto sea legible.
+4. Formato de salida: Usa encabezados claros como ### USUARIO y ### ANTIGRAVITY. Los comandos de terminal y el código de archivos deben ir dentro de bloques de código Markdown (cuadritos).
+5. Filtra el historial para que solo incluya el texto de la conversación, los comandos de terminal ejecutados y el código de los archivos creados; IGNORA las acciones de lectura (view_file), búsqueda (grep) o verificación de estado (command_status) para no ensuciar el documento.
+6. Crea una versión para el chat actual y otra para exportación masiva de todos los chats de la carpeta 'brain'."

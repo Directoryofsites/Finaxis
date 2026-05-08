@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: letter;
+            margin: 2cm;
+        }
+
+        body {
+            font-family: 'Helvetica', sans-serif;
+            font-size: 11px;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* ... (rest of styles) */
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        tr {
+            page-break-inside: avoid;
+        }
+
+        th {
+            background: #333333;
+            color: white;
+            padding: 5px;
+            text-align: left;
+            font-size: 10px;
+        }
+
+        td {
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .font-mono {
+            font-family: 'Courier New', monospace;
+        }
+
+        .footer-totals {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+
+        .footer-totals td {
+            border-top: 2px solid #333;
+        }
+
+        .letras-row td {
+            background: #fff;
+            padding-top: 10px;
+            font-style: italic;
+            border: none;
+        }
+
+        .signatures {
+            margin-top: 50px;
+            width: 100%;
+            display: table;
+        }
+
+        .sig-col {
+            display: table-cell;
+            width: 25%;
+            text-align: center;
+            vertical-align: bottom;
+            height: 40px;
+        }
+
+        .sig-line {
+            border-top: 1px solid #333;
+            margin: 0 10px;
+            padding-top: 5px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <table class="header-table">
+        <tr>
+            <td width="60%" valign="top">
+                {% if empresa.logo_url %}
+                <img src="{{empresa.logo_url}}" style="max-height: 60px; margin-bottom: 5px;"><br>
+                {% endif %}
+                <div class="company-name">{{empresa.razon_social}}</div>
+                <div>NIT: {{empresa.nit}}</div>
+                <div>{{empresa.direccion}}</div>
+                <div>{{empresa.telefono}}</div>
+            </td>
+            <td width="40%" valign="top" align="right">
+                <div class="doc-type-box">{{documento.tipo_nombre}}</div>
+                <div class="doc-number">N° {{documento.consecutivo}}</div>
+                <div style="text-align: right; margin-top: 5px;">Fecha: <strong>{{documento.fecha_emision}}</strong>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="info-box">
+        <table style="width: 100%; margin: 0;">
+            <tr>
+                <td width="15%"><strong>Tercero:</strong></td>
+                <td width="45%">{{tercero.razon_social}}</td>
+                <td width="15%"><strong>NIT/CC:</strong></td>
+                <td width="25%">{{tercero.nit}}</td>
+            </tr>
+            {% if documento.observaciones %}
+            <tr>
+                <td colspan="4" style="border-top: 1px dashed #ccc; padding-top: 5px;">
+                    <strong>Notas:</strong> {{documento.observaciones}}
+                </td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th width="15%">Cuenta</th>
+                <th width="45%">Descripción</th>
+                <th width="20%" class="text-right">Débito</th>
+                <th width="20%" class="text-right">Crédito</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="font-mono">{{item.producto_codigo}}</td>
+                <td>{{item.producto_nombre}}</td>
+                <td class="text-right font-mono">{{item.debito_fmt}}</td>
+                <td class="text-right font-mono">{{item.credito_fmt}}</td>
+            </tr>
+            {% endfor %}
+            <tr class="footer-totals">
+                <td colspan="2" class="text-right">SUMAS IGUALES:</td>
+                <td class="text-right font-mono">{{totales.total_debito}}</td>
+                <td class="text-right font-mono">{{totales.total_credito}}</td>
+            </tr>
+            <tr class="letras-row">
+                <td colspan="4"><strong>SON:</strong> {{totales.valor_letras}}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    {% if ph_distribucion %}
+    <div style="margin-top: 20px; page-break-inside: avoid;">
+        <div style="font-weight: bold; background: #eee; padding: 5px; border: 1px solid #ccc; font-size: 10px; border-bottom: none;">
+            DETALLE DE AMORTIZACIÓN Y APLICACIÓN DEL PAGO (Regla de Prioridad)
+        </div>
+        <table style="margin-top: 0; border: 1px solid #ccc; width: 100%;">
+            <thead>
+                <tr>
+                    <th style="background: #f9f9f9; color: #333; border-bottom: 1px solid #ccc;">Nivel de Prioridad</th>
+                    <th style="background: #f9f9f9; color: #333; border-bottom: 1px solid #ccc;" class="text-right">Monto Aplicado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if ph_distribucion.intereses > 0 %}
+                <tr>
+                    <td style="padding: 4px; border-top: 1px solid #eee;"><strong>Nivel 1:</strong> Intereses de Mora</td>
+                    <td class="text-right font-mono" style="padding: 4px; border-top: 1px solid #eee;">$ {{ ph_distribucion.intereses|format_decimal(0) }}</td>
+                </tr>
+                {% for item in ph_distribucion.intereses_detalle %}
+                <tr>
+                    <td style="padding: 2px 4px 2px 25px; font-size: 8.5px; color: #555; font-style: italic;">&bull; {{ item.concepto }}</td>
+                    <td class="text-right font-mono" style="padding: 2px 4px; font-size: 8.5px; color: #555;">$ {{ item.valor|format_decimal(0) }}</td>
+                </tr>
+                {% endfor %}
+                {% endif %}
+
+                {% if ph_distribucion.multas > 0 %}
+                <tr>
+                    <td style="padding: 4px; border-top: 1px solid #eee;"><strong>Nivel 2:</strong> Multas y Sanciones</td>
+                    <td class="text-right font-mono" style="padding: 4px; border-top: 1px solid #eee;">$ {{ ph_distribucion.multas|format_decimal(0) }}</td>
+                </tr>
+                {% for item in ph_distribucion.multas_detalle %}
+                <tr>
+                    <td style="padding: 2px 4px 2px 25px; font-size: 8.5px; color: #555; font-style: italic;">&bull; {{ item.concepto }}</td>
+                    <td class="text-right font-mono" style="padding: 2px 4px; font-size: 8.5px; color: #555;">$ {{ item.valor|format_decimal(0) }}</td>
+                </tr>
+                {% endfor %}
+                {% endif %}
+
+                {% if ph_distribucion.capital > 0 %}
+                <tr>
+                    <td style="padding: 4px; border-top: 1px solid #eee;"><strong>Nivel 3:</strong> Capital (Cuotas de Admin. y otros)</td>
+                    <td class="text-right font-mono" style="padding: 4px; border-top: 1px solid #eee;">$ {{ ph_distribucion.capital|format_decimal(0) }}</td>
+                </tr>
+                {% for item in ph_distribucion.capital_detalle %}
+                <tr>
+                    <td style="padding: 2px 4px 2px 25px; font-size: 8.5px; color: #555; font-style: italic;">&bull; {{ item.concepto }}</td>
+                    <td class="text-right font-mono" style="padding: 2px 4px; font-size: 8.5px; color: #555;">$ {{ item.valor|format_decimal(0) }}</td>
+                </tr>
+                {% endfor %}
+                {% endif %}
+                <tr style="background: #f5f5f5; font-weight: bold;">
+                    <td style="padding: 6px;">TOTAL DISTRIBUIDO</td>
+                    <td class="text-right font-mono" style="padding: 6px;">$ {{ ph_distribucion.total|format_decimal(0) }}</td>
+                </tr>
+            </tbody>
+        </table>
+        <div style="font-size: 8px; font-style: italic; color: #666; margin-top: 5px; margin-bottom: 15px;">
+            * El pago se aplica siguiendo el orden legal: Intereses de mora > Multas > Capital.
+        </div>
+    </div>
+    {% endif %}
+
+    {% if aplicaciones_pagos and not ph_distribucion %}
+    <div style="margin-top: 20px; page-break-inside: avoid;">
+        <div style="font-weight: bold; background: #eee; padding: 5px; border: 1px solid #ccc; font-size: 10px; border-bottom: none;">
+            RELACIÓN DE DOCUMENTOS CANCELADOS / ABONADOS CON ESTE PAGO
+        </div>
+        <table style="margin-top: 0; border: 1px solid #ccc; width: 100%;">
+            <thead>
+                <tr>
+                    <th style="background: #f9f9f9; color: #333; border-bottom: 1px solid #ccc; font-size: 9px; padding: 4px;">Documento</th>
+                    <th style="background: #f9f9f9; color: #333; border-bottom: 1px solid #ccc; font-size: 9px; padding: 4px;">Fecha</th>
+                    <th style="background: #f9f9f9; color: #333; border-bottom: 1px solid #ccc; font-size: 9px; padding: 4px;" class="text-right">Monto Aplicado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set total_aplicado = 0 %}
+                {% for app in aplicaciones_pagos %}
+                <tr>
+                    <td style="padding: 4px; border-bottom: 1px solid #eee; font-size: 9px;">{{ app.numero }}</td>
+                    <td style="padding: 4px; border-bottom: 1px solid #eee; font-size: 9px; color: #666;">{{ app.fecha }}</td>
+                    <td class="text-right font-mono" style="padding: 4px; border-bottom: 1px solid #eee; font-size: 9px;">$ {{ app.valor|format_decimal(0) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div style="font-size: 8px; font-style: italic; color: #666; margin-top: 5px; margin-bottom: 15px;">
+            * Esta tabla detalla qué facturas fueron cubiertas total o parcialmente por este movimiento.
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="signatures">
+        <div class="sig-col">
+            <div class="sig-line">Elaboró</div>
+        </div>
+        <div class="sig-col">
+            <div class="sig-line">Revisó</div>
+        </div>
+        <div class="sig-col">
+            <div class="sig-line">Aprobó</div>
+        </div>
+        <div class="sig-col">
+            <div class="sig-line">Contabilizó</div>
+        </div>
+    </div>
+
+    {% if documento.dian_cufe %}
+    <div style="margin-top: 30px; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 9px; color: #555;">
+        <strong>Información Fiscal (DIAN/Proveedor):</strong><br>
+        <strong>{% if 'SOPORTE' in documento.tipo_nombre.upper() %}CUDS{% else %}CUFE{% endif %}:</strong> <span
+            style="font-family: monospace;">{{documento.dian_cufe}}</span><br>
+        <strong>Estado DIAN:</strong> {{documento.dian_estado}}<br>
+        {% if not documento.dian_xml_url %}
+        <br>
+        <em>Nota: Documento generado en entorno de Pruebas/Habilitación (Sin URL pública directa). Este documento es
+            válido como soporte interno.</em>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div style="text-align: center; font-size: 9px; color: #aaa; margin-top: 20px;">
+        Gracias por su confianza.
+    </div>
+</body>
+
+</html>

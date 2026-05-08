@@ -237,6 +237,7 @@ def get_journal_report(
     fecha_inicio: date = Query(..., description="Fecha de inicio del reporte (YYYY-MM-DD)"),
     fecha_fin: date = Query(..., description="Fecha de fin del reporte (YYYY-MM-DD)"),
     tipos_documento_ids: Optional[List[int]] = Query(None, description="Lista de IDs de tipos de documento"),
+    tipo_documento_id: Optional[int] = Query(None, description="ID único de tipo de documento (compatibilidad)"),
     cuenta_filtro: Optional[str] = Query(None, description="Filtro por código o nombre de cuenta"),
     numero_documento: Optional[str] = Query(None, description="Filtro por número de documento"),
     beneficiario_filtro: Optional[str] = Query(None, description="Filtro por beneficiario (Nombre o NIT)"),
@@ -247,18 +248,25 @@ def get_journal_report(
     """
     Genera los datos para el reporte del Libro Diario (para la tabla en frontend).
     """
-    # MODIFICACIÓN: Ahora llama a nuestro nuevo servicio centralizado
+    # Consolidar IDs de tipo de documento
+    ids_finales = tipos_documento_ids or []
+    if tipo_documento_id and tipo_documento_id not in ids_finales:
+        ids_finales.append(tipo_documento_id)
+
+    print(f"[ESPIA-MONITOR] Empresa: {current_user.empresa_id} | Rango: {fecha_inicio} a {fecha_fin} | Tipos: {ids_finales}")
+
     report_data = libros_oficiales_service.get_data_for_libro_diario(
         db=db,
         empresa_id=current_user.empresa_id,
         fecha_inicio=fecha_inicio,
         fecha_fin=fecha_fin,
-        tipos_documento_ids=tipos_documento_ids,
+        tipos_documento_ids=ids_finales if ids_finales else None,
         cuenta_filtro=cuenta_filtro,
         numero_documento=numero_documento,
         beneficiario_filtro=beneficiario_filtro,
         concepto_filtro=concepto_filtro
     )
+    print(f"[ESPIA-MONITOR] Resultados encontrados: {len(report_data)}")
     return report_data
 
 @router.get("/journal/get-signed-url", response_model=Dict[str, str])

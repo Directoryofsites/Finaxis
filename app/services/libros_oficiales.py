@@ -50,24 +50,29 @@ def get_data_for_libro_diario(
     Obtiene una lista plana de movimientos contables para la tabla del Libro Diario en el frontend.
     """
     try:
+        from sqlalchemy.orm import aliased
+        TerceroMov = aliased(models_tercero)
+
         query = db.query(
-            models_doc.id.label("documento_id"), # NUEVO
-            models_mov.id.label("movimiento_id"), # NUEVO
             models_doc.fecha,
-            models_tipo.nombre.label("tipo_documento"),
-            models_tipo.codigo.label("tipo_documento_codigo"), 
             models_doc.numero.label("numero_documento"),
-            models_tercero.razon_social.label("beneficiario_nombre"),
-            models_tercero.nit.label("beneficiario_nit"),
-            models_mov.concepto,
+            models_tipo.nombre.label("tipo_documento"),
+            models_tipo.codigo.label("tipo_documento_codigo"),
+            models_doc.id.label("documento_id"),
+            # Beneficiario con fallback (Documento -> Movimiento)
+            func.coalesce(models_tercero.razon_social, TerceroMov.razon_social, '').label("beneficiario_nombre"),
+            func.coalesce(models_tercero.nit, TerceroMov.nit, '').label("beneficiario_nit"),
             models_plan.codigo.label("cuenta_codigo"),
             models_plan.nombre.label("cuenta_nombre"),
+            models_mov.concepto,
             models_mov.debito,
-            models_mov.credito
+            models_mov.credito,
+            models_mov.id.label("movimiento_id")
         ).join(models_mov, models_doc.id == models_mov.documento_id)\
-         .join(models_tipo, models_doc.tipo_documento_id == models_tipo.id)\
+         .outerjoin(models_tipo, models_doc.tipo_documento_id == models_tipo.id)\
          .join(models_plan, models_mov.cuenta_id == models_plan.id)\
          .outerjoin(models_tercero, models_doc.beneficiario_id == models_tercero.id)\
+         .outerjoin(TerceroMov, models_mov.tercero_id == TerceroMov.id)\
          .filter(
             models_doc.empresa_id == empresa_id,
             models_doc.fecha.between(fecha_inicio, fecha_fin),
@@ -91,7 +96,9 @@ def get_data_for_libro_diario(
             filtro_ben = f"%{beneficiario_filtro}%"
             query = query.filter(or_(
                 models_tercero.razon_social.ilike(filtro_ben),
-                models_tercero.nit.ilike(filtro_ben)
+                models_tercero.nit.ilike(filtro_ben),
+                TerceroMov.razon_social.ilike(filtro_ben),
+                TerceroMov.nit.ilike(filtro_ben)
             ))
 
         if concepto_filtro:
