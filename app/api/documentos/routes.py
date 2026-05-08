@@ -55,12 +55,16 @@ def create_documento(
     current_user: models_usuario = Depends(has_permission("contabilidad:crear_documento"))
 ):
     documento.empresa_id = current_user.empresa_id
+    print(f"[ESPIA-DOC] Iniciando creación de documento para Empresa {documento.empresa_id}...")
     try:
         db_documento = service.create_documento(db=db, documento=documento, user_id=current_user.id)      
+        print(f"[ESPIA-DOC] Documento creado exitosamente ID: {db_documento.id}")
         return db_documento
     except HTTPException as http_exc:
+        print(f"[ESPIA-DOC] Error HTTP controlado: {http_exc.detail}")
         raise http_exc
     except Exception as e:
+        print(f"[ESPIA-DOC] ERROR INESPERADO: {str(e)}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error inesperado al crear el documento: {str(e)}")
 
 

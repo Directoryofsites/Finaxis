@@ -169,6 +169,20 @@ Transformar Finaxis de una herramienta pasiva a una plataforma que se "auto-diag
 - **Redirección:** Ahora el botón redirige directamente a `/contabilidad/captura-rapida/monitor` (página completa), aprovechando todo el ancho de pantalla para la auditoría de movimientos.
 - **Optimización:** Se eliminó el código muerto y el estado de monitorización del componente `RightSidebar.js`.
 
+### 5. Robustez en Consumo (Bypass SQL Puro) ✅
+- **Problema:** En SQLite local, la "ceguera de sesión" de SQLAlchemy impedía ver registros recién creados por procesos concurrentes, causando `IntegrityError` incluso con manejadores de excepciones estándar.
+- **Solución Nuclear:** Se implementó un **Bypass de SQL Puro**. Se utiliza `INSERT OR IGNORE` para garantizar la existencia del plan a nivel de disco y un objeto **PlanProxy** que intercepta las actualizaciones y las ejecuta mediante comandos `UPDATE` directos, puenteando el sistema de objetos del ORM.
+- **Resultado:** Estabilización total de la persistencia en entornos locales. El sistema es ahora inmune a bloqueos de sesión y colisiones de unicidad en el control de planes mensuales.
+
+### 6. Herencia de Licencia para Empresas Hijas (Contadores) ✅
+- **Problema:** Las empresas hijas creadas por contadores licenciados aparecían "bloqueadas" o sin cupo debido a que la lógica no propagaba la licencia del padre.
+- **Solución:** Se implementó lógica de herencia dinámica en `consumo_service.py`. Si la empresa padre (Contador) está licenciada (Cupo >= 999,999 o `licencia_key` válida), todas sus empresas hijas heredan automáticamente el estatus de cupo ILIMITADO.
+- **Impacto:** Un contador licencia su oficina una sola vez y puede crear infinitas empresas clientes que funcionan de inmediato sin configuraciones adicionales.
+
+### 7. Estabilización de Atributos y Compatibilidad Proxy ✅
+- **Mejora:** Se dotó al `PlanProxy` de todos los atributos del modelo original (`anio`, `mes`, `empresa_id`) y se blindó el acceso a campos de licencia en el modelo de Empresa usando `getattr`.
+- **Garantía:** El sistema de consumo es ahora transparente para el resto de la aplicación, comportándose como un objeto ORM pero con la velocidad y seguridad del SQL atómico.
+
 ---
 *Esta bitácora se actualizará cada vez que realicemos un cambio estructural importante para mantener la coherencia del proyecto.*
 

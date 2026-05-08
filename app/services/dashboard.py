@@ -398,9 +398,16 @@ def get_limite_real_mes(db: Session, empresa_id: int, anio: int, mes: int) -> in
     empresa = db.query(models_empresa.Empresa).filter(models_empresa.Empresa.id == empresa_id).first()
     limite_base = 0
     if empresa:
-        # FIX: Si es hija (tiene padre), su límite local es irrelevante para el cálculo visual.
-        # Retornamos 0 para que el frontend oculte la barra de progreso y muestre solo consumo.
         if empresa.padre_id:
+            # FIX: Si es hija, intentamos ver si tiene un plan local ya creado (con herencia aplicada)
+            # Si no existe, heredamos nominalmente del padre para la visualización.
+            if plan_mensual:
+                return plan_mensual.limite_asignado
+            
+            padre = db.query(models_empresa.Empresa).filter(models_empresa.Empresa.id == empresa.padre_id).first()
+            if padre:
+                # Retornamos el límite del padre (Holding)
+                return get_limite_real_mes(db, padre.id, anio, mes)
             return 0
 
         if empresa.limite_registros_mensual is not None:
@@ -527,14 +534,12 @@ def get_consumo_actual(db: Session, empresa_id: int, mes: Optional[int] = None, 
     empresa_obj = db.query(models_empresa.Empresa).filter(models_empresa.Empresa.id == empresa_id).first()
     es_hija = empresa_obj and empresa_obj.padre_id is not None
     
-    plan_mensual = None
-    if not es_hija:
-        # Solo buscamos plan si es Padre o Independiente
-        plan_mensual = db.query(ControlPlanMensual).filter(
-            ControlPlanMensual.empresa_id == empresa_id,
-            ControlPlanMensual.anio == fecha_base.year,
-            ControlPlanMensual.mes == fecha_base.month
-        ).first()
+    # Buscamos el plan mensual (Incluso para hijas, ya que ahora lo creamos/sincronizamos con herencia)
+    plan_mensual = db.query(ControlPlanMensual).filter(
+        ControlPlanMensual.empresa_id == empresa_id,
+        ControlPlanMensual.anio == fecha_base.year,
+        ControlPlanMensual.mes == fecha_base.month
+    ).first()
     
     total_registros_mes = 0
     limite = 0

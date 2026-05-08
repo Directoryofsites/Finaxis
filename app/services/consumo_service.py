@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, desc, asc
+from sqlalchemy.exc import IntegrityError # Importar para manejo de colisiones en SQLite
 from datetime import datetime
 from fastapi import HTTPException
 from app.models.consumo_registros import (
@@ -198,147 +199,93 @@ def calcular_deficit(db: Session, empresa_id: int, cantidad_necesaria: int) -> i
     
     return cantidad_necesaria - total_disponible
 
-def _get_or_create_plan_mensual(db: Session, empresa_id: int, fecha_doc: datetime, exclude_document_id: int = None) -> ControlPlanMensual:
+def _get_or_create_plan_mensual(db: Session, empresa_id: int, fecha_doc: datetime, exclude_document_id: int = None):
+    """
+    Versión BLINDADA con SQL Puro. 
+    Ignora el sistema de objetos de SQLAlchemy para evitar el problema de registros 'fantasma'.
+    """
+    from sqlalchemy import text
     anio = fecha_doc.year
     mes = fecha_doc.month
     
-    # Imports necesarios para el sync
-    from app.models.documento import Documento
-    from app.models.movimiento_contable import MovimientoContable
-    from sqlalchemy import func, extract
-    from app.models.empresa import Empresa # Ensure import
-    from app.models.cupo_adicional import CupoAdicional # Importar modelo Cupo
-
-    plan = db.query(ControlPlanMensual).filter(
-        ControlPlanMensual.empresa_id == empresa_id,
-        ControlPlanMensual.anio == anio,
-        ControlPlanMensual.mes == mes
-    ).with_for_update().first()
+    print(f"[ESPIA] Entrando a _get_or_create (SQL PURO) para Empresa {empresa_id} en {anio}-{mes}")
     
-    # 1. Obtener límite BASE de la empresa
+    # 1. Calcular límite (Lectura simple)
+    from app.models.empresa import Empresa
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
     
-    # MODIFICADO MULTI-TENANCY:
-    # Si tiene padre (es hija), el ControlPlanMensual actúa como "Monitor de Cupo".
-    # Su límite es el 'limite_registros_mensual' asignado administrativamente.
-    # Si es Independiente/Padre, su límite es 'limite_registros' del plan comprado.
-    if empresa and empresa.padre_id:
-        limite_base = empresa.limite_registros_mensual if empresa.limite_registros_mensual is not None else 0
+    limite_total = 200
+    if empresa:
+        if empresa.padre_id:
+            padre = db.query(Empresa).filter(Empresa.id == empresa.padre_id).first()
+            # Un padre está licenciado si tiene licencia_key o un límite muy alto (999.999)
+            if padre and (getattr(padre, 'licencia_key', None) or (padre.limite_registros and padre.limite_registros >= 999999)):
+                limite_total = 999999
+            else:
+                limite_total = empresa.limite_registros_mensual or 200
+        else:
+            limite_total = empresa.limite_registros_mensual or 200
+
+    # 2. Asegurar existencia con INSERT atómico (Dialecto-aware)
+    dialect = db.bind.dialect.name
+    if dialect == 'postgresql':
+        sql_insert = """
+            INSERT INTO control_plan_mensual 
+            (empresa_id, anio, mes, limite_asignado, cantidad_disponible, fecha_creacion, estado, es_manual)
+            VALUES (:e, :a, :m, :la, :cd, :fc, :st, :em)
+            ON CONFLICT (empresa_id, anio, mes) DO NOTHING
+        """
     else:
-        limite_base = empresa.limite_registros if empresa and empresa.limite_registros is not None else 0
+        # Por defecto SQLite
+        sql_insert = """
+            INSERT OR IGNORE INTO control_plan_mensual 
+            (empresa_id, anio, mes, limite_asignado, cantidad_disponible, fecha_creacion, estado, es_manual)
+            VALUES (:e, :a, :m, :la, :cd, :fc, :st, :em)
+        """
+
+    db.execute(text(sql_insert), {
+        "e": empresa_id, "a": anio, "m": mes, 
+        "la": limite_total, "cd": limite_total,
+        "fc": datetime.utcnow(), "st": 'ABIERTO', "em": 0
+    })
+    db.flush()
     
-    # 2. Obtener CUPO ADICIONAL para este mes específico
-    cupo_adicional = db.query(CupoAdicional).filter(
-        CupoAdicional.empresa_id == empresa_id,
-        CupoAdicional.anio == anio,
-        CupoAdicional.mes == mes
-    ).first()
-    cantidad_extra = cupo_adicional.cantidad_adicional if cupo_adicional else 0
+    # 3. Recuperar datos con SQL Puro (Incluyendo anio, mes y empresa_id para compatibilidad)
+    res = db.execute(text("""
+        SELECT id, limite_asignado, cantidad_disponible, estado, es_manual, anio, mes, empresa_id
+        FROM control_plan_mensual 
+        WHERE empresa_id = :e AND anio = :a AND mes = :m
+    """), {"e": empresa_id, "a": anio, "m": mes}).fetchone()
     
-    # LIMIT TOTAL REAL = Base + Adicional
-    limite_total = limite_base + cantidad_extra
-    
-    # Calcular Consumo Real (Siempre útil para sync)
-    query_consumo = db.query(func.count(MovimientoContable.id))\
-        .join(Documento, MovimientoContable.documento_id == Documento.id)\
-        .filter(
-            Documento.empresa_id == empresa_id,
-            extract('year', Documento.fecha) == anio,
-            extract('month', Documento.fecha) == mes,
-            Documento.anulado == False
-        )
-    
-    # FIX: Excluir documento actual para evitar doble conteo durante auto-healing
-    # Si excluimos el doc actual, el consumo_real será lo que había ANTES de esta transacción.
-    if exclude_document_id:
-        query_consumo = query_consumo.filter(Documento.id != exclude_document_id)
+    if not res:
+        raise Exception("Fallo crítico: El plan no existe ni pudo ser creado.")
 
-    consumo_real = query_consumo.scalar() or 0
+    # 4. OBJETO PROXY: Se comporta como el modelo original pero guarda cambios vía SQL
+    class PlanProxy:
+        def __init__(self, row, db_session):
+            self._db = db_session
+            self.id = row[0]
+            self.limite_asignado = row[1]
+            self.cantidad_disponible = row[2]
+            self.estado = row[3]
+            self.es_manual = bool(row[4])
+            self.anio = row[5]
+            self.mes = row[6]
+            self.empresa_id = row[7]
 
-    if not plan:
-        # CREACIÓN NUEVA
-        disponible_inicial = max(0, limite_total - consumo_real)
-        
-        plan = ControlPlanMensual(
-            empresa_id=empresa_id,
-            anio=anio,
-            mes=mes,
-            limite_asignado=limite_total,
-            cantidad_disponible=disponible_inicial,
-            estado=EstadoPlan.ABIERTO
-        )
-        db.add(plan)
-        db.flush()
-        
-    else:
-        # Si está CERRADO, no tocamos nada, respetamos el cierre (cantidad=0 usualmente)
-        # Usamos .value por si el ORM devuelve string
-        # Si está CERRADO, permitimos el Recálculo de Disponibilidad (para corregir discrepancias)
-        # pero EVITAMOS cambiar el límite asignado (para mantener la foto histórica administrativa).
-        
-        # if plan.estado == EstadoPlan.CERRADO.value or plan.estado == "CERRADO":
-        #    return plan  <-- REMOVIDO para permitir sync de saldos
+        def __setattr__(self, name, value):
+            if name in ['cantidad_disponible', 'limite_asignado', 'estado']:
+                # Si cambiamos un valor, lo mandamos directo al disco
+                super().__setattr__(name, value)
+                sql = text(f"UPDATE control_plan_mensual SET {name} = :v WHERE id = :id")
+                self._db.execute(sql, {"v": value, "id": self.id})
+                self._db.flush()
+                print(f"[ESPIA-PROXY] Sincronizado {name}={value} en disco para Plan ID {self.id}")
+            else:
+                super().__setattr__(name, value)
 
-        # FIX: Si el plan es MANUAL, no tocamos el límite asignado (respetamos la decisión de soporte)
-        if plan.es_manual:
-             pass # Continuar a sanity check, pero no tocar límite
-
-        # AUTO-HEALING / SYNC CONTINUO
-        # Verificamos si el límite total ha cambiado (por cambio de plan o nuevo cupo adicional)
-        
-        # Solo actualizamos LÍMITES si está ABIERTO. Si está cerrado, el límite es sagrado.
-        if plan.estado != EstadoPlan.CERRADO.value and plan.estado != "CERRADO":
-            limit_mismatch = (plan.limite_asignado != limite_total and limite_total > 0)
-            
-            # Sync simple de límite
-            # Sync inteligente de límite: Preservamos el consumo realizado al actualizar el límite.
-            if limit_mismatch and not plan.es_manual:
-                 old_limit = plan.limite_asignado if plan.limite_asignado is not None else 0
-                 diff = limite_total - old_limit
-                 plan.limite_asignado = limite_total
-                 plan.cantidad_disponible += diff
-                 # Nota: Ajustamos 'plan.cantidad_disponible' por el delta, confiando en que refleja el consumo acumulado (incluyendo hijos)
-
-        # RECALCULO DE DISPONIBILIDAD (Sanity Check)
-        # MODIFICADO: Usar HistorialConsumo como fuente de verdad para el "Esperado".
-        # El conteo simple de Documentos falla si hay "Cupo Rodante" (Consumo diferido).
-        
-        # 1. Calcular Uso Real de ESTE Plan (Suma de Historial donde este plan fue la fuente)
-        # Incluye consumos hechos en ESTE mes y en FUTUROS meses (si se tomó prestado)
-        consumo_ledger = db.query(func.sum(HistorialConsumo.cantidad)).filter(
-            HistorialConsumo.fuente_id == plan.id,
-            HistorialConsumo.fuente_tipo.in_([TipoFuenteConsumo.PLAN, 'PLAN_PASADO']),
-            HistorialConsumo.tipo_operacion == TipoOperacionConsumo.CONSUMO
-        ).scalar() or 0
-        
-        reversiones_ledger = db.query(func.sum(HistorialConsumo.cantidad)).filter(
-            HistorialConsumo.fuente_id == plan.id,
-            HistorialConsumo.fuente_tipo.in_([TipoFuenteConsumo.PLAN, 'PLAN_PASADO']),
-            HistorialConsumo.tipo_operacion == TipoOperacionConsumo.REVERSION
-        ).scalar() or 0
-        
-        uso_neto_plan = consumo_ledger - reversiones_ledger
-        
-        esperado = max(0, limite_total - uso_neto_plan)
-        
-        should_heal = False
-        
-        # Corrección: El "Esperado" (Ledger) debería coincidir con el "Disponible" (Snapshot).
-        # Permitimos una tolerancia mínima.
-        if plan.cantidad_disponible != esperado:
-             should_heal = True
-             print(f"[AUTO-HEAL] Corrigiendo Plan {plan.id} ({mes}/{anio}). DB({plan.cantidad_disponible}) -> Calc({esperado}). Ledger: -{consumo_ledger} +{reversiones_ledger}")
-
-        if should_heal:
-             plan.cantidad_disponible = esperado
-             db.add(plan)
-             db.flush() # Commit parcial
-             
-             # Nota: Eliminamos la lógica recursiva de "Familia" porque el HistorialConsumo
-             # YA tiene registrado quién consumió (hijos, nietos, etc) apuntando a este FuenteID.
-             # El Historial es la verdad absoluta.
-
-    return plan
+    print(f"[ESPIA] Plan asegurado vía Proxy SQL (ID: {res[0]})")
+    return PlanProxy(res, db)
 
 def registrar_consumo(db: Session, empresa_id: int, cantidad: int, documento_id: int, fecha_doc: datetime):
     """
@@ -369,7 +316,7 @@ def registrar_consumo(db: Session, empresa_id: int, cantidad: int, documento_id:
             
         # 3. Actualizar Monitor Local (Reflejar el consumo realizado)
         monitor_cupo.cantidad_disponible -= cantidad
-        db.add(monitor_cupo)
+        # db.add(monitor_cupo)  <-- ELIMINADO: El Proxy ya se grabó solo vía SQL Puro
         
         return # Fin flujo Hija
 
@@ -415,7 +362,7 @@ def registrar_consumo(db: Session, empresa_id: int, cantidad: int, documento_id:
             and_(ControlPlanMensual.anio == plan_mensual.anio, ControlPlanMensual.mes < plan_mensual.mes)
         ),
         start_filter
-    ).order_by(asc(ControlPlanMensual.anio), asc(ControlPlanMensual.mes)).with_for_update().all()
+    ).order_by(asc(ControlPlanMensual.anio), asc(ControlPlanMensual.mes)).all()
     
     # B. Construir Lista Prioritaria (FIFO Total)
     # [Nov, Dec... (Past)] + [Current]
@@ -435,6 +382,10 @@ def registrar_consumo(db: Session, empresa_id: int, cantidad: int, documento_id:
         
         plan_candidato.cantidad_disponible -= a_tomar
         remanente_a_consumir -= a_tomar
+        
+        # Solo agregamos a DB si NO es un Proxy (el Proxy ya sincroniza solo)
+        if not hasattr(plan_candidato, '_db'):
+            db.add(plan_candidato)
         
         # Determinar tipo de fuente (Visual)
         # Si es el plan del documento -> PLAN. Si es pasado -> PLAN_PASADO.

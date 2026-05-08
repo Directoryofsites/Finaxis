@@ -430,8 +430,12 @@ def seed_database():
         # --- FASE 2: ASIGNAR PERMISOS A ROLES ---
         print("--> Asignando permisos a los roles correspondientes...")
         for rol_nombre, lista_permisos in permisos_por_rol.items():
-            rol_db = db.query(models_permiso.Rol).filter(models_permiso.Rol.nombre == rol_nombre).one()
+            rol_db = db.query(models_permiso.Rol).filter(models_permiso.Rol.nombre == rol_nombre).first()
             
+            if not rol_db:
+                print(f"--> ERROR: Rol '{rol_nombre}' no encontrado, saltando asignación.")
+                continue
+
             # --- FIX GENERAL: PROTECCIÓN DE PERMISOS DE USUARIO ---
             # Si el rol ya tiene permisos asignados (proviene de DB con datos),
             # ASUMIMOS que el usuario pudo haberlos personalizado.

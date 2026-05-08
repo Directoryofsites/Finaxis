@@ -98,11 +98,17 @@ def get_resumen_consumo(
     
     plan = _get_or_create_plan_mensual(db, target_empresa_id, fecha_consulta)
     try:
-        db.commit() 
+        db.commit()
+        db.refresh(plan)
     except:
         db.rollback()
+        # Si falló el commit/refresh, intentamos obtenerlo de nuevo para asegurar que no esté detached
+        plan = db.query(ControlPlanMensual).filter(
+            ControlPlanMensual.empresa_id == target_empresa_id,
+            ControlPlanMensual.anio == query_anio,
+            ControlPlanMensual.mes == query_mes
+        ).first()
     
-    db.refresh(plan)
     
     if plan:
         consumido = plan.limite_asignado - plan.cantidad_disponible
