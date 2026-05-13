@@ -13,8 +13,8 @@ const getDynamicApiUrl = () => {
             return `http://${hostname}:8765`;
         }
         
-        // Para dominios reales (si algún día lo subes a internet)
-        return `${protocol}//${hostname}:8765`;
+        // Para dominios reales (finaxis.com.co) usamos la variable de Vercel
+        return process.env.NEXT_PUBLIC_API_URL;
     }
     return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8765';
 };
