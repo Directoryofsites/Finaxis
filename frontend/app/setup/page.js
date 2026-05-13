@@ -12,7 +12,18 @@ export default function SetupPage() {
 
   // step: 0=elegir modo, 1=config PostgreSQL (solo multi), 2=datos empresa
   const [step, setStep] = useState(0);
-  const [dbMode, setDbMode] = useState(null); // 'mono' | 'multi'
+  const [dbMode, setDbMode] = useState(null); // 'mono' | 'multi' | 'web'
+
+  React.useEffect(() => {
+    // Si estamos en la nube (ej. finaxis.com.co), saltar configuración de DB local
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      if (host !== 'localhost' && host !== '127.0.0.1') {
+        setStep(2);
+        setDbMode('web');
+      }
+    }
+  }, []);
 
   const [dbConfig, setDbConfig] = useState({
     host: 'localhost',
@@ -169,8 +180,8 @@ export default function SetupPage() {
           {/* Pasos */}
           <div style={{ width: '100%', marginTop: '2rem' }}>
             {[
-              { num: 0, label: 'Tipo de Instalación' },
-              { num: 1, label: 'Configuración de Red', skip: dbMode === 'mono' },
+              { num: 0, label: 'Tipo de Instalación', skip: dbMode === 'web' },
+              { num: 1, label: 'Configuración de Red', skip: dbMode === 'mono' || dbMode === 'web' },
               { num: 2, label: 'Registro de Empresa' },
             ].map(({ num, label, skip }) => (
               <div key={num} style={{
@@ -363,9 +374,9 @@ export default function SetupPage() {
                 </h2>
               </div>
               <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
-                {dbMode === 'multi'
-                  ? '✅ PostgreSQL configurado. Ahora registre su primera empresa.'
-                  : 'Configure su empresa y el usuario administrador.'}
+                {dbMode === 'multi' && '✅ PostgreSQL configurado. Ahora registre su primera empresa.'}
+                {dbMode === 'mono' && 'Configure su empresa y el usuario administrador.'}
+                {dbMode === 'web' && 'Bienvenido a Finaxis Cloud. Registre su empresa y el usuario administrador para comenzar.'}
               </p>
 
               <form onSubmit={handleSubmit}>
@@ -404,10 +415,12 @@ export default function SetupPage() {
                   </div>
 
                   <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
-                    <button type="button" onClick={() => setStep(dbMode === 'mono' ? 0 : 1)}
-                      style={btnSecondaryStyle}>
-                      ← Atrás
-                    </button>
+                    {dbMode !== 'web' && (
+                      <button type="button" onClick={() => setStep(dbMode === 'mono' ? 0 : 1)}
+                        style={btnSecondaryStyle}>
+                        ← Atrás
+                      </button>
+                    )}
                     <button type="submit" disabled={loading} style={{
                       ...btnPrimaryStyle, flex: 2, opacity: loading ? 0.6 : 1,
                     }}>
