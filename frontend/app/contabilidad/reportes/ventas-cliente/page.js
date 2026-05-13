@@ -5,15 +5,15 @@ import { useRouter } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import Select from 'react-select';
 import 'react-datepicker/dist/react-datepicker.css';
-import { useAuth } from '../../../../contexts/AuthContext';
+import { useAuth } from '../../../context/AuthContext';
 import {
     FaSearch, FaFilter, FaPrint, FaCalendarAlt, FaEraser,
     FaChevronDown, FaChevronUp, FaFileInvoiceDollar, FaChartLine
 } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useTheme } from '../../../../contexts/ThemeContext';
-import { getSelectStyles } from '../../../../lib/uiUtils';
+import { useTheme } from '../../../context/ThemeContext';
+import { getSelectStyles } from '../../../lib/uiUtils';
 
 // Servicios
 import { getGruposInventario, searchProductosAutocomplete } from '../../../../lib/inventarioService';

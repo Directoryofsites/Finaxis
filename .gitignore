@@ -120,3 +120,4 @@ backend_logs.txt
 *.log
 
 !frontend/lib/
+!frontend/app/lib/
