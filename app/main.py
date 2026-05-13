@@ -575,6 +575,10 @@ app.include_router(whatsapp_routes.router, prefix="/api/whatsapp", tags=["WhatsA
 from app.api.setup import routes as setup_router
 app.include_router(setup_router.router, prefix="/api", tags=["Setup Inicial"])
 
+# --- MODULO BUZON TRIBUTARIO ---
+from app.api.buzon_tributario import routes as buzon_tributario_routes
+app.include_router(buzon_tributario_routes.router, prefix="/api/buzon-tributario", tags=["Buzon Tributario"])
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8002)
