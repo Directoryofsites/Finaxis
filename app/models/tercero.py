@@ -9,6 +9,7 @@ class Tercero(Base):
     __tablename__ = "terceros"
 
     id = Column(Integer, primary_key=True, index=True)
+    version_id = Column(Integer, nullable=False, default=1) # Bloqueo optimista
     empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=False, index=True)
     nit = Column(String(20), nullable=False, index=True)
     dv = Column(String(1), nullable=True)

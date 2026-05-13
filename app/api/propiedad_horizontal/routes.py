@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from fastapi import UploadFile, File, Form
 
 from app.core.database import get_db
@@ -160,10 +160,17 @@ class PagoRequest(BaseModel):
     unidad_id: int
     monto: float
     fecha: date
-    forma_pago_id: int = None
+    forma_pago_id: Optional[int] = None
     cuenta_caja_id: Optional[int] = None # Cuenta de destino (Caja/Banco)
     detalles: Optional[List[PagoDetalle]] = None
     observaciones: Optional[str] = None
+
+    @classmethod
+    @field_validator("cuenta_caja_id", "forma_pago_id", mode="before")
+    def empty_string_to_none(cls, v):
+        if v == "":
+            return None
+        return v
 
 class PagoMasivoRequest(BaseModel):
     unidades_ids: List[int]

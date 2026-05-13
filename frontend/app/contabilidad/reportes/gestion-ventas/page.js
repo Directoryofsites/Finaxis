@@ -17,6 +17,8 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useTheme } from '../../../context/ThemeContext';
+import { getSelectStyles } from '../../../lib/uiUtils';
 
 // Chart.js imports
 import {
@@ -51,6 +53,7 @@ const formatCurrency = (value) => {
 };
 
 export default function GestionVentasPage() {
+    const { isDarkMode } = useTheme();
 
     // --- Estados ---
     const [filtros, setFiltros] = useState({
@@ -122,17 +125,17 @@ export default function GestionVentasPage() {
 
     // --- Configuración Tabla ---
     const columns = useMemo(() => [
-        { accessorKey: 'fecha', header: 'Fecha', cell: info => <span className="text-gray-600">{info.getValue()}</span> },
+        { accessorKey: 'fecha', header: 'Fecha', cell: info => <span className="text-gray-600 dark:text-gray-400">{info.getValue()}</span> },
         { 
             header: 'Documento', 
             accessorFn: row => `${row.tipo_documento}-${row.numero}`,
-            cell: info => <span className="font-mono font-bold text-indigo-900">{info.getValue()}</span>
+            cell: info => <span className="font-mono font-bold text-indigo-900 dark:text-indigo-300">{info.getValue()}</span>
         },
-        { accessorKey: 'beneficiario_nombre', header: 'Cliente', cell: info => <span className="font-medium text-gray-800">{info.getValue()}</span> },
+        { accessorKey: 'beneficiario_nombre', header: 'Cliente', cell: info => <span className="font-medium text-gray-800 dark:text-gray-200">{info.getValue()}</span> },
         { 
             accessorKey: 'total', 
             header: 'Total Venta',
-            cell: info => <span className="font-mono font-semibold text-gray-700">{formatCurrency(info.getValue())}</span>
+            cell: info => <span className="font-mono font-semibold text-gray-700 dark:text-gray-300">{formatCurrency(info.getValue())}</span>
         },
         {
             id: 'acciones',
@@ -199,7 +202,7 @@ export default function GestionVentasPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans">
+        <div className="min-h-screen bg-slate-50 dark:bg-black p-4 md:p-8 font-sans">
             <ToastContainer position="top-right" autoClose={3000} />
 
             {/* HEADER */}
@@ -224,19 +227,19 @@ export default function GestionVentasPage() {
             </div>
 
             {/* FILTROS */}
-            <div className="max-w-7xl mx-auto mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 animate-fadeIn" style={{animationDelay: '0.1s'}}>
+            <div className="max-w-7xl mx-auto mb-8 bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-zinc-800 animate-fadeIn" style={{animationDelay: '0.1s'}}>
                 <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
                     <div>
                         <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Desde</label>
-                        <DatePicker selected={filtros.fecha_inicio} onChange={date => handleDateChange('fecha_inicio', date)} dateFormat="yyyy-MM-dd" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-semibold" />
+                        <DatePicker selected={filtros.fecha_inicio} onChange={date => handleDateChange('fecha_inicio', date)} dateFormat="yyyy-MM-dd" className="w-full px-4 py-2 bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-semibold dark:text-white" />
                     </div>
                     <div>
                         <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Hasta</label>
-                        <DatePicker selected={filtros.fecha_fin} onChange={date => handleDateChange('fecha_fin', date)} dateFormat="yyyy-MM-dd" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-semibold" />
+                        <DatePicker selected={filtros.fecha_fin} onChange={date => handleDateChange('fecha_fin', date)} dateFormat="yyyy-MM-dd" className="w-full px-4 py-2 bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-semibold dark:text-white" />
                     </div>
                     <div className="md:col-span-1">
                         <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Cliente</label>
-                        <Select instanceId="select-cliente" options={clientesOptions} onChange={handleClienteChange} placeholder="Todos los clientes..." isClearable className="text-sm" />
+                        <Select instanceId="select-cliente" options={clientesOptions} onChange={handleClienteChange} placeholder="Todos los clientes..." isClearable className="text-sm" styles={getSelectStyles(isDarkMode)} />
                     </div>
                     <button type="submit" disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-lg shadow-indigo-200 flex items-center justify-center gap-2">
                         {loading ? <span className="loading loading-spinner loading-sm"></span> : <><FaSearch /> Actualizar Dashboard</>}
@@ -260,35 +263,35 @@ export default function GestionVentasPage() {
 
                     {/* CHARTS */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                            <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><FaChartLine className="text-indigo-500" /> Tendencia de Ventas Diarias</h3>
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-zinc-800">
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2"><FaChartLine className="text-indigo-500" /> Tendencia de Ventas Diarias</h3>
                             <div className="h-64"><Line data={trendData} options={chartOptions} /></div>
                         </div>
                         <div className="grid grid-cols-1 gap-8">
-                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><FaUser className="text-indigo-500" /> Top 5 Clientes</h3>
+                            <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-zinc-800">
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2"><FaUser className="text-indigo-500" /> Top 5 Clientes</h3>
                                 <div className="h-48"><Bar data={clientsData} options={chartOptions} /></div>
                             </div>
-                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><FaFileInvoiceDollar className="text-emerald-500" /> Top 5 Productos</h3>
+                            <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-zinc-800">
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2"><FaFileInvoiceDollar className="text-emerald-500" /> Top 5 Productos</h3>
                                 <div className="h-48"><Bar data={productsData} options={chartOptions} /></div>
                             </div>
                         </div>
                     </div>
 
                     {/* DATA TABLE */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mt-12">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <h2 className="font-bold text-slate-800 flex items-center gap-2 text-xl">
-                                <FaFileInvoiceDollar className="text-indigo-600" /> Detalle de Documentos
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-slate-200 dark:border-zinc-800 overflow-hidden mt-12">
+                        <div className="p-6 border-b border-slate-100 dark:border-zinc-800 flex justify-between items-center bg-slate-50/50 dark:bg-black/50">
+                            <h2 className="font-bold text-slate-800 dark:text-white flex items-center gap-2 text-xl">
+                                <FaFileInvoiceDollar className="text-indigo-600 dark:text-indigo-400" /> Detalle de Documentos
                             </h2>
-                            <span className="bg-white border border-slate-200 px-3 py-1 rounded-lg text-sm font-bold text-indigo-600 shadow-sm">
+                            <span className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-700 px-3 py-1 rounded-lg text-sm font-bold text-indigo-600 dark:text-indigo-400 shadow-sm">
                                 {reporteData.items.length} Registros
                             </span>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
-                                <thead className="bg-indigo-50/50 text-indigo-900 text-xs font-bold uppercase tracking-wider">
+                                <thead className="bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-900 dark:text-indigo-300 text-xs font-bold uppercase tracking-wider">
                                     {table.getHeaderGroups().map(headerGroup => (
                                         <tr key={headerGroup.id}>
                                             {headerGroup.headers.map(header => (
@@ -297,9 +300,9 @@ export default function GestionVentasPage() {
                                         </tr>
                                     ))}
                                 </thead>
-                                <tbody className="divide-y divide-slate-100 text-sm">
+                                <tbody className="divide-y divide-slate-100 dark:divide-zinc-800 text-sm">
                                     {table.getRowModel().rows.map(row => (
-                                        <tr key={row.id} className="hover:bg-slate-50/80 transition-colors">
+                                        <tr key={row.id} className="hover:bg-slate-50/80 dark:hover:bg-zinc-800/80 transition-colors">
                                             {row.getVisibleCells().map(cell => (
                                                 <td key={cell.id} className="py-4 px-6">{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
                                             ))}
@@ -326,10 +329,10 @@ function KPICard({ title, value, icon, color, trend }) {
     };
 
     return (
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
             <div className="relative z-10">
                 <div className="flex justify-between items-start mb-4">
-                    <span className={`p-2.5 rounded-xl bg-slate-50 ${colors[color].split(' ')[2]} border border-slate-100 transition-colors group-hover:bg-indigo-600 group-hover:text-white`}>
+                    <span className={`p-2.5 rounded-xl bg-slate-50 dark:bg-black ${colors[color].split(' ')[2]} border border-slate-100 dark:border-zinc-800 transition-colors group-hover:bg-indigo-600 group-hover:text-white`}>
                         {React.cloneElement(icon, { className: "text-xl" })}
                     </span>
                     {trend && (
@@ -339,7 +342,7 @@ function KPICard({ title, value, icon, color, trend }) {
                     )}
                 </div>
                 <h4 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">{title}</h4>
-                <p className={`text-2xl font-black ${trend === 'negative' ? 'text-rose-600' : 'text-slate-800'}`}>{value}</p>
+                <p className={`text-2xl font-black ${trend === 'negative' ? 'text-rose-600' : 'text-slate-800 dark:text-white'}`}>{value}</p>
             </div>
             <div className={`absolute -right-4 -bottom-4 w-24 h-24 rounded-full opacity-[0.03] ${colors[color].split(' ')[0]} transition-transform group-hover:scale-150`}></div>
         </div>

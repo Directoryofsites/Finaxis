@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useTheme } from '../../../context/ThemeContext';
 import Select from 'react-select';
 import AsyncSelect from 'react-select/async';
 import DatePicker from 'react-datepicker';
@@ -48,10 +49,57 @@ const formatDateForURL = (date) => {
 
 // --- ESTILOS REUSABLES ---
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
-const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all bg-white";
+const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all bg-white dark:bg-black dark:text-white dark:border-gray-700";
+
+const getSelectStyles = (isDarkMode) => ({
+    control: (base, state) => ({
+        ...base,
+        minHeight: '2.6rem',
+        borderRadius: '0.5rem',
+        borderColor: state.isFocused ? '#6366f1' : (isDarkMode ? '#333333' : '#D1D5DB'),
+        backgroundColor: isDarkMode ? '#000000' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#000000',
+        boxShadow: state.isFocused ? '0 0 0 1px #6366f1' : 'none',
+        '&:hover': {
+            borderColor: '#6366f1'
+        }
+    }),
+    menu: (base) => ({
+        ...base,
+        backgroundColor: isDarkMode ? '#000000' : '#ffffff',
+        border: isDarkMode ? '1px solid #333333' : '1px solid #E5E7EB',
+        zIndex: 9999
+    }),
+    option: (base, state) => ({
+        ...base,
+        backgroundColor: state.isSelected
+            ? '#6366f1'
+            : state.isFocused
+                ? (isDarkMode ? '#1a1a1a' : '#f3f4f6')
+                : 'transparent',
+        color: state.isSelected
+            ? '#ffffff'
+            : (isDarkMode ? '#ffffff' : '#111827'),
+        cursor: 'pointer',
+        fontSize: '0.875rem'
+    }),
+    singleValue: (base) => ({
+        ...base,
+        color: isDarkMode ? '#ffffff' : '#111827'
+    }),
+    input: (base) => ({
+        ...base,
+        color: isDarkMode ? '#ffffff' : '#111827'
+    }),
+    placeholder: (base) => ({
+        ...base,
+        color: isDarkMode ? '#666666' : '#9CA3AF'
+    })
+});
 
 export default function MovimientoAnaliticoPage() {
-    const { user, loading: authLoading } = useAuth(); // Usamos loading del AuthContext
+    const { user, loading: authLoading } = useAuth();
+    const { isDarkMode } = useTheme(); // Usamos loading del AuthContext
 
     // Estados
     const [filtros, setFiltros] = useState({
@@ -168,7 +216,7 @@ export default function MovimientoAnaliticoPage() {
     }
 
     return (
-        <div className="container mx-auto p-4 md:p-6 bg-slate-50 min-h-screen font-sans pb-20">
+        <div className="container mx-auto p-4 md:p-6 bg-slate-50 dark:bg-black min-h-screen font-sans pb-20">
             <ToastContainer position="top-right" autoClose={3000} />
 
             {/* HEADER */}
@@ -182,7 +230,7 @@ export default function MovimientoAnaliticoPage() {
                         </div>
                         <div>
                             <div className="flex items-center gap-4">
-                                <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Kardex Analítico</h1>
+                                <h1 className="text-3xl font-bold text-gray-800 dark:text-white tracking-tight">Kardex Analítico</h1>
                                 <button
                                     onClick={() => window.open('/manual/capitulo_45_movimiento_analitico.html', '_blank')}
                                     className="flex items-center gap-2 px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors font-medium shadow-sm"
@@ -192,14 +240,14 @@ export default function MovimientoAnaliticoPage() {
                                     <span className="text-lg">📖</span> <span className="font-bold text-sm hidden md:inline">Manual</span>
                                 </button>
                             </div>
-                            <p className="text-gray-500 text-sm">Movimientos detallados de inventario por producto.</p>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm">Movimientos detallados de inventario por producto.</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* PANEL DE CONTROL (FILTROS) */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-8 animate-fadeIn">
+            <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg border border-gray-100 dark:border-zinc-800 p-6 mb-8 animate-fadeIn">
 
                 {/* Nivel 1: Filtros Esenciales */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -244,7 +292,7 @@ export default function MovimientoAnaliticoPage() {
                                 options={bodegasOptions}
                                 placeholder="Todas las Bodegas"
                                 isClearable
-                                styles={{ control: (base) => ({ ...base, minHeight: '2.6rem', borderRadius: '0.5rem', borderColor: '#D1D5DB' }) }}
+                                styles={getSelectStyles(isDarkMode)}
                             />
                             <FaWarehouse className="absolute right-9 top-3 text-gray-400 pointer-events-none" />
                         </div>
@@ -291,7 +339,7 @@ export default function MovimientoAnaliticoPage() {
                             <AsyncSelect
                                 instanceId="select-grupo" cacheOptions defaultOptions loadOptions={loadGrupos}
                                 onChange={(opt) => handleFiltroChange('grupo_id', opt)} value={filtros.grupo_id}
-                                placeholder="Buscar grupo..." isClearable styles={{ control: (base) => ({ ...base, borderRadius: '0.5rem' }) }}
+                                placeholder="Buscar grupo..." isClearable styles={getSelectStyles(isDarkMode)}
                             />
                         </div>
                         <div className="lg:col-span-2">
@@ -299,7 +347,7 @@ export default function MovimientoAnaliticoPage() {
                             <AsyncSelect
                                 instanceId="select-producto" cacheOptions defaultOptions loadOptions={loadProductos}
                                 onChange={(opt) => handleFiltroChange('producto_id', opt)} value={filtros.producto_id}
-                                placeholder="Buscar por nombre o código..." isClearable styles={{ control: (base) => ({ ...base, borderRadius: '0.5rem' }) }}
+                                placeholder="Buscar por nombre o código..." isClearable styles={getSelectStyles(isDarkMode)}
                             />
                         </div>
 
@@ -316,17 +364,17 @@ export default function MovimientoAnaliticoPage() {
 
             {/* RESULTADOS (TABLA ANALÍTICA) */}
             {reporteData.items.length > 0 && !isLoading && (
-                <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden animate-slideDown">
+                <div className="bg-white dark:bg-black rounded-xl shadow-lg border border-gray-100 dark:border-zinc-800 overflow-hidden animate-slideDown">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm border-collapse">
                             <thead>
                                 {/* Nivel 1: Categorías */}
-                                <tr className="bg-slate-100 text-gray-600 uppercase text-xs font-bold tracking-wider border-b border-gray-200">
-                                    <th className="py-3 px-4 text-left border-r border-gray-200 w-1/3">Producto</th>
-                                    <th colSpan="2" className="py-2 text-center border-r border-gray-200 bg-slate-50 text-gray-500">Saldo Inicial</th>
-                                    <th colSpan="2" className="py-2 text-center border-r border-emerald-200 bg-emerald-50 text-emerald-700">Entradas (+)</th>
-                                    <th colSpan="2" className="py-2 text-center border-r border-rose-200 bg-rose-50 text-rose-700">Salidas (-)</th>
-                                    <th colSpan="2" className="py-2 text-center bg-indigo-50 text-indigo-700">Saldo Final</th>
+                                <tr className="bg-slate-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-300 uppercase text-xs font-bold tracking-wider border-b border-gray-200 dark:border-zinc-700">
+                                    <th className="py-3 px-4 text-left border-r border-gray-200 dark:border-zinc-700 w-1/3">Producto</th>
+                                    <th colSpan="2" className="py-2 text-center border-r border-gray-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900 text-gray-500">Saldo Inicial</th>
+                                    <th colSpan="2" className="py-2 text-center border-r border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400">Entradas (+)</th>
+                                    <th colSpan="2" className="py-2 text-center border-r border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400">Salidas (-)</th>
+                                    <th colSpan="2" className="py-2 text-center bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400">Saldo Final</th>
                                 </tr>
                                 {/* Nivel 2: Detalles */}
                                 <tr className="text-[10px] font-bold uppercase text-gray-500 border-b border-gray-200">
@@ -348,17 +396,17 @@ export default function MovimientoAnaliticoPage() {
 
                             <tbody className="divide-y divide-gray-100">
                                 {reporteData.items.map((item, idx) => (
-                                    <tr key={item.producto_id} className={`hover:bg-gray-50 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
-                                        <td className="py-3 px-4 border-r border-gray-100">
+                                    <tr key={item.producto_id} className={`hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors ${idx % 2 === 0 ? 'bg-white dark:bg-black' : 'bg-slate-50/30 dark:bg-zinc-900/30'}`}>
+                                        <td className="py-3 px-4 border-r border-gray-100 dark:border-zinc-800">
                                             <div className="flex flex-col">
-                                                <span className="font-bold text-gray-700 text-sm">{item.producto_nombre}</span>
-                                                <span className="font-mono text-xs text-gray-400">{item.producto_codigo}</span>
+                                                <span className="font-bold text-gray-700 dark:text-gray-200 text-sm">{item.producto_nombre}</span>
+                                                <span className="font-mono text-xs text-gray-400 dark:text-gray-500">{item.producto_codigo}</span>
                                             </div>
                                         </td>
 
                                         {/* Inicial */}
-                                        <td className="text-right px-2 font-mono text-gray-500 border-r border-gray-100">{formatValue(item.saldo_inicial_cantidad, false)}</td>
-                                        <td className="text-right px-2 font-mono text-gray-500 border-r border-gray-200">{formatValue(item.saldo_inicial_valor, true)}</td>
+                                        <td className="text-right px-2 font-mono text-gray-500 dark:text-gray-400 border-r border-gray-100 dark:border-zinc-800">{formatValue(item.saldo_inicial_cantidad, false)}</td>
+                                        <td className="text-right px-2 font-mono text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-zinc-700">{formatValue(item.saldo_inicial_valor, true)}</td>
 
                                         {/* Entradas */}
                                         <td className="text-right px-2 font-mono bg-emerald-50/10 border-r border-emerald-50">
@@ -381,8 +429,8 @@ export default function MovimientoAnaliticoPage() {
                                         <td className="text-right px-2 font-mono text-rose-600/80 bg-rose-50/10 border-r border-rose-100">{item.total_salidas_valor > 0 ? formatValue(item.total_salidas_valor, true) : '-'}</td>
 
                                         {/* Final */}
-                                        <td className="text-right px-2 font-mono font-bold text-indigo-900 bg-indigo-50/10 border-r border-indigo-50">{formatValue(item.saldo_final_cantidad, false)}</td>
-                                        <td className="text-right px-2 font-mono font-bold text-indigo-900 bg-indigo-50/10">{formatValue(item.saldo_final_valor, true)}</td>
+                                        <td className="text-right px-2 font-mono font-bold text-indigo-900 dark:text-indigo-300 bg-indigo-50/10 border-r border-indigo-50 dark:border-zinc-800">{formatValue(item.saldo_final_cantidad, false)}</td>
+                                        <td className="text-right px-2 font-mono font-bold text-indigo-900 dark:text-indigo-300 bg-indigo-50/10">{formatValue(item.saldo_final_valor, true)}</td>
                                     </tr>
                                 ))}
                             </tbody>

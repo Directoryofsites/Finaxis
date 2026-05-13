@@ -38,7 +38,7 @@ export default function PagosPHPage() {
     const [pagoForm, setPagoForm] = useState({
         monto: '',
         fecha: new Date().toISOString().slice(0, 10),
-        cuenta_caja_id: '',
+        cuenta_caja_id: null,
         cuenta_caja_codigo: '',
         cuenta_caja_nombre: ''
     });
@@ -243,9 +243,14 @@ export default function PagosPHPage() {
 
         try {
             let res;
+            const payload = {
+                ...pagoForm,
+                cuenta_caja_id: pagoForm.cuenta_caja_id === '' ? null : pagoForm.cuenta_caja_id
+            };
+
             if (paymentMode === 'UNIT') {
                 res = await phService.registrarPago({
-                    ...pagoForm,
+                    ...payload,
                     unidad_id: parseInt(selectedUnidadId),
                     monto: parseFloat(pagoForm.monto),
                     detalles: isAbonoManual ? detallesAbono.filter(d => d.monto > 0) : null
@@ -253,7 +258,7 @@ export default function PagosPHPage() {
             } else {
                 // PAGO CONSOLIDADO
                 res = await phService.registrarPagoConsolidado({
-                    ...pagoForm,
+                    ...payload,
                     propietario_id: parseInt(selectedPropietarioId),
                     monto_total: parseFloat(pagoForm.monto),
                     observaciones: "Pago Consolidado Web"

@@ -31,17 +31,34 @@ else:
 os.environ['FINAXIS_MODO'] = 'LOCAL'
 os.environ['RUN_SEEDS']    = 'true'
 
-# Base de datos SQLite local (en AppData del usuario para persistencia)
+# ── Base de datos: Prioridad config.json (Wizard) > SQLite (fallback) ────────
+import json as _json
 datos_dir = os.path.join(os.environ.get('APPDATA', APP_DIR), 'Finaxis')
 os.makedirs(datos_dir, exist_ok=True)
-db_path = os.path.join(datos_dir, 'finaxis_local.db')
-os.environ['DATABASE_URL'] = f'sqlite:///{db_path}'
+config_path = os.path.join(datos_dir, 'config.json')
+
+_db_url_from_config = None
+if os.path.exists(config_path):
+    try:
+        with open(config_path, 'r', encoding='utf-8') as _f:
+            _cfg = _json.load(_f)
+            _db_url_from_config = _cfg.get('DATABASE_URL') or _cfg.get('database_url')
+    except Exception as _e:
+        print(f"[Finaxis] Advertencia: No se pudo leer config.json: {_e}")
+
+if _db_url_from_config:
+    os.environ['DATABASE_URL'] = _db_url_from_config
+    print(f"[Finaxis] Modo MULTIUSUARIO (PostgreSQL): {_db_url_from_config[:50]}...")
+else:
+    db_path = os.path.join(datos_dir, 'finaxis_local.db')
+    os.environ['DATABASE_URL'] = f'sqlite:///{db_path}'
+    print(f"[Finaxis] Modo MONOUSUARIO (SQLite): {db_path}")
 
 # Clave secreta fija para el instalador
 os.environ.setdefault('SECRET_KEY', 'finaxis-local-secret-key-instalador-v1-2024')
 
-# URL del backend para que Next.js sepa dónde está la API
-os.environ['NEXT_PUBLIC_API_URL'] = 'http://localhost:8765'
+# URL del backend (Se deja vacía para que el frontend la detecte dinámicamente según la IP del servidor)
+os.environ['NEXT_PUBLIC_API_URL'] = ''
 
 # Directorio de trabajo
 os.chdir(APP_DIR)
@@ -78,7 +95,7 @@ def _lanzar_frontend():
     # Variables de entorno para Next.js
     env = os.environ.copy()
     env['PORT']     = str(FRONTEND_PORT)
-    env['HOSTNAME'] = '127.0.0.1'
+    env['HOSTNAME'] = '0.0.0.0'  # Escucha en toda la red (modo multiusuario)
 
     print(f"[Finaxis] Iniciando frontend Next.js en {FRONTEND_URL} ...")
 
@@ -110,9 +127,9 @@ def main():
     print("=" * 55)
     print("  FINAXIS - Sistema Contable Local")
     print(f"  Version: 1.0")
-    print(f"  Backend API:  http://localhost:{API_PORT}")
-    print(f"  Frontend:     {FRONTEND_URL}")
-    print(f"  Base de datos: {db_path}")
+    print(f"  Backend API:  http://0.0.0.0:{API_PORT}")
+    print(f"  Frontend:     {FRONTEND_URL} (Accesible en red)")
+    print(f"  Base de datos: {os.environ.get('DATABASE_URL', 'no configurada')[:60]}")
     print("=" * 55)
 
     # Registrar cleanup para Ctrl+C y cierre
@@ -126,11 +143,11 @@ def main():
     threading.Thread(target=_abrir_navegador, daemon=True).start()
 
     # Lanzar FastAPI/Uvicorn (BLOQUEANTE - mantiene el proceso vivo)
-    print(f"[Finaxis] Iniciando backend FastAPI en http://localhost:{API_PORT} ...")
+    print(f"[Finaxis] Iniciando backend FastAPI en RED (0.0.0.0:{API_PORT}) ...")
     import uvicorn
     uvicorn.run(
         "app.main:app",
-        host="127.0.0.1",
+        host="0.0.0.0",
         port=API_PORT,
         log_level="warning",
         reload=False,

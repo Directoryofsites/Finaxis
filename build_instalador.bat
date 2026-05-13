@@ -50,7 +50,7 @@ echo       Esto puede tomar 3-5 minutos...
 echo.
 
 cd /d "%FRONTEND_DIR%"
-SET NEXT_PUBLIC_API_URL=http://localhost:8765
+SET NEXT_PUBLIC_API_URL=
 
 call npm run build
 IF %ERRORLEVEL% NEQ 0 (

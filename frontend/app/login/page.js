@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { apiService } from '../../lib/apiService';
+import { API_URL, apiService } from '../../lib/apiService';
 import { jwtDecode } from 'jwt-decode';
 
 export default function LoginPage() {
@@ -28,13 +28,29 @@ export default function LoginPage() {
   useEffect(() => {
     const checkSetup = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/setup/check`);
+        const res = await fetch(`${API_URL}/api/setup/check`);
+        if (!res.ok) {
+          // Si el servidor no responde bien, asumir que necesita setup
+          router.push('/setup');
+          return;
+        }
         const data = await res.json();
         if (data.setup_needed) {
           router.push('/setup');
         }
       } catch (err) {
-        console.error("Error checking setup status", err);
+        // Si no puede conectar al backend en absoluto, esperar 2s y reintentar una vez
+        console.warn("Error checking setup status, retrying...", err);
+        setTimeout(async () => {
+          try {
+            const res = await fetch(`${API_URL}/api/setup/check`);
+            const data = await res.json();
+            if (data.setup_needed) router.push('/setup');
+          } catch {
+            // Si sigue fallando, redirigir al setup de todas formas
+            router.push('/setup');
+          }
+        }, 2000);
       }
     };
     checkSetup();
@@ -299,6 +315,17 @@ export default function LoginPage() {
         <p className="text-gray-400 text-xs tracking-wider">
           &copy; {new Date().getFullYear()} Finaxis. Todos los derechos reservados.
         </p>
+
+        <button
+          onClick={async () => {
+            if (!window.confirm('Reconfigurar el sistema desde cero?')) return;
+            try { await fetch(API_URL + '/api/setup/reset', { method: 'POST' }); } catch (_) {}
+            window.location.href = '/setup';
+          }}
+          className="text-gray-600 text-xs mt-1 hover:text-gray-400 transition-colors underline block"
+        >
+          Reconfigurar sistema
+        </button>
       </div>
     </main>
   );

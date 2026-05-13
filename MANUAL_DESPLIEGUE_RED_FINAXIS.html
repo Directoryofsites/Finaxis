@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Despliegue en Red - Finaxis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --secondary: #10b981;
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f1f5f9;
+            --accent: #f59e0b;
+            --code-bg: #000000;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 50px 20px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            border-radius: 24px;
+            margin-bottom: 40px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        h1 { margin: 0; font-size: 3rem; font-weight: 800; letter-spacing: -1.5px; text-transform: uppercase; }
+        .subtitle { opacity: 0.9; font-size: 1.2rem; font-weight: 300; margin-top: 10px; }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            margin: 40px 0 20px;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .section-title::after {
+            content: "";
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(to right, var(--primary), transparent);
+            margin-left: 20px;
+        }
+
+        .step {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 35px;
+            margin-bottom: 35px;
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .step::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            background: var(--primary);
+        }
+
+        .step-client::before { background: var(--secondary); }
+
+        h2 { margin-top: 0; color: #fff; font-size: 1.6rem; display: flex; align-items: center; }
+        h2 span.icon { font-size: 2rem; margin-right: 15px; }
+
+        code {
+            background: var(--code-bg);
+            color: #5eead4;
+            padding: 20px;
+            display: block;
+            border-radius: 12px;
+            font-family: 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.95rem;
+            border: 1px solid #334155;
+            margin: 15px 0;
+        }
+
+        .important {
+            background: rgba(245, 158, 11, 0.1);
+            border: 2px dashed var(--accent);
+            padding: 20px;
+            border-radius: 15px;
+            color: #fbbf24;
+            font-weight: 600;
+            margin: 25px 0;
+        }
+
+        .instruction-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .instruction-list li {
+            padding-left: 30px;
+            position: relative;
+            margin-bottom: 12px;
+        }
+
+        .instruction-list li::before {
+            content: "➜";
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .step-client .instruction-list li::before { color: var(--secondary); }
+
+        footer { text-align: center; padding: 60px 20px; opacity: 0.4; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Finaxis Network</h1>
+        <p class="subtitle">Manual Maestro de Despliegue y Conectividad</p>
+        <div style="margin-top:20px;">
+            <span class="badge">Versión 1.7 (Manual Maestro Final)</span>
+        </div>
+    </header>
+
+    <div class="section-title">Fase A: Configuración del Servidor</div>
+
+    <!-- PASO 1: RED PRIVADA -->
+    <div class="step">
+        <h2><span class="icon">🏠</span>Paso 1: Perfil de Red del Servidor</h2>
+        <p>Configuramos la red como "Privada" para habilitar el descubrimiento.</p>
+        <ul class="instruction-list">
+            <li>Presiona la tecla <strong>Windows</strong> en tu teclado.</li>
+            <li>Escribe la palabra <code>PowerShell</code>.</li>
+            <li>Haz <strong>Clic Derecho</strong> sobre "Windows PowerShell".</li>
+            <li>Selecciona <strong>Ejecutar como administrador</strong>.</li>
+            <li>Copia y pega este comando:</li>
+        </ul>
+        <code>Get-NetConnectionProfile | Set-NetConnectionProfile -NetworkCategory Private</code>
+    </div>
+
+    <!-- PASO 2: FIREWALL -->
+    <div class="step">
+        <h2><span class="icon">🛡️</span>Paso 2: Apertura de Puertos (Firewall)</h2>
+        <p>Autorizamos la entrada de datos al servidor.</p>
+        <ul class="instruction-list">
+            <li>En la misma ventana de PowerShell (como administrador), pega este comando:</li>
+        </ul>
+        <code>New-NetFirewallRule -DisplayName "Finaxis Network" -Direction Inbound -LocalPort 3000,8765,5432 -Protocol TCP -Action Allow</code>
+    </div>
+
+    <!-- PASO 3: IPCONFIG -->
+    <div class="step">
+        <h2><span class="icon">🔍</span>Paso 3: Identificar la IP del Servidor</h2>
+        <ul class="instruction-list">
+            <li>En la ventana de PowerShell, escribe: <strong><code>ipconfig</code></strong> y presiona Enter.</li>
+            <li>Busca la línea que dice <strong>Dirección IPv4</strong>.</li>
+            <li>Anota ese número (Ejemplo: <code>192.168.40.133</code>).</li>
+        </ul>
+        <div class="important">Esta es la IP que usarás en todos los equipos clientes.</div>
+    </div>
+
+    <!-- PASO 4: POSTGRESQL -->
+    <div class="step">
+        <h2><span class="icon">🐘</span>Paso 4: Configuración de PostgreSQL</h2>
+        <ol>
+            <li>Abre <code>C:\Program Files\PostgreSQL\17\data\postgresql.conf</code> y busca <code>listen_addresses</code>. Cámbialo a <strong>'*'</strong>.</li>
+            <li>Abre <code>C:\Program Files\PostgreSQL\17\data\pg_hba.conf</code> y al final agrega:</li>
+        </ol>
+        <code>host    all             all             [TU_IP_SIN_EL_ULTIMO_NUMERO].0/24         scram-sha-256</code>
+        <p><em>Ejemplo: Si tu IP es 192.168.40.133, pones: 192.168.40.0/24</em></p>
+        <div class="important">REINICIA el servicio de PostgreSQL desde el administrador de tareas o Servicios de Windows.</div>
+    </div>
+
+    <div class="section-title" style="color: var(--secondary);">Fase B: Configuración del Equipo Cliente</div>
+
+    <!-- PASO 5: RED PRIVADA CLIENTE -->
+    <div class="step step-client">
+        <h2><span class="icon">💻</span>Paso 5: Configuración del PC Usuario</h2>
+        <p>Cada equipo cliente debe confiar en la red local.</p>
+        <ul class="instruction-list">
+            <li>En el PC del Usuario, presiona <strong>Windows</strong>, busca <code>PowerShell</code>.</li>
+            <li>Haz <strong>Clic Derecho</strong> y elige <strong>Ejecutar como administrador</strong>.</li>
+            <li>Ejecuta:</li>
+        </ul>
+        <code>Get-NetConnectionProfile | Set-NetConnectionProfile -NetworkCategory Private</code>
+    </div>
+
+    <!-- PASO 6: FIREWALL CLIENTE -->
+    <div class="step step-client">
+        <h2><span class="icon">🛡️</span>Paso 6: Permiso de Salida (Cliente)</h2>
+        <p>Aseguramos que el cliente pueda enviar datos hacia el servidor.</p>
+        <ul class="instruction-list">
+            <li>En el PowerShell del Cliente (Administrador), pega esto:</li>
+        </ul>
+        <code>New-NetFirewallRule -DisplayName "Finaxis Client Access" -Direction Outbound -LocalPort 3000,8765,5432 -Protocol TCP -Action Allow</code>
+    </div>
+
+    <!-- PASO 7: ACCESO -->
+    <div class="step step-client" style="border: 2px solid var(--secondary);">
+        <h2><span class="icon">🚀</span>Paso 7: Prueba y Acceso Final</h2>
+        <ol>
+            <li>En el navegador del cliente prueba: <code>http://[IP_SERVIDOR]:8765/api/ping</code></li>
+            <li>Si ves <code>{"status": "alive"}</code>, entra a: <strong><code>http://[IP_SERVIDOR]:3000</code></strong></li>
+        </ol>
+    </div>
+    <!-- FASE C: SEGURIDAD -->
+    <div class="section-title" style="color: var(--accent);">Fase C: Seguridad y Mantenimiento</div>
+
+    <div class="step" style="border-left-color: var(--accent);">
+        <h2><span class="icon">🔒</span>Paso 8: Mantenimiento de la Seguridad</h2>
+        <p><strong>¿Mi equipo está desprotegido?</strong> No. El Firewall de Windows sigue activo y bloqueando todo lo demás. Solo hemos creado una "excepción" para Finaxis.</p>
+        <ul class="instruction-list">
+            <li>Si algún día deseas <strong>ELIMINAR</strong> el acceso de red, abre PowerShell como Administrador y ejecuta:</li>
+        </ul>
+        <code>Remove-NetFirewallRule -DisplayName "Finaxis Network"</code>
+        <p>Esto cerrará los puertos inmediatamente en el servidor.</p>
+    </div>
+
+    <div class="step" style="border-left-color: var(--accent);">
+        <h2><span class="icon">🌍</span>Paso 9: Seguridad en Viajes (Modo Público)</h2>
+        <p>Si sacas tu computador de la oficina y lo conectas en un aeropuerto o café internet, es vital volver al modo <strong>Público</strong>:</p>
+        <ul class="instruction-list">
+            <li>Abre PowerShell como Administrador.</li>
+            <li>Ejecuta:</li>
+        </ul>
+        <code>Get-NetConnectionProfile | Set-NetConnectionProfile -NetworkCategory Public</code>
+        <p><strong>Nota:</strong> Cuando regreses a la oficina, deberás volver a ejecutar el <strong>Paso 1</strong> de este manual para que el sistema funcione de nuevo.</p>
+    </div>
+    <!-- FASE D: ANEXO DE EMERGENCIA -->
+    <div class="section-title" style="color: #ef4444;">Fase D: Anexo de Emergencia (Rescate de Postgres)</div>
+
+    <div class="step" style="border-left-color: #ef4444;">
+        <h2><span class="icon">🚑</span>Problema: Error de Contraseña al Instalar</h2>
+        <p>Si al instalar PostgreSQL en un equipo nuevo el sistema te rechaza la clave (Error: <code>FATAL: authentication failed</code>), sigue este protocolo de rescate:</p>
+        
+        <h3>1. Abrir el "Candado" (Modo Trust)</h3>
+        <ul class="instruction-list">
+            <li>Busca el <strong>Bloc de Notas</strong> en Windows.</li>
+            <li>Haz <strong>Clic Derecho</strong> y elige <strong>Ejecutar como Administrador</strong>.</li>
+            <li>Abre el archivo: <code>C:\Program Files\PostgreSQL\17\data\pg_hba.conf</code></li>
+            <li>Busca la línea que dice <code>127.0.0.1/32</code> y cambia <code>scram-sha-256</code> por la palabra <strong><code>trust</code></strong>.</li>
+            <li><strong>Guarda el archivo</strong>.</li>
+        </ul>
+
+        <h3>2. Reiniciar el Motor</h3>
+        <ul class="instruction-list">
+            <li>Busca <strong>Servicios</strong> en Windows.</li>
+            <li>Busca <code>postgresql-x64-17</code>, clic derecho y <strong>Reiniciar</strong>.</li>
+        </ul>
+
+        <h3>3. Configurar en pgAdmin 4</h3>
+        <ul class="instruction-list">
+            <li>Abre <strong>pgAdmin 4</strong>. Ahora entrará sin pedir clave.</li>
+            <li><strong>Crear Base de Datos:</strong> Clic derecho en <code>Databases</code> > Create > Database > Nombre: <code>finaxis_network</code> > Save.</li>
+            <li><strong>Poner Clave Real:</strong> Ve a <code>Login/Group Roles</code> > Clic derecho en <code>postgres</code> > Properties > Definition > Escribe tu clave en <code>Password</code> > Save.</li>
+        </ul>
+
+        <h3>4. Restaurar Seguridad (MUY IMPORTANTE)</h3>
+        <ul class="instruction-list">
+            <li>Vuelve al archivo <code>pg_hba.conf</code> en el Bloc de Notas.</li>
+            <li>Cambia <code>trust</code> de nuevo por <strong><code>scram-sha-256</code></strong>.</li>
+            <li><strong>Guarda</strong> y vuelve a <strong>Reiniciar</strong> el servicio de PostgreSQL.</li>
+        </ul>
+        <div class="important" style="border-color: #ef4444; color: #ef4444; background: rgba(239, 68, 68, 0.1);">
+            ✅ ¡Listo! El candado ha sido cambiado y ya puedes usar tu nueva clave en el instalador de Finaxis.
+        </div>
+    </div>
+
+    <footer>
+        FINAXIS - Sistema Contable Multi-Usuario<br>
+        Manual Maestro v1.7 - Documento Definitivo (Incluye Rescate de Emergencia).
+    </footer>
+</div>
+
+</body>
+</html>

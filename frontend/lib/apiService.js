@@ -3,8 +3,23 @@
 import axios from 'axios';
 
 // --- CIRUGÍA ARQUITECTÓNICA ---
-// Se exporta como una constante nombrada y se simplifica la baseURL.
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002';
+const getDynamicApiUrl = () => {
+    if (typeof window !== 'undefined') {
+        const { hostname, protocol } = window.location;
+        // El backend del ejecutable corre en el puerto 8765
+        const isIpOrLocal = /^(localhost|127\.|192\.|10\.|172\.)/.test(hostname);
+        
+        if (isIpOrLocal) {
+            return `http://${hostname}:8765`;
+        }
+        
+        // Para dominios reales (si algún día lo subes a internet)
+        return `${protocol}//${hostname}:8765`;
+    }
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8765';
+};
+
+export const API_URL = getDynamicApiUrl();
 
 export const apiService = axios.create({
     baseURL: `${API_URL}/api`,

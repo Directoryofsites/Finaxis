@@ -62,6 +62,17 @@ def load_config(empresa_id=None):
     default_global = {"enabled": False, "hora_ejecucion": "00:00", "ruta_local": "C:/Backups_Finaxis", "dias_retencion": 7, "last_run": None}
     default_config = {"enabled": False, "hora_ejecucion": "02:00", "ruta_local": "C:/Backups_Finaxis", "dias_retencion": 30}
     
+    # ── PRE-CHECK DE SETUP: Evitar crear .db vacío prematuramente ──
+    import app.core.database as _dbm
+    import os
+    _engine_url = str(_dbm._last_db_url) if _dbm._last_db_url else ""
+    if _engine_url.startswith("sqlite:///"):
+        _db_path = _engine_url.replace("sqlite:///", "")
+        if not os.path.exists(_db_path):
+            logger.info("[AutoBackup] Instalación limpia detectada. Retornando configuración por defecto sin conectar a BD.")
+            full_config = {"companies": {}, "global": default_global}
+            return full_config if empresa_id is None else default_global if empresa_id == "global" else default_config
+
     from app.models.configuracion_sistema import ConfiguracionSistema
     db: Session = SessionLocal()
     try:

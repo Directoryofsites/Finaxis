@@ -10,44 +10,97 @@ import os
 import sys
 
 # Lógica para determinar la URL de la base de datos según el entorno
-database_url = settings.DATABASE_URL
+_engine = None
+_SessionLocal = None
+_last_db_url = None
 
-# Si estamos en modo empaquetado (.exe), redirigimos la BD a APPDATA para evitar problemas de permisos
-if getattr(sys, 'frozen', False):
+def get_engine():
+    global _engine, _last_db_url, _SessionLocal
+    
+    # 1. Determinar URL actual (Prioridad: Config.json > Env)
+    current_url = settings.DATABASE_URL
     appdata = os.getenv('APPDATA')
     if appdata:
-        db_dir = os.path.join(appdata, "Finaxis")
-        if not os.path.exists(db_dir):
-            os.makedirs(db_dir, exist_ok=True)
+        config_path = os.path.join(appdata, "Finaxis", "config.json")
+        if os.path.exists(config_path):
+            try:
+                import json
+                with open(config_path, 'r') as f:
+                    config_data = json.load(f)
+                    # Soportamos tanto DATABASE_URL (env) como database_url (json)
+                    json_url = config_data.get("DATABASE_URL") or config_data.get("database_url")
+                    if json_url:
+                        current_url = json_url
+            except:
+                pass
         
-        # Si la URL original es SQLite relativa, la convertimos a absoluta en APPDATA
-        if database_url.startswith("sqlite:///./"):
-            db_path = os.path.join(db_dir, "contapy.db")
-            database_url = f"sqlite:///{db_path}"
+        # Fallback para modo empaquetado si no hay override
+        if getattr(sys, 'frozen', False) and current_url.startswith("sqlite:///./"):
+            current_url = f"sqlite:///{os.path.join(appdata, 'Finaxis', 'contapy.db')}"
 
-engine = create_engine(
-    database_url, 
-    echo=False,
-    pool_size=20,
-    max_overflow=40,
-    connect_args={"check_same_thread": False} if database_url.startswith("sqlite") else {}
-)
+    # 2. Re-inicializar si la URL cambió
+    if _engine is None or current_url != _last_db_url:
+        if _engine:
+            _engine.dispose()
+        
+        _last_db_url = current_url
+        
+        is_sqlite = current_url.startswith("sqlite")
+        if is_sqlite:
+            from sqlalchemy.pool import StaticPool
+            _engine = create_engine(
+                current_url,
+                echo=False,
+                connect_args={"check_same_thread": False},
+                poolclass=StaticPool,  # SQLite: una sola conexión compartida
+            )
+        else:
+            _engine = create_engine(
+                current_url,
+                echo=False,
+                pool_size=20,
+                max_overflow=40,
+            )
+        
+        _SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=_engine)
+        print(f"[DB] Motor listo: {current_url[:40]}...")
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    return _engine
+
+def get_session_local():
+    get_engine()
+    return _SessionLocal
+
+# Objeto Proxy para mantener compatibilidad con el resto del sistema
+class EngineProxy:
+    @property
+    def name(self): return get_engine().name
+    def connect(self): return get_engine().connect()
+    def dispose(self): return get_engine().dispose()
+    def execute(self, *args, **kwargs): return get_engine().execute(*args, **kwargs)
+
+class SessionLocalProxy:
+    def __call__(self, *args, **kwargs):
+        factory = get_session_local()
+        return factory(*args, **kwargs)
+    
+    # Para compatibilidad con decoradores o inspección que busquen atributos de sessionmaker
+    def __getattr__(self, name):
+        return getattr(get_session_local(), name)
+
+engine = EngineProxy()
+SessionLocal = SessionLocalProxy()
 Base = declarative_base()
 
 def get_db():
-    db = SessionLocal()
+    session_factory = get_session_local()
+    db = session_factory()
     try:
         yield db
     finally:
         db.close()
 
 def sql_periodo_mes(field):
-    """
-    Retorna la expresión SQL adecuada para obtener el periodo YYYY-MM
-    detectando si el motor es PostgreSQL o SQLite.
-    """
     from sqlalchemy import func
     if engine.name == 'postgresql':
         return func.to_char(field, 'YYYY-MM')
@@ -59,7 +112,11 @@ def sql_periodo_mes(field):
 # Variable de contexto que almacena el ID de la empresa de la request actual
 current_empresa_id: ContextVar[int] = ContextVar("current_empresa_id", default=None)
 
-@event.listens_for(SessionLocal, "do_orm_execute")
+# Nota: Para que el listener funcione con el factory dinámico, 
+# escuchamos directamente a la clase Session de SQLAlchemy si es necesario, 
+# o simplemente reinyectamos el evento al crear el factory.
+from sqlalchemy.orm import Session
+@event.listens_for(Session, "do_orm_execute")
 def _add_tenant_filter(execute_state: ORMExecuteState):
     """
     Interceptor global de SQLAlchemy. Inyecta automáticamente la cláusula

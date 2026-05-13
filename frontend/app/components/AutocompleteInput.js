@@ -7,10 +7,11 @@ export default function AutocompleteInput({ items, value, onChange, placeholder,
     const [inputValue, setInputValue] = useState('');
     const [filteredItems, setFilteredItems] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
+    const [highlightedIndex, setHighlightedIndex] = useState(-1);
     const wrapperRef = useRef(null);
+    const inputRef = useRef(null);
 
     useEffect(() => {
-        // Sync internal input with prop value if it changes externally
         if (value) {
             setInputValue(value);
         } else {
@@ -22,6 +23,7 @@ export default function AutocompleteInput({ items, value, onChange, placeholder,
         function handleClickOutside(event) {
             if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
                 setIsOpen(false);
+                setHighlightedIndex(-1);
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
@@ -34,10 +36,10 @@ export default function AutocompleteInput({ items, value, onChange, placeholder,
         const val = e.target.value;
         setInputValue(val);
         setIsOpen(true);
+        setHighlightedIndex(0);
 
         if (val.trim() === '') {
-            setFilteredItems([]);
-            // onChange(null); // Optional: clear selection if typed text is cleared
+            setFilteredItems(items.slice(0, 50));
             return;
         }
 
@@ -49,37 +51,81 @@ export default function AutocompleteInput({ items, value, onChange, placeholder,
     };
 
     const handleSelectItem = (item) => {
+        if (!item) return;
         const displayVal = item[displayKey];
         setInputValue(displayVal);
+        setFilteredItems([]);
         onChange(item);
         setIsOpen(false);
+        setHighlightedIndex(-1);
     };
 
     const clearSelection = () => {
         setInputValue('');
         onChange(null);
         setIsOpen(false);
+        setHighlightedIndex(-1);
+    };
+
+    const currentItems = filteredItems.length > 0 ? filteredItems : items.slice(0, 50);
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (!isOpen) {
+                setIsOpen(true);
+                setHighlightedIndex(0);
+            } else {
+                setHighlightedIndex(prev => prev < currentItems.length - 1 ? prev + 1 : prev);
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setHighlightedIndex(prev => prev > 0 ? prev - 1 : 0);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (isOpen && currentItems.length > 0) {
+                const indexToSelect = highlightedIndex >= 0 ? highlightedIndex : 0;
+                handleSelectItem(currentItems[indexToSelect]);
+            }
+            // SIEMPRE saltamos al siguiente campo con Enter (como pidiÃ³ el usuario)
+            setTimeout(() => {
+                const nextInput = inputRef.current?.closest('td')?.nextElementSibling?.querySelector('input');
+                if (nextInput) nextInput.focus();
+            }, 50);
+        } else if (e.key === 'Tab') {
+            if (isOpen && currentItems.length > 0) {
+                const indexToSelect = highlightedIndex >= 0 ? highlightedIndex : 0;
+                handleSelectItem(currentItems[indexToSelect]);
+            }
+        } else if (e.key === 'Escape') {
+            setIsOpen(false);
+            setHighlightedIndex(-1);
+        }
     };
 
     return (
         <div ref={wrapperRef} className="relative w-full">
             <div className="relative">
                 <input
+                    ref={inputRef}
                     type="text"
                     className="w-full border rounded-lg p-2 pr-8 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-gray-900"
                     placeholder={placeholder}
                     value={inputValue}
                     onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
                     onFocus={() => {
                         if (inputValue === '') {
-                            setFilteredItems(items.slice(0, 50)); // Show some initial items if empty
+                            setFilteredItems(items.slice(0, 50));
                         }
                         setIsOpen(true);
+                        setHighlightedIndex(0);
                     }}
                 />
 
                 {inputValue && (
                     <button
+                        type="button"
                         onClick={clearSelection}
                         className="absolute right-8 top-3 text-gray-400 hover:text-gray-600"
                     >
@@ -92,33 +138,20 @@ export default function AutocompleteInput({ items, value, onChange, placeholder,
                 </div>
             </div>
 
-            {isOpen && (filteredItems.length > 0 || items.length > 0) && (
+            {isOpen && (currentItems.length > 0) && (
                 <ul className="absolute z-50 w-full bg-white border border-gray-100 rounded-lg shadow-lg max-h-60 overflow-y-auto mt-1">
-                    {filteredItems.length > 0 ? (
-                        filteredItems.map((item, index) => (
-                            <li
-                                key={index}
-                                className="p-2 hover:bg-blue-50 cursor-pointer text-gray-900 text-sm border-b border-gray-50 last:border-0"
-                                onClick={() => handleSelectItem(item)}
-                            >
-                                {renderOption ? renderOption(item) : item[displayKey]}
-                            </li>
-                        ))
-                    ) : (
-                        inputValue === '' ? (
-                            items.slice(0, 50).map((item, index) => (
-                                <li
-                                    key={index}
-                                    className="p-2 hover:bg-blue-50 cursor-pointer text-gray-900 text-sm border-b border-gray-50 last:border-0"
-                                    onClick={() => handleSelectItem(item)}
-                                >
-                                    {renderOption ? renderOption(item) : item[displayKey]}
-                                </li>
-                            ))
-                        ) : (
-                            <li className="p-4 text-center text-gray-400 text-sm">No se encontraron resultados</li>
-                        )
-                    )}
+                    {currentItems.map((item, index) => (
+                        <li
+                            key={index}
+                            className={`p-2 cursor-pointer text-gray-900 text-sm border-b border-gray-50 last:border-0 ${
+                                highlightedIndex === index ? 'bg-blue-100' : 'hover:bg-blue-50'
+                            }`}
+                            onClick={() => handleSelectItem(item)}
+                            onMouseEnter={() => setHighlightedIndex(index)}
+                        >
+                            {renderOption ? renderOption(item) : item[displayKey]}
+                        </li>
+                    ))}
                 </ul>
             )}
         </div>

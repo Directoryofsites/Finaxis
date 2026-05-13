@@ -33,6 +33,8 @@ import { apiService } from '../../../lib/apiService';
 import { FuncionEspecial } from '../../../lib/constants';
 import ModalCrearTercero from '../../../components/terceros/ModalCrearTercero';
 import CuentaFormModal from '../../components/PlanCuentas/CuentaFormModal';
+import CuentaSelect from '../../components/Inputs/CuentaSelect';
+import ConceptoSelect from '../../components/Inputs/ConceptoSelect';
 import * as planCuentasService from '../../../lib/planCuentasService';
 
 // Estilos reusables (Manual v2.0)
@@ -789,158 +791,211 @@ export default function NuevoDocumentoPage() {
     }
   };
 
+  // UTILIDAD: enfocar un campo por refName
+  const focusRef = (refName) => {
+    const el = formRefs.current[refName];
+    if (!el) return;
+    if (refName.endsWith('-cuenta') || refName.endsWith('-concepto')) {
+      const input = el.querySelector('input');
+      if (input) input.focus();
+      else el.focus();
+    } else {
+      el.focus();
+      if (el.select) el.select();
+    }
+  };
+
+  // HANDLEKEYDOWN: navegacion general (cabecera, aplicaciones de cartera)
   const handleKeyDown = (e, currentRefName) => {
-    const targetName = e.target.name || currentRefName;
-
-    const esDebitoCreditoField = targetName && (targetName.startsWith('mov-') && (targetName.endsWith('-debito') || targetName.endsWith('-credito')));
-    if (esDebitoCreditoField) {
-      const parts = targetName.split('-');
-      const index = parseInt(parts[1], 10);
-      const fieldType = parts[2];
-      let currentValue = parseFloat(movimientos[index][fieldType]) || 0;
-
-      if (e.key === '+') {
-        e.preventDefault();
-        handleMovimientoChange(index, fieldType, (currentValue * 1000).toFixed(2));
-      } else if (e.key === '-') {
-        e.preventDefault();
-        handleMovimientoChange(index, fieldType, (currentValue * 100).toFixed(2));
-      }
+    if (e.key === 'Tab' && e.shiftKey) {
+      e.preventDefault();
+      const currentIndex = order.current.indexOf(currentRefName);
+      if (currentIndex > 0) focusRef(order.current[currentIndex - 1]);
+      return;
     }
 
-    const esPago = tipoDocSeleccionado?.funcion_especial === FuncionEspecial.RC_CLIENTE || tipoDocSeleccionado?.funcion_especial === FuncionEspecial.PAGO_PROVEEDOR;
-    if (esPago) {
-      if (currentRefName === 'valorAAbonar' && e.key === 'Enter') {
-        e.preventDefault();
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      // Caso especial: Enter en el boton Guardar => ejecutar guardado directamente
+      if (currentRefName === 'guardar-doc') {
+        handleSubmit();
+        return;
+      }
+      const esPago = tipoDocSeleccionado?.funcion_especial === FuncionEspecial.RC_CLIENTE ||
+        tipoDocSeleccionado?.funcion_especial === FuncionEspecial.PAGO_PROVEEDOR;
+      if (esPago && currentRefName === 'valorAAbonar') {
         if (facturasPendientes.length > 0) {
           formRefs.current[`aplicacion-${facturasPendientes[0].id}`]?.focus();
         } else {
-          formRefs.current[`mov-0-cuenta`]?.focus();
+          focusRef('mov-0-cuenta');
         }
         return;
       }
-
-      if (currentRefName.startsWith('aplicacion-') && e.key === 'Tab') {
-        e.preventDefault();
-        const facturaId = parseInt(currentRefName.split('-')[1], 10);
-        const currentIndex = facturasPendientes.findIndex(f => f.id === facturaId);
-
-        const valorAbonarNum = parseFloat(valorAAbonar) || 0;
-        const nuevasAplicaciones = { ...aplicaciones };
-        const totalAplicadoSinActual = Object.entries(nuevasAplicaciones)
-          .reduce((sum, [key, val]) => (parseInt(key) !== facturaId ? sum + (parseFloat(val) || 0) : sum), 0);
-
-        let saldoDisponible = valorAbonarNum - totalAplicadoSinActual;
-        const facturaActual = facturasPendientes[currentIndex];
-        const montoAAplicar = Math.max(0, Math.min(saldoDisponible, facturaActual.saldo_pendiente));
-
-        if (montoAAplicar > 0) {
-          nuevasAplicaciones[facturaId] = montoAAplicar.toFixed(2);
-        } else {
-          delete nuevasAplicaciones[facturaId];
-        }
-
-        setAplicaciones(nuevasAplicaciones);
-
-        if (currentIndex + 1 < facturasPendientes.length) {
-          const proximaFacturaId = facturasPendientes[currentIndex + 1].id;
-          formRefs.current[`aplicacion-${proximaFacturaId}`]?.focus();
-        } else {
-          generarMovimientosDesdeAplicaciones(nuevasAplicaciones);
-          setTimeout(() => {
-            formRefs.current[`mov-0-cuenta`]?.focus();
-          }, 100);
-        }
-        return;
-      }
-    }
-
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
       const currentIndex = order.current.indexOf(currentRefName);
-      if (['guardar-doc', 'guardar-plantilla', 'imprimir-doc'].includes(currentRefName)) {
-        const buttonElement = formRefs.current[currentRefName];
-        if (buttonElement && !buttonElement.disabled) {
-          buttonElement.click();
-        }
-        return;
-      }
-
-      let nextElementToFocus = null;
-      for (let i = currentIndex + 1; i < order.current.length; i++) {
-        const candidateRefName = order.current[i];
-        const candidateElement = formRefs.current[candidateRefName];
-
-        if (candidateElement && typeof candidateElement.closest === 'function') {
-          if (!candidateElement.disabled && candidateElement.offsetParent !== null && !candidateElement.closest('tbody button')) {
-            nextElementToFocus = candidateElement;
-            break;
-          }
-        }
-      }
-
-      if (nextElementToFocus) {
-        nextElementToFocus.focus();
+      if (currentIndex !== -1 && currentIndex < order.current.length - 1) {
+        focusRef(order.current[currentIndex + 1]);
       } else {
         formRefs.current['guardar-doc']?.focus();
       }
     }
 
-    if (e.key === 'Tab' && !e.shiftKey) {
-      const lastMovimientoIndex = movimientos.length - 1;
-      const currentTargetName = e.target.name || currentRefName;
-      const esUltimaFilaDebito = currentTargetName === `mov-${lastMovimientoIndex}-debito`;
-      const esUltimaFilaCredito = currentTargetName === `mov-${lastMovimientoIndex}-credito`;
-
-      if ((esUltimaFilaDebito || esUltimaFilaCredito) && movimientos.length > 1) {
-        const totalDebitoOtrasFilas = totales.debito - (parseFloat(movimientos[lastMovimientoIndex].debito) || 0);
-        const totalCreditoOtrasFilas = totales.credito - (parseFloat(movimientos[lastMovimientoIndex].credito) || 0);
-        const diferenciaOtrasFilas = totalDebitoOtrasFilas - totalCreditoOtrasFilas;
-
-        if (diferenciaOtrasFilas > 0.001) {
-          e.preventDefault();
-          handleMovimientoChange(lastMovimientoIndex, 'debito', '');
-          handleMovimientoChange(lastMovimientoIndex, 'credito', diferenciaOtrasFilas.toFixed(2));
-          setTimeout(() => formRefs.current['guardar-doc']?.focus(), 50);
-        }
-        else if (diferenciaOtrasFilas < -0.001) {
-          e.preventDefault();
-          handleMovimientoChange(lastMovimientoIndex, 'credito', '');
-          handleMovimientoChange(lastMovimientoIndex, 'debito', Math.abs(diferenciaOtrasFilas).toFixed(2));
-          setTimeout(() => formRefs.current['guardar-doc']?.focus(), 50);
-        }
+    if (currentRefName.startsWith('aplicacion-') && e.key === 'Tab' && !e.shiftKey) {
+      e.preventDefault();
+      const facturaId = parseInt(currentRefName.split('-')[1], 10);
+      const currentIndex = facturasPendientes.findIndex(f => f.id === facturaId);
+      const valorAbonarNum = parseFloat(valorAAbonar) || 0;
+      const nuevasAplicaciones = { ...aplicaciones };
+      const totalAplicadoSinActual = Object.entries(nuevasAplicaciones)
+        .reduce((sum, [key, val]) => (parseInt(key) !== facturaId ? sum + (parseFloat(val) || 0) : sum), 0);
+      const saldoDisponible = valorAbonarNum - totalAplicadoSinActual;
+      const facturaActual = facturasPendientes[currentIndex];
+      const montoAAplicar = Math.max(0, Math.min(saldoDisponible, facturaActual.saldo_pendiente));
+      if (montoAAplicar > 0) {
+        nuevasAplicaciones[facturaId] = montoAAplicar.toFixed(2);
+      } else {
+        delete nuevasAplicaciones[facturaId];
+      }
+      setAplicaciones(nuevasAplicaciones);
+      if (currentIndex + 1 < facturasPendientes.length) {
+        formRefs.current[`aplicacion-${facturasPendientes[currentIndex + 1].id}`]?.focus();
+      } else {
+        generarMovimientosDesdeAplicaciones(nuevasAplicaciones);
+        setTimeout(() => focusRef('mov-0-cuenta'), 100);
       }
     }
+  };
+
+  // HANDLEMOVATRAVESKEYDOWN: navegacion dentro de la grilla de movimientos
+  // Flujo: cuenta->seleccion->concepto (via onChange), Tab en concepto->hereda nombre->debito,
+  //        Enter en concepto->debito, Enter debito con valor->sig fila,
+  //        Tab en debito/credito (fila 2+) -> auto-cuadra sumas iguales -> guardar,
+  //        Enter en debito/credito cuando balanceado -> guardar,
+  //        Shift+Tab retrocede.
+  const handleMovGridKeyDown = (e, index, campo) => {
+    if (campo === 'debito' || campo === 'credito') {
+      const currentValue = parseFloat(movimientos[index]?.[campo]) || 0;
+      if (e.key === '+') { e.preventDefault(); handleMovimientoChange(index, campo, (currentValue * 1000).toFixed(2)); return; }
+      if (e.key === '-') { e.preventDefault(); handleMovimientoChange(index, campo, (currentValue * 100).toFixed(2)); return; }
+    }
+
+    if (e.key === 'Tab' && e.shiftKey) {
+      e.preventDefault();
+      if (campo === 'concepto') { focusRef(`mov-${index}-cuenta`); }
+      else if (campo === 'debito') { focusRef(`mov-${index}-concepto`); }
+      else if (campo === 'credito') { focusRef(`mov-${index}-debito`); }
+      else if (campo === 'cuenta') {
+        if (index > 0) { focusRef(`mov-${index - 1}-credito`); }
+        else {
+          const gridStart = order.current.indexOf('mov-0-cuenta');
+          if (gridStart > 0) focusRef(order.current[gridStart - 1]);
+        }
+      }
+      return;
+    }
+
+    // Tab sin Shift en DEBITO o CREDITO (fila 2 en adelante):
+    // Auto-cuadra el asiento calculando la diferencia necesaria
+    if ((campo === 'debito' || campo === 'credito') && e.key === 'Tab' && !e.shiftKey && index > 0) {
+      e.preventDefault();
+      const dif = totales.debito - totales.credito; // + = falta credito, - = falta debito
+      if (Math.abs(dif) > 0.001) {
+        if (dif > 0) {
+          // Falta credito: colocar la diferencia en credito de esta fila
+          handleMovimientoChange(index, 'credito', dif.toFixed(2));
+          handleMovimientoChange(index, 'debito', '');
+        } else {
+          // Falta debito: colocar la diferencia en debito de esta fila
+          handleMovimientoChange(index, 'debito', Math.abs(dif).toFixed(2));
+          handleMovimientoChange(index, 'credito', '');
+        }
+      }
+      // Una vez cuadrado, mover el foco al boton Guardar
+      setTimeout(() => formRefs.current['guardar-doc']?.focus(), 80);
+      return;
+    }
+
+    if (campo === 'concepto' && e.key === 'Tab' && !e.shiftKey) {
+      e.preventDefault();
+      const mov = movimientos[index];
+      if (mov.cuentaId) {
+        const cuenta = maestros.cuentas.find(c => c.id === parseInt(mov.cuentaId));
+        if (cuenta) handleMovimientoChange(index, 'concepto', cuenta.nombre);
+      }
+      setTimeout(() => focusRef(`mov-${index}-debito`), 30);
+      return;
+    }
+
+    if (campo === 'concepto' && e.key === 'Enter') {
+      const inputValue = e.target?.value || '';
+      if (inputValue.trim().length > 0) {
+        // El usuario está digitando texto: dejar que CreatableSelect cree la opción
+        // (onChange disparará el salto a débito automáticamente)
+        // Solo prevenir submit del form, pero NO stopPropagation
+        e.preventDefault();
+        return;
+      }
+      // Campo vacío: saltar a débito directamente
+      e.preventDefault(); e.stopPropagation();
+      focusRef(`mov-${index}-debito`);
+      return;
+    }
+
+    // Enter en DEBITO: si ya esta balanceado -> guardar; si tiene valor -> sig fila; si vacio -> credito
+    if (campo === 'debito' && e.key === 'Enter') {
+      e.preventDefault(); e.stopPropagation();
+      if (estaBalanceado) {
+        formRefs.current['guardar-doc']?.focus();
+        return;
+      }
+      const valorDebito = movimientos[index]?.debito;
+      if (valorDebito && parseFloat(valorDebito) > 0) { _saltarASiguienteFila(index); }
+      else { focusRef(`mov-${index}-credito`); }
+      return;
+    }
+
+    // Enter en CREDITO: si ya esta balanceado -> guardar; si no -> sig fila
+    if (campo === 'credito' && e.key === 'Enter') {
+      e.preventDefault(); e.stopPropagation();
+      if (estaBalanceado) {
+        formRefs.current['guardar-doc']?.focus();
+        return;
+      }
+      _saltarASiguienteFila(index);
+      return;
+    }
+  };
+
+  const _saltarASiguienteFila = (index) => {
+    const conceptoAnterior = movimientos[index]?.concepto || '';
+    if (index + 1 < movimientos.length) {
+      // Fila ya existe: pre-llenar concepto si está vacío
+      if (!movimientos[index + 1].concepto && conceptoAnterior) {
+        handleMovimientoChange(index + 1, 'concepto', conceptoAnterior);
+      }
+      focusRef(`mov-${index + 1}-cuenta`);
+    } else {
+      // Crear nueva fila heredando el concepto de la fila anterior
+      setMovimientos(prev => {
+        const updated = [...prev, {
+          rowId: Date.now(),
+          cuentaId: '',
+          concepto: conceptoAnterior,
+          debito: '',
+          credito: '',
+          cuentaInput: ''
+        }];
+        setTimeout(() => focusRef(`mov-${updated.length - 1}-cuenta`), 80);
+        return updated;
+      });
+    }
+  };
+
+  const handleConceptoKeyDown = (e, index) => {
+    handleMovGridKeyDown(e, index, 'concepto');
   };
 
   const shouldFetchFacturasTrigger = useRef(false);
-
-  const handleConceptoKeyDown = (e, index) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      if (index > 0) {
-        const conceptoAnterior = movimientos[index - 1].concepto;
-        setMovimientos(currentMovimientos => {
-          const newMovimientos = [...currentMovimientos];
-          newMovimientos[index] = { ...newMovimientos[index], concepto: conceptoAnterior };
-          return newMovimientos;
-        });
-      }
-    }
-
-    // --- NUEVO: AUTO-COMPLETAR CON TAB SI ESTÁ VACÍO ---
-    if (e.key === 'Tab' && !e.shiftKey) {
-      const currentMov = movimientos[index];
-      // Si el concepto está vacío y hay una cuenta seleccionada
-      if ((!currentMov.concepto || currentMov.concepto.trim() === '') && currentMov.cuentaId) {
-        const cuenta = maestros.cuentas.find(c => c.id === parseInt(currentMov.cuentaId));
-        if (cuenta) {
-          handleMovimientoChange(index, 'concepto', cuenta.nombre);
-        }
-      }
-    }
-
-    handleKeyDown(e, `mov-${index}-concepto`);
-  };
 
   useEffect(() => {
     setFacturasPendientes([]);
@@ -1440,54 +1495,61 @@ export default function NuevoDocumentoPage() {
                 <tbody className="bg-white divide-y divide-gray-100">
                   {movimientos.map((mov, index) => (
                     <tr key={mov.rowId} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-2">
+                      <td className="px-4 py-2 min-w-[250px]">
                         <div className="flex items-center gap-1">
-                          <input
-                            list="cuentas-list"
-                            placeholder="Código o nombre..."
-                            value={mov.cuentaInput}
-                            onChange={e => handleMovimientoChange(index, 'cuentaInput', e.target.value)}
-                            onBlur={e => mov.cuentaId === '' && handleCuentaBlur(index, e.target.value)}
-                            className={tableInputClass}
-                            ref={(el) => addRef(`mov-${index}-cuenta`, el)}
-                            onKeyDown={(e) => handleKeyDown(e, `mov-${index}-cuenta`)}
-                          />
+                          <div className="flex-grow" ref={(el) => addRef(`mov-${index}-cuenta`, el)}>
+                            <CuentaSelect
+                              options={maestros.cuentas}
+                              value={mov.cuentaId}
+                              onChange={(opt) => {
+                                handleMovimientoChange(index, 'cuentaId', opt ? opt.value : '');
+                                handleMovimientoChange(index, 'cuentaInput', opt ? opt.label : '');
+                                // Al seleccionar cuenta (Enter o clic), saltar a concepto
+                                if (opt) {
+                                  setTimeout(() => focusRef(`mov-${index}-concepto`), 60);
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                // Shift+Tab en cuenta: retroceder al campo anterior
+                                if (e.key === 'Tab' && e.shiftKey) {
+                                  handleMovGridKeyDown(e, index, 'cuenta');
+                                }
+                              }}
+                            />
+                          </div>
                           <button
                             type="button"
                             onClick={() => {
                               setCuentaTargetIndex(index);
                               setShowCuentaModal(true);
                             }}
-                            className="p-1.5 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 text-xs font-bold border border-indigo-100 transition-colors"
+                            className="p-1.5 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 text-xs font-bold border border-indigo-100 transition-colors h-[34px]"
                             title="Crear nueva cuenta rápidamente"
                           ><FaPlus /></button>
                         </div>
-                        <datalist id="cuentas-list">
-                          {maestros.cuentas.map(c => <option key={c.id} value={c.codigo}>{`${c.codigo} - ${c.nombre}`}</option>)}
-                        </datalist>
                       </td>
                       <td className="px-4 py-2">
                         <div className="flex items-center gap-1">
-                          <input
-                            list="conceptos-list"
-                            type="text"
-                            placeholder="Descripción..."
-                            value={mov.concepto || ''}
-                            onChange={e => handleMovimientoChange(index, 'concepto', e.target.value)}
-                            className={tableInputClass}
-                            name={`concepto-${index}`}
-                            ref={(el) => addRef(`mov-${index}-concepto`, el)}
-                            onKeyDown={(e) => handleConceptoKeyDown(e, index)}
-                          />
-                          <datalist id="conceptos-list">
-                            {maestros.conceptos.map(c => <option key={c.id} value={c.descripcion} />)}
-                          </datalist>
+                          <div className="flex-grow" ref={(el) => addRef(`mov-${index}-concepto`, el)}>
+                            <ConceptoSelect
+                              options={maestros.conceptos}
+                              value={mov.concepto || ''}
+                              onChange={(val) => {
+                                handleMovimientoChange(index, 'concepto', val);
+                                // Al seleccionar/crear opción (Enter o clic en dropdown), saltar a débito
+                                if (val !== undefined && val !== null) {
+                                  setTimeout(() => focusRef(`mov-${index}-debito`), 60);
+                                }
+                              }}
+                              onKeyDown={(e) => handleMovGridKeyDown(e, index, 'concepto')}
+                            />
+                          </div>
                           <button
                             type="button"
                             onClick={() => handleAddNewConcept(index)}
-                            className="p-1.5 bg-green-50 text-green-600 rounded hover:bg-green-100 text-xs font-bold border border-green-100 transition-colors"
-                            title="Guardar concepto en librería"
-                          ><FaSave /></button>
+                            className="p-1.5 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 text-xs font-bold border border-indigo-100 transition-colors h-[34px]"
+                            title="Guardar este concepto en la librería"
+                          ><FaMagic /></button>
                         </div>
                       </td>
                       <td className="px-4 py-2 text-right">
@@ -1513,7 +1575,7 @@ export default function NuevoDocumentoPage() {
                           onChange={e => handleMovimientoChange(index, 'debito', e.target.value)}
                           className={`${tableInputClass} text-right font-mono`}
                           ref={(el) => addRef(`mov-${index}-debito`, el)}
-                          onKeyDown={(e) => handleKeyDown(e, `mov-${index}-debito`)}
+                          onKeyDown={(e) => handleMovGridKeyDown(e, index, 'debito')}
                         />
                       </td>
                       <td className="px-4 py-2">
@@ -1525,7 +1587,7 @@ export default function NuevoDocumentoPage() {
                           onChange={e => handleMovimientoChange(index, 'credito', e.target.value)}
                           className={`${tableInputClass} text-right font-mono`}
                           ref={(el) => addRef(`mov-${index}-credito`, el)}
-                          onKeyDown={(e) => handleKeyDown(e, `mov-${index}-credito`)}
+                          onKeyDown={(e) => handleMovGridKeyDown(e, index, 'credito')}
                         />
                       </td>
                       <td className="px-2 py-2 text-center">

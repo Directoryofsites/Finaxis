@@ -258,6 +258,19 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
         grupos_list = []
         for g in grupos:
             g_dict = serialize_model(g.__dict__)
+            
+            # --- Mapeo de Cuentas para Portabilidad (v7.7) ---
+            g_dict['cuentas'] = {}
+            for field, key_json in [
+                ('cuenta_inventario_id', 'inventario'), ('cuenta_ingreso_id', 'ingreso'),
+                ('cuenta_costo_venta_id', 'costo'), ('cuenta_ajuste_faltante_id', 'faltante'),
+                ('cuenta_ajuste_sobrante_id', 'sobrante'), ('cuenta_costo_produccion_id', 'produccion')
+            ]:
+                val_id = getattr(g, field)
+                if val_id:
+                    cta = db.query(PlanCuenta).filter(PlanCuenta.id == val_id).first()
+                    if cta: g_dict['cuentas'][key_json] = cta.codigo
+
             if g.impuesto_predeterminado_id:
                 imp = db.query(TasaImpuesto).filter(TasaImpuesto.id == g.impuesto_predeterminado_id).first()
                 if imp: g_dict['impuesto_predeterminado_nombre'] = imp.nombre
@@ -549,7 +562,7 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
 
         for d in docs:
             doc_packet = {
-                "tipo_doc_codigo": d.tipo_documento.codigo, "numero": d.numero,
+                "tipo_doc_codigo": d.tipo_documento.codigo if d.tipo_documento else "UNK", "numero": d.numero,
                 "fecha": d.fecha.isoformat() if d.fecha else None,
                 "tercero_nit": d.beneficiario.nit if d.beneficiario else None,
                 "centro_costo_codigo": d.centro_costo.codigo if d.centro_costo else None,
@@ -563,7 +576,7 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
             if transacciones_conta_flag:
                 for m in d.movimientos:
                     doc_packet["movimientos_contables"].append({
-                        "cuenta_codigo": m.cuenta.codigo, 
+                        "cuenta_codigo": m.cuenta.codigo if m.cuenta else "UNK", 
                         "debito": float(m.debito or 0), "credito": float(m.credito or 0), 
                         "concepto": m.concepto,
                         "producto_codigo": m.producto.codigo if m.producto else None,
@@ -575,7 +588,7 @@ def generar_backup_json(db: Session, empresa_id: int, filtros: dict = None):
                 movs_inv = db.query(MovimientoInventario).filter(MovimientoInventario.documento_id == d.id).all()
                 for mi in movs_inv:
                     doc_packet["movimientos_inventario"].append({
-                        "producto_codigo": mi.producto.codigo, "bodega_nombre": mi.bodega.nombre,
+                        "producto_codigo": mi.producto.codigo if mi.producto else "UNK", "bodega_nombre": mi.bodega.nombre if mi.bodega else "UNK",
                         "tipo": mi.tipo_movimiento, "cantidad": float(mi.cantidad),
                         "costo_unitario": float(mi.costo_unitario), "costo_total": float(mi.costo_total)
                     })
@@ -960,10 +973,15 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
                     if "costo" in ctas: g["cuenta_costo_venta_codigo"] = ctas["costo"]
                     if "faltante" in ctas: g["cuenta_ajuste_faltante_codigo"] = ctas["faltante"]
                     if "sobrante" in ctas: g["cuenta_ajuste_sobrante_codigo"] = ctas["sobrante"]
+                    if "produccion" in ctas: g["cuenta_costo_produccion_codigo"] = ctas["produccion"]
 
         id_maps_grupos = {
-            "cuenta_inventario_id": map_cuentas, "cuenta_ingreso_id": map_cuentas, "cuenta_costo_venta_id": map_cuentas,
-            "cuenta_ajuste_faltante_id": map_cuentas, "cuenta_ajuste_sobrante_id": map_cuentas,
+            "cuenta_inventario_id": map_cuentas, 
+            "cuenta_ingreso_id": map_cuentas, 
+            "cuenta_costo_venta_id": map_cuentas,
+            "cuenta_ajuste_faltante_id": map_cuentas, 
+            "cuenta_ajuste_sobrante_id": map_cuentas,
+            "cuenta_costo_produccion_id": map_cuentas,
             "impuesto_predeterminado_id": map_impuestos
         }
         if should_restore('Grupos Inventario'):
@@ -1090,9 +1108,9 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
                         val_to_set = v
                         
                         # Mapear Foreign Keys
-                        if k in ['tipo_documento_factura_id', 'tipo_documento_recibo_id', 'tipo_documento_mora_id'] and v is not None:
+                        if k in ['tipo_documento_factura_id', 'tipo_documento_recibo_id', 'tipo_documento_mora_id', 'tipo_documento_cruce_id'] and v is not None:
                              val_to_set = map_tipos_id.get(str(v))
-                        elif k in ['cuenta_cartera_id', 'cuenta_caja_id', 'cuenta_ingreso_intereses_id'] and v is not None:
+                        elif k in ['cuenta_cartera_id', 'cuenta_caja_id', 'cuenta_caja_manual_id', 'cuenta_ingreso_intereses_id', 'cuenta_anticipos_id', 'cuenta_descuento_id'] and v is not None:
                              val_to_set = map_cuentas_id.get(str(v))
                         
                         setattr(ph_conf, k, val_to_set)
@@ -2406,7 +2424,8 @@ def _upsert_manual_seguro(db, model, json_key, natural_key, data_source, target_
         clean_data = {k: v for k, v in data.items() if k in valid_columns}
         
         # ARREGLO: Validar y corregir foreign keys de usuarios antes de procesar
-        for user_field in ['created_by', 'updated_by', 'usuario_creador_id', 'usuario_modificador_id']:
+        # Se incluyen variaciones comunes en los modelos para evitar ForeignKeyViolation si el ID origen no existe
+        for user_field in ['created_by', 'updated_by', 'usuario_creador_id', 'usuario_modificador_id', 'creado_por_usuario_id', 'usuario_id', 'cerrado_por_usuario_id']:
             if user_field in clean_data and clean_data[user_field] is not None:
                 # Verificar si el usuario existe, si no, usar el usuario actual
                 user_exists = db.query(Usuario).filter(Usuario.id == clean_data[user_field]).first()

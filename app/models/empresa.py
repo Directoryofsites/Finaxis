@@ -6,6 +6,7 @@ class Empresa(Base):
     __tablename__ = "empresas"
 
     id = Column(Integer, primary_key=True)
+    version_id = Column(Integer, nullable=False, default=1) # Bloqueo optimista
     razon_social = Column(String(255), nullable=False)
     nit = Column(String(20), unique=True, index=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())

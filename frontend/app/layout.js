@@ -2,6 +2,7 @@ import "./globals.css";
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer } from 'react-toastify';
 import { AuthProvider } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import SmartLayout from "./components/SmartLayout";
 import GlobalHotkeys from "./components/GlobalHotkeys";
 import { DM_Sans, IBM_Plex_Sans } from 'next/font/google';
@@ -29,11 +30,13 @@ export default function RootLayout({ children }) {
     <html lang="es" className={`${dmSans.variable} ${ibmPlexSans.variable}`}>
       <body>
         <AuthProvider>
-          <SmartLayout>
-            <GlobalHotkeys />
-            {children}
-          </SmartLayout>
-          <ToastContainer position="bottom-right" autoClose={3000} />
+          <ThemeProvider>
+            <SmartLayout>
+              <GlobalHotkeys />
+              {children}
+            </SmartLayout>
+            <ToastContainer position="bottom-right" autoClose={3000} />
+          </ThemeProvider>
         </AuthProvider>
       </body>
     </html>

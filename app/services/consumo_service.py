@@ -243,10 +243,18 @@ def _get_or_create_plan_mensual(db: Session, empresa_id: int, fecha_doc: datetim
             VALUES (:e, :a, :m, :la, :cd, :fc, :st, :em)
         """
 
+    # Asegurar que el booleano sea compatible con el dialecto
+    # PostgreSQL es estricto con los tipos, SQLite acepta 0/1
+    em_value = False
+    if dialect == 'postgresql':
+        em_value = False
+    else:
+        em_value = 0
+
     db.execute(text(sql_insert), {
         "e": empresa_id, "a": anio, "m": mes, 
         "la": limite_total, "cd": limite_total,
-        "fc": datetime.utcnow(), "st": 'ABIERTO', "em": 0
+        "fc": datetime.utcnow(), "st": 'ABIERTO', "em": em_value
     })
     db.flush()
     

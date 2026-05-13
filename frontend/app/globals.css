@@ -28,10 +28,121 @@ nextjs-portal {
   visibility: hidden !important;
 }
 
+/* MODO OSCURO (ACTIVADO POR CLASE) - FORZADO NEGRO/BLANCO */
+.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+  color-scheme: dark; /* Fuerza a los controles nativos como datalists y scrollbars a modo oscuro */
+}
+
+.dark body, 
+.dark .bg-white,
+.dark [class*="bg-white"], 
+.dark .bg-slate-50,
+.dark .bg-gray-50,
+.dark .bg-indigo-50,
+.dark .bg-blue-50,
+.dark [class$="-50"],
+.dark [class$="-100"],
+.dark [class$="-200"],
+.dark [class*="-50 "],
+.dark [class*="-100 "],
+.dark [class*="-200 "],
+.dark [class*="bg-gray-5"], 
+.dark [class*="bg-gray-1"],
+.dark [class*="bg-slate-5"],
+.dark [class*="bg-slate-1"],
+.dark [class*="hover:bg-"] {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Forzar esquema de color para controles nativos (Datalists, Datepickers, etc) */
+.dark input, 
+.dark select, 
+.dark textarea, 
+.dark datalist,
+.dark [contenteditable] {
+  color-scheme: dark !important;
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border-color: #333333 !important;
+}
+
+.dark input::placeholder {
+  color: #666666 !important;
+}
+
+/* Forzar que los números y textos en celdas sean blancos */
+.dark td, .dark th, .dark input {
+  color: #ffffff !important;
+}
+
+/* Forzar que los hovers en modo oscuro también sean negros o gris muy oscuro */
+.dark [class*="hover:bg-"]:hover {
+  background-color: #111111 !important;
+}
+
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6, .dark p, .dark span, .dark label, .dark li, .dark td, .dark th, .dark small,
+.dark [class*="text-gray-"],
+.dark [class*="text-slate-"],
+.dark [class*="text-indigo-6"],
+.dark [class*="text-blue-6"],
+.dark [class*="text-emerald-6"],
+.dark [class*="text-green-6"],
+.dark [class*="text-red-6"],
+.dark [class*="text-orange-6"],
+.dark [class*="text-teal-6"],
+.dark [class*="text-purple-6"] {
+  color: #ffffff !important;
+}
+
+.dark .text-gray-500,
+.dark .text-gray-400,
+.dark .text-slate-500,
+.dark .text-slate-400 {
+  color: #a0a0a0 !important;
+}
+
+.dark [class*="border-"] {
+  border-color: #222222 !important;
+}
+
+.dark input, 
+.dark select, 
+.dark textarea {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border-color: #333333 !important;
+}
+
+.dark .shadow-sm, .dark .shadow-md, .dark .shadow-lg, .dark .shadow-xl, .dark .shadow-2xl {
+  box-shadow: 0 0 0 1px #222 !important;
+}
+
+/* DatePicker Overrides */
+.dark .react-datepicker,
+.dark .react-datepicker__header,
+.dark .react-datepicker__current-month,
+.dark .react-datepicker__day-name,
+.dark .react-datepicker__day {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border-color: #222222 !important;
+}
+
+.dark .react-datepicker__day:hover {
+  background-color: #222222 !important;
+}
+
+.dark .react-datepicker__day--selected {
+  background-color: #4f46e5 !important;
+}
+
+/* Evitar que el sistema sobrescriba si el usuario eligió manualmente */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not(.light) {
+     /* variables opcionales aquí */
   }
 }
 

@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 # --- INICIO: LÓGICA DE AUTO-CREACIÓN Y SEMBRADO ---
 # Se movió al evento de startup para evitar bloqueos en el arranque del worker
 async def run_startup_tasks():
+    import os
     print("Iniciando secuencia de arranque de base de datos...")
 
     # ── Detectar directorio base según entorno (PyInstaller vs desarrollo) ──
@@ -28,6 +29,19 @@ async def run_startup_tasks():
         # Desarrollo normal — raíz del proyecto
         _app_base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
+    # ── PRE-CHECK DE SETUP: Evitar crear .db vacío prematuramente ──
+    from app.core.database import get_engine, Base
+    import os
+    
+    target_engine = get_engine()
+    engine_url = str(target_engine.url)
+    
+    if engine_url.startswith("sqlite:///"):
+        db_path = engine_url.replace("sqlite:///", "")
+        if not os.path.exists(db_path):
+            print("  [Startup] Instalación limpia detectada. Saltando migraciones y seeder (el asistente de inicio lo hará).")
+            return
+            
     # 1. Ejecutar migraciones de Alembic (FLUJO PROFESIONAL)
     try:
         print("Sincronizando base de datos con Alembic...")
@@ -52,14 +66,14 @@ async def run_startup_tasks():
 
     # 3. Ejecutar Seeds y creación de tablas
     if os.getenv("RUN_SEEDS", "true").lower() == "true":
-        print("Ejecutando tareas de mantenimiento de DB (Startup)...")
-        from app.core.database import engine, Base
+        print("Verificando integridad de Base de Datos (Startup)...")
         from app.core.seeder import seed_database
         
         try:
+            print(f"  [Startup] Motor detectado: {target_engine.name}")
             # Crear tablas faltantes
-            Base.metadata.create_all(bind=engine)
-            # Sembrar datos maestros
+            Base.metadata.create_all(bind=target_engine)
+            # Sembrar datos maestros (idempotente)
             seed_database()
         except Exception as e:
             print(f"Error en tareas de startup (Mantenimiento DB): {e}")
@@ -400,25 +414,10 @@ def ping_test():
 
 from fastapi.middleware.cors import CORSMiddleware
 
-# --- CONFIGURACIÓN DE CORS FINAL (PRODUCCIÓN) ---
-# Se define una lista explícita de orígenes para permitir credentials=True
-origins = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:8000",
-    "http://localhost:8002",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:8002",
-    "https://finaxis.com.co",
-    "https://www.finaxis.com.co",
-    "https://contapy-frontend.vercel.app",
-    "https://finaxis.onrender.com"
-]
-
+# --- CONFIGURACIÓN DE CORS FINAL (MODO RED LOCAL) ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -1015,8 +1015,24 @@ function CapturaRapidaContent() {
                               type="text"
                               value={mov.concepto || ''}
                               onChange={(e) => handleConceptoChange(index, e.target.value)}
+                              onKeyDown={(e) => {
+                                // --- HERENCIA MANUAL CON TAB ---
+                                if (e.key === 'Tab' && !e.shiftKey) {
+                                  const cuenta = cuentas.find(c => c.id === mov.cuenta_id);
+                                  if (cuenta) {
+                                    e.preventDefault(); // Quedarse en el campo
+                                    handleConceptoChange(index, cuenta.nombre);
+                                  }
+                                }
+                                // --- NAVEGACIÃ“N CON ENTER ---
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  const nextInput = e.target.closest('td').nextElementSibling?.querySelector('input');
+                                  if (nextInput) nextInput.focus();
+                                }
+                              }}
                               className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-200 outline-none"
-                              placeholder="Descripción del movimiento..."
+                              placeholder="DescripciÃ³n del movimiento..."
                             />
                             <button
                               type="button"

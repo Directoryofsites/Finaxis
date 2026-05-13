@@ -7,12 +7,13 @@ import {
     FaThumbtack, FaTimes, FaExpandAlt, FaMagic, FaPaperPlane,
     FaBackspace, FaTrash, FaMicrophone, FaStop, FaPlus, FaSave, FaList, FaShareSquare, FaHistory, FaClock,
     FaBuilding, FaChartLine, FaBolt, FaSync, FaFilePdf, FaEdit, FaSearch, FaPrint, FaBook,
-    FaChalkboardTeacher
+    FaChalkboardTeacher, FaMoon, FaSun
 } from 'react-icons/fa';
 import { CONTEXT_CONFIG } from '../config/rightSidebarConfig';
 import { toast } from 'react-toastify';
 import { apiService } from '@/lib/apiService';
 import { useAuth } from '@/app/context/AuthContext';
+import { useTheme } from '@/app/context/ThemeContext';
 import EconomicIndicatorsPanel from './EconomicIndicatorsPanel';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -237,6 +238,7 @@ const WidgetRenderer = ({ config }) => {
 
 export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClose }) {
     const { user } = useAuth();
+    const { isDarkMode, toggleTheme } = useTheme();
     const pathname = usePathname();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState('ai');
@@ -526,6 +528,17 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                     title="Indicadores Económicos (Dólar, UVT, Nómina)"
                 >
                     <span className="font-bold text-lg">$</span>
+                </button>
+
+                <div className="w-6 h-[1px] bg-gray-200 my-4"></div>
+
+                {/* BOTÓN MODO OSCURO (NUEVO) */}
+                <button
+                    onClick={toggleTheme}
+                    className={`nav-item p-2 rounded-xl transition-all ${isDarkMode ? 'bg-gray-800 text-yellow-400 shadow-lg' : 'text-gray-400 hover:text-indigo-500 hover:bg-indigo-50'}`}
+                    title={isDarkMode ? "Cambiar a Modo Claro" : "Cambiar a Modo Oscuro (Fondos Negros)"}
+                >
+                    {isDarkMode ? <FaSun className="text-xl" /> : <FaMoon className="text-xl" />}
                 </button>
 
                 <div className="flex-grow"></div>

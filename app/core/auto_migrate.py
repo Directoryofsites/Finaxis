@@ -75,7 +75,9 @@ def run_auto_migrations():
                 if 'aplica_pronto_pago' not in cols_ph_unidades:
                     migrations.append(('ph_unidades', 'aplica_pronto_pago', 'BOOLEAN DEFAULT TRUE'))
                 if 'metadatos_extra' not in cols_ph_unidades:
-                    migrations.append(('ph_unidades', 'metadatos_extra', "JSONB DEFAULT '{}'"))
+                    # JSONB solo existe en PostgreSQL; SQLite usa TEXT
+                    _json_col_type = "JSONB DEFAULT '{}'" if engine.name == 'postgresql' else "TEXT DEFAULT '{}'"
+                    migrations.append(('ph_unidades', 'metadatos_extra', _json_col_type))
 
             # --- OTRAS MIGRACIONES ---
             # configuracion_fe (FACTURACIÓN ELECTRÓNICA, DS, NOTAS)
@@ -102,7 +104,8 @@ def run_auto_migrations():
                 ("licencia_key", "TEXT"),
                 ("licencia_version", "VARCHAR(20)"),
                 ("licencia_cliente", "VARCHAR(255)"),
-                ("licencia_activada_en", "VARCHAR(20)")
+                ("licencia_activada_en", "VARCHAR(20)"),
+                ("version_id", "INTEGER DEFAULT 1")
             ]
             for col, col_type in empresa_lite_cols:
                 if col not in cols_empresas:
@@ -177,6 +180,7 @@ def run_auto_migrations():
                 ("lista_precio_id", "INTEGER"),
                 ("cuenta_gasto_defecto_id", "INTEGER"),
                 ("es_vendedor", "BOOLEAN DEFAULT FALSE"),
+                ("version_id", "INTEGER DEFAULT 1")
             ]
             for col, col_type in tercero_cols:
                 if col not in cols_terceros:

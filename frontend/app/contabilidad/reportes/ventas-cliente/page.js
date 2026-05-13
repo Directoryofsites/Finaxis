@@ -12,6 +12,8 @@ import {
 } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useTheme } from '../../../context/ThemeContext';
+import { getSelectStyles } from '../../../lib/uiUtils';
 
 // Servicios
 import { getGruposInventario, searchProductosAutocomplete } from '../../../../lib/inventarioService';
@@ -20,7 +22,7 @@ import { getAnalisisVentasCliente, generarPdfVentasCliente } from '../../../../l
 
 // Estilos
 const labelClass = "block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide";
-const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all outline-none pl-10 bg-white";
+const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all outline-none pl-10 bg-white dark:bg-black dark:text-white dark:border-gray-700";
 
 // Formateador
 const fmtMoneda = (val) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
@@ -30,6 +32,7 @@ const fmtPorcentaje = (val) => `${parseFloat(val).toFixed(2)}%`;
 export default function AnalisisVentasClientePage() {
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
+    const { isDarkMode } = useTheme();
 
     // Estados de Filtros
     const [filtros, setFiltros] = useState({
@@ -162,15 +165,15 @@ export default function AnalisisVentasClientePage() {
     };
 
     return (
-        <div className="p-6 bg-gray-50 min-h-screen font-sans text-gray-800">
+        <div className="p-6 bg-gray-50 dark:bg-black min-h-screen font-sans text-gray-800 dark:text-gray-200">
             <ToastContainer />
             <div className="max-w-7xl mx-auto">
 
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-                            <FaChartLine className="text-blue-600" />
+                        <h1 className="text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
+                            <FaChartLine className="text-blue-600 dark:text-blue-400" />
                             Análisis Integral de Ventas
                         </h1>
                         <p className="text-gray-500 mt-1">Explora ventas, costos y rentabilidad por cliente.</p>
@@ -178,7 +181,7 @@ export default function AnalisisVentasClientePage() {
                 </div>
 
                 {/* Filtros */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
+                <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 mb-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
                         {/* Fechas */}
@@ -218,6 +221,7 @@ export default function AnalisisVentasClientePage() {
                                 onChange={opt => setFiltros({ ...filtros, tercero_ids: opt })}
                                 placeholder="Escribe para buscar cliente..."
                                 className="text-sm"
+                                styles={getSelectStyles(isDarkMode)}
                             />
                         </div>
 
@@ -232,6 +236,7 @@ export default function AnalisisVentasClientePage() {
                                 onChange={opt => setFiltros({ ...filtros, producto_ids: opt })}
                                 placeholder="Escribe para buscar producto..."
                                 className="text-sm"
+                                styles={getSelectStyles(isDarkMode)}
                             />
                         </div>
                         <div className="lg:col-span-2">
@@ -243,6 +248,7 @@ export default function AnalisisVentasClientePage() {
                                 onChange={opt => setFiltros({ ...filtros, grupo_ids: opt })}
                                 placeholder="Selecciona grupos..."
                                 className="text-sm"
+                                styles={getSelectStyles(isDarkMode)}
                             />
                         </div>
                     </div>
@@ -271,21 +277,21 @@ export default function AnalisisVentasClientePage() {
                 {/* Dashboard KPI */}
                 {reporteData && (
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center">
+                        <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 text-center">
                             <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Ventas Totales</p>
                             <p className="text-2xl font-bold text-gray-800 mt-1">{fmtMoneda(reporteData.gran_total_venta)}</p>
                         </div>
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center">
+                        <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 text-center">
                             <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Costo Total</p>
                             <p className="text-2xl font-bold text-gray-600 mt-1">{fmtMoneda(reporteData.gran_total_costo)}</p>
                         </div>
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center">
+                        <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 text-center">
                             <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Utilidad Global</p>
                             <p className={`text-2xl font-bold mt-1 ${reporteData.gran_total_utilidad >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                 {fmtMoneda(reporteData.gran_total_utilidad)}
                             </p>
                         </div>
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center">
+                        <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 text-center">
                             <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Margen Global</p>
                             <p className={`text-2xl font-bold mt-1 ${reporteData.margen_global_porcentaje >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                 {fmtPorcentaje(reporteData.margen_global_porcentaje)}
@@ -296,7 +302,7 @@ export default function AnalisisVentasClientePage() {
 
                 {/* Tabla de Resultados */}
                 {reporteData && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 overflow-hidden">
                         <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
                             <h2 className="font-bold text-gray-700">Resultados por Cliente ({reporteData.items.length})</h2>
                             <div className="flex gap-2">
