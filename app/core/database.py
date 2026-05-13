@@ -76,6 +76,7 @@ class EngineProxy:
     @property
     def name(self): return get_engine().name
     def connect(self): return get_engine().connect()
+    def begin(self): return get_engine().begin()
     def dispose(self): return get_engine().dispose()
     def execute(self, *args, **kwargs): return get_engine().execute(*args, **kwargs)
 
