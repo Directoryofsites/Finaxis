@@ -17,8 +17,8 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useTheme } from '../../../context/ThemeContext';
-import { getSelectStyles } from '../../../lib/uiUtils';
+import { useTheme } from '../../../../contexts/ThemeContext';
+import { getSelectStyles } from '../../../../lib/uiUtils';
 
 // Chart.js imports
 import {
