@@ -7,7 +7,7 @@ import {
     FaThumbtack, FaTimes, FaExpandAlt, FaMagic, FaPaperPlane,
     FaBackspace, FaTrash, FaMicrophone, FaStop, FaPlus, FaSave, FaList, FaShareSquare, FaHistory, FaClock,
     FaBuilding, FaChartLine, FaBolt, FaSync, FaFilePdf, FaEdit, FaSearch, FaPrint, FaBook,
-    FaChalkboardTeacher, FaMoon, FaSun
+    FaChalkboardTeacher, FaMoon, FaSun, FaEnvelopeOpenText
 } from 'react-icons/fa';
 import { CONTEXT_CONFIG } from '../config/rightSidebarConfig';
 import { toast } from 'react-toastify';
@@ -518,6 +518,15 @@ export default function RightSidebar({ isOpen, isPinned, onToggle, onPin, onClos
                     title="Vista Previa: Portal Público"
                 >
                     <FaRobot className="text-xl" />
+                </button>
+
+                {/* BOTÓN BUZÓN DE PQRS (NUEVO SHORTCUT) */}
+                <button
+                    onClick={() => router.push('/admin/pqrs')}
+                    className="nav-item p-2 mt-2 rounded-lg text-gray-400 hover:text-orange-600 hover:bg-orange-50 transition-colors"
+                    title="Buzón de PQRs (Tickets de Clientes)"
+                >
+                    <FaEnvelopeOpenText className="text-xl" />
                 </button>
 
                 {/* BOTÓN INDICADORES ECONÓMICOS */}

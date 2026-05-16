@@ -31,6 +31,12 @@ export default function RestauracionForm({
   const [parsedBackupData, setParsedBackupData] = useState(null);
   const [selectedModules, setSelectedModules] = useState({});
 
+  // Paginación y Búsqueda
+  const [showDocsModal, setShowDocsModal] = useState(false);
+  const [docsFilter, setDocsFilter] = useState('');
+  const [docsPage, setDocsPage] = useState(1);
+  const itemsPerPage = 100;
+
   const handleFileSelect = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -185,6 +191,22 @@ export default function RestauracionForm({
     setSelectedModules(newState);
   };
 
+  // Lógica de Paginación y Filtrado para Documentos
+  const docsDetails = analysisReport?.summary?.['Documentos y Movimientos']?.detalles || 
+                      analysisReport?.summary?.['documentos']?.detalles || 
+                      analysisReport?.summary?.['transacciones']?.detalles || [];
+                      
+  const filteredDocs = docsDetails.filter(d => {
+    const term = docsFilter.toLowerCase();
+    return (d.numero?.toLowerCase()?.includes(term) || 
+            d.tipo?.toLowerCase()?.includes(term) || 
+            d.fecha?.toLowerCase()?.includes(term) ||
+            d.referencia?.toLowerCase()?.includes(term));
+  });
+
+  const totalPages = Math.ceil(filteredDocs.length / itemsPerPage);
+  const paginatedDocs = filteredDocs.slice((docsPage - 1) * itemsPerPage, docsPage * itemsPerPage);
+
   return (
     <>
       {/* CARD DE CONFIGURACIÓN */}
@@ -332,21 +354,33 @@ export default function RestauracionForm({
                       <span>{conflicto}</span>
                     </div>
                   )}
+                  
+                  {/* BOTÓN DE DETALLES PARA DOCUMENTOS */}
+                  {value.detalles && value.detalles.length > 0 && (
+                     <div className="mt-3 pt-2 border-t border-gray-100">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setShowDocsModal(true); setDocsPage(1); }}
+                          className="w-full py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded flex items-center justify-center gap-2 transition-colors"
+                        >
+                          🔍 Ver detalle de documentos
+                        </button>
+                     </div>
+                  )}
                 </div>
               );
             })}
           </div>
 
-          {/* Lista Detallada de Conflictos */}
+          {/* Lista Detallada de Documentos a Importar */}
           {Object.values(analysisReport.conflicts).flat().length > 0 && (
             <div className="mb-8">
-              <details className="group bg-red-50 border border-red-100 rounded-lg">
-                <summary className="flex items-center justify-between cursor-pointer p-4 text-red-700 font-semibold">
-                  <span>Ver detalle de registros omitidos por conflicto ({Object.values(analysisReport.conflicts).flat().length})</span>
+              <details className="group bg-blue-50 border border-blue-100 rounded-lg">
+                <summary className="flex items-center justify-between cursor-pointer p-4 text-blue-700 font-semibold">
+                  <span>Ver detalle de documentos que serán importados ({Object.values(analysisReport.conflicts).flat().length})</span>
                   <span className="transform group-open:rotate-180 transition-transform">▼</span>
                 </summary>
-                <div className="p-4 pt-0 border-t border-red-100">
-                  <ul className="list-disc list-inside space-y-1 mt-2 text-sm text-red-600 max-h-60 overflow-y-auto font-mono">
+                <div className="p-4 pt-0 border-t border-blue-100">
+                  <ul className="list-disc list-inside space-y-1 mt-2 text-sm text-blue-600 max-h-60 overflow-y-auto font-mono">
                     {Object.values(analysisReport.conflicts).flat().map((conflict, index) => (
                       <li key={`conflict-${index}`}>{conflict}</li>
                     ))}
@@ -371,6 +405,86 @@ export default function RestauracionForm({
             >
               {isProcessing ? <><FaSpinner className="animate-spin" /> Restaurando...</> : <><FaFileImport /> Confirmar e Importar Datos</>}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE DETALLE DE DOCUMENTOS */}
+      {showDocsModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-slideDown" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 rounded-t-xl">
+              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                🔍 Detalle de Documentos a Importar
+              </h3>
+              <button onClick={() => setShowDocsModal(false)} className="text-gray-500 hover:text-red-500 text-2xl font-bold px-2 transition-colors">&times;</button>
+            </div>
+            
+            {/* Buscador */}
+            <div className="p-4 border-b border-gray-100 bg-white">
+              <input 
+                type="text" 
+                placeholder="Filtrar por tipo (ej. FV), número (ej. 1050), fecha o referencia..." 
+                value={docsFilter}
+                onChange={(e) => { setDocsFilter(e.target.value); setDocsPage(1); }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                Mostrando {paginatedDocs.length} de {filteredDocs.length} documentos encontrados.
+              </p>
+            </div>
+
+            {/* Tabla */}
+            <div className="overflow-auto p-0 flex-1 bg-white">
+              {filteredDocs.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">No se encontraron documentos con ese filtro.</div>
+              ) : (
+                <table className="w-full text-sm text-left text-gray-600 border-collapse">
+                  <thead className="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 shadow-sm">
+                    <tr>
+                      <th className="px-4 py-3">Tipo</th>
+                      <th className="px-4 py-3">Número</th>
+                      <th className="px-4 py-3">Fecha</th>
+                      <th className="px-4 py-3">Concepto / Observación</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedDocs.map((doc, idx) => (
+                      <tr key={idx} className="border-b hover:bg-gray-50">
+                        <td className="px-4 py-2 font-bold text-gray-700">{doc.tipo}</td>
+                        <td className="px-4 py-2">{doc.numero}</td>
+                        <td className="px-4 py-2">{doc.fecha}</td>
+                        <td className="px-4 py-2 text-gray-500 truncate max-w-xs">{doc.referencia}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {/* Paginación */}
+            {totalPages > 1 && (
+              <div className="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between rounded-b-xl">
+                <button 
+                  onClick={() => setDocsPage(p => Math.max(1, p - 1))}
+                  disabled={docsPage === 1}
+                  className="px-4 py-2 bg-white border border-gray-300 rounded shadow-sm text-sm disabled:opacity-50 hover:bg-gray-100 font-medium transition-colors"
+                >
+                  &laquo; Anterior 100
+                </button>
+                <span className="text-sm text-gray-600 font-bold">
+                  Página {docsPage} de {totalPages}
+                </span>
+                <button 
+                  onClick={() => setDocsPage(p => Math.min(totalPages, p + 1))}
+                  disabled={docsPage === totalPages}
+                  className="px-4 py-2 bg-white border border-gray-300 rounded shadow-sm text-sm disabled:opacity-50 hover:bg-gray-100 font-medium transition-colors"
+                >
+                  Siguientes 100 &raquo;
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

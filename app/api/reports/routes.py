@@ -242,6 +242,11 @@ def get_journal_report(
     numero_documento: Optional[str] = Query(None, description="Filtro por número de documento"),
     beneficiario_filtro: Optional[str] = Query(None, description="Filtro por beneficiario (Nombre o NIT)"),
     concepto_filtro: Optional[str] = Query(None, description="Filtro por concepto"),
+    valor_filtro: Optional[float] = Query(None, description="Filtro por valor"),
+    operador_valor: Optional[str] = Query(">=", description="Operador de valor"),
+    centro_costo_filtro: Optional[str] = Query(None, description="Filtro por Centro de Costo"),
+    vendedor_filtro: Optional[str] = Query(None, description="Filtro por Vendedor"),
+    producto_filtro: Optional[str] = Query(None, description="Filtro por Producto"),
     db: Session = Depends(get_db),
     current_user: usuario_schema.User = Depends(get_current_user)
 ):
@@ -264,7 +269,12 @@ def get_journal_report(
         cuenta_filtro=cuenta_filtro,
         numero_documento=numero_documento,
         beneficiario_filtro=beneficiario_filtro,
-        concepto_filtro=concepto_filtro
+        concepto_filtro=concepto_filtro,
+        valor_filtro=valor_filtro,
+        operador_valor=operador_valor,
+        centro_costo_filtro=centro_costo_filtro,
+        vendedor_filtro=vendedor_filtro,
+        producto_filtro=producto_filtro
     )
     print(f"[ESPIA-MONITOR] Resultados encontrados: {len(report_data)}")
     return report_data
@@ -278,6 +288,11 @@ def get_signed_journal_report_url(
     numero_documento: Optional[str] = Query(None, description="Filtro por número de documento"),
     beneficiario_filtro: Optional[str] = Query(None, description="Filtro por beneficiario (Nombre o NIT)"),
     concepto_filtro: Optional[str] = Query(None, description="Filtro por concepto"),
+    valor_filtro: Optional[float] = Query(None, description="Filtro por valor"),
+    operador_valor: Optional[str] = Query(">=", description="Operador de valor"),
+    centro_costo_filtro: Optional[str] = Query(None, description="Filtro por Centro de Costo"),
+    vendedor_filtro: Optional[str] = Query(None, description="Filtro por Vendedor"),
+    producto_filtro: Optional[str] = Query(None, description="Filtro por Producto"),
     modo: Optional[str] = Query(None, description="Modo de generación: 'oficial' para cerrar el período"),
     db: Session = Depends(get_db),
     current_user: usuario_schema.User = Depends(get_current_user)
@@ -314,7 +329,12 @@ def get_signed_journal_report_url(
         cuenta_filtro=cuenta_filtro,
         numero_documento=numero_documento,
         beneficiario_filtro=beneficiario_filtro,
-        concepto_filtro=concepto_filtro
+        concepto_filtro=concepto_filtro,
+        valor_filtro=valor_filtro,
+        operador_valor=operador_valor,
+        centro_costo_filtro=centro_costo_filtro,
+        vendedor_filtro=vendedor_filtro,
+        producto_filtro=producto_filtro
     )
     return {"signed_url_token": signed_token}
 
@@ -345,6 +365,11 @@ def get_journal_report_pdf(
     numero_documento = verified_params.get("numero_documento")
     beneficiario_filtro = verified_params.get("beneficiario_filtro")
     concepto_filtro = verified_params.get("concepto_filtro")
+    valor_filtro = verified_params.get("valor_filtro")
+    operador_valor = verified_params.get("operador_valor")
+    centro_costo_filtro = verified_params.get("centro_costo_filtro")
+    vendedor_filtro = verified_params.get("vendedor_filtro")
+    producto_filtro = verified_params.get("producto_filtro")
 
     # MODIFICACIÓN: Ahora llama a nuestro nuevo servicio centralizado
     pdf_content = libros_oficiales_service.generate_libro_diario_pdf(
@@ -356,7 +381,12 @@ def get_journal_report_pdf(
         cuenta_filtro=cuenta_filtro,
         numero_documento=numero_documento,
         beneficiario_filtro=beneficiario_filtro,
-        concepto_filtro=concepto_filtro
+        concepto_filtro=concepto_filtro,
+        valor_filtro=valor_filtro,
+        operador_valor=operador_valor,
+        centro_costo_filtro=centro_costo_filtro,
+        vendedor_filtro=vendedor_filtro,
+        producto_filtro=producto_filtro
     )
     from fastapi.responses import Response
     return Response(content=pdf_content, media_type="application/pdf")

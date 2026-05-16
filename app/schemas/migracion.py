@@ -85,6 +85,7 @@ class AnalysisSummaryItem(BaseModel):
     total: int
     a_crear: int
     coincidencias: int
+    detalles: Optional[List[Dict[str, Any]]] = None
 
 class AnalysisConflicts(BaseModel):
     """ Define la estructura de los conflictos encontrados. """

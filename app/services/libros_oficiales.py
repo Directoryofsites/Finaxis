@@ -44,14 +44,22 @@ def get_data_for_libro_diario(
     cuenta_filtro: Optional[str] = None,
     numero_documento: Optional[str] = None,
     beneficiario_filtro: Optional[str] = None,
-    concepto_filtro: Optional[str] = None
+    concepto_filtro: Optional[str] = None,
+    valor_filtro: Optional[float] = None,
+    operador_valor: Optional[str] = '>=',
+    centro_costo_filtro: Optional[str] = None,
+    vendedor_filtro: Optional[str] = None,
+    producto_filtro: Optional[str] = None
 ) -> List[Dict[str, Any]]:
     """
     Obtiene una lista plana de movimientos contables para la tabla del Libro Diario en el frontend.
     """
     try:
         from sqlalchemy.orm import aliased
+        from ..models import CentroCosto as models_cc, Producto as models_prod
+        
         TerceroMov = aliased(models_tercero)
+        Vendedor = aliased(models_tercero)
 
         query = db.query(
             models_doc.fecha,
@@ -67,12 +75,19 @@ def get_data_for_libro_diario(
             models_mov.concepto,
             models_mov.debito,
             models_mov.credito,
-            models_mov.id.label("movimiento_id")
+            models_mov.id.label("movimiento_id"),
+            # --- NUEVOS CAMPOS ---
+            models_cc.codigo.label("centro_costo_codigo"),
+            Vendedor.razon_social.label("vendedor_nombre"),
+            models_prod.nombre.label("producto_nombre")
         ).join(models_mov, models_doc.id == models_mov.documento_id)\
          .outerjoin(models_tipo, models_doc.tipo_documento_id == models_tipo.id)\
          .join(models_plan, models_mov.cuenta_id == models_plan.id)\
          .outerjoin(models_tercero, models_doc.beneficiario_id == models_tercero.id)\
          .outerjoin(TerceroMov, models_mov.tercero_id == TerceroMov.id)\
+         .outerjoin(models_cc, models_mov.centro_costo_id == models_cc.id)\
+         .outerjoin(Vendedor, models_doc.vendedor_id == Vendedor.id)\
+         .outerjoin(models_prod, models_mov.producto_id == models_prod.id)\
          .filter(
             models_doc.empresa_id == empresa_id,
             models_doc.fecha.between(fecha_inicio, fecha_fin),
@@ -104,6 +119,26 @@ def get_data_for_libro_diario(
         if concepto_filtro:
             query = query.filter(models_mov.concepto.ilike(f"%{concepto_filtro}%"))
 
+        if valor_filtro:
+            # Filtro de valor (se aplica al máximo entre débito y crédito)
+            max_val = func.greatest(models_mov.debito, models_mov.credito)
+            if operador_valor == '>=':
+                query = query.filter(max_val >= valor_filtro)
+            elif operador_valor == '<=':
+                query = query.filter(max_val <= valor_filtro)
+            elif operador_valor == '==':
+                # Margen de error para flotantes
+                query = query.filter(max_val.between(valor_filtro - 0.01, valor_filtro + 0.01))
+
+        if centro_costo_filtro:
+            query = query.filter(models_cc.codigo.ilike(f"%{centro_costo_filtro}%"))
+
+        if vendedor_filtro:
+            query = query.filter(Vendedor.razon_social.ilike(f"%{vendedor_filtro}%"))
+
+        if producto_filtro:
+            query = query.filter(models_prod.nombre.ilike(f"%{producto_filtro}%"))
+
         movimientos_raw = query.order_by(models_doc.fecha, models_doc.numero, models_mov.id).all()
 
         report_data = [
@@ -120,7 +155,10 @@ def get_data_for_libro_diario(
                 "cuenta_nombre": mov.cuenta_nombre,
                 "concepto": mov.concepto,
                 "debito": float(mov.debito or 0.0),
-                "credito": float(mov.credito or 0.0)
+                "credito": float(mov.credito or 0.0),
+                "centro_costo_codigo": mov.centro_costo_codigo or "",
+                "vendedor_nombre": mov.vendedor_nombre or "",
+                "producto_nombre": mov.producto_nombre or ""
             }
             for mov in movimientos_raw
         ]
@@ -129,6 +167,7 @@ def get_data_for_libro_diario(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al generar datos del Libro Diario: {str(e)}")
+
 
 
 # --- FUNCIÓN DE PDF (CORREGIDA Y COMPLETA) ---
@@ -141,7 +180,12 @@ def generate_libro_diario_pdf(
     cuenta_filtro: Optional[str] = None,
     numero_documento: Optional[str] = None,
     beneficiario_filtro: Optional[str] = None,
-    concepto_filtro: Optional[str] = None
+    concepto_filtro: Optional[str] = None,
+    valor_filtro: Optional[float] = None,
+    operador_valor: Optional[str] = '>=',
+    centro_costo_filtro: Optional[str] = None,
+    vendedor_filtro: Optional[str] = None,
+    producto_filtro: Optional[str] = None
 ):
     """
     Genera el archivo PDF para el reporte del Libro Diario, construyendo la estructura
@@ -153,7 +197,12 @@ def generate_libro_diario_pdf(
         cuenta_filtro=cuenta_filtro,
         numero_documento=numero_documento,
         beneficiario_filtro=beneficiario_filtro,
-        concepto_filtro=concepto_filtro
+        concepto_filtro=concepto_filtro,
+        valor_filtro=valor_filtro,
+        operador_valor=operador_valor,
+        centro_costo_filtro=centro_costo_filtro,
+        vendedor_filtro=vendedor_filtro,
+        producto_filtro=producto_filtro
     )
     
     
@@ -210,6 +259,14 @@ def generate_libro_diario_pdf(
         desc_filtros.append(f"Beneficiario: {beneficiario_filtro}")
     if concepto_filtro:
         desc_filtros.append(f"Concepto: {concepto_filtro}")
+    if valor_filtro:
+        desc_filtros.append(f"Valor {operador_valor} {valor_filtro}")
+    if centro_costo_filtro:
+        desc_filtros.append(f"C. Costo: {centro_costo_filtro}")
+    if vendedor_filtro:
+        desc_filtros.append(f"Vendedor: {vendedor_filtro}")
+    if producto_filtro:
+        desc_filtros.append(f"Producto: {producto_filtro}")
     
     filtros_str = " | ".join(desc_filtros) if desc_filtros else None
 

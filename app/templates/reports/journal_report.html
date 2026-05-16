@@ -1,195 +1,338 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
-    <title>Libro Diario Detallado</title>
+    <title>Monitor de Asientos - Reporte Premium</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        @page {
-            size: letter;
-            margin: 1.5cm;
+        :root {
+            --primary: #1e1b4b; /* Indigo muy oscuro */
+            --primary-accent: #4f46e5;
+            --secondary: #64748b;
+            --border: #e2e8f0;
+            --bg-light: #f8fafc;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --success: #059669;
+        }
 
-            @bottom-center {
+        @page {
+            size: letter landscape;
+            margin: 1.2cm;
+            @bottom-right {
                 content: "Página " counter(page) " de " counter(pages);
-                font-size: 10px;
+                font-family: 'DM Sans', sans-serif;
+                font-size: 8pt;
+                color: var(--secondary);
+            }
+            @bottom-left {
+                content: "Generado el: {{ fecha_emision }}";
+                font-family: 'DM Sans', sans-serif;
+                font-size: 8pt;
+                color: var(--secondary);
             }
         }
 
         body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
-            font-size: 10px;
-            color: #333;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #333;
-            padding-bottom: 10px;
-        }
-
-        .header h1,
-        .header h2,
-        .header p {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 8.5pt;
+            color: var(--text-main);
             margin: 0;
-            padding: 2px 0;
+            padding: 0;
+            line-height: 1.5;
+            background-color: white;
         }
 
-        .header h1 {
-            font-size: 16px;
+        .header-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid var(--primary);
         }
 
-        .header h2 {
-            font-size: 14px;
+        .company-branding h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 28pt;
+            font-weight: 600;
+            margin: 0;
+            color: var(--primary);
+            line-height: 1;
+            letter-spacing: -0.5px;
         }
 
-        .header p {
-            font-size: 12px;
+        .company-branding p {
+            margin: 4px 0 0 0;
+            color: var(--secondary);
+            font-size: 11pt;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .report-meta {
+            text-align: right;
+        }
+
+        .report-meta h2 {
+            margin: 0;
+            font-size: 18pt;
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .period-badge {
+            display: inline-block;
+            margin-top: 5px;
+            padding: 4px 12px;
+            background-color: var(--primary);
+            color: white;
+            border-radius: 20px;
+            font-size: 9pt;
+            font-weight: 600;
+        }
+
+        .filters-panel {
+            background-color: #f1f5f9;
+            border-left: 4px solid var(--primary-accent);
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .filters-title {
+            font-size: 7.5pt;
+            text-transform: uppercase;
+            font-weight: 800;
+            color: var(--primary-accent);
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .filters-content {
+            font-size: 9pt;
+            color: var(--text-main);
+            font-weight: 500;
         }
 
         table {
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            table-layout: fixed;
-            /* CRITICAL FOR PERFORMANCE */
-        }
-
-        th,
-        td {
-            border: 1px solid #ccc;
-            padding: 4px;
-            /* Reduced padding for density */
-            text-align: left;
-            vertical-align: top;
-            word-wrap: break-word;
-            /* Ensure content wraps */
-            overflow-wrap: break-word;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 5px;
         }
 
         th {
-            background-color: #f2f2f2;
-            font-weight: bold;
-            font-size: 9px;
+            background-color: #f8fafc;
+            color: var(--primary);
+            text-transform: uppercase;
+            font-size: 7pt;
+            font-weight: 800;
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 2px solid var(--primary);
+            letter-spacing: 0.5px;
         }
 
         td {
-            font-size: 9px;
+            padding: 10px 8px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: top;
         }
 
-        .date-header {
-            background-color: #e0e0e0;
-            font-weight: bold;
-            text-align: center;
+        .date-divider {
+            background-color: #f8fafc;
+            padding: 8px 15px;
+            border-bottom: 1px solid var(--border);
         }
 
-        .text-right {
-            text-align: right;
+        .date-text {
+            font-size: 10pt;
+            font-weight: 700;
+            color: var(--primary-accent);
+            display: flex;
+            align-items: center;
         }
 
-        .totals-row td {
-            font-weight: bold;
-            background-color: #333;
-            color: #fff;
-            border-top: 2px solid #000;
+        .date-text::before {
+            content: "";
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: var(--primary-accent);
+            border-radius: 50%;
+            margin-right: 8px;
         }
 
-        .doc-subtotal-row td {
-            background-color: #f9f9f9;
-            font-weight: bold;
-            font-style: italic;
-            border-top: 1px solid #aaa;
+        .doc-id {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 9pt;
         }
+
+        .account-code {
+            font-weight: 700;
+            color: var(--text-main);
+            display: block;
+        }
+
+        .account-name {
+            font-size: 7.5pt;
+            color: var(--text-muted);
+            display: block;
+        }
+
+        .meta-tag {
+            display: inline-block;
+            font-size: 7pt;
+            background-color: #eff6ff;
+            color: #1e40af;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-bottom: 2px;
+            font-weight: 600;
+        }
+
+        .amount {
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .amount-debit { color: var(--text-main); }
+        .amount-credit { color: var(--text-main); }
+
+        .subtotal-row td {
+            background-color: #fcfcfc;
+            font-weight: 700;
+            border-top: 1px solid var(--border);
+            border-bottom: 2px solid var(--border);
+            color: var(--secondary);
+            font-size: 8pt;
+        }
+
+        .total-row {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .total-row td {
+            padding: 15px 10px;
+            font-size: 11pt;
+            font-weight: 700;
+            border: none;
+        }
+
+        .text-right { text-align: right; }
+        .text-muted { color: var(--text-muted); }
+    </style>
     </style>
 </head>
-
 <body>
 
-    <div class="header">
-        <h1>{{ empresa_nombre }}</h1>
-        <h2>NIT: {{ empresa_nit }}</h2>
-        <p><strong>Libro Diario Detallado</strong></p>
-        <p>Desde el {{ fecha_inicio }} hasta el {{ fecha_fin }}</p>
+    <div class="header-main">
+        <div class="company-branding">
+            <h1>{{ empresa_nombre }}</h1>
+            <p>NIT: {{ empresa_nit }}</p>
+        </div>
+        <div class="report-meta">
+            <h2>Libro Diario</h2>
+            <div class="period-badge">{{ fecha_inicio }} — {{ fecha_fin }}</div>
+        </div>
     </div>
 
+    {% if filtros_aplicados %}
+    <div class="filters-panel">
+        <span class="filters-title">Criterios de búsqueda activos</span>
+        <div class="filters-content">{{ filtros_aplicados }}</div>
+    </div>
+    {% endif %}
+
     <table>
-        <colgroup>
-            <col style="width: 12%"> <!-- Documento -->
-            <col style="width: 20%"> <!-- Beneficiario -->
-            <col style="width: 20%"> <!-- Cuenta -->
-            <col style="width: 28%"> <!-- Concepto -->
-            {% if has_cost_centers %}
-            <col style="width: 20%"> <!-- Reduced Concepto if CC exists? -->
-            <col style="width: 8%"> <!-- CC -->
-            {% endif %}
-            <col style="width: 10%"> <!-- Debito -->
-            <col style="width: 10%"> <!-- Credito -->
-        </colgroup>
         <thead>
             <tr>
-                <th>Documento</th>
-                <th>Beneficiario</th>
-                <th>Cuenta</th>
-                <th>Concepto</th>
-                {% if has_cost_centers %}
-                <th>C. Costo</th>
-                {% endif %}
-                <th class="text-right">Débito</th>
-                <th class="text-right">Crédito</th>
+                <th style="width: 10%">Documento</th>
+                <th style="width: 15%">Tercero / Beneficiario</th>
+                <th style="width: 20%">Cuenta Contable</th>
+                <th style="width: 20%">Concepto / Detalle</th>
+                <th style="width: 10%">C. Costo</th>
+                <th style="width: 10%">Vendedor / Prod.</th>
+                <th style="width: 7.5%" class="text-right">Débito</th>
+                <th style="width: 7.5%" class="text-right">Crédito</th>
             </tr>
         </thead>
-
         <tbody>
             {% for date_group in report_data_structured %}
             <tr>
-                <td colspan="{{ 7 if has_cost_centers else 6 }}" class="date-header">
-                    Fecha: {{ date_group.fecha }}
+                <td colspan="8" class="date-divider">
+                    <div class="date-text">Fecha de Asiento: {{ date_group.fecha }}</div>
                 </td>
             </tr>
 
             {% for doc in date_group.documents %}
-            {# --- Filas del Documento --- #}
             {% for mov in doc.rows %}
             <tr>
-                <td>{{ doc.tipo_documento }}-{{ doc.numero_documento }}</td>
-                <td>{{ doc.beneficiario_nombre or '' }}</td>
-                <td>{{ mov.cuenta_codigo }} - {{ mov.cuenta_nombre }}</td>
-                <td>{{ mov.concepto }}</td>
-                {% if has_cost_centers %}
-                <td>{{ mov.centro_costo_codigo or '' }}</td>
-                {% endif %}
-                <td class="text-right">{{ mov.debito | currency }}</td>
-                <td class="text-right">{{ mov.credito | currency }}</td>
-            </tr>
-            {% endfor %}
-
-            {# --- Subtotal del Documento --- #}
-            <tr class="doc-subtotal-row">
-                <td colspan="{{ 5 if has_cost_centers else 4 }}" class="text-right">
-                    Subtotal {{ doc.tipo_documento }} #{{ doc.numero_documento }}:
+                <td>
+                    <span class="doc-id">{{ doc.tipo_documento }}-{{ doc.numero_documento }}</span>
                 </td>
-                <td class="text-right">{{ doc.total_debito | currency }}</td>
-                <td class="text-right">{{ doc.total_credito | currency }}</td>
+                <td>
+                    <div style="font-weight: 500;">{{ doc.beneficiario_nombre or '---' }}</div>
+                    {% if mov.beneficiario_nit %}
+                    <div class="text-muted" style="font-size: 7.5pt;">NIT: {{ mov.beneficiario_nit }}</div>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="account-code">{{ mov.cuenta_codigo }}</span>
+                    <span class="account-name">{{ mov.cuenta_nombre }}</span>
+                </td>
+                <td>
+                    <div style="font-size: 8pt; color: #334155;">{{ mov.concepto }}</div>
+                </td>
+                <td>
+                    {% if mov.centro_costo_codigo %}
+                    <span class="meta-tag">CC: {{ mov.centro_costo_codigo }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if mov.vendedor_nombre %}
+                    <div class="meta-tag" style="background-color: #f0fdf4; color: #166534;">V: {{ mov.vendedor_nombre }}</div>
+                    {% endif %}
+                    {% if mov.producto_nombre %}
+                    <div class="meta-tag" style="background-color: #fff7ed; color: #9a3412;">P: {{ mov.producto_nombre }}</div>
+                    {% endif %}
+                </td>
+                <td class="text-right">
+                    <span class="amount amount-debit">{{ mov.debito | currency }}</span>
+                </td>
+                <td class="text-right">
+                    <span class="amount amount-credit">{{ mov.credito | currency }}</span>
+                </td>
             </tr>
             {% endfor %}
 
-            {% else %}
-            <tr>
-                <td colspan="{{ 7 if has_cost_centers else 6 }}" style="text-align:center;">No hay movimientos para el
-                    período seleccionado.</td>
+            {# Subtotal del documento (opcional, lo mantenemos por claridad) #}
+            <tr class="subtotal-row">
+                <td colspan="6" class="text-right">
+                    SUBTOTAL {{ doc.tipo_documento }} #{{ doc.numero_documento }}
+                </td>
+                <td class="text-right amount">{{ doc.total_debito | currency }}</td>
+                <td class="text-right amount">{{ doc.total_credito | currency }}</td>
             </tr>
+            {% endfor %}
             {% endfor %}
         </tbody>
-
         <tfoot>
-            <tr class="totals-row">
-                <td colspan="{{ 5 if has_cost_centers else 4 }}" class="text-right"><strong>TOTAL GENERAL</strong></td>
-                <td class="text-right"><strong>{{ total_debito | currency }}</strong></td>
-                <td class="text-right"><strong>{{ total_credito | currency }}</strong></td>
+            <tr class="total-row">
+                <td colspan="6" class="text-right">TOTAL GENERAL DEL PERIODO</td>
+                <td class="text-right amount">{{ total_debito | currency }}</td>
+                <td class="text-right amount">{{ total_credito | currency }}</td>
             </tr>
         </tfoot>
     </table>
 
 </body>
-
 </html>

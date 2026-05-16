@@ -41,6 +41,7 @@ from ..models.conciliacion_bancaria import (
     ImportConfig, ImportSession, BankMovement, Reconciliation, 
     ReconciliationMovement, AccountingConfig, ReconciliationAudit
 )
+from ..models.plan_cuenta import PlanCuenta
 # --- NUEVOS MODELOS SOPORTADOS (v7.7 - NÓMINA) ---
 from ..models.nomina import ConfiguracionNomina, TipoNomina, Empleado, Nomina, DetalleNomina
 
@@ -691,25 +692,74 @@ def analizar_backup(db: Session, analysis_request: schemas_migracion.AnalysisReq
         report["summary"]["Cupos Mensuales"] = {"total": len(cupos_source), "a_crear": a_crear_cupos, "coincidencias": len(cupos_source) - a_crear_cupos}
 
     # ANÁLISIS DE DOCUMENTOS
+    # REGLA DE ORO: Solo interesan los documentos ACTIVOS del backup.
+    # Anulados del backup = ignorados. Anulados de la DB = ignorados.
     docs_source = backup_data.get("transacciones") or backup_data.get("documentos") or []
     if docs_source:
-        sq_totales = db.query(
-            MovimientoContable.documento_id,
-            func.sum(MovimientoContable.debito).label('total_debito')
-        ).group_by(MovimientoContable.documento_id).subquery()
+        # Solo los ACTIVOS en la DB cuentan como "ya existentes"
+        existing_docs = db.query(Documento.tipo_documento_id, Documento.numero).filter(
+            Documento.empresa_id == target_empresa_id,
+            Documento.anulado == False
+        ).all()
+        active_db_keys = {f"{d.tipo_documento_id}-{str(d.numero)}" for d in existing_docs}
 
-        existing_docs_query = db.query(
-            Documento.id,
-            Documento.tipo_documento_id,
-            Documento.numero,
-            func.coalesce(sq_totales.c.total_debito, 0).label('total_debito')
-        ).outerjoin(sq_totales, Documento.id == sq_totales.c.documento_id)\
-         .filter(Documento.empresa_id == target_empresa_id).all()
+        tipos_db = db.query(TipoDocumento).filter(TipoDocumento.empresa_id == target_empresa_id).all()
+        target_tipos_map_codigo = {t.codigo.strip().upper(): t.id for t in tipos_db}
+        
+        tipos_map = {}
+        maestros_src = backup_data.get("maestros", {})
+        if "tipos_documento" in maestros_src:
+            for td in maestros_src["tipos_documento"]:
+                tipos_map[td.get("id")] = td.get("codigo", "")
+        elif "tipos_documento" in backup_data:
+            for td in backup_data["tipos_documento"]:
+                tipos_map[td.get("id")] = td.get("codigo", "")
 
-        # En análisis no hacemos nada crítico, solo reportamos
-        a_importar_o_corregir = len(docs_source)
+        # Solo los ACTIVOS del backup son candidatos a restaurar
+        docs_activos_backup = [d for d in docs_source if not d.get("anulado", False)]
+        a_crear = 0
+        coincidencias = 0
+        detalles_importar = []
+        
+        for doc in docs_activos_backup:
+            numero = doc.get("numero")
+            t_id = doc.get("tipo_documento_id")
+            t_id_str = str(t_id) if t_id is not None else None
+            tipo_codigo_raw = str(
+                doc.get("tipo_doc_codigo") or 
+                doc.get("tipo_documento_codigo") or 
+                tipos_map.get(t_id) or 
+                tipos_map.get(t_id_str) or 
+                ""
+            )
+            tipo_codigo = tipo_codigo_raw.strip().upper()
+            target_tipo_id = target_tipos_map_codigo.get(tipo_codigo)
+            
+            if target_tipo_id:
+                natural_key = f"{target_tipo_id}-{numero}"
+                if natural_key in active_db_keys:
+                    # Ya existe activo en la DB → conflicto, no se restaura
+                    coincidencias += 1
+                else:
+                    # No existe activo en DB → se restaura (puede estar anulado o no existir)
+                    a_crear += 1
+                    report["conflicts"]["documentos"].append(f"Tipo {tipo_codigo} Nro: {numero}")
+                    
+                    # Detalle para el modal del frontend
+                    detalles_importar.append({
+                        "tipo": tipo_codigo,
+                        "numero": str(numero),
+                        "fecha": doc.get("fecha", "N/A"),
+                        "referencia": doc.get("observaciones") or doc.get("referencia") or ""
+                    })
+            else:
+                # Tipo de documento no encontrado en la empresa destino → se omite
+                coincidencias += 1
+
+        total_en_backup = len(docs_activos_backup)
         report["summary"]["Documentos y Movimientos"] = {
-            "total": len(docs_source), "a_crear": a_importar_o_corregir, "coincidencias": 0
+            "total": total_en_backup, "a_crear": a_crear, "coincidencias": coincidencias,
+            "detalles": detalles_importar
         }
 
     # ANÁLISIS DE PROPIEDAD HORIZONTAL
@@ -1862,6 +1912,11 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
             map_unidades = {u.codigo: u.id for u in unidades_db}
 
             for doc_data in docs_source:
+                # REGLA DE ORO: Solo restaurar documentos ACTIVOS del backup.
+                # Los documentos anulados del backup NO se tocan.
+                if doc_data.get('anulado', False):
+                    continue
+
                 tipo_codigo = doc_data.get('tipo_doc_codigo')
                 tipo_id = map_tipos_final.get(tipo_codigo)
                 if not tipo_id: continue
@@ -1899,8 +1954,8 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
                     documento_bd.estado = val_estado
                     documento_bd.unidad_ph_id = unidad_ph_id # <-- ACTUALIZAR UNIDAD
                     
-                    db.query(MovimientoContable).filter(MovimientoContable.documento_id == documento_bd.id).delete()
-                    db.query(MovimientoInventario).filter(MovimientoInventario.documento_id == documento_bd.id).delete()
+                    db.execute(delete(MovimientoContable).where(MovimientoContable.documento_id == int(documento_bd.id)))
+                    db.execute(delete(MovimientoInventario).where(MovimientoInventario.documento_id == int(documento_bd.id)))
                     actualizados_count += 1
                     ids_vivos_en_backup.add(documento_bd.id)
                 else:
@@ -1956,36 +2011,35 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
             _reconstruir_saldos_inventario(db, target_empresa_id)
             resumen["acciones_realizadas"].append("📦 Stocks y COSTOS de inventario reconstruidos.")
 
-            if terceros_afectados:
-                for tid in terceros_afectados:
-                    try:
-                        services_cartera.recalcular_aplicaciones_tercero(db, tercero_id=tid, empresa_id=target_empresa_id)
-                    except:
-                        pass # Tolerancia a errores de recálculo
-                resumen["acciones_realizadas"].append(f"💰 Saldos de cartera recalculados para {len(terceros_afectados)} terceros.")
-
-        # --- ATOMICIDAD: EL ÚNICO COMMIT DE TODA LA OPERACIÓN ---
+        # --- ATOMICIDAD: EL ÚNICO COMMIT DE TODA LA OPERACIÓN (Se movió aquí para proteger los documentos) ---
         db.commit()
-        
+
         # Verificar integridad referencial después del commit
         integridad = verificar_integridad_referencial(db, target_empresa_id)
         if not integridad['integridad_valida']:
             resumen["acciones_realizadas"].append(f"⚠️ Advertencias de integridad: {'; '.join(integridad['errores'])}")
         else:
             resumen["acciones_realizadas"].append("✅ Verificación de integridad referencial: OK")
+
+        if docs_source and 'terceros_afectados' in locals() and terceros_afectados:
+            for tid in terceros_afectados:
+                try:
+                    services_cartera.recalcular_aplicaciones_tercero(db, tercero_id=tid, empresa_id=target_empresa_id)
+                except Exception as e:
+                    print(f"⚠️ [WARNING] Error recalculando cartera para tercero {tid}: {str(e)}")
+            resumen["acciones_realizadas"].append(f"💰 Saldos de cartera recalculados para {len(terceros_afectados)} terceros.")
         
         return {"message": "Restauración Protocolo Fusión v7.6 Finalizada - Nuevos módulos incluidos (Datos existentes preservados)", "resumen": resumen}
 
     except Exception as e:
         # --- ROLLBACK TOTAL ---
-        print(f"❌ [ERROR] Error crítico durante restauración para empresa {target_empresa_id}: {str(e)}")
+        error_msg = str(e)
+        print(f"❌ [ERROR] Error crítico durante restauración para empresa {target_empresa_id}: {error_msg}")
         print(f"📊 [ROLLBACK] Revirtiendo todos los cambios...")
         
-        db.rollback()
-        
-        # Verificar que el rollback fue exitoso
         try:
-            # Intentar una consulta simple para verificar que la conexión sigue funcionando
+            db.rollback()
+            # Verificar que el rollback fue exitoso
             db.execute(select(func.count()).select_from(Empresa).where(Empresa.id == target_empresa_id))
             print(f"✅ [ROLLBACK] Rollback completado exitosamente")
         except Exception as rollback_error:
@@ -2003,7 +2057,7 @@ def ejecutar_restauracion(db: Session, request: schemas_migracion.AnalysisReques
         
         raise HTTPException(
             status_code=500, 
-            detail=f"Error fatal durante restauración (Operación Revertida Completamente): {str(e)}. Contexto: {error_context}"
+            detail=f"Error fatal durante restauración (Operación Revertida Completamente): {error_msg}. Contexto: {error_context}"
         )
 
 # =====================================================================================
