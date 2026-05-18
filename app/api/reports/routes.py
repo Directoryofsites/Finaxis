@@ -24,6 +24,7 @@ from app.services import analisis_financiero as analisis_financiero_service # <-
 from app.services import periodo as periodo_service
 from app.services.email_service import email_service # <-- NUEVO SERVICIO EMAIL
 from app.schemas.compras import FiltrosDetalladoCompras, CompraDetalladaResponse
+from app.schemas.reporte_comparacion_saldos import FiltrosComparacionSaldos
 
 # --- FIN: MODIFICACIÓN ARQUITECTÓNICA ---
 
@@ -2229,3 +2230,71 @@ def generate_purchases_detailed_csv_route(
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+
+# --- REPORTES DE COMPARACIÓN MENSUAL DE SALDOS ---
+
+@router.post("/comparacion-saldos")
+def get_comparacion_saldos_route(
+    filtros: FiltrosComparacionSaldos,
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    from app.services import comparacion_saldos as comparacion_saldos_service
+    return comparacion_saldos_service.generate_comparacion_saldos_report(
+        db=db,
+        empresa_id=current_user.empresa_id,
+        filtros=filtros
+    )
+
+@router.post("/comparacion-saldos/get-signed-url")
+def get_signed_comparacion_saldos_url(
+    filtros: FiltrosComparacionSaldos,
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    pdf_endpoint = "/api/reports/comparacion-saldos/imprimir"
+    filtros_dict = filtros.model_dump(mode='json')
+    
+    signed_token = reports_service.generate_signed_report_url(
+        endpoint=pdf_endpoint,
+        expiration_seconds=60,
+        empresa_id=current_user.empresa_id,
+        filtros=filtros_dict
+    )
+    return {"signed_url_token": signed_token}
+
+@router.get("/comparacion-saldos/imprimir")
+def get_comparacion_saldos_pdf_route(
+    signed_token: str = Query(..., description="Token de URL firmada"),
+    db: Session = Depends(get_db)
+):
+    from app.services import comparacion_saldos as comparacion_saldos_service
+    
+    verified_params = reports_service.verify_signed_report_url(signed_token, "/api/reports/comparacion-saldos/imprimir")
+    if not verified_params:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="URL inválida o expirada.")
+        
+    empresa_id = verified_params["empresa_id"]
+    filtros = FiltrosComparacionSaldos(**verified_params["filtros"])
+    
+    return comparacion_saldos_service.generate_comparacion_saldos_pdf(
+        db=db,
+        empresa_id=empresa_id,
+        filtros=filtros
+    )
+
+@router.post("/comparacion-saldos/csv")
+def get_comparacion_saldos_csv_direct(
+    filtros: FiltrosComparacionSaldos,
+    db: Session = Depends(get_db),
+    current_user: usuario_schema.User = Depends(get_current_user)
+):
+    from app.services import comparacion_saldos as comparacion_saldos_service
+    
+    report_data = comparacion_saldos_service.generate_comparacion_saldos_report(
+        db=db,
+        empresa_id=current_user.empresa_id,
+        filtros=filtros
+    )
+    return comparacion_saldos_service.generate_comparacion_saldos_csv(report_data)
+

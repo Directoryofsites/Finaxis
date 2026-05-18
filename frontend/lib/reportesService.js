@@ -51,3 +51,21 @@ export const getSignedUrlForBalanceDePruebaCC = (filtros) => {
 export const recalcularSaldosTercero = (terceroId) => {
   return apiService.post(`/reports/recalcular-tercero/${terceroId}`);
 };
+
+/**
+ * Llama al endpoint del backend para generar el reporte de Comparación Mensual de Saldos.
+ * @param {object} filtros - El objeto con los filtros del reporte.
+ * @returns {Promise} La promesa de la llamada de Axios.
+ */
+export const getComparacionSaldos = (filtros) => {
+  return apiService.post('/reports/comparacion-saldos', filtros);
+};
+
+/**
+ * Llama al endpoint del backend para obtener la URL firmada para la descarga del PDF de Comparación Mensual de Saldos.
+ * @param {object} filtros - El objeto con los filtros del reporte.
+ * @returns {Promise} La promesa de la llamada de Axios.
+ */
+export const getSignedUrlForComparacionSaldos = (filtros) => {
+  return apiService.post('/reports/comparacion-saldos/get-signed-url', filtros);
+};
