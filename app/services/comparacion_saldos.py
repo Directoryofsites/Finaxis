@@ -93,7 +93,11 @@ def generate_comparacion_saldos_report(db: Session, empresa_id: int, filtros: Fi
     
     for row in saldos_iniciales_q:
         if row.cuenta_id in cuentas_map:
-            cuentas_map[row.cuenta_id]['data']['saldo_inicial'] = float(row.saldo_inicial or 0.0)
+            codigo = cuentas_map[row.cuenta_id]['data']['codigo']
+            if codigo and codigo[0] in ('4', '5', '6', '7'):
+                cuentas_map[row.cuenta_id]['data']['saldo_inicial'] = 0.0
+            else:
+                cuentas_map[row.cuenta_id]['data']['saldo_inicial'] = float(row.saldo_inicial or 0.0)
             
     # 4. Obtener movimientos mensuales agrupados por cuenta para cada mes del rango
     # movimientos_mensuales[cuenta_id][mes] = (debito, credito)
@@ -120,16 +124,27 @@ def generate_comparacion_saldos_report(db: Session, empresa_id: int, filtros: Fi
                 movimientos_mensuales[c_id] = {}
             movimientos_mensuales[c_id][m] = (float(row.debito or 0.0), float(row.credito or 0.0))
             
-    # 5. Calcular saldos acumulados secuenciales mes a mes en las cuentas auxiliares (hojas)
+    # 5. Calcular saldos mensuales en las cuentas auxiliares (hojas)
     for c_id, c_node in cuentas_map.items():
         if not c_node['children']:
-            saldo_acumulado = c_node['data']['saldo_inicial']
-            for m in meses:
-                deb, cred = 0.0, 0.0
-                if c_id in movimientos_mensuales and m in movimientos_mensuales[c_id]:
-                    deb, cred = movimientos_mensuales[c_id][m]
-                saldo_acumulado += (deb - cred)
-                c_node['data']['saldos_mensuales'][m] = saldo_acumulado
+            codigo = c_node['data']['codigo']
+            es_balance = codigo and codigo[0] in ('1', '2', '3')
+            
+            if es_balance:
+                saldo_acumulado = c_node['data']['saldo_inicial']
+                for m in meses:
+                    deb, cred = 0.0, 0.0
+                    if c_id in movimientos_mensuales and m in movimientos_mensuales[c_id]:
+                        deb, cred = movimientos_mensuales[c_id][m]
+                    saldo_acumulado += (deb - cred)
+                    c_node['data']['saldos_mensuales'][m] = saldo_acumulado
+            else:
+                c_node['data']['saldo_inicial'] = 0.0
+                for m in meses:
+                    deb, cred = 0.0, 0.0
+                    if c_id in movimientos_mensuales and m in movimientos_mensuales[c_id]:
+                        deb, cred = movimientos_mensuales[c_id][m]
+                    c_node['data']['saldos_mensuales'][m] = deb - cred
                 
     # 6. Agregación recursiva hacia las cuentas padre (desde hojas hacia arriba)
     def acumular_padre(cuenta_id):
